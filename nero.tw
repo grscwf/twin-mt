@@ -1,5 +1,5 @@
 :: StoryTitle
-The Mage's Tower (Nero)
+mages-tower-nero
 
 
 :: StoryData
@@ -413,6 +413,39 @@ macros.arousalbar = {
 }
 /* Arousal Bar Macro - End */
 
+/**
+ * Deletes all state vars whose name starts with prefix.
+ *
+ * This is useful for clearing state at reset points,
+ * especially when a section uses define_var.
+ */
+setup.deleteVars = function(prefix) {
+  const vars = State.variables;
+  const names = Object.keys(vars);
+  for (const name of names) {
+    if (name.startsWith(prefix)) {
+      delete vars[name];
+    }
+  }
+};
+
+/**
+ * Sets the state var named varname to value,
+ * only if it doesn't yet exist.
+ *
+ * This is useful for declaring the initial value of a var
+ * that's only used in the passage it's set.
+ *
+ * And using a consistent prefix for state vars in a section
+ * will make it easy to use delete_vars to reset section state.
+ */
+setup.defineVar = function(varname, value) {
+  const vars = State.variables;
+  if (!vars.hasOwnProperty(varname)) {
+    vars[varname] = value;
+  }
+};
+
 
 :: Bound {"position":"2500,175","size":"100,100"}
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
@@ -436,7 +469,7 @@ by <a href="http://www.slethstories.com/" target="_blank">Sleth</a>
 
 
 :: StoryDisplayTitle {"position":"150,25","size":"100,100"}
-The Mage's Tower
+The Mage's Tower - Nero
 
 
 :: StoryMenu {"position":"2500,500","size":"100,100"}
@@ -6681,61 +6714,62 @@ XXX Nero sketch
 
 
 :: Nero Chosen [restart] {"position":"3800,400","size":"100,100"}
-<<include [[Nero Init]]>>\
+<<include [[n1 Init]]>>\
 XXX
 Nero fuller description.
 
 "Last chance, buddy. Wake up, or else..." the voice says again, with a hint of sadistic glee...
 
-[[Cast a protection spell]]
-[[Pretend to be asleep]]
-[[Turn on the charm]]
+[[n1 Cast 1]]
+[[n1 Resist 1]]
+[[n1 Charm 1]]
 
 
-:: n1 Ivex Acts {"position":"3800,900","size":"100,100"}
-<<include [[n1a Look]]>>\
+:: n1 Ivex 1 {"position":"3800,900","size":"100,100"}
+XXX
+<<include [[n1 Look]]>>\
+
+[[n1 Cast 2]]
+
+[[n1 Reveal 1]]
+[[n1 Resist 2]]
+[[n1 Charm 2]]
 
 
-:: Nero Init {"position":"3900,400","size":"100,100"}
-<<silently>>
-<!--
-This section of the game is on a clock, based on story beats.
-The clock unit is ticks. 10 ticks = 1 beat.
--->
-<<set $n1_clock = 0>>
+:: n1 Init {"position":"3900,400","size":"100,100"}
+<<script>>
+setup.deleteVars('n1_');
 
-<!-- Ivex gets an alert at a fixed time -->
-<<set $n1_ivex_alert_tick = 60>>
-<<set $n1_ivex_alerted = false>>
+const v = State.variables;
 
-<!--
-These are normal durations for various actions.
--->
-<<set $n1_look_ticks = 5>>
-<<set $n1_cast_ticks = 10>>
-<<set $n1_talk_ticks = 10>>
-<<set $n1_ivex_ticks = 10>>
+// Look state for expandable containers
+v.n1_seenCross = false;
+v.n1_seenStudy = false;
+v.n1_seenDesk = false;
+v.n1_seenBookshelf = false;
+v.n1_seenCabinet = false;
+v.n1_seenWall = false;
 
-<!--
-The lust candle increases Nero's lust from 0 to 60.
-Crossing the lust_high threshold enables high-lust logic.
-The lust meter is nonlinear:
-lust_scale is what percent is full at each 10 ticks of lust.
-At 50 lust, the meter is full and starts throbbing.
--->
-<<set $n1_candle_active = false>>
-<<set $n1_lust = 0>>
-<<set $n1_lust_high = 50>>
-<<set $n1_lust_max = 60>>
-<<set $n1_lust_scale = [0, 30, 70, 90, 100, 100]>>
+// States for magic
+setup.m_BeforeCast = 'BeforeCast';
+setup.m_AfterCast = 'AfterCast';
+setup.m_WantTouch = 'WantTouch';
+setup.m_WantName = 'WantName';
+setup.m_WantPassword = 'WantPassword';
 
-<</silently>>\
+// Current state of magic
+v.n1_magic = setup.m_BeforeCast;
+
+<</script>>\
 
 
-:: testing {"position":"6100,100","size":"100,100"}
+:: testing {"position":"4850,300","size":"100,100"}
+<<script>>
+<</script>>
+<<set $x = setup.tourney>>
 
 
-:: n1a Look {"position":"4300,900","size":"100,100"}
+:: n1 Look {"position":"4300,900","size":"100,100"}
 XXX
 <!--
 This module is a description of what Nero can see, with clickables like desk, bookshelf. It's included at the top of several n1a passages, which set a variable $n1a_after_look, indicating what passage to go to if the player does a look.
@@ -6768,27 +6802,16 @@ Nero assesses his situation.
 <</fi>>
 
 
-:: Cast a protection spell {"position":"3675,600","size":"100,100"}
+:: n1 Resist 1 {"position":"3825,600","size":"100,100"}
 XXX
-fails. Ivex mocks.
--1 cooperative
-+1 casting
-
-[[Continue|n1 Ivex Intro]]
-
-
-:: Pretend to be asleep {"position":"3800,600","size":"100,100"}
-XXX
+Pretend to be asleep.
 Ivex grabs balls.
--1 cooperative
 
 [[Continue|n1 Ivex Intro]]
 
 
-:: Turn on the charm {"position":"3925,600","size":"100,100"}
+:: n1 Charm 1 {"position":"3925,600","size":"100,100"}
 XXX
-say charm 1, open eyes.
-convo = charm-1
 
 [[Continue|n1 Ivex Intro]]
 
@@ -6796,19 +6819,22 @@ convo = charm-1
 :: n1 Ivex Intro {"position":"3800,750","size":"100,100"}
 XXX
 
-[[Continue|n1 Ivex Acts]]
+[[Continue|n1 Ivex 1]]
 
 
 :: leather restraints {"position":"4200,1200","size":"100,100"}
 
 
 :: wooden cross {"position":"4300,1050","size":"100,100"}
+XXX
 [[leather restraints]]
 [[gravity gems]]
 [[base gem]]
 
 
 :: mage's study {"position":"5000,1050","size":"100,100"}
+XXX
+
 [[desk]]
 [[bookshelves]]
 [[cabinets]]
@@ -6819,6 +6845,7 @@ XXX
 
 
 :: desk {"position":"4725,1200","size":"100,100"}
+XXX
 [[small mirror]]
 [[snow globe]]
 [[candle]]
@@ -6826,6 +6853,7 @@ XXX
 
 
 :: bookshelves {"position":"5100,1200","size":"100,100"}
+XXX
 [[books]]
 [[auth coin]]
 [[magic wand]]
@@ -6850,15 +6878,18 @@ XXX
 
 
 :: cabinets {"position":"5400,1200","size":"100,100"}
+XXX
 [[tk bottle]]
 [[taxidermy penguin]]
 
 
 :: auth coin {"position":"5100,1350","size":"100,100"}
+XXX
 deck of cards weighted down by a coin
 
 
 :: wall {"position":"5650,1200","size":"100,100"}
+XXX
 [[map]]
 [[portrait of mom]]
 
@@ -6876,5 +6907,26 @@ deck of cards weighted down by a coin
 
 
 :: magic wand {"position":"5200,1350","size":"100,100"}
+
+
+:: n1 Cast 1 {"position":"3700,600","size":"100,100"}
+XXX
+fails. Ivex mocks
+
+<<set $n1_magic = setup.m_AfterCast>>
+
+[[Continue|n1 Ivex Intro]]
+
+
+:: n1 Cast 2 {"position":"3600,875","size":"100,100"}
+
+
+:: n1 Reveal 1 {"position":"3600,1075","size":"100,100"}
+
+
+:: n1 Charm 2 {"position":"3925,1075","size":"100,100"}
+
+
+:: n1 Resist 2 {"position":"3825,1075","size":"100,100"}
 
 
