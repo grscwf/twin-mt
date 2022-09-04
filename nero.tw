@@ -6735,20 +6735,19 @@ Nero's head feels stuffed, like it's crammed full with pebbles that shift a litt
 
 [[Pretend to be asleep and learn more about the situation|n1 Resist 1]]
 [[Engage with the voice and talk his way out of this|n1 Charm 1]]
-[[Activate his emergency protection spell|n1 Cast 1]]
+[[Activate his emergency protection spell|n1 Cast Endgame 1]]
 
 
 :: n1 Ivex 1 {"position":"3800,900","size":"100,100"}
 XXX Ivex, again I ask, who sent you
 
-<<set $n1_afterLook = "XXX">>
+<<set $n1_afterLook = "XXX">>\
+<<set $n1_afterMagic = "XXX">>\
+
 <<include [[n1 Look]]>>\
-<<include [[n1 Magic]]>>\
+<<include [[n1 Magic Info]]>>\
 
-<<set $n1_afterOvertMagic = "XXX">>
-<<set $n1_afterCovertMagic = "XXX">>
-<<include [[n1 Magic Action]]>>\
-
+<<include [[n1 Overt Magic Action]]>>\
 [[n1 Resist 2]]
 [[n1 Charm 2]]
 
@@ -6761,8 +6760,13 @@ const v = State.variables;
 
 v.n1_naked = false;
 
+// Ivex mood bits
 v.n1_ivexAroused = false;
-v.n1_ivexDistracted = false;
+v.n1_ivexSkeptical = false;
+v.n1_ivexVicious = false;
+
+// Passage to go to after doing an action when Ivex is distracted
+v.n1_afterIvexDistraction = null;
 
 // Look state for expandable containers
 v.n1_seenCross = false;
@@ -6785,10 +6789,7 @@ setup.m_WantPassword = 6;
 v.n1_magicState = setup.m_BeforeCast;
 
 // Passage to go to after an overt magic action
-v.n1_afterOvertMagic = null;
-
-// Passage to go to after a covert magic action
-v.n1_afterCovertMagic = null;
+v.n1_afterMagic = null;
 
 <</script>>\
 
@@ -6797,24 +6798,14 @@ v.n1_afterCovertMagic = null;
 <<if $typo>>hello<<else>>goodbye<</if>>
 
 
-:: n1 Look {"position":"4300,900","size":"100,100"}
+:: n1 Look {"position":"4300,1000","size":"100,100"}
 XXX
-<!--
-This module is a description of what Nero can see, with clickables like desk, bookshelf. It's included at the top of several n1a passages, which set a variable $n1a_after_look, indicating what passage to go to if the player does a look.
-
-Clicking on an item is a look action, which takes you to a description for that item. There are no actions in this module other than looks.
-
-Descriptions can have more clickables. Any clickables you see will be added to this top-level look module, so you don't need to repeatedly descend to look more.
-
-Descriptions have these actions:
-- Do something else - goes to $n1a_after_look, which usually advances Ivex's storyline.
-- Ask Ivex about (maybe not available right away) - goes to a side-path where Ivex responds, and you have an opportunity to do a covert action.
--->
+<<nobr>>
 
 Nero assesses his situation.
 
 <<if $n1_seenCross>>
-	He's attached with [leather restraints] to a [[wooden cross]]
+	He's attached with [[leather restraints]] to a [[wooden cross]]
 <<else>>
 	He appears to be strapped to a [[wooden cross]]
 <</if>>
@@ -6832,6 +6823,7 @@ Nero assesses his situation.
 <<if $n1_seenStudy>>
   	The study has XXX
 <</if>>
+<</nobr>>\
 
 
 :: n1 Resist 1 {"position":"3800,600","size":"100,100"}
@@ -6839,7 +6831,7 @@ Best to play it safe and gather more information before acting.
 
 Nero can feel leather straps on his arms and legs and torso, holding him upright and spread-eagled against something sturdy, probably made of wood.
 
-Other than the breathing of his unknown companion, it's quiet. It sounds like he's indoors, and smells a bit musty.
+Other than the breathing sounds of his unknown companion, it's eerily quiet. It sounds like he's indoors, and it smells of incense that doesn't really hide a musty scent that reminds Nero of living quarters long overdue for cleaning.
 
 Nero ventures to open his eyelids slightly to peer through the slits, when suddenly...
 
@@ -6849,15 +6841,18 @@ Nero's eyes fly wide open and he stiflles a yelp.
 
 The voice purrs. "I said, wakey wakey..."
 
-The pain is excruciating and twists deeply in his gut. Nero's instinct is to struggle to escape the grasp, but even a slight motion causes the pressure on his ball to send sharp spikes into his diaphragm. So he forces himself to stay still and focus on steady breathing.
+The pain is excruciating and twists deeply in his gut. Nero's instinct is to struggle to escape the grasping paw, but even a slight motion causes the pressure on his ball to send sharp spikes into his diaphragm. So he forces himself to stay still and focus on steady breathing.
 
-His vision is still cloudy, perhaps the after-effects of whatever knocked him out, and also some tears from the pain. But he can see the blurry face of his tormentor.
+His vision is cloudy. Probably the after-effects of whatever knocked him out. Definitely not from tears of pain. He never cries. He blinks rapidly to shake loose whatever dust is causing his eyes to water. And soon enough, he can see the blurry face of his tormentor.
 
-Their eyes make contact. The captor's grin becomes a toothy feral smile, and then a fist smashes against his crotch, thumping hard against his other ball and briefly making it ache stronger than the ball held captive.
+Their eyes make contact. The captor's grin becomes a toothy, feral smile,
+
+And then a fist smashes into his crotch, thumping hard against his other ball and briefly making it ache stronger than the ball held captive.
 
 Nero cannot suppress a whine. The sound is embarrassing and pathetic, and after a moment, the hand on his ball releases its grasp.
 
 "There we go," says the voice. "That's a fun start."
+<<set $n1_neroAroused = true>>\
 
 Nero's vision clears, and the vague shape of his tormentor snaps into focus.
 
@@ -6869,7 +6864,7 @@ It's Ivex, the panther mage who's the subject of his current "errand".
 
 
 :: n1 Charm 1 {"position":"3925,600","size":"100,100"}
-XXX open eyes, charm, Ivex skeptical.
+XXX open eyes, charm, Ivex noncommittal..
 
 [[Continue|n1 Ivex Intro]]
 
@@ -6881,17 +6876,17 @@ link to Ivex description early, or maybe inline
 [[Continue|n1 Ivex 1]]
 
 
-:: leather restraints {"position":"4200,1200","size":"100,100"}
+:: leather restraints {"position":"4200,1300","size":"100,100"}
 
 
-:: wooden cross {"position":"4300,1050","size":"100,100"}
+:: wooden cross {"position":"4300,1150","size":"100,100"}
 XXX
 [[leather restraints]]
 [[gravity gems]]
 [[base gem]]
 
 
-:: mage's study {"position":"5000,1050","size":"100,100"}
+:: mage's study {"position":"5000,1150","size":"100,100"}
 XXX
 
 [[desk]]
@@ -6900,10 +6895,10 @@ XXX
 [[wall]]
 
 
-:: gravity gems {"position":"4300,1200","size":"100,100"}
+:: gravity gems {"position":"4300,1300","size":"100,100"}
 
 
-:: desk {"position":"4725,1200","size":"100,100"}
+:: desk {"position":"4725,1300","size":"100,100"}
 XXX
 [[small mirror]]
 [[snow globe]]
@@ -6911,84 +6906,101 @@ XXX
 [[letter opener]]
 
 
-:: bookshelves {"position":"5100,1200","size":"100,100"}
+:: bookshelves {"position":"5100,1300","size":"100,100"}
 XXX
 [[books]]
 [[auth coin]]
 [[magic wand]]
 
 
-:: small mirror {"position":"4550,1350","size":"100,100"}
+:: small mirror {"position":"4550,1450","size":"100,100"}
 
 
-:: snow globe {"position":"4650,1350","size":"100,100"}
+:: snow globe {"position":"4650,1450","size":"100,100"}
 
 
-:: books {"position":"5000,1350","size":"100,100"}
+:: books {"position":"5000,1450","size":"100,100"}
 
 
-:: base gem {"position":"4400,1200","size":"100,100"}
+:: base gem {"position":"4400,1300","size":"100,100"}
 
 
-:: candle {"position":"4850,1350","size":"100,100"}
+:: candle {"position":"4850,1450","size":"100,100"}
 
 
-:: letter opener {"position":"4750,1350","size":"100,100"}
+:: letter opener {"position":"4750,1450","size":"100,100"}
 
 
-:: cabinets {"position":"5400,1200","size":"100,100"}
+:: cabinets {"position":"5400,1300","size":"100,100"}
 XXX
 [[tk bottle]]
 [[taxidermy penguin]]
 
 
-:: auth coin {"position":"5100,1350","size":"100,100"}
+:: auth coin {"position":"5100,1450","size":"100,100"}
 XXX
 deck of cards weighted down by a coin
 
 
-:: wall {"position":"5650,1200","size":"100,100"}
+:: wall {"position":"5650,1300","size":"100,100"}
 XXX
 [[map]]
 [[portrait of mom]]
 
 
-:: tk bottle {"position":"5350,1350","size":"100,100"}
+:: tk bottle {"position":"5350,1450","size":"100,100"}
 
 
-:: map {"position":"5700,1350","size":"100,100"}
+:: map {"position":"5700,1450","size":"100,100"}
 
 
-:: portrait of mom {"position":"5600,1350","size":"100,100"}
+:: portrait of mom {"position":"5600,1450","size":"100,100"}
 
 
-:: taxidermy penguin {"position":"5450,1350","size":"100,100"}
+:: taxidermy penguin {"position":"5450,1450","size":"100,100"}
 
 
-:: magic wand {"position":"5200,1350","size":"100,100"}
+:: magic wand {"position":"5200,1450","size":"100,100"}
 
 
-:: n1 Cast 1 {"position":"3675,600","size":"100,100"}
-XXX protection spell, fails, Ivex mocks.
+:: n1 Cast Endgame 1 {"position":"3675,600","size":"100,100"}
+Nero's limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And he's wary of speaking just yet.
 
-<<set $n1_magicState = setup.m_AfterCast>>
+All this would be a crippling handicap to most spellcasters, but Nero has one spell ready to cast, that does not need his hands or spoken words.
 
-[[Continue|n1 Ivex Intro]]
+He's kept the spell's construction a secret, so it doesn't have a name yet, but privately he thinks of it as [[Nero's Endgame]].
+
+It's a spell of last resort, but bound as he is now, this seems a good time to use it.
+
+He prepares the spell's image in his mind, and then <i>twists</i> it...
+
+[[Continue|n1 Cast Endgame 2]]
 
 
 :: n1 Charm 2 {"position":"3875,1050","size":"100,100"}
+XXX nero tries to fanboy, claims he got the dossier from a bounty hunter who tried and failed to take nero in.
+this branch has easy distract-ivex options, many look actions will distract.
+misstep will send you to the resist branch.
 
 
 :: n1 Resist 2 {"position":"3725,1050","size":"100,100"}
+XXX we're here because we didn't try charm, or failed to charm. can have a different intro for didn't-try vs failed.
+here, nero tries to feed Ivex a different lie, and uses resistance to make the lie seem more plausible.
+he's still trying to distract Ivex, but it's harder.
+distract options are, ivex gets bored of a torture and goes to get another one.
+and maybe also, offer surprising info that Ivex has to consider or check.
+some look options still work too.
+
+<<set $n1_ivexSkeptical = true>>
 
 
-:: n1 Magic {"position":"3375,975","size":"100,100"}
+:: n1 Magic Info {"position":"3400,1000","size":"100,100"}
 <<nobr>>
 <<switch $n1_magicState>>
 <<case setup.m_BeforeCast>>
-	<!-- nothing -->
+	XXX something about trying magic and ivex distraction
 <<case setup.m_AfterCast>>
-	XXX speculate on magic failure
+	XXX speculate on magic failure. also mention distraction
 <<case setup.m_BeforeConnect>>
 	XXX describe magic flows
 <<case setup.m_WantTouch>>
@@ -7003,7 +7015,7 @@ XXX protection spell, fails, Ivex mocks.
 <</nobr>>\
 
 
-:: n1 Magic Action {"position":"3375,1100","size":"100,100"}
+:: n1 Overt Magic Action {"position":"3400,1125","size":"100,100"}
 <<nobr>>
 <<switch $n1_magicState>>
 <<case setup.m_BeforeCast>>
@@ -7022,5 +7034,43 @@ XXX protection spell, fails, Ivex mocks.
 	XXX bug
 <</switch>>
 <</nobr>>\
+
+
+:: n1 Ivex Distracted {"position":"3400,1250","size":"100,100"}
+XXX whenever player distracts Ivex, we come here for one turn.
+this is a chance to do some actions without Ivex noticing.
+after, we go to $n1_afterIvexDistraction
+
+
+:: Nero's Endgame {"position":"3525,600","size":"100,100"}
+Nero's Endgame is an unusual construction. He realized he needed it after the Triestorm incident.
+
+It had begun with a simple request. Lord Estrivar of the Triestorm Council had asked him to find Perosolamew, his missing parrot. This was a trivial divination that Nero would normally decline and post on a student jobs board, but Estrivar was insistent and pleasant and offered an extremely generous retainer.
+
+Five days later, Nero was naked and bound to a stone altar in the secret lair of the Triestorm shoemakers guild, who were preparing to sacrifice him to Greater Iron Hans, the (probably not real) demigod of Laces and Leathers.
+
+As the butcher knife approached his cock, Nero vowed that if he ever escaped, he would ensure this could not happen again.
+
+Two weeks later, he enlisted the help of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It's a single-use spell, requiring another (not unpleasant) session of shaving and inscription to prepare again. So it's not something he can use often. But it's extremely useful when there are no other options.
+
+All he has to do is hold in his mind the memory of the glyphs on his shaven ass, as he'd seen them in a mirror, and mentally <i>twist</i> their alignment in a particular way. And then the magic in the matrix unlocks and releases a one-two combo.
+
+First comes Raven's Protective Barrier, which can absorb up to 344 pounds of energy from both magic and physical attacks. 344 pounds is not the upper limit of Raven's spell, but it's the best that Nero can do on the limited canvas of his ass.
+
+And then comes Noether's Invisibility, which is not so much an invisibility spell as a "shrink the caster to the size of an ant" spell. Since the caster's clothes and equipment are not also shrunk, the spell is more a parlor trick than a regular tool of working mages. But it has the virtue of being the simplest spell most likely to free Nero from any type of physical restraint.
+
+The unusual construction has another limitation: neither spell will last very long. About 3 seconds. Maybe another second if his bladder is full. Still, it's enough to rescue him from immediate peril, and it lets him prepare more substantial spells, ones that do require gestures or words.
+
+It's saved his life more than once.
+
+[[Return|n1 Cast Endgame 1]]
+
+
+:: n1 Cast Endgame 2 {"position":"3675,725","size":"100,100"}
+XXX
+
+<<set $n1_magicState = setup.m_AfterCast>>
+
+[[Continue|n1 Ivex Intro]]
 
 
