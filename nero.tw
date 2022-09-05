@@ -6739,8 +6739,8 @@ Nero's head feels stuffed, like it's crammed full with pebbles that shift a litt
 
 "Last chance, buddy. Wake up, or else..." the voice says again, with a hint of sadistic glee...
 
-[[Pretend to be asleep and learn more about the situation|n1 Feign Sleep]]
-[[Engage with the voice and talk his way out of this|n1 Friendly Hello]]
+[[Feign sleep to learn more about his situation|n1 Feign Sleep]]
+[[Try to sweet talk his way through this|n1 Friendly Hello]]
 [[Activate his emergency protection spell|n1 Cast Endgame]]
 
 
@@ -6750,18 +6750,23 @@ XXX Ivex, again I ask, who sent you
 <<set $n1_afterLook = "XXX">>\
 <<set $n1_afterMagic = "XXX">>\
 
-<<include [[n1 Look]]>>\
-<<include [[n1 Magic Info]]>>\
+<<include [[n1 Look]]>>
 
-<<include [[n1 Overt Magic Action]]>>\
+<<include [[n1 Magic Info]]>>
+
+<<include [[n1 Overt Magic Action]]>>
 [[n1 Resist Intro]]
 [[n1 Charm 1]]
 
 
-:: n1 Init [done] {"position":"3925,400","size":"100,100"}
+:: n1 Init {"position":"3925,400","size":"100,100"}
 <<script>>
 setup.deleteVars('n1_');
 const v = State.variables;
+
+// XXX rethink initialization. don't need to set false or null, since deleteVars basically clears state anyway. but would be nice to check for typos. except init here doesn't really help with typo problem. also would be nice to notice unused vars.
+
+// XXX setup.* should probably go in global script
 
 v.n1_felineBarbs = false;
 v.n1_naked = false;
@@ -6771,13 +6776,19 @@ v.n1_ivexCharmed = false;
 v.n1_ivexSkeptical = false;
 v.n1_ivexGone = false;
 
-// Look state for expandable containers
-v.n1_seenCross = false;
+// Look state
+v.n1_seenGems = false;
 v.n1_seenStudy = false;
 v.n1_seenDesk = false;
 v.n1_seenBookshelf = false;
 v.n1_seenCabinet = false;
 v.n1_seenWall = false;
+
+// Information from Ivex
+v.n1_knowsItsMom = false;
+
+// Event state
+v.n1_ivexSmashedBalls = false;
 
 // Magic knowledge states
 setup.m_BeforeCast = 1;
@@ -6790,8 +6801,10 @@ v.n1_magicState = setup.m_BeforeCast;
 
 // Passage to go to after a look action
 v.n1_afterLook = null;
+
 // Passage to go to after an overt magic action
 v.n1_afterMagic = null;
+
 // Passage to go to after doing an action when Ivex is distracted
 v.n1_afterIvexDistraction = null;
 
@@ -6804,7 +6817,7 @@ v.n1_afterIvexDistraction = null;
 
 :: n1 Look {"position":"4300,1000","size":"100,100"}
 XXX
-every item has a description and two actions
+every item has a description (possibly with some variants) and two actions
 - ask ivex about (if not ivexGone)
 - do something else
 
@@ -6823,40 +6836,59 @@ when ivexGone and wantPassword, every item also has password guess actions.
 
 Nero assesses his situation.
 
-<<if $n1_seenCross>>
-	He's attached with [[leather restraints]] to a [[wooden cross]]
-<<else>>
-	He appears to be strapped to a [[wooden cross]]
+He's attached with leather restraints to a
+[[wooden cross]]
+
+<<if $n1_seenGems>>
+	and [[gravity gems]]
 <</if>>
 
 <<if $n1_seenStudy>>
-	in what looks like a [[mage's study]].
-<<else>>
 	in [[Ivex's study|mage's study]].
-<</if>>
-
-<<if $n1_seenCross>>
-	The cross has XXX
+<<else>>
+	in what looks like a [[mage's study]].
 <</if>>
 
 <<if $n1_seenStudy>>
-  	The study has XXX
+  	The study has
+    a [[desk|desk]],
+    several [[cabinets|cabinet]],
+    and many [[bookshelves|bookshelf]].
 <</if>>
 
 <<if $n1_seenDesk>>
-	XXX
-<</if>>
-
-<<if $n1_seenBookshef>>
-	XXX
+	The desk has
+    a [[letter opener|letter opener]]
+    a [[snow globe|snow globe]]
+    and a small [[mirror|small mirror]].
 <</if>>
 
 <<if $n1_seenCabinet>>
-  XXX
+	On top of the cabinets is
+    a large glass [[bottle|tk bottle]]
+    and a [[stuffed penguin|taxidermy penguin]].
+<</if>>
+
+<<if $n1_seenBookshelf>>
+	The bookshelves have
+    numerous [[books|books]],
+    a deck of [[cards|deck of cards]],
+    and a [[magic wand|magic wand]].
 <</if>>
 
 <<if $n1_seenWall>>
-  XXX
+	The far [[wall|wall]] has
+    a [[map|map]]
+    and a [[portrait|portrait of mom]] of
+    <<if $n1_knowsItsMom>>
+   		Ivex's mom.
+    <<else>>
+        a female panther.
+    <</if>>
+<</if>>
+
+<<if $n1_seenStudy && !$n1_seenWall>>
+	The far [[wall|wall]] has several items adorning it.
 <</if>>
 
 <</nobr>>\
@@ -6871,23 +6903,24 @@ Other than the breathing sounds of his unknown companion, it's eerily quiet. It 
 
 Nero ventures to open his eyelids slightly to peer through the slits, when suddenly...
 
-A hand grabs at the crotch of his trousers. The fingers dig in and curl around one testicle. And then they squeeze, hard.
+A hand grabs at the crotch of his trousers. The fingers dig in and curl around one testicle. And then they squeeze. Hard.
 
 Nero's eyes fly wide open and he stiflles a yelp.
 
 The voice purrs. "I said, wakey wakey..."
 
-The pain is excruciating and twists deeply in his gut. Nero's instinct is to struggle to escape the grasping paw, but even a slight motion causes the pressure on his ball to send sharp spikes into his diaphragm. So he forces himself to stay still and focus on steady breathing.
+The pain is excruciating and twists deeply in his gut. Nero's instinct is to struggle to escape the grasping paw, but even a slight motion causes the pressure on his captive ball to send sharp spikes into his diaphragm. So he forces himself to stay still and focus on steady breathing.
 
 His vision is cloudy. Probably the after-effects of whatever knocked him out. Definitely not from tears of pain. He blinks rapidly to shake loose whatever dust is causing his eyes to water. And soon enough, he can see the blurry face of his tormentor.
 
-Their eyes make contact. The captor's grin becomes a toothy, feral smile,
+Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 
-And then a fist smashes into his crotch, thumping hard against his other ball and briefly making it ache stronger than the one held captive.
+And then a fist smashes into his crotch, thumping hard against his other ball and briefly making it ache stronger than the one held tight.
 
 Nero cannot suppress a whine. The sound is embarrassing and pathetic, and after a moment, the hand on his ball releases its grasp.
 
-"There we go," says the voice. "That's a fun start."
+"There we go," says the voice. "That's a fun start!"
+<<set $n1_ivexSmashedBalls = true>>
 
 Nero's vision clears, and the vague shape of his tormentor snaps into focus.
 
@@ -6911,20 +6944,14 @@ link to Ivex description early, or maybe inline
 [[Continue|n1 Ivex 1]]
 
 
-:: leather restraints {"position":"4200,1300","size":"100,100"}
-XXX
-nothing special, maybe just delete this, fold description into cross.
-
-
-:: wooden cross {"position":"4300,1175","size":"100,100"}
+:: wooden cross {"position":"4225,1200","size":"100,100"}
 XXX
 can't really see much until you use the mirror.
 
-[[leather restraints]]
 [[gravity gems]]
 
 
-:: mage's study {"position":"5000,1150","size":"100,100"}
+:: mage's study {"position":"4925,600","size":"100,100"}
 XXX
 
 [[desk]]
@@ -6933,7 +6960,7 @@ XXX
 [[wall]]
 
 
-:: gravity gems {"position":"4325,1300","size":"100,100"}
+:: gravity gems {"position":"4350,1325","size":"100,100"}
 XXX
 not visible until look in mirror
 
@@ -6942,7 +6969,7 @@ Nero is fascinated, because it's not supposed to be possible to have a stable co
 ask ivex, he mocks your limited understanding. he's bluffing, he doesn't know anything about grav instability.
 
 
-:: desk {"position":"4725,1300","size":"100,100"}
+:: desk {"position":"4750,775","size":"100,100"}
 XXX
 [[small mirror]]
 [[snow globe]]
@@ -6950,7 +6977,7 @@ XXX
 [[letter opener]]
 
 
-:: bookshelf {"position":"5100,1300","size":"100,100"}
+:: bookshelf {"position":"5075,900","size":"100,100"}
 XXX
 [[books]]
 [[deck of cards]]
@@ -6966,6 +6993,8 @@ you can use it to look at the gems on the cross. probably nothing else useful. i
 at beforeConnect, the mirror glows, it's an unprotected entrypoint into Ivex's magic net. you can send a ping to discover the sprite and connect.
 
 if you do clever escape, you can take the mirror to 2nd floor, and use it to ping things on the 2nd floor.
+
+[[gravity gems]]
 
 
 :: snow globe [key maybe-password] {"position":"4650,1450","size":"100,100"}
@@ -7006,7 +7035,7 @@ has a hole.
 password: zip code. this seems iffy, probably drop it.
 
 
-:: cabinet {"position":"5400,1300","size":"100,100"}
+:: cabinet {"position":"5350,1050","size":"100,100"}
 XXX
 [[tk bottle]]
 [[taxidermy penguin]]
@@ -7019,7 +7048,7 @@ the cards are all porn.
 the coin is the auth token, it has a hole.
 
 
-:: wall {"position":"5650,1300","size":"100,100"}
+:: wall {"position":"5600,1275","size":"100,100"}
 XXX
 [[map]]
 [[portrait of mom]]
@@ -7076,9 +7105,9 @@ password: wand name
 :: n1 Cast Endgame [done] {"position":"3675,600","size":"100,100"}
 Nero's limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And he's wary of speaking just yet.
 
-All this would be a crippling handicap to most spellcasters, but Nero always has one spell ready to cast, that does not need gestures or words.
+All this would be a crippling handicap to most spellcasters, but Nero always has one spell ready to cast, without need of gestures or words.
 
-He's kept the spell's construction a secret, so it doesn't have a name yet. Privately he thinks of it as [[n1 Nero's Endgame]]. It's a spell of last resort, but bound as he is now, this seems a good time to use it.
+He's kept the spell's construction a secret, so it doesn't have a name yet. Privately he thinks of it as [[Nero's Endgame|n1 Nero's Endgame]]. It's a spell of last resort, but bound as he is now, this seems a good time to use it.
 
 He prepares the spell's image in his mind, and then <i>twists</i> it...
 
@@ -7262,7 +7291,7 @@ maybe gravballs bypassees n1a entirely
 [[n1a Struggle]]
 
 
-:: n1a Init [done] {"position":"3775,1875","size":"100,100"}
+:: n1a Init {"position":"3775,1875","size":"100,100"}
 <<script>>
 setup.deleteVars('n1a_');
 const v = State.variables;
@@ -7408,7 +7437,7 @@ restart at n1a Ivex Leaves
 restart at n1 Start
 
 
-:: n2 Init [done] {"position":"4025,2825","size":"100,100"}
+:: n2 Init {"position":"4025,2825","size":"100,100"}
 <<script>>
 setup.deleteVars('n2_');
 const v = State.variables;
