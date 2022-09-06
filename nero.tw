@@ -420,9 +420,6 @@ macros.arousalbar = {
 
 /**
  * Deletes all state vars whose name starts with prefix.
- *
- * This is useful for clearing state at reset points,
- * especially when a section uses define_var.
  */
 setup.deleteVars = function(prefix) {
   const vars = State.variables;
@@ -435,16 +432,9 @@ setup.deleteVars = function(prefix) {
 };
 
 /**
- * Sets the state var named varname to value,
- * only if it doesn't yet exist.
- *
- * This is useful for declaring the initial value of a var
- * that's only used in the passage it's set.
- *
- * And using a consistent prefix for state vars in a section
- * will make it easy to use delete_vars to reset section state.
+ * If state var varname is not set, set it to value.
  */
-setup.defineVar = function(varname, value) {
+setup.setDefault = function(varname, value) {
   const vars = State.variables;
   if (!vars.hasOwnProperty(varname)) {
     vars[varname] = value;
@@ -6730,66 +6720,66 @@ Thank you so much!
 </dd></dl>\
 
 [[Continue as Drekkar|Drekkar Start]]
-[[Continue as Nero|n1 Start]]
+[[Continue as Nero|n1A Start]]
 
 
-:: n1 Start [restart] {"position":"3800,400","size":"100,100"}
-<<include [[n1 Init]]>>\
+:: n1A Start [restart] {"position":"3800,400","size":"100,100"}
+<<include [[n1A Init]]>>\
 
 Nero's head feels stuffed, like it's crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically recites Parson's Hangover Cantrip, but wisely decides not to take any unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 
 "Last chance, buddy. Wake up, or else..." the voice says again, with a hint of sadistic glee...
 
-[[Feign sleep to learn more about his situation|n1 Feign Sleep]]
-[[Try to sweet talk his way through this|n1 Friendly Hello]]
-[[Activate his emergency protection spell|n1 Cast Endgame]]
+[[Feign sleep to learn more about his situation|n1A Feign Sleep]]
+[[Try to sweet talk his way through this|n1A Friendly Hello]]
+[[Activate his emergency protection spell|n1A Cast Endgame]]
 
 
-:: n1 Ivex 1 {"position":"3800,925","size":"100,100"}
+:: n1A Ivex 1 {"position":"3800,925","size":"100,100"}
 XXX Ivex, again I ask, who sent you
 
-<<set $n1_afterLook = "XXX">>\
-<<set $n1_afterMagic = "XXX">>\
+<<set $n1A_afterLook = "XXX">>\
+<<set $n1A_afterMagic = "XXX">>\
 
-<<include [[n1 Look]]>>
+<<include [[n1A Look]]>>
 
-<<include [[n1 Magic Info]]>>
+<<include [[n1A Magic Info]]>>
 
-<<include [[n1 Overt Magic Action]]>>
-[[n1 Resist Intro]]
-[[n1 Charm 1]]
+<<include [[n1A Overt Magic Action]]>>
+[[n1A Resist Intro]]
+[[n1A Charm 1]]
 
 
-:: n1 Init [must-fix] {"position":"3925,400","size":"100,100"}
+:: n1A Init [must-fix] {"position":"3925,400","size":"100,100"}
 <<script>>
-setup.deleteVars('n1_');
+setup.deleteVars('n1A_');
 const v = State.variables;
 
 // XXX rethink initialization. don't need to set false or null, since deleteVars basically clears state anyway. but would be nice to check for typos. except init here doesn't really help with typo problem. also would be nice to notice unused vars.
 
 // XXX setup.* should probably go in global script
 
-v.n1_felineBarbs = false;
-v.n1_naked = false;
-v.n1_gravBalls = false;
+v.n1A_felineBarbs = false;
+v.n1A_naked = false;
+v.n1A_gravBalls = false;
 
-v.n1_ivexCharmed = false;
-v.n1_ivexSkeptical = false;
-v.n1_ivexGone = false;
+v.n1A_ivexCharmed = false;
+v.n1A_ivexSkeptical = false;
+v.n1A_ivexGone = false;
 
 // Look state
-v.n1_seenGems = false;
-v.n1_seenStudy = false;
-v.n1_seenDesk = false;
-v.n1_seenBookshelf = false;
-v.n1_seenCabinet = false;
-v.n1_seenWall = false;
+v.n1A_seenGems = false;
+v.n1A_seenStudy = false;
+v.n1A_seenDesk = false;
+v.n1A_seenBookshelf = false;
+v.n1A_seenCabinet = false;
+v.n1A_seenWall = false;
 
 // Information from Ivex
-v.n1_knowsItsMom = false;
+v.n1A_knowsItsMom = false;
 
 // Event state
-v.n1_ivexSmashedBalls = false;
+v.n1A_ivexSmashedBalls = false;
 
 // Magic knowledge states
 setup.m_BeforeCast = 1;
@@ -6798,16 +6788,16 @@ setup.m_BeforeConnect = 3;
 setup.m_WantTouch = 4;
 setup.m_WantName = 5;
 setup.m_WantPassword = 6;
-v.n1_magicState = setup.m_BeforeCast;
+v.n1A_magicState = setup.m_BeforeCast;
 
 // Passage to go to after a look action
-v.n1_afterLook = null;
+v.n1A_afterLook = null;
 
 // Passage to go to after an overt magic action
-v.n1_afterMagic = null;
+v.n1A_afterMagic = null;
 
 // Passage to go to after doing an action when Ivex is distracted
-v.n1_afterIvexDistraction = null;
+v.n1A_afterIvexDistraction = null;
 
 <</script>>\
 
@@ -6816,7 +6806,7 @@ v.n1_afterIvexDistraction = null;
 <<if $typo>>hello<<else>>goodbye<</if>>
 
 
-:: n1 Look {"position":"4300,1000","size":"100,100"}
+:: n1A Look {"position":"4300,1000","size":"100,100"}
 XXX
 every item has a description (possibly with some variants) and two actions
 - ask ivex about (if not ivexGone)
@@ -6838,64 +6828,64 @@ when ivexGone and wantPassword, every item also has password guess actions.
 Nero assesses his situation.
 
 He's attached with leather restraints to a
-[[wooden cross]]
+[[n1A cross]]
 
-<<if $n1_seenGems>>
-	and [[gravity gems]]
+<<if $n1A_seenGems>>
+	and [[n1A cross gems]]
 <</if>>
 
-<<if $n1_seenStudy>>
-	in [[Ivex's study|mage's study]].
+<<if $n1A_seenStudy>>
+	in [[Ivex's study|n1A study]].
 <<else>>
-	in what looks like a [[mage's study]].
+	in what looks like a [[n1A study]].
 <</if>>
 
-<<if $n1_seenStudy>>
+<<if $n1A_seenStudy>>
   	The study has
-    a [[desk|desk]],
-    several [[cabinets|cabinet]],
-    and many [[bookshelves|bookshelf]].
+    a [[desk|n1A desk]],
+    several [[cabinets|n1A cabinet]],
+    and many [[bookshelves|n1A bookshelf]].
 <</if>>
 
-<<if $n1_seenDesk>>
+<<if $n1A_seenDesk>>
 	The desk has
-    a [[letter opener|letter opener]]
-    a [[snow globe|snow globe]]
-    and a small [[mirror|small mirror]].
+    a [[letter opener|n1A letter opener]]
+    a [[snow globe|n1A globe]]
+    and a small [[mirror|n1A mirror]].
 <</if>>
 
-<<if $n1_seenCabinet>>
+<<if $n1A_seenCabinet>>
 	On top of the cabinets is
-    a large glass [[bottle|tk bottle]]
-    and a [[stuffed penguin|taxidermy penguin]].
+    a large glass [[bottle|n1A bottle]]
+    and a [[stuffed penguin|n1A penguin]].
 <</if>>
 
-<<if $n1_seenBookshelf>>
+<<if $n1A_seenBookshelf>>
 	The bookshelves have
-    numerous [[books|books]],
-    a deck of [[cards|deck of cards]],
-    and a [[magic wand|magic wand]].
+    numerous [[books|n1A books]],
+    a deck of [[cards|n1A cards]],
+    and a [[magic wand|n1A wand]].
 <</if>>
 
-<<if $n1_seenWall>>
-	The far [[wall|wall]] has
-    a [[map|map]]
-    and a [[portrait|portrait of mom]] of
-    <<if $n1_knowsItsMom>>
+<<if $n1A_seenWall>>
+	The far [[wall|n1A wall]] has
+    a [[map|n1A map]]
+    and a [[portrait|n1A portrait]] of
+    <<if $n1A_knowsItsMom>>
    		Ivex's mom.
     <<else>>
         a female panther.
     <</if>>
 <</if>>
 
-<<if $n1_seenStudy && !$n1_seenWall>>
-	The far [[wall|wall]] has several items adorning it.
+<<if $n1A_seenStudy && !$n1A_seenWall>>
+	The far [[wall|n1A wall]] has several items adorning it.
 <</if>>
 
 <</nobr>>\
 
 
-:: n1 Feign Sleep [done] {"position":"3800,600","size":"100,100"}
+:: n1A Feign Sleep [done] {"position":"3800,600","size":"100,100"}
 Best to play it safe and gather more information before acting.
 
 Nero can feel leather straps on his arms and legs and torso, holding him upright and spread-eagled against something sturdy, probably made of wood.
@@ -6921,7 +6911,7 @@ And then a fist smashes into his crotch, thumping hard against his other ball an
 Nero cannot suppress a whine. The sound is embarrassing and pathetic, and after a moment, the hand on his ball releases its grasp.
 
 "There we go," says the voice. "That's a fun start!"
-<<set $n1_ivexSmashedBalls = true>>
+<<set $n1A_ivexSmashedBalls = true>>
 
 Nero's vision clears, and the vague shape of his tormentor snaps into focus.
 
@@ -6929,39 +6919,39 @@ It's <b>him</b>.
 
 It's Ivex, the panther mage who's the subject of his current "errand".
 
-[[Continue|n1 Ivex Intro]]
+[[Continue|n1A Ivex Intro]]
 
 
-:: n1 Friendly Hello {"position":"3925,600","size":"100,100"}
+:: n1A Friendly Hello {"position":"3925,600","size":"100,100"}
 XXX open eyes, charm, Ivex noncommittal, but creeps.
 
-[[Continue|n1 Ivex Intro]]
+[[Continue|n1A Ivex Intro]]
 
 
-:: n1 Ivex Intro {"position":"3800,775","size":"100,100"}
+:: n1A Ivex Intro {"position":"3800,775","size":"100,100"}
 XXX Ivex asks, who sent you. deflect, but Ivex holds up case folder, reads from it.
 link to Ivex description early, or maybe inline
 
-[[Continue|n1 Ivex 1]]
+[[Continue|n1A Ivex 1]]
 
 
-:: wooden cross {"position":"4225,1200","size":"100,100"}
+:: n1A cross {"position":"4225,1200","size":"100,100"}
 XXX
 can't really see much until you use the mirror.
 
-[[gravity gems]]
+[[n1A cross gems]]
 
 
-:: mage's study {"position":"4925,600","size":"100,100"}
+:: n1A study {"position":"4925,600","size":"100,100"}
 XXX
 
-[[desk]]
-[[bookshelf]]
-[[cabinet]]
-[[wall]]
+[[n1A desk]]
+[[n1A bookshelf]]
+[[n1A cabinet]]
+[[n1A wall]]
 
 
-:: gravity gems {"position":"4350,1325","size":"100,100"}
+:: n1A cross gems {"position":"4350,1325","size":"100,100"}
 XXX
 not visible until look in mirror
 
@@ -6970,22 +6960,22 @@ Nero is fascinated, because it's not supposed to be possible to have a stable co
 ask ivex, he mocks your limited understanding. he's bluffing, he doesn't know anything about grav instability.
 
 
-:: desk {"position":"4750,775","size":"100,100"}
+:: n1A desk {"position":"4750,775","size":"100,100"}
 XXX
-[[small mirror]]
-[[snow globe]]
-[[candle]]
-[[letter opener]]
+[[n1A mirror]]
+[[n1A globe]]
+[[n1A candle]]
+[[n1A letter opener]]
 
 
-:: bookshelf {"position":"5075,900","size":"100,100"}
+:: n1A bookshelf {"position":"5075,900","size":"100,100"}
 XXX
-[[books]]
-[[deck of cards]]
-[[magic wand]]
+[[n1A books]]
+[[n1A cards]]
+[[n1A wand]]
 
 
-:: small mirror {"position":"4550,1450","size":"100,100"}
+:: n1A mirror {"position":"4550,1450","size":"100,100"}
 XXX propped up against snow globe
 maybe do something with having it knocked over, if ivex disturbs snow globe
 
@@ -6995,16 +6985,16 @@ at beforeConnect, the mirror glows, it's an unprotected entrypoint into Ivex's m
 
 if you do clever escape, you can take the mirror to 2nd floor, and use it to ping things on the 2nd floor.
 
-[[gravity gems]]
+[[n1A cross gems]]
 
 
-:: snow globe [key maybe-password] {"position":"4650,1450","size":"100,100"}
+:: n1A globe [key maybe-password] {"position":"4650,1450","size":"100,100"}
 XXX
 snow globe. looks like a snow dragon in a pose, one arm raised in triumph, the other arm not visible.
 slogan says "CARPE DI-", can't see the rest.
 
 if wantPassword, ask Ivex about snow globe. this is the clever escape.
-[[n1 clever escape]]
+[[n1A clever escape]]
 
 when free, you can see that it's a lewd snowdragon grabbing his cock, and the slogan is "CARPE DICK".
 
@@ -7012,7 +7002,7 @@ password: carpe diem
 password: favorite place to vacation
 
 
-:: books [maybe-password] {"position":"5000,1450","size":"100,100"}
+:: n1A books [maybe-password] {"position":"5000,1450","size":"100,100"}
 XXX
 some magic texts that you recognize, boring.
 something fascist.
@@ -7022,12 +7012,12 @@ a school almanac.
 password: school name
 
 
-:: candle {"position":"4850,1450","size":"100,100"}
+:: n1A candle {"position":"4850,1450","size":"100,100"}
 XXX
 horny. staring at it makes you hornier.
 
 
-:: letter opener [has-hole maybe-password] {"position":"4750,1450","size":"100,100"}
+:: n1A letter opener [has-hole maybe-password] {"position":"4750,1450","size":"100,100"}
 XXX
 letter opener, looks sharp enough to cut bonds.
 too bad you don't have tk.
@@ -7036,26 +7026,26 @@ has a hole.
 password: zip code. this seems iffy, probably drop it.
 
 
-:: cabinet {"position":"5350,1050","size":"100,100"}
+:: n1A cabinet {"position":"5350,1050","size":"100,100"}
 XXX
-[[tk bottle]]
-[[taxidermy penguin]]
+[[n1A bottle]]
+[[n1A penguin]]
 
 
-:: deck of cards [key has-hole] {"position":"5100,1450","size":"100,100"}
+:: n1A cards [key has-hole] {"position":"5100,1450","size":"100,100"}
 XXX
 deck of cards weighted down by a coin.
 the cards are all porn.
 the coin is the auth token, it has a hole.
 
 
-:: wall {"position":"5600,1275","size":"100,100"}
+:: n1A wall {"position":"5600,1275","size":"100,100"}
 XXX
-[[map]]
-[[portrait of mom]]
+[[n1A map]]
+[[n1A portrait]]
 
 
-:: tk bottle [key has-hole] {"position":"5350,1450","size":"100,100"}
+:: n1A bottle [key has-hole] {"position":"5350,1450","size":"100,100"}
 XXX
 large bottle, has a wooden horse cock inside, too large to have been inserted through the hole.
 
@@ -7065,14 +7055,14 @@ ask nero, he brags about the innovation.
 plus he's given it a name.
 
 
-:: map [maybe-password] {"position":"5700,1450","size":"100,100"}
+:: n1A map [maybe-password] {"position":"5700,1450","size":"100,100"}
 XXX
 map of the area.
 
 password: birthplace
 
 
-:: portrait of mom [has-hole maybe-password] {"position":"5600,1450","size":"100,100"}
+:: n1A portrait [has-hole maybe-password] {"position":"5600,1450","size":"100,100"}
 XXX
 portrait of an older panther. ambiguous if it's a lover or relative, until you ask Ivex.
 
@@ -7083,7 +7073,7 @@ nero thinks, maybe this is the hole? ew. reluctantly asks ivex. Ivex kisses mom 
 password: mom's maiden name
 
 
-:: taxidermy penguin [has-hole maybe-password] {"position":"5450,1450","size":"100,100"}
+:: n1A penguin [has-hole maybe-password] {"position":"5450,1450","size":"100,100"}
 XXX
 his childhood pet. (he wanted an owl, his uncle thought this was close enough).
 in a very lewd position.
@@ -7093,7 +7083,7 @@ ask ivex, tells you the pet's name, says he really loved riding dildos.
 password: pet name
 
 
-:: magic wand [has-hole maybe-password] {"position":"5200,1450","size":"100,100"}
+:: n1A wand [has-hole maybe-password] {"position":"5200,1450","size":"100,100"}
 XXX
 looks like a standard magic wand with an odd ring-shaped attachment on the end.
 (has a hole).
@@ -7103,38 +7093,38 @@ ask ivex, he will brag about the sex toy he made,
 password: wand name
 
 
-:: n1 Cast Endgame [done] {"position":"3675,600","size":"100,100"}
+:: n1A Cast Endgame [done] {"position":"3675,600","size":"100,100"}
 Nero's limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And he's wary of speaking just yet.
 
 All this would be a crippling handicap to most spellcasters, but Nero always has one spell ready to cast, without need of gestures or words.
 
-He's kept the spell's construction a secret, so it doesn't have a name yet. Privately he thinks of it as [[Nero's Endgame|n1 Nero's Endgame]]. It's a spell of last resort, but bound as he is now, this seems a good time to use it.
+He's kept the spell's construction a secret, so it doesn't have a name yet. Privately he thinks of it as [[Nero's Endgame|n1A Nero's Endgame]]. It's a spell of last resort, but bound as he is now, this seems a good time to use it.
 
 He prepares the spell's image in his mind, and then <i>twists</i> it...
 
-[[Continue|n1 Endgame Failed]]
+[[Continue|n1A Endgame Failed]]
 
 
-:: n1 Charm 1 {"position":"3950,1100","size":"100,100"}
+:: n1A Charm 1 {"position":"3950,1100","size":"100,100"}
 XXX nero tries to fanboy, claims he got the dossier from a bounty hunter who tried and failed to take nero in.
 this branch has easy distract-ivex options, many look actions will distract.
 misstep will send you to the resist branch.
 
-<<set $n1_ivexCharmed = true>>\
+<<set $n1A_ivexCharmed = true>>\
 \
-[[n1 Charm 2]]
-[[n1 Charm Failed]]
+[[n1A Charm 2]]
+[[n1A Charm Failed]]
 
 
-:: n1 Resist Intro {"position":"3650,1100","size":"100,100"}
+:: n1A Resist Intro {"position":"3650,1100","size":"100,100"}
 XXX we're here because we didn't try charm. short intro to main line.
 
-[[n1 Resist 1]]
+[[n1A Resist 1]]
 
 
-:: n1 Magic Info [must-fix] {"position":"3400,1000","size":"100,100"}
+:: n1A Magic Info [must-fix] {"position":"3400,1000","size":"100,100"}
 <<nobr>>
-<<switch $n1_magicState>>
+<<switch $n1A_magicState>>
 <<case setup.m_BeforeCast>>
 	XXX something about trying magic and ivex distraction
 <<case setup.m_AfterCast>>
@@ -7153,9 +7143,9 @@ XXX we're here because we didn't try charm. short intro to main line.
 <</nobr>>\
 
 
-:: n1 Overt Magic Action [must-fix] {"position":"3400,1125","size":"100,100"}
+:: n1A Overt Magic Action [must-fix] {"position":"3400,1125","size":"100,100"}
 <<nobr>>
-<<switch $n1_magicState>>
+<<switch $n1A_magicState>>
 <<case setup.m_BeforeCast>>
 	XXX cast an aggression spell
 <<case setup.m_AfterCast>>
@@ -7174,13 +7164,13 @@ XXX we're here because we didn't try charm. short intro to main line.
 <</nobr>>\
 
 
-:: n1 Ivex Distracted [must-fix] {"position":"3400,1250","size":"100,100"}
+:: n1A Ivex Distracted [must-fix] {"position":"3400,1250","size":"100,100"}
 XXX whenever player distracts Ivex, we come here for one turn.
 this is a chance to do some actions without Ivex noticing.
-after, we go to $n1_afterIvexDistraction
+after, we go to $n1A_afterIvexDistraction
 
 
-:: n1 Nero's Endgame [done] {"position":"3525,600","size":"100,100"}
+:: n1A Nero's Endgame [done] {"position":"3525,600","size":"100,100"}
 Nero's Endgame is an unusual spell construction. He realized he needed it after the Triestorm incident.
 
 It had begun with a simple request. Lord Estrivar of the Triestorm Council had asked him to find Perosolamew, the Lord's missing parrot. This was a trivial divination that Nero would normally decline and post on a student jobs board, but Estrivar was insistent and pleasant and offered an extremely generous retainer.
@@ -7203,18 +7193,18 @@ The unusual ass-inscribed construction has another limitation: neither spell wil
 
 It's saved his life more than once.
 
-[[Return|n1 Cast Endgame]]
+[[Return|n1A Cast Endgame]]
 
 
-:: n1 Endgame Failed {"position":"3675,725","size":"100,100"}
+:: n1A Endgame Failed {"position":"3675,725","size":"100,100"}
 XXX fails, Ivex mocks
 
-<<set $n1_magicState = setup.m_AfterCast>>
+<<set $n1A_magicState = setup.m_AfterCast>>
 
-[[Continue|n1 Ivex Intro]]
+[[Continue|n1A Ivex Intro]]
 
 
-:: n1 Resist 1 {"position":"3650,1300","size":"100,100"}
+:: n1A Resist 1 {"position":"3650,1300","size":"100,100"}
 XXX nero tries to feed Ivex a lie, different from the charm branch.
 resists a bit to make the lie seem more plausible.
 tries to pose as a bounty hunter from WAG
@@ -7224,26 +7214,26 @@ still have distract options but it's harder
 - offer surprising info that ivex has to consider or check
 - a few look options are still distraction.
 
-[[n1 Barb Choice]]
+[[n1A Barb Choice]]
 
 
-:: n1 Charm Failed {"position":"3800,1150","size":"100,100"}
+:: n1A Charm Failed {"position":"3800,1150","size":"100,100"}
 XXX made a misstep while trying to charm Ivex.
 Ivex is now skeptical, and we continue down the resist line.
 
-<<set $n1_ivexCharmed = false>>\
-<<set $n1_ivexSkeptical = true>>\
+<<set $n1A_ivexCharmed = false>>\
+<<set $n1A_ivexSkeptical = true>>\
 \
-[[n1 Resist 1]]
+[[n1A Resist 1]]
 
 
-:: n1 Charm 2 {"position":"3950,1225","size":"100,100"}
+:: n1A Charm 2 {"position":"3950,1225","size":"100,100"}
 XXX maybe eventually you're forced to fail? or maybe it's possible to continue this line all the way to alarm.
 
-[[n1 Charm Failed]]
+[[n1A Charm Failed]]
 
 
-:: n1 Barb Choice {"position":"3650,1425","size":"100,100"}
+:: n1A Barb Choice {"position":"3650,1425","size":"100,100"}
 XXX it's gotten creepy-lewd, and Nero notices Ivex's bulge uwu.
 not sure if this is before or after candle
 some anticipatory apprehension
@@ -7251,58 +7241,58 @@ some anticipatory apprehension
 he's seen a fellow feline mage naked in the academy gynmasium
 
 might need to move this earlier, before gravBalls is possible.
-around n1 Ivex Intro seems ok, but that's kind of too early in lewdness.
+around n1A Ivex Intro seems ok, but that's kind of too early in lewdness.
 maybe just vary the text (or duplicate) when gravBalls.
 
-[[asked about the lack of barbs|n1 Barbs No]]
-[[And asked about the barbs|n1 Barbs Yes]]
+[[asked about the lack of barbs|n1A Barbs No]]
+[[And asked about the barbs|n1A Barbs Yes]]
 
 
-:: n1 Barbs No {"position":"3575,1550","size":"100,100"}
+:: n1A Barbs No {"position":"3575,1550","size":"100,100"}
 Barbed penises are a myth of the ignorant, yes feral species have barbs, but sentient felines do not. archeological records unclear. but not above encourating the myth to increase mystique, and lovers are quite satisfied with performance regardless of barbs. expresses pity at the problem with knots.
-<<set $n1_felineBarbs = false>>\
+<<set $n1A_felineBarbs = false>>\
 
-[[n1 Resist More]]
+[[n1A Resist More]]
 
 
-:: n1 Barbs Yes {"position":"3725,1550","size":"100,100"}
+:: n1A Barbs Yes {"position":"3725,1550","size":"100,100"}
 oh yes the barbs. compare and contrast female reponses. nero content with knot
-<<set $n1_felineBarbs = true>>\
+<<set $n1A_felineBarbs = true>>\
 
-[[n1 Resist More]]
+[[n1A Resist More]]
 
 
-:: n1 Resist More {"position":"3650,1675","size":"100,100"}
+:: n1A Resist More {"position":"3650,1675","size":"100,100"}
 XXX nero is naked. candle is out. barbs question is answered.
 
 amp up the lewdness, build intensity, then interrupt.
 
-[[n1a Ivex Leaves]]
+[[n1B Ivex Leaves]]
 
 
-:: n1a Ivex Leaves [restart] {"position":"3650,1875","size":"100,100"}
+:: n1B Ivex Leaves [restart] {"position":"3650,1875","size":"100,100"}
 XXX ivex leaves
 
 note gravBalls, or tease the missed opportunity
 
-maybe gravballs bypassees n1a entirely
+maybe gravballs bypassees n1B entirely
 
-<<include [[n1a Init]]>>\
+<<include [[n1B Init]]>>\
 
-[[n1a Struggle]]
+[[n1B Struggle]]
 
 
-:: n1a Init {"position":"3775,1875","size":"100,100"}
+:: n1B Init {"position":"3775,1875","size":"100,100"}
 <<script>>
-setup.deleteVars('n1a_');
+setup.deleteVars('n1B_');
 const v = State.variables;
 
-v.n1_ivexGone = true;
+v.n1A_ivexGone = true;
 
 <</script>>\
 
 
-:: n1a Struggle {"position":"3650,2025","size":"200,200"}
+:: n1B Struggle {"position":"3650,2025","size":"200,200"}
 XXX lust candle ticking
 
 actions are magic, look, struggle.
@@ -7312,30 +7302,30 @@ the other options are teases, and maybe reveal info helpful for next session.
 
 at lust max, tell the player this is the last chance, and make it a 50/50 choice.
 
-[[n1a Failed Escape]]
-[[n1a Grav Disrupted]]
+[[n1B Failed Escape]]
+[[n1B Grav Disrupted]]
 
 
-:: n1a Failed Escape {"position":"3425,2100","size":"100,100"}
+:: n1B Failed Escape {"position":"3425,2100","size":"100,100"}
 XXX
 desperately horny from candle when Ivex returns.
 Ivex snuffs candle and gloats.
 nero is panting hard, ivex comments on tongue.
 inverts cross and presents cock for sucking
 
-[[n1a tamed mild]]
-[[n1a tamed harsh]]
+[[n1B tamed mild]]
+[[n1B tamed harsh]]
 
 
-:: n1a Grav Disrupted {"position":"3700,2300","size":"100,100"}
+:: n1B Grav Disrupted {"position":"3700,2300","size":"100,100"}
 XXX
 grav gems disrupted. nero is still strapped to cross, and extremely horny.
 
-[[n1a snuff candle]]
-[[n1a grab letter opener]]
+[[n1B snuff candle]]
+[[n1B grab letter opener]]
 
 
-:: n1a tamed mild [end] {"position":"3300,2025","size":"100,100"}
+:: n1B tamed mild [end] {"position":"3300,2025","size":"100,100"}
 XXX bad ending unlocked
 
 nero thinks, lemme satisfy him, and then there will be another opportunity to escape.
@@ -7349,10 +7339,10 @@ ivex calls nero a good doggy, gets nero to reveal all. nero senses something wro
 sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
 
 restart at Ivex leaves
-restart at n1 start
+restart at n1A start
 
 
-:: n1a tamed harsh [end] {"position":"3300,2175","size":"100,100"}
+:: n1B tamed harsh [end] {"position":"3300,2175","size":"100,100"}
 XXX bad ending unlocked
 
 no way is nero sucking ivex off. he's escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
@@ -7368,10 +7358,10 @@ nero whines. dumps all his info amid torture, feels ashamed at failing, but ends
 sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
 restart at Ivex leaves
-restart at n1 start
+restart at n1A start
 
 
-:: n1a snuff candle {"position":"3700,2425","size":"100,100"}
+:: n1B snuff candle {"position":"3700,2425","size":"100,100"}
 XXX
 lust subsides. wait a bit, then grab letter opener.
 
@@ -7385,10 +7375,10 @@ finally get a good look at snowglobe, reads inscription out loud with incredulit
 
 if wantPassword, sprite responds, "password accepted", gee that would have been useful earlier. player should remember this for next playthrough.
 
-[[n1a look around]]
+[[n1B look around]]
 
 
-:: n1a grab letter opener {"position":"3500,2300","size":"100,100"}
+:: n1B grab letter opener {"position":"3500,2300","size":"100,100"}
 XXX grab letter opener before snuffing candle.
 
 cuts loose, cross falls and does lots of damage. mirror broken, nero doesn't care.
@@ -7396,13 +7386,13 @@ nero starts jerking off because candle, and can't stop even after cumming.
 
 if asked about magic wand, use it.
 
-[[n1a tamed desperate]]
+[[n1B tamed desperate]]
 
 
-:: n1a look around {"position":"3700,2575","size":"200,200"}
+:: n1B look around {"position":"3700,2575","size":"200,200"}
 XXX explore study a bit, but nudge player toward finding escape.
 
-if asked about magic wand and high lust, option to use it and land in [[n1a tamed desperate]]
+if asked about magic wand and high lust, option to use it and land in [[n1B tamed desperate]]
 maybe can land there from clever escape too?
 
 can pick up mirror if rescued
@@ -7422,7 +7412,7 @@ else, regret about the mirror. extremely horny, might be distracting.
 [[n2 Hallway]]
 
 
-:: n1a tamed desperate [end] {"position":"3300,2400","size":"100,100"}
+:: n1B tamed desperate [end] {"position":"3300,2400","size":"100,100"}
 XXX bad ending unlocked
 
 ivex returns and laughs at the sight. says horny dog needs some discipline.
@@ -7434,8 +7424,8 @@ sketch ongoing life as a pathetic needy bitch.
 nero hates himself but can't help himself.
 one day he finds a dumb gem that ivex has left out, and decides to use it.
 
-restart at n1a Ivex Leaves
-restart at n1 Start
+restart at n1B Ivex Leaves
+restart at n1A Start
 
 
 :: n2 Init {"position":"4025,2825","size":"100,100"}
@@ -7649,7 +7639,7 @@ lion rapes, extreme overstimulation.
 Ivex is amused and turns nero into lion's toy.
 
 
-:: n1 clever escape {"position":"4650,1775","size":"100,100"}
+:: n1A clever escape {"position":"4650,1775","size":"100,100"}
 XXX you need a password, and you've asked ivex about the snow globe.
 
 he starts to preen and tell you about it, but then realizes what you've been doing.
@@ -7671,6 +7661,6 @@ mirror not broken.
 
 take a moment to rest.
 
-[[n1a look around]]
+[[n1B look around]]
 
 
