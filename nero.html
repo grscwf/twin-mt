@@ -172,6 +172,11 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
   background-color: #cb9b32;
 }
 
+#menu {
+  /* make some clear space, since footer is on top */
+  margin-bottom: 50px;
+}
+
 #menu ul {
   border-radius: 15px;
 }
@@ -225,6 +230,13 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 
 #story-title {
   display: none;
+}
+
+#story-version {
+  color: rgb(90 90 90);
+  font-size: 12px;
+  font-weight: normal;
+  line-height: 1;
 }
 
 #story-caption {
@@ -327,7 +339,6 @@ ul.actions {
 }
 
 ul.actions li {
-  /*list-style-image: url('https://i.imgur.com/VdVEJPV.png');*/
   padding: 10px 0 10px 25px;
   list-style: none;
   background-image: url("images/quote.png");
@@ -335,6 +346,12 @@ ul.actions li {
   background-position: left center;
   background-size: 15px;
 }
+
+/* fixup for debug/test mode */
+.debugging ul.actions li {
+  background-image: url("https://magestower.slethstories.com/images/quote.png");
+}
+
 /* Action Box - End */
 
 
@@ -441,15 +458,28 @@ ul.actions li {
   100% {
     background-color: #ebe6ff;
   }
-}
-
-.debug-only a::before {
-  content: "\e838";
-  font-family: tme-fa-icons;
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.ui.stowBarInitially = true;
 
-// XXX Temporarily enable history for easier testing.
-// Config.history.controls = false;
+if (!Config.debug) {
+  Config.history.controls = false;
+}
+
+if (Config.debug) {
+  // set flag for StoryMenu (can't use Config.debug; it's always false for StoryMenu)
+  setup.enableDebugMenu = true;
+
+  // set base url for html images (this happens too late for css images)
+  $('head').prepend('<base href="https://magestower.slethstories.com/">');
+
+  // add debugging class for css
+  $('html').addClass('debugging');
+
+  // start with debugview off
+  setTimeout(() => DebugView.disable());
+}
+
+l10nStrings.restartTitle = 'Reset';
+l10nStrings.restartPrompt = 'Archive unlocks and unsaved progress will be lost.<br><br>Are you sure you want to reset everything and start over?';
 
 $(document.head).append("<link rel='icon' href='images/mt_icon_tr.png'>");
 
@@ -519,7 +549,7 @@ setup.MK = {
   WantTouch: 'WantTouch',
   WantName: 'WantName',
   WantPassword: 'WantPassword',
-};</script><tw-tag name="done" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="restart" color="green"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+};</script><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="restart" color="green"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="maybe-password" color="blue"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
@@ -528,9 +558,15 @@ The snapping comes from right beside his ear. The adventurer frowns, but conscio
 
 The bound wolf only lets out a pained groan at first. Everything hurts. Slowly but surely, memories start to return. Memories of who he is...
 
-[[Choose your adventurer|Choose Character]]</tw-passagedata><tw-passagedata pid="2" name="StoryAuthor" tags="" position="1825,150" size="100,100">by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;</tw-passagedata><tw-passagedata pid="3" name="StoryBanner" tags="" position="2075,150" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
-&lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="4" name="StoryDisplayTitle" tags="" position="1950,150" size="100,100">The Mage&#39;s Tower (with Nero)</tw-passagedata><tw-passagedata pid="5" name="StoryMenu" tags="" position="2500,500" size="100,100">[[Archives]]
-[[Credits]]</tw-passagedata><tw-passagedata pid="6" name="Soft Awakening" tags="" position="900,625" size="100,100">&lt;&lt;set $warrior = true&gt;&gt;\
+[[Choose your adventurer|Choose Character]]</tw-passagedata><tw-passagedata pid="2" name="StoryAuthor" tags="" position="1825,150" size="100,100">by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;\
+&lt;div id=&quot;story-version&quot;&gt;
+  v2.20220910.0
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="3" name="StoryBanner" tags="" position="2075,150" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+&lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="4" name="StoryDisplayTitle" tags="" position="1950,150" size="100,100">The Mage&#39;s Tower V2</tw-passagedata><tw-passagedata pid="5" name="StoryMenu" tags="" position="2500,500" size="100,100">[[Archives]]
+[[Credits]]
+&lt;&lt;if setup.enableDebugMenu&gt;&gt;
+    [[Debug: Goto Title|Title Screen]]
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="Soft Awakening" tags="" position="900,625" size="100,100">&lt;&lt;set $warrior = true&gt;&gt;\
 It takes some effort, but the wolf opens his eyes. It takes a few seconds to regain their focus. At the same time, the stiffness of his body feels worse than ever. This nap was anything but comfortable.
 
 As his vision clears, $name realizes that he&#39;s not quite lying down. In fact, he&#39;s pretty much standing up. The feeling of the leather wrappings around his wrists, ankles, and mid-section becomes obvious upon his first attempts to move with a groan. \
@@ -663,10 +699,6 @@ With a spring to his step, the panther approaches, closing in the last distance 
   &lt;/ul&gt;\
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="14" name="StoryInit" tags="" position="2200,150" size="100,100">&lt;&lt;script&gt;&gt;
 const v = variables();
-
-l10nStrings.restartTitle = &#39;Reset&#39;;
-l10nStrings.restartPrompt = &#39;Archive unlocks and unsaved progress will be lost.&lt;br&gt;&lt;br&gt;Are you sure you want to reset everything and start over?&#39;;
-
 v.name = &quot;Drekkar&quot;;
 v.class = &quot;warrior&quot;;
 v.warrior = true;
@@ -726,14 +758,6 @@ v.personalEnding = false;
 \
 &lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;if Config.debug&gt;&gt;
-    &lt;&lt;append &quot;#menu&quot;&gt;&gt;
-        &lt;ul class=&quot;debug-only&quot;&gt;
-            &lt;li&gt;[[Goto Title|Title Screen]]&lt;/li&gt;
-        &lt;/ul&gt;
-    &lt;&lt;/append&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
 &lt;&lt;append &quot;#ui-bar-body&quot;&gt;&gt;
   &lt;div id=&quot;ui-bar-footer&quot;&gt;
     &lt;span&gt;
@@ -747,7 +771,6 @@ v.personalEnding = false;
     &lt;/span&gt;
   &lt;/div&gt;
 &lt;&lt;/append&gt;&gt;
-
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="15" name="Molesting" tags="" position="950,1000" size="100,100">&lt;&lt;print $name&gt;&gt; opens a warning growl, but even though the wolf tugs against the restraints of the cross he&#39;s bound to, there is nothing that can be done against the feeling of extreme vulnerability. The panther, the enemy, stands right there, well within the range of touch, and all the wolf can do is remain there with his limbs spread wide.
 
 &quot;Look at you, wolf. Such a powerful &lt;&lt;print $class&gt;&gt;...&quot; The panther licks his lips. His hand comes to the wolf&#39;s chest. His touch feels invasive as he places his hand upon &lt;&lt;print $name&gt;&gt;&#39;s broad pectorals and feels it up. All $name can do is snarl once more, but the wolf knows that his growling is nothing but a fake threat at that moment. There has to be a way to turn the tables on that damned mage, but how...?
@@ -3985,10 +4008,6 @@ It doesn&#39;t stop there, and neither does the slime. All the stimulation keeps
     } else {
         v.startGameText = &#39;New Game&#39;;
     }
-    if (Config.debug) {
-        $(&#39;head&#39;).append(&#39;&lt;base href=&quot;https://magestower.slethstories.com/&quot;&gt;&#39;);
-        setTimeout(() =&gt; DebugView.disable());
-    }
 &lt;&lt;/script&gt;&gt;\
 \
 &lt;div class=&quot;title-screen&quot;&gt;\
@@ -4006,12 +4025,13 @@ It doesn&#39;t stop there, and neither does the slime. All the stimulation keeps
 &lt;&lt;link $startGameText&gt;&gt;
     &lt;&lt;if $passedContentWarning&gt;&gt;
         &lt;&lt;goto [[Bound]]&gt;&gt;
+    &lt;&lt;else&gt;&gt;
+        &lt;&lt;script&gt;&gt;
+            Dialog.setup(&quot;Content Warning&quot;);
+            Dialog.wiki(&quot;&lt;&lt;include [[Content Warning]]&gt;&gt;&quot;);
+            Dialog.open();
+        &lt;&lt;/script&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;script&gt;&gt;
-        Dialog.setup(&quot;Content Warning&quot;);
-        Dialog.wiki(&quot;&lt;&lt;include [[Content Warning]]&gt;&gt;&quot;);
-        Dialog.open();
-     &lt;&lt;/script&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 \
 &lt;&lt;link &#39;Load Game&#39;&gt;&gt;
