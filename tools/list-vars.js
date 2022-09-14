@@ -23,8 +23,18 @@ function listVars(twFile) {
   const lines = text.split(/\r?\n/);
   const vars = [];
   const passageMap = [];
+  const contexts = [];
   let passage = "-";
+
   lines.forEach((line, lno) => {
+
+    const addMatch = (v, start) => {
+      vars[v] ??= new Set();
+      vars[v].add(lno);
+      contexts[v] ??= [];
+      contexts[v][lno] = trimContext(line, start);
+    }
+
     const m = /^:: (.*)/.exec(line);
     if (m != null) {
       passage = m[1].replace(/ [\[{].*/, "");
@@ -33,18 +43,15 @@ function listVars(twFile) {
 
     // $varname
     for (const m of line.matchAll(/[$](\w+)/g)) {
-      vars[m[1]] ??= new Set();
-      vars[m[1]].add(lno);
+      addMatch(m[1], m.index);
     }
     // v.varname
     for (const m of line.matchAll(/\bv[.](\w+)/g)) {
-      vars[m[1]] ??= new Set();
-      vars[m[1]].add(lno);
+      addMatch(m[1], m.index);
     }
     // setup.name
     for (const m of line.matchAll(/\b(setup[.]\w+)/g)) {
-      vars[m[1]] ??= new Set();
-      vars[m[1]].add(lno);
+      addMatch(m[1], m.index);
     }
   });
 
@@ -54,30 +61,39 @@ function listVars(twFile) {
 
   const many = 5;
 
-  for (let c = 1; c < many; ++ c) {
-    const subset = varnames.filter(v => counts[v] === c);
+  for (let c = 1; c < many; ++c) {
+    const subset = varnames.filter((v) => counts[v] === c);
     if (subset.length !== 0) {
       console.log(`=== count ${c} ===`);
-      console.log('');
+      console.log("");
       list(subset);
       console.log("");
     }
   }
 
-  console.log(`=== count >= ${many} ===`);
-  list(varnames.filter((v) => counts[v] >= many));
+  console.log("=== count any ===");
+  list(varnames);
 
   function list(subset) {
     for (const varname of subset) {
       console.log(varname);
       const lnos = Array.from(vars[varname]).sort((a, b) => b - a);
       for (const lno of lnos) {
-        // XXX group by passage name
-        // XXX trim line context to < 80 chars
-        console.log(`   ${passageMap[lno]}:${lno}: ${lines[lno]}`);
+        console.log(`    [[${passageMap[lno]}]] ${lno}: ${contexts[varname][lno]}`);
       }
     }
   }
+}
+
+const MAX_CONTEXT = 60;
+
+function trimContext(line, pos) {
+  line = line.trim();
+  if (line.length > MAX_CONTEXT) {
+    const left = Math.max(0, pos - MAX_CONTEXT / 2);
+    line = line.slice(left, left + MAX_CONTEXT);
+  }
+  return line;
 }
 
 main(process.argv.slice(2));
