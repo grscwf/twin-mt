@@ -478,14 +478,26 @@ Macro.add("delete-vars", {
   }
 });
 
-/** Returns a link "Do something else" that comes back here. */
-setup.returnHere = function() {
-  return '[[Do something else.|' + State.passage + ']]';
+/** Returns a "Continue" link back to here, that sets $n1_funnel to true. */
+setup.afterActionFunnel = function() {
+  const here = State.passage;
+  if (/\[\]\"/.test(here)) throw new Error("bad passage name " + here);
+  const qhere = '"' + here + '"';
+  const v = State.variables;
+  v.n1_funnel = v.n1_returnedTo === here;
+  return '[[Continue|' + here + '][$n1_returnedTo = ' + qhere + ']]';
 }
 
-/** Returns a link "Continue" that comes back here. */
-setup.continueHere = function() {
-  return '[[Continue|' + State.passage + ']]';
+/** Returns a link "Do something else" that comes back here. */
+setup.afterLookFunnel = function() {
+  const here = State.passage;
+  if (/\[\]\"/.test(here)) throw new Error("bad passage name " + here);
+  const qhere = '"' + here + '"';
+  const v = State.variables;
+  if (v.n1_lookCount == null) v.n1_lookCount = 0;
+  if (v.n1_returnedTo === here) v.n1_lookCount += 1;
+  v.n1_funnel = v.n1_lookCount >= 3;
+  return '[[Do something else.|' + here + '][$n1_returnedTo = ' + qhere + ']]';
 }
 
 /** Optional <li> action. */
@@ -6844,7 +6856,7 @@ Nero considers his next move.
 <<set $n1_ivexAggro = $n1_ivexAggro || 1>>\
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.returnHere()>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
 <<set $n1_afterAction = "[[Continue|n1 Aggro]]">>\
 \
 <<nobr>>
@@ -6860,11 +6872,9 @@ Ivex "the Magnificent" speaks with anger. "Again I ask! Who sent you?"
 <</switch>>
 <</nobr>>
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-
-<<nobr>><ul class="actions">
+<<nobr>>
+<<include "n1 Look-Magic">>
+<ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[XXX Resist Ivex.|n1 Resist]]</li>
     <li>[[`"There's been a misunderstanding..."`|n1 Charm]]</li>
@@ -7414,7 +7424,7 @@ Ivex is distracted. Perhaps this is a chance to do something without him noticin
 
 <<script>>
 const v = State.variables;
-v.n1_afterLook = setup.returnHere();
+v.n1_afterLook = setup.afterLookFunnel();
 v.n1_afterAction = 'XXX';
 <</script>>
 
@@ -8133,7 +8143,7 @@ ivex, incredulous: what you think your my equal? you should be my minion.
 
 <<script>>
 const v = State.variables;
-v.n1_afterLook = setup.returnHere();
+v.n1_afterLook = setup.afterLookFunnel();
 v.n1_afterAction = 'XXX';
 <</script>>
 
@@ -8141,7 +8151,7 @@ v.n1_afterAction = 'XXX';
 :: n1 Recruit {"position":"4625,1500","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.returnHere()>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
 <<set $n1_afterAction = 'XXX'>>\
 \
 nero: I'd like to recruit you
@@ -8200,7 +8210,7 @@ ivex: and will you do everything I ask?
 
 <<script>>
 const v = State.variables;
-v.n1_afterLook = setup.returnHere();
+v.n1_afterLook = setup.afterLookFunnel();
 v.n1_afterAction = 'XXX';
 <</script>>
 
@@ -8224,7 +8234,7 @@ ivex: yeah, no. charm failed.
 <<set $n1_ivexReceptive = true>>\
 \
 naked here if not already [[n1 Get Naked]]
-<<set $n1_afterNaked = setup.continueHere()>>
+<<set $n1_afterNaked = 'xxx'>>
 
 ivex offers a finger to suck
 [[lick eagerly|n1 too eager]]
@@ -8240,7 +8250,7 @@ ivex offers a finger to suck
 
 <<script>>
 const v = State.variables;
-v.n1_afterLook = setup.returnHere();
+v.n1_afterLook = setup.afterLookFunnel();
 v.n1_afterAction = 'XXX';
 <</script>>
 
@@ -8271,7 +8281,7 @@ you need to demonstrate loyalty. gonna torture you anyway
 
 <<script>>
 const v = State.variables;
-v.n1_afterLook = setup.returnHere();
+v.n1_afterLook = setup.afterLookFunnel();
 v.n1_afterAction = 'XXX';
 <</script>>
 
@@ -8279,7 +8289,7 @@ v.n1_afterAction = 'XXX';
 :: n1 Comfortable? {"position":"4275,2600","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.returnHere()>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
 <<set $n1_afterAction = "[[Continue|n1 Get Comfortable][$n1_mood = 'aggro']]">>\
 \
 ivex, are you comfortable?
@@ -8312,7 +8322,7 @@ grab balls
 :: n1 Heavy Squeeze {"position":"4150,2950","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.returnHere()>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
 <<set $n1_afterAction = "[[Continue|n1 Alarm][$n1_mood = 'aggro']]">>\
 \
 ivex, squeezes harder, tell me who sent you
@@ -8551,7 +8561,7 @@ transition from naked to ivex intro.
 :: n1 Doubts {"position":"4625,1650","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.returnHere()>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
 <<set $n1_afterAction= 'XXX'>>\
 \
 Ivex: why have I never heard of you
@@ -8569,7 +8579,7 @@ Ivex: why have I never heard of you
 :: n1 Secret Creep {"position":"4625,1800","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.returnHere()>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
 <<set $n1_afterAction= 'XXX'>>\
 \
 ivex: and do you keep the secret with mind control, do guild members have to do everything you ask? grabs crotch
@@ -8612,7 +8622,7 @@ ivex loses patience. transition to candle.
 :: n1 Light Squeeze {"position":"4150,2800","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.returnHere()>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
 <<set $n1_afterAction = "[[Continue|n1 Ball Punch][$n1_mood = 'aggro']]">>\
 \
 ivex squeezes ball: tell me who sent you
@@ -8705,5 +8715,19 @@ the tiger's voice was low and friendly
 
 [[tiger says, "Wanna feel the barbs?"|n1 Barbs Yes]]
 [[tiger says, "Barbs are a myth"|n1 Barbs No]]
+
+
+:: n1 Look-Magic {"position":"5150,1175","size":"100,200"}
+<<nobr>>
+<<if $n1_funnel>>
+<<set $n1_magicAction = null>>
+
+<<else>>
+<<include "n1 Look">>
+<br><br>
+<<include "n1 Magic">>
+<br><br>
+<</if>>
+<</nobr>>\
 
 
