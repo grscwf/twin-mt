@@ -10,6 +10,7 @@ nero
 	"start": "Title Screen",
 	"tag-colors": {
 		"action-point": "blue",
+		"big-mood": "purple",
 		"done": "purple",
 		"end": "red",
 		"has-hole": "yellow",
@@ -281,7 +282,7 @@ ul.actions li {
 }
 
 /* fixup for debug/test mode */
-.debugging ul.actions li {
+.file-url ul.actions li {
   background-image: url("https://magestower.slethstories.com/images/quote.png");
 }
 
@@ -409,15 +410,18 @@ if (!Config.debug) {
 if (Config.debug) {
   // set flag for StoryMenu (can't use Config.debug; it's always false for StoryMenu)
   setup.enableDebugMenu = true;
-
-  // set base url for html images (this happens too late for css images)
-  $('head').prepend('<base href="https://magestower.slethstories.com/">');
-
-  // add debugging class for css
-  $('html').addClass('debugging');
-
   // start with debugview off
   setTimeout(() => DebugView.disable());
+  // add debugging class for css
+  $('html').addClass('debugging');
+}
+
+// images workaround for local testing
+if (Config.debug && location.protocol === 'file:') {
+  // base for html images (this happens too late for css images)
+  $('head').prepend('<base href="https://magestower.slethstories.com/">');
+  // add file-url class for css
+  $('html').addClass('file-url');
 }
 
 l10nStrings.restartTitle = 'Reset';
@@ -489,14 +493,15 @@ setup.afterActionFunnel = function() {
 }
 
 /** Returns a link "Do something else" that comes back here. */
-setup.afterLookFunnel = function() {
+setup.afterLookFunnel = function(max) {
+  max = max || 3;
   const here = State.passage;
   if (/\[\]\"/.test(here)) throw new Error("bad passage name " + here);
   const qhere = '"' + here + '"';
   const v = State.variables;
   if (v.n1_lookCount == null) v.n1_lookCount = 0;
   if (v.n1_returnedTo === here) v.n1_lookCount += 1;
-  v.n1_funnel = v.n1_lookCount >= 3;
+  v.n1_funnel = v.n1_lookCount >= max;
   return '[[Do something else.|' + here + '][$n1_returnedTo = ' + qhere + ']]';
 }
 
@@ -6856,7 +6861,7 @@ Nero considers his next move.
 <<set $n1_ivexAggro = $n1_ivexAggro || 1>>\
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterLook = setup.afterLookFunnel(2)>>\
 <<set $n1_afterAction = "[[Continue|n1 Aggro]]">>\
 \
 <<nobr>>
@@ -6873,7 +6878,7 @@ Ivex "the Magnificent" speaks with anger. "Again I ask! Who sent you?"
 <</nobr>>
 
 <<nobr>>
-<<include "n1 Look-Magic">>
+<<include "n1 Look and Magic">>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[XXX Resist Ivex.|n1 Resist]]</li>
@@ -6948,10 +6953,14 @@ He's <<if $n1_naked>>naked and<</if>> attached with leather restraints to a
   <br><br>
 <</if>>
 
+<<if $n1_candleLit && !$n1_sawDesk>>
+    The desk has a [[lit candle|n1 candle]] among the clutter.
+<</if>>
+
 <<if $n1_sawDesk>>
     The desk has
     <<if $n1_candleLit>>
-      a [[candle|n1 candle]],
+      a [[lit candle|n1 candle]],
     <</if>>
     a [[letter opener|n1 knife]],
     a [[snow globe|n1 globe]],
@@ -6960,7 +6969,11 @@ He's <<if $n1_naked>>naked and<</if>> attached with leather restraints to a
 
 <<if $n1_sawCabinet>>
     On top of the cabinets is
-    a [[large glass bottle|n1 bottle]]
+    <<if $n1_sawBottle>>
+        a [[poltergeist device in a bottle|n1 bottle]]
+    <<else>>
+        a [[large glass bottle|n1 bottle]]
+    <</if>>
     and a [[stuffed penguin|n1 penguin]].
 <</if>>
 
@@ -7205,7 +7218,6 @@ XXX
 :: n1 bottle [key has-hole] {"position":"6650,1850","size":"100,100"}
 <<set $n1_sawBottle = true>>\
 \
-XXX
 large bottle, has a wooden horse cock inside, too large to have been inserted through the hole.
 
 cock has tk matrix glyphs. Nero recognizes it, but is puzzled because the tk matrix requires phyiscal contact, what good is it in the bottle.
@@ -7293,19 +7305,17 @@ He prepares the spell's image in his mind, and then <em>twists</em> it...
 
 
 :: n1 Charm {"position":"4550,1350","size":"100,100"}
-<<set $n1_ivexReceptive = true>>\
-\
 nero: no, I got the dossier from a bounty hunter who failed to capture me. it's impressive, I knew I had to try to meet you
 
 ivex: really. why?
 
 <<nobr>><ul class="actions">
     <li>[[want to recruit|n1 Recruit]]</li>
-    <li>[[want to partner|n1 Try Partner]]</li>
+    <li>[[want to partner|n1 Partner]]</li>
 </ul><</nobr>>
 
 
-:: n1 Resist {"position":"4375,1350","size":"100,100"}
+:: n1 Resist {"position":"4350,1350","size":"100,100"}
 ivex: hard way it is.
 seems happy about it.
 
@@ -7473,7 +7483,7 @@ It's Ivex, the panther mage who's the subject of Nero's current "errand".
 [[Continue|=n1 Endgame 3]]
 
 
-:: n1 Start Candle {"position":"4325,2450","size":"100,100"}
+:: n1 Start Candle {"position":"4200,2250","size":"100,100"}
 <<set $n1_candleLit = true>>\
 \
 ivex wears mask and brings out candle
@@ -8026,7 +8036,7 @@ sprite: password incorrect, try again.
 <<link $n1_afterAction>><</link>>
 
 
-:: =n1 Feign Sleep 2 {"position":"4400,650","size":"100,100"}
+:: =n1 Feign Sleep 2 [big-mood] {"position":"4400,650","size":"100,100"}
 <<set $n1_ballsSmashed = true>>\
 \
 Suddenly, a hand grabs at the crotch of Nero's trousers. The fingers dig in and curl around one of the wolf's testicles. And then the fingers squeeze. Hard.
@@ -8122,60 +8132,49 @@ exasperated sigh.
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 Try Partner {"position":"5225,1775","size":"200,100"}
+:: n1 Ivex Disdainful {"position":"5125,1750","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
-<<set $n1_ivexReceptive = true>>\
-\
-nero: I'd like you to be my partner.
-
-ivex, incredulous: what you think your my equal? you should be my minion.
-
-[[no, really, equal partnership is fair|n1 Equality]]
-[[yes sir, please|n1 Minion]]
-
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-\
-<ul class="actions">\
-    <<if $n1_magicAction>><li><<link $n1_magicAction>><</link>></li><</if>>\
-</ul>\
-
-<<script>>
-const v = State.variables;
-v.n1_afterLook = setup.afterLookFunnel();
-v.n1_afterAction = 'XXX';
-<</script>>
-
-
-:: n1 Recruit {"position":"4625,1500","size":"200,100"}
-<<set $n1_ivexDistracted = false>>\
-<<set $n1_ivexReceptive = true>>\
+<<set $n1_ivexReceptive = false>>\
 <<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = 'XXX'>>\
+<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-nero: I'd like to recruit you
+ivex: what, you think you're my equal?
 
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
+    <<optional-action $n1_magicAction>>
+    <li>[[really, equal partnership is fair|n1 Reject Equality]]</li>
+    <li>[[perhaps I could apprentice|n1 Submit]]</li>
+</ul>
+<</nobr>>
+
+
+:: n1 Ivex Offended {"position":"4625,1525","size":"200,100"}
+<<set $n1_ivexDistracted = false>>\
+<<set $n1_ivexReceptive = false>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterAction = setup.afterActionFunnel()>>\
+\
 ivex, incredulous: you want me to be your minion?
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-
-<<nobr>><ul class="actions">
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[no, I'm a cog in something larger|n1 Secret Society]]</li>
-    <li>[[not a minion, an apprentice|n1 Apprentice]]</li>
-</ul><</nobr>>
+    <li>[[not a minion, an apprentice|n1 Reject Demotion]]</li>
+</ul>
+<</nobr>>
 
 
-:: n1 Secret Society {"position":"4875,1575","size":"100,100"}
+:: n1 Secret Society {"position":"4850,1575","size":"100,100"}
 Nero: it's awesome, we have bacon
 
-[[Continue|n1 Doubts]]
+[[Continue|n1 Ivex Skeptical]]
 
 
-:: n1 Apprentice {"position":"4475,1575","size":"100,100"}
+:: n1 Reject Demotion {"position":"4425,1625","size":"100,100"}
 nero: I have much to teach you, and perhaps you have some things to show me as well.
 
 ivex, disgusted. charm failed.
@@ -8183,122 +8182,85 @@ ivex, disgusted. charm failed.
 [[continue|n1 Start Candle]]
 
 
-:: n1 Equality {"position":"5100,1775","size":"100,100"}
+:: n1 Reject Equality {"position":"4775,2075","size":"100,100"}
 ivex: no way. charm failed.
 
 [[n1 Start Candle]]
 
 
-:: n1 Minion {"position":"5225,2125","size":"200,100"}
+:: n1 Ivex Demanding {"position":"5125,1875","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-Ivex: really.
-gets creepy-lewd
 ivex: and will you do everything I ask?
 
-[[within reason|n1 Professional]]
-[[anything at all|n1 Super Sub]]
-
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-\
-<ul class="actions">\
-    <<if $n1_magicAction>><li><<link $n1_magicAction>><</link>></li><</if>>\
-</ul>\
-
-<<script>>
-const v = State.variables;
-v.n1_afterLook = setup.afterLookFunnel();
-v.n1_afterAction = 'XXX';
-<</script>>
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
+    <<optional-action $n1_magicAction>>
+    <li>[[within reason|n1 Subbier][$n1_mood = 'resist']]</li>
+    <li>[[anything at all|n1 Subbier][$n1_mood = 'charm']]</li>
+</ul>
+<</nobr>>
 
 
-:: n1 Very Secret {"position":"4875,1700","size":"100,100"}
+:: n1 Very Secret {"position":"4850,1725","size":"100,100"}
 nero: we're a secret inside the WAG.
 
 ivex; fascinating, tell me more.
 
-[[Continue|n1 Secret Creep]]
+[[Continue|n1 Ivex Intrigued]]
 
 
-:: n1 Professional {"position":"5100,2125","size":"100,100"}
-ivex: yeah, no. charm failed.
-
-[[n1 Start Candle]]
-
-
-:: n1 Super Sub {"position":"5225,2325","size":"200,100"}
+:: n1 Ivex Finger {"position":"5125,2000","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-naked here if not already [[n1 Get Naked]]
-<<set $n1_afterNaked = 'xxx'>>
-
 ivex offers a finger to suck
-[[lick eagerly|n1 too eager]]
-[[lick reluctantly|n1 shy virgin]]
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-\
-<ul class="actions">\
-    <<if $n1_magicAction>><li><<link $n1_magicAction>><</link>></li><</if>>\
-</ul>\
-
-<<script>>
-const v = State.variables;
-v.n1_afterLook = setup.afterLookFunnel();
-v.n1_afterAction = 'XXX';
-<</script>>
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
+    <<optional-action $n1_magicAction>>
+    <li>[[lick eagerly|n1 Licking][$n1_mood = 'charm']]</li>
+    <li>[[lick reluctantly|n1 Licking][$n1_mood = 'resist']]</li>
+</ul>
+<</nobr>>
 
 
-:: n1 too eager {"position":"5100,2325","size":"100,100"}
-ivex: you're too eager, this is a trick
-
-[[n1 Start Candle]]
-
-
-:: n1 shy virgin {"position":"5225,2550","size":"200,100"}
+:: n1 Ivex Cruel {"position":"5125,2125","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
+<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-Ivex: ooh, yes that's nice,
-but you have to understand why I'm suspicious.
-you need to demonstrate loyalty. gonna torture you anyway
-[[yes please|n1 super eager]]
-[[um, no|n1 too bad]]
+Ivex: gonna torture you. loyalty.
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-\
-<ul class="actions">\
-    <<if $n1_magicAction>><li><<link $n1_magicAction>><</link>></li><</if>>\
-</ul>\
-
-<<script>>
-const v = State.variables;
-v.n1_afterLook = setup.afterLookFunnel();
-v.n1_afterAction = 'XXX';
-<</script>>
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
+    <<optional-action $n1_magicAction>>
+    <li>[[yes please|n1 Reject Mercy][$n1_mood = 'charm']]</li>
+    <li>[[...wait, no|n1 Reject Mercy][$n1_mood = 'resist']]</li>
+</ul>
+<</nobr>>
 
 
-:: n1 Comfortable? {"position":"4275,2600","size":"200,100"}
+:: n1 Comfortable? {"position":"4200,2400","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterLook = setup.afterLookFunnel(1)>>\
 <<set $n1_afterAction = "[[Continue|n1 Get Comfortable][$n1_mood = 'aggro']]">>\
 \
 ivex, are you comfortable?
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-
-<<nobr>><ul class="actions">
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
     <li>[[agree|n1 Get Comfortable][$n1_mood = 'charm']]</li>
     <li>[[disagree|n1 Get Comfortable][$n1_mood = 'resist']]</li>
     <<optional-action $n1_magicAction>>
@@ -8322,32 +8284,18 @@ grab balls
 :: n1 Heavy Squeeze {"position":"4150,2950","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterLook = setup.afterLookFunnel(1)>>\
 <<set $n1_afterAction = "[[Continue|n1 Alarm][$n1_mood = 'aggro']]">>\
 \
 ivex, squeezes harder, tell me who sent you
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-
-<<nobr>><ul class="actions">
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
     <li>{[resist|n1 alarm][$n1_mood = 'resist']]</li>
     <li>[[submit|n1 Alarm][$n1_mood = 'charm']]</li>
     <<optional-action $n1_magicAction>>
 </ul><</nobr>>
-
-
-:: n1 super eager {"position":"5100,2550","size":"100,100"}
-ivex: yeah, that's not suspicious at all. well, whether you're real or not, it won't matter soon.
-
-[[n1 Start Candle]]
-
-
-:: n1 too bad {"position":"5100,2750","size":"100,100"}
-Ivex: tough, I bet you're just leading me on. let's find out.
-
-[[n1 Start Candle]]
 
 
 :: n1 Cast Escape {"position":"3600,1025","size":"100,100"}
@@ -8528,14 +8476,6 @@ XXX not the first time Nero's been in anti-magic. they're complicated and fragil
 [[Continue|n1 Ivex Repeat]]
 
 
-:: n1 yes ew {"position":"4625,1925","size":"100,100"}
-nero: ... yes, mind control, definitely.
-
-ivex: bah, you lie.
-
-[[Continue|n1 Start Candle]]
-
-
 :: =n1 Endgame 3 {"position":"4200,750","size":"100,100"}
 <<set $n1_afterNaked = "[[Continue|n1 Endgame 4]]">>\
 \
@@ -8552,53 +8492,46 @@ Ivex laughs again. "Let me show you what a real mage can do. I am Ivex the Magni
 [[Continue|n1 Get Naked]]
 
 
-:: n1 Endgame 4 {"position":"4200,850","size":"100,100"}
+:: n1 Endgame 4 {"position":"4225,875","size":"100,100"}
 transition from naked to ivex intro.
 
 [[Continue|=n1 Ivex Intro]]
 
 
-:: n1 Doubts {"position":"4625,1650","size":"200,100"}
+:: n1 Ivex Skeptical {"position":"4625,1650","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
 <<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction= 'XXX'>>\
+<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
 Ivex: why have I never heard of you
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-
-<<nobr>><ul class="actions">
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
     <li>[[we're a secret inside the WAG|n1 Very Secret]]</li>
 	<<optional-action $n1_magicAction>>
 </ul><</nobr>>
 
 
-:: n1 Secret Creep {"position":"4625,1800","size":"200,100"}
+:: n1 Ivex Intrigued {"position":"4625,1775","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
 <<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction= 'XXX'>>\
+<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
 ivex: and do you keep the secret with mind control, do guild members have to do everything you ask? grabs crotch
 
-<<nobr>><ul class="actions">
-    <li>[[...yes|n1 yes ew]]</li>
-    <li>[[...um, no|n1 no ew]]</li>
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
+    <<optional-action $n1_magicAction>>
+    <li>[[...yes|n1 Reject Fantasy][$n1_mood = 'charm']]</li>
+    <li>[[...um, no|n1 Reject Fantasy][$n1_mood = 'resist']]</li>
 </ul><</nobr>>
 
 
-:: n1 no ew {"position":"4500,1875","size":"100,100"}
-nero: no mind control, ew
-
-ivex: bah, you lie
-
-[[Continue|n1 Start Candle]]
-
-
-:: n1 Aggro {"position":"4200,1300","size":"100,100"}
+:: n1 Aggro {"position":"4175,1250","size":"100,100"}
 <<set $n1_ivexAggro = 1 + ($n1_ivexAggro || 1)>>\
 \
 <<switch $n1_ivexAggro>>\
@@ -8622,16 +8555,14 @@ ivex loses patience. transition to candle.
 :: n1 Light Squeeze {"position":"4150,2800","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
+<<set $n1_afterLook = setup.afterLookFunnel(1)>>\
 <<set $n1_afterAction = "[[Continue|n1 Ball Punch][$n1_mood = 'aggro']]">>\
 \
 ivex squeezes ball: tell me who sent you
 
-<<include "n1 Look">>
-
-<<include "n1 Magic">>
-
-<<nobr>><ul class="actions">
+<<nobr>>
+<<include "n1 Look and Magic">>
+<ul class="actions">
     <li>[[resist|n1 Ball Punch][$n1_mood = 'resist']]</li>
     <li>[[submit|n1 Ball Punch][$n1_mood = 'charm']]</li>
     <<optional-action $n1_magicAction>>
@@ -8717,10 +8648,12 @@ the tiger's voice was low and friendly
 [[tiger says, "Barbs are a myth"|n1 Barbs No]]
 
 
-:: n1 Look-Magic {"position":"5150,1175","size":"100,200"}
+:: n1 Look and Magic {"position":"5150,1175","size":"100,200"}
 <<nobr>>
 <<if $n1_funnel>>
 <<set $n1_magicAction = null>>
+Ivex is getting impatient. XXX vary this
+<br><br>
 
 <<else>>
 <<include "n1 Look">>
@@ -8729,5 +8662,64 @@ the tiger's voice was low and friendly
 <br><br>
 <</if>>
 <</nobr>>\
+
+
+:: n1 Recruit {"position":"4500,1475","size":"100,100"}
+nero: I'd like to recruit you
+
+ivex, offended.
+
+[[Continue|n1 Ivex Offended]]
+
+
+:: n1 Partner {"position":"5100,1600","size":"100,100"}
+nero: I'd like to collaborate
+
+ivex incredulous
+
+[[Continue|n1 Ivex Disdainful]]
+
+
+:: n1 Submit {"position":"5350,1800","size":"100,100"}
+nero: no, no. I meant, I could be your apprentice
+
+ivex: hm.... really...
+starts into creepy-lewd
+
+[[Continue|n1 Ivex Demanding]]
+
+
+:: n1 Subbier {"position":"5000,1950","size":"100,100"}
+<<set $n1_afterNaked = "[[n1 Ivex Finger]]">>\
+\
+nero: yes sir.
+
+naked here if not already [[n1 Get Naked]]
+
+[[Continue|n1 Ivex Finger]]
+
+
+:: n1 Licking [big-mood] {"position":"5350,2075","size":"100,100"}
+<<set $n1_neroSubby = true>>\
+\
+ivex: ooh, yeah that's nice
+but you have to understand why I'm suspicious
+you need to demonstrate loyalty
+
+[[Continue|n1 Ivex Cruel]]
+
+
+:: n1 Reject Mercy {"position":"4775,2200","size":"100,100"}
+ivex: yeah, not suspicious at all. well, whether you're real or not, it won't matter soon.
+
+[[n1 Start Candle]]
+
+
+:: n1 Reject Fantasy {"position":"4425,1800","size":"100,100"}
+nero: mind control. ew
+
+ivex: bah, you lie.
+
+[[Continue|n1 Start Candle]]
 
 
