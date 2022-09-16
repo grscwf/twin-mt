@@ -499,8 +499,11 @@ setup.afterLookFunnel = function(max) {
   if (/\[\]\"/.test(here)) throw new Error("bad passage name " + here);
   const qhere = '"' + here + '"';
   const v = State.variables;
-  if (v.n1_lookCount == null) v.n1_lookCount = 0;
-  if (v.n1_returnedTo === here) v.n1_lookCount += 1;
+  if (v.n1_returnedTo === here) {
+    v.n1_lookCount = 1 + (v.n1_lookCount || 0);
+  } else {
+    v.n1_lookCount = 0;
+  }
   v.n1_funnel = v.n1_lookCount >= max;
   return '[[Do something else.|' + here + '][$n1_returnedTo = ' + qhere + ']]';
 }
@@ -6861,7 +6864,7 @@ Nero considers his next move.
 <<set $n1_ivexAggro = $n1_ivexAggro || 1>>\
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel(2)>>\
+<<set $n1_afterLook = setup.afterLookFunnel(6)>>\
 <<set $n1_afterAction = "[[Continue|n1 Aggro]]">>\
 \
 <<nobr>>
@@ -6878,7 +6881,7 @@ Ivex "the Magnificent" speaks with anger. "Again I ask! Who sent you?"
 <</nobr>>
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[XXX Resist Ivex.|n1 Resist]]</li>
@@ -6886,8 +6889,8 @@ Ivex "the Magnificent" speaks with anger. "Again I ask! Who sent you?"
 </ul><</nobr>>
 
 
-:: testing {"position":"5375,375","size":"100,100"}
-testing
+:: testing {"position":"4875,400","size":"100,100"}
+testing<mark>hello</mark>
 
 
 :: n1 Look {"position":"5500,1200","size":"100,200"}
@@ -7044,7 +7047,7 @@ can't really see much until you use the mirror.
 </ul>\
 
 
-:: n1 study {"position":"6175,975","size":"100,100"}
+:: n1 study {"position":"6025,775","size":"100,100"}
 XXX
 
 [[n1 desk]]
@@ -7073,7 +7076,7 @@ ask ivex, he mocks your limited understanding. he's bluffing, he doesn't know an
 </ul>\
 
 
-:: n1 desk {"position":"6000,1150","size":"100,100"}
+:: n1 desk {"position":"6050,1125","size":"100,100"}
 XXX
 [[n1 mirror]]
 [[n1 globe]]
@@ -7294,7 +7297,7 @@ maybe leads to [[n2 tamed desperate]]
 :: =n1 Endgame {"position":"4200,500","size":"100,100"}
 Nero's limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And he's wary of making any sounds just yet.
 
-All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn't need broad gestures or words. He's kept the spell's construction a secret, so it doesn't have a name yet. Privately he thinks of it as [[Nero's Endgame|=n1 Endgame Info]]. It's a spell of last resort, but bound as he is now, this seems a good time to use it.
+All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn't need broad gestures or words. He's kept the spell's construction a secret, so it doesn't have a canonical name yet. Privately he thinks of it as [[Nero's Endgame|=n1 Endgame Info]]. It's a spell of last resort, but bound as he is now, this seems a good time to use it.
 
 He prepares the spell's image in his mind, and then <em>twists</em> it...
 
@@ -7416,24 +7419,27 @@ output
 <</nobr>>\
 
 
-:: n1 Ivex Distracted {"position":"5000,1200","size":"200,100"}
+:: n1 Ivex Distracted {"position":"5100,1300","size":"200,100"}
 <<set $n1_ivexDistracted = true>>\
+<<set $n1_afterLook = setup.afterLookFunnel(3)>>\
+<<set $n1_afterAction = $n1_afterDistract>>\
 \
 Ivex is distracted. Perhaps this is a chance to do something without him noticing.
 
-<<include "n1 Look">>
+XXX look funnel
 
-<<include "n1 Magic">>
-\
-<ul class="actions">\
-    <<if $n1_magicAction>><li><<link $n1_magicAction>><</link>></li><</if>>\
-</ul>\
+<<nobr>>
+<<include [[n1 Look]]>>
+<br><br>
 
-<<script>>
-const v = State.variables;
-v.n1_afterLook = setup.afterLookFunnel();
-v.n1_afterAction = 'XXX';
-<</script>>
+<<include [[n1 Magic]]>>
+<br><br>
+
+<ul class="actions">
+    <<optional-action $n1_magicAction>>
+    <li><<link "Do something else" $n1_afterDistract>><</link>></li>
+</ul>
+<</nobr>>
 
 
 :: =n1 Endgame Info {"position":"4050,500","size":"100,100"}
@@ -7463,9 +7469,8 @@ It's saved his life more than once.
 
 
 :: =n1 Endgame 2 {"position":"4200,600","size":"100,100"}
-<<set $n1_magicTried = true>>\
-\
-Nero feels a familiar tingle on his ass from the unleashing of the spell, and then ...
+Nero feels a familiar tingle on his ass from the unleashing of the spell. And then...
+<!-- no passage break here; too early -->\
 
 Nothing happens.
 
@@ -7495,31 +7500,19 @@ breathe, describe candle.
 [[continue|n1 Comfortable?]]
 
 
-:: n1 Get Naked {"position":"3900,1825","size":"100,100"}
-<<set $n1_naked = true>>\
-\
-Ivex theatrically raises his left arm, then snaps two fingers together.
+:: n1 Naked {"position":"3825,1800","size":"100,100"}
+Ivex theatrically raises his left arm, then snaps his fingers.
 
 All of Nero's clothes disappear.
 
-The wolf shivers slightly from the sudden chill and mild embarassment. He can't help but be a little impressed. It's not immediately obvious if his clothing was destroyed or teleported away, but in either case the spell is remarkably precise to be able to target <em>only</em> his clothes, and not the wooden cross and leather straps holding him in place, and not even disturbing any of the hairs of his fur.
+The wolf shivers slightly from mild embarrassment and the sudden chill. He can't help but be a little bit impressed. It's not immediately obvious if his clothing was destroyed or teleported away, but in either case the spell was remarkably precise, since it targeted <em>only</em> his clothes, and not the wooden cross or leather straps holding him in place. Nero didn't even feel it disturb any of the hairs of his fur.
 
-And to trigger it with such a small gesture. Nero wonders where the glyphs of such a complicated spell could be placed. Is it something Ivex is wearing, or perhaps it's something in this room?
+And the spell's trigger was such a small gesture. Nero starts sketching in his mind the outline of a matrix for a similar spell. It's quite large and complicated, and it would need a substantial core to store it. He wonders what the locus could be. Is it something Ivex is wearing? Or perhaps it's something in this room...
 
-A moment later, a different realization lands in the wolf mage's brain. Ivex has a complicated spell specifically prepared, that will quickly remove all the clothes from a bound prisoner.
-
-He must do this often.
-
-Nero suddenly notices what his eyes had already been staring at. The panther mage's right paw was firmly grasping his own crotch.
-
-XXX variation if we've already been super lewd.
-
-It seemed a safe bet that Nero would soon be unfortunate enough to see Ivex's cock.
-
-[[Continue|n1 Feline Barbs]]
+[[Continue|n1 Naked 2]]
 
 
-:: n1 Barbs No {"position":"3775,2075","size":"100,100"}
+:: n1 Barbs No {"position":"3775,2350","size":"100,100"}
 <<set $n1_felineBarbs = false>>\
 \
 tiger says, "barbs are a myth"
@@ -7537,10 +7530,10 @@ approaches nero, makes an obvious pass. nero flees, laughter behind him.
 <<link $n1_afterNaked>><</link>>
 
 
-:: n1 Barbs Yes {"position":"3875,2075","size":"100,100"}
+:: n1 Barbs Yes {"position":"3875,2350","size":"100,100"}
 <<set $n1_felineBarbs = true>>\
 \
-tiger says, "wanna feel the barbs?"
+tiger says, "the barbs aren't sharp"
 
 nero stammers.
 
@@ -7927,7 +7920,7 @@ lion rapes, extreme overstimulation.
 Ivex is amused and turns nero into lion's toy.
 
 
-:: n1 clever escape {"position":"5500,2625","size":"100,100"}
+:: n1 clever escape {"position":"5500,2600","size":"100,100"}
 you need a password, and you've asked ivex about the snow globe.
 
 he starts to preen and tell you about it, but then realizes what you've been doing.
@@ -7995,7 +7988,7 @@ cast mage-sight.
 
 ivex mocks
 if naked, aren't you already revealed enough?
-if not naked, [[n1 Get Naked]]
+if not naked, [[n1 Naked]]
 
 it's not a total failure, you see the mirror is special
 
@@ -8033,9 +8026,7 @@ sprite: password incorrect, try again.
 <<link $n1_afterAction>><</link>>
 
 
-:: =n1 Feign Sleep 2 [big-mood] {"position":"4400,575","size":"100,100"}
-<<set $n1_ballsSmashed = true>>\
-\
+:: =n1 Feign Sleep 2 {"position":"4400,600","size":"100,100"}
 Suddenly, a hand grabs at the crotch of Nero's trousers. The fingers dig in and curl around one of the wolf's testicles. And then the fingers squeeze. Hard.
 
 Nero's eyes fly wide open and he stifles a yelp.
@@ -8053,7 +8044,9 @@ Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 [[Continue|=n1 Feign Sleep 3]]
 
 
-:: =n1 Feign Sleep 3 {"position":"4400,675","size":"100,100"}
+:: =n1 Feign Sleep 3 [big-mood] {"position":"4400,700","size":"100,100"}
+<<set $n1_ballsSmashed = true>>\
+\
 A fist smashes into Nero's crotch, thumping hard against his other ball and briefly making it ache stronger than the one held tight.
 
 The wolf cannot suppress a whine. The sound is embarrassing and pathetic, and a moment later, the hand on his ball releases its grasp.
@@ -8138,7 +8131,7 @@ exasperated sigh.
 ivex: what, you think you're my equal?
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[really, equal partnership is fair|n1 Reject Equality]]</li>
@@ -8156,7 +8149,7 @@ ivex: what, you think you're my equal?
 ivex, incredulous: you want me to be your minion?
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[no, I'm a cog in something larger|n1 Secret Society]]</li>
@@ -8194,7 +8187,7 @@ ivex: no way. charm failed.
 ivex: and will you do everything I ask?
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[within reason|n1 Subbier][$n1_mood = 'resist']]</li>
@@ -8211,7 +8204,7 @@ ivex; fascinating, tell me more.
 [[Continue|n1 Ivex Intrigued]]
 
 
-:: n1 Ivex Finger {"position":"5025,1875","size":"200,100"}
+:: n1 Ivex Dominant {"position":"5025,1875","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
 <<set $n1_afterLook = setup.afterLookFunnel()>>\
@@ -8220,7 +8213,7 @@ ivex; fascinating, tell me more.
 ivex offers a finger to suck
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[lick eagerly|n1 Licking][$n1_mood = 'charm']]</li>
@@ -8238,7 +8231,7 @@ ivex offers a finger to suck
 Ivex: gonna torture you. loyalty.
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[yes please|n1 Reject Mercy][$n1_mood = 'charm']]</li>
@@ -8256,7 +8249,7 @@ Ivex: gonna torture you. loyalty.
 ivex, are you comfortable?
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <li>[[agree|n1 Get Comfortable][$n1_mood = 'charm']]</li>
     <li>[[disagree|n1 Get Comfortable][$n1_mood = 'resist']]</li>
@@ -8287,7 +8280,7 @@ grab balls
 ivex, squeezes harder, tell me who sent you
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <li>{[resist|n1 alarm][$n1_mood = 'resist']]</li>
     <li>[[submit|n1 Alarm][$n1_mood = 'charm']]</li>
@@ -8327,7 +8320,7 @@ stuff about anti-magic.
 <<link Continue $n1_afterAction>><</link>>
 
 
-:: testing 2 {"position":"5375,500","size":"100,100"}
+:: testing 2 {"position":"4875,525","size":"100,100"}
 testing 2
 
 
@@ -8340,7 +8333,7 @@ string of coins
 </ul>\
 
 
-:: n1 window {"position":"5700,1000","size":"100,100"}
+:: n1 window {"position":"5850,1025","size":"100,100"}
 window
 
 <ul class="actions">\
@@ -8463,7 +8456,7 @@ Nero mentally crosses off one branch of actions from his strategic map. Feigning
 <<nobr>>
 <<if !$n1_magicTried>>
 
-Nero is, after all, an accomplished mage. The bindings restricting his arms are a slight handicap, preventing him from casting his best spells. But there are still several spells that he can usefully deploy in this predicament, whenever the right opportunity presents itself.
+Nero is, after all, an accomplished mage. The bindings restricting his arms are a slight impediment, preventing him from casting his best spells. But there are still several spells that he can usefully deploy in this predicament, whenever the right opportunity presents itself.
 
 <<else>>
 
@@ -8476,22 +8469,23 @@ XXX not the first time Nero's been in anti-magic. they're complicated and fragil
 
 
 :: =n1 Endgame 3 {"position":"4200,700","size":"100,100"}
-<<set $n1_afterNaked = "[[Continue|n1 Endgame 4]]">>\
-\
 The panther notices that Nero is awake, and he emits a giggle. "That tickled! What was that?"
 
 Ivex continues staring at the ceiling and tilts his head from side to side. "Is that... Chimeras on Ice? No, wait. I see it now. Raven's Diversion!"
 
 Ivex laughs at Nero's face. "I was misled by the power scale. That's a crazy-weak scaffold for Raven. Not exactly an ace student, were you."
 
-Nero refrains from comment. Not that the lupine mage wouldn't defend his abilities in other circumstances, but considering his current predicament, it might be useful to seem weaker than he is. He deliberately splays his ears slightly, to signal mild distress.
+Nero refrains from comment. Not that the lupine mage wouldn't defend his abilities in other circumstances, but considering his current predicament, it might be useful to appear weaker than he is. He deliberately splays his ears slightly, to signal mild distress.
 
 Ivex laughs again. "Let me show you what a real mage can do. I am Ivex the Magnificent, and I've got something way better than your pathetic Raven's Diversion. Behold, a spell that I call, <em>Ivex's Diversion</em>!"
 
-[[Continue|n1 Get Naked]]
+[[Continue|n1 Naked]]
+<<set $n1_afterNaked = "[[Continue|n1 Endgame 4]]">>\
 
 
-:: n1 Endgame 4 {"position":"4250,825","size":"100,100"}
+:: n1 Endgame 4 [big-mood] {"position":"4250,825","size":"100,100"}
+<<set $n1_magicTried = true>>\
+\
 transition from naked to ivex intro.
 
 [[Continue|=n1 Ivex Intro]]
@@ -8506,7 +8500,7 @@ transition from naked to ivex intro.
 Ivex: why have I never heard of you
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <li>[[we're a secret inside the WAG|n1 Very Secret]]</li>
 	<<optional-action $n1_magicAction>>
@@ -8522,7 +8516,7 @@ Ivex: why have I never heard of you
 ivex: and do you keep the secret with mind control, do guild members have to do everything you ask? grabs crotch
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <<optional-action $n1_magicAction>>
     <li>[[...yes|n1 Reject Fantasy][$n1_mood = 'charm']]</li>
@@ -8560,7 +8554,7 @@ ivex loses patience. transition to candle.
 ivex squeezes ball: tell me who sent you
 
 <<nobr>>
-<<include "n1 Look and Magic">>
+<<include [[n1 Look and Magic]]>>
 <ul class="actions">
     <li>[[resist|n1 Ball Punch][$n1_mood = 'resist']]</li>
     <li>[[submit|n1 Ball Punch][$n1_mood = 'charm']]</li>
@@ -8629,25 +8623,22 @@ ivex mocks, enjoys the fight
 <<if $n1_naked>>
 [[Continue|n1 Get Creepy]]
 <<else>>
-[[Continue|n1 Get Naked]]
+[[Continue|n1 Naked]]
 <</if>>
 <</nobr>>
 
 
-:: n1 Feline Barbs {"position":"3825,1950","size":"100,100"}
-It would not be Nero's first encounter with a feline cock.
+:: n1 Barbs {"position":"3825,2125","size":"100,100"}
+Nero much enjoyed field games, but on that day, he stepped wrong while trying to intercept a ball. His ankle twisted, and he fell to the ground in mild distress. The coach took only a brief look at the injury before declaring it was reason enough to dismiss Nero early.
 
-Many years ago, when he was but a student, Nero twisted an ankle during field games, which the coach agreed was good reason for him to be dismissed early. When Nero arrived at the gymnasium showers, they were crowded but emptying. Several packs of older students were on their way out. Nero waited until all their banter and laughter had disappeared down the halls, before disrobing and entering the showers himself.
+Nero limped his way to the gymnasium showers. The showers were full of older students drying off and clumping into small packs that wandered toward the cafeteria and dorms. Nero waited until all their banter and laughter had disappeared down the halls, then he disrobed and entered the showers himself.
 
-XXX not really alone. tiger, catches him peeking.
-the tiger's penis not was not erect, not fully, Nero might have fled immediately if it were. but he could see more than a little of the pink, protruding from the sheath.
-the tiger's voice was low and friendly
+It wasn't until after he finished and toweled himself dry that he realized he wasn't alone.
 
-[[tiger says, "Wanna feel the barbs?"|n1 Barbs Yes]]
-[[tiger says, "Barbs are a myth"|n1 Barbs No]]
+[[Continue|n1 Barbs 2]]
 
 
-:: n1 Look and Magic {"position":"5300,1100","size":"100,200"}
+:: n1 Look and Magic {"position":"5100,1000","size":"100,200"}
 <<nobr>>
 <<if $n1_funnel>>
 <<set $n1_magicAction = null>>
@@ -8655,9 +8646,9 @@ Ivex is getting impatient. XXX vary this
 <br><br>
 
 <<else>>
-<<include "n1 Look">>
+<<include [[n1 Look]]>>
 <br><br>
-<<include "n1 Magic">>
+<<include [[n1 Magic]]>>
 <br><br>
 <</if>>
 <</nobr>>\
@@ -8689,13 +8680,13 @@ starts into creepy-lewd
 
 
 :: n1 Subbier {"position":"4900,1850","size":"100,100"}
-<<set $n1_afterNaked = "[[n1 Ivex Finger]]">>\
+<<set $n1_afterNaked = "[[n1 Ivex Dominant]]">>\
 \
 nero: yes sir.
 
-naked here if not already [[n1 Get Naked]]
+naked here if not already [[n1 Naked]]
 
-[[Continue|n1 Ivex Finger]]
+[[Continue|n1 Ivex Dominant]]
 
 
 :: n1 Licking [big-mood] {"position":"5250,1950","size":"100,100"}
@@ -8720,5 +8711,52 @@ nero: mind control. ew
 ivex: bah, you lie.
 
 [[Continue|n1 Start Candle]]
+
+
+:: n1 Naked 2 {"position":"3825,1900","size":"100,100"}
+A moment later, a different thought lands in Nero's brain.
+
+Ivex has <em>specifically prepared</em> a complicated spell that will quickly remove all the clothes from a bound prisoner.
+
+He must do this often.
+
+Nero suddenly realizes what his eyes have already been staring at.
+
+The panther mage's right paw is firmly grasping his own crotch...
+
+[[Continue|n1 Naked 3]]
+
+
+:: n1 Naked 3 [big-mood] {"position":"3825,2000","size":"100,100"}
+<<set $n1_naked = true>>\
+\
+It seems a safe bet that Nero will soon be unfortunate enough to see Ivex's cock.
+
+Why do all his patrons become entangled with such seedy and perverse villains?
+
+Ah well. It wouldn't be Nero's first encounter with a feline cock.
+
+Many years ago, when he was still a student...
+
+[[Continue|n1 Barbs]]
+
+
+:: n1 Barbs 2 {"position":"3825,2225","size":"100,100"}
+The bin for used towels was stationed at a pillar near the changing area. And on the other side of the pillar, a tiger was lounging on the bench.
+
+A large, muscular, and extremely naked, male tiger. XXX more description
+
+The tiger's penis was not erect, not fully. Nero might have fled immediately if it were. But he could see more than a little of the pink protruding from the sheath.
+
+Nero looked away quickly and pretended not to see anything.
+
+The tiger spoke with a voice that was low and friendly. He said,
+
+<<nobr>>
+<ul class="actions">
+    <li>[["The barbs aren't sharp."`|n1 Barbs Yes]]</li>
+    <li>[["Barbs are a myth."`|n1 Barbs No]]</li>
+</ul>
+<</nobr>>
 
 
