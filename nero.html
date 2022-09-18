@@ -501,10 +501,11 @@ ul.actions li {
   color: #bbb;
 }
 
-.flag-debug .flag-was-overridden,
-.flag-debug .flag-was-overridden:hover {
-  border-color: #c83;
+.flag-debug .flag-was-set,
+.flag-debug .flag-was-set:hover {
+  border-color: #999;
   border-style: dashed;
+  cursor: not-allowed;
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.ui.stowBarInitially = true;
 
 if (!Config.debug) {
@@ -632,41 +633,51 @@ function flagDebugSetup() {
     return;
   }
 
-  const flagSet = new Set();
-  let toggled = [];
+  const viewSet = new Set();
+  const touchedSet = new Set();
+  let originalVars;
   $(document).on(":passagestart", () => {
-    flagSet.clear();
+    viewSet.clear();
+    touchedSet.clear();
+    originalVars = State.active.variables;
+    State.active.variables = new Proxy(originalVars, {
+      set(obj, prop, value) {
+        touchedSet.add(prop);
+        return Reflect.set(obj, prop, value);
+      }
+    })
   });
   Macro.add("flag-debug", {
     handler: function() {
-      this.args.forEach(f => flagSet.add(f));
+      this.args.forEach(f => viewSet.add(f));
     }
   });
   $(document).on(":passageend", () => {
     $(".flag-debug").remove();
-    if (flagSet.size === 0) return;
+    State.active.variables = originalVars;
+    if (viewSet.size === 0) return;
     const div = $("<div>").addClass("flag-debug");
     div.append("<label>flag-debug</label>");
     $("#passages").prepend(div);
     const v = State.variables;
-    const flags = Array.from(flagSet).sort();
+    const flags = Array.from(viewSet).sort();
     for (const flag of flags) {
       const button = $("<a>").text(flag);
       button.addClass(v[flag] ? "flag-on" : "flag-off");
-      if (flag === toggled[0] && v[flag] !== toggled[1]) {
-        button.addClass("flag-was-overridden");
+      if (touchedSet.has(flag)) {
+        button.addClass("flag-was-set");
+      } else {
+        button.on("click", () => {
+          v[flag] = !v[flag];
+          Engine.play(state.passage);
+        });
       }
-      button.on("click", () => {
-        v[flag] = !v[flag];
-        toggled = [flag, v[flag]];
-        Engine.play(state.passage);
-      });
       div.append(button);
     }
   });
 }
 
-flagDebugSetup();</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+flagDebugSetup();</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
