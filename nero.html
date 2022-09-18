@@ -474,7 +474,7 @@ ul.actions li {
 
 .flag-debug label {
   color: #888;
-  margin-right: 4px;
+  margin-right: 16px;
 }
 
 .flag-debug label:hover {
@@ -483,6 +483,12 @@ ul.actions li {
 
 .flag-debug.flag-hide a {
   visibility: hidden;
+}
+
+.flag-debug .flag-big-moods {
+  display: inline;
+  font-weight: bold;
+  margin-right: 16px;
 }
 
 .flag-debug a {
@@ -648,16 +654,28 @@ Macro.add("optional-action", {
   }
 });
 
-/** <<flag-debug>>: show flags and allow toggling them. */
+/** True when flag-debug is re-displaying current passage. */
+let redisplaying = false;
+
+/**
+ * <<flag-debug name ...>> - show flags and allow toggling them.
+ *
+ * - If a flag is read by the passage, it will have a solid border.
+ * - If a flag is written by the passage, it will have a colored background
+ *   and toggling will be disabled.
+ * - "bigMood" are flags that are always shown in a section.
+ */
 function flagDebugSetup() {
   if (!Config.debug) {
     Macro.add("flag-debug", {});
     return;
   }
 
-  const alwaysDisplay = [
-    [["n1 ", "=n1 "],
-     ["n1_barbs", "n1_licked", "n1_naked", "n1_smashed"]],
+  const bigMoods = [
+    [["n1 ", "=n1 ", "n2 ", "=n2 "],
+     ["n1_naked", "n1_smashed"]],
+    [["n2 ", "=n2 "],
+     ["n1_licked"]]
   ];
   
   const display = new Set();
@@ -693,38 +711,53 @@ function flagDebugSetup() {
     State.active.variables = originalVars;
 
     const here = State.passage;
-    for (const rule of alwaysDisplay) {
+    const bigMood = new Set();
+    for (const rule of bigMoods) {
       if (rule[0].some(p => here.startsWith(p))) {
-        rule[1].forEach(f => display.add(f));
+        rule[1].forEach(f => bigMood.add(f));
       }
     }
+
+    if (bigMood.size === 0 && display.size === 0) return;
     
-    if (display.size === 0) return;
     const div = $("<div>").addClass("flag-debug");
     if (hidden) div.addClass("flag-hide");
-    const label = $("<label>").text("flag-debug");
-    div.append(label);
     $("#story").prepend(div);
 
+    const label = $("<label>").text("flag-debug");
     label.on("click", () => div.toggleClass("flag-hide"));
+    div.append(label);
+
+    const bigDiv = $("<div>").addClass("flag-big-moods");
+    if (bigMood.size !== 0) div.append(bigDiv);
 
     const v = State.variables;
     const flags = Array.from(display).sort();
-    for (const flag of flags) {
+
+    const flagButton = flag => {
       const button = $("<a>").text(flag);
       button.addClass(v[flag] ? "flag-on" : "flag-off");
-      div.append(button);
-
       if (checked.has(flag)) button.addClass("flag-was-read");
       if (touched.has(flag)) button.addClass("flag-was-set");
-
       if (!touched.has(flag)) {
         button.on("click", () => {
           v[flag] = !v[flag];
-          Engine.play(state.passage);
+          redisplaying = true;
+          Engine.show();
+          redisplaying = false;
           $("html").addClass("fast-transition");
         });
       }
+      return button;
+    }
+
+    for (const flag of Array.from(bigMood).sort()) {
+      display.delete(flag);
+      bigDiv.append(flagButton(flag));
+    }
+
+    for (const flag of Array.from(display).sort()) {
+      div.append(flagButton(flag));
     }
   });
 }
@@ -775,24 +808,26 @@ Macro.add("n1-patience", {
     const angryText = this.args[4] || impatientText;
     const v = State.variables;
     const here = State.passage;
-    // If we're at a new action node, reset patience and aggro
-    if (v.n1_patience_passage !== here) {
-      v.n1_patience_looks = looks;
-      v.n1_patience_actions = actions;
-      v.n1_patience_passage = here;
-      v.n1_patience_aggro = 0;
+    if (!redisplaying) {
+      // If we're at a new action node, reset patience and aggro
+      if (v.n1_patience_passage !== here) {
+        v.n1_patience_looks = looks;
+        v.n1_patience_actions = actions;
+        v.n1_patience_passage = here;
+        v.n1_patience_aggro = 0;
+      }
+      // If we've exhausted patience, start aggro.
+      if (v.n1_patience_aggro || v.n1_patience_looks <= 1 || v.n1_patience_actions <= 1) {
+        v.n1_patience_aggro++;
+      }
+      // warning on aggro
+      v.n1_patience_warning = v.n1_patience_aggro === 1;
+      // forced response
+      v.n1_patience_funnel = v.n1_patience_aggro > 1;
+      // set return links
+      v.n1_afterLook = "[[Do something else.|" + here + "][$n1_patience_looks -= 1]]";
+      v.n1_afterAction = "[[Continue|" + here + "][$n1_patience_actions -= 1]]";
     }
-    // If we've exhausted patience, start aggro.
-    if (v.n1_patience_aggro || v.n1_patience_looks <= 1 || v.n1_patience_actions <= 1) {
-      v.n1_patience_aggro++;
-    }
-    // warning on aggro
-    v.n1_patience_warning = v.n1_patience_aggro === 1;
-    // forced response
-    v.n1_patience_funnel = v.n1_patience_aggro > 1;
-    // set return links
-    v.n1_afterLook = "[[Do something else.|" + here + "][$n1_patience_looks -= 1]]";
-    v.n1_afterAction = "[[Continue|" + here + "][$n1_patience_actions -= 1]]";
     // Ivex text
     switch (v.n1_patience_aggro) {
       case 0: $(this.output).wiki(patientText); break;
@@ -800,7 +835,7 @@ Macro.add("n1-patience", {
       default: $(this.output).wiki(angryText); break;
     }
   }
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+});</script><tw-tag name="done" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
@@ -6179,7 +6214,7 @@ Thank you so much!
 &lt;b&gt;Nero&lt;/b&gt; - A slender wolf, and unusually handsome for a mage. But he&#39;s always valued his mind more than his body. Nero is an unacknowledged son of one of Lady Garloch&#39;s nephews (or so he says). He&#39;s equally at ease covering for absent professors at the prestigious Windbone Magic Academy as he is when singing with drunken sailors at a Seaside tavern. His talent for magic has turned out to be very useful in his career of discreetly handling difficult problems for patrons who have way more money than sense. But this time...
 
 [[Continue as Nero|=n1 Start]]
-&lt;/div&gt;\</tw-passagedata><tw-passagedata pid="237" name="=n1 Start" tags="section-start" position="4400,375" size="100,100">&lt;&lt;delete-vars n1_ n3_ n4_ n5_ n6_&gt;&gt;\
+&lt;/div&gt;\</tw-passagedata><tw-passagedata pid="237" name="=n1 Start" tags="section-start" position="4400,375" size="100,100">&lt;&lt;delete-vars n1_ n2_ n3_ n4_ n5_ n6_&gt;&gt;\
 \
 Nero&#39;s head feels stuffed, like it&#39;s crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically recites Pearson&#39;s Hangover Cantrip, but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 
@@ -6282,13 +6317,13 @@ He&#39;s &lt;&lt;if $n1_naked&gt;&gt;naked and&lt;&lt;/if&gt;&gt; attached with 
   &lt;br&gt;&lt;br&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n1_candleLit &amp;&amp; !$n1_sawDesk&gt;&gt;
+&lt;&lt;if $n2_candleLit &amp;&amp; !$n1_sawDesk&gt;&gt;
     The desk has a [[lit candle|n1 candle]] among the clutter.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_sawDesk&gt;&gt;
     The desk has
-    &lt;&lt;if $n1_candleLit&gt;&gt;
+    &lt;&lt;if $n2_candleLit&gt;&gt;
       a [[lit candle|n1 candle]],
     &lt;&lt;/if&gt;&gt;
     a [[letter opener|n1 knife]],
@@ -6700,7 +6735,8 @@ It&#39;s &lt;em&gt;him&lt;/em&gt;.
 
 It&#39;s Ivex, the panther mage who&#39;s the subject of Nero&#39;s current &quot;errand&quot;.
 
-[[Continue|=n1 Endgame 3]]</tw-passagedata><tw-passagedata pid="269" name="n2 Start Candle" tags="section-start" position="4125,2425" size="100,100">&lt;&lt;set $n1_candleLit = true&gt;&gt;\
+[[Continue|=n1 Endgame 3]]</tw-passagedata><tw-passagedata pid="269" name="n2 Start Candle" tags="section-start" position="4125,2425" size="100,100">&lt;&lt;delete-vars n2_ n3_ n4_ n5_ n6_&gt;&gt;
+&lt;&lt;set $n2_candleLit = true&gt;&gt;\
 \
 ivex wears mask and brings out candle
 
