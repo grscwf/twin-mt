@@ -394,9 +394,43 @@ ul.actions li {
   }
 }
 
-/* Character list */
+/* flag-debug */
+.flag-debug {
+  font-size: 12px;
+  line-height: 14px;
+  padding: 4px 0;
+  margin-top: -28px;
+  text-align: right;
+}
 
-.character-description {
+.flag-debug label {
+  color: #888;
+  margin-right: 4px;
+}
+
+.flag-debug a {
+  border: 2px solid transparent;
+  border-radius: 4px;
+  display: inline-block;
+  padding: 0 4px;
+}
+
+.flag-debug a:not(:first-child) {
+  margin-left: 4px;
+}
+
+.flag-debug a:hover {
+  border: 2px solid #ccc;
+}
+
+.flag-debug .flag-on {
+  background-color: #595;
+  color: #afa;
+}
+
+.flag-debug .flag-off {
+  background-color: #655;
+  color: #bbb;
 }
 
 
@@ -471,12 +505,13 @@ macros.arousalbar = {
 /** Deletes all state vars whose name starts with prefix. */
 Macro.add("delete-vars", {
   handler: function() {
-    const prefix = this.args[0];
     const vars = State.variables;
     const names = Object.keys(vars);
-    for (const name of names) {
-      if (name.startsWith(prefix)) {
-        delete vars[name];
+    for (const prefix of this.args) {
+      for (const name of names) {
+        if (name.startsWith(prefix)) {
+          delete vars[name];
+        }
       }
     }
   }
@@ -516,6 +551,31 @@ Macro.add("optional-action", {
       $(this.output).wiki(
         "<li><<link " + this.args.raw + ">><</link>></li>"
       );
+    }
+  }
+});
+
+/** Show flags and allow toggling them. */
+Macro.add("flag-debug", {
+  handler: function() {
+    if (!Config.debug) return;
+    const v = State.variables;
+    let div = $('.flag-debug', this.output);
+    if (div.length === 0) {
+      div = $('<div>').addClass('flag-debug');
+      div.append('<label>flag-debug</label>');
+      div.appendTo(this.output);
+    }
+    for (const flag of this.args) {
+      if ($('.v-' + flag, div).length !== 0) continue;
+      const button = $('<a>').text(flag);
+      button.addClass('.v-' + flag);
+      button.addClass(v[flag] ? 'flag-on' : 'flag-off');
+      button.on('click', function() {
+        v[flag] = !v[flag];
+        Engine.play(State.passage);
+      });
+      div.append(button);
     }
   }
 });
@@ -6845,7 +6905,7 @@ Thank you so much!
 
 
 :: =n1 Start [section-start] {"position":"4400,375","size":"100,100"}
-<<delete-vars "n1_">>\
+<<delete-vars n1_ n2_ n3_ n4_ n5_>>\
 \
 Nero's head feels stuffed, like it's crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically recites Pearson's Hangover Cantrip, but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 
@@ -6895,23 +6955,33 @@ testing<mark>hello</mark>
 
 :: n1 Look {"position":"5500,1200","size":"100,200"}
 <<nobr>>
+<<flag-debug n1_naked>>
 <!--
 look states
-- free
-- ivex gone
-    - want password
-    - want touch
-    - want name (for bottle)
-    - other
-- ivex here
-	- ivex receptive or hostile
-    	- when hostile, descriptions are more focused and distressed
-    - want password
-    - want touch
-    - want name (for bottle)
-    - other
-
-after action, either ivex-repeat, ivex-next, ivex-distracted
+- n3_free
+	- n1_wantDevice
+	- n1_wantName
+	- n1_wantTouch
+	- n1_wantPassword
+    - n1_passwordWait
+	- n2_extraHorny
+	- n2_mirrorBroken
+    - n3_wrongTouch
+- n2_ivexGone (bound)
+	- n1_wantDevice
+	- n1_wantName
+	- n1_wantTouch
+	- n1_wantPassword
+- otherwise (n1, ivex, bound)
+	- n1_magicSight
+	- n1_wantDevice
+	- n1_wantName
+	- n1_wantTouch
+	- n1_wantPassword
+    - n1_passwordWait
+    - n1_ivexDistracted
+	- n1_ivexReceptive
+	- n1_ivexImpatient
 -->
 
 Nero
@@ -7019,6 +7089,8 @@ The blurry figure becomes a person...
 
 
 :: =n1 Ivex Intro {"position":"4400,850","size":"100,100"}
+<<flag-debug n1_naked>>\
+\
 Ivex moves away from the <<if $n1_naked>>naked<</if>> bound wolf and settles against the edge of a cluttered desk.
 
 He's a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, more known for grace than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in any social situation.
@@ -7326,6 +7398,7 @@ nero confident that he can escape.
 
 :: n1 Magic {"position":"4000,1400","size":"100,200"}
 <<nobr>>
+<<flag-debug n1_ivexDistracted n1_ivexReceptive>>
 <!--
 magic state flags
 - n1_magicTried - after casting first spell
@@ -7335,6 +7408,10 @@ magic state flags
 - n1_wantName - sprite wants device name
 - n1_wantTouch - sprite wants touch
 - n1_wantPassword - sprite wants password
+- n1_passwordWait - processing password
+
+other flags
+- n3_wrongTouch - nero touched after escape
 
 major ivex flags
 - n1_ivexDistracted - ivex isn't paying attention
@@ -7542,7 +7619,7 @@ nero throws towel at tiger and retreats, laughter behind him.
 
 
 :: n2 Start [section-start] {"position":"4400,2600","size":"100,100"}
-<<delete-vars "n2_">>\
+<<delete-vars n2_ n3_ n4_ n5_>>\
 <<set $n1_ivexGone = true>>\
 \
 ivex has left.
@@ -7560,6 +7637,7 @@ also provide a shortcut to final struggle.
 only struggle is useful in this session.
 the other options are teases, and maybe reveal info helpful for next session.
 
+need magic sight to succeed at all. justify as, need to see flow around grav gems.
 at lust max, tell the player this is the last chance, and make it a 50/50 choice.
 
 [[n2 Failed Escape]]
@@ -7629,7 +7707,7 @@ cut loose, cross falls, knocks mirror and snowglobe.
 
 nero dives to rescue mirror, but misses and rescues snowglobe instead.
 
-mirror breaks. regret, could have been useful.
+mirror breaks. regret, could have been useful. magic sight fades, dependent on mirror.
 
 finally get a good look at snowglobe, reads inscription out loud with incredulity.
 
@@ -7663,7 +7741,7 @@ or maybe a one-time prompt? this section is an opportunity to intro the inventor
 
 
 :: n4 start [section-start] {"position":"4400,4900","size":"100,100"}
-<<delete-vars "n3_">>\
+<<delete-vars n4_ n5_>>\
 \
 2f door closes behind him, no apparent way to open it again.
 
@@ -7830,7 +7908,7 @@ easy escape requires
 
 
 :: n5 escaped [section-start end] {"position":"4350,5925","size":"100,100"}
-<<delete-vars "n4_">>\
+<<delete-vars n5_>>\
 \
 there are two paths into here.
 made-gem means lion is available for punishment.
@@ -8330,8 +8408,9 @@ string of coins
 </ul>\
 
 
-:: n1 window {"position":"5850,1025","size":"100,100"}
+:: n1 window [has-hole] {"position":"5850,1025","size":"100,100"}
 window
+has-hole
 
 <ul class="actions">\
   <li><<link $n1_afterLook>><</link>></li>\
@@ -8438,6 +8517,8 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 
 
 :: =n1 Ivex Intro 2 {"position":"4400,950","size":"100,100"}
+<<flag-debug n1_magicTried>>\
+\
 "There must be some mistake," says Nero. "I don't have any idea what you're talking about,"
 
 Ivex growls. "Don't try to play dumb with me!" He grabs a sheet of paper from the desk. "I found this in your satchel."
@@ -8786,22 +8867,24 @@ When the new professor entered the lecture hall and introduced himself, Nero's e
 :: =n1 Anti-magic [noreturn] {"position":"3800,900","size":"100,100"}
 Anti-magic fields are broadly divided into two categories.
 
-The strongest type of anti-magic simply applies all of its energy to indiscriminate suppression or diversion of all magic energies. It's an effective tactic in war, where an anti-magic division can be supported and defended by other units.
+The strongest type of anti-magic simply applies all of its power to the indiscriminate suppression or diversion of all magic energies. It's an effective tactic in war, where an anti-magic division can be supported and defended by other units.
 
-But in other situations, most mages would prefer that they did not also sabotage their own abiliites. So a typical mage's anti-magic field is a subtle construction that selectively permits the actions of only those spells deemed "correct".
+But in less organized situations, mages usually prefer to suppress hostile magic without also sabotaging their own abilities. So a typical mage's anti-magic field is a subtle construction that selectively permits the actions of only those spells deemed "correct".
 
-This is an exceedingly complicated proposition. Lammada's Lemma proves that it's impossible for any spell to perfectly distinguish between correct and incorrect spells. (If it were possible, the spell would declare a particular projection of itself to be an incorrect spell, thereby suppressing and contradicting itself.) So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
+This is an exceptionally complicated proposition. Lammada's Theorem proves that it's impossible for any spell to perfectly distinguish between correct and incorrect spells. (If such a spell existed, it would be possible to construct a projection of that spell, which would declare itself incorrect, thereby suppressing and contradicting itself.) So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
 
-In the pragmatic, actual world, selective anti-magic is a matter of being exhaustively more clever than your opponents. You do not need a perfect filter. You just need to make it extremely difficult and time-consuming for an adversary to find and use a flaw in your construction.
+In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. It does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction. The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
 
-The best anti-magic spells from reputable mage agencies are quite expensive and thorough. Provided you follow their instructions exactly. And that's where many of them fail. Rich merchants buy the best of the best, and then sprinkle it like garlic powder over their entire kitchen, unaware that the careless application makes their kitchen more prone to fire.
+Nero is one such expert. Which incidentally also makes him an expert in finding the subtle flaws in the anti-magic fields of other mages.
 
-Finding the subtle flaws that can bypass anti-magic fields is something that Nero excels at, and it's pretty much the backbone of his unconventional career.
+It's a skill that's been quite useful in his unconventional career.
 
 <<link "Return" $return>><</link>>
 
 
 :: n3 free [section-start] {"position":"4550,3775","size":"100,100"}
+<<delete-vars n3_ n4_ n5_>>\
+\
 [[n3 look around]]
 
 

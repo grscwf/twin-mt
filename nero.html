@@ -462,9 +462,43 @@ ul.actions li {
   }
 }
 
-/* Character list */
+/* flag-debug */
+.flag-debug {
+  font-size: 12px;
+  line-height: 14px;
+  padding: 4px 0;
+  margin-top: -28px;
+  text-align: right;
+}
 
-.character-description {
+.flag-debug label {
+  color: #888;
+  margin-right: 4px;
+}
+
+.flag-debug a {
+  border: 2px solid transparent;
+  border-radius: 4px;
+  display: inline-block;
+  padding: 0 4px;
+}
+
+.flag-debug a:not(:first-child) {
+  margin-left: 4px;
+}
+
+.flag-debug a:hover {
+  border: 2px solid #ccc;
+}
+
+.flag-debug .flag-on {
+  background-color: #595;
+  color: #afa;
+}
+
+.flag-debug .flag-off {
+  background-color: #655;
+  color: #bbb;
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.ui.stowBarInitially = true;
 
 if (!Config.debug) {
@@ -535,12 +569,13 @@ macros.arousalbar = {
 /** Deletes all state vars whose name starts with prefix. */
 Macro.add("delete-vars", {
   handler: function() {
-    const prefix = this.args[0];
     const vars = State.variables;
     const names = Object.keys(vars);
-    for (const name of names) {
-      if (name.startsWith(prefix)) {
-        delete vars[name];
+    for (const prefix of this.args) {
+      for (const name of names) {
+        if (name.startsWith(prefix)) {
+          delete vars[name];
+        }
       }
     }
   }
@@ -580,6 +615,31 @@ Macro.add("optional-action", {
       $(this.output).wiki(
         "<li><<link " + this.args.raw + ">><</link>></li>"
       );
+    }
+  }
+});
+
+/** Show flags and allow toggling them. */
+Macro.add("flag-debug", {
+  handler: function() {
+    if (!Config.debug) return;
+    const v = State.variables;
+    let div = $('.flag-debug', this.output);
+    if (div.length === 0) {
+      div = $('<div>').addClass('flag-debug');
+      div.append('<label>flag-debug</label>');
+      div.appendTo(this.output);
+    }
+    for (const flag of this.args) {
+      if ($('.v-' + flag, div).length !== 0) continue;
+      const button = $('<a>').text(flag);
+      button.addClass('.v-' + flag);
+      button.addClass(v[flag] ? 'flag-on' : 'flag-off');
+      button.on('click', function() {
+        v[flag] = !v[flag];
+        Engine.play(State.passage);
+      });
+      div.append(button);
     }
   }
 });</script><tw-tag name="end" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
@@ -5961,7 +6021,7 @@ Thank you so much!
 &lt;b&gt;Nero&lt;/b&gt; - A slender wolf, and unusually handsome for a mage. But he&#39;s always valued his mind more than his body. Nero is an unacknowledged son of one of Lady Garloch&#39;s nephews (or so he says). He&#39;s equally at ease covering for absent professors at the prestigious Windbone Magic Academy as he is when singing with drunken sailors at a Seaside tavern. His talent for magic has turned out to be very useful in his career of discreetly handling difficult problems for patrons who have way more money than sense. But this time...
 
 [[Continue as Nero|=n1 Start]]
-&lt;/div&gt;\</tw-passagedata><tw-passagedata pid="237" name="=n1 Start" tags="section-start" position="4400,375" size="100,100">&lt;&lt;delete-vars &quot;n1_&quot;&gt;&gt;\
+&lt;/div&gt;\</tw-passagedata><tw-passagedata pid="237" name="=n1 Start" tags="section-start" position="4400,375" size="100,100">&lt;&lt;delete-vars n1_ n2_ n3_ n4_ n5_&gt;&gt;\
 \
 Nero&#39;s head feels stuffed, like it&#39;s crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically recites Pearson&#39;s Hangover Cantrip, but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 
@@ -5999,23 +6059,33 @@ Ivex &quot;the Magnificent&quot; speaks with anger. &quot;Again I ask! Who sent 
     &lt;li&gt;[[XXX Resist Ivex.|n1 Resist]]&lt;/li&gt;
     &lt;li&gt;[[`&quot;There&#39;s been a misunderstanding...&quot;`|n1 Charm]]&lt;/li&gt;
 &lt;/ul&gt;&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="239" name="testing" tags="" position="4875,400" size="100,100">testing&lt;mark&gt;hello&lt;/mark&gt;</tw-passagedata><tw-passagedata pid="240" name="n1 Look" tags="" position="5500,1200" size="100,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;flag-debug n1_naked&gt;&gt;
 &lt;!--
 look states
-- free
-- ivex gone
-    - want password
-    - want touch
-    - want name (for bottle)
-    - other
-- ivex here
-	- ivex receptive or hostile
-    	- when hostile, descriptions are more focused and distressed
-    - want password
-    - want touch
-    - want name (for bottle)
-    - other
-
-after action, either ivex-repeat, ivex-next, ivex-distracted
+- n3_free
+	- n1_wantDevice
+	- n1_wantName
+	- n1_wantTouch
+	- n1_wantPassword
+    - n1_passwordWait
+	- n2_extraHorny
+	- n2_mirrorBroken
+    - n3_wrongTouch
+- n2_ivexGone (bound)
+	- n1_wantDevice
+	- n1_wantName
+	- n1_wantTouch
+	- n1_wantPassword
+- otherwise (n1, ivex, bound)
+	- n1_magicSight
+	- n1_wantDevice
+	- n1_wantName
+	- n1_wantTouch
+	- n1_wantPassword
+    - n1_passwordWait
+    - n1_ivexDistracted
+	- n1_ivexReceptive
+	- n1_ivexImpatient
 --&gt;
 
 Nero
@@ -6111,7 +6181,9 @@ After a few more rapid blinks, along with some shaking of his aching head, Nero&
 
 The blurry figure becomes a person...
 
-[[Continue|=n1 Hello 2]]</tw-passagedata><tw-passagedata pid="243" name="=n1 Ivex Intro" tags="" position="4400,850" size="100,100">Ivex moves away from the &lt;&lt;if $n1_naked&gt;&gt;naked&lt;&lt;/if&gt;&gt; bound wolf and settles against the edge of a cluttered desk.
+[[Continue|=n1 Hello 2]]</tw-passagedata><tw-passagedata pid="243" name="=n1 Ivex Intro" tags="" position="4400,850" size="100,100">&lt;&lt;flag-debug n1_naked&gt;&gt;\
+\
+Ivex moves away from the &lt;&lt;if $n1_naked&gt;&gt;naked&lt;&lt;/if&gt;&gt; bound wolf and settles against the edge of a cluttered desk.
 
 He&#39;s a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, more known for grace than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in any social situation.
 
@@ -6330,6 +6402,7 @@ seems happy about it.
 nero confident that he can escape.
 
 [[Continue|n1 Start Candle]]</tw-passagedata><tw-passagedata pid="265" name="n1 Magic" tags="" position="4000,1400" size="100,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;flag-debug n1_ivexDistracted n1_ivexReceptive&gt;&gt;
 &lt;!--
 magic state flags
 - n1_magicTried - after casting first spell
@@ -6339,6 +6412,10 @@ magic state flags
 - n1_wantName - sprite wants device name
 - n1_wantTouch - sprite wants touch
 - n1_wantPassword - sprite wants password
+- n1_passwordWait - processing password
+
+other flags
+- n3_wrongTouch - nero touched after escape
 
 major ivex flags
 - n1_ivexDistracted - ivex isn&#39;t paying attention
@@ -6519,7 +6596,7 @@ nero approaches to drop his towel. tiger asks, would you like to feel it.
 nero throws towel at tiger and retreats, laughter behind him.
 
 [[Continue|=n1 Barbs End]]
-</tw-passagedata><tw-passagedata pid="273" name="n2 Start" tags="section-start" position="4400,2600" size="100,100">&lt;&lt;delete-vars &quot;n2_&quot;&gt;&gt;\
+</tw-passagedata><tw-passagedata pid="273" name="n2 Start" tags="section-start" position="4400,2600" size="100,100">&lt;&lt;delete-vars n2_ n3_ n4_ n5_&gt;&gt;\
 &lt;&lt;set $n1_ivexGone = true&gt;&gt;\
 \
 ivex has left.
@@ -6533,6 +6610,7 @@ also provide a shortcut to final struggle.
 only struggle is useful in this session.
 the other options are teases, and maybe reveal info helpful for next session.
 
+need magic sight to succeed at all. justify as, need to see flow around grav gems.
 at lust max, tell the player this is the last chance, and make it a 50/50 choice.
 
 [[n2 Failed Escape]]
@@ -6582,7 +6660,7 @@ cut loose, cross falls, knocks mirror and snowglobe.
 
 nero dives to rescue mirror, but misses and rescues snowglobe instead.
 
-mirror breaks. regret, could have been useful.
+mirror breaks. regret, could have been useful. magic sight fades, dependent on mirror.
 
 finally get a good look at snowglobe, reads inscription out loud with incredulity.
 
@@ -6604,7 +6682,7 @@ can pick up mirror if rescued.
 auto pickup anyway on leaving.
 or maybe a one-time prompt? this section is an opportunity to intro the inventory limitations, no pockets.
 
-[[n4 start]]</tw-passagedata><tw-passagedata pid="282" name="n4 start" tags="section-start" position="4400,4900" size="100,100">&lt;&lt;delete-vars &quot;n3_&quot;&gt;&gt;\
+[[n4 start]]</tw-passagedata><tw-passagedata pid="282" name="n4 start" tags="section-start" position="4400,4900" size="100,100">&lt;&lt;delete-vars n4_ n5_&gt;&gt;\
 \
 2f door closes behind him, no apparent way to open it again.
 
@@ -6751,7 +6829,7 @@ easy escape requires
 - get blank gem
 - energize gem
 
-[[n5 escaped]]</tw-passagedata><tw-passagedata pid="287" name="n5 escaped" tags="section-start end" position="4350,5925" size="100,100">&lt;&lt;delete-vars &quot;n4_&quot;&gt;&gt;\
+[[n5 escaped]]</tw-passagedata><tw-passagedata pid="287" name="n5 escaped" tags="section-start end" position="4350,5925" size="100,100">&lt;&lt;delete-vars n5_&gt;&gt;\
 \
 there are two paths into here.
 made-gem means lion is available for punishment.
@@ -7116,7 +7194,8 @@ stuff about anti-magic.
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1 ask coins]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="322" name="n1 window" tags="" position="5850,1025" size="100,100">window
+&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="322" name="n1 window" tags="has-hole" position="5850,1025" size="100,100">window
+has-hole
 
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
@@ -7159,7 +7238,9 @@ The panther speaks lightly. &quot;I am Ivex the Magnificent. But you already kne
 
 Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encountered many braggarts in his escapades before. And here in front of him is another. It should be quite easy to fulfill his commission and puncture this weird mage&#39;s arrogance.
 
-[[Continue|=n1 Ivex Intro]]</tw-passagedata><tw-passagedata pid="338" name="=n1 Ivex Intro 2" tags="" position="4400,950" size="100,100">&quot;There must be some mistake,&quot; says Nero. &quot;I don&#39;t have any idea what you&#39;re talking about,&quot;
+[[Continue|=n1 Ivex Intro]]</tw-passagedata><tw-passagedata pid="338" name="=n1 Ivex Intro 2" tags="" position="4400,950" size="100,100">&lt;&lt;flag-debug n1_magicTried&gt;&gt;\
+\
+&quot;There must be some mistake,&quot; says Nero. &quot;I don&#39;t have any idea what you&#39;re talking about,&quot;
 
 Ivex growls. &quot;Don&#39;t try to play dumb with me!&quot; He grabs a sheet of paper from the desk. &quot;I found this in your satchel.&quot;
 
@@ -7429,20 +7510,22 @@ When the new professor entered the lecture hall and introduced himself, Nero&#39
 [[Continue|=n1 Barbs End 2]]
 </tw-passagedata><tw-passagedata pid="360" name="=n1 Anti-magic" tags="noreturn" position="3800,900" size="100,100">Anti-magic fields are broadly divided into two categories.
 
-The strongest type of anti-magic simply applies all of its energy to indiscriminate suppression or diversion of all magic energies. It&#39;s an effective tactic in war, where an anti-magic division can be supported and defended by other units.
+The strongest type of anti-magic simply applies all of its power to the indiscriminate suppression or diversion of all magic energies. It&#39;s an effective tactic in war, where an anti-magic division can be supported and defended by other units.
 
-But in other situations, most mages would prefer that they did not also sabotage their own abiliites. So a typical mage&#39;s anti-magic field is a subtle construction that selectively permits the actions of only those spells deemed &quot;correct&quot;.
+But in less organized situations, mages usually prefer to suppress hostile magic without also sabotaging their own abilities. So a typical mage&#39;s anti-magic field is a subtle construction that selectively permits the actions of only those spells deemed &quot;correct&quot;.
 
-This is an exceedingly complicated proposition. Lammada&#39;s Lemma proves that it&#39;s impossible for any spell to perfectly distinguish between correct and incorrect spells. (If it were possible, the spell would declare a particular projection of itself to be an incorrect spell, thereby suppressing and contradicting itself.) So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
+This is an exceptionally complicated proposition. Lammada&#39;s Theorem proves that it&#39;s impossible for any spell to perfectly distinguish between correct and incorrect spells. (If such a spell existed, it would be possible to construct a projection of that spell, which would declare itself incorrect, thereby suppressing and contradicting itself.) So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
 
-In the pragmatic, actual world, selective anti-magic is a matter of being exhaustively more clever than your opponents. You do not need a perfect filter. You just need to make it extremely difficult and time-consuming for an adversary to find and use a flaw in your construction.
+In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. It does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction. The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
 
-The best anti-magic spells from reputable mage agencies are quite expensive and thorough. Provided you follow their instructions exactly. And that&#39;s where many of them fail. Rich merchants buy the best of the best, and then sprinkle it like garlic powder over their entire kitchen, unaware that the careless application makes their kitchen more prone to fire.
+Nero is one such expert. Which incidentally also makes him an expert in finding the subtle flaws in the anti-magic fields of other mages.
 
-Finding the subtle flaws that can bypass anti-magic fields is something that Nero excels at, and it&#39;s pretty much the backbone of his unconventional career.
+It&#39;s a skill that&#39;s been quite useful in his unconventional career.
 
 &lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
-</tw-passagedata><tw-passagedata pid="361" name="n3 free" tags="section-start" position="4550,3775" size="100,100">[[n3 look around]]</tw-passagedata><tw-passagedata pid="362" name="=n1 Barbs End 2" tags="" position="3825,2525" size="100,100">Nero shakes off the memory of that ... complicated year. There are more pressing matters to consider.
+</tw-passagedata><tw-passagedata pid="361" name="n3 free" tags="section-start" position="4550,3775" size="100,100">&lt;&lt;delete-vars n3_ n4_ n5_&gt;&gt;\
+\
+[[n3 look around]]</tw-passagedata><tw-passagedata pid="362" name="=n1 Barbs End 2" tags="" position="3825,2525" size="100,100">Nero shakes off the memory of that ... complicated year. There are more pressing matters to consider.
 
 Such as, the noticeably horny panther mage who is now fingering the fur on Nero&#39;s naked chest.
 
