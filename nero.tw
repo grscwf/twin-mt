@@ -422,11 +422,10 @@ ul.actions li {
   border-radius: 4px;
   display: inline-block;
   margin-bottom: 2px;
-  padding: 1px 2px;
+  padding: 2px 4px;
 }
 
 .flag-debug a:not(:last-child) {
-  margin-right: 2px;
 }
 
 .flag-debug a.flag-was-set {
@@ -447,15 +446,18 @@ ul.actions li {
 }
 
 .flag-debug a.flag-was-set {
-  border-color: transparent;
+}
+
+.flag-debug a.flag-was-read {
+  border-color: #666;
 }
 
 .flag-debug a.flag-was-set.flag-off {
-  color: #666;
+  background-color: #333;
 }
 
 .flag-debug a.flag-was-set.flag-on {
-  color: #575;
+  background-color: #242;
 }
 
 .fast-transition .passage {
@@ -570,32 +572,6 @@ Macro.add("delete-vars", {
   }
 });
 
-/** Returns a "Continue" link back to here, that sets $n1_funnel to true. */
-setup.afterActionFunnel = function() {
-  const here = State.passage;
-  if (/\[\]\"/.test(here)) throw new Error("bad passage name " + here);
-  const qhere = '"' + here + '"';
-  const v = State.variables;
-  v.n1_funnel = v.n1_returnedTo === here;
-  return '[[Continue|' + here + '][$n1_returnedTo = ' + qhere + ']]';
-}
-
-/** Returns a link "Do something else" that comes back here. */
-setup.afterLookFunnel = function(max) {
-  max = max || 3;
-  const here = State.passage;
-  if (/\[\]\"/.test(here)) throw new Error("bad passage name " + here);
-  const qhere = '"' + here + '"';
-  const v = State.variables;
-  if (v.n1_returnedTo === here) {
-    v.n1_lookCount = 1 + (v.n1_lookCount || 0);
-  } else {
-    v.n1_lookCount = 0;
-  }
-  v.n1_funnel = v.n1_lookCount >= max;
-  return '[[Do something else.|' + here + '][$n1_returnedTo = ' + qhere + ']]';
-}
-
 /** Optional <li> action. */
 Macro.add("optional-action", {
   handler: function() {
@@ -615,31 +591,51 @@ function flagDebugSetup() {
     return;
   }
 
-  const viewSet = new Set();
-  const touchedSet = new Set();
+  const alwaysDisplay = [
+    [["n1 ", "=n1 "],
+     ["n1_barbs", "n1_licked", "n1_naked", "n1_smashed"]],
+  ];
+  
+  const display = new Set();
+  const touched = new Set();
+  const checked = new Set();
   let originalVars;
+  
   $(document).on(":passagestart", () => {
     $("html").removeClass("fast-transition");
-    viewSet.clear();
-    touchedSet.clear();
+    display.clear();
+    touched.clear();
+    checked.clear();
     originalVars = State.active.variables;
     State.active.variables = new Proxy(originalVars, {
-      set(obj, prop, value) {
-        touchedSet.add(prop);
-        return Reflect.set(obj, prop, value);
+      set(target, prop, value, receiver) {
+        touched.add(prop);
+        return Reflect.set(target, prop, value, receiver);
+      },
+      get(target, prop, receiver) {
+        checked.add(prop);
+        return Reflect.get(target, prop, receiver);
       }
     })
   });
   Macro.add("flag-debug", {
     handler: function() {
-      this.args.forEach(f => viewSet.add(f));
+      this.args.forEach(f => display.add(f));
     }
   });
   $(document).on(":passageend", () => {
     const hidden = $(".flag-debug").hasClass("flag-hide");
     $(".flag-debug").remove();
     State.active.variables = originalVars;
-    if (viewSet.size === 0) return;
+
+    const here = State.passage;
+    for (const rule of alwaysDisplay) {
+      if (rule[0].some(p => here.startsWith(p))) {
+        rule[1].forEach(f => display.add(f));
+      }
+    }
+    
+    if (display.size === 0) return;
     const div = $("<div>").addClass("flag-debug");
     if (hidden) div.addClass("flag-hide");
     const label = $("<label>").text("flag-debug");
@@ -649,20 +645,22 @@ function flagDebugSetup() {
     label.on("click", () => div.toggleClass("flag-hide"));
 
     const v = State.variables;
-    const flags = Array.from(viewSet).sort();
+    const flags = Array.from(display).sort();
     for (const flag of flags) {
       const button = $("<a>").text(flag);
       button.addClass(v[flag] ? "flag-on" : "flag-off");
-      if (touchedSet.has(flag)) {
-        button.addClass("flag-was-set");
-      } else {
+      div.append(button);
+
+      if (checked.has(flag)) button.addClass("flag-was-read");
+      if (touched.has(flag)) button.addClass("flag-was-set");
+
+      if (!touched.has(flag)) {
         button.on("click", () => {
           v[flag] = !v[flag];
           Engine.play(state.passage);
           $("html").addClass("fast-transition");
         });
       }
-      div.append(button);
     }
   });
 }
@@ -687,8 +685,9 @@ function randomWalkSetup() {
   };
   $(document).on(":passageend", () => {
     $(".random-walk").remove();
-    const div = $("<div>").text("random")
+    const div = $("<div>").text("walk")
     div.addClass("random-walk");
+    div.attr("title", "<period> forward\n<comma> backward");
     $("#story").append(div);
     div.on("click", walk);
   });
@@ -701,6 +700,43 @@ function randomWalkSetup() {
 }
 
 randomWalkSetup();
+
+/* patience */
+Macro.add("n1-patience", {
+  handler: function() {
+    const looks = this.args[0];
+    const actions = this.args[1];
+    const patientText = this.args[2];
+    const impatientText = this.args[3] || patientText;
+    const angryText = this.args[4] || impatientText;
+    const v = State.variables;
+    const here = State.passage;
+    // If we're at a new action node, reset patience and aggro
+    if (v.n1_patience_passage !== here) {
+      v.n1_patience_looks = looks;
+      v.n1_patience_actions = actions;
+      v.n1_patience_passage = here;
+      v.n1_patience_aggro = 0;
+    }
+    // If we've exhausted patience, start aggro.
+    if (v.n1_patience_aggro || v.n1_patience_looks <= 1 || v.n1_patience_actions <= 1) {
+      v.n1_patience_aggro++;
+    }
+    // warning on aggro
+    v.n1_patience_warning = v.n1_patience_aggro === 1;
+    // forced response
+    v.n1_patience_funnel = v.n1_patience_aggro > 1;
+    // set return links
+    v.n1_afterLook = "[[Do something else.|" + here + "][$n1_patience_looks -= 1]]";
+    v.n1_afterAction = "[[Continue|" + here + "][$n1_patience_actions -= 1]]";
+    // Ivex text
+    switch (v.n1_patience_aggro) {
+      case 0: $(this.output).wiki(patientText); break;
+      case 1: $(this.output).wiki(impatientText); break;
+      default: $(this.output).wiki(angryText); break;
+    }
+  }
+});
 
 
 :: Bound {"position":"2500,175","size":"100,100"}
@@ -7027,7 +7063,7 @@ Thank you so much!
 
 
 :: =n1 Start [section-start] {"position":"4400,375","size":"100,100"}
-<<delete-vars n1_ n2_ n3_ n4_ n5_>>\
+<<delete-vars n1_ n3_ n4_ n5_ n6_>>\
 \
 Nero's head feels stuffed, like it's crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically recites Pearson's Hangover Cantrip, but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 
@@ -7042,25 +7078,15 @@ Nero considers his next move.
 </ul><</nobr>>
 
 
-:: n1 Ivex Repeat {"position":"4350,1100","size":"200,100"}
-<<set $n1_ivexAggro = $n1_ivexAggro || 1>>\
+:: n1 Ivex Repeat (4,2) {"position":"4350,1100","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel(6)>>\
-<<set $n1_afterAction = "[[Continue|n1 Aggro]]">>\
 \
-<<nobr>>
-<<switch $n1_ivexAggro>>
-<<case 1>>
-Ivex "the Magnificent" speaks with annoyance. "Again I ask. Who sent you?"
-<<case 2>>
-Ivex "the Magnificent" speaks with exasperation. "Again I ask. Who sent you?"
-<<case 3>>
-Ivex "the Magnificent" speaks with anger. "Again I ask! Who sent you?"
-<<default>>
-<<run throw new Error("bug")>>
-<</switch>>
-<</nobr>>
+<<n1-patience 6 2
+	'Ivex (The Magificent) speaks. "Again I ask. Who sent you?"'
+    'Ivex stamps an itty bitty foot-paw in annoyance. "Again I ask. Who sent you?"'
+    'Ivex snaps his cape and speaks with anger. "Again I ask! Who sent you!"'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -7075,21 +7101,21 @@ Ivex "the Magnificent" speaks with anger. "Again I ask! Who sent you?"
 testing<mark>hello</mark>
 
 
-:: n1 Look {"position":"5500,1200","size":"100,200"}
+:: n1 Look {"position":"6675,2150","size":"100,200"}
 <<nobr>>
 <<flag-debug n1_naked>>
 <!--
 look states
-- n3_free
+- n4_free
 	- n1_wantDevice
 	- n1_wantName
 	- n1_wantTouch
 	- n1_wantPassword
     - n1_passwordWait
-	- n2_extraHorny
-	- n2_mirrorBroken
-    - n3_wrongTouch
-- n2_ivexGone (bound)
+	- n3_extraHorny
+	- n3_mirrorBroken
+    - n4_wrongTouch
+- n3_ivexGone (bound)
 	- n1_wantDevice
 	- n1_wantName
 	- n1_wantTouch
@@ -7107,7 +7133,7 @@ look states
 -->
 <<flag-debug n1_wantSight n1_wantDevice n1_wantName n1_wantTouch n1_wantPassword>>
 <<flag-debug n1_passwordWait>>
-<<flag-debug n2_extraHorny n2_mirrorBroken n3_wrongTouch>>
+<<flag-debug n3_extraHorny n3_mirrorBroken n4_wrongTouch>>
 <<flag-debug n1_ivexDistracted n1_ivexReceptive>>
 
 Nero
@@ -7239,7 +7265,7 @@ Ivex speaks. "So we can do this the easy way, or the hard way. <em>Please</em> m
 </ul><</nobr>>
 
 
-:: n1 cross {"position":"5425,1725","size":"100,100"}
+:: n1 cross {"position":"6600,2675","size":"100,100"}
 XXX
 can't really see much until you use the mirror.
 
@@ -7250,7 +7276,7 @@ can't really see much until you use the mirror.
 </ul>\
 
 
-:: n1 study {"position":"6025,775","size":"100,100"}
+:: n1 study {"position":"7200,1725","size":"100,100"}
 XXX
 
 [[n1 desk]]
@@ -7266,7 +7292,7 @@ XXX
 </ul>\
 
 
-:: n1 gravgems {"position":"5550,1850","size":"100,100"}
+:: n1 gravgems {"position":"6725,2800","size":"100,100"}
 not visible until look in mirror
 
 Nero is fascinated, because it's not supposed to be possible to have a stable configuration of so many gems this close together.
@@ -7279,7 +7305,7 @@ ask ivex, he mocks your limited understanding. he's bluffing, he doesn't know an
 </ul>\
 
 
-:: n1 desk {"position":"6050,1125","size":"100,100"}
+:: n1 desk {"position":"7225,2075","size":"100,100"}
 XXX
 [[n1 mirror]]
 [[n1 globe]]
@@ -7293,7 +7319,7 @@ XXX
 </ul>\
 
 
-:: n1 bookshelf {"position":"6325,1275","size":"100,100"}
+:: n1 bookshelf {"position":"7500,2225","size":"100,100"}
 XXX
 [[n1 books]]
 [[n1 cards]]
@@ -7306,7 +7332,7 @@ XXX
 </ul>\
 
 
-:: n1 mirror {"position":"5775,1800","size":"100,100"}
+:: n1 mirror {"position":"6950,2750","size":"100,100"}
 XXX propped up against snow globe
 maybe do something with having it knocked over, if ivex disturbs snow globe
 
@@ -7326,7 +7352,7 @@ if you do clever escape, you can take the mirror to 2nd floor, and use it to pin
 </ul>\
 
 
-:: n1 globe [key maybe-password] {"position":"5875,1800","size":"100,100"}
+:: n1 globe [key maybe-password] {"position":"7050,2750","size":"100,100"}
 XXX
 snow globe. looks like a snow dragon in a pose, one arm raised in triumph, the other arm not visible.
 slogan says "CARPE DI-", can't see the rest.
@@ -7342,7 +7368,7 @@ password: favorite place to vacation
 </ul>\
 
 
-:: n1 books [maybe-password] {"position":"6350,1825","size":"100,100"}
+:: n1 books [maybe-password] {"position":"7525,2775","size":"100,100"}
 XXX
 some magic texts that you recognize, boring.
 something fascist.
@@ -7357,7 +7383,7 @@ password: school name
 </ul>\
 
 
-:: n1 candle {"position":"6075,1800","size":"100,100"}
+:: n1 candle {"position":"7250,2750","size":"100,100"}
 XXX
 horny. staring at it makes you hornier.
 \
@@ -7367,7 +7393,7 @@ horny. staring at it makes you hornier.
 </ul>\
 
 
-:: n1 knife [has-hole maybe-password] {"position":"5975,1800","size":"100,100"}
+:: n1 knife [has-hole maybe-password] {"position":"7150,2750","size":"100,100"}
 XXX
 letter opener, looks sharp enough to cut bonds.
 too bad you don't have tk.
@@ -7381,7 +7407,7 @@ password: zip code. this seems iffy, probably drop it.
 </ul>\
 
 
-:: n1 cabinet {"position":"6650,1450","size":"100,100"}
+:: n1 cabinet {"position":"7825,2400","size":"100,100"}
 XXX
 [[n1 bottle]]
 [[n1 penguin]]
@@ -7393,7 +7419,7 @@ XXX
 </ul>\
 
 
-:: n1 cards [key has-hole] {"position":"6450,1825","size":"100,100"}
+:: n1 cards [key has-hole] {"position":"7625,2775","size":"100,100"}
 XXX
 deck of cards weighted down by a coin.
 the cards are all porn.
@@ -7405,7 +7431,7 @@ the coin is the auth token, it has a hole.
 </ul>\
 
 
-:: n1 wall {"position":"6950,1550","size":"100,100"}
+:: n1 wall {"position":"8125,2500","size":"100,100"}
 XXX
 [[n1 map]]
 [[n1 portrait]]
@@ -7418,7 +7444,7 @@ XXX
 </ul>\
 
 
-:: n1 bottle [key has-hole] {"position":"6650,1850","size":"100,100"}
+:: n1 bottle [key has-hole] {"position":"7825,2800","size":"100,100"}
 <<set $n1_sawBottle = true>>\
 \
 large bottle, has a wooden horse cock inside, too large to have been inserted through the hole.
@@ -7436,7 +7462,7 @@ plus he's given it a name.
 </ul>\
 
 
-:: n1 map [maybe-password] {"position":"7050,1875","size":"100,100"}
+:: n1 map [maybe-password] {"position":"8225,2825","size":"100,100"}
 XXX
 map of the area.
 
@@ -7448,7 +7474,7 @@ password: birthplace
 </ul>\
 
 
-:: n1 portrait [has-hole maybe-password] {"position":"6950,1875","size":"100,100"}
+:: n1 portrait [has-hole maybe-password] {"position":"8125,2825","size":"100,100"}
 XXX
 portrait of an older panther. ambiguous if it's a lover or relative, until you ask Ivex.
 
@@ -7464,7 +7490,7 @@ password: mom's maiden name
 </ul>\
 
 
-:: n1 penguin [has-hole maybe-password] {"position":"6750,1850","size":"100,100"}
+:: n1 penguin [has-hole maybe-password] {"position":"7925,2800","size":"100,100"}
 XXX
 his childhood pet. (he wanted an owl, his uncle thought this was close enough).
 in a very lewd position.
@@ -7479,7 +7505,7 @@ password: pet name
 </ul>\
 
 
-:: n1 wand [has-hole maybe-password] {"position":"6250,1825","size":"100,100"}
+:: n1 wand [has-hole maybe-password] {"position":"7425,2775","size":"100,100"}
 XXX
 looks like a standard magic wand with an odd ring-shaped attachment on the end.
 (has a hole).
@@ -7489,7 +7515,7 @@ ask ivex, he will brag about the sex toy he made,
 password: wand name
 
 if Ivex bragged, and you've escaped, option to use wand
-maybe leads to [[n2 tamed desperate]]
+maybe leads to [[n3 tamed desperate]]
 \
 <ul class="actions">\
   <<if !$n1_ivexGone>><li>[[Ask Ivex|n1 ask wand]]</li><</if>>\
@@ -7507,7 +7533,7 @@ He prepares the spell's image in his mind, and then <em>twists</em> it...
 [[Continue|=n1 Endgame 2]]
 
 
-:: n1 Charm {"position":"4625,1150","size":"100,100"}
+:: n1 Charm {"position":"4625,1200","size":"100,100"}
 nero: no, I got the dossier from a bounty hunter who failed to capture me. it's impressive, I knew I had to try to meet you
 
 ivex: really. why?
@@ -7518,16 +7544,16 @@ ivex: really. why?
 </ul><</nobr>>
 
 
-:: n1 Resist {"position":"4350,1225","size":"100,100"}
+:: n1 Resist {"position":"4150,1225","size":"100,100"}
 ivex: hard way it is.
 seems happy about it.
 
 nero confident that he can escape.
 
-[[Continue|n1 Start Candle]]
+[[Continue|n2 Start Candle]]
 
 
-:: n1 Magic {"position":"4000,1400","size":"100,200"}
+:: n1 Magic {"position":"6275,2250","size":"100,200"}
 <<nobr>>
 <!--
 magic state flags
@@ -7541,7 +7567,7 @@ magic state flags
 - n1_passwordWait - processing password
 
 other flags
-- n3_wrongTouch - nero touched after escape
+- n4_wrongTouch - nero touched after escape
 
 major ivex flags
 - n1_ivexDistracted - ivex isn't paying attention
@@ -7554,7 +7580,7 @@ output
 - n1_magicAction - provides  link for an available magic action
 -->
 
-<<flag-debug n1_magicTried magicSight magicLinked>>
+<<flag-debug n1_magicTried n1_magicSight n1_magicLinked>>
 <<flag-debug n1_wantDevice n1_wantName n1_wantTouch n1_wantPassword>>
 <<flag-debug n1_ivexDistracted n1_ivexReceptive>>
 
@@ -7631,9 +7657,9 @@ output
 <</nobr>>\
 
 
-:: n1 Ivex Distracted {"position":"5150,1300","size":"200,100"}
+:: n1 Ivex Distracted {"position":"5850,1675","size":"200,100"}
 <<set $n1_ivexDistracted = true>>\
-<<set $n1_afterLook = setup.afterLookFunnel(3)>>\
+<<set $n1_afterLook = 'XXX'>>\
 <<set $n1_afterAction = $n1_afterDistract>>\
 \
 Ivex is distracted. Perhaps this is a chance to do something without him noticing.
@@ -7685,7 +7711,7 @@ It's Ivex, the panther mage who's the subject of Nero's current "errand".
 [[Continue|=n1 Endgame 3]]
 
 
-:: n1 Start Candle {"position":"4175,1850","size":"100,100"}
+:: n2 Start Candle [section-start] {"position":"4125,2425","size":"100,100"}
 <<set $n1_candleLit = true>>\
 \
 ivex wears mask and brings out candle
@@ -7697,10 +7723,10 @@ ivex, smart wolf like you will figure it out soon enough
 nero wary, considers holding breath but realizes it's pointless.
 breathe, describe candle.
 
-[[continue|n1 Comfortable?]]
+[[continue|n2 Comfortable? (1,1)]]
 
 
-:: =n1 Naked {"position":"3825,1800","size":"100,100"}
+:: =n1 Naked {"position":"3525,2000","size":"100,100"}
 Ivex theatrically raises his left arm, then snaps his fingers.
 
 All of Nero's clothes disappear.
@@ -7712,8 +7738,8 @@ And the spell's trigger was such a small, ambiguous gesture. Nero starts sketchi
 [[Continue|=n1 Naked 2]]
 
 
-:: =n1 No Barbs {"position":"3750,2250","size":"100,100"}
-<<set $n1_felineBarbs = false>>\
+:: =n1 No Barbs {"position":"3450,2450","size":"100,100"}
+<<set $n1_barbs = false>>\
 \
 He said, "Barbs are a myth."
 
@@ -7736,8 +7762,8 @@ As the wolf limped away with what remaining dignity he could muster, he heard th
 [[Continue|=n1 Barbs End]]
 
 
-:: n1 Barbs Yes {"position":"3900,2250","size":"100,100"}
-<<set $n1_felineBarbs = true>>\
+:: n1 Barbs Yes {"position":"3600,2450","size":"100,100"}
+<<set $n1_barbs = true>>\
 \
 tiger says, "the barbs aren't sharp"
 
@@ -7754,17 +7780,17 @@ nero throws towel at tiger and retreats, laughter behind him.
 [[Continue|=n1 Barbs End]]
 
 
-:: n2 Start [section-start] {"position":"4400,2600","size":"100,100"}
-<<delete-vars n2_ n3_ n4_ n5_>>\
+:: n3 Start [section-start] {"position":"4300,3975","size":"100,100"}
+<<delete-vars n3_ n4_ n5_ n6_>>\
 <<set $n1_ivexGone = true>>\
 \
 ivex has left.
 tease missed opportunity, based on magicState.
 
-[[n2 Struggle]]
+[[n3 Struggle]]
 
 
-:: n2 Struggle {"position":"4300,2750","size":"200,200"}
+:: n3 Struggle {"position":"4200,4125","size":"200,200"}
 lust candle ticking
 
 actions are magic, look, struggle.
@@ -7776,30 +7802,30 @@ the other options are teases, and maybe reveal info helpful for next session.
 need magic sight to succeed at all. justify as, need to see flow around grav gems.
 at lust max, tell the player this is the last chance, and make it a 50/50 choice.
 
-[[n2 Failed Escape]]
-[[n2 Grav Disrupted]]
+[[n3 Failed Escape]]
+[[n3 Grav Disrupted]]
 
 
-:: n2 Failed Escape {"position":"4075,3200","size":"100,100"}
+:: n3 Failed Escape {"position":"3950,4375","size":"100,100"}
 XXX
 desperately horny from candle when Ivex returns.
 Ivex snuffs candle and gloats.
 nero is panting hard, ivex comments on tongue.
 inverts cross and presents cock for sucking
 
-[[n2 tamed mild]]
-[[n2 tamed harsh]]
+[[n3 tamed mild]]
+[[n3 tamed harsh]]
 
 
-:: n2 Grav Disrupted {"position":"4475,3350","size":"100,100"}
+:: n3 Grav Disrupted {"position":"4350,4525","size":"100,100"}
 XXX
 grav gems disrupted. nero is still strapped to cross, and extremely horny.
 
-[[n2 snuff candle]]
-[[n2 grab letter opener]]
+[[n3 snuff candle]]
+[[n3 grab letter opener]]
 
 
-:: n2 tamed mild [end] {"position":"3950,3125","size":"100,100"}
+:: n3 tamed mild [end] {"position":"3825,4300","size":"100,100"}
 XXX bad ending unlocked
 
 nero thinks, lemme satisfy him, and then there will be another opportunity to escape.
@@ -7816,7 +7842,7 @@ restart at Ivex leaves
 restart from beginning
 
 
-:: n2 tamed harsh [end] {"position":"3950,3275","size":"100,100"}
+:: n3 tamed harsh [end] {"position":"3825,4450","size":"100,100"}
 XXX bad ending unlocked
 
 no way is nero sucking ivex off. he's escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
@@ -7835,7 +7861,7 @@ restart at Ivex leaves
 restart from beginning
 
 
-:: n2 snuff candle {"position":"4525,3525","size":"100,100"}
+:: n3 snuff candle {"position":"4400,4700","size":"100,100"}
 XXX
 lust subsides. wait a bit, then grab letter opener.
 
@@ -7849,10 +7875,10 @@ finally get a good look at snowglobe, reads inscription out loud with incredulit
 
 if wantPassword, sprite responds, "password accepted", gee that would have been useful earlier. player should remember this for next playthrough.
 
-[[n3 free]]
+[[n4 free]]
 
 
-:: n2 grab letter opener {"position":"4325,3425","size":"100,100"}
+:: n3 grab letter opener {"position":"4200,4600","size":"100,100"}
 XXX grab letter opener before snuffing candle.
 
 cuts loose, cross falls and does lots of damage. mirror broken, nero doesn't care.
@@ -7860,34 +7886,34 @@ nero starts jerking off because candle, and can't stop even after cumming.
 
 if asked about magic wand, use it.
 
-[[n2 tamed desperate]]
+[[n3 tamed desperate]]
 
 
-:: n3 look around {"position":"4525,3950","size":"200,200"}
+:: n4 look around {"position":"4925,4850","size":"200,200"}
 XXX explore study a bit, but nudge player toward finding escape.
 
-if asked about magic wand and high lust, option to use it and land in [[n2 tamed desperate]]
+if asked about magic wand and high lust, option to use it and land in [[n3 tamed desperate]]
 maybe can land there from clever escape too? probably not
 
 can pick up mirror if rescued.
 auto pickup anyway on leaving.
 or maybe a one-time prompt? this section is an opportunity to intro the inventory limitations, no pockets.
 
-[[n4 start]]
+[[n5 start]]
 
 
-:: n4 start [section-start] {"position":"4400,4900","size":"100,100"}
-<<delete-vars n4_ n5_>>\
+:: n5 start [section-start] {"position":"4675,5525","size":"100,100"}
+<<delete-vars n5_ n6_>>\
 \
 2f door closes behind him, no apparent way to open it again.
 
 if gotMirror, at least he's got the mirror. and he's still horny, but manageable.
 else, regret about the mirror. extremely horny, might be distracting.
 
-[[n4 hallway]]
+[[n5 hallway]]
 
 
-:: n2 tamed desperate [end] {"position":"3950,3550","size":"100,100"}
+:: n3 tamed desperate [end] {"position":"3825,4725","size":"100,100"}
 XXX bad ending unlocked
 
 ivex returns and laughs at the sight. says horny dog needs some discipline.
@@ -7899,11 +7925,11 @@ sketch ongoing life as a pathetic needy bitch.
 nero hates himself but can't help himself.
 one day he finds a dumb gem that ivex has left out, and decides to use it.
 
-restart at n2 Ivex Leaves
+restart at n3 Ivex Leaves
 restart from beginning
 
 
-:: n4 hallway {"position":"4350,5050","size":"200,200"}
+:: n5 hallway {"position":"4625,5675","size":"200,200"}
 XXX
 there's an obnoxious statue of Ivex here, enormous erection
 
@@ -7927,11 +7953,11 @@ if door isn't already open
 
 maybe tk matrix in this room too
 
-[[n4 lion room]]
-[[n4 extraction room]]
+[[n5 lion room]]
+[[n5 extraction room]]
 
 
-:: n4 lion room {"position":"4125,5050","size":"200,200"}
+:: n5 lion room {"position":"4400,5675","size":"200,200"}
 XXX
 nero recognizes thrall spell
 
@@ -7973,10 +7999,10 @@ in the hallway, it rolls to the lion room.
 in the lion room, it falls into a drain.
 this is bad ending: hunted
 
-[[n4 hunted]]
+[[n5 hunted]]
 
 
-:: n4 extraction room {"position":"4350,5400","size":"200,200"}
+:: n5 extraction room {"position":"4625,6025","size":"200,200"}
 XXX
 examine blob and altar
 examine desk and books.
@@ -8010,8 +8036,8 @@ put it on, you get a green glow.
 after 1 action, glow turns yellow, ring starts shrinking.
 if you don't take it off when yellow, any other action locks it down, glow turns red.
 this is bad ending: stiffened
-mild is when the lion isn't hunting you [[n4 stiffened mild]]
-harsh is when lion is hunting you [[n4 stiffened harsh]]
+mild is when the lion isn't hunting you [[n5 stiffened mild]]
+harsh is when lion is hunting you [[n5 stiffened harsh]]
 
 hard escape requires
 - read journal
@@ -8040,11 +8066,11 @@ easy escape requires
 - get blank gem
 - energize gem
 
-[[n5 escaped]]
+[[n6 escaped]]
 
 
-:: n5 escaped [section-start end] {"position":"4350,5925","size":"100,100"}
-<<delete-vars n5_>>\
+:: n6 escaped [section-start end] {"position":"4625,6550","size":"100,100"}
+<<delete-vars n6_>>\
 \
 there are two paths into here.
 made-gem means lion is available for punishment.
@@ -8075,18 +8101,18 @@ if all of the above, can "rescue" ivex and take over his domain.
 otherwise, fulfill contract.
 
 
-:: n4 hunted {"position":"3975,5100","size":"100,100"}
+:: n5 hunted {"position":"4250,5725","size":"100,100"}
 XXX got here because lion is rapey, and you've lost the slippery ring
 
 you can try to satisfy the lion, or try to continue to escape
 
 maybe, leave harsh for the ring+lion ending
 
-[[n4 hunted mild]]
-[[n4 hunted harsh]]
+[[n5 hunted mild]]
+[[n5 hunted harsh]]
 
 
-:: n4 hunted mild [end] {"position":"3850,5025","size":"100,100"}
+:: n5 hunted mild [end] {"position":"4125,5650","size":"100,100"}
 XXX lion is rapey, nero tries to satisfy him
 uses his paw. lion cums, lion forces nero to lick it up, and then immediately gets rapey again.
 the cum is aphrodisiac, nero ends up pawing himself too
@@ -8095,7 +8121,7 @@ he's stuck in a loop pawing with lion and licking it up until Ivex returns.
 Ivex is amused and decides to chain nero to the lion as part of an assembly line, the lion can continually grind while nero continually paws. nero isn't compelled by anything but horniness and fear of the lion.
 
 
-:: n4 hunted harsh [end] {"position":"3850,5200","size":"100,100"}
+:: n5 hunted harsh [end] {"position":"4125,5825","size":"100,100"}
 XXX lion is rapey, nero tries to evade.
 gets caught, pinned down and raped.
 it's over quick, lion takes a rest,
@@ -8105,7 +8131,7 @@ it's an endless loop until Ivex arrives.
 Ivex is amused and makes nero permanent prey. safe hole in keep, lust spell, inhibitor spell. can get relief by grabbing a one-time remedy from lion, but locked out from safe hole for n minutes, have to keep evading lion.
 
 
-:: n4 stiffened mild [end] {"position":"3850,5475","size":"100,100"}
+:: n5 stiffened mild [end] {"position":"4125,6100","size":"100,100"}
 XXX
 slippery ring is locked on. lion isn't hunting you.
 
@@ -8118,7 +8144,7 @@ nero struggles to reduce the contact area, ends up perched on the toes of one fo
 ivex returns and is amused, turns nero into an office ornament. likes to push nero and watch him collapse to the ground and then struggle to get back up.
 
 
-:: n4 stiffened harsh [end] {"position":"3850,5625","size":"100,100"}
+:: n5 stiffened harsh [end] {"position":"4125,6250","size":"100,100"}
 XXX
 slippery ring locks on, and lion is hunting.
 
@@ -8127,7 +8153,7 @@ lion rapes, extreme overstimulation.
 Ivex is amused and turns nero into lion's toy.
 
 
-:: n1 clever escape {"position":"5575,2650","size":"100,100"}
+:: n1 clever escape {"position":"6800,3775","size":"100,100"}
 you need a password, and you've asked ivex about the snow globe.
 
 he starts to preen and tell you about it, but then realizes what you've been doing.
@@ -8152,7 +8178,7 @@ mirror not broken.
 
 take a moment to rest.
 
-[[n3 free]]
+[[n4 free]]
 
 
 :: Content Warning {"position":"2625,75","size":"100,100"}
@@ -8168,7 +8194,7 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 </div>
 
 
-:: n1 Cast Attack {"position":"3350,1025","size":"100,100"}
+:: n1 Cast Attack {"position":"5825,2050","size":"100,100"}
 <<set $n1_magicTried = true>>\
 \
 ivex watching and not receptive.
@@ -8187,7 +8213,7 @@ stuff about anti-magic.
 <!-- Charm branch never casts attack, so don't need a transition out of charm. -->
 
 
-:: n1 Cast Reveal {"position":"3350,1150","size":"100,100"}
+:: n1 Cast Reveal {"position":"5825,2175","size":"100,100"}
 <<set $n1_magicSight = true>>\
 <<set $n1_afterNaked = $n1_afterAction>>\
 \
@@ -8202,7 +8228,7 @@ it's not a total failure, you see the mirror is special
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 Send Ping {"position":"3350,1275","size":"100,100"}
+:: n1 Send Ping {"position":"5825,2300","size":"100,100"}
 <<set $n1_magicLinked = true>>\
 <<set $n1_wantDevice = true>>\
 \
@@ -8219,13 +8245,13 @@ Ivex annoyed: pay attention!
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 Guess Password {"position":"3475,1775","size":"100,100"}
+:: n1 Guess Password {"position":"5950,2800","size":"100,100"}
 list of plausible passwords based on things you've seen, plus a few generic guesses.
 
 [[n1 Wrong Password]]
 
 
-:: n1 Wrong Password {"position":"3600,1775","size":"100,100"}
+:: n1 Wrong Password {"position":"6075,2800","size":"100,100"}
 ivex: what was that? speak up.
 
 sprite: password incorrect, try again.
@@ -8252,7 +8278,7 @@ Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 
 
 :: =n1 Feign Sleep 3 [big-mood] {"position":"4400,700","size":"100,100"}
-<<set $n1_ballsSmashed = true>>\
+<<set $n1_smashed = true>>\
 \
 A fist smashes into Nero's crotch, thumping hard against his other ball and briefly making it ache stronger than the one held tight.
 
@@ -8275,7 +8301,7 @@ Still, whatever route brought him here, a success is a success. The rest of the 
 [[Continue|=n1 Ivex Intro]]
 
 
-:: n1 Help Touch {"position":"3475,1650","size":"100,100"}
+:: n1 Help Touch {"position":"5950,2675","size":"100,100"}
 ivex sneers: there's no help for you
 
 sprite: please choose from the following help topics: no topics found.
@@ -8283,7 +8309,7 @@ sprite: please choose from the following help topics: no topics found.
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 Help List {"position":"3350,1400","size":"100,100"}
+:: n1 Help List {"position":"5825,2425","size":"100,100"}
 ivex: what is there? what is there but despair.
 
 sprite:, device listing: remember to implement this some day.
@@ -8295,7 +8321,7 @@ vary on revisit
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 say name {"position":"3475,1525","size":"100,100"}
+:: n1 say name {"position":"5950,2550","size":"100,100"}
 <<set $n1_wantName = false>>\
 <<set $n1_wantTouch = true>>\
 \
@@ -8316,7 +8342,7 @@ ok, that's a standard security barrier, just need to get ivex to touch the hole,
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 say matrix {"position":"3475,1400","size":"100,100"}
+:: n1 say matrix {"position":"5950,2425","size":"100,100"}
 <<set $n1_wantDevice = false>>\
 <<set $n1_wantName = true>>\
 \
@@ -8329,13 +8355,13 @@ exasperated sigh.
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 Ivex Disdainful {"position":"5025,1675","size":"200,100"}
+:: n1 Ivex Disdainful (1,1) {"position":"5200,2200","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-ivex: what, you think you're my equal?
+<<n1-patience 1 1
+    'Ivex: you think you're my equal?'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -8347,13 +8373,13 @@ ivex: what, you think you're my equal?
 <</nobr>>
 
 
-:: n1 Ivex Offended {"position":"4575,1400","size":"200,100"}
+:: n1 Ivex Offended (1,1) {"position":"4575,1450","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-ivex, incredulous: you want me to be your minion?
+<<n1-patience 1 1
+    'Ivex: you want me to be your minion?'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -8365,37 +8391,37 @@ ivex, incredulous: you want me to be your minion?
 <</nobr>>
 
 
-:: n1 Secret Society {"position":"4800,1475","size":"100,100"}
+:: n1 Secret Society {"position":"4800,1525","size":"100,100"}
 Nero: it's awesome, we have bacon
 
 ivex takes the bait, he's skeptical but interested.
 
-[[Continue|n1 Ivex Skeptical]]
+[[Continue|n1 Ivex Skeptical (4,3)]]
 
 
-:: n1 Reject Demotion {"position":"4400,1450","size":"100,100"}
+:: n1 Reject Demotion {"position":"4400,1525","size":"100,100"}
 nero: I have much to teach you, and perhaps you have some things to show me as well.
 
 ivex, disgusted. charm failed.
 
-[[continue|n1 Start Candle]]
+[[continue|n2 Start Candle]]
 
 
-:: n1 Reject Equality {"position":"4700,1950","size":"100,100"}
+:: n1 Reject Equality {"position":"4875,2475","size":"100,100"}
 nero: really, equality is good.
 
 ivex: no way. charm failed.
 
-[[n1 Start Candle]]
+[[n2 Start Candle]]
 
 
-:: n1 Ivex Demanding {"position":"5025,1800","size":"200,100"}
+:: n1 Ivex Demanding (4,3) {"position":"5200,2325","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-ivex: and will you do everything I ask?
+<<n1-patience 4 3
+    'Ivex: will you do everything I ask?'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -8407,21 +8433,21 @@ ivex: and will you do everything I ask?
 <</nobr>>
 
 
-:: n1 Very Secret {"position":"4800,1600","size":"100,100"}
+:: n1 Very Secret {"position":"4800,1650","size":"100,100"}
 nero: we're a secret inside the WAG.
 
 ivex, fascinated, leaps into speculation about how the secret is kept, dreams up a horny mind-control scenario and asks for confirmation.
 
-[[Continue|n1 Ivex Intrigued]]
+[[Continue|n1 Ivex Intrigued (4,3)]]
 
 
-:: n1 Ivex Dominant {"position":"5025,1925","size":"200,100"}
+:: n1 Ivex Dominant (4,3) {"position":"5200,2450","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-ivex mentions canine tongues, offers a finger to lick
+<<n1-patience 4 3
+    'Ivex mentiones canine tongues, offers a finger to lick'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -8433,13 +8459,13 @@ ivex mentions canine tongues, offers a finger to lick
 <</nobr>>
 
 
-:: n1 Ivex Cruel {"position":"5025,2050","size":"200,100"}
+:: n1 Ivex Cruel (4,3) {"position":"5200,2575","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-Ivex: gonna torture you. cuz loyalty.
+<<n1-patience 4 3
+    'Ivex: gonna torture you, cuz loyalty'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -8451,24 +8477,24 @@ Ivex: gonna torture you. cuz loyalty.
 <</nobr>>
 
 
-:: n1 Comfortable? {"position":"4250,2000","size":"200,100"}
+:: n2 Comfortable? (1,1) {"position":"4200,2575","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel(1)>>\
-<<set $n1_afterAction = "[[Continue|n1 Get Comfortable][$n1_mood = 'aggro']]">>\
 \
-ivex, are you comfortable?
+<<n1-patience 1 1
+    'Ivex: are you comfortable?'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
 <ul class="actions">
-    <li>[[agree|n1 Get Comfortable][$n1_mood = 'charm']]</li>
-    <li>[[disagree|n1 Get Comfortable][$n1_mood = 'resist']]</li>
+    <li>[[agree|n2 Get Comfortable][$n1_mood = 'charm']]</li>
+    <li>[[disagree|n2 Get Comfortable][$n1_mood = 'resist']]</li>
     <<optional-action $n1_magicAction>>
 </ul><</nobr>>
 
 
-:: n1 Get Creepy {"position":"4200,2125","size":"100,100"}
+:: n2 Get Creepy {"position":"4150,2700","size":"100,100"}
 ivex creeps on nero
 ivex, do you know what I love about wolf mages
 
@@ -8479,27 +8505,27 @@ react based on history
 ivex, they're always so proud of themselves
 grab balls
 
-[[Continue|n1 Light Squeeze]]
+[[Continue|n2 Light Squeeze (1,1)]]
 
 
-:: n1 Heavy Squeeze {"position":"4325,2300","size":"200,100"}
+:: n2 Heavy Squeeze (1,1) {"position":"4275,2875","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel(1)>>\
-<<set $n1_afterAction = "[[Continue|n1 Alarm][$n1_mood = 'aggro']]">>\
 \
-ivex, squeezes harder, tell me who sent you
+<<n1-patience 1 1
+    'Ivex squeezes harder: tell me who sent you'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
 <ul class="actions">
-    <li>[[resist|n1 Alarm][$n1_mood = 'resist']]</li>
-    <li>[[submit|n1 Alarm][$n1_mood = 'charm']]</li>
     <<optional-action $n1_magicAction>>
+    <li>[[resist|n2 Alarm][$n1_mood = 'resist']]</li>
+    <li>[[submit|n2 Alarm][$n1_mood = 'charm']]</li>
 </ul><</nobr>>
 
 
-:: n1 Cast Escape {"position":"3600,1025","size":"100,100"}
+:: n1 Cast Escape {"position":"6075,2050","size":"100,100"}
 <<set $n1_magicTried = true>>\
 \
 Ivex not watching, try escape. fails.
@@ -8513,7 +8539,7 @@ stuff about anti-magic.
 <<link Continue $n1_afterAction>><</link>>
 
 
-:: n1 Cast Strength {"position":"3475,1025","size":"100,100"}
+:: n1 Cast Strength {"position":"5950,2050","size":"100,100"}
 <<set $n1_magicTried = true>>\
 \
 Ivex watching and receptive,
@@ -8535,7 +8561,7 @@ stuff about anti-magic.
 testing 2
 
 
-:: n1 coins {"position":"7150,1875","size":"100,100"}
+:: n1 coins {"position":"8325,2825","size":"100,100"}
 string of coins
 
 <ul class="actions">\
@@ -8544,7 +8570,7 @@ string of coins
 </ul>\
 
 
-:: n1 window [has-hole] {"position":"5850,1025","size":"100,100"}
+:: n1 window [has-hole] {"position":"7025,1975","size":"100,100"}
 window
 has-hole
 
@@ -8553,55 +8579,55 @@ has-hole
 </ul>\
 
 
-:: n1 ask penguin {"position":"6750,1975","size":"100,100"}
+:: n1 ask penguin {"position":"7925,2925","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask portrait {"position":"6950,2000","size":"100,100"}
+:: n1 ask portrait {"position":"8125,2950","size":"100,100"}
 <<set $n1_knowsMom = true>>\
 \
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask map {"position":"7050,2000","size":"100,100"}
+:: n1 ask map {"position":"8225,2950","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask coins {"position":"7150,2000","size":"100,100"}
+:: n1 ask coins {"position":"8325,2950","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask gravgems {"position":"5550,1975","size":"100,100"}
+:: n1 ask gravgems {"position":"6725,2925","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask mirror {"position":"5775,1925","size":"100,100"}
+:: n1 ask mirror {"position":"6950,2875","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask globe {"position":"5875,1925","size":"100,100"}
+:: n1 ask globe {"position":"7050,2875","size":"100,100"}
 if wantPassword, this is the clever escape. [[n1 clever escape]]
 
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask knife {"position":"5975,1925","size":"100,100"}
+:: n1 ask knife {"position":"7150,2875","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask candle {"position":"6075,1925","size":"100,100"}
+:: n1 ask candle {"position":"7250,2875","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask wand {"position":"6250,1950","size":"100,100"}
+:: n1 ask wand {"position":"7425,2900","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask books {"position":"6350,1950","size":"100,100"}
+:: n1 ask books {"position":"7525,2900","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 ask cards {"position":"6450,1950","size":"100,100"}
+:: n1 ask cards {"position":"7625,2900","size":"100,100"}
 ivex touches coin
 
 <<link $n1_afterAction>><</link>>
@@ -8612,7 +8638,7 @@ ivex touches coin
 <</if>>\
 
 
-:: n1 ask bottle {"position":"6650,1975","size":"100,100"}
+:: n1 ask bottle {"position":"7825,2925","size":"100,100"}
 <<link $n1_afterAction>><</link>>
 
 
@@ -8637,9 +8663,9 @@ The panther's muzzle comes uncomfortably close to Nero's crotch...
 
 
 :: =n1 Hello 3 {"position":"4600,700","size":"100,100"}
-Ivex closes his eyes and inhales deeply. His feline nose is right in front of the wolf's trousers, millimeters away from Nero's crotch.
+Ivex's feline nose is right in front of the wolf's trousers, millimeters away from Nero's crotch. The panther closes his eyes and inhales deeply.
 
-What is the panther doing? Nero is aghast. Is he... sniffing me? What a freak!
+Nero is aghast. What is the panther doing? Is he... sniffing me? What a freak!
 
 Nero has learned of many different greeting rituals from the various foreign lecturers who visit Windbone Magic Academy, but no civilization in recorded history has ever greeted strangers, or even friends, with a ritual as strange and intrusive as what the feline mage is doing now.
 
@@ -8679,7 +8705,7 @@ The anti-magic field is another complication, but [[countering anti-magic|=n1 An
 <</if>>
 <</nobr>>
 
-[[Continue|n1 Ivex Repeat]]
+[[Continue|n1 Ivex Repeat (4,2)]]
 
 
 :: =n1 Endgame 3 {"position":"4200,700","size":"100,100"}
@@ -8714,13 +8740,13 @@ Threat. Yes. That was a threat.
 [[Continue|=n1 Ivex Intro]]
 
 
-:: n1 Ivex Skeptical {"position":"4575,1525","size":"200,100"}
+:: n1 Ivex Skeptical (4,3) {"position":"4575,1575","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-Ivex: why have I never heard of you
+<<n1-patience 4 3
+    'Ivex: why have I never heard of you?'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -8730,13 +8756,13 @@ Ivex: why have I never heard of you
 </ul><</nobr>>
 
 
-:: n1 Ivex Intrigued {"position":"4575,1650","size":"200,100"}
+:: n1 Ivex Intrigued (4,3) {"position":"4575,1700","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = true>>\
-<<set $n1_afterLook = setup.afterLookFunnel()>>\
-<<set $n1_afterAction = setup.afterActionFunnel()>>\
 \
-ivex: and do you keep the secret with mind control, do guild members have to do everything you ask? grabs crotch
+<<n1-patience 4 3
+    'Ivex: do guild members have to do everything you ask? grabs crotch'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
@@ -8747,45 +8773,24 @@ ivex: and do you keep the secret with mind control, do guild members have to do 
 </ul><</nobr>>
 
 
-:: n1 Aggro {"position":"4200,1125","size":"100,100"}
-<<set $n1_ivexAggro = 1 + ($n1_ivexAggro || 1)>>\
-\
-<<switch $n1_ivexAggro>>\
-<<case 2>>\
-ivex monologues a bit.
-[[Continue|n1 Ivex Repeat]]
-
-<<case 3>>
-ivex insults nero.
-[[Continue|n1 Ivex Repeat]]
-
-<<case 4>>
-ivex loses patience. transition to candle.
-[[Continue|n1 Start Candle]]
-
-<<default>>
-<<run throw new Error("bug")>>
-<</switch>>
-
-
-:: n1 Light Squeeze {"position":"4325,2175","size":"200,100"}
+:: n2 Light Squeeze (1,1) {"position":"4275,2750","size":"200,100"}
 <<set $n1_ivexDistracted = false>>\
 <<set $n1_ivexReceptive = false>>\
-<<set $n1_afterLook = setup.afterLookFunnel(1)>>\
-<<set $n1_afterAction = "[[Continue|n1 Ball Punch][$n1_mood = 'aggro']]">>\
 \
-ivex squeezes ball: tell me who sent you
+<<n1-patience 1 1
+    'Ivex squeezes ball: tell me who sent you'
+>>
 
 <<nobr>>
 <<include [[n1 Look and Magic]]>>
 <ul class="actions">
-    <li>[[resist|n1 Ball Punch][$n1_mood = 'resist']]</li>
-    <li>[[submit|n1 Ball Punch][$n1_mood = 'charm']]</li>
+    <li>[[resist|n2 Ball Punch][$n1_mood = 'resist']]</li>
+    <li>[[submit|n2 Ball Punch][$n1_mood = 'charm']]</li>
     <<optional-action $n1_magicAction>>
 </ul><</nobr>>
 
 
-:: n1 Ball Punch {"position":"4200,2250","size":"100,100"}
+:: n2 Ball Punch {"position":"4150,2825","size":"100,100"}
 <<nobr>>
 <<switch $n1_mood>>
 <<case 'aggro'>>
@@ -8805,10 +8810,10 @@ if had punch before, anticipate.
 
 ivex punches, mix of pain and horny.
 
-[[Continue|n1 Heavy Squeeze]]
+[[Continue|n2 Heavy Squeeze (1,1)]]
 
 
-:: n1 Alarm {"position":"4200,2375","size":"100,100"}
+:: n2 Alarm {"position":"4150,2950","size":"100,100"}
 <<nobr>>
 <<switch $n1_mood>>
 <<case 'aggro'>>
@@ -8827,12 +8832,12 @@ ivex got an alarm
 we'll continue this later
 leaves abruptly
 
-[[n2 Start]]
+[[n3 Start]]
 
 
-:: n1 Get Comfortable {"position":"4075,2050","size":"100,100"}
+:: n2 Get Comfortable {"position":"4025,2625","size":"100,100"}
 <<flag-debug n1_naked>>\
-<<set $n1_afterNaked = "[[Continue|n1 Get Creepy]]">>\
+<<set $n1_afterNaked = "[[Continue|n2 Get Creepy]]">>\
 \
 
 <<nobr>>
@@ -8850,14 +8855,14 @@ ivex mocks, enjoys the fight
 
 <<nobr>>
 <<if $n1_naked>>
-[[Continue|n1 Get Creepy]]
+[[Continue|n2 Get Creepy]]
 <<else>>
 [[Continue|=n1 Naked]]
 <</if>>
 <</nobr>>
 
 
-:: =n1 Barbs {"position":"3825,2025","size":"100,100"}
+:: =n1 Barbs {"position":"3525,2225","size":"100,100"}
 Nero much enjoyed field games at the Windbone Magic Academy, but on that fateful day, he took an awkward step while trying to intercept a passing ball. His ankle twisted, and he fell to the ground in distress. The athletics coach took only a brief look at the injury before declaring it was reason enough to dismiss Nero early.
 
 Nero limped his way to the gymnasium showers. The changing area was full of older students who were drying off and gathering into small packs that wandered toward the cafeteria and dorms. Nero waited until all their banter and laughter disappeared down the halls, then he disrobed and entered the showers himself.
@@ -8867,12 +8872,10 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 [[Continue|=n1 Barbs 2]]
 
 
-:: n1 Look and Magic {"position":"5100,1000","size":"100,200"}
+:: n1 Look and Magic {"position":"6150,950","size":"100,200"}
 <<nobr>>
-<<if $n1_funnel>>
+<<if $n1_patience_funnel>>
 <<set $n1_magicAction = null>>
-Ivex is getting impatient. XXX vary this
-<br><br>
 
 <<else>>
 <<include [[n1 Look]]>>
@@ -8883,68 +8886,68 @@ Ivex is getting impatient. XXX vary this
 <</nobr>>\
 
 
-:: n1 Recruit {"position":"4625,1275","size":"100,100"}
+:: n1 Recruit {"position":"4625,1325","size":"100,100"}
 nero: I'd like to recruit you
 
 ivex, offended.
 
-[[Continue|n1 Ivex Offended]]
+[[Continue|n1 Ivex Offended (1,1)]]
 
 
-:: n1 Partner {"position":"5050,1550","size":"100,100"}
+:: n1 Partner {"position":"5300,2075","size":"100,100"}
 nero: I'd like to collaborate
 
 ivex incredulous at the audacity
 
-[[Continue|n1 Ivex Disdainful]]
+[[Continue|n1 Ivex Disdainful (1,1)]]
 
 
-:: n1 Submit {"position":"5250,1725","size":"100,100"}
+:: n1 Submit {"position":"5425,2250","size":"100,100"}
 nero: no, no. I meant, I could be your apprentice
 
 ivex: hm.... really...
 starts into creepy-lewd
 
-[[Continue|n1 Ivex Demanding]]
+[[Continue|n1 Ivex Demanding (4,3)]]
 
 
-:: n1 Subbier {"position":"4900,1900","size":"100,100"}
-<<set $n1_afterNaked = "[[n1 Ivex Dominant]]">>\
+:: n1 Subbier {"position":"5075,2425","size":"100,100"}
+<<set $n1_afterNaked = "[[n1 Ivex Dominant (4,3)]]">>\
 \
 nero: yes sir. (or, within reason)
 
 naked here if not already [[=n1 Naked]]
 
-[[Continue|n1 Ivex Dominant]]
+[[Continue|n1 Ivex Dominant (4,3)]]
 
 
-:: n1 Licking [big-mood] {"position":"5250,2000","size":"100,100"}
-<<set $n1_neroSubby = true>>\
+:: n1 Licking [big-mood] {"position":"5425,2525","size":"100,100"}
+<<set $n1_licked = true>>\
 \
 ivex: ooh, yeah that's nice
 but you have to understand why I'm suspicious
 you need to demonstrate loyalty
 
-[[Continue|n1 Ivex Cruel]]
+[[Continue|n1 Ivex Cruel (4,3)]]
 
 
-:: n1 Reject Mercy {"position":"4700,2075","size":"100,100"}
+:: n1 Reject Mercy {"position":"4875,2600","size":"100,100"}
 nero: accepting of torture (or resistant)
 
 ivex: yeah, not suspicious at all. well, whether you're real or not, it won't matter soon.
 
-[[n1 Start Candle]]
+[[n2 Start Candle]]
 
 
-:: n1 Reject Fantasy {"position":"4400,1650","size":"100,100"}
+:: n1 Reject Fantasy {"position":"4400,1675","size":"100,100"}
 nero: um, mind control. ew (yes, or no)
 
 ivex: bah, you lie.
 
-[[Continue|n1 Start Candle]]
+[[Continue|n2 Start Candle]]
 
 
-:: =n1 Naked 2 [big-mood] {"position":"3825,1900","size":"100,100"}
+:: =n1 Naked 2 [big-mood] {"position":"3525,2100","size":"100,100"}
 <<set $n1_naked = true>>\
 \
 A moment later, a different thought lands in Nero's brain.
@@ -8964,7 +8967,7 @@ Many years ago, when he was still a novice student...
 [[Continue|=n1 Barbs]]
 
 
-:: =n1 Barbs 2 {"position":"3825,2125","size":"100,100"}
+:: =n1 Barbs 2 {"position":"3525,2325","size":"100,100"}
 The bin for used towels was stationed at a pillar near the entrance to the changing area. And on the other side of the pillar, on a bench not visible from the entrance, a tiger lounged in light and shadow.
 
 The tiger was larger than Nero in a slim way, athletic without being bulky or noticeably muscular. He was relaxed and leaning comfortably against the wall. Blobs of light from a frosted window were splayed across his body, accentuating the black striped pattern on his orange fur.
@@ -8987,7 +8990,7 @@ The tiger spoke with a voice that was low and friendly. He said,
 <</nobr>>
 
 
-:: =n1 Barbs End {"position":"3825,2400","size":"100,100"}
+:: =n1 Barbs End {"position":"3525,2600","size":"100,100"}
 It's an embarrassing memory of his naive, younger self.
 
 But that wasn't the worst of it. The day after the encounter in the showers, Nero saw the tiger again in his third-hour class.
@@ -9019,13 +9022,13 @@ It's a skill that's been quite useful in his unconventional career.
 <<link "Return" $return>><</link>>
 
 
-:: n3 free [section-start] {"position":"4550,3775","size":"100,100"}
-<<delete-vars n3_ n4_ n5_>>\
+:: n4 free [section-start] {"position":"4950,4675","size":"100,100"}
+<<delete-vars n4_ n5_ n6_>>\
 \
-[[n3 look around]]
+[[n4 look around]]
 
 
-:: =n1 Barbs End 2 {"position":"3825,2525","size":"100,100"}
+:: =n1 Barbs End 2 {"position":"3525,2725","size":"100,100"}
 Nero shakes off the memory of that ... complicated year. There are more pressing matters to consider.
 
 Such as, the noticeably horny panther mage who is now fingering the fur on Nero's naked chest.
