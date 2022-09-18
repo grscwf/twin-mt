@@ -463,12 +463,13 @@ ul.actions li {
 }
 
 /* flag-debug */
+
 .flag-debug {
   font-size: 12px;
   line-height: 14px;
   padding: 4px 0;
-  margin-top: -28px;
-  text-align: right;
+  margin-bottom: 12px;
+  margin-top: -36px;
 }
 
 .flag-debug label {
@@ -476,36 +477,81 @@ ul.actions li {
   margin-right: 4px;
 }
 
+.flag-debug label:hover {
+  background-color: #333;
+}
+
+.flag-debug.flag-hide a {
+  visibility: hidden;
+}
+
 .flag-debug a {
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: 4px;
   display: inline-block;
-  padding: 0 4px;
+  margin-bottom: 2px;
+  padding: 1px 2px;
 }
 
-.flag-debug a:not(:first-child) {
-  margin-left: 4px;
+.flag-debug a:not(:last-child) {
+  margin-right: 2px;
 }
 
-.flag-debug a:hover {
-  border: 2px solid #ccc;
-}
-
-.flag-debug .flag-on {
-  background-color: #595;
-  color: #afa;
-}
-
-.flag-debug .flag-off {
-  background-color: #655;
-  color: #bbb;
-}
-
-.flag-debug .flag-was-set,
-.flag-debug .flag-was-set:hover {
-  border-color: #999;
-  border-style: dashed;
+.flag-debug a.flag-was-set {
   cursor: not-allowed;
+}
+
+.flag-debug a:not(.flag-was-set):hover {
+  border-color: #ccc;
+  background-color: #333;
+}
+
+.flag-debug a.flag-off {
+  color: #999;
+}
+
+.flag-debug a.flag-on {
+  color: #6a6;
+}
+
+.flag-debug a.flag-was-set {
+  border-color: transparent;
+}
+
+.flag-debug a.flag-was-set.flag-off {
+  color: #666;
+}
+
+.flag-debug a.flag-was-set.flag-on {
+  color: #575;
+}
+
+.fast-transition .passage {
+  transition: none;
+}
+
+/* random walk */
+.random-walk {
+  background-color: #666;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #000;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 4px;
+  position: absolute;
+  right: 4px;
+  bottom: 100px;
+}
+
+.random-walk:hover {
+  background-color: #333;
+  border-color: #ccc;
+  color: #ccc;
+}
+
+.random-walk-chosen {
+  outline: 1px solid #9cc;
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.ui.stowBarInitially = true;
 
 if (!Config.debug) {
@@ -637,6 +683,7 @@ function flagDebugSetup() {
   const touchedSet = new Set();
   let originalVars;
   $(document).on(":passagestart", () => {
+    $("html").removeClass("fast-transition");
     viewSet.clear();
     touchedSet.clear();
     originalVars = State.active.variables;
@@ -653,12 +700,18 @@ function flagDebugSetup() {
     }
   });
   $(document).on(":passageend", () => {
+    const hidden = $(".flag-debug").hasClass("flag-hide");
     $(".flag-debug").remove();
     State.active.variables = originalVars;
     if (viewSet.size === 0) return;
     const div = $("<div>").addClass("flag-debug");
-    div.append("<label>flag-debug</label>");
-    $("#passages").prepend(div);
+    if (hidden) div.addClass("flag-hide");
+    const label = $("<label>").text("flag-debug");
+    div.append(label);
+    $("#story").prepend(div);
+
+    label.on("click", () => div.toggleClass("flag-hide"));
+
     const v = State.variables;
     const flags = Array.from(viewSet).sort();
     for (const flag of flags) {
@@ -670,6 +723,7 @@ function flagDebugSetup() {
         button.on("click", () => {
           v[flag] = !v[flag];
           Engine.play(state.passage);
+          $("html").addClass("fast-transition");
         });
       }
       div.append(button);
@@ -677,7 +731,32 @@ function flagDebugSetup() {
   });
 }
 
-flagDebugSetup();</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+flagDebugSetup();
+
+/* random traversal */
+function randomWalkSetup() {
+  if (!Config.debug) return;
+  $(document).on(":passageend", () => {
+    $(".random-walk").remove();
+    const div = $("<div>").text("random")
+    div.addClass("random-walk");
+    $("#story").append(div);
+    div.on("click", () => {
+      const chosen = $('#passages .random-walk-chosen');
+      if (chosen.length !== 0) {
+        chosen.click();
+      } else {
+        const avail = $('#passages a');
+        if (avail.length !== 0) {
+          const i = random(avail.length - 1);
+          $(avail[i]).addClass('random-walk-chosen');
+        }
+      }
+    });
+  });
+}
+
+randomWalkSetup();</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
@@ -6122,6 +6201,10 @@ look states
 	- n1_ivexReceptive
 	- n1_ivexImpatient
 --&gt;
+&lt;&lt;flag-debug n1_wantSight n1_wantDevice n1_wantName n1_wantTouch n1_wantPassword&gt;&gt;
+&lt;&lt;flag-debug n1_passwordWait&gt;&gt;
+&lt;&lt;flag-debug n2_extraHorny n2_mirrorBroken n3_wrongTouch&gt;&gt;
+&lt;&lt;flag-debug n1_ivexDistracted n1_ivexReceptive&gt;&gt;
 
 Nero
 &lt;&lt;= either(&quot;appraises&quot;, &quot;assesses&quot;, &quot;considers&quot;, &quot;contemplates&quot;, &quot;examines&quot;, &quot;evaluates&quot;, &quot;ponders&quot;)&gt;&gt;
@@ -6226,7 +6309,12 @@ But this panther mage looks like a knight champion, the type of person with a ca
 
 Or he could be, if he dressed better. His clothes are the facile fashion of a used boat merchant, overshadowed by a large red cape that belongs in a comic operetta. Gaudy rings adorn all the wrong fingers with mismatched gems, and the crowning crime of style is the clasp of the cape, which has an absurdly large gem emitting a magenta glow that does no favors to the panther&#39;s black fur.
 
-It all feels like a poor person&#39;s idea of what a rich person would wear. Not that Nero would ever tell that to his captor, of course.
+&lt;&lt;nobr&gt;&gt;
+It all feels like a poor person&#39;s idea of what a rich person would wear. Not that Nero would ever tell that to his captor.
+&lt;&lt;if $n1_naked&gt;&gt;
+    Especially since he was completely naked at the moment.
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
 
 Ivex speaks. &quot;So we can do this the easy way, or the hard way. &lt;em&gt;Please&lt;/em&gt; make the right choice.&quot; He has a grin like a child unwrapping a present. &quot;Tell me, who sent you?&quot;
 
@@ -6437,7 +6525,6 @@ seems happy about it.
 nero confident that he can escape.
 
 [[Continue|n1 Start Candle]]</tw-passagedata><tw-passagedata pid="265" name="n1 Magic" tags="" position="4000,1400" size="100,200">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;flag-debug n1_ivexDistracted n1_ivexReceptive&gt;&gt;
 &lt;!--
 magic state flags
 - n1_magicTried - after casting first spell
@@ -6462,6 +6549,10 @@ linkage
 output
 - n1_magicAction - provides  link for an available magic action
 --&gt;
+
+&lt;&lt;flag-debug n1_magicTried magicSight magicLinked&gt;&gt;
+&lt;&lt;flag-debug n1_wantDevice n1_wantName n1_wantTouch n1_wantPassword&gt;&gt;
+&lt;&lt;flag-debug n1_ivexDistracted n1_ivexReceptive&gt;&gt;
 
 &lt;&lt;if !$n1_magicTried&gt;&gt;
 
@@ -6502,6 +6593,7 @@ output
 &lt;&lt;elseif $n1_wantDevice&gt;&gt;
 
     XXX sprite: which device do you want to access.
+    &lt;&lt;flag-debug n1_sawBottle&gt;&gt;
     &lt;&lt;if $n1_sawBottle&gt;&gt;
         &lt;&lt;set $n1_magicAction = &#39;[[Whisper &quot;the poltergeist device&quot; to the sprite.|n1 say matrix]]&#39;&gt;&gt;
     &lt;&lt;else&gt;&gt;
@@ -6511,6 +6603,7 @@ output
 &lt;&lt;elseif $n1_wantName&gt;&gt;
 
     sprite: there&#39;s more than one poltergeist device available, which one do you want to access.
+    &lt;&lt;flag-debug n1_knowsName&gt;&gt;
     &lt;&lt;if $n1_knowsName&gt;&gt;
         &lt;&lt;set $n1_magicAction = &quot;[[Whisper the name of the poltergeist device to the sprite.|n1 say name]]&quot;&gt;&gt;
     &lt;&lt;else&gt;&gt;
@@ -6528,7 +6621,7 @@ output
     &lt;&lt;set $n1_magicAction = &quot;[[Whisper a password to the sprite.|n1 Guess Password]]&quot;&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
-    &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
+	XXX linked, and satisfied all prompts
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="266" name="n1 Ivex Distracted" tags="" position="5150,1300" size="200,100">&lt;&lt;set $n1_ivexDistracted = true&gt;&gt;\
@@ -7406,7 +7499,8 @@ ivex got an alarm
 we&#39;ll continue this later
 leaves abruptly
 
-[[n2 Start]]</tw-passagedata><tw-passagedata pid="347" name="n1 Get Comfortable" tags="" position="4075,2050" size="100,100">&lt;&lt;set $n1_afterNaked = &quot;[[Continue|n1 Get Creepy]]&quot;&gt;&gt;\
+[[n2 Start]]</tw-passagedata><tw-passagedata pid="347" name="n1 Get Comfortable" tags="" position="4075,2050" size="100,100">&lt;&lt;flag-debug n1_naked&gt;&gt;\
+&lt;&lt;set $n1_afterNaked = &quot;[[Continue|n1 Get Creepy]]&quot;&gt;&gt;\
 \
 
 &lt;&lt;nobr&gt;&gt;
