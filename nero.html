@@ -736,23 +736,31 @@ flagDebugSetup();
 /* random traversal */
 function randomWalkSetup() {
   if (!Config.debug) return;
+  const walk = () => {
+    const avail = $('#passages a[data-passage]');
+    const chosen = $('#passages .random-walk-chosen');
+    console.log([avail.length, chosen.length]);
+    if (chosen.length === 1) {
+      chosen.click();
+    } else if (avail.length === 1) {
+      avail.click();
+    } else if (avail.length > 0) {
+      const i = random(avail.length - 1);
+      $(avail[i]).addClass('random-walk-chosen');
+    }
+  };
   $(document).on(":passageend", () => {
     $(".random-walk").remove();
     const div = $("<div>").text("random")
     div.addClass("random-walk");
     $("#story").append(div);
-    div.on("click", () => {
-      const chosen = $('#passages .random-walk-chosen');
-      if (chosen.length !== 0) {
-        chosen.click();
-      } else {
-        const avail = $('#passages a');
-        if (avail.length !== 0) {
-          const i = random(avail.length - 1);
-          $(avail[i]).addClass('random-walk-chosen');
-        }
-      }
-    });
+    div.on("click", walk);
+  });
+  $(document).on("keydown", ev => {
+    switch (ev.key) {
+      case ".": walk(); break;
+      case ",": Engine.backward(); break;
+    }
   });
 }
 
