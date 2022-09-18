@@ -433,6 +433,12 @@ ul.actions li {
   color: #bbb;
 }
 
+.flag-debug .flag-was-overridden,
+.flag-debug .flag-was-overridden:hover {
+  border-color: #c83;
+  border-style: dashed;
+}
+
 
 :: Story JavaScript [script]
 Config.ui.stowBarInitially = true;
@@ -555,30 +561,48 @@ Macro.add("optional-action", {
   }
 });
 
-/** Show flags and allow toggling them. */
-Macro.add("flag-debug", {
-  handler: function() {
-    if (!Config.debug) return;
-    const v = State.variables;
-    let div = $('.flag-debug', this.output);
-    if (div.length === 0) {
-      div = $('<div>').addClass('flag-debug');
-      div.append('<label>flag-debug</label>');
-      div.appendTo(this.output);
+/** <<flag-debug>>: show flags and allow toggling them. */
+function flagDebugSetup() {
+  if (!Config.debug) {
+    Macro.add("flag-debug", {});
+    return;
+  }
+
+  const flagSet = new Set();
+  let toggled = [];
+  $(document).on(":passagestart", () => {
+    flagSet.clear();
+  });
+  Macro.add("flag-debug", {
+    handler: function() {
+      this.args.forEach(f => flagSet.add(f));
     }
-    for (const flag of this.args) {
-      if ($('.v-' + flag, div).length !== 0) continue;
-      const button = $('<a>').text(flag);
-      button.addClass('.v-' + flag);
-      button.addClass(v[flag] ? 'flag-on' : 'flag-off');
-      button.on('click', function() {
+  });
+  $(document).on(":passageend", () => {
+    $(".flag-debug").remove();
+    if (flagSet.size === 0) return;
+    const div = $("<div>").addClass("flag-debug");
+    div.append("<label>flag-debug</label>");
+    $("#passages").prepend(div);
+    const v = State.variables;
+    const flags = Array.from(flagSet).sort();
+    for (const flag of flags) {
+      const button = $("<a>").text(flag);
+      button.addClass(v[flag] ? "flag-on" : "flag-off");
+      if (flag === toggled[0] && v[flag] !== toggled[1]) {
+        button.addClass("flag-was-overridden");
+      }
+      button.on("click", () => {
         v[flag] = !v[flag];
-        Engine.play(State.passage);
+        toggled = [flag, v[flag]];
+        Engine.play(state.passage);
       });
       div.append(button);
     }
-  }
-});
+  });
+}
+
+flagDebugSetup();
 
 
 :: Bound {"position":"2500,175","size":"100,100"}
