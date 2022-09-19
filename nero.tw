@@ -23,7 +23,8 @@ nero
 		"must-fix": "orange",
 		"noreturn": "yellow",
 		"section-start": "green",
-		"text": "blue"
+		"text": "blue",
+		"under-construction": "red"
 	},
 	"zoom": 0.6
 }
@@ -472,31 +473,54 @@ ul.actions li {
 
 /* random walk */
 .random-walk {
-  background-color: #666;
+  bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  font-size: 18px;
+  gap: 4px;
+  position: fixed;
+  right: 4px;
+}
+
+.random-walk a {
+  background-color: #eee;
   border: 1px solid transparent;
   border-radius: 4px;
   color: #000;
   cursor: pointer;
-  font-size: 18px;
+  opacity: 0.3;
   padding: 2px 4px;
-  position: absolute;
-  right: 4px;
-  bottom: 100px;
 }
 
-.random-walk:hover {
+.random-walk a:hover {
   background-color: #333;
-  border-color: #ccc;
-  color: #ccc;
+  border-color: #eee;
+  color: #eee;
 }
 
 .random-walk-chosen {
   outline: 1px solid #9cc;
 }
 
+/* draft indicator */
+.draft-sign {
+  color: rgba(100, 100, 100, 0.3);
+  font-size: 120px;
+  position: fixed;
+  right: 10px;
+  top: 10px;
+  z-index: 100;
+}
+
 
 :: Story JavaScript [script]
+Config.saves.id = 'sleth-mages-tower-2';
 Config.ui.stowBarInitially = true;
+
+// enable debug if URL has ?debug
+if (/[?&]debug\b/.test(location.search)) {
+  Config.debug = true;
+}
 
 if (!Config.debug) {
   Config.history.controls = false;
@@ -512,7 +536,7 @@ if (Config.debug) {
 }
 
 // images workaround for local testing
-if (Config.debug && location.protocol === 'file:') {
+if (location.protocol === 'file:' && /-[0-9a-f]{12}\.html$/.test(location.pathname)) {
   // base for html images (this happens too late for css images)
   $('head').prepend('<base href="https://magestower.slethstories.com/">');
   // add file-url class for css
@@ -529,6 +553,17 @@ $(document).on(':passagestart', function (ev) {
         State.variables.return = ev.passage.title;
     }
 });
+
+// intercept at under-construction passages.
+if (!Config.debug) {
+    Config.navigation.override = destination => {
+        const passage = Story.get(destination);
+        if (passage.tags.includes("under-construction")) {
+            return "n0 Under Construction";
+        }
+        return false;
+    };
+}
 
 /* Health Bar code - Start */
 window.Health = function (CurHP, MaxHP, BarID, Horizontal, Container) {
@@ -596,14 +631,16 @@ let redisplaying = false;
 /**
  * <<flag-debug name ...>> - show flags and allow toggling them.
  *
- * - If a flag is read by the passage, it will have a solid border.
- * - If a flag is written by the passage, it will have a colored background
+ * - "bigMoods" are flags that are always shown in a section.
+ * - Other flags are only shown if they're read or written
+ *   by the passage.
+ * - If a flag is read, it has a solid border.
+ * - If a flag is written, it has a colored background
  *   and toggling will be disabled.
- * - "bigMood" are flags that are always shown in a section.
  */
 function flagDebugSetup() {
   if (!Config.debug) {
-    Macro.add("flag-debug", {});
+    Macro.add("flag-debug", { handler: () => {} });
     return;
   }
 
@@ -626,13 +663,21 @@ function flagDebugSetup() {
     checked.clear();
     originalVars = State.active.variables;
     State.active.variables = new Proxy(originalVars, {
-      set(target, prop, value, receiver) {
+      defineProperty(o, prop) {
         touched.add(prop);
-        return Reflect.set(target, prop, value, receiver);
+        return Reflect.defineProperty(...arguments);
       },
-      get(target, prop, receiver) {
+      deleteProperty(o, prop) {
+        touched.add(prop);
+        return Reflect.deleteProperty(...arguments);
+      },
+      get(o, prop) {
         checked.add(prop);
-        return Reflect.get(target, prop, receiver);
+        return Reflect.get(...arguments);
+      },
+      set(o, prop) {
+        touched.add(prop);
+        return Reflect.set(...arguments);
       }
     })
   });
@@ -693,41 +738,58 @@ function flagDebugSetup() {
     }
 
     for (const flag of Array.from(display).sort()) {
-      div.append(flagButton(flag));
+      if (checked.has(flag) || touched.has(flag)) {
+      	div.append(flagButton(flag));
+      }
     }
   });
 }
 
 flagDebugSetup();
 
-/* random traversal */
+/* random walk */
 function randomWalkSetup() {
   if (!Config.debug) return;
   const walk = () => {
     const avail = $('#passages a[data-passage]');
     const chosen = $('#passages .random-walk-chosen');
-    console.log([avail.length, chosen.length]);
     if (chosen.length === 1) {
       chosen.click();
-    } else if (avail.length === 1) {
-      avail.click();
     } else if (avail.length > 0) {
+      chosen.removeClass('random-walk-chosen');
       const i = random(avail.length - 1);
       $(avail[i]).addClass('random-walk-chosen');
     }
   };
+  const back = () => {
+    const chosen = $('#passages .random-walk-chosen');
+    if (chosen.length > 0) {
+      chosen.removeClass('random-walk-chosen');
+    } else {
+      Engine.backward();
+    }
+  };
   $(document).on(":passageend", () => {
     $(".random-walk").remove();
-    const div = $("<div>").text("walk")
-    div.addClass("random-walk");
-    div.attr("title", "<period> forward\n<comma> backward");
+    const div = $("<div>").addClass("random-walk");
     $("#story").append(div);
-    div.on("click", walk);
+
+    const backDiv = $("<a>").addClass("random-walk-back");
+    backDiv.text("back");
+    backDiv.attr("title", "<comma> backward");
+    backDiv.on("click", back);
+    div.append(backDiv);
+
+    const walkDiv = $("<a>").addClass("random-walk-go");
+    walkDiv.text("walk");
+    walkDiv.attr("title", "<period> forward");
+    walkDiv.on("click", walk);
+    div.append(walkDiv);
   });
   $(document).on("keydown", ev => {
     switch (ev.key) {
       case ".": walk(); break;
-      case ",": Engine.backward(); break;
+      case ",": back(); break;
     }
   });
 }
@@ -770,6 +832,18 @@ Macro.add("n1-patience", {
       case 1: $(this.output).wiki(impatientText); break;
       default: $(this.output).wiki(angryText); break;
     }
+  }
+});
+
+/* draft passage styling */
+$(document).on(":passagestart", ev => {
+  $(".draft-sign").remove();
+  if (/^n\d /.test(ev.passage.title)) {
+    $("html").addClass("nero-draft");
+    const div = $("<div>").addClass("draft-sign").text("draft");
+    $("body").append(div);
+  } else {
+    $('html').removeClass("nero-draft");
   }
 });
 
@@ -7118,7 +7192,7 @@ Nero considers his next move.
 <<set $n1_ivexReceptive = false>>\
 \
 <<n1-patience 6 2
-	'Ivex (The Magificent) speaks. "Again I ask. Who sent you?"'
+	'Ivex (the Magificent) speaks. "Again I ask. Who sent you?"'
     'Ivex stamps an itty bitty foot-paw in annoyance. "Again I ask. Who sent you?"'
     'Ivex snaps his cape and speaks with anger. "Again I ask! Who sent you!"'
 >>
@@ -7134,6 +7208,10 @@ Nero considers his next move.
 
 :: testing {"position":"4875,400","size":"100,100"}
 testing<mark>hello</mark>
+<<script>>
+$(document).on(":passageinit", ev => console.log(ev));
+<</script>>
+[[testing 2]]
 
 
 :: n1 Look {"position":"6675,2150","size":"100,200"}
@@ -7278,7 +7356,7 @@ The blurry figure becomes a person...
 :: =n1 Ivex Intro {"position":"4400,850","size":"100,100"}
 <<flag-debug n1_naked>>\
 \
-Ivex moves away from the <<if $n1_naked>>naked<</if>> bound wolf and settles against the edge of a cluttered desk.
+Ivex (the Magnificent) moves away from the <<if $n1_naked>>naked and<</if>> <<if $n1_smashed>>bound wolf's aching balls<<else>>bound wolf<</if>> and settles against the edge of a cluttered desk.
 
 He's a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, more known for grace than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in any social situation.
 
@@ -7286,12 +7364,19 @@ But this panther mage looks like a knight champion, the type of person with a ca
 
 Or he could be, if he dressed better. His clothes are the facile fashion of a used boat merchant, overshadowed by a large red cape that belongs in a comic operetta. Gaudy rings adorn all the wrong fingers with mismatched gems, and the crowning crime of style is the clasp of the cape, which has an absurdly large gem emitting a magenta glow that does no favors to the panther's black fur.
 
-<<nobr>>
 It all feels like a poor person's idea of what a rich person would wear. Not that Nero would ever tell that to his captor.
-<<if $n1_naked>>
-    Especially since he was completely naked at the moment.
+\
+<<nobr>>
+<<if $n1_smashed>>
+    <br>
+    Especially since Nero has no interest in suffering another blow to his balls.
+    <br>
+<<elseif $n1_naked>>
+    <br>
+    Especially since Nero is completely naked at the moment.
+    <br>
 <</if>>
-<</nobr>>
+<</nobr>>\
 
 Ivex speaks. "So we can do this the easy way, or the hard way. <em>Please</em> make the right choice." He has a grin like a child unwrapping a present. "Tell me, who sent you?"
 
@@ -7559,9 +7644,9 @@ maybe leads to [[n3 tamed desperate]]
 
 
 :: =n1 Endgame {"position":"4200,500","size":"100,100"}
-Nero's limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And he's wary of making any sounds just yet.
+Nero's limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And his throat feels too sore to enunciate anything clearly just yet.
 
-All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn't need broad gestures or words. He's kept the spell's construction a secret, so it doesn't have a proper name yet. Privately he thinks of it as [[Nero's Endgame|=n1 Endgame Info]]. It's a spell of last resort, but bound as he is now, this seems a good time to use it.
+All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn't need broad gestures or precisely spoken words. He's kept the spell's construction a secret, so it doesn't have a proper name yet. Privately he thinks of it as [[Nero's Endgame|=n1 Endgame Info]]. It's a spell of last resort, but bound and helpless as he is now, this seems a good time to use it.
 
 He prepares the spell's image in his mind, and then <em>twists</em> it...
 
@@ -7636,7 +7721,7 @@ output
 
 <<elseif !$n1_magicSight>>
 
-    Perhaps it's time to cast a mage-sight spell, which would be useful for finding a way to bypass Ivex's anti-magic field.
+    Perhaps it's time to cast a mage-sight spell, which might help find a way to bypass Ivex's anti-magic field.
 
     <<if $n1_ivexDistracted>>
         The spell is quiet and emits little energy. Ivex is unlikely to sense it.
@@ -7648,7 +7733,7 @@ output
        Ivex is watching, but he won't be able to stop it, and Nero needs every advantage he can get.
     <</if>>
 
-    <<set $n1_magicAction = "[[Cast a mage-sight spelll.|n1 Cast Reveal]]">>
+    <<set $n1_magicAction = "[[Cast a mage-sight spell.|n1 Cast Reveal]]">>
 
 <<elseif !$n1_magicLinked>>
 
@@ -7692,7 +7777,7 @@ output
 <</nobr>>\
 
 
-:: n1 Ivex Distracted {"position":"5850,1675","size":"200,100"}
+:: n1 Ivex Distracted {"position":"6100,1600","size":"200,100"}
 <<set $n1_ivexDistracted = true>>\
 <<set $n1_afterLook = 'XXX'>>\
 <<set $n1_afterAction = $n1_afterDistract>>\
@@ -7724,9 +7809,9 @@ Five days later, Nero was naked, gagged, and bound to a stone altar in the secre
 
 Back then, Nero's entire magic repertoire required either spoken words, large gestures, or specially prepared materials. None of which were available to him at that moment. Nobody even knew he was there. Escape was impossible.
 
-So when the Upper Cobbler finished sharpening his knife and brought it close to Nero's cock, Nero made a solemn vow to never be this helpless again. Assuming of course that he survived the situation.
+So when the Upper Cobbler finished sharpening his knife and brought toward Nero's naked crotch, Nero made a solemn vow to never be this helpless again. Provided of course he survived the situation...
 
-[[Continue|n1 Endgame Info 2]]
+[[Continue|=n1 Endgame Info 2]]
 
 
 :: =n1 Endgame 2 {"position":"4200,600","size":"100,100"}
@@ -7763,7 +7848,7 @@ breathe, describe candle.
 
 
 :: =n1 Naked {"position":"3525,2000","size":"100,100"}
-Ivex theatrically raises his left arm, then snaps his fingers.
+Ivex "the Magnificent" theatrically raises his left arm, then snaps his fingers.
 
 All of Nero's clothes disappear.
 
@@ -7785,9 +7870,9 @@ The tiger produced a lazy, friendly smile. "It's the first question every canine
 
 Nero wrapped his towel around his nakedness, trying to make it seem like it was just a natural step in the drying of his fur.
 
-The tiger continued with confidence. "It's true that feral feline species, many of them, have keratinous spines on their penis. But we appear to have lost them sometime in the evolution of an upright posture. There's ongoing debate on the subject. Penises are not particularly well preserved in archeological or fossil records. Much of the debate centers on interpretation of some historical writings that appear to mention penile barbs. The most well-known instance is an uncharacteristically vulgar play that is attributed to Jocoros of Ancient Parenthia. But even if the authorship weren't in doubt, the penile-barbed lynx in the play is a manifestation of the god Torna, who represents, among other things, the bestial impulses that arise when people engage in war..."
+The tiger continued with confidence. "It's true that feral feline species, many of them, have keratinous spines on their penis. But we appear to have lost them sometime in the evolution of an upright posture. There's ongoing debate on the subject. Penises are not particularly well preserved in archeological or fossil records. Much of the debate centers on interpretation of some historical writings that appear to mention penile barbs. The most well-known instance is an uncharacteristically vulgar play that is attributed to Jocoros of Ancient Parenthia. But even if the authorship weren't in doubt, the penile-barbed lynx in the play is a manifestation of the god Torna, who represents, among other things, the bestial impulses that arise when people engage in war, and love..."
 
-Nero hurriedly continued to dry himself and scramble into his clothes, nodding at what seemed like appropriate times, trying to maintain a friendly distance without making it seem like he had any interest in the topic.
+Nero hurriedly continued to dry himself and scramble into his clothes, nodding at what seemed like appropriate times, trying to maintain a friendly distance while also trying to avoid giving the impression that he had any interest in the topic.
 
 When he finished dressing, the tiger had left historical lecture behind and was in middle of recounting some personal feedback he'd received from a lover who had experienced both feline and canine cock.
 
@@ -7816,7 +7901,7 @@ nero throws towel at tiger and retreats, laughter behind him.
 [[Continue|=n1 Barbs End]]
 
 
-:: n3 Start [section-start] {"position":"4300,3975","size":"100,100"}
+:: n3 Start [section-start under-construction] {"position":"4300,3975","size":"100,100"}
 <<delete-vars n3_ n4_ n5_ n6_>>\
 <<set $n1_ivexGone = true>>\
 \
@@ -7949,7 +8034,7 @@ else, regret about the mirror. extremely horny, might be distracting.
 [[n5 hallway]]
 
 
-:: n3 tamed desperate [end] {"position":"3825,4725","size":"100,100"}
+:: n3 tamed desperate [end under-construction] {"position":"3825,4725","size":"100,100"}
 XXX bad ending unlocked
 
 ivex returns and laughs at the sight. says horny dog needs some discipline.
@@ -8217,7 +8302,7 @@ take a moment to rest.
 [[n4 free]]
 
 
-:: Content Warning {"position":"2625,75","size":"100,100"}
+:: Content Warning {"position":"2725,25","size":"100,100"}
 This interactive story contains content of an adult nature. If you are easily offended or are under the age of 18, please exit now.
 
 Moreover, this story contains elements that depict dubious or lack of consent, as well as other fetish sexual topics such as mind control, CBT, chastity, and others. If these themes make you uncomfortable or are not enjoyable for you, proceed only at your own discretion.
@@ -8717,7 +8802,17 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 :: =n1 Ivex Intro 2 {"position":"4400,950","size":"100,100"}
 <<flag-debug n1_magicTried>>\
 \
-"There must be some mistake," says Nero. "I don't have any idea what you're talking about,"
+<<nobr>>
+"There must be some mistake,"
+<<if $n1_smashed>>
+   says Nero, as he tries unsuccessfully to use his twitching, wolf tail to shelter his balls.
+<<elseif $n1_naked>>
+    says Nero, as he tries unsuccessfully to use his bushy wolf tail to cover his bare crotch.
+<<else>>
+    says Nero.
+<</if>>
+"I don't have any idea what you're talking about."
+<</nobr>>
 
 Ivex growls. "Don't try to play dumb with me!" He grabs a sheet of paper from the desk. "I found this in your satchel."
 
@@ -8732,7 +8827,7 @@ Nero mentally crosses off one branch of actions from his strategic map. Feigning
 <<nobr>>
 <<if !$n1_magicTried>>
 
-Nero is, after all, an accomplished mage. The bindings restricting his arms are a slight impediment, preventing him from casting his best spells. But there are still several spells that he can usefully deploy in this predicament, whenever the right opportunity presents itself.
+Nero is, after all, an accomplished mage. The bindings restricting his arms are a slight impediment, preventing him from casting his best spells. <<if $n1_naked>>And his nakedness robs him of several magical tools that are sewn into his clothes.<</if>> But there are still several spells that he can usefully deploy in this predicament, whenever the right opportunity presents itself.
 
 <<else>>
 
@@ -8745,7 +8840,7 @@ The anti-magic field is another complication, but [[countering anti-magic|=n1 An
 
 
 :: =n1 Endgame 3 {"position":"4200,700","size":"100,100"}
-The panther notices that Nero is awake, and he emits a giggle. "That tickled! What was that?"
+The panther notices that Nero is watching, and he emits a giggle. "That tickled! What was that?"
 
 Ivex continues staring at the ceiling and tilts his head from side to side. "Is that... Chimeras on Ice? No, wait. I see it now. Raven's Diversion!"
 
@@ -8753,7 +8848,7 @@ Ivex laughs at Nero's face. "I was misled by the power scale. That's a crazy-wea
 
 Nero refrains from comment. Not that the lupine mage wouldn't defend his abilities in other circumstances, but considering his current predicament, it might be useful to appear weaker than he is. He deliberately splays his ears slightly, to signal mild distress.
 
-Ivex laughs again. "Let me show you what a real mage can do. I am Ivex the Magnificent, and I've got something way better than your pathetic Raven's Diversion. Behold, a spell called, <em>Ivex's Diversion</em>!"
+Ivex laughs again. "Let me show you what a real mage can do. I am Ivex the Magnificent, and I've got something way better than your pathetic Raven's Diversion. Behold, a spell called, <em>Ivex the Magnificent's Diversion</em>!"
 
 [[Continue|=n1 Naked]]
 <<set $n1_afterNaked = "[[Continue|=n1 Endgame 4]]">>\
@@ -8994,7 +9089,7 @@ He must do this a lot.
 
 Nero suddenly realizes what his eyes have already been staring at. The panther mage's right paw is firmly grasping his own crotch...
 
-It seems a safe bet that Nero, restrained and exposed on the cross, will soon be unfortunate enough to see Ivex's cock.
+It seems a safe bet that Nero, restrained and exposed as he is, will soon be unfortunate enough to see Ivex the Magnificent's cock.
 
 Ah well. It wouldn't be Nero's first encounter with a feline cock.
 
@@ -9027,20 +9122,16 @@ The tiger spoke with a voice that was low and friendly. He said,
 
 
 :: =n1 Barbs End {"position":"3525,2600","size":"100,100"}
-It's an embarrassing memory of his naive, younger self.
+It's an embarrassing memory from his naive, younger self. And that wasn't even the [[worst bit|=n1 Barbs Extra]].
 
-But that wasn't the worst of it. The day after the encounter in the showers, Nero saw the tiger again in his third-hour class.
+Nero shakes off the memories of feline penises from that ... complicated year. There are much more urgent matters to consider.
 
-Cryptomancy 1 was a perennial favorite of new students, who always enjoy the teaching methodology of the effervescent Magister Starpaw. But a few weeks into the semester, the magister suffered grave injury in an unfortunate encounter with her ex, and she was given leave for the rest of the year to recover.
+Such as, the noticeably horny panther mage who is now fingering the fur on Nero's naked chest.
 
-Fortunately for her students, who would otherwise fall behind in their studies, the Academy was quick to entice an accomplished industrial cryptomancer to take her place.
-
-When the new professor entered the lecture hall and introduced himself, Nero's ears went flat. The professor was the tiger from the showers.
-
-[[Continue|=n1 Barbs End 2]]
+<<link $n1_afterNaked>><</link>>
 
 
-:: =n1 Anti-magic [noreturn] {"position":"3800,900","size":"100,100"}
+:: =n1 Anti-magic [noreturn] {"position":"5100,800","size":"100,100"}
 Anti-magic fields are broadly divided into two categories.
 
 The strongest type of anti-magic simply applies all of its power to the indiscriminate suppression or diversion of all magic energies. It's an effective tactic in war, where an anti-magic division can be supported and defended by other units.
@@ -9049,31 +9140,23 @@ But in less organized situations, mages usually prefer to suppress hostile magic
 
 This is an exceptionally complicated proposition. Lammada's Theorem proves that it's impossible for any spell to perfectly distinguish between correct and incorrect spells. (If such a spell existed, it would be possible to construct a projection of that spell, which would declare itself incorrect, thereby suppressing and contradicting itself.) So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
 
-In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. It does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction. The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
+In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. The selectiveness does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction. The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
 
-Nero is one such expert. Which incidentally also makes him an expert in finding the subtle flaws in the anti-magic fields of other mages.
+Nero is one such expert. Which incidentally also makes him an expert in <em>bypassing</em> the anti-magic fields of other mages.
 
 It's a skill that's been quite useful in his unconventional career.
 
 <<link "Return" $return>><</link>>
 
 
-:: n4 free [section-start] {"position":"4950,4675","size":"100,100"}
+:: n4 free [section-start under-construction] {"position":"4950,4675","size":"100,100"}
 <<delete-vars n4_ n5_ n6_>>\
 \
 [[n4 look around]]
 
 
-:: =n1 Barbs End 2 {"position":"3525,2725","size":"100,100"}
-Nero shakes off the memory of that ... complicated year. There are more pressing matters to consider.
-
-Such as, the noticeably horny panther mage who is now fingering the fur on Nero's naked chest.
-
-<<link $n1_afterNaked>><</link>>
-
-
-:: n1 Endgame Info 2 [noreturn] {"position":"3800,625","size":"100,100"}
-Two weeks later, he enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It's a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It's not a spell he can use often, but it's extremely useful when there are no better options.
+:: =n1 Endgame Info 2 [noreturn] {"position":"3800,625","size":"100,100"}
+Two weeks later, Nero enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It's a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It's not a spell he can use often, but it's extremely useful when there are no better options.
 
 All he has to do is hold in his mind an image of the glyphs on his shaven ass as he's seen in a mirror, and mentally <em>twist</em> their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
 
@@ -9086,5 +9169,29 @@ The unusual ass-inscribed construction has another limitation: neither spell wil
 It's saved his life more than once.
 
 <<link "Return" $return>><</link>>
+
+
+:: n0 Under Construction {"position":"3000,400","size":"100,100"}
+<em>Congratulations. You've reached an "Under Construction" point in Nero's story.</em>
+
+[[Back to Title|Title Screen]]
+
+
+:: =n1 Barbs Extra [noreturn] {"position":"3375,2600","size":"100,100"}
+The day after the encounter in the showers, Nero saw the tiger again in his third-hour class.
+
+Cryptomancy 1 was a perennial favorite of new students, who always enjoyed the dynamic teaching methodology of the effervescent Magister Starpaw. But a few weeks into the semester, the magister suffered grave injury in an unfortunate encounter with her ex, and she was given leave for the rest of the year to recover.
+
+Fortunately for her students, who would otherwise fall behind in their studies, the Academy was quick to entice an accomplished industrial cryptomancer, Mica Tebron, to take her place. There was some excitement about the appointment. Mica was said to have lost his right arm in a lab accident, and instead of having a healer grow a replacement, he had built one himself out of mechanics and magic, imbuing it with fantastic powers that he was occasionally willing to demonstrate.
+
+The day of the professor's inaugural appearance, Nero arrived late. The lecture hall was already overflowing with many more students than were officially enrolled in the class. Nero shoved his way through throngs of eager students, trying to reach his canine friends. But the audience was too packed and chaotic. There was little chance of him reaching such a specific goal, so he settled for finding a place to stand that would give him a view of the lectern, currently occupied by the Academy President in the middle of a flavorless introduction.
+
+Nero's motion through the crowd came to an end when he became stuck in a cluster of older feline students, who were not at all pleased to accommodate him there. The nearest one grimaced at him, and a skinny lion behind him proceeded to insult Nero's ancestry.
+
+But when Mica entered, the lion, and the entire room of students, went silent. The new professor walked in with his arm raised and surrounded by a swirl of glowing stripes. And as he brought his hand down and across his chest in a confident sixth-weave pattern, an orb of intertwined water and fire appeared in his palm and grew to become an explosion of ice that sprinkled the nearest students with glittery snow.
+
+Everyone was astonished at the sight. Nero especially so. His ears were completely flat. Mica was the tiger from the showers.
+
+<<link Return $return>><</link>>
 
 
