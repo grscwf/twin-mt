@@ -407,7 +407,7 @@ ul.actions li {
 
 .flag-debug label {
   color: #888;
-  margin-right: 16px;
+  margin-right: 8px;
 }
 
 .flag-debug label:hover {
@@ -421,7 +421,17 @@ ul.actions li {
 .flag-debug .flag-big-moods {
   display: inline;
   font-weight: bold;
-  margin-right: 16px;
+}
+
+.flag-debug .flag-separator {
+  display: inline;
+  border-left: 1px solid #999;
+  margin-left: 8px;
+  padding-left: 16px;
+}
+
+.flag-debug .flag-other {
+  display: inline;
 }
 
 .flag-debug a {
@@ -625,6 +635,25 @@ Macro.add("optional-action", {
   }
 });
 
+/** enums */
+let enums = {};
+
+function defineEnum(enumName, valueNames) {
+  enums[enumName] = valueNames;
+  valueNames.forEach((n, i) => window[n] = i);
+}
+
+defineEnum("MagicPhase", [
+  "MP_beforeCast",
+  "MP_triedMagic",
+  "MP_magicSight",
+  "MP_wantDevice",
+  "MP_wantName",
+  "MP_wantTouch",
+  "MP_wantPassword",
+  "MP_connected",
+]);
+
 /** True when flag-debug is re-displaying current passage. */
 let redisplaying = false;
 
@@ -637,6 +666,7 @@ let redisplaying = false;
  * - If a flag is read, it has a solid border.
  * - If a flag is written, it has a colored background
  *   and toggling will be disabled.
+ * - For enum flags, click increases, shift-click decreases.
  */
 function flagDebugSetup() {
   if (!Config.debug) {
@@ -644,25 +674,59 @@ function flagDebugSetup() {
     return;
   }
 
-  const bigMoods = [
-    [["n1 ", "=n1 ", "n2 ", "=n2 "],
-     ["n1_naked", "n1_smashed"]],
-    [["n2 ", "=n2 "],
-     ["n1_licked"]]
-  ];
+  const bigMoodVars = {
+    n1_licked: ["n1 "],
+    n1_naked: ["n1 ", "n2 "],
+    n1_smashed: ["n1 "],
+  };
+  const enumVars = {
+    magicPhase: "MagicPhase",
+  };
   
   const display = new Set();
   const touched = new Set();
   const checked = new Set();
-  let originalVars;
+  let hidden = false;
+  let actualVars;
   
+  const flagButton = flag => {
+    const v = actualVars;
+    const button = $("<a>");
+    const flagEnum = enumVars[flag];
+    if (flagEnum != null) {
+      button.text(flag + ":" + (enums[flagEnum][v[flag]] ?? v[flag]));
+      button.addClass("flag-enum flag-enum-" + flagEnum);
+    } else {
+      button.text(flag);
+      button.addClass(v[flag] ? "flag-on" : "flag-off");
+    }
+    if (checked.has(flag)) button.addClass("flag-was-read");
+    if (touched.has(flag)) button.addClass("flag-was-set");
+    if (!touched.has(flag) || checked.has(flag)) {
+      button.on("click", (ev) => {
+        if (flagEnum != null) {
+          const n = enums[flagEnum].length;
+          v[flag] += ev.shiftKey ? n - 1 : 1;
+          v[flag] %= n;
+        } else {
+          v[flag] = !v[flag];
+        }
+        redisplaying = true;
+        Engine.show();
+        redisplaying = false;
+        $("html").addClass("fast-transition");
+      });
+    }
+    return button;
+  }
+
   $(document).on(":passagestart", () => {
     $("html").removeClass("fast-transition");
     display.clear();
     touched.clear();
     checked.clear();
-    originalVars = State.active.variables;
-    State.active.variables = new Proxy(originalVars, {
+    actualVars = State.active.variables;
+    State.active.variables = new Proxy(actualVars, {
       defineProperty(o, prop) {
         touched.add(prop);
         return Reflect.defineProperty(...arguments);
@@ -687,15 +751,17 @@ function flagDebugSetup() {
     }
   });
   $(document).on(":passageend", () => {
-    const hidden = $(".flag-debug").hasClass("flag-hide");
     $(".flag-debug").remove();
-    State.active.variables = originalVars;
+
+    State.active.variables = actualVars;
+    const v = actualVars;
 
     const here = State.passage;
     const bigMood = new Set();
-    for (const rule of bigMoods) {
-      if (rule[0].some(p => here.startsWith(p))) {
-        rule[1].forEach(f => bigMood.add(f));
+    for (const [name, regions] of Object.entries(bigMoodVars)) {
+      if (regions.some(r => here.startsWith(r) || here.startsWith("=" + r))) {
+        bigMood.add(name);
+        display.delete(name);
       }
     }
 
@@ -706,41 +772,30 @@ function flagDebugSetup() {
     $("#story").prepend(div);
 
     const label = $("<label>").text("flag-debug");
-    label.on("click", () => div.toggleClass("flag-hide"));
+    label.on("click", () => {
+      hidden = !hidden;
+      div.toggleClass("flag-hide");
+    });
     div.append(label);
 
-    const bigDiv = $("<div>").addClass("flag-big-moods");
-    if (bigMood.size !== 0) div.append(bigDiv);
-
-    const v = State.variables;
-    const flags = Array.from(display).sort();
-
-    const flagButton = flag => {
-      const button = $("<a>").text(flag);
-      button.addClass(v[flag] ? "flag-on" : "flag-off");
-      if (checked.has(flag)) button.addClass("flag-was-read");
-      if (touched.has(flag)) button.addClass("flag-was-set");
-      if (!touched.has(flag)) {
-        button.on("click", () => {
-          v[flag] = !v[flag];
-          redisplaying = true;
-          Engine.show();
-          redisplaying = false;
-          $("html").addClass("fast-transition");
-        });
-      }
-      return button;
+    if (bigMood.size !== 0) {
+      const bigDiv = $("<div>").addClass("flag-big-moods");
+      div.append(bigDiv);
+      Array.from(bigMood).sort().forEach(flag => {
+        bigDiv.append(flagButton(flag));
+      })
     }
 
-    for (const flag of Array.from(bigMood).sort()) {
-      display.delete(flag);
-      bigDiv.append(flagButton(flag));
+    if (bigMood.size !== 0 && display.size !== 0) {
+      div.append($("<div>").addClass("flag-separator"));
     }
 
-    for (const flag of Array.from(display).sort()) {
-      if (checked.has(flag) || touched.has(flag)) {
-      	div.append(flagButton(flag));
-      }
+    if (display.size !== 0) {
+      const otherDiv = $("<div>").addClass("flag-other");
+      div.append(otherDiv);
+      Array.from(display).sort().forEach(flag => {
+        otherDiv.append(flagButton(flag));
+      })
     }
   });
 }
@@ -8479,7 +8534,7 @@ exasperated sigh.
 <<set $n1_ivexReceptive = false>>\
 \
 <<n1-patience 1 1
-    'Ivex: you think you're my equal?'
+    "Ivex: you think you're my equal?"
 >>
 
 <<nobr>>
@@ -8811,7 +8866,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<nobr>>
 "There must be some mistake,"
 <<if $n1_smashed>>
-   says Nero, as he tries unsuccessfully to use his twitching, wolf tail to shelter his balls.
+   says Nero, as he tries unsuccessfully to use his twitching wolf tail to shelter his balls.
 <<elseif $n1_naked>>
     says Nero, as he tries unsuccessfully to use his bushy wolf tail to cover his bare crotch.
 <<else>>
