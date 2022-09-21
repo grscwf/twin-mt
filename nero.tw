@@ -442,9 +442,6 @@ ul.actions li {
   padding: 2px 4px;
 }
 
-.flag-debug a:not(:last-child) {
-}
-
 .flag-debug a.flag-was-set {
   cursor: not-allowed;
 }
@@ -460,6 +457,15 @@ ul.actions li {
 
 .flag-debug a.flag-on {
   color: #6a6;
+}
+
+.flag-debug .flag-enum-outer {
+  color: #888;
+  white-space: nowrap;
+}
+
+.flag-debug .flag-enum-value {
+  color: #888;
 }
 
 .flag-debug a.flag-was-set {
@@ -516,10 +522,11 @@ ul.actions li {
 .draft-sign {
   color: rgba(100, 100, 100, 0.3);
   font-size: 120px;
+  pointer-events: none;
   position: fixed;
   right: 10px;
   top: 10px;
-  z-index: 100;
+  z-index: -1;
 }
 
 
@@ -666,7 +673,7 @@ let redisplaying = false;
  * - If a flag is read, it has a solid border.
  * - If a flag is written, it has a colored background
  *   and toggling will be disabled.
- * - For enum flags, click increases, shift-click decreases.
+ * - For enum flags, click increases, ctrl-click decreases.
  */
 function flagDebugSetup() {
   if (!Config.debug) {
@@ -676,29 +683,36 @@ function flagDebugSetup() {
 
   const bigMoodVars = {
     n1_licked: ["n1 "],
+    n1_magicPhase: ["n1 ", "n2 "],
     n1_naked: ["n1 ", "n2 "],
     n1_smashed: ["n1 "],
   };
   const enumVars = {
-    magicPhase: "MagicPhase",
+    n1_magicPhase: "MagicPhase",
   };
-  
+
   const display = new Set();
   const touched = new Set();
   const checked = new Set();
   let hidden = false;
   let actualVars;
-  
+
   const flagButton = flag => {
     const v = actualVars;
-    const button = $("<a>");
+    const outer = $("<span>").addClass("flag-button-outer");
+    const button = $("<a>").addClass("flag-button");
+    outer.append(button);
+
     const flagEnum = enumVars[flag];
     if (flagEnum != null) {
-      button.text(flag + ":" + (enums[flagEnum][v[flag]] ?? v[flag]));
-      button.addClass("flag-enum flag-enum-" + flagEnum);
+      outer.addClass("flag-enum-outer");
+      // outer.prepend($("<span>").addClass("flag-enum-sep").text("="));
+      // outer.prepend($("<span>").addClass("flag-enum-name").text(flag));
+      const value = enums[flagEnum][v[flag]] || v[flag];
+      button.attr("title", flag + "=" + v[flag]).addClass("flag-enum-value").text(value);
     } else {
-      button.text(flag);
       button.addClass(v[flag] ? "flag-on" : "flag-off");
+      button.text(flag);
     }
     if (checked.has(flag)) button.addClass("flag-was-read");
     if (touched.has(flag)) button.addClass("flag-was-set");
@@ -706,7 +720,7 @@ function flagDebugSetup() {
       button.on("click", (ev) => {
         if (flagEnum != null) {
           const n = enums[flagEnum].length;
-          v[flag] += ev.shiftKey ? n - 1 : 1;
+          v[flag] += ev.ctrlKey ? n - 1 : 1;
           v[flag] %= n;
         } else {
           v[flag] = !v[flag];
@@ -717,7 +731,7 @@ function flagDebugSetup() {
         $("html").addClass("fast-transition");
       });
     }
-    return button;
+    return outer;
   }
 
   $(document).on(":passagestart", () => {
@@ -766,7 +780,7 @@ function flagDebugSetup() {
     }
 
     if (bigMood.size === 0 && display.size === 0) return;
-    
+
     const div = $("<div>").addClass("flag-debug");
     if (hidden) div.addClass("flag-hide");
     $("#story").prepend(div);
@@ -7228,6 +7242,7 @@ Thank you so much!
 
 :: =n1 Start [section-start] {"position":"4400,375","size":"100,100"}
 <<delete-vars n1_ n2_ n3_ n4_ n5_ n6_>>\
+<<set $n1_magicPhase = MP_beforeCast>>
 \
 Nero's head feels stuffed, like it's crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically recites Pearson's Hangover Cantrip, but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 
@@ -7275,32 +7290,19 @@ $(document).on(":passageinit", ev => console.log(ev));
 <!--
 look states
 - n4_free
-	- n1_wantDevice
-	- n1_wantName
-	- n1_wantTouch
-	- n1_wantPassword
-    - n1_passwordWait
+  - n1_magicPhase
 	- n3_extraHorny
 	- n3_mirrorBroken
     - n4_wrongTouch
 - n3_ivexGone (bound)
-	- n1_wantDevice
-	- n1_wantName
-	- n1_wantTouch
-	- n1_wantPassword
+  - n1_magicPhase
 - otherwise (n1, ivex, bound)
-	- n1_magicSight
-	- n1_wantDevice
-	- n1_wantName
-	- n1_wantTouch
-	- n1_wantPassword
-    - n1_passwordWait
-    - n1_ivexDistracted
+	- n1_magicPhase
+  - n1_ivexDistracted
 	- n1_ivexReceptive
 	- n1_ivexImpatient
 -->
-<<flag-debug n1_wantSight n1_wantDevice n1_wantName n1_wantTouch n1_wantPassword>>
-<<flag-debug n1_passwordWait>>
+<<flag-debug n1_magicPhase>>
 <<flag-debug n3_extraHorny n3_mirrorBroken n4_wrongTouch>>
 <<flag-debug n1_ivexDistracted n1_ivexReceptive>>
 
@@ -7729,15 +7731,6 @@ nero confident that he can escape.
 :: n1 Magic {"position":"6275,2250","size":"100,200"}
 <<nobr>>
 <!--
-magic state flags
-- n1_magicTried - after casting first spell
-- n1_magicSight - after casting reveal
-- n1_magicLinked - after connecting to sprite
-- n1_wantDevice - sprite wants device
-- n1_wantName - sprite wants device name
-- n1_wantTouch - sprite wants touch
-- n1_wantPassword - sprite wants password
-- n1_passwordWait - processing password
 
 other flags
 - n4_wrongTouch - nero touched after escape
@@ -7753,11 +7746,12 @@ output
 - n1_magicAction - provides  link for an available magic action
 -->
 
-<<flag-debug n1_magicTried n1_magicSight n1_magicLinked>>
-<<flag-debug n1_wantDevice n1_wantName n1_wantTouch n1_wantPassword>>
+<<flag-debug n1_magicPhase>>
 <<flag-debug n1_ivexDistracted n1_ivexReceptive>>
+<<run if ($n1_magicPhase == null) $n1_magicPhase = MP_beforeCast>>
 
-<<if !$n1_magicTried>>
+<<switch $n1_magicPhase>>
+<<case `MP_beforeCast`>>
 
     <<if $n1_ivexDistracted>>
         Ivex isn't watching. Perhaps Nero can use this moment to prepare a quiet, lengthy spell that will guarantee his escape.
@@ -7766,19 +7760,19 @@ output
     <<elseif $n1_ivexReceptive>>
         Ivex seems receptive. Perhaps this is a good time for Nero to impress him with a flashy but harmless spell, ideally one that would also bring him closer to escape.
         <<set $n1_magicAction = "[[Cast a flashy spell.|n1 Cast Strength]]">>
-        
+
     <<else>>
         Ivex is staring like a predator, so if Nero tries a spell, it should be fast and decisive. Or perhaps he should try something else first.
         <<set $n1_magicAction = "[[Cast an attack spell.|n1 Cast Attack]]">>
     <</if>>
 
-<<elseif !$n1_magicSight>>
+<<case `MP_triedMagic`>>
 
     Perhaps it's time to cast a mage-sight spell, which might help find a way to bypass Ivex's anti-magic field.
 
     <<if $n1_ivexDistracted>>
         The spell is quiet and emits little energy. Ivex is unlikely to sense it.
-    
+
     <<elseif $n1_ivexReceptive>>
         Ivex is watching, but mage-sight is a conventional move in tactical magic, and it might reassure the panther about the wolf mage's competence.
 
@@ -7788,12 +7782,12 @@ output
 
     <<set $n1_magicAction = "[[Cast a mage-sight spell.|n1 Cast Reveal]]">>
 
-<<elseif !$n1_magicLinked>>
+<<case `MP_magicSight`>>
 
      XXX mage-sight shows energy diverters and firewalls, but the mirror isn't firewalled, and it has a connection node. [[n1 mirror]]
     <<set $n1_magicAction = null>>
 
-<<elseif $n1_wantDevice>>
+<<case `MP_wantDevice`>>
 
     XXX sprite: which device do you want to access.
     <<flag-debug n1_sawBottle>>
@@ -7803,7 +7797,7 @@ output
         <<set $n1_magicAction = "[[Whisper to the sprite and ask for help.|n1 Help List]]">>
     <</if>>
 
-<<elseif $n1_wantName>>
+<<case `MP_wantName`>>
 
     sprite: there's more than one poltergeist device available, which one do you want to access.
     <<flag-debug n1_knowsName>>
@@ -7813,19 +7807,23 @@ output
         <<set $n1_magicAction = "[[Whisper to the sprite and ask for help.|n1 Help List]]">>
     <</if>>
 
-<<elseif $n1_wantTouch>>
+<<case `MP_wantTouch`>>
 
     sprite: psi metrics have diverged. please touch my hole to re-establish identification.
     <<set $n1_magicAction = '[[Whisper to the sprite and ask for help.|n1 Help Touch]]'>>
 
-<<elseif $n1_wantPassword>>
+<<case `MP_wantPassword`>>
 
     sprite: ok, you're connected. what's the password
     <<set $n1_magicAction = "[[Whisper a password to the sprite.|n1 Guess Password]]">>
 
-<<else>>
-	XXX linked, and satisfied all prompts
-<</if>>
+<<case `MP_connected`>>
+	  XXX linked, and satisfied all prompts
+
+<<default>>
+    <<run throw new Error("bug")>>
+
+<</switch>>
 
 <</nobr>>\
 
@@ -8369,7 +8367,7 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 
 
 :: n1 Cast Attack {"position":"5825,2050","size":"100,100"}
-<<set $n1_magicTried = true>>\
+<<set $n1_magicPhase = MP_triedMagic>>\
 \
 ivex watching and not receptive.
 guns blazing, cast spell to disable Ivex. tricky to do in a mage's home turf, but Nero knows a trick that most mages don't.
@@ -8388,7 +8386,7 @@ stuff about anti-magic.
 
 
 :: n1 Cast Reveal {"position":"5825,2175","size":"100,100"}
-<<set $n1_magicSight = true>>\
+<<set $n1_magicPhase = MP_magicSight>>\
 <<set $n1_afterNaked = $n1_afterAction>>\
 \
 cast mage-sight.
@@ -8402,30 +8400,13 @@ it's not a total failure, you see the mirror is special
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 Send Ping {"position":"5825,2300","size":"100,100"}
-<<set $n1_magicLinked = true>>\
-<<set $n1_wantDevice = true>>\
-\
-send probe to mirror. completely covert
-
-the mirror responds: Connected to Ivex's Awesome Thing Version 1.3
-
-nero recognizes, it's a sprite! definitely something he can work with.
-
-sprite: please specify what device to connect to.
-
-Ivex annoyed: pay attention!
-
-<<link $n1_afterAction>><</link>>
-
-
-:: n1 Guess Password {"position":"5950,2800","size":"100,100"}
+:: n1 Guess Password {"position":"5950,2675","size":"100,100"}
 list of plausible passwords based on things you've seen, plus a few generic guesses.
 
 [[n1 Wrong Password]]
 
 
-:: n1 Wrong Password {"position":"6075,2800","size":"100,100"}
+:: n1 Wrong Password {"position":"6075,2675","size":"100,100"}
 ivex: what was that? speak up.
 
 sprite: password incorrect, try again.
@@ -8475,7 +8456,7 @@ Still, whatever route brought him here, a success is a success. The rest of the 
 [[Continue|=n1 Ivex Intro]]
 
 
-:: n1 Help Touch {"position":"5950,2675","size":"100,100"}
+:: n1 Help Touch {"position":"5950,2550","size":"100,100"}
 ivex sneers: there's no help for you
 
 sprite: please choose from the following help topics: no topics found.
@@ -8483,7 +8464,7 @@ sprite: please choose from the following help topics: no topics found.
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 Help List {"position":"5825,2425","size":"100,100"}
+:: n1 Help List {"position":"5825,2300","size":"100,100"}
 ivex: what is there? what is there but despair.
 
 sprite:, device listing: remember to implement this some day.
@@ -8495,9 +8476,8 @@ vary on revisit
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 say name {"position":"5950,2550","size":"100,100"}
-<<set $n1_wantName = false>>\
-<<set $n1_wantTouch = true>>\
+:: n1 say name {"position":"5950,2425","size":"100,100"}
+<<set $n1_magicPhase = MP_wantTouch>>\
 \
 ivex: oh yeah, you definitely want to feel it.
 
@@ -8516,9 +8496,8 @@ ok, that's a standard security barrier, just need to get ivex to touch the hole,
 <<link $n1_afterAction>><</link>>
 
 
-:: n1 say matrix {"position":"5950,2425","size":"100,100"}
-<<set $n1_wantDevice = false>>\
-<<set $n1_wantName = true>>\
+:: n1 say matrix {"position":"5950,2300","size":"100,100"}
+<<set $n1_magicPhase = MP_wantName>>\
 \
 ivex: hah, would you like to feel that
 
@@ -8700,7 +8679,7 @@ grab balls
 
 
 :: n1 Cast Escape {"position":"6075,2050","size":"100,100"}
-<<set $n1_magicTried = true>>\
+<<set $n1_magicPhase = MP_triedMagic>>\
 \
 Ivex not watching, try escape. fails.
 
@@ -8714,7 +8693,7 @@ stuff about anti-magic.
 
 
 :: n1 Cast Strength {"position":"5950,2050","size":"100,100"}
-<<set $n1_magicTried = true>>\
+<<set $n1_magicPhase = MP_triedMagic>>\
 \
 Ivex watching and receptive,
 try to cast strength to break bonds.
@@ -8804,13 +8783,12 @@ if wantPassword, this is the clever escape. [[n1 clever escape]]
 :: n1 ask cards {"position":"7625,2900","size":"100,100"}
 ivex touches coin
 
-<<if $n1_wantTouch>>\
+<<if $n1_magicPhase === MP_wantTouch>>\
    authentication succeeded.
    connecting...
    what's the password?
-   
-   <<set $n1_wantTouch = false>>\
-    <<set $n1_wantPassword = true>>\
+
+   <<set $n1_magicPhase = MP_wantPassword>>\
 <</if>>\
 
 <<link $n1_afterAction>><</link>>
@@ -8861,8 +8839,6 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 
 
 :: =n1 Ivex Intro 2 {"position":"4400,950","size":"100,100"}
-<<flag-debug n1_magicTried>>\
-\
 <<nobr>>
 "There must be some mistake,"
 <<if $n1_smashed>>
@@ -8886,7 +8862,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 Nero mentally crosses off one branch of actions from his strategic map. Feigning ignorance was a long shot, but it had been worth trying. There are plenty of other paths to victory.
 
 <<nobr>>
-<<if !$n1_magicTried>>
+<<if $n1_magicPhase < MP_triedMagic>>
 
 Nero is, after all, an accomplished mage. The bindings restricting his arms are a slight impediment, preventing him from casting his best spells. <<if $n1_naked>>And his nakedness robs him of several magical tools that are sewn into his clothes.<</if>> But there are still several spells that he can usefully deploy in this predicament, whenever the right opportunity presents itself.
 
@@ -8916,7 +8892,7 @@ Ivex laughs again. "Let me show you what a real mage can do. I am Ivex the Magni
 
 
 :: =n1 Endgame 4 [big-mood] {"position":"4250,825","size":"100,100"}
-<<set $n1_magicTried = true>>\
+<<set $n1_magicPhase = MP_triedMagic>>\
 <<set $n1_naked = true>>\
 \
 Ivex touches the claw of his index finger to Nero's exposed left nipple.
@@ -9257,14 +9233,14 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 
 
 :: n1 connect {"position":"6700,3300","size":"100,100"}
+<<set $n1_magicPhase = MP_wantDevice>>\
+
 mage-sight on. connecting to available node through mirror.
 
 node is a Sprite, sort of an AI assistant. cheerily says "Welcome Ivex the Magnificent, I am your Awesome Sprite Version 1.7. What device would you like to control, Master?"
 
 sprite responds to you psychically, but requres you to talk to it out loud.
 
-<<set $n1_magicLinked = true>>
-<<set $n1_wantDevice = true>>
 
 <<link $n1_afterAction>><</link>>
 
