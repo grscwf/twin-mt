@@ -771,7 +771,7 @@ function flagDebugSetup() {
       outer.addClass("flag-enum-outer");
       // outer.prepend($("<span>").addClass("flag-enum-sep").text("="));
       // outer.prepend($("<span>").addClass("flag-enum-name").text(flag));
-      const value = enums[flagEnum][v[flag]] || v[flag];
+      const value = enums[flagEnum][v[flag] || 0] || v[flag];
       button.attr("title", flag + "=" + v[flag]).addClass("flag-enum-value").text(value);
     } else {
       button.addClass(v[flag] ? "flag-on" : "flag-off");
@@ -783,6 +783,7 @@ function flagDebugSetup() {
       button.on("click", (ev) => {
         if (flagEnum != null) {
           const n = enums[flagEnum].length;
+          v[flag] ||= 0;
           v[flag] += ev.ctrlKey ? n - 1 : 1;
           v[flag] %= n;
         } else {
@@ -6720,9 +6721,33 @@ All this would be an overwhelming disadvantage to most spellcasters, but Nero al
 
 He prepares the spell&#39;s image in his mind, and then &lt;em&gt;twists&lt;/em&gt; it...
 
-[[Continue|=n1 Endgame 2]]</tw-passagedata><tw-passagedata pid="263" name="n1 Charm" tags="" position="4625,1200" size="100,100">nero: no, I got the dossier from a bounty hunter who failed to capture me. it&#39;s impressive, I knew I had to try to meet you
+[[Continue|=n1 Endgame 2]]</tw-passagedata><tw-passagedata pid="263" name="n1 Charm" tags="" position="4625,1200" size="100,100">&quot;There&#39;s been a misunderstanding,&quot; says Nero. &quot;I wasn&#39;t &lt;em&gt;given&lt;/em&gt; your dossier. I &lt;em&gt;stole&lt;/em&gt; it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore.&quot;
 
-ivex: really. why?
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if $n1_magicPhase &lt; MP_magicSight&gt;&gt;
+
+Ivex seems intrigued. Good. Perhaps the right story will lower the panther&#39;s guard, and then Nero can fulfill his commission with a minimum of fuss.
+
+&lt;&lt;elseif $n1_magicPhase &lt; MP_wantDevice&gt;&gt;
+
+Ivex seems intrigued. Spinning an enticing tale might distract the panther long enough for Nero to find a flaw in his anti-magic field.
+
+&lt;&lt;elseif $n1_magicPhase &lt; MP_wantPassword&gt;&gt;
+
+Ivex seems intrigued. A little more seduction, and soon Nero will have the keys to the panther mage&#39;s kingdom.
+
+&lt;&lt;else&gt;&gt;
+&lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+
+Nero continues. &quot;The ship captain was kind enough to let me search the bounty hunter&#39;s luggage, and in his papers I found your dossier. It&#39;s astonishing. When I read your exploits, I knew I had to meet you.&quot;
+
+&quot;Finally!&quot; says Ivex. &quot;... I mean, it&#39;s funny that bounty hunters keep falling into my traps. But I&#39;ve been really trying to meet other types of people. You&#39;re not what I expected. But, gotta start somewhere, right?&quot;
+
+XXX nero, unsure how to respond. consider naked, and smashed.
+
+Ivex grins. &quot;Now that you&#39;ve found me, what do you want?&quot;
 
 &lt;&lt;nobr&gt;&gt;&lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;[[want to recruit|n1 Recruit]]&lt;/li&gt;
@@ -6765,16 +6790,20 @@ output
         &lt;&lt;set $n1_magicAction = &quot;[[Cast a flashy spell.|n1 Cast Strength]]&quot;&gt;&gt;
 
     &lt;&lt;else&gt;&gt;
-        Ivex is staring like a predator, so if Nero tries a spell, it should be fast and decisive. Or perhaps he should try something else first.
+        Ivex is staring like a predator, so if Nero tries a spell, it should be fast and decisive.
+        &lt;&lt;if !$n1_somethingElseOnce&gt;&gt;
+            &lt;&lt;set $n1_somethingElseOnce true&gt;&gt;
+            Or perhaps he should try something else first.
+        &lt;&lt;/if&gt;&gt;
         &lt;&lt;set $n1_magicAction = &quot;[[Cast an attack spell.|n1 Cast Attack]]&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;case `MP_triedMagic`&gt;&gt;
 
-    Perhaps it&#39;s time to cast a mage-sight spell, which might help find a way to bypass Ivex&#39;s anti-magic field.
+    Perhaps it&#39;s time to cast mage-sight and look for a way to bypass Ivex&#39;s anti-magic field.
 
     &lt;&lt;if $n1_ivexDistracted&gt;&gt;
-        The spell is quiet and emits little energy. Ivex is unlikely to sense it.
+        Mage-sight is quiet and emits little energy. Ivex is unlikely to sense it.
 
     &lt;&lt;elseif $n1_ivexReceptive&gt;&gt;
         Ivex is watching, but mage-sight is a conventional move in tactical magic, and it might reassure the panther about the wolf mage&#39;s competence.
@@ -6783,7 +6812,7 @@ output
        Ivex is watching, but he won&#39;t be able to stop it, and Nero needs every advantage he can get.
     &lt;&lt;/if&gt;&gt;
 
-    &lt;&lt;set $n1_magicAction = &quot;[[Cast a mage-sight spell.|n1 Cast Reveal]]&quot;&gt;&gt;
+    &lt;&lt;set $n1_magicAction = &quot;[[Cast mage-sight.|n1 Cast Reveal]]&quot;&gt;&gt;
 
 &lt;&lt;case `MP_magicSight`&gt;&gt;
 
@@ -7836,7 +7865,7 @@ Cryptomancy 1 was a perennial favorite of new students, who always enjoyed the d
 
 Fortunately for her students, who would otherwise fall behind in their studies, the Academy was quick to entice an accomplished industrial cryptomancer, Mica Tebron, to take her place. There was some excitement about the appointment. Mica was said to have lost his right arm in a lab accident, and instead of having a healer grow a replacement, he had built one himself out of mechanics and magic, imbuing it with fantastic powers that he was occasionally willing to demonstrate.
 
-The day of the professor&#39;s inaugural appearance, Nero arrived late. The lecture hall was already overflowing with many more students than were officially enrolled in the class. Nero shoved his way through throngs of eager students, trying to reach his canine friends. But the audience was too packed and chaotic. There was little chance of him reaching such a specific goal, so he settled for finding a place to stand that would give him a view of the lectern, currently occupied by the Academy President in the middle of a flavorless introduction.
+The day of the professor&#39;s inaugural appearance, Nero arrived late. The lecture hall was already overflowing with many more students than were officially enrolled in the class. Nero shoved his way through throngs of eager students, trying to reach his canine friends. But the audience was too packed and chaotic. There was little chance of him reaching such a specific goal, so he settled for trying to find a place to stand that would give him a view of the lectern, currently occupied by the Academy President in the middle of a flavorless introduction.
 
 Nero&#39;s motion through the crowd came to an end when he became stuck in a cluster of older feline students, who were not at all pleased to accommodate him there. The nearest one grimaced at him, and a skinny lion behind him proceeded to insult Nero&#39;s ancestry.
 
