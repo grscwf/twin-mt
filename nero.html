@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="nero" startnode="169" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="169" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position:relative;
 }
@@ -784,8 +784,8 @@ function flagDebugSetup() {
         if (flagEnum != null) {
           const n = enums[flagEnum].length;
           v[flag] ||= 0;
-          v[flag] += ev.ctrlKey ? n - 1 : 1;
-          v[flag] %= n;
+          v[flag] += ev.ctrlKey ? -1 : 1;
+          v[flag] = Math.max(0, Math.min(v[flag], n - 1));
         } else {
           v[flag] = !v[flag];
         }
@@ -883,17 +883,7 @@ flagDebugSetup();
 /* random walk */
 function randomWalkSetup() {
   if (!Config.debug) return;
-  const walk = () => {
-    const avail = $('#passages a[data-passage]');
-    const chosen = $('#passages .random-walk-chosen');
-    if (chosen.length === 1) {
-      chosen.click();
-    } else if (avail.length > 0) {
-      chosen.removeClass('random-walk-chosen');
-      const i = random(avail.length - 1);
-      $(avail[i]).addClass('random-walk-chosen');
-    }
-  };
+
   const back = () => {
     const chosen = $('#passages .random-walk-chosen');
     if (chosen.length > 0) {
@@ -902,6 +892,35 @@ function randomWalkSetup() {
       Engine.backward();
     }
   };
+
+  const visited = new Set();
+  const lastPick = {};
+  const id = el => [$(el).attr('data-passage'), $(el).text()].join('|');
+  const walk = () => {
+    const chosen = $('#passages .random-walk-chosen');
+    if (chosen.length === 1) {
+      chosen.click();
+      return;
+    }
+    chosen.removeClass('random-walk-chosen');
+
+    const here = State.passage;
+    const all = $('#passages a[data-passage]');
+    if (all.length === 0) return;
+
+    let avail = all.filter((i, el) => !visited.has(id(el)));
+    if (avail.length === 0) {
+      all.each((i, el) => visited.delete(id(el)));
+      avail = all.filter((i, el) => id(el) !== lastPick[here]);
+    }
+    console.log(avail.map((i, el) => id(el)));
+
+    const i = random(avail.length - 1);
+    $(avail[i]).addClass('random-walk-chosen');
+    lastPick[here] = id(avail[i]);
+    visited.add(lastPick[here]);
+  };
+
   $(document).on(":passageend", () => {
     $(".random-walk").remove();
     const div = $("<div>").addClass("random-walk");
@@ -919,10 +938,11 @@ function randomWalkSetup() {
     walkDiv.on("click", walk);
     div.append(walkDiv);
   });
+
   $(document).on("keydown", ev => {
     switch (ev.key) {
-      case ".": walk(); break;
       case ",": back(); break;
+      case ".": walk(); break;
     }
   });
 }
@@ -978,7 +998,7 @@ $(document).on(":passagestart", ev => {
   } else {
     $('html').removeClass("nero-draft");
   }
-});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...

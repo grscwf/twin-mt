@@ -721,8 +721,8 @@ function flagDebugSetup() {
         if (flagEnum != null) {
           const n = enums[flagEnum].length;
           v[flag] ||= 0;
-          v[flag] += ev.ctrlKey ? n - 1 : 1;
-          v[flag] %= n;
+          v[flag] += ev.ctrlKey ? -1 : 1;
+          v[flag] = Math.max(0, Math.min(v[flag], n - 1));
         } else {
           v[flag] = !v[flag];
         }
@@ -820,17 +820,7 @@ flagDebugSetup();
 /* random walk */
 function randomWalkSetup() {
   if (!Config.debug) return;
-  const walk = () => {
-    const avail = $('#passages a[data-passage]');
-    const chosen = $('#passages .random-walk-chosen');
-    if (chosen.length === 1) {
-      chosen.click();
-    } else if (avail.length > 0) {
-      chosen.removeClass('random-walk-chosen');
-      const i = random(avail.length - 1);
-      $(avail[i]).addClass('random-walk-chosen');
-    }
-  };
+
   const back = () => {
     const chosen = $('#passages .random-walk-chosen');
     if (chosen.length > 0) {
@@ -839,6 +829,35 @@ function randomWalkSetup() {
       Engine.backward();
     }
   };
+
+  const visited = new Set();
+  const lastPick = {};
+  const id = el => [$(el).attr('data-passage'), $(el).text()].join('|');
+  const walk = () => {
+    const chosen = $('#passages .random-walk-chosen');
+    if (chosen.length === 1) {
+      chosen.click();
+      return;
+    }
+    chosen.removeClass('random-walk-chosen');
+
+    const here = State.passage;
+    const all = $('#passages a[data-passage]');
+    if (all.length === 0) return;
+
+    let avail = all.filter((i, el) => !visited.has(id(el)));
+    if (avail.length === 0) {
+      all.each((i, el) => visited.delete(id(el)));
+      avail = all.filter((i, el) => id(el) !== lastPick[here]);
+    }
+    console.log(avail.map((i, el) => id(el)));
+
+    const i = random(avail.length - 1);
+    $(avail[i]).addClass('random-walk-chosen');
+    lastPick[here] = id(avail[i]);
+    visited.add(lastPick[here]);
+  };
+
   $(document).on(":passageend", () => {
     $(".random-walk").remove();
     const div = $("<div>").addClass("random-walk");
@@ -856,10 +875,11 @@ function randomWalkSetup() {
     walkDiv.on("click", walk);
     div.append(walkDiv);
   });
+
   $(document).on("keydown", ev => {
     switch (ev.key) {
-      case ".": walk(); break;
       case ",": back(); break;
+      case ".": walk(); break;
     }
   });
 }
