@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Usage: node list-vars.js file.tw
+ * Usage: node list-vars.js $twFile
  *
- * Lists all vars and their usages in file.tw. Useful for spotting typos
+ * Lists all vars and their usages in $twFile. Useful for spotting typos
  * and unused vars.
  */
 
 const fs = require("fs");
 
 function usage() {
-  console.log("Usage: node list-vars.js file.tw");
+  console.log("Usage: node list-vars.js $twFile");
   process.exit(1);
 }
 

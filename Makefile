@@ -20,3 +20,6 @@ nero-to-tw:
 	WSLENV=$$WSLENV:TWEEGO_PATH/l \
 	TWEEGO_PATH=./assets \
 		tweego -d nero.html -o nero.tw
+
+nero-version:
+	node tools/update-version.js nero.tw nero.html
