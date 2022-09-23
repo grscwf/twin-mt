@@ -665,7 +665,7 @@ defineEnum("MagicPhase", [
 let redisplaying = false;
 
 /**
- * <<flag-debug name ...>> - show flags and allow toggling them.
+ * flag debug - show flags and allow toggling them.
  *
  * - "bigMoods" are flags that are always shown in a section.
  * - Other flags are only shown if they're read or written
@@ -676,10 +676,7 @@ let redisplaying = false;
  * - For enum flags, click increases, ctrl-click decreases.
  */
 function flagDebugSetup() {
-  if (!Config.debug) {
-    Macro.add("flag-debug", { handler: () => {} });
-    return;
-  }
+  if (!Config.debug) return;
 
   const bigMoodVars = {
     n1_licked: ["n1 "],
@@ -706,8 +703,6 @@ function flagDebugSetup() {
     const flagEnum = enumVars[flag];
     if (flagEnum != null) {
       outer.addClass("flag-enum-outer");
-      // outer.prepend($("<span>").addClass("flag-enum-sep").text("="));
-      // outer.prepend($("<span>").addClass("flag-enum-name").text(flag));
       const value = enums[flagEnum][v[flag] || 0] || v[flag];
       button.attr("title", flag + "=" + v[flag]).addClass("flag-enum-value").text(value);
     } else {
@@ -760,16 +755,18 @@ function flagDebugSetup() {
       }
     })
   });
-  Macro.add("flag-debug", {
-    handler: function() {
-      this.args.forEach(f => display.add(f));
-    }
-  });
+
   $(document).on(":passageend", () => {
     $(".flag-debug").remove();
 
     State.active.variables = actualVars;
     const v = actualVars;
+
+    for (const n of [...touched, ...checked]) {
+      if (v[n] == null || typeof v[n] === 'boolean') {
+        display.add(n);
+      }
+    }
 
     const here = State.passage;
     const bigMood = new Set();
@@ -7307,7 +7304,6 @@ $(document).on(":passageinit", ev => console.log(ev));
 
 :: n1 Look {"position":"6675,2150","size":"100,200"}
 <<nobr>>
-<<flag-debug n1_naked>>
 <!--
 look states
 - n4_free
@@ -7323,9 +7319,6 @@ look states
 	- n1_ivexReceptive
 	- n1_ivexImpatient
 -->
-<<flag-debug n1_magicPhase>>
-<<flag-debug n3_extraHorny n3_mirrorBroken n4_wrongTouch>>
-<<flag-debug n1_ivexDistracted n1_ivexReceptive>>
 
 Nero
 <<= either("appraises", "assesses", "considers", "contemplates", "examines", "evaluates", "ponders")>>
@@ -7432,8 +7425,6 @@ The blurry figure becomes a person...
 
 
 :: =n1 Ivex Intro {"position":"4400,850","size":"100,100"}
-<<flag-debug n1_naked>>\
-\
 Ivex (the Magnificent) moves away from the <<if $n1_naked>>naked and<</if>> <<if $n1_smashed>>bound wolf's aching balls<<else>>bound wolf<</if>> and settles against the edge of a cluttered desk.
 
 He's a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, more known for grace than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in any social situation.
@@ -7805,8 +7796,6 @@ output
 - n1_magicAction - provides  link for an available magic action
 -->
 
-<<flag-debug n1_magicPhase>>
-<<flag-debug n1_ivexDistracted n1_ivexReceptive>>
 <<run if ($n1_magicPhase == null) $n1_magicPhase = MP_beforeCast>>
 
 <<switch $n1_magicPhase>>
@@ -7853,7 +7842,6 @@ output
 <<case `MP_wantDevice`>>
 
     XXX sprite: which device do you want to access.
-    <<flag-debug n1_sawBottle>>
     <<if $n1_sawBottle>>
         <<set $n1_magicAction = '[[Whisper "the poltergeist device" to the sprite.|n1 say matrix]]'>>
     <<else>>
@@ -7863,7 +7851,6 @@ output
 <<case `MP_wantName`>>
 
     sprite: there's more than one poltergeist device available, which one do you want to access.
-    <<flag-debug n1_knowsName>>
     <<if $n1_knowsName>>
         <<set $n1_magicAction = "[[Whisper the name of the poltergeist device to the sprite.|n1 say name]]">>
     <<else>>
@@ -9083,7 +9070,6 @@ leaves abruptly
 
 
 :: n2 Get Comfortable {"position":"4025,2625","size":"100,100"}
-<<flag-debug n1_naked>>\
 <<set $n1_afterNaked = "[[Continue|n2 Get Creepy]]">>\
 \
 
