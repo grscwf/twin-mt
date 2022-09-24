@@ -436,18 +436,22 @@ ul.actions li {
   content: "\2191";
 }
 
-.var-info-was-read {
-  border-color: #666;
-  cursor: pointer;
-}
-
 .var-info-was-read::after {
   content: "\2193";
 }
 
-.var-info-was-read:hover {
+.var-info-can-change {
+  border-color: #666;
+  cursor: pointer;
+}
+
+.var-info-can-change:hover {
   border-color: #ccc;
   background-color: #333;
+}
+
+.var-info-boolean-false {
+  color: #c88;
 }
 
 .var-info-boolean-true {
@@ -468,7 +472,7 @@ ul.actions li {
   display: flex;
   flex-direction: column;
   font-size: 18px;
-  gap: 4px;
+  gap: 8px;
   position: fixed;
   right: 4px;
 }
@@ -703,18 +707,23 @@ function varInfoSetup() {
     const v = actualVars;
 
     const outer = $("<span>").addClass("var-info-button-outer");
-    const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
+    outer.attr("title", vname + "=" + JSON.stringify(v[vname]));
 
     if (varsRead.has(vname)) outer.addClass("var-info-was-read");
     if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
     if (!varsRead.has(vname) && !varsWritten.has(vname)) outer.addClass("var-info-was-ignored");
 
-    const vtype = varTypes[vname];
-    if (vtype == null || vtype === "boolean") {
+    const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
+    label.text(vname);
+
+    // assume unset is boolean
+    const vtype = varTypes[vname] || (vname in v ? typeof v[vname] : "boolean");
+
+    if (vtype === "boolean") {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
-      label.text(vname);
       if (varsRead.has(vname)) {
+        outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = !v[vname];
           redisplay();
@@ -727,11 +736,11 @@ function varInfoSetup() {
     if (enumList != null) {
       outer.addClass("var-info-enum");
       outer.addClass("var-info-enum-" + vtype);
-      const val = enumList[v[vname] || 0] || v[vname];
-      label.text(val);
-      outer.attr("title", vname + "=" + v[vname]);
+      const sym = enumList[v[vname] || 0] || JSON.stringify(v[vname]);
+      label.text(sym);
       const n = enumList.length;
       if (varsRead.has(vname)) {
+        outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = (v[vname] + 1) % n;
           redisplay();
@@ -740,7 +749,8 @@ function varInfoSetup() {
       return outer;
     }
 
-    throw new Error("bug");
+    outer.addClass("var-info-other-type");
+    return outer;
   };
 
   $(document).on(":passageend", () => {
@@ -751,9 +761,7 @@ function varInfoSetup() {
 
     const display = new Set();
     for (const n of [...varsRead, ...varsWritten]) {
-      if (v[n] == null || typeof v[n] === 'boolean') {
-        display.add(n);
-      }
+      display.add(n);
     }
 
     const here = State.passage;
@@ -764,8 +772,6 @@ function varInfoSetup() {
         display.delete(name);
       }
     }
-
-    if (bigMood.size === 0 && display.size === 0) return;
 
     const outer = $("<div>").addClass("var-info");
     $("#story").prepend(outer);
@@ -783,7 +789,7 @@ function varInfoSetup() {
     }
 
     if (display.size !== 0) {
-      const other = $("<span>").addClass("var-info-other").appendTo(outer);
+      const other = $("<span>").addClass("var-info-not-big-moods").appendTo(outer);
       Array.from(display).sort().forEach(vname => {
         other.append(varButton(vname));
       })

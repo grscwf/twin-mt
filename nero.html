@@ -495,29 +495,30 @@ ul.actions li {
 }
 
 .var-info-was-ignored {
+  opacity: 0.8;
   text-decoration: line-through;
-}
-
-.var-info-was-written {
-  /* background-color: #333; */
 }
 
 .var-info-was-written::before {
   content: "\2191";
 }
 
-.var-info-was-read {
-  border-color: #666;
-  cursor: pointer;
-}
-
 .var-info-was-read::after {
   content: "\2193";
 }
 
-.var-info-was-read:hover {
+.var-info-can-change {
+  border-color: #666;
+  cursor: pointer;
+}
+
+.var-info-can-change:hover {
   border-color: #ccc;
   background-color: #333;
+}
+
+.var-info-boolean-false {
+  color: #c88;
 }
 
 .var-info-boolean-true {
@@ -525,7 +526,7 @@ ul.actions li {
 }
 
 .var-info-enum {
-  color: #66a;
+  color: #88c;
 }
 
 .redisplay-transition * {
@@ -538,7 +539,7 @@ ul.actions li {
   display: flex;
   flex-direction: column;
   font-size: 18px;
-  gap: 4px;
+  gap: 8px;
   position: fixed;
   right: 4px;
 }
@@ -711,10 +712,11 @@ function redisplay() {
   Engine.show();
   redisplaying = false;
   $("html").addClass("redisplay-transition");
-  $(document).one(":passageStart", () => {
-    $("html").removeClass("redisplay-transition");
-  });
 }
+
+$(document).on(":passageStart", () => {
+  $("html").removeClass("redisplay-transition");
+});
 
 /**
  * var-info - show vars and allow toggling flags.
@@ -768,18 +770,23 @@ function varInfoSetup() {
     const v = actualVars;
 
     const outer = $("<span>").addClass("var-info-button-outer");
-    const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
+    outer.attr("title", vname + "=" + JSON.stringify(v[vname]));
 
     if (varsRead.has(vname)) outer.addClass("var-info-was-read");
     if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
     if (!varsRead.has(vname) && !varsWritten.has(vname)) outer.addClass("var-info-was-ignored");
 
-    const vtype = varTypes[vname];
-    if (vtype == null || vtype === "boolean") {
+    const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
+    label.text(vname);
+
+    // assume unset is boolean
+    const vtype = varTypes[vname] || (vname in v ? typeof v[vname] : "boolean");
+
+    if (vtype === "boolean") {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
-      label.text(vname);
       if (varsRead.has(vname)) {
+        outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = !v[vname];
           redisplay();
@@ -792,11 +799,11 @@ function varInfoSetup() {
     if (enumList != null) {
       outer.addClass("var-info-enum");
       outer.addClass("var-info-enum-" + vtype);
-      const val = enumList[v[vname] || 0] || v[vname];
-      label.text(val);
-      outer.attr("title", vname + "=" + v[vname]);
+      const sym = enumList[v[vname] || 0] || JSON.stringify(v[vname]);
+      label.text(sym);
       const n = enumList.length;
       if (varsRead.has(vname)) {
+        outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = (v[vname] + 1) % n;
           redisplay();
@@ -805,7 +812,8 @@ function varInfoSetup() {
       return outer;
     }
 
-    throw new Error("bug");
+    outer.addClass("var-info-other-type");
+    return outer;
   };
 
   $(document).on(":passageend", () => {
@@ -816,9 +824,7 @@ function varInfoSetup() {
 
     const display = new Set();
     for (const n of [...varsRead, ...varsWritten]) {
-      if (v[n] == null || typeof v[n] === 'boolean') {
-        display.add(n);
-      }
+      display.add(n);
     }
 
     const here = State.passage;
@@ -829,8 +835,6 @@ function varInfoSetup() {
         display.delete(name);
       }
     }
-
-    if (bigMood.size === 0 && display.size === 0) return;
 
     const outer = $("<div>").addClass("var-info");
     $("#story").prepend(outer);
@@ -848,7 +852,7 @@ function varInfoSetup() {
     }
 
     if (display.size !== 0) {
-      const other = $("<span>").addClass("var-info-other").appendTo(outer);
+      const other = $("<span>").addClass("var-info-not-big-moods").appendTo(outer);
       Array.from(display).sort().forEach(vname => {
         other.append(varButton(vname));
       })
@@ -976,7 +980,7 @@ $(document).on(":passagestart", ev => {
   } else {
     $('html').removeClass("nero-draft");
   }
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
