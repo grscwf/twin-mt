@@ -398,7 +398,8 @@ ul.actions li {
 /* var-info */
 
 .var-info {
-  color: #888;
+  color: #999;
+  cursor: default;
   font-size: 12px;
   line-height: 14px;
   padding: 4px 0;
@@ -407,11 +408,8 @@ ul.actions li {
 }
 
 .var-info label {
+  color: #666;
   margin-right: 8px;
-}
-
-.var-info-big-moods {
-  font-weight: bold;
 }
 
 .var-info-separator {
@@ -423,16 +421,15 @@ ul.actions li {
 .var-info-button-outer {
   border: 1px solid transparent;
   border-radius: 4px;
-  cursor: pointer;
   display: inline-block;
   margin-bottom: 2px;
   padding: 2px 4px;
   white-space: nowrap;
 }
 
-.var-info-was-written {
-  background-color: #333;
-  cursor: not-allowed;
+.var-info-was-ignored {
+  opacity: 0.8;
+  text-decoration: line-through;
 }
 
 .var-info-was-written::before {
@@ -441,27 +438,24 @@ ul.actions li {
 
 .var-info-was-read {
   border-color: #666;
+  cursor: pointer;
 }
 
 .var-info-was-read::after {
   content: "\2193";
 }
 
-.var-info-boolean:not(.var-info-was-written):hover {
+.var-info-was-read:hover {
   border-color: #ccc;
   background-color: #333;
-}
-
-.var-info-boolean-false {
-  color: #999;
 }
 
 .var-info-boolean-true {
   color: #6a6;
 }
 
-.var-info-boolean-true.var-info-was-written {
-  background-color: #242;
+.var-info-enum {
+  color: #88c;
 }
 
 .redisplay-transition * {
@@ -651,10 +645,11 @@ function redisplay() {
   Engine.show();
   redisplaying = false;
   $("html").addClass("redisplay-transition");
-  $(document).one(":passageStart", () => {
-    $("html").removeClass("redisplay-transition");
-  });
 }
+
+$(document).on(":passageStart", () => {
+  $("html").removeClass("redisplay-transition");
+});
 
 /**
  * var-info - show vars and allow toggling flags.
@@ -710,15 +705,16 @@ function varInfoSetup() {
     const outer = $("<span>").addClass("var-info-button-outer");
     const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
 
-    if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
     if (varsRead.has(vname)) outer.addClass("var-info-was-read");
+    if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
+    if (!varsRead.has(vname) && !varsWritten.has(vname)) outer.addClass("var-info-was-ignored");
 
     const vtype = varTypes[vname];
     if (vtype == null || vtype === "boolean") {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
       label.text(vname);
-      if (!varsWritten.has(vname)) {
+      if (varsRead.has(vname)) {
         outer.on("click", () => {
           v[vname] = !v[vname];
           redisplay();
@@ -735,7 +731,7 @@ function varInfoSetup() {
       label.text(val);
       outer.attr("title", vname + "=" + v[vname]);
       const n = enumList.length;
-      if (!varsWritten.has(vname)) {
+      if (varsRead.has(vname)) {
         outer.on("click", () => {
           v[vname] = (v[vname] + 1) % n;
           redisplay();
