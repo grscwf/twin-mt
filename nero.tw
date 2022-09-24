@@ -453,8 +453,8 @@ ul.actions li {
 }
 
 .var-info-can-change:hover {
-  border-color: #ccc;
   background-color: #333;
+  border-color: #ccc;
 }
 
 .var-info-boolean-false {
@@ -467,6 +467,36 @@ ul.actions li {
 
 .var-info-enum {
   color: #88c;
+  position: relative;
+}
+
+.var-info-enum .var-info-button-label {
+  pointer-events: none;
+}
+
+.var-info-enum-left,
+.var-info-enum-right {
+  border: 1px solid #666;
+  border-radius: 4px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  width: 50%;
+}
+
+.var-info-enum-left:hover,
+.var-info-enum-right:hover {
+  background-color: rgba(255,255,255,0.2);
+}
+
+.var-info-enum-left {
+  border-right: 0;
+  left: 0;
+}
+
+.var-info-enum-right {
+  border-left: 0;
+  right: 0;
 }
 
 .redisplay-transition * {
@@ -747,21 +777,30 @@ function varInfoSetup() {
     if (enumList != null) {
       outer.addClass("var-info-enum");
       outer.addClass("var-info-enum-" + vtype);
-      const sym = enumList[v[vname] || 0] || JSON.stringify(v[vname]);
+      const sym = enumList[v[vname] || 0];
       const sameType = Object.values(varTypes).filter(t => t === vtype).length;
-      label.text(sameType < 2 ? sym : vname + "=" + sym);
+      label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
       if (varsRead.has(vname)) {
-        outer.addClass("var-info-can-change");
-        outer.on("click", () => {
-          v[vname] = (v[vname] + 1) % n;
-          redisplay();
-        });
+        if (0 < v[vname]) {
+          const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
+          left.on("click", () => {
+            v[vname] -= 1;
+            redisplay();
+          });
+        }
+        if (v[vname] <= n) {
+          const right = $("<span>").addClass("var-info-enum-right var-info-can-change").appendTo(outer);
+          right.on("click", () => {
+            v[vname] += 1;
+            redisplay();
+          });
+        }
       }
       return outer;
     }
 
-    outer.addClass("var-info-other-type");
+    outer.addClass("var-info-misc");
     return outer;
   };
 

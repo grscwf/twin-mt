@@ -520,8 +520,8 @@ ul.actions li {
 }
 
 .var-info-can-change:hover {
-  border-color: #ccc;
   background-color: #333;
+  border-color: #ccc;
 }
 
 .var-info-boolean-false {
@@ -534,6 +534,36 @@ ul.actions li {
 
 .var-info-enum {
   color: #88c;
+  position: relative;
+}
+
+.var-info-enum .var-info-button-label {
+  pointer-events: none;
+}
+
+.var-info-enum-left,
+.var-info-enum-right {
+  border: 1px solid #666;
+  border-radius: 4px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  width: 50%;
+}
+
+.var-info-enum-left:hover,
+.var-info-enum-right:hover {
+  background-color: rgba(255,255,255,0.2);
+}
+
+.var-info-enum-left {
+  border-right: 0;
+  left: 0;
+}
+
+.var-info-enum-right {
+  border-left: 0;
+  right: 0;
 }
 
 .redisplay-transition * {
@@ -810,21 +840,30 @@ function varInfoSetup() {
     if (enumList != null) {
       outer.addClass("var-info-enum");
       outer.addClass("var-info-enum-" + vtype);
-      const sym = enumList[v[vname] || 0] || JSON.stringify(v[vname]);
+      const sym = enumList[v[vname] || 0];
       const sameType = Object.values(varTypes).filter(t => t === vtype).length;
-      label.text(sameType < 2 ? sym : vname + "=" + sym);
+      label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
       if (varsRead.has(vname)) {
-        outer.addClass("var-info-can-change");
-        outer.on("click", () => {
-          v[vname] = (v[vname] + 1) % n;
-          redisplay();
-        });
+        if (0 < v[vname]) {
+          const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
+          left.on("click", () => {
+            v[vname] -= 1;
+            redisplay();
+          });
+        }
+        if (v[vname] <= n) {
+          const right = $("<span>").addClass("var-info-enum-right var-info-can-change").appendTo(outer);
+          right.on("click", () => {
+            v[vname] += 1;
+            redisplay();
+          });
+        }
       }
       return outer;
     }
 
-    outer.addClass("var-info-other-type");
+    outer.addClass("var-info-misc");
     return outer;
   };
 
@@ -992,7 +1031,7 @@ $(document).on(":passagestart", ev => {
   } else {
     $('html').removeClass("nero-draft");
   }
-});</script><tw-tag name="done" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
