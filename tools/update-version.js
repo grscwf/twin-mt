@@ -44,8 +44,10 @@ function genVersion(oldVersion) {
   const today = getToday();
   if (today === parts[1]) {
     parts[2] = String(1 + parseInt(parts[2], 10));
+  } else {
+    parts[1] = today;
+    parts[2] = 0;
   }
-  parts[1] = today;
   return parts.join(".");
 }
 
