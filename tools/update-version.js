@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Usage: node update-version.js $file
+ * Usage: node update-version.js $file ...
  *
- * Updates story-version in .tw or .html file.
+ * Updates story-version in .tw or .html files.
  */
 
 const fs = require("fs");
