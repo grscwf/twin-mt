@@ -407,17 +407,13 @@ ul.actions li {
   margin-top: -36px;
 }
 
-.var-info label {
-  color: #666;
-  margin-right: 8px;
-}
-
 .var-info-separator {
   border-left: 1px solid #999;
   margin-left: 8px;
   padding-left: 16px;
 }
 
+.var-info label,
 .var-info-button-outer {
   border: 1px solid transparent;
   border-radius: 4px;
@@ -427,6 +423,15 @@ ul.actions li {
   white-space: nowrap;
 }
 
+.var-info label {
+  color: #666;
+  margin-right: 8px;
+  padding: 2px 0;
+}
+
+.var-info-button-outer {
+}
+
 .var-info-was-ignored {
   opacity: 0.8;
   text-decoration: line-through;
@@ -434,10 +439,12 @@ ul.actions li {
 
 .var-info-was-written::before {
   content: "\2191";
+  padding-right: 2px;
 }
 
 .var-info-was-read::after {
   content: "\2193";
+  padding-left: 2px;
 }
 
 .var-info-can-change {
@@ -707,14 +714,17 @@ function varInfoSetup() {
     const v = actualVars;
 
     const outer = $("<span>").addClass("var-info-button-outer");
-    outer.attr("title", vname + "=" + JSON.stringify(v[vname]));
 
     if (varsRead.has(vname)) outer.addClass("var-info-was-read");
     if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
     if (!varsRead.has(vname) && !varsWritten.has(vname)) outer.addClass("var-info-was-ignored");
 
     const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
-    label.text(vname);
+
+    const jval = JSON.stringify(v[vname]);
+    outer.attr("title", vname + "=" + jval);
+    const trunc = jval.length < 20 ? jval : jval.slice(0, 15) + "...";
+    label.text(vname + "=" + trunc);
 
     // assume unset is boolean
     const vtype = varTypes[vname] || (vname in v ? typeof v[vname] : "boolean");
@@ -722,6 +732,7 @@ function varInfoSetup() {
     if (vtype === "boolean") {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
+      label.text(vname);
       if (varsRead.has(vname)) {
         outer.addClass("var-info-can-change");
         outer.on("click", () => {
@@ -737,7 +748,8 @@ function varInfoSetup() {
       outer.addClass("var-info-enum");
       outer.addClass("var-info-enum-" + vtype);
       const sym = enumList[v[vname] || 0] || JSON.stringify(v[vname]);
-      label.text(sym);
+      const sameType = Object.values(varTypes).filter(t => t === vtype).length;
+      label.text(sameType < 2 ? sym : vname + "=" + sym);
       const n = enumList.length;
       if (varsRead.has(vname)) {
         outer.addClass("var-info-can-change");
