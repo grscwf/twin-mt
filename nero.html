@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="nero" startnode="169" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="169" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position:relative;
 }
@@ -462,9 +462,10 @@ ul.actions li {
   }
 }
 
-/* flag-debug */
+/* var-info */
 
-.flag-debug {
+.var-info {
+  color: #888;
   font-size: 12px;
   line-height: 14px;
   padding: 4px 0;
@@ -472,85 +473,65 @@ ul.actions li {
   margin-top: -36px;
 }
 
-.flag-debug label {
-  color: #888;
+.var-info label {
   margin-right: 8px;
 }
 
-.flag-debug label:hover {
-  background-color: #333;
-}
-
-.flag-debug.flag-hide a {
-  visibility: hidden;
-}
-
-.flag-debug .flag-big-moods {
-  display: inline;
+.var-info-big-moods {
   font-weight: bold;
 }
 
-.flag-debug .flag-separator {
-  display: inline;
+.var-info-separator {
   border-left: 1px solid #999;
   margin-left: 8px;
   padding-left: 16px;
 }
 
-.flag-debug .flag-other {
-  display: inline;
-}
-
-.flag-debug a {
+.var-info-button-outer {
   border: 1px solid transparent;
   border-radius: 4px;
+  cursor: pointer;
   display: inline-block;
   margin-bottom: 2px;
   padding: 2px 4px;
+  white-space: nowrap;
 }
 
-.flag-debug a.flag-was-set {
+.var-info-was-written {
+  background-color: #333;
   cursor: not-allowed;
 }
 
-.flag-debug a:not(.flag-was-set):hover {
+.var-info-was-written::before {
+  content: "\2191";
+}
+
+.var-info-was-read {
+  border-color: #666;
+}
+
+.var-info-was-read::after {
+  content: "\2193";
+}
+
+.var-info-boolean:not(.var-info-was-written):hover {
   border-color: #ccc;
   background-color: #333;
 }
 
-.flag-debug a.flag-off {
+.var-info-boolean-false {
   color: #999;
 }
 
-.flag-debug a.flag-on {
+.var-info-boolean-true {
   color: #6a6;
 }
 
-.flag-debug .flag-enum-outer {
-  color: #888;
-  white-space: nowrap;
-}
-
-.flag-debug .flag-enum-value {
-  color: #888;
-}
-
-.flag-debug a.flag-was-set {
-}
-
-.flag-debug a.flag-was-read {
-  border-color: #666;
-}
-
-.flag-debug a.flag-was-set.flag-off {
-  background-color: #333;
-}
-
-.flag-debug a.flag-was-set.flag-on {
+.var-info-boolean-true.var-info-was-written {
   background-color: #242;
 }
 
-.fast-transition .passage {
+.redisplay-transition * {
   transition: none;
 }
 
@@ -724,21 +705,28 @@ defineEnum("MagicPhase", [
   "MP_connected",
 ]);
 
-/** True when flag-debug is re-displaying current passage. */
+/** True when redisplaying */
 let redisplaying = false;
 
+/** Redisplay current passage. */
+function redisplay() {
+  redisplaying = true;
+  Engine.show();
+  redisplaying = false;
+  $("html").addClass("redisplay-transition");
+  $(document).one(":passageStart", () => {
+    $("html").removeClass("redisplay-transition");
+  });
+}
+
 /**
- * flag debug - show flags and allow toggling them.
+ * var-info - show vars and allow toggling flags.
  *
- * - "bigMoods" are flags that are always shown in a section.
- * - Other flags are only shown if they're read or written
+ * - "bigMoods" are vars that are always shown in a section.
+ * - Other vars are only shown if they're read or written
  *   by the passage.
- * - If a flag is read, it has a solid border.
- * - If a flag is written, it has a colored background
- *   and toggling will be disabled.
- * - For enum flags, click increases, ctrl-click decreases.
  */
-function flagDebugSetup() {
+function varInfoSetup() {
   if (!Config.debug) return;
 
   const bigMoodVars = {
@@ -747,85 +735,89 @@ function flagDebugSetup() {
     n1_naked: ["n1 ", "n2 "],
     n1_smashed: ["n1 "],
   };
-  const enumVars = {
+  const varTypes = {
     n1_magicPhase: "MagicPhase",
   };
 
-  const display = new Set();
-  const touched = new Set();
-  const checked = new Set();
-  let hidden = false;
+  const varsRead = new Set();
+  const varsWritten = new Set();
   let actualVars;
 
-  const flagButton = flag => {
-    const v = actualVars;
-    const outer = $("<span>").addClass("flag-button-outer");
-    const button = $("<a>").addClass("flag-button");
-    outer.append(button);
-
-    const flagEnum = enumVars[flag];
-    if (flagEnum != null) {
-      outer.addClass("flag-enum-outer");
-      const value = enums[flagEnum][v[flag] || 0] || v[flag];
-      button.attr("title", flag + "=" + v[flag]).addClass("flag-enum-value").text(value);
-    } else {
-      button.addClass(v[flag] ? "flag-on" : "flag-off");
-      button.text(flag);
-    }
-    if (checked.has(flag)) button.addClass("flag-was-read");
-    if (touched.has(flag)) button.addClass("flag-was-set");
-    if (!touched.has(flag) || checked.has(flag)) {
-      button.on("click", (ev) => {
-        if (flagEnum != null) {
-          const n = enums[flagEnum].length;
-          v[flag] ||= 0;
-          v[flag] += ev.ctrlKey ? -1 : 1;
-          v[flag] = Math.max(0, Math.min(v[flag], n - 1));
-        } else {
-          v[flag] = !v[flag];
-        }
-        redisplaying = true;
-        Engine.show();
-        redisplaying = false;
-        $("html").addClass("fast-transition");
-      });
-    }
-    return outer;
-  }
-
   $(document).on(":passagestart", () => {
-    $("html").removeClass("fast-transition");
-    display.clear();
-    touched.clear();
-    checked.clear();
+    varsRead.clear();
+    varsWritten.clear();
     actualVars = State.active.variables;
     State.active.variables = new Proxy(actualVars, {
       defineProperty(o, prop) {
-        if (typeof prop === "string") touched.add(prop);
+        if (typeof prop === "string") varsWritten.add(prop);
         return Reflect.defineProperty(...arguments);
       },
       deleteProperty(o, prop) {
-        if (typeof prop === "string") touched.add(prop);
+        if (typeof prop === "string") varsWritten.add(prop);
         return Reflect.deleteProperty(...arguments);
       },
       get(o, prop) {
-        if (typeof prop === "string") checked.add(prop);
+        if (typeof prop === "string") varsRead.add(prop);
         return Reflect.get(...arguments);
       },
       set(o, prop) {
-        if (typeof prop === "string") touched.add(prop);
+        if (typeof prop === "string") varsWritten.add(prop);
         return Reflect.set(...arguments);
       }
     })
   });
 
+  const varButton = vname => {
+    const v = actualVars;
+
+    const outer = $("<span>").addClass("var-info-button-outer");
+    const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
+
+    if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
+    if (varsRead.has(vname)) outer.addClass("var-info-was-read");
+
+    const vtype = varTypes[vname];
+    if (vtype == null || vtype === "boolean") {
+      outer.addClass("var-info-boolean");
+      outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
+      label.text(vname);
+      if (!varsWritten.has(vname)) {
+        outer.on("click", () => {
+          v[vname] = !v[vname];
+          redisplay();
+        });
+      }
+      return outer;
+    }
+
+    const enumList = enums[vtype];
+    if (enumList != null) {
+      outer.addClass("var-info-enum");
+      outer.addClass("var-info-enum-" + vtype);
+      const val = enumList[v[vname] || 0] || v[vname];
+      label.text(val);
+      outer.attr("title", vname + "=" + v[vname]);
+      const n = enumList.length;
+      if (!varsWritten.has(vname)) {
+        outer.on("click", () => {
+          v[vname] = (v[vname] + 1) % n;
+          redisplay();
+        });
+      }
+      return outer;
+    }
+
+    throw new Error("bug");
+  };
+
   $(document).on(":passageend", () => {
-    $(".flag-debug").remove();
+    $(".var-info").remove();
 
     State.active.variables = actualVars;
     const v = actualVars;
 
-    for (const n of [...touched, ...checked]) {
+    const display = new Set();
+    for (const n of [...varsRead, ...varsWritten]) {
       if (v[n] == null || typeof v[n] === 'boolean') {
         display.add(n);
       }
@@ -842,40 +834,31 @@ function flagDebugSetup() {
 
     if (bigMood.size === 0 && display.size === 0) return;
 
-    const div = $("<div>").addClass("flag-debug");
-    if (hidden) div.addClass("flag-hide");
-    $("#story").prepend(div);
-
-    const label = $("<label>").text("flag-debug");
-    label.on("click", () => {
-      hidden = !hidden;
-      div.toggleClass("flag-hide");
-    });
-    div.append(label);
+    const outer = $("<div>").addClass("var-info");
+    $("#story").prepend(outer);
+    const label = $("<label>").text("var-info").appendTo(outer);
 
     if (bigMood.size !== 0) {
-      const bigDiv = $("<div>").addClass("flag-big-moods");
-      div.append(bigDiv);
-      Array.from(bigMood).sort().forEach(flag => {
-        bigDiv.append(flagButton(flag));
+      const big = $("<span>").addClass("var-info-big-moods").appendTo(outer);
+      Array.from(bigMood).sort().forEach(vname => {
+        big.append(varButton(vname));
       })
     }
 
     if (bigMood.size !== 0 && display.size !== 0) {
-      div.append($("<div>").addClass("flag-separator"));
+      outer.append($("<span>").addClass("var-info-separator"));
     }
 
     if (display.size !== 0) {
-      const otherDiv = $("<div>").addClass("flag-other");
-      div.append(otherDiv);
-      Array.from(display).sort().forEach(flag => {
-        otherDiv.append(flagButton(flag));
+      const other = $("<span>").addClass("var-info-other").appendTo(outer);
+      Array.from(display).sort().forEach(vname => {
+        other.append(varButton(vname));
       })
     }
   });
 }
 
-flagDebugSetup();
+varInfoSetup();
 
 /* random walk */
 function randomWalkSetup() {
@@ -995,7 +978,7 @@ $(document).on(":passagestart", ev => {
   } else {
     $('html').removeClass("nero-draft");
   }
-});</script><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
