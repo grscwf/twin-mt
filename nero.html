@@ -640,7 +640,7 @@ if (location.protocol === 'file:' && /-[0-9a-f]{12}\.html$|[/]Twine[/]Stories[/]
 }
 
 l10nStrings.restartTitle = 'Reset';
-l10nStrings.restartPrompt = 'Archive unlocks and unsaved progress will be lost.<br><br>Are you sure you want to reset everything and start over?';
+l10nStrings.restartPrompt = 'Reset will re-lock all endings in the Archives, and delete any unsaved progress.<br><br>Are you sure you want to reset everything and start over?';
 
 $(document.head).append("<link rel='icon' href='images/mt_icon_tr.png'>");
 
@@ -721,7 +721,8 @@ Macro.add("optional-action", {
   }
 });
 
-/** enums */
+/*--- enums */
+
 let enums = {};
 
 function defineEnum(enumName, valueNames) {
@@ -737,8 +738,12 @@ defineEnum("MagicPhase", [
   "MP_wantName",
   "MP_wantTouch",
   "MP_wantPassword",
+  "MP_onHold",
   "MP_connected",
+  "MP_lockedOut",
 ]);
+
+/*---- redisplay */
 
 /** True when redisplaying */
 let redisplaying = false;
@@ -773,22 +778,30 @@ function varInfoSetup() {
     [
       // Naked/barbs choice.
       /^=?n1p /,
-      // never licked
+      // n1_ivexReceptive always false
+      // n1_licked always false
       'n1_magicPhase',
+      // n1_naked deterministic
       'n1_smashed',
     ],
     [
       // 1st floor magic/look.
       /^=?n1x /,
+      'n1_ivexReceptive',
       'n1_licked',
-      'n1_naked',
       'n1_magicPhase',
+      'n1_naked',
       'n1_smashed',
+      'n2_extraHorny',
+      'n2_free',
+      'n2_horny',
+      'n2_ivexGone',
     ],
     [
       // Ivex before candle.
       /^=?n1c /,
-      // never licked
+      // n1_ivexReceptive deterministic
+      // n1_licked always false
       'n1_magicPhase',
       'n1_naked',
       'n1_smashed',
@@ -796,6 +809,7 @@ function varInfoSetup() {
     [
       // Ivex with candle.
       /^=?n1d /,
+      // n1_ivexReceptive always false
       'n1_licked',
       'n1_magicPhase',
       'n1_naked',
@@ -804,17 +818,28 @@ function varInfoSetup() {
     [
       // Ivex gone, still bound.
       /^=?n2a /,
-      // always naked
+      // n1_ivexReceptive always false
       'n1_licked',
       'n1_magicPhase',
+      // n1_naked always true
       'n1_smashed',
+      // n2_extranHorny always false
+      // n2_free always false
+      // n2_horny always true
+      // n2_ivexGone always true
     ],
     [
       // Free in 1st floor.
       /^=?n2b /,
+      // n1_ivexReceptive always false
       'n1_licked',
       'n1_magicPhase',
+      // n1_naked always true
       'n1_smashed',
+      'n2_extraHorny',
+      // n2_free always true
+      'n2_horny',
+      // n2_ivexGone always true
     ],
   ];
 
@@ -956,7 +981,7 @@ function varInfoSetup() {
 
 varInfoSetup();
 
-/* random walk */
+/** Random walk */
 function randomWalkSetup() {
   if (!Config.debug) return;
 
@@ -1028,7 +1053,7 @@ function randomWalkSetup() {
 
 randomWalkSetup();
 
-/* patience */
+/** Patience */
 Macro.add("n1-patience", {
   handler: function() {
     const looks = this.args[0];
@@ -1067,7 +1092,7 @@ Macro.add("n1-patience", {
   }
 });
 
-/* draft passage styling */
+/** Draft passages */
 $(document).on(":passagestart", ev => {
   $(".draft-sign").remove();
   if (/^n\d /.test(ev.passage.title)) {
@@ -6537,7 +6562,7 @@ his situation.
     &lt;&lt;if $n1_sawBookshelf&gt;&gt;
         and many bookshelves.
     &lt;&lt;else&gt;&gt;
-    and many [[bookshelves|n1x bookshelf]].
+    and many [[bookshelves|n1x Bookshelf]].
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -6609,10 +6634,14 @@ his situation.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_sawBookshelf&gt;&gt;
-    The [[bookshelves|n1x bookshelf]] have
-    numerous [[books|n1x books]],
-    a [[deck of cards|n1x cards]],
-    and a [[magic wand|n2x wand]].
+    The [[bookshelves|n1x Bookshelf]] have
+    numerous [[books|n1x Books]],
+    &lt;&lt;if $n1_sawCards&gt;&gt;
+        a [[deck of cards|n1x Cards]] weighted down by a [[coin|n1x Coin]],
+    &lt;&lt;else&gt;&gt;
+        a [[deck of cards|n1x Cards]],
+    &lt;&lt;/if&gt;&gt;
+    and a [[magic wand|n1x Wand]].
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="241" name="=n1a Feign Sleep" tags="" position="4400,500" size="100,100">Best to play it safe and gather more information before acting.
@@ -6681,7 +6710,7 @@ and a prominent [[window|n1x Window]].
     The opposite wall has a [[sturdy door|n2x Door]].
 &lt;&lt;/if&gt;&gt;
 The other walls are filled with several [[cabinets|n1x cabinet]]
-and many [[bookshelves|n1x bookshelf]].
+and many [[bookshelves|n1x Bookshelf]].
 
 &lt;&lt;if !$n2_free&gt;&gt;
     &lt;br&gt;&lt;br&gt;
@@ -6702,7 +6731,7 @@ ask ivex, he mocks your limited understanding. he&#39;s bluffing, he doesn&#39;t
 
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="247" name="n1x Desk" tags="" position="6725,2425" size="100,100">&lt;&lt;set $n1_sawDesk = true&gt;&gt;
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="247" name="n1x Desk" tags="" position="6725,2350" size="100,100">&lt;&lt;set $n1_sawDesk = true&gt;&gt;
 
 desk has assorted papers in disarray.
 
@@ -6721,15 +6750,24 @@ if free, briefly search the clutter, boring. drawers are stuffed with parking ti
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-</tw-passagedata><tw-passagedata pid="248" name="n1x bookshelf" tags="" position="7175,2550" size="100,100">[[n1x books]]
-[[n1x cards]]
-[[n2x wand]]
-\
-&lt;&lt;set $n1_sawBookshelf = true&gt;&gt;\
-\
-&lt;ul class=&quot;actions&quot;&gt;\
-  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="249" name="n1x Mirror" tags="" position="6575,2600" size="100,100">if broken, useless mirror, regrets.
+</tw-passagedata><tw-passagedata pid="248" name="n1x Bookshelf" tags="" position="7175,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;set $n1_sawBookshelf = true&gt;&gt;
+
+several bookshelves with many [[n1x Books]] that Nero recognizes, stacked haphazardly.
+&lt;&lt;/nobr&gt;&gt;
+
+the nearest bookshelf is more boxes than books, except for one shelf that has
+a [[large magic wand|n1x Wand]]
+and a [[deck of cards|n1x Cards]]
+if seen deck, weighted down by a [[coin|n1x Coin]]
+
+if free, boxes of xxx
+
+&lt;&lt;nobr&gt;&gt;
+&lt;ul class=&quot;actions&quot;&gt;
+    &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="n1x Mirror" tags="" position="6575,2600" size="100,100">if broken, useless mirror, regrets.
 
 if free and not broken, can take mirror.
 
@@ -6750,24 +6788,23 @@ if free, it&#39;s a lewd snowdragon grabbing his cock, and the slogan is &quot;C
 - already did password check
 
 if not free and want password
-- suggest &quot;carpe diem&quot;
+- suggest &quot;carpe diem&quot; [[n1x Password]]
 - suggest plausible completions of place name
 
 if want pasword and ivex here, [[n1x Ask Globe]]
 
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="251" name="n1x books" tags="maybe-password" position="7200,2775" size="100,100">some magic texts that you recognize, boring.
-something fascist.
-some porno.
-a school almanac.
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="251" name="n1x Books" tags="maybe-password" position="7200,2775" size="100,100">magic texts nero recognizes, boring.
+a school almanac, class of X, can&#39;t read school name.
 
-password: school name
-\
-&lt;ul class=&quot;actions&quot;&gt;\
-  &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1x ask books]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
-  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="252" name="n1x Candle" tags="" position="6875,2600" size="100,100">assert candle is lit and not free
+if want password and ivex here, the school almanac is interesting, [[n1x Ask Books]]
+
+if free, can also see porn mags and something fascist.
+
+&lt;ul class=&quot;actions&quot;&gt;
+  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="252" name="n1x Candle" tags="" position="6875,2600" size="100,100">assert candle is lit and not free
 
 scent is intoxicating, and staring at it makes you hornier.
 
@@ -6785,33 +6822,36 @@ if free, can take it.
 if want touch
 - if ivex receptive, polite [[n1x Ask Knife]]
 - if ivex not receptive, hostile [[n1x Ask Knife]]
-- if free, try touch, doesn&#39;t work
+- if free, [[n1x Touch Knife]]
 - if not free, too bad ivex isn&#39;t here
 
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="254" name="n1x cabinet" tags="" position="7500,2500" size="100,100">[[n1x bottle]]
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="254" name="n1x cabinet" tags="" position="7625,2425" size="100,100">[[n1x bottle]]
 [[n1x penguin]]
 \
 &lt;&lt;set $n1_sawCabinet = true&gt;&gt;\
 \
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="255" name="n1x cards" tags="key has-hole" position="7300,2775" size="100,100">deck of cards weighted down by a coin.
-the cards are all porn.
-the coin is the auth token, it has a hole.
-\
-&lt;ul class=&quot;actions&quot;&gt;\
-  &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1x ask cards]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
-  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="256" name="n1x wall" tags="" position="7800,2525" size="100,100">[[n1x map]]
+&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="255" name="n1x Cards" tags="key has-hole" position="7300,2775" size="100,100">deck of cards weighted down by a [[coin|n1x Coin]].
+
+if free, can see that the cards are all porn.
+
+if want touch and ivex here, [[n1x Ask Cards]]
+
+&lt;&lt;nobr&gt;&gt;
+&lt;ul class=&quot;actions&quot;&gt;
+    &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="n1x wall" tags="" position="7925,2450" size="100,100">[[n1x map]]
 [[n1x portrait]]
 \
 &lt;&lt;set $n1_sawWall = true&gt;&gt;\
 \
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="257" name="n1x bottle" tags="key has-hole" position="7450,2700" size="100,100">&lt;&lt;set $n1_sawBottle = true&gt;&gt;\
+&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="257" name="n1x bottle" tags="key has-hole" position="7575,2625" size="100,100">&lt;&lt;set $n1_sawBottle = true&gt;&gt;\
 \
 large bottle, has a wooden horse cock inside, too large to have been inserted through the hole.
 
@@ -6823,14 +6863,14 @@ plus he&#39;s given it a name.
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1x ask bottle]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="258" name="n1x map" tags="maybe-password" position="7850,2725" size="100,100">map of the area.
+&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="258" name="n1x map" tags="maybe-password" position="7975,2650" size="100,100">map of the area.
 
 password: birthplace
 \
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1x ask map]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="259" name="n1x portrait" tags="has-hole maybe-password" position="7750,2725" size="100,100">portrait of an older panther. ambiguous if it&#39;s a lover or relative, until you ask Ivex.
+&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="259" name="n1x portrait" tags="has-hole maybe-password" position="7875,2650" size="100,100">portrait of an older panther. ambiguous if it&#39;s a lover or relative, until you ask Ivex.
 
 Ivex says it&#39;s mom and has creepy affection.
 
@@ -6841,7 +6881,7 @@ password: mom&#39;s maiden name
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1x ask portrait]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="260" name="n1x penguin" tags="has-hole maybe-password" position="7550,2700" size="100,100">his childhood pet. (he wanted an owl, his uncle thought this was close enough).
+&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="260" name="n1x penguin" tags="has-hole maybe-password" position="7675,2625" size="100,100">his childhood pet. (he wanted an owl, his uncle thought this was close enough).
 in a very lewd position.
 
 ask ivex, tells you the pet&#39;s name, says he really loved riding dildos.
@@ -6851,25 +6891,29 @@ password: pet name
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1x ask penguin]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="261" name="n2x wand" tags="has-hole maybe-password" position="7100,2775" size="100,100">looks like a standard magic wand with an odd ring-shaped attachment on the end.
-(has a hole).
+&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="261" name="n1x Wand" tags="has-hole maybe-password" position="7075,2775" size="100,100">ISO standard magic wand, but an odd ring-shaped attachment on the end.
 
-ask ivex, he will brag about the sex toy he made,
+if want hole, maybe that&#39;s the hole
+- if free, [[n1x Touch Wand]]
+- if ivex here, [[n1x Ask Wand]]
 
-password: wand name
+if want password
+- if not know wand and ivex here, ask wand.
+- if know wand, can try password [[n1x Password]]
 
-if Ivex bragged, and you&#39;ve escaped, option [[n2x use wand]]
+if free and asked wand, can [[n2x Use Wand]]
 
-&lt;ul class=&quot;actions&quot;&gt;\
-  &lt;&lt;if !$n1_ivexGone&gt;&gt;&lt;li&gt;[[Ask Ivex|n1x ask wand]]&lt;/li&gt;&lt;&lt;/if&gt;&gt;\
-  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
-&lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="262" name="=n1a Endgame" tags="" position="4250,450" size="100,100">Nero&#39;s limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And his throat feels too sore to enunciate anything substantial just yet.
+&lt;&lt;nobr&gt;&gt;
+&lt;ul class=&quot;actions&quot;&gt;
+  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="262" name="=n1a Endgame" tags="" position="4250,450" size="100,100">Nero&#39;s limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And his throat feels too sore to enunciate anything substantial just yet.
 
 All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn&#39;t need broad gestures or precisely spoken words. He&#39;s kept the spell&#39;s construction a secret, so it doesn&#39;t have a proper name yet. Privately he thinks of it as [[Nero&#39;s Endgame|=n1a Endgame Info]]. It&#39;s a spell of last resort, but bound and helpless as he is now, this seems a good time to use it.
 
 He prepares the spell&#39;s image in his mind, and then &lt;em&gt;twists&lt;/em&gt; it...
 
-[[Continue|=n1a Endgame 2]]</tw-passagedata><tw-passagedata pid="263" name="n1c Charm" tags="" position="4600,1325" size="100,100">&quot;There&#39;s been a misunderstanding,&quot; says Nero. &quot;I wasn&#39;t &lt;em&gt;given&lt;/em&gt; your dossier. I &lt;em&gt;stole&lt;/em&gt; it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore.&quot;
+[[Continue|=n1a Endgame 2]]</tw-passagedata><tw-passagedata pid="263" name="n1c Charm" tags="" position="4675,1325" size="100,100">&quot;There&#39;s been a misunderstanding,&quot; says Nero. &quot;I wasn&#39;t &lt;em&gt;given&lt;/em&gt; your dossier. I &lt;em&gt;stole&lt;/em&gt; it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore.&quot;
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_magicPhase &lt; MP_magicSight&gt;&gt;
@@ -6922,8 +6966,8 @@ nero confident that he can escape.
 [[Continue|n1d Start Candle]]</tw-passagedata><tw-passagedata pid="265" name="n1x Magic" tags="" position="5950,2125" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;!--
 flags
-- n1_ivexReceptive - ivex isn&#39;t hostile
-- n4_wrongTouch - nero touched after escape
+- n1_ivexReceptive
+- n2_ivexGone
 
 linkage
 - n1_afterAction - continue link when action is done
@@ -6932,7 +6976,7 @@ output
 - n1_magicAction - provides  link for an available magic action
 --&gt;
 
-&lt;&lt;run if ($n1_magicPhase == null) $n1_magicPhase = MP_beforeCast&gt;&gt;
+&lt;&lt;set $n1_magicPhase ||= MP_beforeCast&gt;&gt;
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
@@ -6993,8 +7037,17 @@ output
     sprite: ok, you&#39;re connected. what&#39;s the password
     &lt;&lt;set $n1_magicAction = &quot;[[Whisper a password to the sprite.|n1x Guess Password]]&quot;&gt;&gt;
 
+&lt;&lt;case `MP_onHold`&gt;&gt;
+
+    sprite is singing baby shark
+
 &lt;&lt;case `MP_connected`&gt;&gt;
-	  XXX linked, and satisfied all prompts
+
+    can throw things around with your mind!
+
+&lt;&lt;case `MP_lockedOut`&gt;&gt;
+
+    sprite: locked out, please wait 214748367 seconds before trying again
 
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
@@ -7160,7 +7213,7 @@ or maybe a one-time prompt? this section is an opportunity to intro the inventor
 if gotMirror, at least he&#39;s got the mirror. and he&#39;s still horny, but manageable.
 else, regret about the mirror. extremely horny, might be distracting.
 
-[[n3a hallway]]</tw-passagedata><tw-passagedata pid="282" name="n2a tamed desperate" tags="end under-construction" position="6900,3300" size="100,100">bad ending unlocked
+[[n3a hallway]]</tw-passagedata><tw-passagedata pid="282" name="n2a tamed desperate" tags="end under-construction" position="6600,3475" size="100,100">bad ending unlocked
 
 ivex returns and laughs at the sight. says horny dog needs some discipline.
 applies phase chastity.
@@ -7679,9 +7732,9 @@ if free, look outside, weird.
 
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="320" name="n1x ask penguin" tags="" position="7550,2825" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="321" name="n1x ask portrait" tags="" position="7750,2850" size="100,100">&lt;&lt;set $n1_knowsMom = true&gt;&gt;\
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="320" name="n1x ask penguin" tags="" position="7675,2750" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="321" name="n1x ask portrait" tags="" position="7875,2775" size="100,100">&lt;&lt;set $n1_knowsMom = true&gt;&gt;\
 \
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="322" name="n1x ask map" tags="" position="7850,2850" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="323" name="n1x Ask Grav Gems" tags="" position="6325,2725" size="100,100">ask ivex, what are those gems.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="322" name="n1x ask map" tags="" position="7975,2775" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="323" name="n1x Ask Grav Gems" tags="" position="6325,2725" size="100,100">ask ivex, what are those gems.
 
 he preens, they&#39;re grav gems.
 set know-gems true.
@@ -7706,17 +7759,18 @@ ivex not receptive, gets threatening with letter opener.
 
 &lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="326" name="n1x Ask Candle" tags="" position="6875,2725" size="100,100">ivex says creepy-lewd nonsense about candle, not useful.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="327" name="n1x ask wand" tags="" position="7100,2900" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="328" name="n1x ask books" tags="" position="7200,2900" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="329" name="n1x ask cards" tags="" position="7300,2900" size="100,100">ivex touches coin
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="327" name="n1x Ask Wand" tags="" position="7100,2900" size="100,100">ivex brags about sex toy he made
+tells you its name
 
-&lt;&lt;if $n1_magicPhase === MP_wantTouch&gt;&gt;\
-   authentication succeeded.
-   connecting...
-   what&#39;s the password?
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="328" name="n1x Ask Books" tags="" position="7200,2900" size="100,100">trying to get Ivex to say what his school name is
 
-   &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;\
-&lt;&lt;/if&gt;&gt;\
+[[n1x Password]]
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="330" name="n1x ask bottle" tags="" position="7450,2825" size="100,100">ivex tells you his remote-control innovation, and tells you the device is named Lance Rockhard
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="329" name="n1x Ask Cards" tags="" position="7300,2900" size="100,100">if ivex receptive, can get him to show you the cards, which are porn.
+- he incidentally touches the coin
+- if want touch, sprite accepts touch. go to want password.
+
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="330" name="n1x ask bottle" tags="" position="7575,2750" size="100,100">ivex tells you his remote-control innovation, and tells you the device is named Lance Rockhard
 
 &lt;&lt;set $n1_knowsName = true&gt;&gt;
 
@@ -7751,7 +7805,7 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 [[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="333" name="=n1c Ivex Intro 2" tags="" position="4400,1050" size="100,100">&lt;&lt;nobr&gt;&gt;
 &quot;There must be some mistake,&quot;
 &lt;&lt;if $n1_smashed&gt;&gt;
-   says Nero, as he tries unsuccessfully to use his twitching wolf tail to shelter his balls.
+   says Nero, as he tries unsuccessfully to use his twitching wolf tail to shelter his aching balls.
 &lt;&lt;elseif $n1_naked&gt;&gt;
     says Nero, as he tries unsuccessfully to use his bushy wolf tail to cover his bare crotch.
 &lt;&lt;else&gt;&gt;
@@ -7762,7 +7816,7 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 
 Ivex growls. &quot;Don&#39;t try to play dumb with me!&quot; He grabs a sheet of paper from the desk. &quot;I found this in your satchel.&quot;
 
-He raises the paper and reads from it. &quot;Ivex Darkshadow. Probably not his birth name. Studied at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with blah blah blah...&quot;
+He raises the paper and reads from it. &quot;Ivex Darkshadow. Probably not his birth name. No documentation prior to his enrollment at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with blah blah blah...&quot;
 
 Ivex throws the paper into the air and makes a gesture, causing it to burst into flames.
 
@@ -8007,7 +8061,7 @@ Nero is one such expert. Which incidentally also makes him an expert in &lt;em&g
 
 It&#39;s a skill that&#39;s been quite useful in his unconventional career.
 
-&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="355" name="=n1a Endgame Info 2" tags="noreturn" position="4100,575" size="100,100">Two weeks later, Nero enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It&#39;s a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It&#39;s not a spell he can use often, but it&#39;s extremely useful when there are no better options.
+&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="355" name="=n1a Endgame Info 2" tags="noreturn" position="4100,550" size="100,100">Two weeks later, Nero enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It&#39;s a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It&#39;s not a spell he can use often, but it&#39;s extremely useful when there are no better options.
 
 All he has to do is hold in his mind an image of the glyphs on his shaven ass as he&#39;s seen in a mirror, and mentally &lt;em&gt;twist&lt;/em&gt; their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
 
@@ -8071,7 +8125,7 @@ Not that Nero would ever tell that to his
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="361" name="n2x Door" tags="" position="5850,3325" size="100,100">assert nero free
+&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="361" name="n2x Door" tags="" position="5900,3300" size="100,100">assert nero free
 
 sturdy door, no handle, gem instead.
 
@@ -8097,7 +8151,7 @@ if ivex not receptive and already tried, angry reaction, set failed true.
 otherwise, set tried true. ivex goes to look
 - if want touch and not touched, touches window. sprite doesn&#39;t respond
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="364" name="n2x Touch Door" tags="" position="6025,3400" size="100,100">door swings inward. look through. a moment later, door swings shut.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="364" name="n2x Touch Door" tags="" position="6025,3350" size="100,100">door swings inward. look through. a moment later, door swings shut.
 no handle on other side of door, so this looks like a one-way trip.
 
 &lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="365" name="n2b Last Chance" tags="" position="5375,5075" size="200,100">forward into uncertainty and adventure.
@@ -8125,11 +8179,42 @@ finally get a good look at snowglobe, reads inscription out loud with incredulit
 
 if wantPassword, sprite responds, &quot;password accepted&quot;, gee that would have been useful earlier. player should remember this for next playthrough.
 
-[[n2b look around]]</tw-passagedata><tw-passagedata pid="367" name="n2x use wand" tags="" position="6900,3100" size="100,100">assert nero is free
+[[n2b look around]]</tw-passagedata><tw-passagedata pid="367" name="n2x Use Wand" tags="" position="6600,3300" size="100,100">assert nero is free
 
 if asked wand and high lust, [[n2a tamed desperate]]
 
 otherwise, set high lust and refuse to use again
+
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="368" name="n1x Coin" tags="" position="7400,2775" size="100,100">on top of the [[deck of cards|n1x Cards]] is a coin from the X region. large and worthless. typical transactions use 500 of them strung together.
+
+if want touch, hey, this has a hole
+- if free, [[n1x Touch Coin]]
+- if ivex not gone, [[n1x Ask Coin]]
+
+&lt;&lt;nobr&gt;&gt;
+&lt;ul class=&quot;actions&quot;&gt;
+    &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="369" name="n1x Ask Coin" tags="" position="7400,2900" size="100,100">varies if ivex receptive or not, but ivex does not want to touch coin in any case.
+
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="370" name="n1x Touch Coin" tags="" position="7400,3025" size="100,100">assert want touch
+
+sprite says, touch registered, authentication denied. locked.
+set magic phase locked
+
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="371" name="n1x Touch Knife" tags="" position="6775,2850" size="100,100">assert want touch
+
+doesn&#39;t work
+
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;
+</tw-passagedata><tw-passagedata pid="372" name="n1x Touch Wand" tags="" position="6975,2975" size="100,100">assert nero free and want touch
+
+sprite doesn&#39;t respond. option to [[n2x Use Wand]], or maybe this is the same node as use wand.
+
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="373" name="n1x Password" tags="" position="7200,2175" size="100,100">from any place that has a suggested password.
+
+sprite says, ok, thinking.
+set magic phase to on-hold
 
 &lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
