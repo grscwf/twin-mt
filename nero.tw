@@ -556,6 +556,29 @@ ul.actions li {
   z-index: -1;
 }
 
+/* assert-true */
+.assert-true-outer {
+  text-align: center;
+  margin: 12px 0;
+}
+.assert-true-inner {
+  border: 1px solid #994;
+  border-radius: 4px;
+  color: #ff4;
+  display: inline-block;
+  font-size: 12px;
+  padding: 8px 8px 4px 8px;
+  text-align: left;
+}
+.assert-true-1 {
+}
+.assert-true-2 {
+}
+.assert-true-inner code {
+  color: #fbb;
+}
+
+
 
 :: Story JavaScript [script]
 Config.saves.id = 'sleth-mages-tower-2';
@@ -824,8 +847,7 @@ function varInfoSetup() {
   });
 
   // note: sugarcube overrides JSON.stringify to handle "undefined" and a few other cases specially
-  const str = val =>
-    typeof val === "object" ? JSON.stringify(val) : String(val);
+  const str = val => val == null ? String(val) : JSON.stringify(val);
 
   const varButton = vname => {
     const v = actualVars;
@@ -1071,6 +1093,24 @@ Macro.add("get-actions", {
   }
 });
 
+/** Assertions */
+Macro.add("assert-true", {
+  skipArgs: true,
+  handler: function() {
+    const val = eval(this.args.full);
+    if (!val) {
+      const outer = $("<div class=assert-true-outer>").appendTo(this.output);
+      const inner = $("<div class=assert-true-inner>").appendTo(outer);
+      const line1 = $("<div class=assert-true-1>").appendTo(inner);
+      const line2 = $("<div class=assert-true-2>").appendTo(inner);
+      line1.append("Assertion failed: ");
+      line1.append($("<code>").text(this.args.raw));
+      line2.append("This state should be impossible. ");
+      line2.append("This passage is not expected to make sense in this state.");
+    }
+  }
+});
+
 
 :: Bound {"position":"2500,175","size":"100,100"}
 <<nobr>>
@@ -1091,7 +1131,7 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 :: StoryAuthor {"position":"1825,150","size":"100,100"}
 by <a href="http://www.slethstories.com/" target="_blank">Sleth</a>\
 <div id="story-version">
-  v2.20220925.0
+  v2.20220925.1
 </div>
 
 
