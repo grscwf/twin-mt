@@ -481,7 +481,8 @@ ul.actions li {
 }
 
 .var-info label,
-.var-info-button-outer {
+.var-info-button-outer,
+.var-info-passage {
   border: 1px solid transparent;
   border-radius: 4px;
   display: inline-block;
@@ -494,9 +495,6 @@ ul.actions li {
   color: #666;
   margin-right: 8px;
   padding: 2px 0;
-}
-
-.var-info-button-outer {
 }
 
 .var-info-was-ignored {
@@ -714,9 +712,7 @@ Macro.add("optional-action", {
   handler: function() {
     const link = this.args[0];
     if (link != null && link !== "") {
-      $(this.output).wiki(
-        "<li><<link " + this.args.raw + ">><</link>></li>"
-      );
+      $(this.output).wiki("<li>" + this.args.raw + "</li>");
     }
   }
 });
@@ -874,17 +870,17 @@ function varInfoSetup() {
   const varButton = vname => {
     const v = actualVars;
 
-    const outer = $("<span>").addClass("var-info-button-outer");
+    const outer = $("<span class=var-info-button-outer>");
 
     if (varsRead.has(vname)) outer.addClass("var-info-was-read");
     if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
     if (!varsRead.has(vname) && !varsWritten.has(vname)) outer.addClass("var-info-was-ignored");
 
-    const label = $("<span>").addClass("var-info-button-label").appendTo(outer);
+    const label = $("<span class=var-info-button-label>").appendTo(outer);
 
     const jval = JSON.stringify(v[vname]);
     outer.attr("title", vname + "=" + jval);
-    const trunc = jval.length < 20 ? jval : jval.slice(0, 15) + "...";
+    const trunc = jval.length < 15 ? jval : jval.slice(0, 10) + "...";
     label.text(vname + "=" + trunc);
 
     // assume unset is boolean
@@ -937,45 +933,34 @@ function varInfoSetup() {
 
   $(document).on(":passageend", () => {
     $(".var-info").remove();
-
     State.active.variables = actualVars;
-    const v = actualVars;
 
-    const display = new Set();
-    for (const n of [...varsRead, ...varsWritten]) {
-      display.add(n);
-    }
+    const touched = new Set();
+    [...varsRead].forEach(v => touched.add(v));
+    [...varsWritten].forEach(v => touched.add(v));
 
     const here = State.passage;
     const bigMood = new Set();
-    for (const rule of bigMoodVars) {
-      if (rule[0].test(here)) {
-        for (const vname of rule.slice(1)) {
-          bigMood.add(vname);
-          display.delete(vname);
-        }
+    for (const [re, ...vars] of bigMoodVars) {
+      if (re.test(here)) {
+        vars.forEach(v => bigMood.add(v));
+        vars.forEach(v => touched.delete(v));
       }
     }
 
-    const outer = $("<div>").addClass("var-info");
-    $("#story").prepend(outer);
-    const label = $("<label>").text("var-info").appendTo(outer);
-
-    if (bigMood.size !== 0) {
-      const big = $("<span>").addClass("var-info-big-moods").appendTo(outer);
-      Array.from(bigMood).sort().forEach(vname => {
-        big.append(varButton(vname));
-      })
+    const outer = $("<div class=var-info>").prependTo("#story");
+    $("<label>").text("var-info").appendTo(outer);
+    if (bigMood.size) {
+      const el = $("<span class=var-info-big-mood>").appendTo(outer);
+      [...bigMood].sort().forEach(v => el.append(varButton(v)));
     }
-
-    outer.append($("<span>").addClass("var-info-separator"));
-
-    if (display.size !== 0) {
-      const other = $("<span>").addClass("var-info-not-big-moods").appendTo(outer);
-      Array.from(display).sort().forEach(vname => {
-        other.append(varButton(vname));
-      })
+    $("<span class=var-info-separator>").appendTo(outer);
+    if (touched.size) {
+      const el = $("<span class=var-info-touched>").appendTo(outer);
+      [...touched].sort().forEach(v => el.append(varButton(v)));
     }
+    $("<span class=var-info-separator>").appendTo(outer);
+    $("<span class=var-info-passage>").text(here).appendTo(outer);
   });
 }
 
@@ -1102,7 +1087,30 @@ $(document).on(":passagestart", ev => {
   } else {
     $('html').removeClass("nero-draft");
   }
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
+});
+
+/*---- Actions */
+
+const actionList = [];
+$(document).on(":passagestart", () => {
+  actionList.length = 0;
+});
+Macro.add("add-action", {
+  skipArgs: true,
+  handler: function() {
+    actionList.push(this.args.raw);
+  }
+});
+Macro.add("get-actions", {
+  skipArgs: true,
+  handler: function() {
+    for (const action of actionList) {
+      $(this.output).wiki('<li>' + action + '</li>');
+    }
+    actionList.length = 0;
+  }
+});
+</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;set $passedContentWarning = true&gt;&gt;\
 The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
@@ -6573,14 +6581,14 @@ his situation.
         The far wall has
     &lt;&lt;/if&gt;&gt;
     a [[window|n1x Window]]
-    and [[several items|n1x wall]] adorning it.
+    and [[some items|n1x Wall]] adorning it.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_sawWall&gt;&gt;
     &lt;&lt;if $n2_free&gt;&gt;
-        One [[wall|n1x wall]] has
+        One [[wall|n1x Wall]] has
     &lt;&lt;else&gt;&gt;
-        The [[far wall|n1x wall]] has
+        The [[far wall|n1x Wall]] has
     &lt;&lt;/if&gt;&gt;
     a [[window|n1x Window]],
     a [[large map|n1x map]],
@@ -6670,14 +6678,14 @@ Ivex (the Magnificent) moves away from the
     naked and
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;if $n1_smashed&gt;&gt;
-    bound wolf&#39;s aching balls
+    bound wolf&#39;s tender balls
 &lt;&lt;else&gt;&gt;
     bound wolf
 &lt;&lt;/if&gt;&gt;
 and settles against the edge of a cluttered desk.
 &lt;&lt;/nobr&gt;&gt;
 
-He&#39;s a pretentiously dressed [[black panther|=n1c Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier came from school portraits that were created several years ago, so it isn&#39;t too surprising that the panther has grown a bit since then.
+He&#39;s a [[pretentiously dressed black panther|=n1c Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier came from school portraits that were created several years ago, so it isn&#39;t too surprising that the panther has grown a bit since then.
 
 Ivex speaks. &quot;So we can do this the easy way, or the hard way. &lt;em&gt;Please&lt;/em&gt; make the right choice.&quot; He has a grin like a child unwrapping a present. &quot;Tell me, who sent you?&quot;
 
@@ -6696,7 +6704,7 @@ else, can&#39;t really see much of it
 &lt;/ul&gt;</tw-passagedata><tw-passagedata pid="245" name="=n1x Study" tags="" position="6925,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_sawStudy = true&gt;&gt;
 
-The room is a mix of order and chaos that&#39;s typical for a mage&#39;s private study. Nero often finds that the furnishings of a person&#39;s private quarters reflects the furnishings of their mind, and if that&#39;s true in this case, Ivex&#39;s mind is childish and untidy and dominated by
+The room is a mix of order and chaos that&#39;s typical for a mage&#39;s private study. Nero often finds that the furnishings of a person&#39;s private quarters reflects the furnishings of their mind, and if that&#39;s true in this case, Ivex&#39;s mind is childish and dirty and dominated by
 &lt;&lt;if $n2_free&gt;&gt;
     the wooden cross that&#39;s fallen over and leaning on the [[desk|n1x Desk]].
 &lt;&lt;else&gt;&gt;
@@ -6704,7 +6712,7 @@ The room is a mix of order and chaos that&#39;s typical for a mage&#39;s private
 &lt;&lt;/if&gt;&gt;
 
 &lt;br&gt;&lt;br&gt;
-One wall has various [[decorations|n1x wall]]
+One wall has various [[decorations|n1x Wall]]
 and a prominent [[window|n1x Window]].
 &lt;&lt;if $n2_free&gt;&gt;
     The opposite wall has a [[sturdy door|n2x Door]].
@@ -6844,11 +6852,33 @@ if want touch and ivex here, [[n1x Ask Cards]]
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="n1x wall" tags="" position="7925,2450" size="100,100">[[n1x map]]
-[[n1x portrait]]
-\
-&lt;&lt;set $n1_sawWall = true&gt;&gt;\
-\
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="n1x Wall" tags="" position="7925,2450" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;set $n1_sawWall = true&gt;&gt;
+
+The far wall, on the other side of the desk, is the only wall in the room that does not have bookshelves or cabinets against it. Without furniture in the way, Nero can see that the wall is made of wooden tiles placed in a simple repeating pattern.
+&lt;&lt;/nobr&gt;&gt;
+
+&lt;&lt;nobr&gt;&gt;
+There&#39;s a solitary [[round window|n1x Window]] exactly in the center of the wall. The daytime sky beyond the window&#39;s glass gives it the appearance of a giant blue eye that&#39;s
+&lt;&lt;if $n1_naked || $n2_free&gt;&gt;
+    leering at the completely naked wolf.
+&lt;&lt;else&gt;&gt;
+    staring over the desk at Nero&#39;s helplessly bound body.
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+
+&lt;&lt;nobr&gt;&gt;
+To the left of the window is a [[large map|n1x map]] of the continent with political boundaries marked in bright primary colors. On the opposite side of the window is
+&lt;&lt;if $n1_knowsMom&gt;&gt;
+    a [[portrait of Ivex&#39;s mother|n1x portrait]]
+&lt;&lt;else&gt;&gt;
+    a [[portrait of a female panther|n1x portrait]]
+&lt;&lt;/if&gt;&gt;
+that&#39;s the same size as the map. The panther&#39;s clothes are more bright primary colors, and her body is splayed out on a couch in a pose that&#39;s almost a mirror image of the shape of the continent on the map.
+&lt;&lt;/nobr&gt;&gt;
+
+The entire arrangement is disturbingly symmetric. Even the pattern of wooden tiles... Nero notices below the portrait, a tile with a distinctive wood grain that has an exactly reversed twin on the other side, below the map. Perhaps Ivex constructed the interior of this room with a lazy reflection spell.
+
 &lt;ul class=&quot;actions&quot;&gt;\
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;\
 &lt;/ul&gt;\</tw-passagedata><tw-passagedata pid="257" name="n1x bottle" tags="key has-hole" position="7575,2625" size="100,100">&lt;&lt;set $n1_sawBottle = true&gt;&gt;\
@@ -6907,7 +6937,7 @@ if free and asked wand, can [[n2x Use Wand]]
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="262" name="=n1a Endgame" tags="" position="4250,450" size="100,100">Nero&#39;s limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And his throat feels too sore to enunciate anything substantial just yet.
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="262" name="=n1a Endgame" tags="" position="4250,450" size="100,100">Nero&#39;s limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And his tongue feels too numb to enunciate anything clearly just yet.
 
 All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn&#39;t need broad gestures or precisely spoken words. He&#39;s kept the spell&#39;s construction a secret, so it doesn&#39;t have a proper name yet. Privately he thinks of it as [[Nero&#39;s Endgame|=n1a Endgame Info]]. It&#39;s a spell of last resort, but bound and helpless as he is now, this seems a good time to use it.
 
@@ -7538,7 +7568,7 @@ It&#39;s &lt;em&gt;him&lt;/em&gt;.
 
 It&#39;s Ivex, the panther mage who&#39;s the subject of Nero&#39;s current &quot;errand&quot;.
 
-The panther says brightly, &quot;Welcome to my domain. I am Ivex the Magnificent.&quot;
+The panther says brightly, &quot;Welcome to my world. I am Ivex the Magnificent.&quot;
 
 Well. Nero had thought that locating Ivex would be the difficult part of this task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, &lt;em&gt;notice&lt;/em&gt; the trap before stepping into it. His aching balls agreed with that.
 
@@ -7719,20 +7749,68 @@ well, it was worth a shot, learned something
 
 stuff about anti-magic.
 
-&lt;&lt;link Continue $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="318" name="testing 2" tags="" position="4875,525" size="100,100">testing 2</tw-passagedata><tw-passagedata pid="319" name="n1x Window" tags="has-hole" position="6500,1800" size="100,100">if not free, looks ordinary, blue sky, can&#39;t see anything.
+&lt;&lt;link Continue $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="318" name="testing 2" tags="" position="4875,525" size="100,100">testing 2</tw-passagedata><tw-passagedata pid="319" name="n1x Window" tags="has-hole" position="6500,1800" size="100,100">The only window in the room is round, about 1 meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
-if want touch and not touched, perhaps this is the hole
-- if ivex gone, touch action [[n1x Touch Window]]
-- if ivex here, what&#39;s that outside? [[n1x Ask Window]]
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if $n2_free&gt;&gt;
+    And there doesn&#39;t seem to be anything other than clear blue sky.
+    This room seems to be at the top floor of an extremely tall tower.
+    The outer surface of the wall is smooth stone that continues downward
+    with a regular pattern of similar round windows.
+    The ground is obscured by a layer of white clouds,
+    so it&#39;s unclear how high up this is.
 
-if ivex here and receptive, what&#39;s that outside?
-if ivex here and not receptive and not failed, what&#39;s that outside?
+    &lt;br&gt;&lt;br&gt;
+    Nero wonders where this tower could be.
+    A building this tall would certainly be noticed anywhere in the country.
+    Perhaps the tower is floating in the sky?
+    The power consumption of such a construction would be immense!
+    Ivex may be much more powerful than he seems.
 
-if free, look outside, weird.
+    &lt;br&gt;&lt;br&gt;
+    XXX can&#39;t escape this way. variants on mage sight.
 
+&lt;&lt;else&gt;&gt;
+    From his bound position, Nero cannot see anything else outside.
+&lt;&lt;/if&gt;&gt;
+
+&lt;&lt;if $n1_magicPhase === MP_wantTouch&gt;&gt;
+    &lt;br&gt;&lt;br&gt;
+    &lt;&lt;if $n1_windowTouched&gt;&gt;
+        Despite the window&#39;s hole-ishness, this doesn&#39;t seem to be
+        the hole that the sprite wants touched.
+
+    &lt;&lt;else&gt;&gt;
+        The window doesn&#39;t appear to open,
+        but it still technically is a hole, so maybe this is the hole
+        that the sprite wants touched.
+        
+        &lt;&lt;if $n2_free&gt;&gt;
+            &lt;&lt;add-action [[Touch the window.|n1x Touch Window]]&gt;&gt;
+        &lt;&lt;else&gt;&gt;
+            &lt;br&gt;&lt;br&gt;
+            &lt;&lt;if $n2_ivexGone || $n1_windowAskFailed&gt;&gt;
+                Too bad Nero has no way to reach it.
+            &lt;&lt;elseif $n1_windowAskTried&gt;&gt;
+                Ivex was unreceptive last time, but perhaps he can
+                still be persuaded to touch it.
+                &lt;&lt;add-action [[`&quot;No really, I saw something!&quot;`|n1x Ask Window]]&gt;&gt;
+            &lt;&lt;else&gt;&gt;
+                Tricking Ivex into touching it should be easy.
+                &lt;&lt;add-action [[`&quot;What&#39;s that outside?&quot;`|n1x Ask Window]]&gt;&gt;
+            &lt;&lt;/if&gt;&gt;
+        &lt;&lt;/if&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+
+&lt;&lt;nobr&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
-  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="320" name="n1x ask penguin" tags="" position="7675,2750" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="321" name="n1x ask portrait" tags="" position="7875,2775" size="100,100">&lt;&lt;set $n1_knowsMom = true&gt;&gt;\
+    &lt;&lt;get-actions&gt;&gt;
+    &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="320" name="n1x ask penguin" tags="" position="7675,2750" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="321" name="n1x ask portrait" tags="" position="7875,2775" size="100,100">&lt;&lt;set $n1_knowsMom = true&gt;&gt;\
 \
 &lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="322" name="n1x ask map" tags="" position="7975,2775" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="323" name="n1x Ask Grav Gems" tags="" position="6325,2725" size="100,100">ask ivex, what are those gems.
 
