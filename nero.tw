@@ -440,9 +440,16 @@ ul.actions li {
   user-select: all;
 }
 
-.var-info-was-ignored {
-  opacity: 0.8;
+.var-info-was-ignored .var-info-button-label {
+  opacity: 0.6;
   text-decoration: line-through;
+}
+
+.var-info-todo {
+  background-color: #400;
+}
+.var-info-todo::after {
+  content: "\1f6a7";
 }
 
 .var-info-was-written::before {
@@ -453,6 +460,14 @@ ul.actions li {
 .var-info-was-read::after {
   content: "\2193";
   padding-left: 2px;
+}
+
+.var-info-warning .var-info-button-label {
+  opacity: 1;
+}
+.var-info-warning::after {
+  content: " \26a0";
+  color: #df0;
 }
 
 .var-info-can-change {
@@ -564,17 +579,18 @@ a[data-passage^="n"]:hover {
   color: #48e;
 }
 
-/* assert-true */
-.assert-true-outer {
+/* assert-message */
+#assert-message-outer {
   position: fixed;
   bottom: 0;
   left: 0;
+  line-height: 1.5;
   text-align: center;
   margin: 12px 0;
   width: 100%;
   z-index: 99991;
 }
-.assert-true-inner {
+#assert-message-inner {
   background-color: #cc4;
   border-radius: 4px;
   color: #000;
@@ -583,11 +599,7 @@ a[data-passage^="n"]:hover {
   padding: 8px 8px 4px 8px;
   text-align: left;
 }
-.assert-true-1 {
-}
-.assert-true-2 {
-}
-.assert-true-inner code {
+.assert-message-fail code {
   color: #f33;
   font-weight: bold;
 }
@@ -755,6 +767,75 @@ $(document).on(":passagestart", () => {
   $("html").removeClass("redisplay-transition");
 });
 
+/** Assertions */
+let actualVars = null;
+
+$(document).on(":passagestart", () => {
+  $("#assert-message-outer").remove();
+});
+
+function assertionFailed(expr) {
+  let inner = $("#assert-message-inner");
+  if (inner.length === 0) {
+    const outer = $("<div id=assert-message-outer>");
+    outer.appendTo("#story");
+    inner = $("<div id=assert-message-inner>");
+    inner.appendTo(outer);
+    const info = $("<div class=assert-message-info>");
+    info.text("This state should be impossible.");
+    info.append(" Passage is not expected to make sense.");
+    info.appendTo(inner);
+  }
+  const fail = $("<div class=assert-message-fail>");
+  fail.append("Assertion failed: ");
+  fail.append($("<code>").text(expr));
+  fail.appendTo(inner);
+}
+
+Macro.add("assert-true", {
+  skipArgs: true,
+  handler: function() {
+    const proxy = State.active.variables;
+    if (actualVars != null) State.active.variables = actualVars;
+    const val = eval(this.args.full);
+    State.active.variables = proxy;
+    if (!val) {
+      assertionFailed(this.args.raw);
+    }
+  }
+});
+
+/*---- big mood */
+
+const bigMoodIgnore = new Set();
+const bigMoodTodo = new Set();
+
+$(document).on(":passagestart", () => {
+  bigMoodIgnore.clear();
+  bigMoodTodo.clear();
+});
+Macro.add("assert-big-mood", {
+  handler: function() {
+    const vname = this.args[0];
+    const expected = this.args[1];
+    const actual = actualVars[vname];
+    bigMoodIgnore.add(vname);
+    if (expected !== actual && !(expected === false && actual == null)) {
+      assertionFailed(`$${vname} === ${expected}`);
+    }
+  }
+});
+Macro.add("ignore-big-mood", {
+  handler: function() {
+    this.args.forEach(v => bigMoodIgnore.add(v));
+  }
+});
+Macro.add("big-mood-todo", {
+  handler: function() {
+    this.args.forEach(v => bigMoodTodo.add(v));
+  }
+});
+
 /**
  * var-info - show vars and allow toggling flags.
  *
@@ -861,7 +942,6 @@ function varInfoSetup() {
 
   const varsRead = new Set();
   const varsWritten = new Set();
-  let actualVars;
 
   $(document).on(":passagestart", () => {
     varsRead.clear();
@@ -877,6 +957,7 @@ function varInfoSetup() {
         return Reflect.deleteProperty(...arguments);
       },
       get(o, prop) {
+        // if (typeof prop === "string" && prop.startsWith("n1_")) debugger;
         if (typeof prop === "string") varsRead.add(prop);
         return Reflect.get(...arguments);
       },
@@ -913,7 +994,7 @@ function varInfoSetup() {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
       label.text(vname);
-      if (varsRead.has(vname)) {
+      if (varsRead.has(vname) && !bigMoodIgnore.has(vname)) {
         outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = !v[vname];
@@ -966,8 +1047,10 @@ function varInfoSetup() {
     const bigMood = new Set();
     for (const [re, ...vars] of bigMoodVars) {
       if (re.test(here)) {
-        vars.forEach(v => bigMood.add(v));
-        vars.forEach(v => touched.delete(v));
+        for (const v of vars) {
+          bigMood.add(v);
+          touched.delete(v);
+        }
       }
     }
 
@@ -975,12 +1058,19 @@ function varInfoSetup() {
     $("<label>").text("var-info").appendTo(outer);
     if (bigMood.size) {
       const el = $("<span class=var-info-big-mood>").appendTo(outer);
-      [...bigMood].sort().forEach(v => el.append(varButton(v)));
+      [...bigMood].sort().forEach(v => {
+        const but = varButton(v).appendTo(el);
+        if (bigMoodTodo.has(v)) {
+          but.addClass("var-info-todo");
+        } else if (!varsRead.has(v) && !bigMoodIgnore.has(v)) {
+          but.addClass("var-info-warning");
+        }
+      });
     }
     $("<span class=var-info-separator>").appendTo(outer);
     if (touched.size) {
       const el = $("<span class=var-info-touched>").appendTo(outer);
-      [...touched].sort().forEach(v => el.append(varButton(v)));
+      [...touched].sort().forEach(v => varButton(v).appendTo(el));
     }
     $("<span class=var-info-separator>").appendTo(outer);
     $("<span class=var-info-passage>").text(here).appendTo(outer);
@@ -1131,24 +1221,6 @@ Macro.add("get-actions", {
       $(this.output).wiki('<li>' + action + '</li>');
     }
     actionList.length = 0;
-  }
-});
-
-/** Assertions */
-Macro.add("assert-true", {
-  skipArgs: true,
-  handler: function() {
-    const val = eval(this.args.full);
-    if (!val) {
-      const outer = $("<div class=assert-true-outer>").appendTo(this.output);
-      const inner = $("<div class=assert-true-inner>").appendTo(outer);
-      const line1 = $("<div class=assert-true-1>").appendTo(inner);
-      const line2 = $("<div class=assert-true-2>").appendTo(inner);
-      line1.append("Assertion failed: ");
-      line1.append($("<code>").text(this.args.raw));
-      line2.append("This state should be impossible. ");
-      line2.append("This passage is not expected to make sense in this state.");
-    }
   }
 });
 
@@ -7698,7 +7770,9 @@ The blurry figure becomes a person...
 
 :: =n1c Ivex Intro {"position":"3875,675","size":"100,100"}
 <<nobr>>
+<<assert-true $n1_magicPhase <= MP_triedMagic>>
 <<assert-true !($n1_naked && $n1_smashed)>>
+<<assert-big-mood n1_mageSight false>>
 
 Ivex (the Magnificent) moves away from the
 <<if $n1_naked>>
@@ -9097,18 +9171,14 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 
 
 :: =n1d Get Creepy {"position":"4825,2300","size":"100,100"}
-The panther's musk is quite noticeable now. Perhaps Nero's sense of smell has become sensitized by his attempts at identifying the mysterious candle. Whatever the cause, Nero finds himself unreasonably aware of the bulge at the panther's crotch, and he discovers his mind has formed a clear image of the leaking fluid at the tip of the panther's cock.
-
 <<nobr>>
-<<assert-true $n1_naked>>
-<!--
-TODO smashed variants
-TODO licked variants
--->
+<<assert-big-mood n1_naked true>>
+
+The panther's musk is quite noticeable now. Perhaps Nero's sense of smell has become sensitized by his attempts at identifying the mysterious candle. Whatever the cause, Nero finds himself unreasonably aware of the bulge at the panther's crotch, and he discovers his mind has formed a clear image of the leaking fluid at the tip of the panther's cock.
+<</nobr>>
 
 Nero is not completely averse to dalliances with pretty men when there are no receptive women, but the burly panther mage is decidedly not his type.
 So it is with some dismay that he notices his own cock has started to stir.
-<</nobr>>
 
 [[Continue|=n1d Get Creepy 2]]
 
@@ -9341,14 +9411,17 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 
 :: =n1c Ivex Intro 2 {"position":"3975,675","size":"100,100"}
 <<nobr>>
+<<assert-true $n1_magicPhase <= MP_triedMagic>>
 <<assert-true !($n1_naked && $n1_smashed)>>
+<<assert-big-mood n1_mageSight false>>
 
 "There must be some mistake,"
-<<if $n1_smashed>>
-   says Nero, as he tries to use his twitching tail to shelter his aching balls.
-<<elseif $n1_naked>>
+<<if $n1_naked>>
+	<<ignore-big-mood n1_smashed>>
     says Nero, as he tries to use his
     bushy wolf tail to cover his bare crotch, unsuccessfully.
+<<elseif $n1_smashed>>
+   says Nero, as he tries to use his twitching tail to shelter his aching balls.
 <<else>>
     says Nero.
 <</if>>
@@ -9476,8 +9549,8 @@ Ivex lifts the riding crop off the wolf's balls, and draws his arm back slowly, 
 :: =n1d Strip Resist {"position":"4800,2100","size":"100,100"}
 <<nobr>>
 <<set $n1_afterNaked = "[[Continue|=n1d Get Creepy]]">>
-<<assert-true !$n1_licked>>
-<<assert-true !$n1_naked>>
+<<assert-big-mood n1_licked false>>
+<<assert-big-mood n1_naked false>>
 
 Nero sneers, almost a snarl.
 This concern expressed by the panther for the wolf's comfort
@@ -9753,6 +9826,8 @@ Needless to say, Nero only made that mistake once.
 :: =n1c Ivex Description [noreturn] {"position":"3800,775","size":"100,100"}
 <<nobr>>
 <<assert-true !($n1_naked && $n1_smashed)>>
+<<assert-big-mood n1_mageSight false>>
+<<ignore-big-mood n1_magicPhase>>
 
 Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobots than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
 <</nobr>>
@@ -9940,7 +10015,7 @@ The wolf considers holding his breath to avoid whatever is in the candle's fumes
 
 :: =n1d Naked Resist {"position":"4700,2350","size":"100,100"}
 <<nobr>>
-<<assert-true $n1_naked>>
+<<assert-big-mood n1_naked true>>
 <!--
 TODO smashed variants
 TODO licked variants
@@ -10114,10 +10189,14 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 
 
 :: =n1c Ivex Intro 3 {"position":"4075,675","size":"100,100"}
-There are plenty of other paths to victory. Nero is, after all, an accomplished mage.
-
 <<nobr>>
 <<assert-true $n1_magicPhase <= MP_triedMagic>>
+<<assert-big-mood n1_mageSight false>>
+
+There are plenty of other paths to victory. Nero is, after all, an accomplished mage.
+<</nobr>>
+
+<<nobr>>
 <<if $n1_magicPhase >= MP_triedMagic>>
     The anti-magic field is a difficulty,
     but [[countering anti-magic|=n1c Anti-magic]]
@@ -10185,7 +10264,7 @@ Ivex anticipates the wolf's snapping jaws and smoothly dips his head below where
 
 :: =n1d Naked Submit {"position":"4700,2250","size":"100,100"}
 <<nobr>>
-<<assert-true $n1_naked>>
+<<assert-big-mood n1_naked true>>
 <!--
 TODO smashed variants
 TODO licked variants
@@ -10222,8 +10301,8 @@ and roughly strokes the fur on the wolf's naked chest.
 :: =n1d Strip Submit {"position":"4675,2075","size":"100,100"}
 <<nobr>>
 <<set $n1_afterNaked = "[[Continue|=n1d Get Creepy]]">>
-<<assert-true !$n1_licked>>
-<<assert-true !$n1_naked>>
+<<assert-big-mood n1_licked false>>
+<<assert-big-mood n1_naked false>>
 
 <<if $n1_smashed>>
 
