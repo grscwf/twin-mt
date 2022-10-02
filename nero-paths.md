@@ -15,7 +15,7 @@
   - (2) Cast mage-sight.
   - (3) Look at the mirror.
   - Optional: Ask Ivex about the grav gems before he leaves, which provides a hint.
-- (4) When the lust candle is at max, and you've seen the grav gems with mage-sight, Struggle with desperate strength will disrupt the grav gems.
+- (4) When the lust candle is at max, and Nero has seen the grav gems with mage-sight, Struggle with desperate strength will disrupt the grav gems.
   - Anything other than struggling will fail.
   - This should basically be a 50/50 choice if the player misses the hints.
   - On failure, Nero is overwhelmed by lust. Ivex returns.
@@ -131,3 +131,6 @@
 - Ways to fail
   - Wear the ring too long - Bad Ending: Stiffened
   - Lose ring while hunted - Bad Ending: Hunted
+  - Neither of these has much warning before it happens, but once the player knows they can happen, they're easy to avoid:
+    - Take off the ring as soon as it's yellow.
+    - Don't activate lion hunting until everything is set right.
