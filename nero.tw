@@ -323,23 +323,46 @@ ul.actions li {
 .pulsingstrong {
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 1);
   transform: scale(1);
-  animation: pulse 1.0s infinite;
-}  
+  animation: strongpulse 1.3s infinite;
+}
+.pulsingmax {
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 1);
+  transform: scale(1);
+  animation: strongpulse 1.0s infinite;
+}
 
 @keyframes pulse {
     0% {
-        transform: scale(1.05);
-        box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7);
-    }
-
-    70% {
         transform: scale(1);
+        transform-origin: left;
         box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
     }
-
-    100% {
-        transform: scale(1.05);
+    20% {
+        transform: scale(1.02, 1.1);
+        transform-origin: left;
         box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+    100% {
+        transform: scale(1);
+        transform-origin: left;
+        box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+    }
+}
+@keyframes strongpulse {
+    0% {
+        transform: scale(1);
+        transform-origin: left;
+        box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+    }
+    10% {
+        transform: scale(1.05, 1.3);
+        transform-origin: left;
+        box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+    100% {
+        transform: scale(1);
+        transform-origin: left;
+        box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
     }
 }
 /* Horizontal Health Bar - End */
@@ -445,15 +468,15 @@ ul.actions li {
   user-select: all;
 }
 
-.var-info-was-ignored:not(.var-info-warning):not(.var-info-todo) .var-info-button-label {
+.var-info-was-ignored:not(.var-info-warning):not(.var-info-to-do) .var-info-button-label {
   opacity: 0.6;
   text-decoration: line-through;
 }
 
-.var-info-todo {
+.var-info-to-do {
   /* background-color: #400; */
 }
-.var-info-todo::after {
+.var-info-to-do::after {
   content: "\1f6a7";
 }
 
@@ -524,11 +547,11 @@ ul.actions li {
   right: 0;
 }
 
-.redisplay-transition, .redisplay-transition * {
-  transition: none !important;
-}
-.redisplay-transition .passage-in {
-  opacity: 1 !important;
+.var-info-value {
+  display: inline-block;
+  max-width: 3em;
+  overflow-x: clip;
+  text-overflow: ellipsis;
 }
 
 /* random walk */
@@ -594,38 +617,52 @@ a[data-passage^="n"]:hover {
   color: #99f;
 }
 
-/* assert-message */
-#assert-message-outer {
+/* messages and assertions */
+#messages-outer {
   position: fixed;
   bottom: 0;
   left: 0;
   line-height: 1.5;
   text-align: center;
   margin: 12px 0;
+  white-space: pre-line;
   width: 100%;
   z-index: 99991;
 }
-#assert-message-outer a {
+#messages-inner {
+  display: inline-block;
+}
+a.messages-close {
   color: #55f;
   float: right;
   font-weight: bold;
   margin-top: -2px;
+  padding-left: 8px;
 }
-#assert-message-outer a:hover {
+a.messages-close:hover {
   color: #55c;
 }
-#assert-message-inner {
+.messages-item {
   background-color: #cc4;
   border-radius: 4px;
   color: #000;
-  display: inline-block;
   font-size: 12px;
+  margin-bottom: 8px;
   padding: 8px 8px 4px 8px;
   text-align: left;
 }
-.assert-message-fail code {
+.messages-assert-fail code {
   color: #f33;
   font-weight: bold;
+}
+
+#messages-to-do > ul {
+  margin: 0;
+  padding-inline-start: 16px;
+}
+.messages-to-do-label {
+  font-weight: bold;
+  margin-right: 4px;
 }
 
 /* make debug bar fit on small screens */
@@ -637,11 +674,22 @@ a[data-passage^="n"]:hover {
 .beat {
   transition: opacity 400ms ease-in;
 }
-.beat-hidden {
+.beat.hidden {
   opacity: 0;
 }
-.beat-removed {
+.beat.removed {
   display: none;
+}
+
+/* fast redisplay */
+.redisplay-passage, .redisplay-passage * {
+  transition: none !important;
+}
+.redisplay-passage .passage-in {
+  opacity: 1 !important;
+}
+.redisplay-passage .beat.hidden {
+  opacity: 1;
 }
 
 
@@ -784,40 +832,48 @@ defineEnum("MagicPhase", [
 /** Redisplay current passage. */
 function redisplay() {
   Engine.play(State.passage);
-  $("html").addClass("redisplay-transition");
+  $("html").addClass("redisplay-passage");
 }
-
 $(document).on(":passagestart", () => {
-  $("html").removeClass("redisplay-transition");
+  $("html").removeClass("redisplay-passage");
 });
 
-/*** Assertions */
+/*** Messages and assertions */
 
 let actualVars = null;
 
 $(document).on(":passagestart", () => {
-  $("#assert-message-outer").remove();
+  $("#messages-outer").remove();
 });
 
+function addMessage(jq) {
+  let outer = $("#messages-outer");
+  let inner = $("#messages-inner");
+  if (outer.length !== 1) {
+    outer.remove();
+    outer = $("<div id=messages-outer>").appendTo("#story");
+    inner = $("<div id=messages-inner>").appendTo(outer);
+  }
+  jq.appendTo(inner);
+  return jq;
+}
+
 function assertionFailed(expr) {
-  let inner = $("#assert-message-inner");
-  if (inner.length === 0) {
-    const outer = $("<div id=assert-message-outer>");
-    outer.appendTo("#story");
-    inner = $("<div id=assert-message-inner>");
-    inner.appendTo(outer);
-    const info = $("<div class=assert-message-info>");
+  let inner = $("#messages-assert");
+  if (inner.length !== 1) {
+    inner.remove();
+    inner = $("<div id=messages-assert class=messages-item>");
+    addMessage(inner);
+    const info = $("<div id=messages-assert-info>").appendTo(inner);
     info.text("This state should be impossible.");
     info.append(" Passage is not expected to make sense. ");
-    $("<a>[close]</a>").on("click", () => {
-      $("#assert-message-outer").remove();
+    $("<a class=messages-close>[close]</a>").on("click", () => {
+      inner.remove();
     }).appendTo(info);
-    info.appendTo(inner);
   }
-  const fail = $("<div class=assert-message-fail>");
+  const fail = $("<div class=messages-assert-fail>").appendTo(inner);
   fail.append("Assertion failed: ");
   fail.append($("<code>").text(expr));
-  fail.appendTo(inner);
 }
 
 Macro.add("assert-true", {
@@ -833,29 +889,54 @@ Macro.add("assert-true", {
   }
 });
 
+function addTo_do(text) {
+  let list = $("#messages-to-do > ul");
+  if (list.length !== 1) {
+    $("#messages-to-do").remove();
+    const div = $("<div id=messages-to-do class=messages-item>");
+    addMessage(div);
+    $("<a class=messages-close>[close]</a>").on("click", () => {
+      div.remove();
+    }).appendTo(div);
+    $("<div class=messages-to-do-label>")
+      .text("TO"+"DO").appendTo(div);
+    list = $("<ul>").appendTo(div);
+  }
+  $("<li>").text(text).appendTo(list);
+}
+
+Macro.add("TO"+"DO", {
+  skipArgs: true,
+  handler: function() {
+    addTo_do(this.args.raw);
+  }
+});
+
 /*** Big Mood */
 
 const bigMoodIgnore = new Set();
-const bigMoodTodo = new Set();
+const bigMoodTo_do = new Set();
 
 $(document).on(":passagestart", () => {
   bigMoodIgnore.clear();
-  bigMoodTodo.clear();
+  bigMoodTo_do.clear();
 });
+function assertBigMood(vname, exp, raw) {
+  const actual = actualVars[vname];
+  const ok = exp === actual || (exp === false && actual == null);
+  if (ok) return;
+  const m = /`\s*(.*?)\s*`/.exec(raw);
+  if (m != null) {
+    assertionFailed(`bigMood $${vname} === (${m[1]})`);
+  } else {
+    assertionFailed(`bigMood $${vname} === ${exp}`);
+  }
+}  
 Macro.add("assert-big-mood", {
   handler: function() {
     const vname = this.args[0];
     const exp = this.args[1];
-    const actual = actualVars[vname];
-    bigMoodIgnore.add(vname);
-    const ok = exp === actual || (exp === false && actual == null);
-    if (ok) return;
-    const m = /`\s*(.*?)\s*`/.exec(this.args.raw);
-    if (m != null) {
-      assertionFailed(`$${vname} === (${m[1]})`);
-    } else {
-      assertionFailed(`$${vname} === ${exp}`);
-    }
+    assertBigMood(vname, exp, this.args.raw);
   }
 });
 Macro.add("ignore-big-mood", {
@@ -863,9 +944,12 @@ Macro.add("ignore-big-mood", {
     this.args.forEach(v => bigMoodIgnore.add(v));
   }
 });
-Macro.add("big-mood-todo", {
+Macro.add("TO"+"DO-big-mood", {
   handler: function() {
-    this.args.forEach(v => bigMoodTodo.add(v));
+    this.args.forEach(v => {
+      addTo_do(`${v} variants`);
+      bigMoodTo_do.add(v)
+    });
   }
 });
 
@@ -888,13 +972,13 @@ function varInfoSetup() {
       // Naked/barbs choice.
       /^[@=]?n1p /,
 
-      // n1_candleHorny always false
+      ['n1_candleHorny', false],
       'n1_candleLit',
-      // n1_ivexReceptive always false
-      // n1_licked always false
+      ['n1_ivexReceptive', false],
+      ['n1_licked', false],
       'n1_mageSight',
       'n1_magicPhase',
-      // n1_naked deterministic
+      ['n1_naked', 'deterministic'],
       'n1_smashed',
     ],
     [
@@ -920,10 +1004,10 @@ function varInfoSetup() {
       // Ivex before candle.
       /^[@=]?n1c /,
 
-      // n1_candleHorny always false
-      // n1_candleLit always false
-      // n1_ivexReceptive deterministic
-      // n1_licked always false
+      ['n1_candleHorny', false],
+      ['n1_candleLit', false],
+      ['n1_ivexReceptive', 'deterministic'],
+      ['n1_licked', false],
       'n1_mageSight',
       'n1_magicPhase',
       'n1_naked',
@@ -934,8 +1018,8 @@ function varInfoSetup() {
       /^[@=]?n1d /,
 
       'n1_candleHorny',
-      // n1_candleLit always true
-      // n1_ivexReceptive always false
+      ['n1_candleLit', true],
+      ['n1_ivexReceptive', false],
       'n1_licked',
       'n1_mageSight',
       'n1_magicPhase',
@@ -947,37 +1031,37 @@ function varInfoSetup() {
       /^[@=]?n2a /,
 
       'n1_candleHorny',
-      // n1_candleLit always true
-      // n1_ivexReceptive always false
+      ['n1_candleLit', 'deterministic'],
+      ['n1_ivexReceptive', false],
       'n1_licked',
       'n1_mageSight',
       'n1_magicPhase',
-      // n1_naked always true
+      ['n1_naked', true],
       'n1_smashed',
 
-      // n2_clever always false
-      // n2_extraHorny always false
-      // n2_free always false
-      // n2_ivexGone always true
-      // n2_mirrorBroken always false
+      ['n2_clever', false],
+      ['n2_extraHorny', false],
+      ['n2_free', false],
+      ['n2_ivexGone', true],
+      ['n2_mirrorBroken', false],
     ],
     [
       // Free in 1st floor.
       /^[@=]?n2b /,
 
-      // n1_candleHorny always false
-      // n1_candleLit always false
-      // n1_ivexReceptive always false
+      ['n1_candleHorny', false],
+      ['n1_candleLit', false],
+      ['n1_ivexReceptive', false],
       'n1_licked',
       'n1_mageSight',
       'n1_magicPhase',
-      // n1_naked always true
+      ['n1_naked', true],
       'n1_smashed',
 
       'n2_clever',
       'n2_extraHorny',
-      // n2_free always true
-      // n2_ivexGone always true
+      ['n2_free', true],
+      ['n2_ivexGone', true],
       'n2_mirrorBroken',
     ],
   ];
@@ -1021,8 +1105,9 @@ function varInfoSetup() {
 
     const jval = str(v[vname]);
     outer.attr("title", vname + "=" + jval);
-    const trunc = jval.length < 15 ? jval : jval.slice(0, 10) + "...";
-    label.text(vname + "=" + trunc);
+    $("<span class=var-info-vname>").text(vname).appendTo(label);
+    label.append("=");
+    $("<span class=var-info-value>").text(jval).appendTo(label);
 
     // assume unset is boolean
     const vtype = varTypes[vname] || (vname in v ? typeof v[vname] : "boolean");
@@ -1084,9 +1169,14 @@ function varInfoSetup() {
     const bigMood = new Set();
     for (const [re, ...vars] of bigMoodVars) {
       if (re.test(here)) {
-        for (const v of vars) {
-          bigMood.add(v);
-          touched.delete(v);
+        for (const vname of vars) {
+          if (!Array.isArray(vname)) {
+            bigMood.add(vname);
+            touched.delete(vname);
+          } else if (vname[1] !== 'deterministic') {
+            const x = `\`${vname[1]} in ${re}\``;
+            assertBigMood(vname[0], vname[1], x);
+          }
         }
       }
     }
@@ -1097,8 +1187,8 @@ function varInfoSetup() {
       const el = $("<span class=var-info-big-mood>").appendTo(outer);
       [...bigMood].sort().forEach(v => {
         const but = varButton(v).appendTo(el);
-        if (bigMoodTodo.has(v)) {
-          but.addClass("var-info-todo");
+        if (bigMoodTo_do.has(v)) {
+          but.addClass("var-info-to-do");
         } else if (!varsRead.has(v) && !bigMoodIgnore.has(v)) {
           but.addClass("var-info-warning");
         }
@@ -1198,29 +1288,29 @@ Macro.add("n1-patience", {
     const angryText = this.args[4] || impatientText;
     const v = State.variables;
     const here = State.passage;
-    // Only if we've moved to this passage (instead of redisplay or reload)
+    // Only if we've moved here (instead of redisplay or reload)
     if (State.peek(-1).title !== here) {
       // If we're at a new action node, reset patience and aggro
-      if (v.n1_patience_passage !== here) {
-        v.n1_patience_looks = looks;
-        v.n1_patience_actions = actions;
-        v.n1_patience_passage = here;
-        v.n1_patience_aggro = 0;
+      if (v.n1_patiencePassage !== here) {
+        v.n1_patienceLooks = looks;
+        v.n1_patienceActions = actions;
+        v.n1_patiencePassage = here;
+        v.n1_patienceAggro = 0;
       }
       // If we've exhausted patience, start aggro.
-      if (v.n1_patience_aggro || v.n1_patience_looks <= 1 || v.n1_patience_actions <= 1) {
-        v.n1_patience_aggro++;
+      if (v.n1_patienceAggro || v.n1_patienceLooks <= 1 || v.n1_patienceActions <= 1) {
+        v.n1_patienceAggro++;
       }
       // warning on aggro
-      v.n1_patience_warning = v.n1_patience_aggro === 1;
+      v.n1_patienceWarning = v.n1_patienceAggro === 1;
       // forced response
-      v.n1_patience_exhausted = v.n1_patience_aggro > 1;
+      v.n1_patienceExhausted = v.n1_patienceAggro > 1;
       // set return links
-      v.n1_afterLook = "[[Do something else.|" + here + "][$n1_patience_looks -= 1]]";
-      v.n1_afterAction = "[[Continue|" + here + "][$n1_patience_actions -= 1; $n1_triedSomething = true]]";
+      v.n1_afterLook = "[[Do something else.|" + here + "][$n1_patienceLooks -= 1]]";
+      v.n1_afterAction = "[[Continue|" + here + "][$n1_patienceActions -= 1; $n1_triedSomething = true]]";
     }
-    // Ivex text
-    switch (v.n1_patience_aggro) {
+    // Patience text
+    switch (v.n1_patienceAggro) {
       case 0: $(this.output).wiki(patientText); break;
       case 1: $(this.output).wiki(impatientText); break;
       default: $(this.output).wiki(angryText); break;
@@ -1309,6 +1399,7 @@ The Mage's Tower (Nero)
     <</link>>
     <<link "&#x23e9; Nero Alone" "=n2a Start">>
         <<delete-vars n1_ n2_>>
+        <<set $n1_naked = true>>
     <</link>>
 <</if>>
 
@@ -7631,7 +7722,7 @@ Nero considers his next move.
 <<nobr>>
 <<set $n1_ivexReceptive = false>>
 <<n1-patience 6 2
-	'Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"'
+    'Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"'
     'Ivex stamps an itty bitty foot-paw in annoyance. "Again I ask. Who sent you?"'
     'Ivex snaps his cape and speaks with anger. "Again I ask! Who sent you!"'
 >>
@@ -7793,7 +7884,7 @@ $(document).on(":passageinit", ev => console.log(ev));
     <<else>>
         emitting a tantalizing, sensuous smoke.
     <</if>>
-    <!-- TODO candle variations -->
+    <<TODO candle variations>>
 <</if>>
 
 <</nobr>>
@@ -7837,6 +7928,7 @@ The blurry figure becomes a person...
 <<nobr>>
 Ivex (the Magnificent) moves away from the
 <<if $n1_naked>>
+    <<ignore-big-mood n1_smashed>>
     bound, naked wolf,
 <<elseif $n1_smashed>>
     bound wolf's abused balls,
@@ -8444,13 +8536,13 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 [[Continue|=n1p Barbs Yes 2]]
 
 
-:: =n2a Start [section-start] {"position":"4375,3050","size":"100,100"}
+:: =n2a Start [section-start] {"position":"4650,3025","size":"100,100"}
 <<nobr>>
 <<delete-vars n2_>>
 <<set $n1_candleHorny = false>>
 <<set $n1_candleLit = false>>
 <<set $n2_ivexGone = true>>
-<<big-mood-todo n1_magicPhase>>
+<<TODO-big-mood n1_magicPhase>>
 <</nobr>>\
 \
 Ivex's exit by teleportation has created a sudden rush of air that causes the candle's smoke to scatter.
@@ -8470,50 +8562,45 @@ Well, that's a question to be deferred to some other time. What's important now 
 [[Continue|@n2a Start]]
 
 
-:: n2a Alone [under-construction] {"position":"4150,3225","size":"200,200"}
+:: n2a Alone (6,2) [under-construction] {"position":"4200,3100","size":"200,200"}
 <<nobr>>
 <<n1-patience 6 2
-    "<<include [[n2a Compute Arousal]]>>"
+    "<<include [[=n2a Compute Arousal]]>>"
 >>
-<<set $n1_candleHorny = $n2_arousal > 8>>
 
 Candle's Influence:
-<<arousalbar $n2_arousal 10 $n2_previousArousal>>
+<<arousalbar $n2_arousal 100 $n2_previousArousal>>
 <<set $n2_previousArousal = $n2_arousal>>
 <<timed 0s t8n>>
-    <<if $n1_patience_actions <= 1 || $n1_patience_looks <= 1>>
+    <<if $n2_candleMax>>
+        <<addclass #horizontalhealthbar pulsingmax>>
+    <<elseif $n2_candleStrong>>
         <<addclass #horizontalhealthbar pulsingstrong>>
     <<else>>
         <<addclass #horizontalhealthbar pulsingbar>>
     <</if>>
 <<next 2s>>
-    <<removeclass #beat-1 beat-hidden>>
+    <<removeclass .beat-1 hidden>>
 <<next 2s>>
-    <<removeclass #beat-2 beat-hidden>>
+    <<removeclass .beat-2 hidden>>
 <</timed>>
 <br>
-@@#beat-1.beat.beat-hidden;
+@@.beat-1.beat.hidden;
 <<include [[n2a Lust]]>>
 @@
-@@#beat-2.beat.beat-hidden;
+@@.beat-2.beat.hidden;
 <<include [[=n1x Look and Magic]]>>
 <<include [[n2a More Magic]]>>
-@@
 <ul class="actions">
-    <li>[[Struggle.|n2a Struggle]]</li>
+    <li>[[Struggle...|@n2a Struggle]]</li>
     <<optional-action $n1_magicAction>>
     <<optional-action $n2_moreMagicAction>>
 </ul>
+@@
 <</nobr>>
 
-need magic sight to succeed at all. justify as, need to see flow around grav gems.
-at lust max, tell the player this is the last chance, and make it a 50/50 choice.
 
-[[n2a Failed Escape]]
-[[n2a Grav Disrupted]]
-
-
-:: n2a Failed Escape {"position":"3900,3400","size":"100,100"}
+:: n2a Failed Escape {"position":"3950,3275","size":"100,100"}
 desperately horny from candle when Ivex returns.
 Ivex snuffs candle and gloats.
 nero is panting hard, ivex comments on tongue.
@@ -8532,7 +8619,7 @@ nero is still strapped to cross, and extremely horny.
 [[n2a grab knife]]
 
 
-:: n2a tamed mild [end] {"position":"3775,3325","size":"100,100"}
+:: n2a tamed mild [end] {"position":"3825,3200","size":"100,100"}
 XXX bad ending unlocked
 
 nero thinks, lemme satisfy him, and then there will be another opportunity to escape.
@@ -8549,7 +8636,7 @@ restart at Ivex leaves
 restart from beginning
 
 
-:: n2a tamed harsh [end] {"position":"3775,3475","size":"100,100"}
+:: n2a tamed harsh [end] {"position":"3825,3350","size":"100,100"}
 XXX bad ending unlocked
 
 no way is nero sucking ivex off. he's escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
@@ -9427,7 +9514,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<nobr>>
 "There must be some mistake,"
 <<if $n1_naked>>
-	<<ignore-big-mood n1_smashed>>
+    <<ignore-big-mood n1_smashed>>
     says Nero, as he tries to use his
     bushy wolf tail to cover his bare crotch, unsuccessfully.
 <<elseif $n1_smashed>>
@@ -9508,7 +9595,7 @@ Threat. Yes. That was a threat.
 
 <ul class="actions">
     <li>[[we're a secret inside the WAG|@n1c Very Secret]]</li>
-	<<optional-action $n1_magicAction>>
+    <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
 
@@ -9616,7 +9703,7 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 
 :: =n1x Look and Magic {"position":"4450,1375","size":"100,200"}
 <<nobr>>
-<<if $n1_patience_exhausted>>
+<<if $n1_patienceExhausted>>
     <<set $n1_magicAction = null>>
 <<else>>
     <<include [[=n1x Look]]>>
@@ -9630,7 +9717,7 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 :: @n1c Recruit {"position":"3700,1150","size":"100,100"}
 nero: I'd like to recruit you
 
-ivex, offended. 
+ivex, offended.
 
 [[Continue|@n1c Ivex Offended (1,1)]]
 
@@ -10093,7 +10180,7 @@ The wolf considers holding his breath to avoid whatever is in the candle's fumes
 :: =n1d Naked Resist {"position":"4700,2425","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_naked true>>
-<<big-mood-todo n1_licked n1_smashed>>
+<<TODO-big-mood n1_licked n1_smashed>>
 
 Nero sneers at the pretentious scoundrel.
 The panther's lewd inquiry is hardly subtle,
@@ -10126,7 +10213,7 @@ fur of the wolf's bare chest.
 
 :: @n1d Get Creepy 3 {"position":"4825,2575","size":"100,100"}
 <<nobr>>
-<<big-mood-todo n1_licked n1_smashed>>
+<<TODO-big-mood n1_licked n1_smashed>>
 <</nobr>>\
 \
 <em>Why am I so horny?</em> Nero is aghast at his body's reaction. But it's not just his body. His mind is also becoming engorged with primal emotions. He is weirdly hyperaware of the panther's rising lust, and he feels a deeply rooted desire to meet it, or exceed it, with a feral lust of his own. Is this feeling arising from a sense of competition between rivals, or is he being drawn somehow into a candlelight courtship dance? Is there even a difference between those possibilities?
@@ -10354,7 +10441,7 @@ Ivex anticipates the wolf's snapping jaws and smoothly dips his head below where
 :: =n1d Naked Submit {"position":"4700,2325","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_naked true>>
-<<big-mood-todo n1_licked n1_smashed>>
+<<TODO-big-mood n1_licked n1_smashed>>
 
 "I'm quite relaxed," says the wolf. "Just a little bit of chill."
 The moment Nero says that, he regrets it.
@@ -10439,7 +10526,7 @@ The panther mage raises an arm, and snaps his fingers.
 
 :: @n1d Pull {"position":"5200,2550","size":"100,100"}
 <<nobr>>
-<<big-mood-todo n1_licked n1_smashed>>
+<<TODO-big-mood n1_licked n1_smashed>>
 <</nobr>>\
 \
 The panther forms a ring with his fingers around the wolf's scrotum, above the wolf's balls, and starts pulling them out, stretching the wolf's sack tight against his nuts.
@@ -10515,7 +10602,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
     cursor: pointer;
     visibility: hidden;
   }
-  
+
   .timed-beat-current .timed-beat-button {
     color: #ffa000;
     visibility: visible;
@@ -10523,7 +10610,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
   .timed-beat-current .timed-beat-button:hover {
     color: #cca000;
   }
-  
+
   .timed-beat-done {
     visibility: visible;
   }
@@ -10643,7 +10730,7 @@ The panther mage pulls a red gem out from a pocket, and disappears in a <em>fwoo
 [[Continue|=n2a Start]]
 
 
-:: @n2a Start {"position":"4375,3150","size":"100,100"}
+:: @n2a Start {"position":"4650,3125","size":"100,100"}
 A flicker in the corner of Nero's eye catches his attention.
 
 The candle has lit itself again!
@@ -10651,11 +10738,11 @@ The candle has lit itself again!
 [[Continue|@n2a Start 3]]
 
 
-:: @n2a Start 3 {"position":"4375,3250","size":"100,100"}
+:: @n2a Start 3 {"position":"4650,3225","size":"100,100"}
 <<nobr>>
 @@#beat-1.beat.beat-hidden;Candle's Influence:@@
-<<arousalbar 2 10 0>>
-<<set $n2_previousArousal = 2>>
+<<arousalbar 20 100 0>>
+<<set $n2_previousArousal = 20>>
 <<timed 0s t8n>>
     <<addclass #horizontalhealthbar pulsingbar>>
 <<next 2s>>
@@ -10671,52 +10758,105 @@ Can Nero escape before his mind is overwhelmed by unthinking lust?
 
 Of course he can. It's just a matter of finding the right angle...
 @@
-[[Continue|n2a Alone]]
+[[Continue|n2a Alone (6,2)]]
 
 
-:: n2a Lust {"position":"4100,3050","size":"100,100"}
+:: n2a Lust {"position":"4300,2875","size":"100,100"}
+<<nobr>>
+XXX progressive text about lust based on arousalLevel
+player is here at most 6 turns.
+6 different texts, always advance one, maybe jump more.
+<br><br>
+<</nobr>>\
 
 
-:: n2a Struggle {"position":"4225,3525","size":"100,100"}
+:: @n2a Struggle {"position":"4250,3375","size":"100,100"}
+<<nobr>>
+<<if !$v2_candleMax>>
+
+    XXX can be here twice before final struggle.
+
+    <br><br>
+    $n1_afterAction
+
+<<elseif !$n1_magicSight && !$n1_sawGems>>
+
+    XXX no magic sight, haven't seen gems, final struggle fails.
+    
+    <br><br>
+    [[Continue|n2a Failed Escape]]
+
+<<else>>
+
+    XXX struggle succeeds. grav gems implode.
+    
+    <br><br>
+    [[Continue|n2a Grav Disrupted]]
+    
+<</if>>
+<</nobr>>
 
 
-:: n2a More Magic {"position":"4075,3450","size":"100,100"}
+:: n2a More Magic {"position":"4075,2975","size":"100,100"}
+<<nobr>>
+<<if $n2_candleMax>>
+
+    <<set $n2_moreMagicAction = "[[Desperate magic|n2a Desperate Magic]]">>
+    XXX desperation move
+    <br><br>
+
+<<elseif !$n1_mageSight>>
+    <!-- nothing -->
+
+<<else>>
+    <<set $n2_moreMagicAction = "[[Futile magic|n2a Futile Magic]]">>
+
+    XXX can be here twice. some interesting-sounding but useless spells.
+    <br><br>
+
+<</if>>
+<</nobr>>\
 
 
-:: n2a Compute Arousal {"position":"3950,3075","size":"100,100"}
+:: =n2a Compute Arousal {"position":"4425,2975","size":"100,100"}
 <<script>>
 const v = State.variables;
-const actions = Math.max(v.n1_patience_actions, 0);
-const looks = Math.max(v.n1_patience_looks, 0);
-switch (actions) {
-case 0:
-  v.n2_arousal = 10;
-  break;
-case 1:
-  v.n2_arousal = 10 - looks / 3;
-  break;
-case 2:
-  v.n2_arousal = 10 - looks * 1.2;
-  break;
-default:
+const actions = Math.max(v.n1_patienceActions, 0);
+const looks = Math.max(v.n1_patienceLooks, 0);
+
+if (actions > 2 || looks > 6) {
+  throw new Error("bug");
+} else if (actions === 0 || looks === 0) {
+  v.n2_arousal = 100;
+} else if (looks === 1) {
+  v.n2_arousal = 98;
+} else if (actions === 1) {
+  v.n2_arousal = 98 - (looks - 1) * 3;;
+} else if (actions === 2) {
+  v.n2_arousal = 98 - (looks - 1) * 12;
+} else {
   throw new Error("bug");
 }
+
+v.n2_candleHorny = v.n2_arousal > 80;
+v.n2_candleStrong = looks === 1 || actions === 1;
+v.n2_candleMax = looks === 0 || actions === 0;
 <</script>>\
 
 
 :: n1x Magic Free {"position":"5675,2325","size":"100,100"}
 <<nobr>>
-<<assert-big-mood $n1_candleHorny false>>
-<<assert-big-mood $n1_ivexReceptive false>>
-<<assert-big-mood $n2_ivexGone true>>
-<<assert-big-mood $n2_free true>>
+<<assert-big-mood n1_candleHorny false>>
+<<assert-big-mood n1_ivexReceptive false>>
+<<assert-big-mood n2_ivexGone true>>
+<<assert-big-mood n2_free true>>
 
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
 
     XXX cast escape
     <<set $n1_magicAction = '[[Cast Lust|n1x Cast Escape]]">>
-	
+
 <<case `MP_triedMagic`>>
 
     XXX cast mage-sight
@@ -10749,15 +10889,15 @@ default:
 
 :: n1x Magic Ivex Gone {"position":"5775,2075","size":"100,100"}
 <<nobr>>
-<<assert-big-mood $n1_candleHorny false>>
-<<assert-big-mood $n1_ivexReceptive true>>
-<<assert-big-mood $n2_ivexGone true>>
-<<assert-big-mood $n2_free false>>
+<<assert-big-mood n1_candleHorny false>>
+<<assert-big-mood n1_ivexReceptive false>>
+<<assert-big-mood n2_ivexGone true>>
+<<assert-big-mood n2_free false>>
 
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
 
-	XXX ivex gone, cast something big and useful
+    XXX ivex gone, cast something big and useful
     <<set $n1_magicAction = "[[Cast escape.|n1x Cast Escape]]">>
 
 <<case `MP_triedMagic`>>
@@ -10792,10 +10932,10 @@ default:
 
 :: n1x Magic Receptive {"position":"5750,1950","size":"100,100"}
 <<nobr>>
-<<assert-big-mood $n1_candleHorny false>>
-<<assert-big-mood $n1_ivexReceptive true>>
-<<assert-big-mood $n2_ivexGone false>>
-<<assert-big-mood $n2_free false>>
+<<assert-big-mood n1_candleHorny false>>
+<<assert-big-mood n1_ivexReceptive true>>
+<<assert-big-mood n2_ivexGone false>>
+<<assert-big-mood n2_free false>>
 
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
@@ -10840,10 +10980,10 @@ default:
 
 :: n1x Magic Covert {"position":"5725,1800","size":"100,100"}
 <<nobr>>
-<<assert-big-mood $n1_candleHorny false>>
-<<assert-big-mood $n1_ivexReceptive false>>
-<<assert-big-mood $n2_ivexGone false>>
-<<assert-big-mood $n2_free false>>
+<<assert-big-mood n1_candleHorny false>>
+<<assert-big-mood n1_ivexReceptive false>>
+<<assert-big-mood n2_ivexGone false>>
+<<assert-big-mood n2_free false>>
 
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
@@ -10888,7 +11028,6 @@ default:
 
 :: n1x Magic Sprite {"position":"5300,1725","size":"100,100"}
 <<nobr>>
-<<run console.log($n1_magicPhase)>>
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
     <!-- nothing -->
@@ -10947,17 +11086,17 @@ default:
 
 :: n1x Magic Horny {"position":"5725,2200","size":"100,100"}
 <<nobr>>
-<<assert-big-mood $n1_candleHorny true>>
-<<assert-big-mood $n1_ivexReceptive false>>
+<<assert-big-mood n1_candleHorny true>>
+<<assert-big-mood n1_ivexReceptive false>>
 <!-- n2_ivexGone can be true or false -->
-<<assert-big-mood $n2_free false>>
+<<assert-big-mood n2_free false>>
 
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
 
     XXX cast lust spell
     <<set $n1_magicAction = "[[Cast Lust|n1x Cast Escape]]">>
-	
+
 <<case `MP_triedMagic`>>
 
     XXX cast mage-sight
@@ -11018,5 +11157,17 @@ cast magic sight
 subby gets stripped.
 
 [[Continue|=n1p Naked]]
+
+
+:: n2a Desperate Magic {"position":"3925,3050","size":"100,100"}
+XXX fails
+
+[[Continue|n2a Failed Escape]]
+
+
+:: n2a Futile Magic {"position":"3950,2850","size":"100,100"}
+XXX fails
+
+$n1_afterAction
 
 

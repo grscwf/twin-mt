@@ -20,12 +20,13 @@
   - Anything other than struggling will fail.
   - This should basically be a 50/50 choice if the player misses the hints.
   - On failure, Nero is overwhelmed by lust. Ivex returns.
-    - Player has a choice of Bad Ending: Tamed Mild or Tamed Harsh.
+    - Bad Ending: Tamed Mild - cooperate
+    - Bad Ending: Tamed Harsh - resist
 - After disrupting the grav gems, there's a choice between getting the knife first or snuffing the candle first.
   - Unlike Drekkar's story, both options are always successful. There's no trap here.
 - Easy solution will break the mirror, making it unavailable on the 2nd Floor, and making the 2nd Floor Easy solution unavailable.
-- There's an additional Bad Ending here: Tamed Desperate:
-  - After escaping with high lust, look at the wand and use it.
+- There's an additional Bad Ending here:
+  - Bad Ending: Tamed Desperate - with high lust, look at wand and use it.
   - This is meant to be a little hard to find.
 
 ### 1st Floor Hard
@@ -86,7 +87,8 @@
     - Wearing it makes it glow green.
     - After one action, it glows yellow.
     - If Nero doesn't take it off when it's yellow, it turns red and locks on.
-      - This is Bad Ending: Stiff Harsh or Stiff Mild.
+      - Bad Ending: Stiff Mild - lion is not hunting.
+      - Bad Ending: Stiff Harsh - lion is hunting.
   - Entering the blob alone will not get the gem.
     - This can be repeated, as long as the player remembers to remove the ring after.
     - After two failures, suggest doing something else.
@@ -105,7 +107,7 @@
     - Put on ring, it turns green.
     - Start lion hunting, ring turns yellow and Nero is starting to feel stiff.
     - Any action other than removing the ring will fail to evade the lion.
-    - This is Bad Ending: Hunted Harsh.
+      - Bad Ending: Hunted Harsh.
   - To enter the blob with the lion:
     - Nero has to be wearing the ring, and the lion has to be hunting.
     - He can't start this in the Extraction room:
@@ -142,8 +144,12 @@
   - (13) Lion distracts blob long enough that Nero can get the gem.
   - (14) Teleport out. Once Nero is out, he has magic back and can defuse the ring.
 - Ways to fail
-  - Wear the ring too long - Bad Ending: Stiff
-  - Lose ring while hunted - Bad Ending: Hunted
+  - Wear the ring too long:
+    - Bad Ending: Stiff Mild - lion is not hunting.
+    - Bad Ending: Stiff Harsh - lion is hunting.
+  - Lose ring while hunted:
+    - Bad Ending: Hunted Mild - cooperate
+    - Bad Ending: Hunted Harsh - resist
   - Neither of these has much warning before it happens, but once the player knows they can happen, they're easy to avoid:
     - Take off the ring as soon as it's yellow.
     - Don't activate lion hunting until everything is ready.
