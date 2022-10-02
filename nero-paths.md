@@ -6,7 +6,6 @@
 - Easy is available after Ivex leaves, if the player misses the Hard solution.
 
 ### 1st Floor Easy
-
 - At the restart point, Nero is bound to the cross, Ivex is gone, the lust candle is lit.
 - Player can do N looks and M actions before the lust candle is maxed.
 - Most actions here are not useful. They're either teases, or they provide hints for the next attempt at 1st Floor Hard.
@@ -14,8 +13,9 @@
   - (1) Try casting any spell.
   - (2) Cast mage-sight.
   - (3) Look at the mirror.
+  - (4) Look at the gems.
   - Optional: Ask Ivex about the grav gems before he leaves, which provides a hint.
-- (4) When the lust candle is at max, and Nero has seen the grav gems with mage-sight, Struggle with desperate strength will disrupt the grav gems.
+- (5) When the lust candle is at max, and Nero has seen the grav gems with mage-sight, Struggle with desperate strength will disrupt the grav gems.
   - Anything other than struggling will fail.
   - This should basically be a 50/50 choice if the player misses the hints.
   - On failure, Nero is overwhelmed by lust. Ivex returns.
@@ -42,7 +42,7 @@
 - Sprite now asks for device name.
 - (6) Ask Ivex about the poltergeist device to get the name.
   - This can be done earlier, anytime after (1).
-  - It's possible this will require another playthrough, if Ivex has left already
+  - It's possible this will require another playthrough, if Ivex has left already.
   - But if the player is here on the 3rd playthrough, they've probably looked at the bottle early enough to have time to ask Ivex. So this probably doesn't need another playthrough.
 - (7) Ask the Sprite for access to the named device.
 - Sprite now asks Nero to touch the hole.
@@ -56,7 +56,7 @@
   - If the player doesn't get this before Ivex leaves, the Easy escape automatically gives the player the password.
 - Player will probably be here on 2st - 5th playthrough.
 - The password is a big tease:
-  - There's a moment when it seems like it succeed, and then it becomes another failure.
+  - There's a moment when it seems like it succeeds, and then it becomes another failure.
   - Ivex catches on to what the player is doing, denies access to the password, and applies extreme torture with another grav ball.
   - Lead the player through a section that feels like "crap, another obstacle, what else do I have to do to get past this."
   - But this turns out to actually work anyway. Nero is free.
@@ -65,7 +65,7 @@
 ## 2nd Floor
 - There are two solutions to the 2nd floor: Easy and Hard.
 - Easy is only available after finishing 1st Floor Hard.
-- Hard is a little tricky, but forgiving, and probably easier than 1st Floor Hard.
+- Hard is tricky, but a little forgiving, and maybe easier than 1st Floor Hard.
   - There are several retryable loops.
   - The player can easily avoid a bad ending that they've stumbled into before. The action that leads to the bad ending is obvious, and there's always an alternative.
   - The bad endings aren't necessarily obvious beforehand. This helps amp up frustration against Ivex and make the good ending more satisfying.
@@ -122,7 +122,7 @@
   - (6) If holding ring, wear ring.
   - (7) Go to hallway.
   - (8) Remove ring, or pick up ring.
-  - (9) Push Ivex statue, which starts falling.
+  - (9) Pull Ivex statue, which starts falling.
   - (10) Talk to lion, start lion in "hunt" mode. Statue falls on door. Door opens.
   - (11) Wear ring. Door is open, and lion hunts Nero into Extraction room.
   - (12) Dive into blob, lion jumps in too.
@@ -134,3 +134,5 @@
   - Neither of these has much warning before it happens, but once the player knows they can happen, they're easy to avoid:
     - Take off the ring as soon as it's yellow.
     - Don't activate lion hunting until everything is set right.
+- So this is solvable on 1st - 4th playthrough (1st: fail 1F escape, 2nd: fail with ring, 3rd: fail with lion), but the timing puzzle may take several tries to get right.
+

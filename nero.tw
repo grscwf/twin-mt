@@ -557,20 +557,30 @@ ul.actions li {
   outline: 1px solid #9cc;
 }
 
-/* draft indicator */
+/* draft/outline indicator */
 .draft-sign {
-  color: rgba(100, 100, 100, 0.3);
+  color: rgba(200, 200, 0, 0.2);
   font-size: 120px;
   pointer-events: none;
   position: fixed;
   right: 10px;
+  text-align: right;
   top: 10px;
+  white-space: pre-line;
   z-index: -1;
 }
 
+/* links to draft passages */
+a[data-passage^="@n"] {
+  color: #5c5;
+}
+a[data-passage^="@n"]:hover {
+  color: #2a2;
+}
+
+/* links to outline passages */
 a[data-passage^="n"] {
   color: #7bd;
-  /* text-decoration: dotted underline; */
 }
 a[data-passage^="n"]:hover {
   color: #48e;
@@ -817,11 +827,12 @@ $(document).on(":passagestart", () => {
 Macro.add("assert-big-mood", {
   handler: function() {
     const vname = this.args[0];
-    const expected = this.args[1];
+    const exp = this.args[1];
     const actual = actualVars[vname];
     bigMoodIgnore.add(vname);
-    if (expected !== actual && !(expected === false && actual == null)) {
-      assertionFailed(`$${vname} === ${expected}`);
+    const ok = exp === actual || (exp === false && actual == null);
+    if (!ok) {
+      assertionFailed(`$${vname} === ${exp}`);
     }
   }
 });
@@ -853,7 +864,7 @@ function varInfoSetup() {
   const bigMoodVars = [
     [
       // Naked/barbs choice.
-      /^=?n1p /,
+      /^[@=]?n1p /,
 
       'n1_candleLit',
       // n1_ivexReceptive always false
@@ -865,7 +876,7 @@ function varInfoSetup() {
     ],
     [
       // 1st floor magic/look.
-      /^=?n1x /,
+      /^[@=]?n1x /,
 
       'n1_candleLit',
       'n1_ivexReceptive',
@@ -882,7 +893,7 @@ function varInfoSetup() {
     ],
     [
       // Ivex before candle.
-      /^=?n1c /,
+      /^[@=]?n1c /,
 
       // n1_candleLit always false
       // n1_ivexReceptive deterministic
@@ -894,7 +905,7 @@ function varInfoSetup() {
     ],
     [
       // Ivex with candle.
-      /^=?n1d /,
+      /^[@=]?n1d /,
 
       // n1_candleLit always true
       // n1_ivexReceptive always false
@@ -906,7 +917,7 @@ function varInfoSetup() {
     ],
     [
       // Ivex gone, still bound.
-      /^=?n2a /,
+      /^[@=]?n2a /,
 
       // n1_candleLit always true
       // n1_ivexReceptive always false
@@ -923,7 +934,7 @@ function varInfoSetup() {
     ],
     [
       // Free in 1st floor.
-      /^=?n2b /,
+      /^[@=]?n2b /,
 
       // n1_candleLit always false
       // n1_ivexReceptive always false
@@ -952,12 +963,7 @@ function varInfoSetup() {
         if (typeof prop === "string") varsWritten.add(prop);
         return Reflect.defineProperty(...arguments);
       },
-      deleteProperty(o, prop) {
-        if (typeof prop === "string") varsWritten.add(prop);
-        return Reflect.deleteProperty(...arguments);
-      },
       get(o, prop) {
-        // if (typeof prop === "string" && prop.startsWith("n1_")) debugger;
         if (typeof prop === "string") varsRead.add(prop);
         return Reflect.get(...arguments);
       },
@@ -1190,15 +1196,16 @@ Macro.add("n1-patience", {
   }
 });
 
-/** Draft passages */
+/** Draft and skeleton passages */
 $(document).on(":passagestart", ev => {
+  $("html").removeClass("nero-draft", "nero-outline");
   $(".draft-sign").remove();
   if (/^n\d/.test(ev.passage.title)) {
-    $("html").addClass("nero-draft");
-    const div = $("<div>").addClass("draft-sign").text("draft");
-    $("body").append(div);
-  } else {
-    $('html').removeClass("nero-draft");
+    $("html").addClass("nero-outline");
+    $("<div>").addClass("draft-sign").text("outline").appendTo("body");
+  } else if (/^@n/.test(ev.passage.title)) {
+    $('html').addClass("nero-draft");
+    $("<div>").addClass("draft-sign").text("draft").appendTo("body");
   }
 });
 
@@ -8471,6 +8478,9 @@ Which should be easy, now that Ivex is gone.
 
 :: n2a Alone [under-construction] {"position":"4150,3225","size":"200,200"}
 <<nobr>>
+<<n1-patience 6 2
+    "<<include [[n2a Compute Arousal]]>>"
+>>
 Candle's Influence:
 <<arousalbar $n2_arousal 10>>
 <<timed 0s t8n>>
@@ -8482,7 +8492,7 @@ Candle's Influence:
 <<next 2s>>
     <<removeclass #beat-2 beat-hidden>>
 <</timed>>
-<</nobr>>
+<br>
 @@#beat-1.beat.beat-hidden;
 <<include [[n2a Lust]]>>
 @@
@@ -8490,19 +8500,12 @@ Candle's Influence:
 <<include [[=n1x Look and Magic]]>>
 <<include [[n2a More Magic]]>>
 @@
-<<nobr>>
 <ul class="actions">
     <li>[[Struggle.|n2a Struggle]]</li>
-    <li><<optional-action $n1_magicAction>></li>
-    <li><<optional-action $n2_moreMagicAction>></li>
+    <<optional-action $n1_magicAction>>
+    <<optional-action $n2_moreMagicAction>>
 </ul>
 <</nobr>>
-
-actions are magic, look, struggle.
-also provide a shortcut to final struggle.
-
-only struggle is useful in this session.
-the other options are teases, and maybe reveal info helpful for next session.
 
 need magic sight to succeed at all. justify as, need to see flow around grav gems.
 at lust max, tell the player this is the last chance, and make it a 50/50 choice.
@@ -10595,5 +10598,26 @@ Of course he can. It's just a matter of finding the right angle...
 
 
 :: n2a More Magic {"position":"4075,3450","size":"100,100"}
+
+
+:: n2a Compute Arousal {"position":"3950,3075","size":"100,100"}
+<<script>>
+const v = State.variables;
+const actions = Math.max(v.n1_patience_actions, 0);
+const looks = Math.max(v.n1_patience_looks, 0);
+switch (actions) {
+case 0:
+  v.n2_arousal = 10;
+  break;
+case 1:
+  v.n2_arousal = 10 - looks / 3;
+  break;
+case 2:
+  v.n2_arousal = 10 - looks * 1.2;
+  break;
+default:
+  throw new Error("bug");
+}
+<</script>>\
 
 
