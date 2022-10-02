@@ -320,6 +320,11 @@ ul.actions li {
   transform: scale(1);
   animation: pulse 1.5s infinite;
 }
+.pulsingstrong {
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 1);
+  transform: scale(1);
+  animation: pulse 1.0s infinite;
+}  
 
 @keyframes pulse {
     0% {
@@ -572,7 +577,7 @@ ul.actions li {
 
 /* links to draft passages */
 a[data-passage^="@n"] {
-  color: #5c5;
+  color: #9d9;
 }
 a[data-passage^="@n"]:hover {
   color: #2a2;
@@ -681,17 +686,20 @@ if (!Config.debug) {
 }
 
 /* Health Bar code - Start */
-window.Health = function (CurHP, MaxHP, BarID, Horizontal, Container) {
+window.Health = function (CurHP, MaxHP, BarID, Horizontal, Container, AnimateFrom) {
     if (Container == undefined) {
         console.log("Container undefined!!");
         Container = document;
     }
-    var HP = parseInt((CurHP / MaxHP) * 100).clamp(0, 100);
+    var HP0 = parseInt((AnimateFrom / MaxHP) * 100).clamp(0, 100);
+    var HP1 = parseInt((CurHP / MaxHP) * 100).clamp(0, 100);
     var BarElement = $(Container).find("#" + BarID);
     if (Horizontal) {
-        BarElement.css({ width: HP + "%" });
+        BarElement.css({ width: HP0 + "%" });
+        setTimeout(() => BarElement.css({ width: HP1 + "%" }), 200);
     } else {
-        BarElement.css({ height: HP + "%" });
+        BarElement.css({ height: HP0 + "%" });
+        setTimeout(() => BarElement.css({ height: HP1 + "%" }), 200);
     }
     //BarElement.attr("title", CurHP + "/" + MaxHP);
     //$(Container).find("#" + BarID + "bkg").attr("title", CurHP + "/" + MaxHP + " HP");
@@ -703,9 +711,10 @@ macros.arousalbar = {
     handler: function(place, macroName, params, parser) {
         var CurArousal = params[0];
         var MaxArousal = params[1];
+        var AnimateFrom = params[2] ?? CurArousal;
 
         $(document).one(':passagerender', function (ev) {
-            Health(CurArousal, MaxArousal, "horizontalhealthbar", true, ev.content);
+            Health(CurArousal, MaxArousal, "horizontalhealthbar", true, ev.content, AnimateFrom);
         });
 
         new Wikifier(place, "<div id=\"horizontalhealthbarbkg\" class=\"hzbarbkg\"><div id=\"horizontalhealthbar\" class=\"hzbar\"></div></div>");
@@ -831,7 +840,11 @@ Macro.add("assert-big-mood", {
     const actual = actualVars[vname];
     bigMoodIgnore.add(vname);
     const ok = exp === actual || (exp === false && actual == null);
-    if (!ok) {
+    if (ok) return;
+    const m = /`\s*(.*?)\s*`/.exec(this.args.raw);
+    if (m != null) {
+      assertionFailed(`$${vname} === (${m[1]})`);
+    } else {
       assertionFailed(`$${vname} === ${exp}`);
     }
   }
@@ -866,6 +879,7 @@ function varInfoSetup() {
       // Naked/barbs choice.
       /^[@=]?n1p /,
 
+      // n1_candleHorny always false
       'n1_candleLit',
       // n1_ivexReceptive always false
       // n1_licked always false
@@ -878,6 +892,7 @@ function varInfoSetup() {
       // 1st floor magic/look.
       /^[@=]?n1x /,
 
+      'n1_candleHorny',
       'n1_candleLit',
       'n1_ivexReceptive',
       'n1_licked',
@@ -886,15 +901,17 @@ function varInfoSetup() {
       'n1_naked',
       'n1_smashed',
 
+      'n2_clever',
       'n2_extraHorny',
       'n2_free',
-      'n2_horny',
       'n2_ivexGone',
+      'n2_mirrorBroken',
     ],
     [
       // Ivex before candle.
       /^[@=]?n1c /,
 
+      // n1_candleHorny always false
       // n1_candleLit always false
       // n1_ivexReceptive deterministic
       // n1_licked always false
@@ -907,6 +924,7 @@ function varInfoSetup() {
       // Ivex with candle.
       /^[@=]?n1d /,
 
+      'n1_candleHorny',
       // n1_candleLit always true
       // n1_ivexReceptive always false
       'n1_licked',
@@ -919,6 +937,7 @@ function varInfoSetup() {
       // Ivex gone, still bound.
       /^[@=]?n2a /,
 
+      'n1_candleHorny',
       // n1_candleLit always true
       // n1_ivexReceptive always false
       'n1_licked',
@@ -927,15 +946,17 @@ function varInfoSetup() {
       // n1_naked always true
       'n1_smashed',
 
+      // n2_clever always false
       // n2_extraHorny always false
       // n2_free always false
-      // n2_horny always true
       // n2_ivexGone always true
+      // n2_mirrorBroken always false
     ],
     [
       // Free in 1st floor.
       /^[@=]?n2b /,
 
+      // n1_candleHorny always false
       // n1_candleLit always false
       // n1_ivexReceptive always false
       'n1_licked',
@@ -944,10 +965,11 @@ function varInfoSetup() {
       // n1_naked always true
       'n1_smashed',
 
+      'n2_clever',
       'n2_extraHorny',
       // n2_free always true
-      'n2_horny',
       // n2_ivexGone always true
+      'n2_mirrorBroken',
     ],
   ];
 
@@ -7618,7 +7640,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 :: =n1x Look {"position":"6875,1825","size":"200,100"}
 <<nobr>>
 
-<<if $n1_candleLit>>
+<<if $n1_candleHorny>>
     Nero <<= either(
         "gasps", "pants", "shakes his head", "shivers", "trembles"
     )>>.
@@ -7631,14 +7653,21 @@ $(document).on(":passageinit", ev => console.log(ev));
     his situation.
 <</if>>
 
-<<if $n2_free>>
+<<if $n2_free && $n2_clever>>
+    He and his tortured balls are standing naked
+<<elseif $n2_free>>
     He's standing naked
 <<else>>
-    He's
-    <<if $n1_naked>>
-        naked and
+    <<if $n1_smashed && $n1_naked>>
+        He and his aching, naked balls are bound
+    <<elseif $n1_smashed>>
+        He and his aching balls are bound
+    <<elseif $n1_naked>>
+        He's naked and bound
+    <<else>>
+        He's bound
     <</if>>
-    bound with leather restraints to a
+    with leather restraints to a
     [[wooden cross|n1x Cross]]
     <<if $n1_sawGems>>
         that has [[glowing gems|n1x Grav Gems]],
@@ -7739,8 +7768,13 @@ $(document).on(":passageinit", ev => console.log(ev));
 
 <<if $n1_candleLit>>
     <br><br>
-    A [[lit candle|n1x Candle]] on the desk is emitting a tantalizing,
-    sensuous smoke.
+    A [[lit candle|n1x Candle]] on the desk is
+    <<if $n1_candleHorny>>
+        burning with an intense, spicy heat that the wolf can feel from
+        the other side of the room.
+    <<else>>
+        emitting a tantalizing, sensuous smoke.
+    <</if>>
     <!-- TODO candle variations -->
 <</if>>
 
@@ -8236,7 +8270,7 @@ betrayed his client's confidence.
     Ivex momentarily flinches at the sudden growl,
     but he quickly straightens and smiles.
 <</if>>
-"You're more fun than I expected a mage would be!"
+"You're much more fun than I expected a mage would be!"
 <</nobr>>
 
 That statement seems ominous. Still, Nero thinks he can provoke the panther into making a careless mistake, which should allow him to finish the mission and escape with minimal distress.
@@ -8260,9 +8294,12 @@ output
 
 <<set $n1_magicPhase ||= MP_beforeCast>>
 
+<<assert-big-mood n1_mageSight `
+    $n1_magicPhase >= MP_magicSight && !$n2_mirrorBroken
+`>>
+
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
-
     <<if $n1_ivexReceptive>>
         Ivex seems receptive. Perhaps this is a good time for Nero to impress him with a flashy but harmless spell, ideally one that would also bring him closer to escape.
         <<set $n1_magicAction = "[[Cast a flashy spell.|n1x Cast Strength]]">>
@@ -8381,13 +8418,13 @@ Ivex makes a gesture with his head, and two small objects fly out from a cabinet
 
 One lands on the panther's face. It's a mask that covers his muzzle, and it's oddly painted on the outside with an image of Ivex's muzzle itself, frozen in a ferocious grin. An unobservant person might not notice that the panther is wearing a mask at all, except that the structure of the mask turns every breath he takes into an unmistakable wheeze.
 
-The other object is a slim red candle, disturbingly ordinary. Ivex catches it, carefully places it in a candleholder on the desk. A moment later, the candle lights up.
+The other object is a slim red candle, disturbingly ordinary. Ivex catches it, and carefully places it in a candleholder on the desk. A moment later, the candle lights up.
 
 Nero tilts his head and reflects on what the candle might be, given that Ivex was quite careful to wear a mask in preparation. "Poisonous fumes are a hazardous way to harm a prisoner in your own office," says the wolf.
 
 "Oh it's hardly poisonous," Ivex replies. "Much the opposite." Ivex's voice is muffled and hollowed by the grinning mask. "I'd tell you all about it, but why spoil the surprise. A clever wolf like you will figure it out soon enough."
 
-[[Continue|=n1d Start Candle 2]]
+[[Continue|@n1d Start Candle 2]]
 
 
 :: =n1p Naked {"position":"4500,1050","size":"100,100"}
@@ -8400,7 +8437,7 @@ And the spell's trigger was such a small, ambiguous gesture. Nero starts sketchi
 <<nobr>>
 <<if $n1_candleLit>>
     Is <em>that</em> what the strange candle is for?
-    Surely it's too volatile to support the necessary scaffold.
+    Surely it's too volatile to support the necessary power scaffold.
     Perhaps it's something else in this room...
 <<else>>
     Is it something Ivex is wearing?
@@ -8453,6 +8490,8 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 :: =n2a Start [section-start] {"position":"4375,3050","size":"100,100"}
 <<nobr>>
 <<delete-vars n2_>>
+<<set $n1_candleHorny = false>>
+<<set $n1_candleLit = false>>
 <<set $n2_ivexGone = true>>
 <<big-mood-todo n1_magicPhase>>
 <</nobr>>\
@@ -8463,17 +8502,15 @@ The candle flickers, and goes out.
 
 Nero's head clears.
 
-His cock is still achingly erect, with a strong and distracting desire to <em>thrust</em> into something. But Nero's will is stronger. It's an urge he can deny.
+His cock is still achingly erect, with a strong and distracting desire to <em>thrust</em> itself into something tight and warm. But Nero's will is stronger. It's an urge he can deny.
 
-With his mind released from the candle's influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter collection of aphrodisiac candles. They're an expensive import, more an artifact of herbcraft than of magic, and often used by lovers on special occasions like anniversaries or wedding nights. Nero has used a few himself. (He's especially fond of the Salty Ocean Breeze flavor.)
+With his mind released from the candle's influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter brand of aphrodisiac candles. They're an expensive import, more an artifact of herbcraft than of magic, and often used by lovers on special occasions like anniversaries or wedding nights. Nero has used a few himself. (He's especially fond of the Salty Ocean Breeze flavor.)
 
 But this one is much more potent than the ones he's experienced before. Ivex must have enhanced it greatly somehow. To what end?
 
-Well, that's a question to be deferred to some other time. What's important now is escape.
+Well, that's a question to be deferred to some other time. What's important now is escape. Which should be easy, now that Ivex is gone.
 
-Which should be easy, now that Ivex is gone.
-
-[[Continue|=n2a Start 2]]
+[[Continue|@n2a Start]]
 
 
 :: n2a Alone [under-construction] {"position":"4150,3225","size":"200,200"}
@@ -8481,10 +8518,15 @@ Which should be easy, now that Ivex is gone.
 <<n1-patience 6 2
     "<<include [[n2a Compute Arousal]]>>"
 >>
+<<set $n1_candleHorny = $n2_arousal > 8>>
+
 Candle's Influence:
-<<arousalbar $n2_arousal 10>>
+<<arousalbar $n2_arousal 10 $n2_previousArousal>>
+<<set $n2_previousArousal = $n2_arousal>>
 <<timed 0s t8n>>
-    <<if $n2_arousal >= 9>>
+    <<if $n1_patience_actions <= 1 || $n1_patience_looks <= 1>>
+        <<addclass #horizontalhealthbar pulsingstrong>>
+    <<else>>
         <<addclass #horizontalhealthbar pulsingbar>>
     <</if>>
 <<next 2s>>
@@ -8943,7 +8985,7 @@ A fist smashes into Nero's crotch, thumping hard against his other ball and brie
 
 The wolf cannot suppress a whine. The sound is embarrassing and pathetic, and a moment later, the hand on his ball releases its grasp.
 
-"There we go," says the voice. "That's a fun start!"
+"There we go," says the voice. "That's a fun start! I <em>knew</em> you were awake."
 
 Nero's vision clears. The vague shape of his tormentor snaps into focus.
 
@@ -8951,7 +8993,7 @@ It's <em>him</em>.
 
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
-The panther says brightly, "Welcome to my world. I am Ivex the Magnificent."
+The panther says brightly, "Welcome to my world, foolish wolf. I am Ivex <em>the Magnificent.</em>"
 
 Well. Nero had thought that locating Ivex would be the difficult part of this task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, <em>notice</em> the trap before stepping into it. His aching balls agreed with that.
 
@@ -9153,7 +9195,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 </ul><</nobr>>
 
 
-:: =n1d Get Creepy {"position":"4825,2375","size":"100,100"}
+:: @n1d Get Creepy {"position":"4825,2375","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_naked true>>
 
@@ -9162,11 +9204,12 @@ The panther's musk is quite noticeable now. Perhaps Nero's sense of smell has be
 
 Nero is not completely averse to dalliances with pretty men when there are no receptive women, but the burly panther mage is decidedly not his type. So it is with some dismay that he notices his own cock has started to stir.
 
-[[Continue|=n1d Get Creepy 2]]
+[[Continue|@n1d Get Creepy 2]]
 
 
 :: =n1d Heavy Squeeze (1,1) {"position":"5325,2675","size":"100,200"}
 <<nobr>>
+<<set $n1_candleHorny = true>>
 <<n1-patience 1 1
     "Ivex pulls at the wolf's balls and squeezes harder. \"Tell me...\""
 >>
@@ -9175,8 +9218,8 @@ Nero is not completely averse to dalliances with pretty men when there are no re
 <<nobr>>
 <<include [[=n1x Look and Magic]]>>
 <ul class="actions">
-    <li>[[Whine with frustration.|=n1d Alarm]]</li>
-    <li>[[Growl with anger and lust.|=n1d Alarm]]</li>
+    <li>[[Whine with frustration.|@n1d Alarm]]</li>
+    <li>[[Growl with anger and lust.|@n1d Alarm]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
@@ -9411,13 +9454,13 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 "I don't have any idea what you're talking about."
 <</nobr>>
 
-Ivex growls. "Don't try to play dumb with me!" He grabs a sheet of paper from the desk. "I found this in your satchel."
+Ivex flattens his ears and growls. "Don't try to play dumb with me!" He grabs a sheet of paper from the desk. "I found this in your satchel."
 
 He raises the paper and reads from it. "Ivex Darkshadow. Probably not his birth name. No documentation prior to his enrollment at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with blah blah blah..."
 
 Ivex throws the paper into the air and makes a gesture, causing it to burst into flames.
 
-"It's all pretty awesome," says the panther. "I'm flattered. But it isn't very accurate."
+"It's all pretty awesome," says the panther. "I'm truly flattered. But it isn't the least bit accurate!"
 
 Nero mentally crosses off one branch of actions from his strategic map. Feigning ignorance was a long shot, but it had been worth trying.
 
@@ -9500,6 +9543,7 @@ Threat. Yes. That was a threat.
 
 :: =n1d Light Squeeze (1,1) {"position":"4950,2475","size":"100,200"}
 <<nobr>>
+<<set $n1_candleHorny = true>>
 <<n1-patience 1 1
     "Ivex closes the paw holding Nero's balls and gently squeezes. \"Tell me, who sent you.\""
 >>
@@ -9509,14 +9553,14 @@ Threat. Yes. That was a threat.
 <<include [[=n1x Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[`"I... can't..."`|=n1d Ball Submit]]</li>
-    <li>[[Snap at Ivex's face.|=n1d Ball Resist]]</li>
+    <li>[[`"I... can't..."`|@n1d Ball Submit]]</li>
+    <li>[[Snap at Ivex's face.|@n1d Ball Resist]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
 
 
-:: =n1d Alarm {"position":"5175,2975","size":"100,100"}
+:: @n1d Alarm {"position":"5175,2975","size":"100,100"}
 Ivex laughs at the pathetic sounds coming from the helpless wolf.
 
 The panther tosses his head. A cabinet drawer opens, and out comes a riding crop that sails through the air, to land in Ivex's paw.
@@ -9525,12 +9569,12 @@ Ivex places the leather tip of the riding crop against the wolf's bare thigh, an
 
 Ivex lifts the riding crop off the wolf's balls, and draws his arm back slowly, preparing to strike...
 
-[[Continue|=n1d Alarm 2]]
+[[Continue|@n1d Alarm 2]]
 
 
 :: =n1d Strip Resist {"position":"4800,2175","size":"100,100"}
 <<nobr>>
-<<set $n1_afterNaked = "[[Continue|=n1d Get Creepy]]">>
+<<set $n1_afterNaked = "[[Continue|@n1d Get Creepy]]">>
 <<assert-big-mood n1_licked false>>
 <<assert-big-mood n1_naked false>>
 
@@ -9844,6 +9888,7 @@ Or he could be, if he dressed better. His clothes are the facile fashion of a us
 It all feels like a poor person's idea of what a rich person would wear.
 Not that Nero would ever tell that to his
 <<if $n1_smashed>>
+    <<ignore-big-mood n1_naked>>
     captor.
 
     <br><br>
@@ -9922,6 +9967,11 @@ if holding stuff, good to be prepared. especially mirror if held. but maybe havi
 
 
 :: n2a use knife {"position":"4575,3750","size":"100,100"}
+<<nobr>>
+<<set $n1_candleLit = false>>
+<<set $n1_candleHorny = false>>
+<</nobr>>\
+\
 struggle to get knife, cut one arm free.
 
 eventually cut all bonds. sigh of relief.
@@ -10009,7 +10059,7 @@ set magic phase to on-hold
 [[Continue|n1c Ivex Dominant (4,3)]]
 
 
-:: =n1d Start Candle 2 {"position":"3650,2375","size":"100,100"}
+:: @n1d Start Candle 2 {"position":"3650,2375","size":"100,100"}
 The candle's flame is orange with a hint of green, and the smoke is a light gray that dissipates quickly. There's little circulation in the room, but Nero can already smell it, a scent like something warm-blooded and spicy.
 
 The wolf considers holding his breath to avoid whatever is in the candle's fumes, but of course he'll have to breathe eventually. No point delaying the inevitable. Perhaps with measured, cautious breaths, he can slowly acclimate himself, and limit whatever effects the candle might have.
@@ -10048,10 +10098,10 @@ fur of the wolf's bare chest.
 
 <</nobr>>
 
-[[Continue|=n1d Get Creepy]]
+[[Continue|@n1d Get Creepy]]
 
 
-:: =n1d Get Creepy 3 {"position":"4825,2575","size":"100,100"}
+:: @n1d Get Creepy 3 {"position":"4825,2575","size":"100,100"}
 <<nobr>>
 <<big-mood-todo n1_licked n1_smashed>>
 <</nobr>>\
@@ -10069,14 +10119,14 @@ The panther takes hold of Nero's balls. Not squeezing, not yet. Just cupping the
 [[Continue|=n1d Light Squeeze (1,1)]]
 
 
-:: =n1d Get Creepy 2 {"position":"4825,2475","size":"100,100"}
+:: @n1d Get Creepy 2 {"position":"4825,2475","size":"100,100"}
 Ivex has also noticed the wolf's traitorous penis, and the lecherous panther brings the fingers of one paw to stroke the fur of the wolf's sheath, teasing it, fondling it, and encouraging the shaft within the sheath to stiffen and grow in the flickering light of the strange red candle.
 
 The panther speaks in a low throaty register that reverberates through the mask. "Do you know what I love the most about wolves?"
 
 Ivex lifts his paw off the wolf's crotch, but leaves it poised right above it, centimeters away. He chuckles under the mask, as the wolf's member bulges and struggles outward, seeking attention...
 
-[[Continue|=n1d Get Creepy 3]]
+[[Continue|@n1d Get Creepy 3]]
 
 
 :: =n1p Barbs Yes 2 {"position":"5025,900","size":"100,100"}
@@ -10113,51 +10163,54 @@ As the young wolf limped away with what remaining dignity he could muster, he he
 
 
 :: =n1p Fast Barbs 1 {"position":"4700,775","size":"100,100"}
-Lord Temesca, the lithe cheetah securely fastened to Nero's workshop table, asked again, "Are you sure this will work?"
+Lord Temesca, the slender cheetah securely fastened to Nero's workshop table, asked again, "Are you sure this will work?"
 
 "Please stay still," replied Nero. "I'm applying a dangerous amount of energy to a delicate region, and it would be tragic if I slipped."
 
 The delicate region was the male cheetah's sheath, which for the past year had been trapped in a chastity spell under control of Temesca's wife, Lady Pevin. The lord had approached Nero with a tale of wanting to escape a miserable marriage, along with enough coin to secure an appointment for the mage's services.
 
-The spell was not the cheap variety that was common in sexual play. Those had mage locks that are easily dismantled with simple charms. This one was more substantial and somewhat perilous. Its lock had a guard against tampering, that would destroy the lock and fuse it shut. Which had happened. Which Temesca had not told his wife. Not that she had even tried to let him free in months.
+The chastity spell was not the cheap variety that was common in sexual play. Those had mage locks that are easily dismantled with simple charms. This one was more substantial and somewhat perilous. Its lock had a guard against tampering, that would destroy the lock and fuse it shut. Which had happened. Which Temesca had not told his wife. Not that she had even <em>tried</em> to let him free in months.
 
-Nero said, "You really should have approached me before trying the Carmel Charm. Finessing mage locks is one of my specialties, and much less dangerous than what I'm doing now."
+Nero said, "You really should have approached me before trying the Carmela Charm. Finessing mage locks is one of my specialties, and it's much less dangerous than what I'm doing now."
 
-The cheetah grimaced, but otherwise stayed silent and still.
+The cheetah grimaced and flattened his ears, but otherwise stayed silent and still.
 
 After a few more minutes of rasping at the energy bonds, the chastity spell collapsed. The cheetah's penis, sensing freedom, immediately sprung to its fullest length, and Lord Temesca shouted with glee.
 
-Nero took a moment to measure the liberated cock and its...
+Nero took a moment to measure the liberated cock...
 
 <<nobr>>
 <ul class="actions">
-    <li>[[barbed shaft...|=n1p Fast Barbs 2][$n1_barbs = true]]</li>
-    <li>[[smooth shaft...|=n1p Fast Barbs 2][$n1_barbs = false]]</li>
+    <li>[[and its barbed shaft...|=n1p Fast Barbs 2][$n1_barbs = true]]</li>
+    <li>[[and its smooth shaft...|=n1p Fast Barbs 2][$n1_barbs = false]]</li>
 </ul>
 <</nobr>>
 
 
 :: =n1p Fast Barbs 2 {"position":"4800,775","size":"100,100"}
 <<nobr>>
-Nero took a moment to measure the liberated cock and its
+Lord Temesca's
 <<if $n1_barbs>>
-    barbed shaft,
+    barbed penis
 <<else>>
-    smooth shaft,
+    smooth penis
 <</if>>
-before telling the bound cheetah,
+quivered at Nero's attention,
+but the wolf mage was not intending to give pleasure.
+After he finished his measurements,
+he told the bound cheetah,
 "I'm sorry, but I'm going to have to give you a refund."
 <</nobr>>
 
 "What? Why?" asked the lord cheetah, quite confused.
 
-Nero brought out the <em>other</em> spell he had prepared for this appointment. He made a few adjustments to it, and then applied it firmly to the cheetah's erect cock, forcing it to retreat back in its sheath.
+Nero brought out the <em>other</em> spell he had prepared for this appointment. He made a few adjustments to it, and then applied it firmly to the cheetah's erect cock, forcing it down into retreat, back into its sheath.
 
-"You see," said the wolf mage, "Your lovely wife, Lady Pevin, approached me the day before you did, and hired me first. She explained to me the circumstances which led her to restrain your cock, and after some investigation of my own, I decided her story had more merit than yours. So I agreed to construct for her a much better chastity spell than the one she had originally found for you."
+"You see," said the wolf mage, "Your lovely wife, Lady Pevin, approached me the day before you did, and hired me first. She explained to me the circumstances which led her to restrain your cock, and after some investigation of my own, I decided her story had more merit than yours. So I agreed to construct for her a much better chastity spell than the one she had originally acquired for you."
 
 Nero called out, "It's done now," and Lady Pevin herself entered the room.
 
-Lord Temesca was livid, but still helplessly bound to the workshop table. Lady Pevin ignored her screaming husband and quietly approached the wolf mage. She then proceeded to lower Nero's trousers, to express her gratitude, in a most un-lady-like way...
+Lord Temesca was livid, but still helplessly strapped to the workshop table. Lady Pevin ignored her screaming husband and quietly approached the wolf mage. She then proceeded to lower Nero's trousers, in order to express her gratitude, in a most un-lady-like way...
 
 [[Continue|=n1p Fast Barbs End]]
 
@@ -10167,13 +10220,13 @@ Lord Temesca was livid, but still helplessly bound to the workshop table. Lady P
 It's an intensely sexy memory,
 <<if $n1_sawFastBarbsExtra>>
     and it was the start of...
-    [[never mind that now...|=n1p Fast Barbs Extra]]
+    [[never mind that now...|@n1p Fast Barbs Extra]]
 
     <br><br>
     Nero has more urgent things to think about.
 <<else>>
     and it was the start of an
-    [[astonishingly perverted summer...|=n1p Fast Barbs Extra]]
+    [[astonishingly perverted summer...|@n1p Fast Barbs Extra]]
 
     <br><br>
     But Nero has more urgent things to think about.
@@ -10185,7 +10238,7 @@ Such as, the noticeably horny panther mage who has just magicked away the wolf's
 <<link $n1_afterNaked>><</link>>
 
 
-:: =n1p Fast Barbs Extra [noreturn] {"position":"5025,775","size":"100,100"}
+:: @n1p Fast Barbs Extra [noreturn] {"position":"5025,775","size":"100,100"}
 <<nobr>>
 <<set $n1_sawFastBarbsExtra = true>>
 
@@ -10217,8 +10270,12 @@ There are plenty of other paths to victory. Nero is, after all, an accomplished 
     The bindings restricting the wolf's body are a slight impediment,
     preventing him from casting his best spells.
     <<if $n1_naked>>
+        <<ignore-big-mood n1_smashed>>
         And his nakedness robs him of several magical tools
         that are sewn into his clothes.
+    <<elseif $n1_smashed>>
+        And his bruised balls urge him to be cautious about
+        taking actions that might antagonize his captor.
     <</if>>
     But there are still several spells that he can usefully deploy
     in this predicament, whenever the right opportunity presents itself.
@@ -10228,7 +10285,7 @@ There are plenty of other paths to victory. Nero is, after all, an accomplished 
 [[Continue|=n1c Ivex Repeat (4,2)]]
 
 
-:: =n1d Ball Submit {"position":"5075,2500","size":"100,100"}
+:: @n1d Ball Submit {"position":"5075,2500","size":"100,100"}
 "I... can't..."
 
 Can't what? Nero doesn't remember what he was trying to say.
@@ -10245,13 +10302,13 @@ Each beat making his cock twitch...
 
 Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em> Do you even know the difference?
 
-[[Continue|=n1d Pull]]
+[[Continue|@n1d Pull]]
 
 [[timing test 1|n1d timing test 1]]
 [[timing test 2|n1d timing test 2]]
 
 
-:: =n1d Ball Resist {"position":"5075,2600","size":"100,100"}
+:: @n1d Ball Resist {"position":"5075,2600","size":"100,100"}
 Nero snaps his jaws at Ivex's face, trying to...
 
 Bite and grab on to...
@@ -10268,7 +10325,7 @@ What is he doing...
 
 Ivex anticipates the wolf's snapping jaws and smoothly dips his head below where the wolf can reach. "Were you trying to snatch my mask?" he asks. "Naughty boy..."
 
-[[Continue|=n1d Pull]]
+[[Continue|@n1d Pull]]
 
 
 :: =n1d Naked Submit {"position":"4700,2325","size":"100,100"}
@@ -10301,12 +10358,12 @@ and roughly strokes the fur on the wolf's naked chest.
 "I know something else that might keep you warm..."
 <</nobr>>
 
-[[Continue|=n1d Get Creepy]]
+[[Continue|@n1d Get Creepy]]
 
 
 :: =n1d Strip Submit {"position":"4675,2150","size":"100,100"}
 <<nobr>>
-<<set $n1_afterNaked = "[[Continue|=n1d Get Creepy]]">>
+<<set $n1_afterNaked = "[[Continue|@n1d Get Creepy]]">>
 <<assert-big-mood n1_licked false>>
 <<assert-big-mood n1_naked false>>
 
@@ -10357,7 +10414,7 @@ The panther mage raises an arm, and snaps his fingers.
 [[Continue|=n1p Naked]]
 
 
-:: =n1d Pull {"position":"5200,2550","size":"100,100"}
+:: @n1d Pull {"position":"5200,2550","size":"100,100"}
 <<nobr>>
 <<big-mood-todo n1_licked n1_smashed>>
 <</nobr>>\
@@ -10486,7 +10543,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
     Do you even know the difference?"
 <</timed-beat>>
 
-[[Continue|=n1d Pull]]
+[[Continue|@n1d Pull]]
 
 
 :: n1d timing test 1 {"position":"5000,2350","size":"100,100"}
@@ -10506,7 +10563,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 
 @@#beat-9.beat-hidden;Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em>  Do you even know the difference?"@@
 
-[[Continue|=n1d Pull]]
+[[Continue|@n1d Pull]]
 <<nobr>>
 <<set _short = "2s">>
 <<set _long = "4s">>
@@ -10544,12 +10601,12 @@ Nero can't think. He wants... more... of something, of anything, of whatever tou
 
 Nero whines.
 
-Ivex lowers his head toward the wolf's crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf's needy cock. And then pulls his head away, taking a drop of pre-cum with it, which shines in the candle light, like drool dripping from the teeth painted on the mask.
+Ivex lowers his head toward the wolf's crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf's needy cock. And then pulls his head back, taking a smear of pre-cum with it, which shines in the candle light, like drool dripping from the teeth painted on the mask.
 
 [[Continue|=n1d Heavy Squeeze (1,1)]]
 
 
-:: =n1d Alarm 2 {"position":"5175,3100","size":"100,100"}
+:: @n1d Alarm 2 {"position":"5175,3075","size":"100,100"}
 The panther suddenly looks away, distracted.
 
 Ivex releases his grasp of the wolf's balls and stands up straight. His head is tilted, as if he's listening to something that only he can hear. He moves toward the window, but he doesn't seem to be looking at anything in particular.
@@ -10563,25 +10620,28 @@ The panther mage pulls a red gem out from a pocket, and disappears in a <em>fwoo
 [[Continue|=n2a Start]]
 
 
-:: =n2a Start 2 {"position":"4375,3150","size":"100,100"}
+:: @n2a Start {"position":"4375,3150","size":"100,100"}
 A flicker in the corner of Nero's eye catches his attention.
 
 The candle has lit itself again!
 
-[[Continue|=n2a Start 3]]
+[[Continue|@n2a Start 3]]
 
 
-:: =n2a Start 3 {"position":"4375,3250","size":"100,100"}
+:: @n2a Start 3 {"position":"4375,3250","size":"100,100"}
 <<nobr>>
-Candle's Influence:
-<<arousalbar 2 10>>
+@@#beat-1.beat.beat-hidden;Candle's Influence:@@
+<<arousalbar 2 10 0>>
+<<set $n2_previousArousal = 2>>
 <<timed 0s t8n>>
     <<addclass #horizontalhealthbar pulsingbar>>
-<<next 4s>>
+<<next 2s>>
     <<removeclass #beat-1 beat-hidden>>
+<<next 2s>>
+    <<removeclass #beat-2 beat-hidden>>
 <</timed>>
 <</nobr>>
-@@#beat-1.beat.beat-hidden;
+@@#beat-2.beat.beat-hidden;
 It's bad enough that Ivex could return at any moment. There's now another urgent deadline, inflicted by the distressing, rekindled candle.
 
 Can Nero escape before his mind is overwhelmed by unthinking lust?
