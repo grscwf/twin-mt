@@ -769,16 +769,9 @@ defineEnum("MagicPhase", [
   "MP_lockedOut",
 ]);
 
-/*---- redisplay */
-
-/** True when redisplaying */
-let redisplaying = false;
-
 /** Redisplay current passage. */
 function redisplay() {
-  redisplaying = true;
   Engine.play(State.passage);
-  redisplaying = false;
   $("html").addClass("redisplay-transition");
 }
 
@@ -786,7 +779,8 @@ $(document).on(":passagestart", () => {
   $("html").removeClass("redisplay-transition");
 });
 
-/** Assertions */
+/*** Assertions */
+
 let actualVars = null;
 
 $(document).on(":passagestart", () => {
@@ -1048,7 +1042,7 @@ function varInfoSetup() {
             redisplay();
           });
         }
-        if (v[vname] <= n) {
+        if (v[vname] < n - 1) {
           const right = $("<span>").addClass("var-info-enum-right var-info-can-change").appendTo(outer);
           right.on("click", () => {
             v[vname] += 1;
@@ -1189,7 +1183,8 @@ Macro.add("n1-patience", {
     const angryText = this.args[4] || impatientText;
     const v = State.variables;
     const here = State.passage;
-    if (!redisplaying) {
+    // Only if we've moved to this passage (instead of redisplay or reload)
+    if (State.peek(-1).title !== here) {
       // If we're at a new action node, reset patience and aggro
       if (v.n1_patience_passage !== here) {
         v.n1_patience_looks = looks;
@@ -7581,7 +7576,7 @@ Thank you so much!
 
 <br><br>
 <ul class="actions">
-    <li>[[Continue as Drekkar (hard)|Drekkar Start]]</li>
+    <li>[[Continue as Drekkar|Drekkar Start]]</li>
 </ul>
 </div>
 
@@ -7590,7 +7585,7 @@ Thank you so much!
 
 <br><br>
 <ul class="actions">
-    <li>[[Continue as Nero (harder)|=n1a Start]]</li>
+    <li>[[Continue as Nero|=n1a Start]]</li>
 </ul>
 </div>
 <</nobr>>
@@ -7858,7 +7853,7 @@ Ivex speaks. "So we can do this the easy way, or the hard way. <em>Please</em> m
 <</nobr>>
 
 
-:: n1x Cross {"position":"6325,1800","size":"100,100"}
+:: n1x Cross {"position":"6450,1800","size":"100,100"}
 <!-- not examinable when free -->
 
 leather straps and wooden cross.
@@ -7913,7 +7908,7 @@ and [[bookshelves|n1x Bookshelf]].
 <</nobr>>
 
 
-:: n1x Grav Gems {"position":"6150,1950","size":"100,100"}
+:: n1x Grav Gems {"position":"6275,1950","size":"100,100"}
 assert saw mirror and not free
 
 if not know gems and not ivex gone, curiosity. [[what are those gems|n1x Ask Grav Gems]]
@@ -7970,7 +7965,7 @@ if free, boxes of xxx
 <</nobr>>
 
 
-:: n1x Mirror {"position":"6150,2125","size":"100,100"}
+:: n1x Mirror {"position":"6275,2125","size":"100,100"}
 if broken, useless mirror, regrets.
 
 if free and not broken, can take mirror.
@@ -8286,12 +8281,14 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 [[Continue|=n1d Start Candle]]
 
 
-:: n1x Magic {"position":"5300,1925","size":"200,100"}
+:: n1x Magic {"position":"5525,2150","size":"100,100"}
 <<nobr>>
 <!--
 flags
+- n1_candleHorny
 - n1_ivexReceptive
 - n2_ivexGone
+- n2_free
 
 linkage
 - n1_afterAction - continue link when action is done
@@ -8301,89 +8298,26 @@ output
 -->
 
 <<set $n1_magicPhase ||= MP_beforeCast>>
+<<set $n1_magicAction = null>>
 
 <<assert-big-mood n1_mageSight `
     $n1_magicPhase >= MP_magicSight && !$n2_mirrorBroken
 `>>
 
-<<switch $n1_magicPhase>>
-<<case `MP_beforeCast`>>
-    <<if $n1_ivexReceptive>>
-        Ivex seems receptive. Perhaps this is a good time for Nero to impress him with a flashy but harmless spell, ideally one that would also bring him closer to escape.
-        <<set $n1_magicAction = "[[Cast a flashy spell.|n1x Cast Strength]]">>
+<<include [[n1x Magic Sprite]]>>
 
-    <<else>>
-        Ivex is staring like a predator, so if Nero tries a spell, it should be fast and decisive.
-        <<if !$n1_triedSomething>>
-            Or perhaps he should try something else first.
-        <</if>>
-        <<set $n1_magicAction = "[[Cast an attack spell.|n1x Cast Attack]]">>
-    <</if>>
-
-<<case `MP_triedMagic`>>
-
-    Perhaps it's time to cast mage-sight and look for a flaw in Ivex's anti-magic field.
-
-    <<if $n1_ivexReceptive>>
-        Ivex is watching, but mage-sight is a conventional move in tactical magic, and it might reassure the panther about the wolf mage's competence.
-
-    <<else>>
-       Ivex is watching, but it'll be too quick for him to stop, and Nero needs every advantage he can get.
-    <</if>>
-
-    <<set $n1_magicAction = "[[Cast mage-sight.|n1x Cast Reveal]]">>
-
-<<case `MP_magicSight`>>
-
-     XXX mage-sight shows energy diverters and firewalls, but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
-    <<set $n1_magicAction = null>>
-
-<<case `MP_wantDevice`>>
-
-    XXX sprite: which device do you want to access.
-    <<if $n1_sawBottle>>
-        <<set $n1_magicAction = '[[Whisper "the poltergeist device" to the sprite.|n1x say matrix]]'>>
-    <<else>>
-        <<set $n1_magicAction = "[[Whisper to the sprite and ask for help.|n1x Help List]]">>
-    <</if>>
-
-<<case `MP_wantName`>>
-
-    sprite: there's more than one poltergeist device available, which one do you want to access.
-    <<if $n1_knowsName>>
-        <<set $n1_magicAction = "[[Whisper the name of the poltergeist device to the sprite.|n1x say name]]">>
-    <<else>>
-        <<set $n1_magicAction = "[[Whisper to the sprite and ask for help.|n1x Help List]]">>
-    <</if>>
-
-<<case `MP_wantTouch`>>
-
-    sprite: psi metrics have diverged. please touch my hole to re-establish identification.
-    <<set $n1_magicAction = '[[Whisper to the sprite and ask for help.|n1x Help Touch]]'>>
-
-<<case `MP_wantPassword`>>
-
-    sprite: ok, you're connected. what's the password
-    <<set $n1_magicAction = "[[Whisper a password to the sprite.|n1x Guess Password]]">>
-
-<<case `MP_onHold`>>
-
-    sprite is singing baby shark
-
-<<case `MP_connected`>>
-
-    can throw things around with your mind!
-
-<<case `MP_lockedOut`>>
-
-    sprite: locked out, please wait 214748367 seconds before trying again
-
-<<default>>
-    <<run throw new Error("bug")>>
-
-<</switch>>
-
-<</nobr>>
+<<if $n2_free>>
+    <<include [[n1x Magic Free]]>>
+<<elseif $n1_candleHorny>>
+    <<include [[n1x Magic Horny]]>>
+<<elseif $n2_ivexGone>>
+    <<include [[n1x Magic Ivex Gone]]>>
+<<elseif $n2_ivexReceptive>>
+    <<include [[n1x Magic Receptive]]>>
+<<else>>
+    <<include [[n1x Magic Covert]]>>
+<</if>>
+<</nobr>>\
 
 
 :: =n1a Endgame Info [noreturn] {"position":"3500,225","size":"100,100"}
@@ -8512,7 +8446,7 @@ Nero's head clears.
 
 His cock is still achingly erect, with a strong and distracting desire to <em>thrust</em> itself into something tight and warm. But Nero's will is stronger. It's an urge he can deny.
 
-With his mind released from the candle's influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter brand of aphrodisiac candles. They're an expensive import, more an artifact of herbcraft than of magic, and often used by lovers on special occasions like anniversaries or wedding nights. Nero has used a few himself. (He's especially fond of the Salty Ocean Breeze flavor.)
+With his mind released from the candle's influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter catalog of aphrodisiac candles. They're an expensive import, more an artifact of herbcraft than of magic, and often used by lovers on special occasions like anniversaries or wedding nights. Nero has used a few himself. (He's especially fond of the Salty Ocean Breeze flavor.)
 
 But this one is much more potent than the ones he's experienced before. Ivex must have enhanced it greatly somehow. To what end?
 
@@ -8918,8 +8852,10 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 </div>
 
 
-:: n1x Cast Attack {"position":"5325,1600","size":"100,100"}
-<<set $n1_magicPhase = MP_triedMagic>>\
+:: n1x Cast Attack {"position":"5800,1650","size":"100,100"}
+<<nobr>>
+<<set $n1_magicPhase = MP_triedMagic>>
+<</nobr>>\
 \
 ivex watching and not receptive.
 guns blazing, cast spell to disable Ivex. tricky to do in a mage's home turf, but Nero knows a trick that most mages don't.
@@ -8937,7 +8873,7 @@ stuff about anti-magic.
 <!-- Charm branch never casts attack, so don't need a transition out of charm. -->
 
 
-:: n1x Cast Reveal {"position":"5500,1600","size":"100,100"}
+:: n1x Cast Reveal {"position":"5550,1850","size":"100,100"}
 <<set $n1_magicPhase = MP_magicSight>>\
 <<set $n1_afterNaked = $n1_afterAction>>\
 \
@@ -8952,13 +8888,13 @@ it's not a total failure, you see the mirror is special
 <<link $n1_afterAction>><</link>>
 
 
-:: n1x Guess Password {"position":"5450,2200","size":"100,100"}
+:: n1x Guess Password {"position":"5475,1575","size":"100,100"}
 list of plausible passwords based on things you've seen, plus a few generic guesses.
 
 [[n1x Wrong Password]]
 
 
-:: n1x Wrong Password {"position":"5450,2325","size":"100,100"}
+:: n1x Wrong Password {"position":"5600,1575","size":"100,100"}
 ivex: what was that? speak up.
 
 sprite: password incorrect, try again.
@@ -9010,7 +8946,7 @@ Still, whatever route brought him here, a success is a success. The rest of the 
 [[Continue|=n1c Ivex Intro]]
 
 
-:: n1x Help Touch {"position":"5600,2175","size":"100,100"}
+:: n1x Help Touch {"position":"5425,1450","size":"100,100"}
 ivex sneers: there's no help for you
 
 sprite: please choose from the following help topics: no topics found.
@@ -9018,7 +8954,7 @@ sprite: please choose from the following help topics: no topics found.
 <<link $n1_afterAction>><</link>>
 
 
-:: n1x Help List {"position":"5625,1700","size":"100,100"}
+:: n1x Help List {"position":"5300,1425","size":"100,100"}
 ivex: what is there? what is there but despair.
 
 sprite:, device listing: remember to implement this some day.
@@ -9030,7 +8966,7 @@ vary on revisit
 <<link $n1_afterAction>><</link>>
 
 
-:: n1x say name {"position":"5600,2050","size":"100,100"}
+:: n1x say name {"position":"5125,1475","size":"100,100"}
 <<set $n1_magicPhase = MP_wantTouch>>\
 \
 ivex: oh yeah, you definitely want to feel it.
@@ -9050,7 +8986,7 @@ ok, that's a standard security barrier, just need to get ivex to touch the hole,
 <<link $n1_afterAction>><</link>>
 
 
-:: n1x say matrix {"position":"5600,1850","size":"100,100"}
+:: n1x say matrix {"position":"5125,1600","size":"100,100"}
 <<set $n1_magicPhase = MP_wantName>>\
 \
 ivex: hah, would you like to feel that
@@ -9233,8 +9169,10 @@ Nero is not completely averse to dalliances with pretty men when there are no re
 <</nobr>>
 
 
-:: n1x Cast Strength {"position":"5275,1725","size":"100,100"}
-<<set $n1_magicPhase = MP_triedMagic>>\
+:: n1x Cast Strength {"position":"5925,1775","size":"100,100"}
+<<nobr>>
+<<set $n1_magicPhase = MP_triedMagic>>
+<</nobr>>\
 \
 Ivex watching and receptive,
 try to cast strength to break bonds.
@@ -9333,7 +9271,7 @@ The only window in the room is round and about a meter in diameter. The window h
 <<link $n1_afterAction>><</link>>
 
 
-:: n1x Ask Grav Gems {"position":"6100,1800","size":"100,100"}
+:: n1x Ask Grav Gems {"position":"6225,1800","size":"100,100"}
 ask ivex, what are those gems.
 
 he preens, they're grav gems.
@@ -9857,7 +9795,7 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 <<link Return $return>><</link>>
 
 
-:: n1x Connect {"position":"6125,2250","size":"100,100"}
+:: n1x Connect {"position":"6250,2250","size":"100,100"}
 <<set $n1_magicPhase = MP_wantDevice>>\
 
 connecting to available node through mirror.
@@ -10687,5 +10625,310 @@ default:
   throw new Error("bug");
 }
 <</script>>\
+
+
+:: n1x Magic Free {"position":"5675,2325","size":"100,100"}
+<<nobr>>
+<<assert-big-mood $n1_candleHorny false>>
+<<assert-big-mood $n1_ivexReceptive false>>
+<<assert-big-mood $n2_ivexGone true>>
+<<assert-big-mood $n2_free true>>
+
+<<switch $n1_magicPhase>>
+<<case `MP_beforeCast`>>
+
+    XXX cast escape
+    <<set $n1_magicAction = '[[Cast Lust|n1x Cast Escape]]">>
+	
+<<case `MP_triedMagic`>>
+
+    XXX cast mage-sight
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x Cast Sight]]">>
+
+<<case `MP_magicSight`>>
+
+     XXX mage-sight shows energy diverters and firewalls,
+     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
+
+<<case `MP_wantDevice`>>
+
+<<case `MP_wantName`>>
+
+<<case `MP_wantTouch`>>
+
+<<case `MP_wantPassword`>>
+
+<<case `MP_onHold`>>
+
+<<case `MP_connected`>>
+
+<<case `MP_lockedOut`>>
+
+<<default>>
+    <<run throw new Error("bug")>>
+<</switch>>
+<</nobr>>\
+
+
+:: n1x Magic Ivex Gone {"position":"5775,2075","size":"100,100"}
+<<nobr>>
+<<assert-big-mood $n1_candleHorny false>>
+<<assert-big-mood $n1_ivexReceptive true>>
+<<assert-big-mood $n2_ivexGone true>>
+<<assert-big-mood $n2_free false>>
+
+<<switch $n1_magicPhase>>
+<<case `MP_beforeCast`>>
+
+	XXX ivex gone, cast something big and useful
+    <<set $n1_magicAction = "[[Cast escape.|n1x Cast Escape]]">>
+
+<<case `MP_triedMagic`>>
+
+    XXX mage-sight
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x Cast Sight]]">>
+
+<<case `MP_magicSight`>>
+
+     XXX mage-sight shows energy diverters and firewalls,
+     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
+
+<<case `MP_wantDevice`>>
+
+<<case `MP_wantName`>>
+
+<<case `MP_wantTouch`>>
+
+<<case `MP_wantPassword`>>
+
+<<case `MP_onHold`>>
+
+<<case `MP_connected`>>
+
+<<case `MP_lockedOut`>>
+
+<<default>>
+    <<run throw new Error("bug")>>
+<</switch>>
+<</nobr>>\
+
+
+:: n1x Magic Receptive {"position":"5750,1950","size":"100,100"}
+<<nobr>>
+<<assert-big-mood $n1_candleHorny false>>
+<<assert-big-mood $n1_ivexReceptive true>>
+<<assert-big-mood $n2_ivexGone false>>
+<<assert-big-mood $n2_free false>>
+
+<<switch $n1_magicPhase>>
+<<case `MP_beforeCast`>>
+
+    Ivex seems receptive.
+    Perhaps this is a good time for Nero to impress him
+    with a flashy but harmless spell,
+    ideally one that would also bring him closer to escape.
+    <<set $n1_magicAction = "[[Cast a flashy spell.|n1x Cast Strength]]">>
+
+<<case `MP_triedMagic`>>
+
+    Perhaps it's time to cast mage-sight and look for a flaw in Ivex's anti-magic field.
+    Ivex is watching, but mage-sight is a conventional move in tactical magic,
+    and it might reassure the panther about the wolf mage's competence.
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x Cast Reveal]]">>
+
+<<case `MP_magicSight`>>
+
+     XXX mage-sight shows energy diverters and firewalls,
+     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
+
+<<case `MP_wantDevice`>>
+
+<<case `MP_wantName`>>
+
+<<case `MP_wantTouch`>>
+
+<<case `MP_wantPassword`>>
+
+<<case `MP_onHold`>>
+
+<<case `MP_connected`>>
+
+<<case `MP_lockedOut`>>
+
+<<default>>
+    <<run throw new Error("bug")>>
+<</switch>>
+<</nobr>>\
+
+
+:: n1x Magic Covert {"position":"5725,1800","size":"100,100"}
+<<nobr>>
+<<assert-big-mood $n1_candleHorny false>>
+<<assert-big-mood $n1_ivexReceptive false>>
+<<assert-big-mood $n2_ivexGone false>>
+<<assert-big-mood $n2_free false>>
+
+<<switch $n1_magicPhase>>
+<<case `MP_beforeCast`>>
+
+    Ivex is staring like a predator, so if Nero tries a spell, it should be fast and decisive.
+    <<if !$n1_triedSomething>>
+        Or perhaps he should try something else first.
+    <</if>>
+    <<set $n1_magicAction = "[[Cast an attack spell.|n1x Cast Attack]]">>
+
+<<case `MP_triedMagic`>>
+
+    Perhaps it's time to cast mage-sight and look for a flaw in Ivex's anti-magic field.
+    Ivex is watching, but it'll be too quick for him to stop,
+    and Nero needs every advantage he can get.
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x Cast Reveal]]">>
+
+<<case `MP_magicSight`>>
+
+     XXX mage-sight shows energy diverters and firewalls,
+     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
+
+<<case `MP_wantDevice`>>
+
+<<case `MP_wantName`>>
+
+<<case `MP_wantTouch`>>
+
+<<case `MP_wantPassword`>>
+
+<<case `MP_onHold`>>
+
+<<case `MP_connected`>>
+
+<<case `MP_lockedOut`>>
+
+<<default>>
+    <<run throw new Error("bug")>>
+<</switch>>
+<</nobr>>\
+
+
+:: n1x Magic Sprite {"position":"5300,1725","size":"100,100"}
+<<nobr>>
+<<switch $n1_magicPhase>>
+<<case `MP_beforeCast`>>
+    <!-- nothing -->
+<<case `MP_triedMagic`>>
+    <!-- nothing -->
+<<case `MP_magicSight`>>
+    <!-- nothing -->
+
+<<case `MP_wantDevice`>>
+
+    XXX sprite: which device do you want to access.
+    <<if $n1_sawBottle>>
+        <<set $n1_magicAction = '[["Nackle's Poltergeist Device..."|n1x say matrix]]'>>
+    <<else>>
+        <<set $n1_magicAction = '[["Help...?"|n1x Help List]]'>>
+    <</if>>
+
+<<case `MP_wantName`>>
+
+    sprite: there's more than one poltergeist device available,
+    which one do you want to access.
+    <<if $n1_knowsName>>
+        <<set $n1_magicAction = '[["Lance Rockhard..."|n1x say name]]'>>
+    <<else>>
+        <<set $n1_magicAction = '[["Help..?"|n1x Help List]]">>
+    <</if>>
+
+<<case `MP_wantTouch`>>
+
+    sprite: psi metrics have diverged. please touch my hole to
+    re-establish identification.
+    <<set $n1_magicAction = '[["Help..?"|n1x Help Touch]]'>>
+
+<<case `MP_wantPassword`>>
+
+    sprite: ok, you're connected. what's the password
+    <<set $n1_magicAction = "[[Guess a password.|n1x Guess Password]]">>
+
+<<case `MP_onHold`>>
+
+    sprite is singing baby shark
+
+<<case `MP_connected`>>
+
+    now you can throw things around with your mind!
+
+<<case `MP_lockedOut`>>
+
+    sprite: locked out, please wait 214748367 seconds before trying again.
+
+<<default>>
+    <<run throw new Error("bug")>>
+<</switch>>
+<</nobr>>\
+
+
+:: n1x Magic Horny {"position":"5725,2200","size":"100,100"}
+<<nobr>>
+<<assert-big-mood $n1_candleHorny true>>
+<<assert-big-mood $n1_ivexReceptive false>>
+<!-- n2_ivexGone can be true or false -->
+<<assert-big-mood $n2_free false>>
+
+<<switch $n1_magicPhase>>
+<<case `MP_beforeCast`>>
+
+    XXX cast lust spell
+    <<set $n1_magicAction = '[[Cast Lust|n1x Cast Escape]]">>
+	
+<<case `MP_triedMagic`>>
+
+    XXX cast mage-sight
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x Cast Sight]]">>
+
+<<case `MP_magicSight`>>
+
+     XXX mage-sight shows energy diverters and firewalls,
+     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
+
+<<case `MP_wantDevice`>>
+
+<<case `MP_wantName`>>
+
+<<case `MP_wantTouch`>>
+
+<<case `MP_wantPassword`>>
+
+<<case `MP_onHold`>>
+
+<<case `MP_connected`>>
+
+<<case `MP_lockedOut`>>
+
+<<default>>
+    <<run throw new Error("bug")>>
+<</switch>>
+<</nobr>>\
+
+
+:: n1x Cast Escape {"position":"5975,2300","size":"100,100"}
+<<nobr>>
+<<set $n1_magicPhase = MP_triedMagic>>
+<</nobr>>\
+\
+ivex gone.
+try casting, fails.
+
+<<link Continue $n1_afterAction>><</link>>
+
+
+:: n1x Cast Sight {"position":"5900,2450","size":"100,100"}
+<<nobr>>
+<<set $n1_magicPhase = MP_magicSight>>
+<</nobr>>\
+\
+ivex gone.
+cast magic sight
+
+<<link Continue $n1_afterAction>><</link>>
 
 
