@@ -722,6 +722,10 @@ a.messages-close:hover {
   color: #f33;
   font-weight: bold;
 }
+.messages-assert-trace {
+  color: #f33;
+  margin-left: 2em;
+}
 
 #messages-to-do > ul {
   margin: 0;
@@ -739,13 +743,24 @@ a.messages-close:hover {
 
 /* timed passages */
 .beat {
-  transition: opacity 400ms ease-in;
+  transition: color 400ms ease-in;
 }
 .beat.hidden {
-  opacity: 0;
+  color: rgba(255, 255, 255, 0.1);
 }
-.beat.removed {
-  display: none;
+
+.beat.hidden ul.actions li {
+  background-image: unset;
+}
+
+.beat a {
+  transition: opacity 400ms ease-in;
+}
+.beat.hidden a {
+  opacity: 0.1;
+}
+.beat.hidden a:hover {
+  opacity: 1;
 }
 
 /* fast redisplay */
@@ -905,6 +920,7 @@ $(document).on(":passagestart", () => {
 /*** Messages and assertions */
 
 let actualVars = null;
+let assertionDebug = false;
 
 $(document).on(":passagestart", () => {
   $("#messages-outer").remove();
@@ -922,7 +938,17 @@ function addMessage(jq) {
   return jq;
 }
 
-function assertionFailed(expr) {
+function macroBacktrace(context) {
+  let trace = "";
+  for (; context != null; context = context.parent) {
+    if (context.displayName === "include") {
+      trace += context.source + "\n";
+    }
+  }
+  return trace;
+}
+
+function assertionFailed(expr, context) {
   let inner = $("#messages-assert");
   if (inner.length !== 1) {
     inner.remove();
@@ -934,10 +960,22 @@ function assertionFailed(expr) {
     $("<a class=messages-close>[close]</a>").on("click", () => {
       inner.remove();
     }).appendTo(info);
+    $("<a class=messages-close>[debug]</a>").on("click", () => {
+      assertionDebug = true;
+      redisplay();
+    }).appendTo(info);
   }
   const fail = $("<div class=messages-assert-fail>").appendTo(inner);
   fail.append("Assertion failed: ");
-  fail.append($("<code>").text(expr));
+  const trace = macroBacktrace(context);
+  $("<code>").text(expr).attr("title", trace).appendTo(fail);
+  if (trace !== "") {
+    $("<div class=messages-assert-trace>").text(trace).appendTo(fail);
+  }
+  if (assertionDebug) {
+    assertionDebug = false;
+    debugger;
+  }
 }
 
 Macro.add("assert-true", {
@@ -948,8 +986,15 @@ Macro.add("assert-true", {
     const val = eval(this.args.full);
     State.active.variables = proxy;
     if (!val) {
-      assertionFailed(this.args.raw);
+      assertionFailed(this.args.raw, this);
     }
+  }
+});
+
+Macro.add("assert-fail", {
+  skipArgs: true,
+  handler: function() {
+    assertionFailed(this.args.raw, this);
   }
 });
 
@@ -985,22 +1030,22 @@ $(document).on(":passagestart", () => {
   bigMoodIgnore.clear();
   bigMoodTo_do.clear();
 });
-function assertBigMood(vname, exp, raw) {
+function assertBigMood(vname, exp, raw, context) {
   const actual = actualVars[vname];
   const ok = exp === actual || (exp === false && actual == null);
   if (ok) return;
   const m = /`\s*(.*?)\s*`/.exec(raw);
   if (m != null) {
-    assertionFailed(`bigMood $${vname} === (${m[1]})`);
+    assertionFailed(`bigMood $${vname} === (${m[1]})`, context);
   } else {
-    assertionFailed(`bigMood $${vname} === ${exp}`);
+    assertionFailed(`bigMood $${vname} === ${exp}`, context);
   }
 }  
 Macro.add("assert-big-mood", {
   handler: function() {
     const vname = this.args[0];
     const exp = this.args[1];
-    assertBigMood(vname, exp, this.args.raw);
+    assertBigMood(vname, exp, this.args.raw, this);
   }
 });
 Macro.add("ignore-big-mood", {
@@ -1011,7 +1056,6 @@ Macro.add("ignore-big-mood", {
 Macro.add("TO"+"DO-big-mood", {
   handler: function() {
     this.args.forEach(v => {
-      addTo_do(`${v} variants`);
       bigMoodTo_do.add(v)
     });
   }
@@ -1438,6 +1482,9 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
     &lt;&lt;link &quot;&amp;#x23e9; Nero Start&quot; &quot;=n1a Start&quot;&gt;&gt;
         &lt;&lt;delete-vars n1_ n2_&gt;&gt;
     &lt;&lt;/link&gt;&gt;
+    &lt;&lt;link &quot;&amp;#x23e9; Nero Actions&quot; &quot;=n1c Ivex Repeat (4,2)&quot;&gt;&gt;
+        &lt;&lt;delete-vars n1_ n2_&gt;&gt;
+    &lt;&lt;/link&gt;&gt;
     &lt;&lt;link &quot;&amp;#x23e9; Nero Candle&quot; &quot;=n1d Start Candle&quot;&gt;&gt;
         &lt;&lt;delete-vars n1_ n2_&gt;&gt;
     &lt;&lt;/link&gt;&gt;
@@ -1445,6 +1492,7 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
         &lt;&lt;delete-vars n1_ n2_&gt;&gt;
         &lt;&lt;set $n1_naked = true&gt;&gt;
     &lt;&lt;/link&gt;&gt;
+    &lt;&lt;link &quot;&amp;#x23e9; Testing&quot; &quot;testing&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="Soft Awakening" tags="" position="900,625" size="100,100">&lt;&lt;set $warrior = true&gt;&gt;\
 It takes some effort, but the wolf opens his eyes. It takes a few seconds to regain their focus. At the same time, the stiffness of his body feels worse than ever. This nap was anything but comfortable.
 
@@ -6835,7 +6883,7 @@ Nero considers his next move.
 &lt;&lt;set $n1_ivexReceptive = false&gt;&gt;
 &lt;&lt;n1-patience 6 2
     &#39;Ivex (the Magnificent) speaks. &quot;Again I ask. Who sent you?&quot;&#39;
-    &#39;Ivex stamps an itty bitty foot-paw in annoyance. &quot;Again I ask. Who sent you?&quot;&#39;
+    &#39;Ivex twitches an ear in annoyance. &quot;Again I ask. Who sent you?&quot;&#39;
     &#39;Ivex snaps his cape and speaks with anger. &quot;Again I ask! Who sent you!&quot;&#39;
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
@@ -6847,11 +6895,14 @@ Nero considers his next move.
     &lt;li&gt;[[Growl at Ivex.|=n1c Resist]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="239" name="testing" tags="" position="4950,200" size="100,100">testing&lt;mark&gt;hello&lt;/mark&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="239" name="testing" tags="" position="4300,175" size="100,100">testing&lt;mark&gt;hello&lt;/mark&gt;
 &lt;&lt;script&gt;&gt;
 $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
 &lt;&lt;/script&gt;&gt;
-[[testing 2]]</tw-passagedata><tw-passagedata pid="240" name="=n1x Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
+[[testing 2]]
+[[timing test 1]]
+[[timing test 2]]
+</tw-passagedata><tw-passagedata pid="240" name="=n1x Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;if $n1_candleHorny&gt;&gt;
     Nero &lt;&lt;= either(
@@ -6883,7 +6934,7 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
     with leather restraints to a
     [[wooden cross|n1x Cross]]
     &lt;&lt;if $n1_sawGems&gt;&gt;
-        that has [[glowing gems|n1x Grav Gems]],
+        that has [[glowing gems|@n1x Grav Gems]],
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -6946,7 +6997,7 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
 &lt;&lt;if !$n1_sawDesk &amp;&amp; $n1_sawMirror&gt;&gt;
     The desk has
     &lt;&lt;if $n1_sawMirror&gt;&gt;
-        a [[small mirror|n1x Mirror]]
+        a [[small mirror|@n1x Mirror]]
     &lt;&lt;/if&gt;&gt;
     among its [[clutter|n1x Desk]].
 &lt;&lt;/if&gt;&gt;
@@ -6955,7 +7006,7 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
     The [[desk|n1x Desk]] has
     a [[letter opener|n1x Knife]],
     a [[snow globe|n1x Globe]],
-    and a [[small mirror|n1x Mirror]].
+    and a [[small mirror|@n1x Mirror]].
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_sawCabinet&gt;&gt;
@@ -7030,18 +7081,46 @@ Ivex (the Magnificent) moves away from the
 and settles against the edge of a cluttered desk.
 &lt;&lt;/nobr&gt;&gt;
 
-He&#39;s a [[pretentiously dressed black panther|=n1c Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier came from school portraits that were created several years ago, so it isn&#39;t too surprising that the panther has grown a bit since then.
+He&#39;s a [[pretentiously dressed black panther|=n1c Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier come from school portraits that were created several years ago, so it isn&#39;t too surprising that the panther has grown a bit since then.
 
-Ivex speaks. &quot;So we can do this the easy way, or the hard way. &lt;em&gt;Please&lt;/em&gt; make the right choice.&quot; He has a grin like a child unwrapping a present. &quot;Tell me, who sent you?&quot;
+ Ivex speaks. &quot;So let me make a proposal.&quot;
+
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if $n1_smashed&gt;&gt;
+    The panther has a grin like a child unwrapping a present.
+&lt;&lt;elseif $n1_naked&gt;&gt;
+    His tail twitches with excitement.
+&lt;&lt;else&gt;&gt;
+    Hopefully not a &lt;em&gt;marriage&lt;/em&gt; proposal.
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+
+&quot;We can do this the easy way, or the hard way. &lt;em&gt;Please&lt;/em&gt; make the right choice.&quot;
+
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if $n1_smashed&gt;&gt;
+    The condition of Nero&#39;s balls leads him to suspect that Ivex would prefer
+    the hard way.
+&lt;&lt;elseif $n1_naked&gt;&gt;
+    The wolf shivers and looks away from the panther&#39;s lustful stare.
+&lt;&lt;else&gt;&gt;
+    Will it even matter in the end what choice he makes?
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+
+&quot;Tell me,&quot; Ivex asks. &quot;Who sent you?&quot;
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_naked&gt;&gt;
-    Nero tries to gather what dignity he can in his helplessly exposed state.
+    Nero tries to gather what dignity he can in his helplessly exposed state,
+    and prepares his opening gambit.
 &lt;&lt;elseif $n1_smashed&gt;&gt;
-    The condition of Nero&#39;s balls leads him to suspect that Ivex would
-    prefer the hard way, which seems like something to avoid if possible.
-&lt;&lt;else&gt;&gt;
+    Avoiding further torture might take a little finesse.
     Nero prepares his opening gambit.
+&lt;&lt;else&gt;&gt;
+    Nero has successfully charmed his way through
+    many situations much more unpleasant than this.
+    He prepares his opening gambit.
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
@@ -7053,8 +7132,8 @@ Ivex speaks. &quot;So we can do this the easy way, or the hard way. &lt;em&gt;Pl
 
 leather straps and wooden cross.
 
-if know gems, apparently held up by [[gravity gems|n1x Grav Gems]]
-else if saw mirror, has [[glowing gems|n1x Grav Gems]]
+if know gems, apparently held up by [[gravity gems|@n1x Grav Gems]]
+else if saw mirror, has [[glowing gems|@n1x Grav Gems]]
 else, can&#39;t really see much of it
 
 &lt;ul class=&quot;actions&quot;&gt;
@@ -7096,17 +7175,32 @@ and [[bookshelves|n1x Bookshelf]].
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="246" name="n1x Grav Gems" tags="" position="6275,1950" size="100,100">assert saw mirror and not free
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="246" name="@n1x Grav Gems" tags="" position="6275,1950" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;assert-true $n1_sawMirror&gt;&gt;
+&lt;&lt;assert-true !$n2_free&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\
+\
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if !$n1_knowGems&gt;&gt;
+    looks interesting. guesses what they are. suggest asking ivex for more
+&lt;&lt;else&gt;&gt;
+    summary of what we know and what ivex said.
 
-if not know gems and not ivex gone, curiosity. [[what are those gems|n1x Ask Grav Gems]]
+    &lt;br&gt;&lt;br&gt;
+    fascinating, it&#39;s not supposed to be possible to have a stable config of
+    that many grav gems, that close together. ivex claimed to have a solution
+    but he&#39;s probably bluffing.
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
 
-if know gems, fascination, it&#39;s not supposed to be possible to have a stable config of so many gems this close together.
-
-ask ivex, he mocks your limited understanding. he&#39;s bluffing, he doesn&#39;t know anything about grav instability.
-
+&lt;&lt;nobr&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
-  &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="247" name="n1x Desk" tags="" position="6675,2625" size="100,100">&lt;&lt;set $n1_sawDesk = true&gt;&gt;
+    &lt;&lt;if !$n1_knowGems&gt;&gt;
+        &lt;li&gt;[[Ask Ivex about gems|@n1x Ask Grav Gems]]&lt;/li&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;li&gt;$n1_afterLook&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="247" name="n1x Desk" tags="" position="6675,2625" size="100,100">&lt;&lt;set $n1_sawDesk = true&gt;&gt;
 
 desk has assorted papers in disarray.
 
@@ -7114,7 +7208,7 @@ if not free, most interesting thing is a [[letter opener|n1x Knife]], if only th
 
 if candle lit, mention [[n1x Candle]]
 
-if mirror broken, mention [[broken mirror|n1x Mirror]], and [[snow globe|n1x Globe]].
+if mirror broken, mention [[broken mirror|@n1x Mirror]], and [[snow globe|n1x Globe]].
 
 if mirror not broken and not free, propped up against a snow globe is a mirror, which might show you more of the room.
 
@@ -7141,21 +7235,46 @@ if free, boxes of xxx
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="n1x Mirror" tags="" position="6275,2125" size="100,100">if broken, useless mirror, regrets.
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="@n1x Mirror" tags="" position="6275,2125" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if $n2_mirrorBroken&gt;&gt;
 
-if free and not broken, can take mirror.
+    broken, useless. regrets.
 
-if not free
-- propped up against [[snow globe|n1x Globe]]
-- if not saw mirror, aha!
-- see [[glowing gems|n1x Grav Gems]]
+&lt;&lt;elseif $n2_free&gt;&gt;
 
-if magic sight
-- mirror is a clear path in the firewall, [[n1x Connect]]
+    if we&#39;re here, we have mage sight, and we&#39;re connected.
+    can take mirror (but need state for location).
 
+&lt;&lt;else&gt;&gt;
+
+    propped up against a [[snow globe|n1x Globe]]
+
+    &lt;&lt;if !$n1_sawMirror&gt;&gt;
+        &lt;br&gt;&lt;br&gt;
+        aha, can see stuff in the reflection
+        &lt;&lt;set $n1_sawMirror = true&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+
+    &lt;br&gt;&lt;br&gt;
+    in reflection, [[glowing gems|@n1x Grav Gems]]
+
+    &lt;&lt;if $n1_mageSight&gt;&gt;
+        &lt;br&gt;&lt;br&gt;
+        mirror is a clear path in the firewall.
+    &lt;&lt;/if&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+
+&lt;&lt;nobr&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
+  &lt;&lt;if !$n2_mirrorBroken &amp;&amp; $n1_magicPhase === MP_magicSight&gt;&gt;
+      &lt;li&gt;[[Connect to the mirror|@n1x Connect]]&lt;/li&gt;
+  &lt;&lt;elseif $n2_free&gt;&gt;
+      &lt;li&gt;[[Take mirror|n1x Take Mirror]]&lt;/li&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="250" name="n1x Globe" tags="key maybe-password" position="6425,2600" size="100,100">snow globe, from a tourist trap.
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="250" name="n1x Globe" tags="key maybe-password" position="6425,2600" size="100,100">snow globe, from a tourist trap.
 slogan has part of name of vacation spot and &quot;CARPE DI..&quot;, can&#39;t se the rest.
 
 if free, it&#39;s a lewd snowdragon grabbing his cock, and the slogan is &quot;CARPE DICK&quot;.
@@ -7314,39 +7433,55 @@ He prepares the spell&#39;s image in his mind, and then &lt;em&gt;twists&lt;/em&
 [[Continue|=n1a Endgame 2]]</tw-passagedata><tw-passagedata pid="263" name="=n1c Charm" tags="" position="3850,1050" size="100,100">&quot;There&#39;s been a misunderstanding,&quot; says Nero. &quot;I wasn&#39;t &lt;em&gt;given&lt;/em&gt; your dossier. I &lt;em&gt;stole&lt;/em&gt; it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore.&quot;
 
 &lt;&lt;nobr&gt;&gt;
-&lt;&lt;if $n1_magicPhase &lt; MP_magicSight&gt;&gt;
+&lt;&lt;if $n1_magicPhase &lt; MP_triedMagic&gt;&gt;
 
-Ivex seems intrigued. Good. Perhaps the right story will lower the panther&#39;s guard, and then Nero can fulfill his commission with a minimum of fuss.
+    Ivex seems intrigued. Good.
+    Perhaps the right story will lower the panther&#39;s guard,
+    and then Nero can fulfill his commission with a minimum of fuss.
 
 &lt;&lt;elseif $n1_magicPhase &lt; MP_wantDevice&gt;&gt;
 
-Ivex seems intrigued. Spinning an enticing tale might distract the panther long enough for Nero to find a flaw in his anti-magic field.
+    Ivex seems intrigued. Spinning an enticing tale
+    might distract the panther long enough
+    for Nero to exploit some flaw in his anti-magic field.
 
-&lt;&lt;elseif $n1_magicPhase &lt; MP_wantPassword&gt;&gt;
+&lt;&lt;elseif $n1_magicPhase &lt; MP_wantTouch&gt;&gt;
 
-Ivex seems intrigued. A little more seduction, and soon Nero will have the keys to the panther mage&#39;s kingdom.
+    Ivex seems intrigued and willing to listen to Nero spin a fanciful tale.
+    This will make it easier to speak some unnoticed instructions
+    to the listening sprite.
 
 &lt;&lt;else&gt;&gt;
-&lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
+
+    Ivex seems intrigued. A little more seduction,
+    and soon Nero will have the keys to the panther mage&#39;s kingdom.
+
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
 Nero continues. &quot;The ship captain was kind enough to let me search the bounty hunter&#39;s luggage, and in his papers I found your dossier. It&#39;s astonishing. When I read your exploits, I knew I had to meet you.&quot;
 
-&quot;Finally!&quot; says Ivex. &quot;... I mean, it&#39;s funny that bounty hunters keep falling into my traps. But I&#39;ve been really trying to meet other types of people. You&#39;re not what I expected. But, gotta start somewhere, right?&quot;
+&quot;Finally!&quot; says Ivex. &quot;... I mean, it&#39;s funny that all those dumb bounty hunters keep falling into my traps. But I&#39;ve been really trying to meet other types of people. You&#39;re not what I expected. But, we all have to start somewhere, right?&quot;
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_smashed&gt;&gt;
 
-Nero isn&#39;t sure what Ivex is talking about. But considering the previous rough treatment of the wolf&#39;s balls, it seems best to agree heartily anyway.
+    Nero isn&#39;t sure what Ivex is talking about.
+    But considering the previous rough treatment of the wolf&#39;s testicles,
+    it seems prudent to agree heartily anyway.
 
 &lt;&lt;elseif $n1_naked&gt;&gt;
 
-Nero gives Ivex a grin, and tries to give the impression that being bound and naked on a cross is just an ordinary day&#39;s adventure. Nohing to worry about.
+    Nero gives Ivex a confident smile,
+    and tries to give the impression that being bound and naked
+    on a cross is just an ordinary day&#39;s adventure.
+    Nothing to worry about.
 
 &lt;&lt;else&gt;&gt;
 
-Nero makes a pleasant but noncommittal sound. Ivex seems volatile, and it&#39;s best to be cautious about saying anything that might offend him.
+    Nero makes a pleasant but noncommittal sound.
+    Ivex seems quite volatile, and it&#39;s probably best to be cautious
+    about saying anything that might offend him.
 
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
@@ -7393,7 +7528,7 @@ betrayed his client&#39;s confidence.
 
 That statement seems ominous. Still, Nero thinks he can provoke the panther into making a careless mistake, which should allow him to finish the mission and escape with minimal distress.
 
-[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="265" name="=n1x Magic" tags="" position="5525,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="265" name="=n1x Magic" tags="" position="5475,2300" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;!--
 flags
 - n1_candleHorny
@@ -7415,18 +7550,20 @@ output
     $n1_magicPhase &gt;= MP_magicSight &amp;&amp; !$n2_mirrorBroken
 `&gt;&gt;
 
-&lt;&lt;include [[@n1x Magic Sprite]]&gt;&gt;
-
 &lt;&lt;if $n2_free&gt;&gt;
     &lt;&lt;include [[@n1x Magic Free]]&gt;&gt;
 &lt;&lt;elseif $n1_candleHorny&gt;&gt;
     &lt;&lt;include [[@n1x Magic Horny]]&gt;&gt;
 &lt;&lt;elseif $n2_ivexGone&gt;&gt;
     &lt;&lt;include [[@n1x Magic Ivex Gone]]&gt;&gt;
-&lt;&lt;elseif $n2_ivexReceptive&gt;&gt;
+&lt;&lt;elseif $n1_ivexReceptive&gt;&gt;
     &lt;&lt;include [[@n1x Magic Receptive]]&gt;&gt;
 &lt;&lt;else&gt;&gt;
     &lt;&lt;include [[@n1x Magic Covert]]&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+
+&lt;&lt;if !$n2_mirrorBroken&gt;&gt;
+    &lt;&lt;include [[@n1x Magic Sprite]]&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="266" name="=n1a Endgame Info" tags="noreturn" position="3500,225" size="100,100">Nero&#39;s Endgame is an unusual spell construction. He realized he needed it during the Triestorm incident.
 
@@ -7453,9 +7590,10 @@ It&#39;s Ivex, the panther mage who&#39;s the reason for Nero&#39;s current &quo
 
 [[Continue|=n1a Endgame 3]]</tw-passagedata><tw-passagedata pid="268" name="=n1d Start Candle" tags="" position="3700,2325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_candleLit = true&gt;&gt;
-
+&lt;&lt;set $n1_ivexReceptive = false&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\
+\
 Ivex makes a gesture with his head, and two small objects fly out from a cabinet.
-&lt;&lt;/nobr&gt;&gt;
 
 One lands on the panther&#39;s face. It&#39;s a mask that covers his muzzle, and it&#39;s oddly painted on the outside with an image of Ivex&#39;s muzzle itself, frozen in a ferocious grin. An unobservant person might not notice that the panther is wearing a mask at all, except that the structure of the mask turns every breath he takes into an unmistakable wheeze.
 
@@ -7527,11 +7665,11 @@ The candle flickers, and goes out.
 
 Nero&#39;s head clears.
 
-His cock is still achingly erect, with a strong and distracting desire to &lt;em&gt;thrust&lt;/em&gt; itself into something tight and warm. But Nero&#39;s will is stronger. It&#39;s an urge he can deny.
+His cock is still achingly erect, and it&#39;s filled with a strong and distracting desire to &lt;em&gt;thrust&lt;/em&gt; itself into something tight and warm. But Nero&#39;s will is stronger. It&#39;s an urge he can deny.
 
-With his mind released from the candle&#39;s influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter catalog of aphrodisiac candles. They&#39;re an expensive import, more an artifact of herbcraft than of magic, and often used by lovers on special occasions like anniversaries or wedding nights. Nero has used a few himself. (He&#39;s especially fond of the Salty Ocean Breeze flavor.)
+With his mind released from the candle&#39;s influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter catalog of aphrodisiacs. They&#39;re an expensive import, more an artifact of herbalism than of magic, and often used by lovers on special occasions like anniversaries and wedding nights. Nero has used a few himself. (He&#39;s especially fond of Salty Ocean Breeze.)
 
-But this one is much more potent than the ones he&#39;s experienced before. Ivex must have enhanced it greatly somehow. To what end?
+But this candle is much more potent than the ones he&#39;s experienced before. Ivex must have enhanced it greatly somehow. To what end?
 
 Well, that&#39;s a question to be deferred to some other time. What&#39;s important now is escape. Which should be easy, now that Ivex is gone.
 
@@ -7861,7 +7999,7 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
     &lt;&lt;run Dialog.close()&gt;&gt;
     &lt;&lt;goto [[Bound]]&gt;&gt;
 &lt;&lt;/button&gt;&gt;\
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="294" name="@n1x Cast Attack" tags="" position="5800,1650" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="294" name="@n1x Cast Attack" tags="" position="5725,1875" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7878,7 +8016,7 @@ stuff about anti-magic.
 
 $n1_afterAction
 
-&lt;!-- Charm branch never casts attack, so don&#39;t need a transition out of charm. --&gt;</tw-passagedata><tw-passagedata pid="295" name="@n1x Cast Reveal" tags="" position="5550,1850" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;!-- Charm branch never casts attack, so don&#39;t need a transition out of charm. --&gt;</tw-passagedata><tw-passagedata pid="295" name="@n1x Cast Reveal" tags="" position="5525,2050" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_magicSight&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[Continue|@n1x After Naked]]&quot;&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -7899,13 +8037,14 @@ ivex mocks:
     [[Continue|=n1p Naked]]
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="296" name="n1x Guess Password" tags="" position="5475,1575" size="100,100">list of plausible passwords based on things you&#39;ve seen, plus a few generic guesses.
+</tw-passagedata><tw-passagedata pid="296" name="n1x Guess Password" tags="" position="5400,1625" size="100,100">offer a list of plausible passwords based on things you&#39;ve seen, plus a few generic guesses.
 
-[[n1x Wrong Password]]</tw-passagedata><tw-passagedata pid="297" name="n1x Wrong Password" tags="" position="5600,1575" size="100,100">ivex: what was that? speak up.
+[[n1x Wrong Password]]</tw-passagedata><tw-passagedata pid="297" name="n1x Wrong Password" tags="" position="5525,1625" size="100,100">ivex: what was that? speak up.
 
 sprite: password incorrect, try again.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="298" name="=n1a Feign Sleep 2" tags="" position="3600,500" size="100,100">Suddenly, a hand grabs at the crotch of Nero&#39;s trousers. The fingers dig in and curl around one of the wolf&#39;s testicles. And then the fingers squeeze. Hard.
+$n1_afterAction
+</tw-passagedata><tw-passagedata pid="298" name="=n1a Feign Sleep 2" tags="" position="3600,500" size="100,100">Suddenly, a hand grabs at the crotch of Nero&#39;s trousers. The fingers dig in and curl around one of the wolf&#39;s testicles. And then the fingers squeeze. Hard.
 
 Nero&#39;s eyes fly wide open and he stifles a yelp.
 
@@ -7941,20 +8080,42 @@ Well. Nero had thought that locating Ivex would be the difficult part of this ta
 
 Still, whatever route brought him here, a success is a success. The rest of the errand should be quite easy.
 
-[[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="300" name="n1x Help Touch" tags="" position="5425,1450" size="100,100">ivex sneers: there&#39;s no help for you
+[[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="300" name="@n1x Sprite Help" tags="" position="5450,1500" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if $n1_magicPhase === MP_wantDevice || $n1_magicPhase === MP_wantName&gt;&gt;
 
-sprite: please choose from the following help topics: no topics found.
+    ask, what is there?
+    
+    &lt;br&gt;&lt;br&gt;
+    ivex: what is there? what is there but despair.
+    
+    &lt;br&gt;&lt;br&gt;
+    sprite: device listing follows.. remember to implement this some day.
+    
+    &lt;br&gt;&lt;br&gt;
+    well that&#39;s unfortunate.
+    
+&lt;&lt;elseif $n1_magicPhase === MP_wantTouch&gt;&gt;
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="301" name="n1x Help List" tags="" position="5300,1425" size="100,100">ivex: what is there? what is there but despair.
+    ask, help?
+    
+    &lt;br&gt;&lt;br&gt;
+    ivex sneers: there&#39;s no help for you
 
-sprite:, device listing: remember to implement this some day.
+    &lt;br&gt;&lt;br&gt;
+    sprite: please choose from the following help topics.. no topics found.
 
-well, that&#39;s unfortunate.
+&lt;&lt;else&gt;&gt;
+    &lt;&lt;assert-fail Unexpected magicPhase&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
 
-vary on revisit
-
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="302" name="n1x say name" tags="" position="5125,1475" size="100,100">&lt;&lt;set $n1_magicPhase = MP_wantTouch&gt;&gt;\
+$n1_afterAction
+</tw-passagedata><tw-passagedata pid="301" name="@n1x Say Name" tags="" position="5325,1450" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;set $n1_magicPhase = MP_wantTouch&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\
 \
+say, Lance Rockhard (ugh)
+
 ivex: oh yeah, you definitely want to feel it.
 
 sprite: connection established. congratulations master ivex, you&#39;re awesome.
@@ -7969,16 +8130,19 @@ sprite: please re-authenticate by touching my hole.
 
 ok, that&#39;s a standard security barrier, just need to get ivex to touch the hole, whatever that is.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="303" name="@n1x Say Device" tags="" position="5125,1600" size="100,100">&lt;&lt;set $n1_magicPhase = MP_wantName&gt;&gt;\
+$n1_afterAction
+</tw-passagedata><tw-passagedata pid="302" name="@n1x Say Device" tags="" position="5200,1425" size="100,100">&lt;&lt;set $n1_magicPhase = MP_wantName&gt;&gt;\
 \
+say, the poltergeist device.
+
 ivex: hah, would you like to feel that
 
-sprite: there is more than one tk device available, please be more specific.
+sprite: there is more than one poltergeist device available, please be more specific.
 
 exasperated sigh.
 
 $n1_afterAction
-</tw-passagedata><tw-passagedata pid="304" name="@n1c Ivex Disdainful (1,1)" tags="" position="3875,1750" size="100,200">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="303" name="@n1c Ivex Disdainful (1,1)" tags="" position="3875,1750" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7994,7 +8158,7 @@ $n1_afterAction
     &lt;li&gt;[[perhaps I could apprentice|@n1c Apprentice]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="305" name="@n1c Ivex Offended (1,1)" tags="" position="3500,1350" size="100,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="304" name="@n1c Ivex Offended (1,1)" tags="" position="3500,1350" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8010,11 +8174,11 @@ $n1_afterAction
     &lt;li&gt;[[not a minion, an apprentice|@n1c Reject Demotion]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="306" name="@n1c Secret Society" tags="" position="3550,1575" size="100,100">Nero: it&#39;s awesome, we have bacon
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="305" name="@n1c Secret Society" tags="" position="3550,1575" size="100,100">Nero: it&#39;s awesome, we have bacon
 
 ivex takes the bait, he&#39;s skeptical but interested.
 
-[[Continue|@n1c Ivex Skeptical (4,3)]]</tw-passagedata><tw-passagedata pid="307" name="@n1c Reject Demotion" tags="big-mood" position="3425,1575" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1c Ivex Skeptical (4,3)]]</tw-passagedata><tw-passagedata pid="306" name="@n1c Reject Demotion" tags="big-mood" position="3425,1575" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_smashed = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8022,7 +8186,7 @@ nero: I have much to teach you, and perhaps you have some things to show me as w
 
 ivex, disgusted. smashes balls.
 
-[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="308" name="@n1c Reject Equality" tags="big-mood" position="3825,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="307" name="@n1c Reject Equality" tags="big-mood" position="3825,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_smashed = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8030,7 +8194,7 @@ nero: really, equality is good.
 
 ivex: no way. smashes balls.
 
-[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="309" name="@n1c Ivex Demanding (4,3)" tags="" position="4000,1750" size="100,200">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="308" name="@n1c Ivex Demanding (4,3)" tags="" position="4000,1750" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8046,11 +8210,11 @@ ivex: no way. smashes balls.
     &lt;li&gt;[[anything at all|@n1c Subby][$n1_resisting = false]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="310" name="@n1c Very Secret" tags="" position="3675,1575" size="100,100">nero: we&#39;re a secret inside the WAG.
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="309" name="@n1c Very Secret" tags="" position="3675,1575" size="100,100">nero: we&#39;re a secret inside the WAG.
 
 ivex, fascinated, leaps into speculation about how the secret is kept, dreams up a horny mind-control scenario and asks for confirmation.
 
-[[Continue|@n1c Ivex Intrigued (4,3)]]</tw-passagedata><tw-passagedata pid="311" name="@n1c Ivex Dominant (4,3)" tags="" position="4350,1850" size="100,200">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1c Ivex Intrigued (4,3)]]</tw-passagedata><tw-passagedata pid="310" name="@n1c Ivex Dominant (4,3)" tags="" position="4350,1850" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8066,7 +8230,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
     &lt;li&gt;[[lick reluctantly|@n1c Licking][$n1_resisting = true]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="312" name="@n1c Ivex Cruel (4,3)" tags="" position="4475,1850" size="100,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="311" name="@n1c Ivex Cruel (4,3)" tags="" position="4475,1850" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8082,7 +8246,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
     &lt;li&gt;[[...wait, no|@n1c Reject Mercy][$n1_resisting = true]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="313" name="=n1d Comfortable? (1,1)" tags="" position="4550,2275" size="100,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="312" name="=n1d Comfortable? (1,1)" tags="" position="4550,2275" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8102,15 +8266,15 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
         &lt;li&gt;[[Sneer at Ivex.|=n1d Strip Resist]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
-&lt;/ul&gt;&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="314" name="@n1d Get Creepy" tags="" position="4825,2375" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;/ul&gt;&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="313" name="@n1d Get Creepy" tags="" position="4825,2375" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_naked true&gt;&gt;
 
-The panther&#39;s musk is quite noticeable now. Perhaps Nero&#39;s sense of smell has become sensitized by his attempts at identifying the mysterious candle. Whatever the cause, Nero finds himself unreasonably aware of the bulge at the panther&#39;s crotch, and he discovers his mind has formed a clear image of the leaking fluid at the tip of the panther&#39;s cock.
+The panther&#39;s musk is quite noticeable now. Perhaps Nero&#39;s sense of smell has become sensitized by his attempts at identifying the mysterious red candle. Whatever the cause, Nero finds himself unreasonably aware of the bulge at the panther&#39;s crotch, and he discovers his mind has formed a clear image of the leaking fluid at the tip of the panther&#39;s cock.
 &lt;&lt;/nobr&gt;&gt;
 
 Nero is not completely averse to dalliances with pretty men when there are no receptive women, but the burly panther mage is decidedly not his type. So it is with some dismay that he notices his own cock has started to stir.
 
-[[Continue|@n1d Get Creepy 2]]</tw-passagedata><tw-passagedata pid="315" name="=n1d Heavy Squeeze (1,1)" tags="" position="5325,2675" size="100,200">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1d Get Creepy 2]]</tw-passagedata><tw-passagedata pid="314" name="=n1d Heavy Squeeze (1,1)" tags="" position="5325,2675" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_candleHorny = true&gt;&gt;
 &lt;&lt;n1-patience 1 1
     &quot;Ivex pulls at the wolf&#39;s balls and squeezes harder. \&quot;Tell me...\&quot;&quot;
@@ -8124,7 +8288,7 @@ Nero is not completely averse to dalliances with pretty men when there are no re
     &lt;li&gt;[[Growl with anger and lust.|@n1d Alarm]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="316" name="@n1x Cast Strength" tags="" position="5925,1775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="315" name="@n1x Cast Strength" tags="" position="5900,1975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8142,7 +8306,7 @@ well, it was worth a shot, learned something
 stuff about anti-magic.
 
 $n1_afterAction
-</tw-passagedata><tw-passagedata pid="317" name="testing 2" tags="" position="4950,325" size="100,100">testing 2</tw-passagedata><tw-passagedata pid="318" name="=n1x Window" tags="has-hole" position="7225,1575" size="100,100">The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
+</tw-passagedata><tw-passagedata pid="316" name="testing 2" tags="" position="4300,475" size="100,100">testing 2</tw-passagedata><tw-passagedata pid="317" name="=n1x Window" tags="has-hole" position="7225,1575" size="100,100">The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n2_free&gt;&gt;
@@ -8202,18 +8366,23 @@ $n1_afterAction
     &lt;&lt;get-actions&gt;&gt;
     &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="319" name="n1x ask penguin" tags="" position="8225,2175" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="320" name="n1x ask portrait" tags="" position="8250,1975" size="100,100">&lt;&lt;set $n1_knowsMom = true&gt;&gt;\
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="318" name="n1x ask penguin" tags="" position="8225,2175" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="319" name="n1x ask portrait" tags="" position="8250,1975" size="100,100">&lt;&lt;set $n1_knowsMom = true&gt;&gt;\
 \
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="321" name="n1x ask map" tags="" position="8225,1675" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="322" name="n1x Ask Grav Gems" tags="" position="6225,1800" size="100,100">ask ivex, what are those gems.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="320" name="n1x ask map" tags="" position="8225,1675" size="100,100">&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="321" name="@n1x Ask Grav Gems" tags="" position="6225,1800" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;assert-true !$n1_knowsGems&gt;&gt;
+&lt;&lt;set $n1_knowsGems = true&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\
+\
+ask ivex, what are those gems.
 
 he preens, they&#39;re grav gems.
-set know-gems true.
 
 nero. really! how do you compensate for greeble instability, I&#39;ve never been able to do more than 3.
 
 ivex, haha wouldn&#39;t you like to know. he&#39;s bluffing, he doesn&#39;t know about greeble instability.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="323" name="n1x Ask Globe" tags="" position="6425,2750" size="100,100">assert magicphase == want password
+$n1_afterAction
+</tw-passagedata><tw-passagedata pid="322" name="n1x Ask Globe" tags="" position="6425,2750" size="100,100">assert magicphase == want password
 
 ask, is that from X?
 
@@ -8221,30 +8390,30 @@ if ivex not receptive, refuse to answer.
 
 if ivex is receptive, he starts answering, starts showing off globe. [[n2x Clever Escape]]
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="324" name="n1x Ask Knife" tags="" position="6750,2850" size="100,100">assert magic phase is want touch
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="323" name="n1x Ask Knife" tags="" position="6750,2850" size="100,100">assert magic phase is want touch
 
 ivex receptive, unwilling to touch letter opener.
 
 ivex not receptive, gets threatening with letter opener.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="325" name="n1x Ask Candle" tags="" position="7000,2750" size="100,100">ivex says creepy-lewd nonsense about candle, not useful.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="324" name="n1x Ask Candle" tags="" position="7000,2750" size="100,100">ivex says creepy-lewd nonsense about candle, not useful.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="326" name="n1x Ask Wand" tags="" position="7450,2775" size="100,100">ivex brags about sex toy he made
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="325" name="n1x Ask Wand" tags="" position="7450,2775" size="100,100">ivex brags about sex toy he made
 tells you its name
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="327" name="n1x Ask Books" tags="" position="7675,2950" size="100,100">trying to get Ivex to say what his school name is
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="326" name="n1x Ask Books" tags="" position="7675,2950" size="100,100">trying to get Ivex to say what his school name is
 
 [[n1x Password]]
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="328" name="n1x Ask Cards" tags="" position="7875,2900" size="100,100">if ivex receptive, can get him to show you the cards, which are porn.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="327" name="n1x Ask Cards" tags="" position="7875,2900" size="100,100">if ivex receptive, can get him to show you the cards, which are porn.
 - he incidentally touches the coin
 - if want touch, sprite accepts touch. go to want password.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="329" name="n1x ask bottle" tags="" position="8125,2375" size="100,100">ivex tells you his remote-control innovation, and tells you the device is named Lance Rockhard
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="328" name="n1x ask bottle" tags="" position="8125,2375" size="100,100">ivex tells you his remote-control innovation, and tells you the device is named Lance Rockhard
 
 &lt;&lt;set $n1_knowsName = true&gt;&gt;
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="330" name="=n1a Hello 2" tags="" position="3600,650" size="100,100">It&#39;s &lt;em&gt;him&lt;/em&gt;.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="329" name="=n1a Hello 2" tags="" position="3600,650" size="100,100">It&#39;s &lt;em&gt;him&lt;/em&gt;.
 
 It&#39;s Ivex, the panther mage who&#39;s the reason for Nero&#39;s current &quot;errand&quot;.
 
@@ -8260,7 +8429,7 @@ And then it gets even more awkward. Ivex leans forward, bringing his head toward
 
 The panther&#39;s muzzle comes uncomfortably close to Nero&#39;s crotch...
 
-[[Continue|=n1a Hello 3]]</tw-passagedata><tw-passagedata pid="331" name="=n1a Hello 3" tags="" position="3700,650" size="100,100">Ivex&#39;s feline nose is right in front of the wolf&#39;s trousers, millimeters away from Nero&#39;s crotch. The panther closes his eyes and inhales deeply.
+[[Continue|=n1a Hello 3]]</tw-passagedata><tw-passagedata pid="330" name="=n1a Hello 3" tags="" position="3700,650" size="100,100">Ivex&#39;s feline nose is right in front of the wolf&#39;s trousers, millimeters away from Nero&#39;s crotch. The panther closes his eyes and inhales deeply.
 
 Nero is aghast. What is the panther doing? Is he... &lt;em&gt;sniffing&lt;/em&gt; me? What a freak!
 
@@ -8268,11 +8437,11 @@ Nero has learned of many different greeting rituals from the various foreign lec
 
 Ivex exhales in a long sigh. The breath briefly flutters a fold of loose cloth on the wolf&#39;s trousers.
 
-The panther speaks lightly. &quot;I am Ivex the Magnificent. But you already knew that, didn&#39;t you.&quot;
+The panther speaks lightly. &quot;Welcome to my little world. I am Ivex the Magnificent. But you already knew that, didn&#39;t you.&quot;
 
-Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encountered many braggarts in his escapades before. And here in front of him is another. It should be quite easy to fulfill his commission and puncture this weird mage&#39;s arrogance.
+Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encountered many braggarts in his adventures before. And here in front of him is another. It should be quite easy to fulfill his commission and escape this weird mage&#39;s residence.
 
-[[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="332" name="=n1c Ivex Intro 2" tags="" position="3975,675" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="331" name="=n1c Ivex Intro 2" tags="" position="3975,675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_mageSight false&gt;&gt;
 &lt;&lt;assert-true $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
 &lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
@@ -8298,11 +8467,11 @@ He raises the paper and reads from it. &quot;Ivex Darkshadow. Probably not his b
 
 Ivex throws the paper into the air and makes a gesture, causing it to burst into flames.
 
-&quot;It&#39;s all pretty awesome,&quot; says the panther. &quot;I&#39;m truly flattered. But it isn&#39;t the least bit accurate!&quot;
+&quot;It&#39;s all pretty awesome,&quot; says the panther. &quot;I&#39;m truly flattered. But it isn&#39;t the least bit accurate at all!&quot;
 
 Nero mentally crosses off one branch of actions from his strategic map. Feigning ignorance was a long shot, but it had been worth trying.
 
-[[Continue|=n1c Ivex Intro 3]]</tw-passagedata><tw-passagedata pid="333" name="=n1a Endgame 3" tags="" position="3700,350" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1c Ivex Intro 3]]</tw-passagedata><tw-passagedata pid="332" name="=n1a Endgame 3" tags="" position="3700,350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[Continue|=n1a Endgame 4]]&quot;&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8318,7 +8487,7 @@ Ivex laughs again. &quot;Let me show you what a real mage can do. I am Ivex the 
 
 Ivex &quot;the Magnificent&quot; theatrically raises his left arm, then snaps his fingers.
 
-[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="334" name="=n1a Endgame 4" tags="big-mood" position="3800,325" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="333" name="=n1a Endgame 4" tags="big-mood" position="3800,325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;set $n1_naked = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -8337,7 +8506,7 @@ When the panther&#39;s paw stops, his palm is resting against Nero&#39;s sheath,
 
 Threat. Yes. That was a threat.
 
-[[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="335" name="@n1c Ivex Skeptical (4,3)" tags="" position="3625,1350" size="100,200">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="334" name="@n1c Ivex Skeptical (4,3)" tags="" position="3625,1350" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8352,7 +8521,7 @@ Threat. Yes. That was a threat.
     &lt;li&gt;[[we&#39;re a secret inside the WAG|@n1c Very Secret]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="336" name="@n1c Ivex Intrigued (4,3)" tags="" position="3750,1350" size="100,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="335" name="@n1c Ivex Intrigued (4,3)" tags="" position="3750,1350" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8368,7 +8537,7 @@ Threat. Yes. That was a threat.
     &lt;li&gt;[[...um, no|@n1c Reject Fantasy][$n1_resisting = true]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="337" name="=n1d Light Squeeze (1,1)" tags="" position="4950,2475" size="100,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="336" name="=n1d Light Squeeze (1,1)" tags="" position="4950,2475" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_candleHorny = true&gt;&gt;
 &lt;&lt;n1-patience 1 1
     &quot;Ivex closes the paw holding Nero&#39;s balls and gently squeezes. \&quot;Tell me, who sent you.\&quot;&quot;
@@ -8383,7 +8552,7 @@ Threat. Yes. That was a threat.
     &lt;li&gt;[[Snap at Ivex&#39;s face.|@n1d Ball Resist]]&lt;/li&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="338" name="@n1d Alarm" tags="" position="5175,2975" size="100,100">Ivex laughs at the pathetic sounds coming from the helpless wolf.
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="337" name="@n1d Alarm" tags="" position="5175,2975" size="100,100">Ivex laughs at the pathetic sounds coming from the helpless wolf.
 
 The panther tosses his head. A cabinet drawer opens, and out comes a riding crop that sails through the air, to land in Ivex&#39;s paw.
 
@@ -8391,7 +8560,7 @@ Ivex places the leather tip of the riding crop against the wolf&#39;s bare thigh
 
 Ivex lifts the riding crop off the wolf&#39;s balls, and draws his arm back slowly, preparing to strike...
 
-[[Continue|@n1d Alarm 2]]</tw-passagedata><tw-passagedata pid="339" name="=n1d Strip Resist" tags="" position="4800,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Alarm 2]]</tw-passagedata><tw-passagedata pid="338" name="=n1d Strip Resist" tags="" position="4800,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[Continue|@n1d Get Creepy]]&quot;&gt;&gt;
 &lt;&lt;assert-big-mood n1_licked false&gt;&gt;
 &lt;&lt;assert-big-mood n1_naked false&gt;&gt;
@@ -8422,7 +8591,7 @@ A moment later, the grinning-masked panther says, &quot;I know &lt;em&gt;exactly
 
 The panther mage raises an arm, and snaps his fingers.
 
-[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="340" name="=n1p Barbs" tags="" position="4700,950" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="339" name="=n1p Barbs" tags="" position="4700,950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
 &lt;&lt;ignore-big-mood n1_mageSight&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -8433,7 +8602,7 @@ The young wolf limped his way to the gymnasium showers. The changing area was fu
 
 It wasn&#39;t until after he finished washing, when he started toweling himself dry, that he realized he was not alone.
 
-[[Continue|=n1p Barbs 2]]</tw-passagedata><tw-passagedata pid="341" name="=n1x Look and Magic" tags="" position="4450,1375" size="100,200">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1p Barbs 2]]</tw-passagedata><tw-passagedata pid="340" name="=n1x Look and Magic" tags="" position="4450,1375" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_patienceExhausted&gt;&gt;
     &lt;&lt;set $n1_magicAction = null&gt;&gt;
 &lt;&lt;else&gt;&gt;
@@ -8442,20 +8611,20 @@ It wasn&#39;t until after he finished washing, when he started toweling himself 
     &lt;&lt;include [[=n1x Magic]]&gt;&gt;
     &lt;br&gt;&lt;br&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="342" name="@n1c Recruit" tags="" position="3700,1150" size="100,100">nero: I&#39;d like to recruit you
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="341" name="@n1c Recruit" tags="" position="3700,1150" size="100,100">nero: I&#39;d like to recruit you
 
 ivex, offended.
 
-[[Continue|@n1c Ivex Offended (1,1)]]</tw-passagedata><tw-passagedata pid="343" name="@n1c Partner" tags="" position="3825,1200" size="100,100">nero: I&#39;d like to collaborate
+[[Continue|@n1c Ivex Offended (1,1)]]</tw-passagedata><tw-passagedata pid="342" name="@n1c Partner" tags="" position="3825,1200" size="100,100">nero: I&#39;d like to collaborate
 
 ivex incredulous at the audacity
 
-[[Continue|@n1c Ivex Disdainful (1,1)]]</tw-passagedata><tw-passagedata pid="344" name="@n1c Apprentice" tags="" position="3950,2000" size="100,100">nero: no, no. I meant, I could be your apprentice
+[[Continue|@n1c Ivex Disdainful (1,1)]]</tw-passagedata><tw-passagedata pid="343" name="@n1c Apprentice" tags="" position="3950,2000" size="100,100">nero: no, no. I meant, I could be your apprentice
 
 ivex: hm.... really...
 starts into creepy-lewd
 
-[[Continue|@n1c Ivex Demanding (4,3)]]</tw-passagedata><tw-passagedata pid="345" name="@n1c Subby" tags="" position="4125,1800" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1c Ivex Demanding (4,3)]]</tw-passagedata><tw-passagedata pid="344" name="@n1c Subby" tags="" position="4125,1800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_resisting&gt;&gt;
     nero: within reason
 &lt;&lt;else&gt;&gt;
@@ -8469,7 +8638,7 @@ starts into creepy-lewd
 &lt;&lt;else&gt;&gt;
     [[Continue|@n1c Subby Naked]]
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="346" name="@n1c Licking" tags="big-mood" position="4350,2075" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="345" name="@n1c Licking" tags="big-mood" position="4350,2075" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_licked = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8484,7 +8653,7 @@ starts into creepy-lewd
 but you have to understand why I&#39;m suspicious
 you need to demonstrate loyalty
 
-[[Continue|@n1c Ivex Cruel (4,3)]]</tw-passagedata><tw-passagedata pid="347" name="@n1c Reject Mercy" tags="" position="4475,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1c Ivex Cruel (4,3)]]</tw-passagedata><tw-passagedata pid="346" name="@n1c Reject Mercy" tags="" position="4475,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_resisting&gt;&gt;
     ivex: ooh, you&#39;re going to be so much fun.
 &lt;&lt;else&gt;&gt;
@@ -8494,7 +8663,7 @@ you need to demonstrate loyalty
 
 ivex: well, whether you&#39;re real or not, it won&#39;t matter soon.
 
-[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="348" name="@n1c Reject Fantasy" tags="" position="3800,1575" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="347" name="@n1c Reject Fantasy" tags="" position="3800,1575" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_resisting&gt;&gt;
     nero: um, mind control, ew.
 &lt;&lt;else&gt;&gt;
@@ -8504,7 +8673,7 @@ ivex: well, whether you&#39;re real or not, it won&#39;t matter soon.
 
 ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 
-[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="349" name="=n1p Naked 2" tags="big-mood" position="4575,900" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Start Candle]]</tw-passagedata><tw-passagedata pid="348" name="=n1p Naked 2" tags="big-mood" position="4575,900" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_naked = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8532,7 +8701,7 @@ Ah well. It wouldn&#39;t be his first encounter with an indelicate feline cock.
     &lt;br&gt;&lt;br&gt;
     [[Continue|=n1p Barbs]]
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="350" name="=n1p Barbs 2" tags="" position="4800,950" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="349" name="=n1p Barbs 2" tags="" position="4800,950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
 &lt;&lt;ignore-big-mood n1_mageSight&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -8556,7 +8725,7 @@ The tiger spoke with a voice that was low and friendly. He said...
     &lt;li&gt;[[`&quot;The barbs aren&#39;t sharp.&quot;`|=n1p Barbs Yes]]&lt;/li&gt;
     &lt;li&gt;[[`&quot;Penile barbs are a myth.&quot;`|=n1p Barbs No]]&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="351" name="=n1p Barbs End" tags="" position="5150,975" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="350" name="=n1p Barbs End" tags="" position="5150,975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8573,7 +8742,7 @@ Nero shakes off the memories of feline penises from that... complicated year. Th
 
 Such as, the noticeably horny panther mage who has just magicked away the wolf&#39;s clothes, and is now fingering the exposed fur on Nero&#39;s naked chest.
 
-&lt;&lt;link $n1_afterNaked&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="352" name="=n1c Anti-magic" tags="noreturn" position="4150,800" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;link $n1_afterNaked&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="351" name="=n1c Anti-magic" tags="noreturn" position="4150,800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_mageSight false&gt;&gt;
 &lt;&lt;assert-big-mood n1_magicPhase `MP_triedMagic`&gt;&gt;
 &lt;&lt;assert-big-mood n1_naked true&gt;&gt;
@@ -8594,7 +8763,7 @@ Nero is one such expert. Which incidentally also makes him an expert in &lt;em&g
 
 It&#39;s a skill that&#39;s been quite useful in his unconventional career.
 
-&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="353" name="=n1a Endgame Info 2" tags="noreturn" position="3600,225" size="100,100">Two weeks later, Nero enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It&#39;s a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It&#39;s not a spell he can use often, but it&#39;s extremely useful when there are no better options.
+&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="352" name="=n1a Endgame Info 2" tags="noreturn" position="3600,225" size="100,100">Two weeks later, Nero enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It&#39;s a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It&#39;s not a spell he can use often, but it&#39;s extremely useful when there are no better options.
 
 All he has to do is hold in his mind an image of the glyphs on his shaven ass as he&#39;s seen in a mirror, and mentally &lt;em&gt;twist&lt;/em&gt; their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
 
@@ -8606,9 +8775,9 @@ The unusual ass-inscribed construction has another limitation: neither spell wil
 
 It&#39;s saved his life more than once.
 
-&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="354" name="n1z Under Construction" tags="" position="2725,200" size="100,100">&lt;em&gt;Congratulations. You&#39;ve reached an &quot;Under Construction&quot; point in Nero&#39;s story.&lt;/em&gt;
+&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="353" name="n1z Under Construction" tags="" position="2725,200" size="100,100">&lt;em&gt;Congratulations. You&#39;ve reached an &quot;Under Construction&quot; point in Nero&#39;s story.&lt;/em&gt;
 
-[[Back to Title|Title Screen]]</tw-passagedata><tw-passagedata pid="355" name="=n1p Barbs Extra" tags="noreturn" position="5275,975" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Back to Title|Title Screen]]</tw-passagedata><tw-passagedata pid="354" name="=n1p Barbs Extra" tags="noreturn" position="5275,975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
 &lt;&lt;set $n1_sawBarbsExtra = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -8629,27 +8798,30 @@ Mica turned his palm to face the audience. The orb started to grow and spin in a
 
 Everyone was astonished at the sight. Nero especially so. His ears were completely flat. Mica was the tiger from the showers.
 
-&lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="356" name="n1x Connect" tags="" position="6250,2250" size="100,100">&lt;&lt;set $n1_magicPhase = MP_wantDevice&gt;&gt;\
+&lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="355" name="@n1x Connect" tags="" position="6250,2250" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;set $n1_magicPhase = MP_wantDevice&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\
+\
+connecting to mirror...
 
-connecting to available node through mirror.
-
-node is a Sprite, sort of an AI assistant. cheerily says &quot;Welcome Ivex the Magnificent, I am your Awesome Sprite Version 1.7. What device would you like to control, Master?&quot;
+mirror is a sprite, sort of an AI assistant. cheerily says &quot;Welcome Ivex the Magnificent, I am your Awesome Sprite Version 1.7. What device would you like to control, Master?&quot;
 
 sprite responds to you psychically, but requres you to talk to it out loud.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="357" name="=n1a Hangover Info" tags="noreturn" position="3350,625" size="100,100">Pearson&#39;s Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It&#39;s often the first off-book spell that academy students learn, because of its usefulness, of course. But the main reason it&#39;s popular is because older students find it immensely funny when a novice attempts it while drunk.
+$n1_afterAction
+</tw-passagedata><tw-passagedata pid="356" name="=n1a Hangover Info" tags="noreturn" position="3350,625" size="100,100">Pearson&#39;s Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It&#39;s often the first off-book spell that academy students learn, because of its usefulness, of course. But the main reason it&#39;s popular is because older students find it immensely funny when a novice attempts it while drunk.
 
 Most spoken spells require extremely precise enunciation to have any effect at all. Pearson&#39;s is different. It works if you say it correctly, yes. But if you slur or stumble its invocation, it doesn&#39;t merely fail. It turns your fur bright pink for the day.
 
 Needless to say, Nero only made that mistake once.
 
-&lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="358" name="=n1c Ivex Description" tags="noreturn" position="3800,775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="357" name="=n1c Ivex Description" tags="noreturn" position="3800,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_mageSight false&gt;&gt;
 &lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
 &lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
-Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobots than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
+Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
 
 But this particular panther mage looks like a knight champion, the type of person with a casual strength and charisma that drives soldiers to victory and lovers to his feet.
 
@@ -8676,7 +8848,7 @@ Not that Nero would ever tell that to his
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="359" name="n2x Door" tags="" position="6225,2525" size="100,100">assert nero free
+&lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="358" name="n2x Door" tags="" position="6225,2525" size="100,100">assert nero free
 
 sturdy door, no handle, gem instead.
 
@@ -8686,12 +8858,12 @@ if was opened, [[leave through the door|n2b Last Chance]]
 
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="360" name="n1x Touch Window" tags="" position="7275,1425" size="100,100">touch window, sprite doesn&#39;t respond.
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="359" name="n1x Touch Window" tags="" position="7275,1425" size="100,100">touch window, sprite doesn&#39;t respond.
 set touched true.
 
 look outside, weird.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="361" name="n1x Ask Window" tags="" position="7150,1450" size="100,100">ask ivex, what&#39;s that outside.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="360" name="n1x Ask Window" tags="" position="7150,1450" size="100,100">ask ivex, what&#39;s that outside.
 
 ivex, what are you talking about.
 
@@ -8702,10 +8874,10 @@ if ivex not receptive and already tried, angry reaction, set failed true.
 otherwise, set tried true. ivex goes to look
 - if want touch and not touched, touches window. sprite doesn&#39;t respond
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="362" name="n2x Touch Door" tags="" position="6100,2525" size="100,100">door swings inward. look through. a moment later, door swings shut.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="361" name="n2x Touch Door" tags="" position="6100,2525" size="100,100">door swings inward. look through. a moment later, door swings shut.
 no handle on other side of door, so this looks like a one-way trip.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="363" name="n2b Last Chance" tags="" position="5325,4100" size="200,100">forward into uncertainty and adventure.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="362" name="n2b Last Chance" tags="" position="5325,4100" size="200,100">forward into uncertainty and adventure.
 
 if not holding anything, perhaps it would be useful to bring something. especially mirror, if not broken. on the other hand, no pockets, having hands free might be better.
 - action: leave anyway [[n3a start]]
@@ -8714,7 +8886,7 @@ if not holding anything, perhaps it would be useful to bring something. especial
 if holding stuff, good to be prepared. especially mirror if held. but maybe having hands free would be good.
 - action: leave with stuff
 - action: look
-- action; drop something</tw-passagedata><tw-passagedata pid="364" name="@n2a Use Knife" tags="" position="4550,3750" size="100,100">&lt;&lt;nobr&gt;&gt;
+- action; drop something</tw-passagedata><tw-passagedata pid="363" name="@n2a Use Knife" tags="" position="4550,3750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_candleHorny = false&gt;&gt;
 &lt;&lt;set $n1_candleLit = false&gt;&gt;
 &lt;&lt;set $n2_extraHorny = true&gt;&gt;
@@ -8746,13 +8918,13 @@ finally get a good look at snowglobe, reads inscription out loud with incredulit
 &lt;&lt;/nobr&gt;&gt;
 
 [[Continue|n2b look around]] 
-</tw-passagedata><tw-passagedata pid="365" name="n2x Use Wand" tags="" position="7675,3375" size="100,100">assert nero is free
+</tw-passagedata><tw-passagedata pid="364" name="n2x Use Wand" tags="" position="7675,3375" size="100,100">assert nero is free
 
 if asked wand and high lust, [[n2a tamed desperate]]
 
 otherwise, set high lust and refuse to use again
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="366" name="n1x Coin" tags="" position="8100,2750" size="100,100">on top of the [[deck of cards|n1x Cards]] is a coin from the X region. large and worthless. typical transactions use 500 of them strung together.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="365" name="n1x Coin" tags="" position="8100,2750" size="100,100">on top of the [[deck of cards|n1x Cards]] is a coin from the X region. large and worthless. typical transactions use 500 of them strung together.
 
 if want touch, hey, this has a hole
 - if free, [[n1x Touch Coin]]
@@ -8762,33 +8934,33 @@ if want touch, hey, this has a hole
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="367" name="n1x Ask Coin" tags="" position="8100,2875" size="100,100">varies if ivex receptive or not, but ivex does not want to touch coin in any case.
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="366" name="n1x Ask Coin" tags="" position="8100,2875" size="100,100">varies if ivex receptive or not, but ivex does not want to touch coin in any case.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="368" name="n1x Touch Coin" tags="" position="8225,2750" size="100,100">assert want touch
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="367" name="n1x Touch Coin" tags="" position="8225,2750" size="100,100">assert want touch
 
 sprite says, touch registered, authentication denied. locked.
 set magic phase locked
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="369" name="n1x Touch Knife" tags="" position="6875,2850" size="100,100">assert want touch
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="368" name="n1x Touch Knife" tags="" position="6875,2850" size="100,100">assert want touch
 
 doesn&#39;t work
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="370" name="n1x Touch Wand" tags="" position="7325,2900" size="100,100">assert nero free and want touch
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="369" name="n1x Touch Wand" tags="" position="7325,2900" size="100,100">assert nero free and want touch
 
 sprite doesn&#39;t respond. option to [[n2x Use Wand]], or maybe this is the same node as use wand.
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="371" name="n1x Password" tags="" position="6750,3300" size="100,100">from any place that has a suggested password.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="370" name="n1x Password" tags="" position="6750,3300" size="100,100">from any place that has a suggested password.
 
 sprite says, ok, thinking.
 set magic phase to on-hold
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="372" name="@n1c Subby Naked" tags="" position="4175,1925" size="100,100">subby and naked. ivex creeps.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="371" name="@n1c Subby Naked" tags="" position="4175,1925" size="100,100">subby and naked. ivex creeps.
 
-[[Continue|@n1c Ivex Dominant (4,3)]]</tw-passagedata><tw-passagedata pid="373" name="@n1d Start Candle 2" tags="" position="3700,2425" size="100,100">The candle&#39;s flame is orange with a hint of green, and the smoke is a light gray that dissipates quickly. There&#39;s little circulation in the room, but Nero can already smell it, a scent like something warm-blooded and spicy.
+[[Continue|@n1c Ivex Dominant (4,3)]]</tw-passagedata><tw-passagedata pid="372" name="@n1d Start Candle 2" tags="" position="3700,2425" size="100,100">The candle&#39;s flame is orange with a hint of green, and the smoke is a light gray that dissipates quickly. There&#39;s little circulation in the room, but Nero can already smell it, a scent like something warm-blooded and spicy.
 
 The wolf considers holding his breath to avoid whatever is in the candle&#39;s fumes, but of course he&#39;ll have to breathe eventually. No point delaying the inevitable. Perhaps with measured, cautious breaths, he can slowly acclimate himself, and limit whatever effects the candle might have.
 
-[[Continue|=n1d Comfortable? (1,1)]]</tw-passagedata><tw-passagedata pid="374" name="=n1d Naked Resist" tags="" position="4700,2425" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Comfortable? (1,1)]]</tw-passagedata><tw-passagedata pid="373" name="=n1d Naked Resist" tags="" position="4700,2425" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_naked true&gt;&gt;
 &lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
 
@@ -8818,7 +8990,7 @@ fur of the wolf&#39;s bare chest.
 
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|@n1d Get Creepy]]</tw-passagedata><tw-passagedata pid="375" name="@n1d Get Creepy 3" tags="" position="4825,2575" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1d Get Creepy]]</tw-passagedata><tw-passagedata pid="374" name="@n1d Get Creepy 3" tags="" position="4825,2575" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8832,13 +9004,13 @@ Ivex leans his body into the wolf, and brings his muzzle close to the wolf&#39;s
 
 The panther takes hold of Nero&#39;s balls. Not squeezing, not yet. Just cupping them, gently, as Nero&#39;s cock continues to strain its way to becoming fully, glisteningly erect.
 
-[[Continue|=n1d Light Squeeze (1,1)]]</tw-passagedata><tw-passagedata pid="376" name="@n1d Get Creepy 2" tags="" position="4825,2475" size="100,100">Ivex has also noticed the wolf&#39;s traitorous penis, and the lecherous panther brings the fingers of one paw to stroke the fur of the wolf&#39;s sheath, teasing it, fondling it, and encouraging the shaft within the sheath to stiffen and grow in the flickering light of the strange red candle.
+[[Continue|=n1d Light Squeeze (1,1)]]</tw-passagedata><tw-passagedata pid="375" name="@n1d Get Creepy 2" tags="" position="4825,2475" size="100,100">Ivex has also noticed the wolf&#39;s traitorous penis, and the lecherous panther brings the fingers of one paw to stroke the fur of the wolf&#39;s sheath, teasing it, fondling it, and encouraging the shaft within the sheath to stiffen and grow in the flickering light of the strange red candle.
 
 The panther speaks in a low throaty register that reverberates through the mask. &quot;Do you know what I love the most about wolves?&quot;
 
 Ivex lifts his paw off the wolf&#39;s crotch, but leaves it poised right above it, centimeters away. He chuckles under the mask, as the wolf&#39;s member bulges and struggles outward, seeking attention...
 
-[[Continue|@n1d Get Creepy 3]]</tw-passagedata><tw-passagedata pid="377" name="=n1p Barbs Yes 2" tags="" position="5025,900" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1d Get Creepy 3]]</tw-passagedata><tw-passagedata pid="376" name="=n1p Barbs Yes 2" tags="" position="5025,900" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
 &lt;&lt;ignore-big-mood n1_mageSight&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -8851,7 +9023,7 @@ Nero approached the bin to deposit his used towel. He tried to make it clear tha
 
 The young wolf, in a panic, threw the towel at the tiger and fled as quickly as he could on his injured ankle. The tiger&#39;s laughter reverberated in his head, even after he was far beyond earshot of the showers.
 
-[[Continue|=n1p Barbs End]]</tw-passagedata><tw-passagedata pid="378" name="=n1p Barbs No 2" tags="" position="5025,1025" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1p Barbs End]]</tw-passagedata><tw-passagedata pid="377" name="=n1p Barbs No 2" tags="" position="5025,1025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8863,19 +9035,19 @@ Nero was unwilling to approach the tiger more than necessary, so he threw his to
 
 As the young wolf limped away with what remaining dignity he could muster, he heard the tiger&#39;s laughter chase him down the hall.
 
-[[Continue|=n1p Barbs End]]</tw-passagedata><tw-passagedata pid="379" name="=n1p Fast Barbs 1" tags="" position="4700,775" size="100,100">Lord Temesca, the slender cheetah securely fastened to Nero&#39;s workshop table, asked again, &quot;Are you sure this will work?&quot;
+[[Continue|=n1p Barbs End]]</tw-passagedata><tw-passagedata pid="378" name="=n1p Fast Barbs 1" tags="" position="4700,775" size="100,100">Lord Temesca, the slender cheetah securely fastened to Nero&#39;s workshop table, asked again, &quot;Are you sure this will work?&quot;
 
 &quot;Please stay still,&quot; replied Nero. &quot;I&#39;m applying a dangerous amount of energy to a delicate region, and it would be tragic if I slipped.&quot;
 
 The delicate region was the male cheetah&#39;s sheath, which for the past year had been trapped in a chastity spell under control of Temesca&#39;s wife, Lady Pevin. The lord had approached Nero with a tale of wanting to escape a miserable marriage, along with enough coin to secure an appointment for the mage&#39;s services.
 
-The chastity spell was not the cheap variety that was common in sexual play. Those had mage locks that are easily dismantled with simple charms. This one was more substantial and somewhat perilous. Its lock had a guard against tampering, that would destroy the lock and fuse it shut. Which had happened. Which Temesca had not told his wife. Not that she had even &lt;em&gt;tried&lt;/em&gt; to let him free in months.
+The chastity spell was not the cheap variety that&#39;s common in sexual play. Those have mage locks that are easily dismantled with simple charms. This one was more substantial and somewhat perilous. Its lock had a guard against tampering, that would destroy the lock and fuse it shut. Which had happened. Which Temesca had not told his wife. Not that she had even &lt;em&gt;tried&lt;/em&gt; to let him free in months.
 
 Nero said, &quot;You really should have approached me before trying the Carmela Charm. Finessing mage locks is one of my specialties, and it&#39;s much less dangerous than what I&#39;m doing now.&quot;
 
 The cheetah grimaced and flattened his ears, but otherwise stayed silent and still.
 
-After a few more minutes of rasping at the energy bonds, the chastity spell collapsed. The cheetah&#39;s penis, sensing freedom, immediately sprung to its fullest length, and Lord Temesca shouted with glee.
+After a few more minutes of rasping at the energy bonds, the chastity spell collapsed. The cheetah&#39;s penis, sensing freedom, immediately sprang to its fullest length, and Lord Temesca shouted with glee.
 
 Nero took a moment to measure the liberated cock...
 
@@ -8884,7 +9056,7 @@ Nero took a moment to measure the liberated cock...
     &lt;li&gt;[[and its barbed shaft...|=n1p Fast Barbs 2][$n1_barbs = true]]&lt;/li&gt;
     &lt;li&gt;[[and its smooth shaft...|=n1p Fast Barbs 2][$n1_barbs = false]]&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="380" name="=n1p Fast Barbs 2" tags="" position="4800,775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="379" name="=n1p Fast Barbs 2" tags="" position="4800,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 Lord Temesca&#39;s
 &lt;&lt;if $n1_barbs&gt;&gt;
     barbed penis
@@ -8908,7 +9080,7 @@ Nero called out, &quot;It&#39;s done now,&quot; and Lady Pevin herself entered t
 
 Lord Temesca was livid, but still helplessly strapped to the workshop table. Lady Pevin ignored her screaming husband and quietly approached the wolf mage. She then proceeded to lower Nero&#39;s trousers, in order to express her gratitude, in a most un-lady-like way...
 
-[[Continue|=n1p Fast Barbs End]]</tw-passagedata><tw-passagedata pid="381" name="=n1p Fast Barbs End" tags="" position="4900,775" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1p Fast Barbs End]]</tw-passagedata><tw-passagedata pid="380" name="=n1p Fast Barbs End" tags="" position="4900,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 It&#39;s an intensely sexy memory,
 &lt;&lt;if $n1_sawFastBarbsExtra&gt;&gt;
     and it was the start of...
@@ -8927,7 +9099,7 @@ It&#39;s an intensely sexy memory,
 
 Such as, the noticeably horny panther mage who has just magicked away the wolf&#39;s clothes, and is now fingering the exposed fur on Nero&#39;s naked chest.
 
-&lt;&lt;link $n1_afterNaked&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="382" name="@n1p Fast Barbs Extra" tags="noreturn" position="5025,775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;link $n1_afterNaked&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="381" name="@n1p Fast Barbs Extra" tags="noreturn" position="5025,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_sawFastBarbsExtra = true&gt;&gt;
 
 The cheetah, Lady Pevin... her strength and flexibility... and Lord Temesca&#39;s antics... and all the things the three of them did that summer... Nero&#39;s mind is overwhelmed with a cascade of incredibly erotic memories...
@@ -8935,7 +9107,7 @@ The cheetah, Lady Pevin... her strength and flexibility... and Lord Temesca&#39;
 
 But his rational mind reminds him of his immediate peril, and he manages to shove away those intoxicating memories, for now.
 
-&lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="383" name="=n1c Ivex Intro 3" tags="" position="4075,675" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="382" name="=n1c Ivex Intro 3" tags="" position="4075,675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_mageSight false&gt;&gt;
 &lt;&lt;assert-true $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -8966,7 +9138,7 @@ There are plenty of other paths to victory. Nero is, after all, an accomplished 
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|=n1c Ivex Repeat (4,2)]]</tw-passagedata><tw-passagedata pid="384" name="@n1d Ball Submit" tags="" position="5075,2500" size="100,100">&quot;I... can&#39;t...&quot;
+[[Continue|=n1c Ivex Repeat (4,2)]]</tw-passagedata><tw-passagedata pid="383" name="@n1d Ball Submit" tags="" position="5075,2500" size="100,100">&quot;I... can&#39;t...&quot;
 
 Can&#39;t what? Nero doesn&#39;t remember what he was trying to say.
 
@@ -8983,9 +9155,7 @@ Each beat making his cock twitch...
 Ivex laughs. &quot;You &lt;em&gt;can&#39;t?&lt;/em&gt; Or you &lt;em&gt;won&#39;t?&lt;/em&gt; Do you even know the difference?
 
 [[Continue|@n1d Pull]]
-
-[[timing test 1|n1d timing test 1]]
-[[timing test 2|n1d timing test 2]]</tw-passagedata><tw-passagedata pid="385" name="@n1d Ball Resist" tags="" position="5075,2600" size="100,100">Nero snaps his jaws at Ivex&#39;s face, trying to...
+</tw-passagedata><tw-passagedata pid="384" name="@n1d Ball Resist" tags="" position="5075,2600" size="100,100">Nero snaps his jaws at Ivex&#39;s face, trying to...
 
 Bite and grab on to...
 
@@ -9001,7 +9171,7 @@ What is he doing...
 
 Ivex anticipates the wolf&#39;s snapping jaws and smoothly dips his head below where the wolf can reach. &quot;Were you trying to snatch my mask?&quot; he asks. &quot;Naughty boy...&quot;
 
-[[Continue|@n1d Pull]]</tw-passagedata><tw-passagedata pid="386" name="=n1d Naked Submit" tags="" position="4700,2325" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1d Pull]]</tw-passagedata><tw-passagedata pid="385" name="=n1d Naked Submit" tags="" position="4700,2325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_naked true&gt;&gt;
 &lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
 
@@ -9030,7 +9200,7 @@ and roughly strokes the fur on the wolf&#39;s naked chest.
 &quot;I know something else that might keep you warm...&quot;
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|@n1d Get Creepy]]</tw-passagedata><tw-passagedata pid="387" name="=n1d Strip Submit" tags="" position="4675,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|@n1d Get Creepy]]</tw-passagedata><tw-passagedata pid="386" name="=n1d Strip Submit" tags="" position="4675,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[Continue|@n1d Get Creepy]]&quot;&gt;&gt;
 &lt;&lt;assert-big-mood n1_licked false&gt;&gt;
 &lt;&lt;assert-big-mood n1_naked false&gt;&gt;
@@ -9079,7 +9249,7 @@ and roughly strokes the fur on the wolf&#39;s naked chest.
 
 The panther mage raises an arm, and snaps his fingers.
 
-[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="388" name="@n1d Pull" tags="" position="5200,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="387" name="@n1d Pull" tags="" position="5200,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -9101,7 +9271,7 @@ Especially at the tip of his cock...
 
 Ivex curls his other paw into a fist, and pulls back his arm...
 
-[[Continue|=n1d Punch]]</tw-passagedata><tw-passagedata pid="389" name="n1d timing test 2" tags="" position="5100,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|=n1d Punch]]</tw-passagedata><tw-passagedata pid="388" name="timing test 2" tags="" position="4550,350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
   if (Macro.has(&quot;timed-beat&quot;)) Macro.delete(&quot;timed-beat&quot;);
   const beats = [];
@@ -9203,7 +9373,8 @@ Ivex curls his other paw into a fist, and pulls back his arm...
     Do you even know the difference?&quot;
 &lt;&lt;/timed-beat&gt;&gt;
 
-[[Continue|@n1d Pull]]</tw-passagedata><tw-passagedata pid="390" name="n1d timing test 1" tags="" position="5000,2350" size="100,100">&quot;I...@@#beat-1.beat-removed; can&#39;t...@@&quot;
+[[testing 2]]
+</tw-passagedata><tw-passagedata pid="389" name="timing test 1" tags="" position="4400,350" size="100,100">&quot;I...@@#beat-1.beat-removed; can&#39;t...@@&quot;
 
 @@#beat-2.beat-hidden;Can&#39;t what?@@ @@#beat-3.beat-hidden;Nero doesn&#39;t remember what he was trying to say.@@
 
@@ -9219,7 +9390,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 
 @@#beat-9.beat-hidden;Ivex laughs. &quot;You &lt;em&gt;can&#39;t?&lt;/em&gt; Or you &lt;em&gt;won&#39;t?&lt;/em&gt;  Do you even know the difference?&quot;@@
 
-[[Continue|@n1d Pull]]
+[[testing 2]]
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;set _short = &quot;2s&quot;&gt;&gt;
 &lt;&lt;set _long = &quot;4s&quot;&gt;&gt;
@@ -9243,7 +9414,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 &lt;&lt;next _long&gt;&gt;
     &lt;&lt;removeclass #beat-9 beat-hidden&gt;&gt;
 &lt;&lt;/timed&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="391" name="=n1d Punch" tags="" position="5200,2675" size="100,100">The punch landing on Nero&#39;s balls is another fire radiating through his body, intertwining with the candle&#39;s smoke that&#39;s filling him up. The intense pain does not dampen his erection. If anything, his cock becomes harder and straighter and oozes copious amounts of pre-cum that gleams like honey in the flickering of the candle&#39;s light.
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="390" name="=n1d Punch" tags="" position="5200,2675" size="100,100">The punch landing on Nero&#39;s balls is another fire radiating through his body, intertwining with the candle&#39;s smoke that&#39;s filling him up. The intense pain does not dampen his erection. If anything, his cock becomes harder and straighter and oozes copious amounts of pre-cum that gleams like honey in the flickering of the candle&#39;s light.
 
 &lt;em&gt;Fuck!&lt;/em&gt;
 
@@ -9253,49 +9424,74 @@ Nero can&#39;t think. He wants... more... of something, of anything, of whatever
 
 Nero whines.
 
-Ivex lowers his head toward the wolf&#39;s crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf&#39;s needy cock. And then pulls his head back, taking a smear of pre-cum with it, which shines in the candle light, like drool dripping from the teeth painted on the mask.
+Ivex lowers his head toward the wolf&#39;s crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf&#39;s needy cock. And then the panther pulls his head back, taking a smear of pre-cum with it, which shines in the candle light, like drool dripping from the teeth that are painted on his mask.
 
-[[Continue|=n1d Heavy Squeeze (1,1)]]</tw-passagedata><tw-passagedata pid="392" name="@n1d Alarm 2" tags="" position="5175,3075" size="100,100">The panther suddenly looks away, distracted.
+[[Continue|=n1d Heavy Squeeze (1,1)]]</tw-passagedata><tw-passagedata pid="391" name="=n1d Alarm 2" tags="" position="5175,3075" size="100,100">The panther suddenly looks away, distracted.
 
 Ivex releases his grasp of the wolf&#39;s balls and stands up straight. His head is tilted, as if he&#39;s listening to something that only he can hear. He moves toward the window, but he doesn&#39;t seem to be looking at anything in particular.
 
-&quot;Great timing!&quot; he growls.
+&quot;Great timing!&quot; he growls. &quot;There&#39;s a &lt;em&gt;reason&lt;/em&gt; I chose this isolated location, but I guess I need stronger deterrents, or maybe I should move to some place even more remote.&quot;
 
-He glances at the agitated wolf and says, &quot;We&#39;ll have to continue this later. Keep that candle warm for me!&quot;
+He glances at the agitated wolf. &quot;We&#39;ll have to continue this friendly discussion a little later. I&#39;ll be back as soon as I can. Keep that candle warm for me!&quot;
 
-The panther mage pulls a red gem out from a pocket, and disappears in a &lt;em&gt;fwoosh&lt;/em&gt;.
+The panther mage pulls a red gem out from a pocket, and then disappears in a &lt;em&gt;fwoosh&lt;/em&gt;.
 
-[[Continue|=n2a Start]]</tw-passagedata><tw-passagedata pid="393" name="@n2a Start" tags="" position="4650,2950" size="100,100">A flicker in the corner of Nero&#39;s eye catches his attention.
+[[Continue|=n2a Start]]</tw-passagedata><tw-passagedata pid="392" name="@n2a Start" tags="" position="4650,2950" size="100,100">A flicker in the corner of Nero&#39;s eye catches his attention.
 
 The candle has lit itself again!
 
-[[Continue|@n2a Start 3]]</tw-passagedata><tw-passagedata pid="394" name="@n2a Start 3" tags="" position="4650,3050" size="100,100">&lt;&lt;nobr&gt;&gt;
-@@#beat-1.beat.beat-hidden;Candle&#39;s Influence:@@
+[[Continue|@n2a Start 3]]</tw-passagedata><tw-passagedata pid="393" name="@n2a Start 3" tags="" position="4650,3050" size="100,100">&lt;&lt;nobr&gt;&gt;
+@@#beat-1.beat.hidden;Candle&#39;s Influence:@@
+
 &lt;&lt;arousalbar 20 100 0&gt;&gt;
 &lt;&lt;set $n2_previousArousal = 20&gt;&gt;
+
+&lt;&lt;/nobr&gt;&gt;
+@@#beat-2.beat.hidden;
+It&#39;s bad enough that Ivex could return at any moment.
+@@
+@@#beat-3.beat.hidden;
+There&#39;s now another urgent deadline, inflicted by the distressing, rekindled candle.
+@@
+@@#beat-4.beat.hidden;
+Can Nero escape before his mind is overwhelmed by unthinking lust?
+@@
+@@#beat-5.beat.hidden;
+Of course he can.
+@@
+@@#beat-6.beat.hidden;
+It&#39;s just a matter of finding the right angle...
+@@
+@@#beat-7.beat.hidden;
+[[Continue|@n2a Alone (6,2)]]
+@@
+
+&lt;&lt;nobr&gt;&gt;
 &lt;&lt;timed 0s t8n&gt;&gt;
     &lt;&lt;addclass #horizontalhealthbar pulsingbar&gt;&gt;
 &lt;&lt;next 2s&gt;&gt;
-    &lt;&lt;removeclass #beat-1 beat-hidden&gt;&gt;
+    &lt;&lt;removeclass #beat-1 hidden&gt;&gt;
 &lt;&lt;next 2s&gt;&gt;
-    &lt;&lt;removeclass #beat-2 beat-hidden&gt;&gt;
+    &lt;&lt;removeclass #beat-2 hidden&gt;&gt;
+&lt;&lt;next 2s&gt;&gt;
+    &lt;&lt;removeclass #beat-3 hidden&gt;&gt;
+&lt;&lt;next 2s&gt;&gt;
+    &lt;&lt;removeclass #beat-4 hidden&gt;&gt;
+&lt;&lt;next 2s&gt;&gt;
+    &lt;&lt;removeclass #beat-5 hidden&gt;&gt;
+&lt;&lt;next 2s&gt;&gt;
+    &lt;&lt;removeclass #beat-6 hidden&gt;&gt;
+&lt;&lt;next 2s&gt;&gt;
+    &lt;&lt;removeclass #beat-7 hidden&gt;&gt;
 &lt;&lt;/timed&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;
-@@#beat-2.beat.beat-hidden;
-It&#39;s bad enough that Ivex could return at any moment. There&#39;s now another urgent deadline, inflicted by the distressing, rekindled candle.
-
-Can Nero escape before his mind is overwhelmed by unthinking lust?
-
-Of course he can. It&#39;s just a matter of finding the right angle...
-@@
-[[Continue|@n2a Alone (6,2)]]</tw-passagedata><tw-passagedata pid="395" name="@n2a Lust" tags="" position="4300,2875" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="394" name="@n2a Lust" tags="" position="4300,2875" size="100,100">&lt;&lt;nobr&gt;&gt;
 XXX progressive text about lust, based on arousal
 player is here at most 6 turns.
 6 different texts, always advance one, maybe jump more.
 &lt;br&gt;&lt;br&gt;
 &lt;&lt;/nobr&gt;&gt;\
-</tw-passagedata><tw-passagedata pid="396" name="@n2a Struggle" tags="" position="4250,3375" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;if !$v2_candleMax&gt;&gt;
+</tw-passagedata><tw-passagedata pid="395" name="@n2a Struggle" tags="" position="4250,3375" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if !$n2_candleMax&gt;&gt;
 
     XXX can be here twice before final struggle.
 
@@ -9319,7 +9515,7 @@ player is here at most 6 turns.
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-    </tw-passagedata><tw-passagedata pid="397" name="@n2a More Magic" tags="" position="4075,2975" size="100,100">&lt;&lt;nobr&gt;&gt;
+    </tw-passagedata><tw-passagedata pid="396" name="@n2a More Magic" tags="" position="4075,2975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n2_candleMax&gt;&gt;
 
     &lt;&lt;set $n2_moreMagicAction = &quot;[[Desperate magic|@n2a Desperate Magic]]&quot;&gt;&gt;
@@ -9336,7 +9532,7 @@ player is here at most 6 turns.
     &lt;br&gt;&lt;br&gt;
 
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="398" name="=n2a Compute Arousal" tags="" position="4425,2975" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="397" name="=n2a Compute Arousal" tags="" position="4425,2975" size="100,100">&lt;&lt;script&gt;&gt;
 const v = State.variables;
 const actions = Math.max(v.n1_patienceActions, 0);
 const looks = Math.max(v.n1_patienceLooks, 0);
@@ -9358,7 +9554,7 @@ if (actions &gt; 2 || looks &gt; 6) {
 v.n2_candleHorny = v.n2_arousal &gt; 80;
 v.n2_candleStrong = looks === 1 || actions === 1;
 v.n2_candleMax = looks === 0 || actions === 0;
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="399" name="@n1x Magic Free" tags="" position="5675,2325" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="398" name="@n1x Magic Free" tags="" position="5650,2525" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone true&gt;&gt;
@@ -9378,7 +9574,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;case `MP_magicSight`&gt;&gt;
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn&#39;t firewalled, and it has a connection node. [[n1x Mirror]]
 
 &lt;&lt;case `MP_wantDevice`&gt;&gt;
 
@@ -9397,7 +9592,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="400" name="@n1x Magic Ivex Gone" tags="" position="5775,2075" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="399" name="@n1x Magic Ivex Gone" tags="" position="5750,2275" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone true&gt;&gt;
@@ -9417,7 +9612,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;case `MP_magicSight`&gt;&gt;
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn&#39;t firewalled, and it has a connection node. [[n1x Mirror]]
 
 &lt;&lt;case `MP_wantDevice`&gt;&gt;
 
@@ -9436,7 +9630,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="401" name="@n1x Magic Receptive" tags="" position="5750,1950" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="400" name="@n1x Magic Receptive" tags="" position="5725,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive true&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone false&gt;&gt;
@@ -9461,7 +9655,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;case `MP_magicSight`&gt;&gt;
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn&#39;t firewalled, and it has a connection node. [[n1x Mirror]]
 
 &lt;&lt;case `MP_wantDevice`&gt;&gt;
 
@@ -9480,7 +9673,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="402" name="@n1x Magic Covert" tags="" position="5725,1800" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="401" name="@n1x Magic Covert" tags="" position="5725,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone false&gt;&gt;
@@ -9505,8 +9698,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;case `MP_magicSight`&gt;&gt;
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn&#39;t firewalled, and it has a connection node. [[n1x Mirror]]
-
+ 
 &lt;&lt;case `MP_wantDevice`&gt;&gt;
 
 &lt;&lt;case `MP_wantName`&gt;&gt;
@@ -9524,14 +9716,17 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="403" name="@n1x Magic Sprite" tags="" position="5300,1725" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="402" name="@n1x Magic Sprite" tags="" position="5175,1675" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;assert-true !$n2_mirrorBroken&gt;&gt;
+
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
     &lt;!-- nothing --&gt;
 &lt;&lt;case `MP_triedMagic`&gt;&gt;
     &lt;!-- nothing --&gt;
 &lt;&lt;case `MP_magicSight`&gt;&gt;
-    &lt;!-- nothing --&gt;
+
+    the [[mirror|@n1x Mirror]] isn&#39;t firewalled.
 
 &lt;&lt;case `MP_wantDevice`&gt;&gt;
 
@@ -9539,7 +9734,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
     &lt;&lt;if $n1_sawBottle&gt;&gt;
         &lt;&lt;set $n1_magicAction = &#39;[[`&quot;Nackle\&#39;s Poltergeist Device...&quot;`|@n1x Say Device]]&#39;&gt;&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;&lt;set $n1_magicAction = &#39;[[`&quot;Help...?&quot;`|n1x Help List]]&#39;&gt;&gt;
+        &lt;&lt;set $n1_magicAction = &#39;[[`&quot;What is there...?&quot;`|@n1x Sprite Help]]&#39;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;case `MP_wantName`&gt;&gt;
@@ -9547,16 +9742,16 @@ v.n2_candleMax = looks === 0 || actions === 0;
     sprite: there&#39;s more than one poltergeist device available,
     which one do you want to access.
     &lt;&lt;if $n1_knowsName&gt;&gt;
-        &lt;&lt;set $n1_magicAction = &#39;[[`&quot;Lance Rockhard...&quot;`|n1x say name]]&#39;&gt;&gt;
+        &lt;&lt;set $n1_magicAction = &#39;[[`&quot;Lance Rockhard...&quot;`|@n1x Say Name]]&#39;&gt;&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;&lt;set $n1_magicAction = &#39;[[`&quot;Help..?&quot;`|n1x Help List]]&#39;&gt;&gt;
+        &lt;&lt;set $n1_magicAction = &#39;[[`&quot;What is there...?&quot;`|@n1x Sprite Help]]&#39;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;case `MP_wantTouch`&gt;&gt;
 
     sprite: psi metrics have diverged. please touch my hole to
     re-establish identification.
-    &lt;&lt;set $n1_magicAction = &#39;[[`&quot;Help..?&quot;`|n1x Help Touch]]&#39;&gt;&gt;
+    &lt;&lt;set $n1_magicAction = &#39;[[`&quot;Help..?&quot;`|@n1x Sprite Help]]&#39;&gt;&gt;
 
 &lt;&lt;case `MP_wantPassword`&gt;&gt;
 
@@ -9578,7 +9773,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="404" name="@n1x Magic Horny" tags="" position="5725,2200" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="403" name="@n1x Magic Horny" tags="" position="5700,2400" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny true&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;!-- n2_ivexGone can be true or false --&gt;
@@ -9598,7 +9793,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;case `MP_magicSight`&gt;&gt;
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn&#39;t firewalled, and it has a connection node. [[n1x Mirror]]
 
 &lt;&lt;case `MP_wantDevice`&gt;&gt;
 
@@ -9617,7 +9811,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="405" name="@n1x Cast Escape" tags="" position="5975,2300" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="404" name="@n1x Cast Escape" tags="" position="5950,2500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -9626,7 +9820,7 @@ try casting a generic escape spell, fails.
 stuff about anti-magic
 
 $n1_afterAction
-</tw-passagedata><tw-passagedata pid="406" name="@n1x Cast Sight" tags="" position="5900,2450" size="100,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="405" name="@n1x Cast Sight" tags="" position="5875,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_magicSight&gt;&gt;
 &lt;&lt;set $n1_magicSight = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -9637,20 +9831,27 @@ reveals intricate energy network, highly firewalled.
 maybe more on anti-magic.
 the mirror is unusual, doesn&#39;t have a firewall.
 
-$n1_afterAction</tw-passagedata><tw-passagedata pid="407" name="@n1c Subby Strip" tags="" position="4225,1675" size="100,100">&lt;&lt;nobr&gt;&gt;
+$n1_afterAction</tw-passagedata><tw-passagedata pid="406" name="@n1c Subby Strip" tags="" position="4225,1675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[@n1c Subby Naked]]&quot;&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 subby gets stripped.
 
-[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="408" name="@n2a Desperate Magic" tags="" position="3925,3050" size="100,100">XXX desperation magic fails
+[[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="407" name="@n2a Desperate Magic" tags="" position="3925,3050" size="100,100">XXX desperation magic fails
 
 [[Continue|@n2a Failed Escape]]
-</tw-passagedata><tw-passagedata pid="409" name="@n2a Futile Magic" tags="" position="3950,2850" size="100,100">XXX magic attempt fails
+</tw-passagedata><tw-passagedata pid="408" name="@n2a Futile Magic" tags="" position="3950,2850" size="100,100">XXX magic attempt fails
 
 $n1_afterAction
-</tw-passagedata><tw-passagedata pid="410" name="@n1x After Naked" tags="" position="5575,1725" size="100,100">now naked, after casting mage-sight.
+</tw-passagedata><tw-passagedata pid="409" name="@n1x After Naked" tags="" position="5550,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;set $n1_mageSight = true&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\
+\
+now naked, after casting mage-sight.
 mage-sight not a total loss, can see stuff.
+
+$n1_afterAction
+</tw-passagedata><tw-passagedata pid="410" name="n1x Take Mirror" tags="" position="6400,2125" size="100,100">need state for mirror location
 
 $n1_afterAction
 </tw-passagedata></tw-storydata>

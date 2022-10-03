@@ -655,6 +655,10 @@ a.messages-close:hover {
   color: #f33;
   font-weight: bold;
 }
+.messages-assert-trace {
+  color: #f33;
+  margin-left: 2em;
+}
 
 #messages-to-do > ul {
   margin: 0;
@@ -672,13 +676,24 @@ a.messages-close:hover {
 
 /* timed passages */
 .beat {
-  transition: opacity 400ms ease-in;
+  transition: color 400ms ease-in;
 }
 .beat.hidden {
-  opacity: 0;
+  color: rgba(255, 255, 255, 0.1);
 }
-.beat.removed {
-  display: none;
+
+.beat.hidden ul.actions li {
+  background-image: unset;
+}
+
+.beat a {
+  transition: opacity 400ms ease-in;
+}
+.beat.hidden a {
+  opacity: 0.1;
+}
+.beat.hidden a:hover {
+  opacity: 1;
 }
 
 /* fast redisplay */
@@ -841,6 +856,7 @@ $(document).on(":passagestart", () => {
 /*** Messages and assertions */
 
 let actualVars = null;
+let assertionDebug = false;
 
 $(document).on(":passagestart", () => {
   $("#messages-outer").remove();
@@ -858,7 +874,17 @@ function addMessage(jq) {
   return jq;
 }
 
-function assertionFailed(expr) {
+function macroBacktrace(context) {
+  let trace = "";
+  for (; context != null; context = context.parent) {
+    if (context.displayName === "include") {
+      trace += context.source + "\n";
+    }
+  }
+  return trace;
+}
+
+function assertionFailed(expr, context) {
   let inner = $("#messages-assert");
   if (inner.length !== 1) {
     inner.remove();
@@ -870,10 +896,22 @@ function assertionFailed(expr) {
     $("<a class=messages-close>[close]</a>").on("click", () => {
       inner.remove();
     }).appendTo(info);
+    $("<a class=messages-close>[debug]</a>").on("click", () => {
+      assertionDebug = true;
+      redisplay();
+    }).appendTo(info);
   }
   const fail = $("<div class=messages-assert-fail>").appendTo(inner);
   fail.append("Assertion failed: ");
-  fail.append($("<code>").text(expr));
+  const trace = macroBacktrace(context);
+  $("<code>").text(expr).attr("title", trace).appendTo(fail);
+  if (trace !== "") {
+    $("<div class=messages-assert-trace>").text(trace).appendTo(fail);
+  }
+  if (assertionDebug) {
+    assertionDebug = false;
+    debugger;
+  }
 }
 
 Macro.add("assert-true", {
@@ -884,8 +922,15 @@ Macro.add("assert-true", {
     const val = eval(this.args.full);
     State.active.variables = proxy;
     if (!val) {
-      assertionFailed(this.args.raw);
+      assertionFailed(this.args.raw, this);
     }
+  }
+});
+
+Macro.add("assert-fail", {
+  skipArgs: true,
+  handler: function() {
+    assertionFailed(this.args.raw, this);
   }
 });
 
@@ -921,22 +966,22 @@ $(document).on(":passagestart", () => {
   bigMoodIgnore.clear();
   bigMoodTo_do.clear();
 });
-function assertBigMood(vname, exp, raw) {
+function assertBigMood(vname, exp, raw, context) {
   const actual = actualVars[vname];
   const ok = exp === actual || (exp === false && actual == null);
   if (ok) return;
   const m = /`\s*(.*?)\s*`/.exec(raw);
   if (m != null) {
-    assertionFailed(`bigMood $${vname} === (${m[1]})`);
+    assertionFailed(`bigMood $${vname} === (${m[1]})`, context);
   } else {
-    assertionFailed(`bigMood $${vname} === ${exp}`);
+    assertionFailed(`bigMood $${vname} === ${exp}`, context);
   }
 }  
 Macro.add("assert-big-mood", {
   handler: function() {
     const vname = this.args[0];
     const exp = this.args[1];
-    assertBigMood(vname, exp, this.args.raw);
+    assertBigMood(vname, exp, this.args.raw, this);
   }
 });
 Macro.add("ignore-big-mood", {
@@ -947,7 +992,6 @@ Macro.add("ignore-big-mood", {
 Macro.add("TO"+"DO-big-mood", {
   handler: function() {
     this.args.forEach(v => {
-      addTo_do(`${v} variants`);
       bigMoodTo_do.add(v)
     });
   }
@@ -1394,6 +1438,9 @@ The Mage's Tower (Nero)
     <<link "&#x23e9; Nero Start" "=n1a Start">>
         <<delete-vars n1_ n2_>>
     <</link>>
+    <<link "&#x23e9; Nero Actions" "=n1c Ivex Repeat (4,2)">>
+        <<delete-vars n1_ n2_>>
+    <</link>>
     <<link "&#x23e9; Nero Candle" "=n1d Start Candle">>
         <<delete-vars n1_ n2_>>
     <</link>>
@@ -1401,6 +1448,7 @@ The Mage's Tower (Nero)
         <<delete-vars n1_ n2_>>
         <<set $n1_naked = true>>
     <</link>>
+    <<link "&#x23e9; Testing" "testing">><</link>>
 <</if>>
 
 
@@ -7723,7 +7771,7 @@ Nero considers his next move.
 <<set $n1_ivexReceptive = false>>
 <<n1-patience 6 2
     'Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"'
-    'Ivex stamps an itty bitty foot-paw in annoyance. "Again I ask. Who sent you?"'
+    'Ivex twitches an ear in annoyance. "Again I ask. Who sent you?"'
     'Ivex snaps his cape and speaks with anger. "Again I ask! Who sent you!"'
 >>
 <</nobr>>
@@ -7738,12 +7786,14 @@ Nero considers his next move.
 <</nobr>>
 
 
-:: testing {"position":"4950,200","size":"100,100"}
+:: testing {"position":"4300,175","size":"100,100"}
 testing<mark>hello</mark>
 <<script>>
 $(document).on(":passageinit", ev => console.log(ev));
 <</script>>
 [[testing 2]]
+[[timing test 1]]
+[[timing test 2]]
 
 
 :: =n1x Look {"position":"6875,1825","size":"200,100"}
@@ -7779,7 +7829,7 @@ $(document).on(":passageinit", ev => console.log(ev));
     with leather restraints to a
     [[wooden cross|n1x Cross]]
     <<if $n1_sawGems>>
-        that has [[glowing gems|n1x Grav Gems]],
+        that has [[glowing gems|@n1x Grav Gems]],
     <</if>>
 <</if>>
 
@@ -7842,7 +7892,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 <<if !$n1_sawDesk && $n1_sawMirror>>
     The desk has
     <<if $n1_sawMirror>>
-        a [[small mirror|n1x Mirror]]
+        a [[small mirror|@n1x Mirror]]
     <</if>>
     among its [[clutter|n1x Desk]].
 <</if>>
@@ -7851,7 +7901,7 @@ $(document).on(":passageinit", ev => console.log(ev));
     The [[desk|n1x Desk]] has
     a [[letter opener|n1x Knife]],
     a [[snow globe|n1x Globe]],
-    and a [[small mirror|n1x Mirror]].
+    and a [[small mirror|@n1x Mirror]].
 <</if>>
 
 <<if $n1_sawCabinet>>
@@ -7938,18 +7988,46 @@ Ivex (the Magnificent) moves away from the
 and settles against the edge of a cluttered desk.
 <</nobr>>
 
-He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier came from school portraits that were created several years ago, so it isn't too surprising that the panther has grown a bit since then.
+He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier come from school portraits that were created several years ago, so it isn't too surprising that the panther has grown a bit since then.
 
-Ivex speaks. "So we can do this the easy way, or the hard way. <em>Please</em> make the right choice." He has a grin like a child unwrapping a present. "Tell me, who sent you?"
+ Ivex speaks. "So let me make a proposal."
+
+<<nobr>>
+<<if $n1_smashed>>
+    The panther has a grin like a child unwrapping a present.
+<<elseif $n1_naked>>
+    His tail twitches with excitement.
+<<else>>
+    Hopefully not a <em>marriage</em> proposal.
+<</if>>
+<</nobr>>
+
+"We can do this the easy way, or the hard way. <em>Please</em> make the right choice."
+
+<<nobr>>
+<<if $n1_smashed>>
+    The condition of Nero's balls leads him to suspect that Ivex would prefer
+    the hard way.
+<<elseif $n1_naked>>
+    The wolf shivers and looks away from the panther's lustful stare.
+<<else>>
+    Will it even matter in the end what choice he makes?
+<</if>>
+<</nobr>>
+
+"Tell me," Ivex asks. "Who sent you?"
 
 <<nobr>>
 <<if $n1_naked>>
-    Nero tries to gather what dignity he can in his helplessly exposed state.
+    Nero tries to gather what dignity he can in his helplessly exposed state,
+    and prepares his opening gambit.
 <<elseif $n1_smashed>>
-    The condition of Nero's balls leads him to suspect that Ivex would
-    prefer the hard way, which seems like something to avoid if possible.
-<<else>>
+    Avoiding further torture might take a little finesse.
     Nero prepares his opening gambit.
+<<else>>
+    Nero has successfully charmed his way through
+    many situations much more unpleasant than this.
+    He prepares his opening gambit.
 <</if>>
 <</nobr>>
 
@@ -7965,8 +8043,8 @@ Ivex speaks. "So we can do this the easy way, or the hard way. <em>Please</em> m
 
 leather straps and wooden cross.
 
-if know gems, apparently held up by [[gravity gems|n1x Grav Gems]]
-else if saw mirror, has [[glowing gems|n1x Grav Gems]]
+if know gems, apparently held up by [[gravity gems|@n1x Grav Gems]]
+else if saw mirror, has [[glowing gems|@n1x Grav Gems]]
 else, can't really see much of it
 
 <ul class="actions">
@@ -8015,18 +8093,33 @@ and [[bookshelves|n1x Bookshelf]].
 <</nobr>>
 
 
-:: n1x Grav Gems {"position":"6275,1950","size":"100,100"}
-assert saw mirror and not free
+:: @n1x Grav Gems {"position":"6275,1950","size":"100,100"}
+<<nobr>>
+<<assert-true $n1_sawMirror>>
+<<assert-true !$n2_free>>
+<</nobr>>\
+\
+<<nobr>>
+<<if !$n1_knowGems>>
+    looks interesting. guesses what they are. suggest asking ivex for more
+<<else>>
+    summary of what we know and what ivex said.
 
-if not know gems and not ivex gone, curiosity. [[what are those gems|n1x Ask Grav Gems]]
+    <br><br>
+    fascinating, it's not supposed to be possible to have a stable config of
+    that many grav gems, that close together. ivex claimed to have a solution
+    but he's probably bluffing.
+<</if>>
+<</nobr>>
 
-if know gems, fascination, it's not supposed to be possible to have a stable config of so many gems this close together.
-
-ask ivex, he mocks your limited understanding. he's bluffing, he doesn't know anything about grav instability.
-
+<<nobr>>
 <ul class="actions">
-  <li><<link $n1_afterLook>><</link>></li>
+    <<if !$n1_knowGems>>
+        <li>[[Ask Ivex about gems|@n1x Ask Grav Gems]]</li>
+    <</if>>
+  <li>$n1_afterLook</li>
 </ul>
+<</nobr>>
 
 
 :: n1x Desk {"position":"6675,2625","size":"100,100"}
@@ -8038,7 +8131,7 @@ if not free, most interesting thing is a [[letter opener|n1x Knife]], if only th
 
 if candle lit, mention [[n1x Candle]]
 
-if mirror broken, mention [[broken mirror|n1x Mirror]], and [[snow globe|n1x Globe]].
+if mirror broken, mention [[broken mirror|@n1x Mirror]], and [[snow globe|n1x Globe]].
 
 if mirror not broken and not free, propped up against a snow globe is a mirror, which might show you more of the room.
 
@@ -8072,22 +8165,47 @@ if free, boxes of xxx
 <</nobr>>
 
 
-:: n1x Mirror {"position":"6275,2125","size":"100,100"}
-if broken, useless mirror, regrets.
+:: @n1x Mirror {"position":"6275,2125","size":"100,100"}
+<<nobr>>
+<<if $n2_mirrorBroken>>
 
-if free and not broken, can take mirror.
+    broken, useless. regrets.
 
-if not free
-- propped up against [[snow globe|n1x Globe]]
-- if not saw mirror, aha!
-- see [[glowing gems|n1x Grav Gems]]
+<<elseif $n2_free>>
 
-if magic sight
-- mirror is a clear path in the firewall, [[n1x Connect]]
+    if we're here, we have mage sight, and we're connected.
+    can take mirror (but need state for location).
 
+<<else>>
+
+    propped up against a [[snow globe|n1x Globe]]
+
+    <<if !$n1_sawMirror>>
+        <br><br>
+        aha, can see stuff in the reflection
+        <<set $n1_sawMirror = true>>
+    <</if>>
+
+    <br><br>
+    in reflection, [[glowing gems|@n1x Grav Gems]]
+
+    <<if $n1_mageSight>>
+        <br><br>
+        mirror is a clear path in the firewall.
+    <</if>>
+<</if>>
+<</nobr>>
+
+<<nobr>>
 <ul class="actions">
+  <<if !$n2_mirrorBroken && $n1_magicPhase === MP_magicSight>>
+      <li>[[Connect to the mirror|@n1x Connect]]</li>
+  <<elseif $n2_free>>
+      <li>[[Take mirror|n1x Take Mirror]]</li>
+  <</if>>
   <li><<link $n1_afterLook>><</link>></li>
 </ul>
+<</nobr>>
 
 
 :: n1x Globe [key maybe-password] {"position":"6425,2600","size":"100,100"}
@@ -8302,39 +8420,55 @@ He prepares the spell's image in his mind, and then <em>twists</em> it...
 "There's been a misunderstanding," says Nero. "I wasn't <em>given</em> your dossier. I <em>stole</em> it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore."
 
 <<nobr>>
-<<if $n1_magicPhase < MP_magicSight>>
+<<if $n1_magicPhase < MP_triedMagic>>
 
-Ivex seems intrigued. Good. Perhaps the right story will lower the panther's guard, and then Nero can fulfill his commission with a minimum of fuss.
+    Ivex seems intrigued. Good.
+    Perhaps the right story will lower the panther's guard,
+    and then Nero can fulfill his commission with a minimum of fuss.
 
 <<elseif $n1_magicPhase < MP_wantDevice>>
 
-Ivex seems intrigued. Spinning an enticing tale might distract the panther long enough for Nero to find a flaw in his anti-magic field.
+    Ivex seems intrigued. Spinning an enticing tale
+    might distract the panther long enough
+    for Nero to exploit some flaw in his anti-magic field.
 
-<<elseif $n1_magicPhase < MP_wantPassword>>
+<<elseif $n1_magicPhase < MP_wantTouch>>
 
-Ivex seems intrigued. A little more seduction, and soon Nero will have the keys to the panther mage's kingdom.
+    Ivex seems intrigued and willing to listen to Nero spin a fanciful tale.
+    This will make it easier to speak some unnoticed instructions
+    to the listening sprite.
 
 <<else>>
-<<run throw new Error("bug")>>
+
+    Ivex seems intrigued. A little more seduction,
+    and soon Nero will have the keys to the panther mage's kingdom.
+
 <</if>>
 <</nobr>>
 
 Nero continues. "The ship captain was kind enough to let me search the bounty hunter's luggage, and in his papers I found your dossier. It's astonishing. When I read your exploits, I knew I had to meet you."
 
-"Finally!" says Ivex. "... I mean, it's funny that bounty hunters keep falling into my traps. But I've been really trying to meet other types of people. You're not what I expected. But, gotta start somewhere, right?"
+"Finally!" says Ivex. "... I mean, it's funny that all those dumb bounty hunters keep falling into my traps. But I've been really trying to meet other types of people. You're not what I expected. But, we all have to start somewhere, right?"
 
 <<nobr>>
 <<if $n1_smashed>>
 
-Nero isn't sure what Ivex is talking about. But considering the previous rough treatment of the wolf's balls, it seems best to agree heartily anyway.
+    Nero isn't sure what Ivex is talking about.
+    But considering the previous rough treatment of the wolf's testicles,
+    it seems prudent to agree heartily anyway.
 
 <<elseif $n1_naked>>
 
-Nero gives Ivex a grin, and tries to give the impression that being bound and naked on a cross is just an ordinary day's adventure. Nohing to worry about.
+    Nero gives Ivex a confident smile,
+    and tries to give the impression that being bound and naked
+    on a cross is just an ordinary day's adventure.
+    Nothing to worry about.
 
 <<else>>
 
-Nero makes a pleasant but noncommittal sound. Ivex seems volatile, and it's best to be cautious about saying anything that might offend him.
+    Nero makes a pleasant but noncommittal sound.
+    Ivex seems quite volatile, and it's probably best to be cautious
+    about saying anything that might offend him.
 
 <</if>>
 <</nobr>>
@@ -8388,7 +8522,7 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 [[Continue|=n1d Start Candle]]
 
 
-:: =n1x Magic {"position":"5525,2150","size":"100,100"}
+:: =n1x Magic {"position":"5475,2300","size":"100,200"}
 <<nobr>>
 <!--
 flags
@@ -8411,18 +8545,20 @@ output
     $n1_magicPhase >= MP_magicSight && !$n2_mirrorBroken
 `>>
 
-<<include [[@n1x Magic Sprite]]>>
-
 <<if $n2_free>>
     <<include [[@n1x Magic Free]]>>
 <<elseif $n1_candleHorny>>
     <<include [[@n1x Magic Horny]]>>
 <<elseif $n2_ivexGone>>
     <<include [[@n1x Magic Ivex Gone]]>>
-<<elseif $n2_ivexReceptive>>
+<<elseif $n1_ivexReceptive>>
     <<include [[@n1x Magic Receptive]]>>
 <<else>>
     <<include [[@n1x Magic Covert]]>>
+<</if>>
+
+<<if !$n2_mirrorBroken>>
+    <<include [[@n1x Magic Sprite]]>>
 <</if>>
 <</nobr>>\
 
@@ -8461,9 +8597,10 @@ It's Ivex, the panther mage who's the reason for Nero's current "errand".
 :: =n1d Start Candle {"position":"3700,2325","size":"100,100"}
 <<nobr>>
 <<set $n1_candleLit = true>>
-
+<<set $n1_ivexReceptive = false>>
+<</nobr>>\
+\
 Ivex makes a gesture with his head, and two small objects fly out from a cabinet.
-<</nobr>>
 
 One lands on the panther's face. It's a mask that covers his muzzle, and it's oddly painted on the outside with an image of Ivex's muzzle itself, frozen in a ferocious grin. An unobservant person might not notice that the panther is wearing a mask at all, except that the structure of the mask turns every breath he takes into an unmistakable wheeze.
 
@@ -8551,11 +8688,11 @@ The candle flickers, and goes out.
 
 Nero's head clears.
 
-His cock is still achingly erect, with a strong and distracting desire to <em>thrust</em> itself into something tight and warm. But Nero's will is stronger. It's an urge he can deny.
+His cock is still achingly erect, and it's filled with a strong and distracting desire to <em>thrust</em> itself into something tight and warm. But Nero's will is stronger. It's an urge he can deny.
 
-With his mind released from the candle's influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter catalog of aphrodisiac candles. They're an expensive import, more an artifact of herbcraft than of magic, and often used by lovers on special occasions like anniversaries or wedding nights. Nero has used a few himself. (He's especially fond of the Salty Ocean Breeze flavor.)
+With his mind released from the candle's influence, he realizes now what should have been obvious before. The candle is probably an item from the Lust Scenter catalog of aphrodisiacs. They're an expensive import, more an artifact of herbalism than of magic, and often used by lovers on special occasions like anniversaries and wedding nights. Nero has used a few himself. (He's especially fond of Salty Ocean Breeze.)
 
-But this one is much more potent than the ones he's experienced before. Ivex must have enhanced it greatly somehow. To what end?
+But this candle is much more potent than the ones he's experienced before. Ivex must have enhanced it greatly somehow. To what end?
 
 Well, that's a question to be deferred to some other time. What's important now is escape. Which should be easy, now that Ivex is gone.
 
@@ -8967,7 +9104,7 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 </div>
 
 
-:: @n1x Cast Attack {"position":"5800,1650","size":"100,100"}
+:: @n1x Cast Attack {"position":"5725,1875","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <</nobr>>\
@@ -8988,7 +9125,7 @@ $n1_afterAction
 <!-- Charm branch never casts attack, so don't need a transition out of charm. -->
 
 
-:: @n1x Cast Reveal {"position":"5550,1850","size":"100,100"}
+:: @n1x Cast Reveal {"position":"5525,2050","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_magicSight>>
 <<set $n1_afterNaked = "[[Continue|@n1x After Naked]]">>
@@ -9012,18 +9149,18 @@ ivex mocks:
 <</nobr>>
 
 
-:: n1x Guess Password {"position":"5475,1575","size":"100,100"}
-list of plausible passwords based on things you've seen, plus a few generic guesses.
+:: n1x Guess Password {"position":"5400,1625","size":"100,100"}
+offer a list of plausible passwords based on things you've seen, plus a few generic guesses.
 
 [[n1x Wrong Password]]
 
 
-:: n1x Wrong Password {"position":"5600,1575","size":"100,100"}
+:: n1x Wrong Password {"position":"5525,1625","size":"100,100"}
 ivex: what was that? speak up.
 
 sprite: password incorrect, try again.
 
-<<link $n1_afterAction>><</link>>
+$n1_afterAction
 
 
 :: =n1a Feign Sleep 2 {"position":"3600,500","size":"100,100"}
@@ -9070,29 +9207,46 @@ Still, whatever route brought him here, a success is a success. The rest of the 
 [[Continue|=n1c Ivex Intro]]
 
 
-:: n1x Help Touch {"position":"5425,1450","size":"100,100"}
-ivex sneers: there's no help for you
+:: @n1x Sprite Help {"position":"5450,1500","size":"100,100"}
+<<nobr>>
+<<if $n1_magicPhase === MP_wantDevice || $n1_magicPhase === MP_wantName>>
 
-sprite: please choose from the following help topics: no topics found.
+    ask, what is there?
+    
+    <br><br>
+    ivex: what is there? what is there but despair.
+    
+    <br><br>
+    sprite: device listing follows.. remember to implement this some day.
+    
+    <br><br>
+    well that's unfortunate.
+    
+<<elseif $n1_magicPhase === MP_wantTouch>>
 
-<<link $n1_afterAction>><</link>>
+    ask, help?
+    
+    <br><br>
+    ivex sneers: there's no help for you
+
+    <br><br>
+    sprite: please choose from the following help topics.. no topics found.
+
+<<else>>
+    <<assert-fail Unexpected magicPhase>>
+<</if>>
+<</nobr>>
+
+$n1_afterAction
 
 
-:: n1x Help List {"position":"5300,1425","size":"100,100"}
-ivex: what is there? what is there but despair.
-
-sprite:, device listing: remember to implement this some day.
-
-well, that's unfortunate.
-
-vary on revisit
-
-<<link $n1_afterAction>><</link>>
-
-
-:: n1x say name {"position":"5125,1475","size":"100,100"}
-<<set $n1_magicPhase = MP_wantTouch>>\
+:: @n1x Say Name {"position":"5325,1450","size":"100,100"}
+<<nobr>>
+<<set $n1_magicPhase = MP_wantTouch>>
+<</nobr>>\
 \
+say, Lance Rockhard (ugh)
+
 ivex: oh yeah, you definitely want to feel it.
 
 sprite: connection established. congratulations master ivex, you're awesome.
@@ -9107,15 +9261,17 @@ sprite: please re-authenticate by touching my hole.
 
 ok, that's a standard security barrier, just need to get ivex to touch the hole, whatever that is.
 
-<<link $n1_afterAction>><</link>>
+$n1_afterAction
 
 
-:: @n1x Say Device {"position":"5125,1600","size":"100,100"}
+:: @n1x Say Device {"position":"5200,1425","size":"100,100"}
 <<set $n1_magicPhase = MP_wantName>>\
 \
+say, the poltergeist device.
+
 ivex: hah, would you like to feel that
 
-sprite: there is more than one tk device available, please be more specific.
+sprite: there is more than one poltergeist device available, please be more specific.
 
 exasperated sigh.
 
@@ -9290,7 +9446,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 <<nobr>>
 <<assert-big-mood n1_naked true>>
 
-The panther's musk is quite noticeable now. Perhaps Nero's sense of smell has become sensitized by his attempts at identifying the mysterious candle. Whatever the cause, Nero finds himself unreasonably aware of the bulge at the panther's crotch, and he discovers his mind has formed a clear image of the leaking fluid at the tip of the panther's cock.
+The panther's musk is quite noticeable now. Perhaps Nero's sense of smell has become sensitized by his attempts at identifying the mysterious red candle. Whatever the cause, Nero finds himself unreasonably aware of the bulge at the panther's crotch, and he discovers his mind has formed a clear image of the leaking fluid at the tip of the panther's cock.
 <</nobr>>
 
 Nero is not completely averse to dalliances with pretty men when there are no receptive women, but the burly panther mage is decidedly not his type. So it is with some dismay that he notices his own cock has started to stir.
@@ -9316,7 +9472,7 @@ Nero is not completely averse to dalliances with pretty men when there are no re
 <</nobr>>
 
 
-:: @n1x Cast Strength {"position":"5925,1775","size":"100,100"}
+:: @n1x Cast Strength {"position":"5900,1975","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <</nobr>>\
@@ -9337,7 +9493,7 @@ stuff about anti-magic.
 $n1_afterAction
 
 
-:: testing 2 {"position":"4950,325","size":"100,100"}
+:: testing 2 {"position":"4300,475","size":"100,100"}
 testing 2
 
 
@@ -9419,17 +9575,21 @@ The only window in the room is round and about a meter in diameter. The window h
 <<link $n1_afterAction>><</link>>
 
 
-:: n1x Ask Grav Gems {"position":"6225,1800","size":"100,100"}
+:: @n1x Ask Grav Gems {"position":"6225,1800","size":"100,100"}
+<<nobr>>
+<<assert-true !$n1_knowsGems>>
+<<set $n1_knowsGems = true>>
+<</nobr>>\
+\
 ask ivex, what are those gems.
 
 he preens, they're grav gems.
-set know-gems true.
 
 nero. really! how do you compensate for greeble instability, I've never been able to do more than 3.
 
 ivex, haha wouldn't you like to know. he's bluffing, he doesn't know about greeble instability.
 
-<<link $n1_afterAction>><</link>>
+$n1_afterAction
 
 
 :: n1x Ask Globe {"position":"6425,2750","size":"100,100"}
@@ -9520,9 +9680,9 @@ Nero has learned of many different greeting rituals from the various foreign lec
 
 Ivex exhales in a long sigh. The breath briefly flutters a fold of loose cloth on the wolf's trousers.
 
-The panther speaks lightly. "I am Ivex the Magnificent. But you already knew that, didn't you."
+The panther speaks lightly. "Welcome to my little world. I am Ivex the Magnificent. But you already knew that, didn't you."
 
-Well. <em>That</em> sort of posturing is familiar. Nero has encountered many braggarts in his escapades before. And here in front of him is another. It should be quite easy to fulfill his commission and puncture this weird mage's arrogance.
+Well. <em>That</em> sort of posturing is familiar. Nero has encountered many braggarts in his adventures before. And here in front of him is another. It should be quite easy to fulfill his commission and escape this weird mage's residence.
 
 [[Continue|=n1c Ivex Intro]]
 
@@ -9554,7 +9714,7 @@ He raises the paper and reads from it. "Ivex Darkshadow. Probably not his birth 
 
 Ivex throws the paper into the air and makes a gesture, causing it to burst into flames.
 
-"It's all pretty awesome," says the panther. "I'm truly flattered. But it isn't the least bit accurate!"
+"It's all pretty awesome," says the panther. "I'm truly flattered. But it isn't the least bit accurate at all!"
 
 Nero mentally crosses off one branch of actions from his strategic map. Feigning ignorance was a long shot, but it had been worth trying.
 
@@ -9671,7 +9831,7 @@ Ivex places the leather tip of the riding crop against the wolf's bare thigh, an
 
 Ivex lifts the riding crop off the wolf's balls, and draws his arm back slowly, preparing to strike...
 
-[[Continue|@n1d Alarm 2]]
+[[Continue|=n1d Alarm 2]]
 
 
 :: =n1d Strip Resist {"position":"4800,2175","size":"100,100"}
@@ -9980,16 +10140,18 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 <<link Return $return>><</link>>
 
 
-:: n1x Connect {"position":"6250,2250","size":"100,100"}
-<<set $n1_magicPhase = MP_wantDevice>>\
+:: @n1x Connect {"position":"6250,2250","size":"100,100"}
+<<nobr>>
+<<set $n1_magicPhase = MP_wantDevice>>
+<</nobr>>\
+\
+connecting to mirror...
 
-connecting to available node through mirror.
-
-node is a Sprite, sort of an AI assistant. cheerily says "Welcome Ivex the Magnificent, I am your Awesome Sprite Version 1.7. What device would you like to control, Master?"
+mirror is a sprite, sort of an AI assistant. cheerily says "Welcome Ivex the Magnificent, I am your Awesome Sprite Version 1.7. What device would you like to control, Master?"
 
 sprite responds to you psychically, but requres you to talk to it out loud.
 
-<<link $n1_afterAction>><</link>>
+$n1_afterAction
 
 
 :: =n1a Hangover Info [noreturn] {"position":"3350,625","size":"100,100"}
@@ -10009,7 +10171,7 @@ Needless to say, Nero only made that mistake once.
 <<assert-true !($n1_naked && $n1_smashed)>>
 <</nobr>>\
 \
-Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobots than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
+Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
 
 But this particular panther mage looks like a knight champion, the type of person with a casual strength and charisma that drives soldiers to victory and lovers to his feet.
 
@@ -10312,13 +10474,13 @@ Lord Temesca, the slender cheetah securely fastened to Nero's workshop table, as
 
 The delicate region was the male cheetah's sheath, which for the past year had been trapped in a chastity spell under control of Temesca's wife, Lady Pevin. The lord had approached Nero with a tale of wanting to escape a miserable marriage, along with enough coin to secure an appointment for the mage's services.
 
-The chastity spell was not the cheap variety that was common in sexual play. Those had mage locks that are easily dismantled with simple charms. This one was more substantial and somewhat perilous. Its lock had a guard against tampering, that would destroy the lock and fuse it shut. Which had happened. Which Temesca had not told his wife. Not that she had even <em>tried</em> to let him free in months.
+The chastity spell was not the cheap variety that's common in sexual play. Those have mage locks that are easily dismantled with simple charms. This one was more substantial and somewhat perilous. Its lock had a guard against tampering, that would destroy the lock and fuse it shut. Which had happened. Which Temesca had not told his wife. Not that she had even <em>tried</em> to let him free in months.
 
 Nero said, "You really should have approached me before trying the Carmela Charm. Finessing mage locks is one of my specialties, and it's much less dangerous than what I'm doing now."
 
 The cheetah grimaced and flattened his ears, but otherwise stayed silent and still.
 
-After a few more minutes of rasping at the energy bonds, the chastity spell collapsed. The cheetah's penis, sensing freedom, immediately sprung to its fullest length, and Lord Temesca shouted with glee.
+After a few more minutes of rasping at the energy bonds, the chastity spell collapsed. The cheetah's penis, sensing freedom, immediately sprang to its fullest length, and Lord Temesca shouted with glee.
 
 Nero took a moment to measure the liberated cock...
 
@@ -10446,9 +10608,6 @@ Each beat making his cock twitch...
 Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em> Do you even know the difference?
 
 [[Continue|@n1d Pull]]
-
-[[timing test 1|n1d timing test 1]]
-[[timing test 2|n1d timing test 2]]
 
 
 :: @n1d Ball Resist {"position":"5075,2600","size":"100,100"}
@@ -10583,7 +10742,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 [[Continue|=n1d Punch]]
 
 
-:: n1d timing test 2 {"position":"5100,2350","size":"100,100"}
+:: timing test 2 {"position":"4550,350","size":"100,100"}
 <<nobr>>
 <<script>>
   if (Macro.has("timed-beat")) Macro.delete("timed-beat");
@@ -10686,10 +10845,10 @@ Ivex curls his other paw into a fist, and pulls back his arm...
     Do you even know the difference?"
 <</timed-beat>>
 
-[[Continue|@n1d Pull]]
+[[testing 2]]
 
 
-:: n1d timing test 1 {"position":"5000,2350","size":"100,100"}
+:: timing test 1 {"position":"4400,350","size":"100,100"}
 "I...@@#beat-1.beat-removed; can't...@@"
 
 @@#beat-2.beat-hidden;Can't what?@@ @@#beat-3.beat-hidden;Nero doesn't remember what he was trying to say.@@
@@ -10706,7 +10865,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 
 @@#beat-9.beat-hidden;Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em>  Do you even know the difference?"@@
 
-[[Continue|@n1d Pull]]
+[[testing 2]]
 <<nobr>>
 <<set _short = "2s">>
 <<set _long = "4s">>
@@ -10744,21 +10903,21 @@ Nero can't think. He wants... more... of something, of anything, of whatever tou
 
 Nero whines.
 
-Ivex lowers his head toward the wolf's crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf's needy cock. And then pulls his head back, taking a smear of pre-cum with it, which shines in the candle light, like drool dripping from the teeth painted on the mask.
+Ivex lowers his head toward the wolf's crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf's needy cock. And then the panther pulls his head back, taking a smear of pre-cum with it, which shines in the candle light, like drool dripping from the teeth that are painted on his mask.
 
 [[Continue|=n1d Heavy Squeeze (1,1)]]
 
 
-:: @n1d Alarm 2 {"position":"5175,3075","size":"100,100"}
+:: =n1d Alarm 2 {"position":"5175,3075","size":"100,100"}
 The panther suddenly looks away, distracted.
 
 Ivex releases his grasp of the wolf's balls and stands up straight. His head is tilted, as if he's listening to something that only he can hear. He moves toward the window, but he doesn't seem to be looking at anything in particular.
 
-"Great timing!" he growls.
+"Great timing!" he growls. "There's a <em>reason</em> I chose this isolated location, but I guess I need stronger deterrents, or maybe I should move to some place even more remote."
 
-He glances at the agitated wolf and says, "We'll have to continue this later. Keep that candle warm for me!"
+He glances at the agitated wolf. "We'll have to continue this friendly discussion a little later. I'll be back as soon as I can. Keep that candle warm for me!"
 
-The panther mage pulls a red gem out from a pocket, and disappears in a <em>fwoosh</em>.
+The panther mage pulls a red gem out from a pocket, and then disappears in a <em>fwoosh</em>.
 
 [[Continue|=n2a Start]]
 
@@ -10773,25 +10932,50 @@ The candle has lit itself again!
 
 :: @n2a Start 3 {"position":"4650,3050","size":"100,100"}
 <<nobr>>
-@@#beat-1.beat.beat-hidden;Candle's Influence:@@
+@@#beat-1.beat.hidden;Candle's Influence:@@
+
 <<arousalbar 20 100 0>>
 <<set $n2_previousArousal = 20>>
+
+<</nobr>>
+@@#beat-2.beat.hidden;
+It's bad enough that Ivex could return at any moment.
+@@
+@@#beat-3.beat.hidden;
+There's now another urgent deadline, inflicted by the distressing, rekindled candle.
+@@
+@@#beat-4.beat.hidden;
+Can Nero escape before his mind is overwhelmed by unthinking lust?
+@@
+@@#beat-5.beat.hidden;
+Of course he can.
+@@
+@@#beat-6.beat.hidden;
+It's just a matter of finding the right angle...
+@@
+@@#beat-7.beat.hidden;
+[[Continue|@n2a Alone (6,2)]]
+@@
+
+<<nobr>>
 <<timed 0s t8n>>
     <<addclass #horizontalhealthbar pulsingbar>>
 <<next 2s>>
-    <<removeclass #beat-1 beat-hidden>>
+    <<removeclass #beat-1 hidden>>
 <<next 2s>>
-    <<removeclass #beat-2 beat-hidden>>
+    <<removeclass #beat-2 hidden>>
+<<next 2s>>
+    <<removeclass #beat-3 hidden>>
+<<next 2s>>
+    <<removeclass #beat-4 hidden>>
+<<next 2s>>
+    <<removeclass #beat-5 hidden>>
+<<next 2s>>
+    <<removeclass #beat-6 hidden>>
+<<next 2s>>
+    <<removeclass #beat-7 hidden>>
 <</timed>>
 <</nobr>>
-@@#beat-2.beat.beat-hidden;
-It's bad enough that Ivex could return at any moment. There's now another urgent deadline, inflicted by the distressing, rekindled candle.
-
-Can Nero escape before his mind is overwhelmed by unthinking lust?
-
-Of course he can. It's just a matter of finding the right angle...
-@@
-[[Continue|@n2a Alone (6,2)]]
 
 
 :: @n2a Lust {"position":"4300,2875","size":"100,100"}
@@ -10805,7 +10989,7 @@ player is here at most 6 turns.
 
 :: @n2a Struggle {"position":"4250,3375","size":"100,100"}
 <<nobr>>
-<<if !$v2_candleMax>>
+<<if !$n2_candleMax>>
 
     XXX can be here twice before final struggle.
 
@@ -10877,7 +11061,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</script>>\
 
 
-:: @n1x Magic Free {"position":"5675,2325","size":"100,100"}
+:: @n1x Magic Free {"position":"5650,2525","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -10898,7 +11082,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_magicSight`>>
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
 
 <<case `MP_wantDevice`>>
 
@@ -10920,7 +11103,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Ivex Gone {"position":"5775,2075","size":"100,100"}
+:: @n1x Magic Ivex Gone {"position":"5750,2275","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -10941,7 +11124,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_magicSight`>>
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
 
 <<case `MP_wantDevice`>>
 
@@ -10963,7 +11145,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Receptive {"position":"5750,1950","size":"100,100"}
+:: @n1x Magic Receptive {"position":"5725,2150","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive true>>
@@ -10989,7 +11171,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_magicSight`>>
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
 
 <<case `MP_wantDevice`>>
 
@@ -11011,7 +11192,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Covert {"position":"5725,1800","size":"100,100"}
+:: @n1x Magic Covert {"position":"5725,2000","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -11037,8 +11218,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_magicSight`>>
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
-
+ 
 <<case `MP_wantDevice`>>
 
 <<case `MP_wantName`>>
@@ -11059,15 +11239,18 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Sprite {"position":"5300,1725","size":"100,100"}
+:: @n1x Magic Sprite {"position":"5175,1675","size":"100,100"}
 <<nobr>>
+<<assert-true !$n2_mirrorBroken>>
+
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
     <!-- nothing -->
 <<case `MP_triedMagic`>>
     <!-- nothing -->
 <<case `MP_magicSight`>>
-    <!-- nothing -->
+
+    the [[mirror|@n1x Mirror]] isn't firewalled.
 
 <<case `MP_wantDevice`>>
 
@@ -11075,7 +11258,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
     <<if $n1_sawBottle>>
         <<set $n1_magicAction = '[[`"Nackle\'s Poltergeist Device..."`|@n1x Say Device]]'>>
     <<else>>
-        <<set $n1_magicAction = '[[`"Help...?"`|n1x Help List]]'>>
+        <<set $n1_magicAction = '[[`"What is there...?"`|@n1x Sprite Help]]'>>
     <</if>>
 
 <<case `MP_wantName`>>
@@ -11083,16 +11266,16 @@ v.n2_candleMax = looks === 0 || actions === 0;
     sprite: there's more than one poltergeist device available,
     which one do you want to access.
     <<if $n1_knowsName>>
-        <<set $n1_magicAction = '[[`"Lance Rockhard..."`|n1x say name]]'>>
+        <<set $n1_magicAction = '[[`"Lance Rockhard..."`|@n1x Say Name]]'>>
     <<else>>
-        <<set $n1_magicAction = '[[`"Help..?"`|n1x Help List]]'>>
+        <<set $n1_magicAction = '[[`"What is there...?"`|@n1x Sprite Help]]'>>
     <</if>>
 
 <<case `MP_wantTouch`>>
 
     sprite: psi metrics have diverged. please touch my hole to
     re-establish identification.
-    <<set $n1_magicAction = '[[`"Help..?"`|n1x Help Touch]]'>>
+    <<set $n1_magicAction = '[[`"Help..?"`|@n1x Sprite Help]]'>>
 
 <<case `MP_wantPassword`>>
 
@@ -11117,7 +11300,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Horny {"position":"5725,2200","size":"100,100"}
+:: @n1x Magic Horny {"position":"5700,2400","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny true>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -11138,7 +11321,6 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_magicSight`>>
 
      XXX mage-sight shows energy diverters and firewalls,
-     but the mirror isn't firewalled, and it has a connection node. [[n1x Mirror]]
 
 <<case `MP_wantDevice`>>
 
@@ -11160,7 +11342,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Cast Escape {"position":"5975,2300","size":"100,100"}
+:: @n1x Cast Escape {"position":"5950,2500","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <</nobr>>\
@@ -11172,7 +11354,7 @@ stuff about anti-magic
 $n1_afterAction
 
 
-:: @n1x Cast Sight {"position":"5900,2450","size":"100,100"}
+:: @n1x Cast Sight {"position":"5875,2650","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_magicSight>>
 <<set $n1_magicSight = true>>
@@ -11209,9 +11391,19 @@ XXX magic attempt fails
 $n1_afterAction
 
 
-:: @n1x After Naked {"position":"5575,1725","size":"100,100"}
+:: @n1x After Naked {"position":"5550,1925","size":"100,100"}
+<<nobr>>
+<<set $n1_mageSight = true>>
+<</nobr>>\
+\
 now naked, after casting mage-sight.
 mage-sight not a total loss, can see stuff.
+
+$n1_afterAction
+
+
+:: n1x Take Mirror {"position":"6400,2125","size":"100,100"}
+need state for mirror location
 
 $n1_afterAction
 
