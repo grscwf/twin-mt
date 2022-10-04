@@ -426,13 +426,16 @@ ul.actions li {
 /* var-info */
 
 .var-info {
+  background-color: rgba(0, 0, 0, 0.8);
   color: #999;
   cursor: default;
   font-size: 12px;
   line-height: 14px;
   padding: 4px 0;
+  position: sticky;
   margin-bottom: 12px;
   margin-top: -36px;
+  top: 0;
 }
 
 .var-info-separator {
@@ -487,6 +490,10 @@ ul.actions li {
 
 .var-info-was-read::after {
   content: "\2193";
+  padding-left: 2px;
+}
+.var-info-was-read.var-info-to-do::after {
+  content: "\2193\1f6a7";
   padding-left: 2px;
 }
 
@@ -595,7 +602,7 @@ ul.actions li {
   text-align: right;
   top: 10px;
   white-space: pre-line;
-  z-index: -1;
+  z-index: 1;
 }
 .nero-outline .draft-sign {
   color: rgba(200, 200, 200, 0.2);
@@ -969,7 +976,10 @@ $(document).on(":passagestart", () => {
 function assertBigMood(vname, exp, raw, context) {
   const actual = actualVars[vname];
   const ok = exp === actual || (exp === false && actual == null);
-  if (ok) return;
+  if (ok) {
+    bigMoodIgnore.add(vname);
+    return;
+  }
   const m = /`\s*(.*?)\s*`/.exec(raw);
   if (m != null) {
     assertionFailed(`bigMood $${vname} === (${m[1]})`, context);
@@ -1178,7 +1188,7 @@ function varInfoSetup() {
       const sameType = Object.values(varTypes).filter(t => t === vtype).length;
       label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
-      if (varsRead.has(vname)) {
+      if (varsRead.has(vname) && !bigMoodIgnore.has(vname)) {
         if (0 < v[vname]) {
           const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
           left.on("click", () => {
@@ -7796,7 +7806,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 [[timing test 2]]
 
 
-:: =n1x Look {"position":"6875,1825","size":"200,100"}
+:: @n1x Look {"position":"6875,1825","size":"200,100"}
 <<nobr>>
 
 <<if $n1_candleHorny>>
@@ -7827,7 +7837,7 @@ $(document).on(":passageinit", ev => console.log(ev));
         He's bound
     <</if>>
     with leather restraints to a
-    [[wooden cross|n1x Cross]]
+    [[wooden cross|@n1x Cross]]
     <<if $n1_sawGems>>
         that has [[glowing gems|@n1x Grav Gems]],
     <</if>>
@@ -7861,17 +7871,17 @@ $(document).on(":passageinit", ev => console.log(ev));
     <<else>>
         The far wall has
     <</if>>
-    a [[prominent round window|=n1x Window]]
-    and [[some decorations|=n1x Wall]] adorning it.
+    a [[prominent round window|@n1x Window]]
+    and [[some decorations|@n1x Wall]] adorning it.
 <</if>>
 
 <<if $n1_sawWall>>
     <<if $n2_free>>
-        One [[wall|=n1x Wall]] has
+        One [[wall|@n1x Wall]] has
     <<else>>
-        The [[far wall|=n1x Wall]] has
+        The [[far wall|@n1x Wall]] has
     <</if>>
-    a [[prominent round window|=n1x Window]],
+    a [[prominent round window|@n1x Window]],
     a [[large map|n1x map]],
     <<if $n1_knowsMom>>
         and a [[portrait of Ivex's mother|n1x portrait]].
@@ -7971,7 +7981,7 @@ The blurry figure becomes a person...
 :: =n1c Ivex Intro {"position":"3875,675","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
-<<assert-true $n1_magicPhase <= MP_triedMagic>>
+<<ignore-big-mood n1_magicPhase>>
 <<assert-true !($n1_naked && $n1_smashed)>>
 <</nobr>>\
 \
@@ -8009,7 +8019,7 @@ He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger tha
     The condition of Nero's balls leads him to suspect that Ivex would prefer
     the hard way.
 <<elseif $n1_naked>>
-    The wolf shivers and looks away from the panther's lustful stare.
+    The wolf shivers in the chill air and looks away from the panther's lustful stare.
 <<else>>
     Will it even matter in the end what choice he makes?
 <</if>>
@@ -8038,18 +8048,67 @@ He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger tha
 <</nobr>>
 
 
-:: n1x Cross {"position":"6450,1800","size":"100,100"}
-<!-- not examinable when free -->
+:: @n1x Cross {"position":"6450,2325","size":"100,100"}
+<<nobr>>
+<<assert-big-mood n2_clever false>>
+<<assert-big-mood n2_extraHorny false>>
+<<assert-big-mood n2_free false>>
+<<assert-big-mood n2_mirrorBroken false>>
 
-leather straps and wooden cross.
+<<ignore-big-mood n1_licked n1_smashed>>
+<<ignore-big-mood n1_ivexReceptive>>
 
-if know gems, apparently held up by [[gravity gems|@n1x Grav Gems]]
-else if saw mirror, has [[glowing gems|@n1x Grav Gems]]
-else, can't really see much of it
+<<TODO-big-mood n1_candleLit n1_candleHorny n1_mageSight>>
+<<TODO-big-mood n2_ivexGone>>
 
+<</nobr>>\
+\
+<<nobr>>
+<<if !$n1_sawMirror>>
+
+    Nero can't see much of the cross that's holding
+    <<if $n1_naked>>
+        him naked with
+    <</if>>
+    his arms and legs spread wide.
+    It's sturdy wood, and the leather straps are thick
+    and quite secure,
+    but it's not immediately obvious what's keeping the
+    cross fastened in place in the [[room|=n1x Study]].
+
+    <<if $n2_ivexGone>>
+        <br><br>
+        With Ivex gone, Nero can struggle against his bonds
+        in earnest hope of escape.
+    <</if>>
+
+<<else>>
+
+    Unyielding leather straps are holding
+    <<if $n1_naked>>
+        Nero naked with his
+    <<else>>
+        Nero's
+    <</if>>
+    arms and legs spread wide against the sturdy wooden cross.
+    But in the reflection from the
+    [[mirror|@n1x Mirror]] on [[Ivex's desk|n1x Desk]],,
+    Nero can see that the cross is not actually attached
+    to anything in the [[study|=n1x Study]].
+    Rather, it is held in place with an arrangement
+    of [[gravity gems|@n1x Grav Gems]].
+    
+<</if>>
+<</nobr>>
+
+<<nobr>>
 <ul class="actions">
-    <li><<link $n1_afterLook>><</link>></li>
+    <<if $n2_ivexGone>>
+        <li>[[Struggle against his bonds.|@n2a Struggle]]</li>
+    <</if>>
+    <li>$n1_afterLook</li>
 </ul>
+<</nobr>>
 
 
 :: =n1x Study {"position":"7150,2400","size":"100,100"}
@@ -8062,20 +8121,20 @@ The room is on the small side, not much larger than an ordinary room at an inn. 
 <<nobr>>
 Nero often finds that the furnishings of a person's private quarters reflects the furnishings of their mind, and if that's true in this case, Ivex's mind is colorful, childish, dirty, and dominated by
 <<if $n2_free>>
-    the [[wooden cross|n1x Cross]] that's fallen over and
+    the [[wooden cross|@n1x Cross]] that's fallen over and
     leaning on the [[cluttered desk|n1x Desk]]
-    by the [[prominent round window|=n1x Window]].
+    by the [[prominent round window|@n1x Window]].
 
     <br><br>
-    The wall with the window is bare except for [[some decorations|=n1x Wall]].
+    The wall with the window is bare except for [[some decorations|@n1x Wall]].
     The opposite wall has a [[sturdy door|n2x Door]].
 
 <<else>>
-    the [[wooden cross|n1x Cross]] that's holding Nero in place.
+    the [[wooden cross|@n1x Cross]] that's holding Nero in place.
 
     <br><br>
-    One wall is bare except for [[some decorations|=n1x Wall]]
-    and a [[prominent round window|=n1x Window]].
+    One wall is bare except for [[some decorations|@n1x Wall]]
+    and a [[prominent round window|@n1x Window]].
 <</if>>
 
 The other walls are lined with many [[wooden cabinets|n1x cabinet]]
@@ -8295,7 +8354,7 @@ if want touch and ivex here, [[n1x Ask Cards]]
 <</nobr>>
 
 
-:: =n1x Wall {"position":"7950,1800","size":"100,100"}
+:: @n1x Wall {"position":"7950,1800","size":"100,100"}
 <<nobr>>
 <<set $n1_sawWall = true>>
 
@@ -8303,7 +8362,7 @@ The far wall, on the other side of the desk, is the only wall in the room that d
 <</nobr>>
 
 <<nobr>>
-There's a solitary [[round window|=n1x Window]] exactly in the center of the wall. The daytime sky beyond the window's glass gives it the appearance of a giant blue eye that's
+There's a solitary [[round window|@n1x Window]] exactly in the center of the wall. The daytime sky beyond the window's glass gives it the appearance of a giant blue eye that's
 <<if $n1_naked || $n2_free>>
     leering at the completely naked wolf.
 <<else>>
@@ -8637,6 +8696,7 @@ And the spell's trigger was such a small, ambiguous gesture. Nero starts sketchi
 :: =n1p Barbs No {"position":"4925,1025","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleLit false>>
+<<ignore-big-mood n1_mageSight n1_magicPhase n1_smashed>>
 <<set $n1_barbs = false>>
 <</nobr>>\
 \
@@ -8656,7 +8716,7 @@ The tiger continued with confidence. "It's true that feral feline species, many 
 :: =n1p Barbs Yes {"position":"4925,900","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleLit false>>
-<<ignore-big-mood n1_mageSight>>
+<<ignore-big-mood n1_mageSight n1_magicPhase n1_smashed>>
 <<set $n1_barbs = true>>
 <</nobr>>\
 \
@@ -9497,7 +9557,7 @@ $n1_afterAction
 testing 2
 
 
-:: =n1x Window [has-hole] {"position":"7225,1575","size":"100,100"}
+:: @n1x Window [has-hole] {"position":"7225,1575","size":"100,100"}
 The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
 <<nobr>>
@@ -9690,7 +9750,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 :: =n1c Ivex Intro 2 {"position":"3975,675","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
-<<assert-true $n1_magicPhase <= MP_triedMagic>>
+<<ignore-big-mood n1_magicPhase>>
 <<assert-true !($n1_naked && $n1_smashed)>>
 <</nobr>>\
 \
@@ -9736,7 +9796,7 @@ Nero refrains from comment. Not that the lupine mage wouldn't defend his abiliti
 
 Ivex laughs again. "Let me show you what a real mage can do. I am Ivex the Magnificent, and I've got something way better than your pathetic Raven's Diversion. Behold, a spell called, <em>Ivex the Magnificent's Diversion</em>!"
 
-Ivex "the Magnificent" theatrically raises his left arm, then snaps his fingers.
+Ivex "the Magnificent" theatrically raises his left arm, then snaps his fingers...
 
 [[Continue|=n1p Naked]]
 
@@ -9747,13 +9807,13 @@ Ivex "the Magnificent" theatrically raises his left arm, then snaps his fingers.
 <<set $n1_naked = true>>
 <</nobr>>\
 \
-Ivex touches the claw of his index finger to Nero's helplessly revealed left nipple, not hurting it, just teasing it, almost tickling it. The wolf tries to evade the touch, but the leather straps are firm and keep him vulnerable to the rude attention.
+Ivex touches the claw of his index finger to Nero's helplessly revealed left nipple, without hurting it, just teasing it, almost tickling it. The wolf tries to evade the touch, but the leather straps are firm and keep him vulnerable to the rude attention.
 
 The panther says, "Ivex the Magnificent's Diversion is just a small taste of my powers." The claw trails across Nero's bare chest to his other nipple, which perks a bit in apprehension. The panther's maneuvers are uncomfortably intimate.
 
 "Answer my questions," said Ivex, "and I will show you much, much more."
 
-Was that a promise or a threat? Nero's ear twitches, but he holds his head still, careful not to stare or look away, and tries to pretend that there's nothing unusual about being bound and completely nude in front of a fully dressed degenerate.
+Was that a promise or a threat? Nero's ear twitches, but he holds his head still, careful not to stare or look away. He tries to pretend that there's nothing unusual about being bound and completely nude in front of a fully dressed degenerate.
 
 "If you don't cooperate..." Ivex runs his fingers down the fur covering the bare wolf's ribs, moving slowly down the abdomen, toward Nero's exposed crotch...
 
@@ -9872,7 +9932,7 @@ The panther mage raises an arm, and snaps his fingers.
 :: =n1p Barbs {"position":"4700,950","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleLit false>>
-<<ignore-big-mood n1_mageSight>>
+<<ignore-big-mood n1_mageSight n1_magicPhase n1_smashed>>
 <</nobr>>\
 \
 Nero usually enjoyed field games at the Windbone Magic Academy, but on that fateful day, he took an awkward step while trying to intercept a passing ball. His ankle twisted, and he fell to the ground in distress. The athletics coach took only a brief look at the injury before declaring it was reason enough to dismiss Nero early.
@@ -9889,7 +9949,7 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 <<if $n1_patienceExhausted>>
     <<set $n1_magicAction = null>>
 <<else>>
-    <<include [[=n1x Look]]>>
+    <<include [[@n1x Look]]>>
     <br><br>
     <<include [[=n1x Magic]]>>
     <br><br>
@@ -10022,7 +10082,7 @@ Ah well. It wouldn't be his first encounter with an indelicate feline cock.
 :: =n1p Barbs 2 {"position":"4800,950","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleLit false>>
-<<ignore-big-mood n1_mageSight>>
+<<ignore-big-mood n1_mageSight n1_magicPhase n1_smashed>>
 <</nobr>>\
 \
 The bin for used towels was stationed at a pillar near the entrance to the changing area. And on the other side of the pillar, on a bench not visible from the entrance, a tiger lounged in light and shadow.
@@ -10050,6 +10110,7 @@ The tiger spoke with a voice that was low and friendly. He said...
 :: =n1p Barbs End {"position":"5150,975","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleLit false>>
+<<ignore-big-mood n1_mageSight n1_magicPhase n1_smashed>>
 <</nobr>>\
 \
 <<nobr>>
@@ -10057,7 +10118,7 @@ It's an embarrassing memory from his naive, younger self.
 <<if !$n1_sawBarbsExtra>>
     And that wasn't even the [[worst bit...|=n1p Barbs Extra]]
 <<else>>
-    And he'll never forget [[Mica's entrance...|=n1p Barbs Extra]]
+    He'll never forget [[Mica's astonishing appearance...|=n1p Barbs Extra]]
 <</if>>
 <</nobr>>
 
@@ -10082,9 +10143,13 @@ The strongest type of anti-magic simply applies all of its power to the indiscri
 
 But in less organized situations, mages usually prefer to suppress hostile magic without also sabotaging their own abilities. So a typical mage's anti-magic field is a subtle construction that selectively permits the actions of only those spells deemed "correct".
 
-This is an exceptionally complicated proposition. Lammada's Theorem proves that it's impossible for any spell to perfectly distinguish between correct and incorrect spells. (If such a spell existed, it would be possible to construct a projection of that spell, which would declare itself incorrect, thereby suppressing and contradicting itself.) So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
+This is an exceptionally complicated proposition. Lammada's Theorem proves that it's impossible for any spell to perfectly distinguish between correct and incorrect spells. (If such a spell existed, it would be possible to construct a projection of that spell, which would declare itself incorrect, thereby suppressing and contradicting itself.)
 
-In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. The selectiveness does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction. The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
+So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
+
+In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. The selectiveness does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction.
+
+The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
 
 Nero is one such expert. Which incidentally also makes him an expert in <em>bypassing</em> the anti-magic fields of other mages.
 
@@ -10155,7 +10220,7 @@ $n1_afterAction
 
 
 :: =n1a Hangover Info [noreturn] {"position":"3350,625","size":"100,100"}
-Pearson's Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It's often the first off-book spell that academy students learn, because of its usefulness, of course. But the main reason it's popular is because older students find it immensely funny when a novice attempts it while drunk.
+Pearson's Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It's often the first off-book spell that academy students learn, because of its usefulness in mitigating alcoholic indulgence, of course. But the main reason it's popular is because older students find it immensely funny when a novice attempts it while drunk.
 
 Most spoken spells require extremely precise enunciation to have any effect at all. Pearson's is different. It works if you say it correctly, yes. But if you slur or stumble its invocation, it doesn't merely fail. It turns your fur bright pink for the day.
 
@@ -10437,7 +10502,7 @@ Ivex lifts his paw off the wolf's crotch, but leaves it poised right above it, c
 :: =n1p Barbs Yes 2 {"position":"5025,900","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleLit false>>
-<<ignore-big-mood n1_mageSight>>
+<<ignore-big-mood n1_mageSight n1_magicPhase n1_smashed>>
 <</nobr>>\
 \
 Nero struggled to put on his clothes while his fur was still damp.
@@ -10454,6 +10519,7 @@ The young wolf, in a panic, threw the towel at the tiger and fled as quickly as 
 :: =n1p Barbs No 2 {"position":"5025,1025","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleLit false>>
+<<ignore-big-mood n1_mageSight n1_magicPhase n1_smashed>>
 <</nobr>>\
 \
 Nero hurriedly continued to dry himself and scramble into his clothes, nodding at what seemed like appropriate times, trying to maintain a friendly distance while also trying to avoid giving the impression that he had any interest in the topic.
@@ -10565,11 +10631,23 @@ There are plenty of other paths to victory. Nero is, after all, an accomplished 
 
 <<nobr>>
 <<if $n1_magicPhase >= MP_triedMagic>>
-    The anti-magic field is a difficulty,
+    <<if $n1_naked>>
+        His nakedness deprives him of several magical aids
+        that are hidden in his clothes,
+        and the anti-magic field is an inconvenience,
+    <<else>>
+        The anti-magic field adds some slight complications
+        to his current endeavor,
+    <</if>>
     but [[countering anti-magic|=n1c Anti-magic]]
     is one of Nero's specialties.
     He's confident that he can find a flaw in Nero's construction
-    and exploit it, when the time is right.
+    and exploit it,
+    <<if $n1_smashed>>
+        and perhaps even get revenge for the distress to his balls.
+    <<else>>
+        when the time is right.
+    <</if>>
 
 <<else>>
     The bindings restricting the wolf's body are a slight impediment,
@@ -10987,7 +11065,7 @@ player is here at most 6 turns.
 <</nobr>>\
 
 
-:: @n2a Struggle {"position":"4250,3375","size":"100,100"}
+:: @n2a Struggle {"position":"4500,3350","size":"100,100"}
 <<nobr>>
 <<if !$n2_candleMax>>
 
@@ -11402,7 +11480,7 @@ mage-sight not a total loss, can see stuff.
 $n1_afterAction
 
 
-:: n1x Take Mirror {"position":"6400,2125","size":"100,100"}
+:: n1x Take Mirror {"position":"6125,2150","size":"100,100"}
 need state for mirror location
 
 $n1_afterAction

@@ -493,13 +493,16 @@ ul.actions li {
 /* var-info */
 
 .var-info {
+  background-color: rgba(0, 0, 0, 0.8);
   color: #999;
   cursor: default;
   font-size: 12px;
   line-height: 14px;
   padding: 4px 0;
+  position: sticky;
   margin-bottom: 12px;
   margin-top: -36px;
+  top: 0;
 }
 
 .var-info-separator {
@@ -554,6 +557,10 @@ ul.actions li {
 
 .var-info-was-read::after {
   content: "\2193";
+  padding-left: 2px;
+}
+.var-info-was-read.var-info-to-do::after {
+  content: "\2193\1f6a7";
   padding-left: 2px;
 }
 
@@ -662,7 +669,7 @@ ul.actions li {
   text-align: right;
   top: 10px;
   white-space: pre-line;
-  z-index: -1;
+  z-index: 1;
 }
 .nero-outline .draft-sign {
   color: rgba(200, 200, 200, 0.2);
@@ -1033,7 +1040,10 @@ $(document).on(":passagestart", () => {
 function assertBigMood(vname, exp, raw, context) {
   const actual = actualVars[vname];
   const ok = exp === actual || (exp === false && actual == null);
-  if (ok) return;
+  if (ok) {
+    bigMoodIgnore.add(vname);
+    return;
+  }
   const m = /`\s*(.*?)\s*`/.exec(raw);
   if (m != null) {
     assertionFailed(`bigMood $${vname} === (${m[1]})`, context);
@@ -1242,7 +1252,7 @@ function varInfoSetup() {
       const sameType = Object.values(varTypes).filter(t => t === vtype).length;
       label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
-      if (varsRead.has(vname)) {
+      if (varsRead.has(vname) && !bigMoodIgnore.has(vname)) {
         if (0 < v[vname]) {
           const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
           left.on("click", () => {
@@ -6902,7 +6912,7 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
 [[testing 2]]
 [[timing test 1]]
 [[timing test 2]]
-</tw-passagedata><tw-passagedata pid="240" name="=n1x Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="240" name="@n1x Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;if $n1_candleHorny&gt;&gt;
     Nero &lt;&lt;= either(
@@ -6932,7 +6942,7 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
         He&#39;s bound
     &lt;&lt;/if&gt;&gt;
     with leather restraints to a
-    [[wooden cross|n1x Cross]]
+    [[wooden cross|@n1x Cross]]
     &lt;&lt;if $n1_sawGems&gt;&gt;
         that has [[glowing gems|@n1x Grav Gems]],
     &lt;&lt;/if&gt;&gt;
@@ -6966,17 +6976,17 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
     &lt;&lt;else&gt;&gt;
         The far wall has
     &lt;&lt;/if&gt;&gt;
-    a [[prominent round window|=n1x Window]]
-    and [[some decorations|=n1x Wall]] adorning it.
+    a [[prominent round window|@n1x Window]]
+    and [[some decorations|@n1x Wall]] adorning it.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_sawWall&gt;&gt;
     &lt;&lt;if $n2_free&gt;&gt;
-        One [[wall|=n1x Wall]] has
+        One [[wall|@n1x Wall]] has
     &lt;&lt;else&gt;&gt;
-        The [[far wall|=n1x Wall]] has
+        The [[far wall|@n1x Wall]] has
     &lt;&lt;/if&gt;&gt;
-    a [[prominent round window|=n1x Window]],
+    a [[prominent round window|@n1x Window]],
     a [[large map|n1x map]],
     &lt;&lt;if $n1_knowsMom&gt;&gt;
         and a [[portrait of Ivex&#39;s mother|n1x portrait]].
@@ -7064,7 +7074,7 @@ The blurry figure becomes a person...
 
 [[Continue|=n1a Hello 2]]</tw-passagedata><tw-passagedata pid="243" name="=n1c Ivex Intro" tags="" position="3875,675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_mageSight false&gt;&gt;
-&lt;&lt;assert-true $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
+&lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
 &lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7102,7 +7112,7 @@ He&#39;s a [[pretentiously dressed black panther|=n1c Ivex Description]], larger
     The condition of Nero&#39;s balls leads him to suspect that Ivex would prefer
     the hard way.
 &lt;&lt;elseif $n1_naked&gt;&gt;
-    The wolf shivers and looks away from the panther&#39;s lustful stare.
+    The wolf shivers in the chill air and looks away from the panther&#39;s lustful stare.
 &lt;&lt;else&gt;&gt;
     Will it even matter in the end what choice he makes?
 &lt;&lt;/if&gt;&gt;
@@ -7128,17 +7138,67 @@ He&#39;s a [[pretentiously dressed black panther|=n1c Ivex Description]], larger
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;[[&#39;&quot;There must be some mistake...&quot;&#39;|=n1c Ivex Intro 2]]&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="n1x Cross" tags="" position="6450,1800" size="100,100">&lt;!-- not examinable when free --&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="@n1x Cross" tags="" position="6450,2325" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;assert-big-mood n2_clever false&gt;&gt;
+&lt;&lt;assert-big-mood n2_extraHorny false&gt;&gt;
+&lt;&lt;assert-big-mood n2_free false&gt;&gt;
+&lt;&lt;assert-big-mood n2_mirrorBroken false&gt;&gt;
 
-leather straps and wooden cross.
+&lt;&lt;ignore-big-mood n1_licked n1_smashed&gt;&gt;
+&lt;&lt;ignore-big-mood n1_ivexReceptive&gt;&gt;
 
-if know gems, apparently held up by [[gravity gems|@n1x Grav Gems]]
-else if saw mirror, has [[glowing gems|@n1x Grav Gems]]
-else, can&#39;t really see much of it
+&lt;&lt;TODO-big-mood n1_candleLit n1_candleHorny n1_mageSight&gt;&gt;
+&lt;&lt;TODO-big-mood n2_ivexGone&gt;&gt;
 
+&lt;&lt;/nobr&gt;&gt;\
+\
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;if !$n1_sawMirror&gt;&gt;
+
+    Nero can&#39;t see much of the cross that&#39;s holding
+    &lt;&lt;if $n1_naked&gt;&gt;
+        him naked with
+    &lt;&lt;/if&gt;&gt;
+    his arms and legs spread wide.
+    It&#39;s sturdy wood, and the leather straps are thick
+    and quite secure,
+    but it&#39;s not immediately obvious what&#39;s keeping the
+    cross fastened in place in the [[room|=n1x Study]].
+
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+        &lt;br&gt;&lt;br&gt;
+        With Ivex gone, Nero can struggle against his bonds
+        in earnest hope of escape.
+    &lt;&lt;/if&gt;&gt;
+
+&lt;&lt;else&gt;&gt;
+
+    Unyielding leather straps are holding
+    &lt;&lt;if $n1_naked&gt;&gt;
+        Nero naked with his
+    &lt;&lt;else&gt;&gt;
+        Nero&#39;s
+    &lt;&lt;/if&gt;&gt;
+    arms and legs spread wide against the sturdy wooden cross.
+    But in the reflection from the
+    [[mirror|@n1x Mirror]] on [[Ivex&#39;s desk|n1x Desk]],,
+    Nero can see that the cross is not actually attached
+    to anything in the [[study|=n1x Study]].
+    Rather, it is held in place with an arrangement
+    of [[gravity gems|@n1x Grav Gems]].
+    
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+
+&lt;&lt;nobr&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="245" name="=n1x Study" tags="" position="7150,2400" size="100,100">&lt;&lt;nobr&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+        &lt;li&gt;[[Struggle against his bonds.|@n2a Struggle]]&lt;/li&gt;
+    &lt;&lt;/if&gt;&gt;
+    &lt;li&gt;$n1_afterLook&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="245" name="=n1x Study" tags="" position="7150,2400" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_sawStudy = true&gt;&gt;
 
 The room is on the small side, not much larger than an ordinary room at an inn. It looks to be Ivex&#39;s private study, and it has the mix of order and chaos that&#39;s typical for mages.
@@ -7147,20 +7207,20 @@ The room is on the small side, not much larger than an ordinary room at an inn. 
 &lt;&lt;nobr&gt;&gt;
 Nero often finds that the furnishings of a person&#39;s private quarters reflects the furnishings of their mind, and if that&#39;s true in this case, Ivex&#39;s mind is colorful, childish, dirty, and dominated by
 &lt;&lt;if $n2_free&gt;&gt;
-    the [[wooden cross|n1x Cross]] that&#39;s fallen over and
+    the [[wooden cross|@n1x Cross]] that&#39;s fallen over and
     leaning on the [[cluttered desk|n1x Desk]]
-    by the [[prominent round window|=n1x Window]].
+    by the [[prominent round window|@n1x Window]].
 
     &lt;br&gt;&lt;br&gt;
-    The wall with the window is bare except for [[some decorations|=n1x Wall]].
+    The wall with the window is bare except for [[some decorations|@n1x Wall]].
     The opposite wall has a [[sturdy door|n2x Door]].
 
 &lt;&lt;else&gt;&gt;
-    the [[wooden cross|n1x Cross]] that&#39;s holding Nero in place.
+    the [[wooden cross|@n1x Cross]] that&#39;s holding Nero in place.
 
     &lt;br&gt;&lt;br&gt;
-    One wall is bare except for [[some decorations|=n1x Wall]]
-    and a [[prominent round window|=n1x Window]].
+    One wall is bare except for [[some decorations|@n1x Wall]]
+    and a [[prominent round window|@n1x Window]].
 &lt;&lt;/if&gt;&gt;
 
 The other walls are lined with many [[wooden cabinets|n1x cabinet]]
@@ -7337,14 +7397,14 @@ if want touch and ivex here, [[n1x Ask Cards]]
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;&lt;&lt;link $n1_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="=n1x Wall" tags="" position="7950,1800" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="@n1x Wall" tags="" position="7950,1800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_sawWall = true&gt;&gt;
 
 The far wall, on the other side of the desk, is the only wall in the room that does not have bookshelves or cabinets against it. Without furniture in the way, Nero can see that the wall is made of wooden tiles placed in a simple repeating pattern.
 &lt;&lt;/nobr&gt;&gt;
 
 &lt;&lt;nobr&gt;&gt;
-There&#39;s a solitary [[round window|=n1x Window]] exactly in the center of the wall. The daytime sky beyond the window&#39;s glass gives it the appearance of a giant blue eye that&#39;s
+There&#39;s a solitary [[round window|@n1x Window]] exactly in the center of the wall. The daytime sky beyond the window&#39;s glass gives it the appearance of a giant blue eye that&#39;s
 &lt;&lt;if $n1_naked || $n2_free&gt;&gt;
     leering at the completely naked wolf.
 &lt;&lt;else&gt;&gt;
@@ -7622,6 +7682,7 @@ And the spell&#39;s trigger was such a small, ambiguous gesture. Nero starts ske
 
 [[Continue|=n1p Naked 2]]</tw-passagedata><tw-passagedata pid="270" name="=n1p Barbs No" tags="" position="4925,1025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
+&lt;&lt;ignore-big-mood n1_mageSight n1_magicPhase n1_smashed&gt;&gt;
 &lt;&lt;set $n1_barbs = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7637,7 +7698,7 @@ The tiger continued with confidence. &quot;It&#39;s true that feral feline speci
 
 [[Continue|=n1p Barbs No 2]]</tw-passagedata><tw-passagedata pid="271" name="=n1p Barbs Yes" tags="" position="4925,900" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_mageSight&gt;&gt;
+&lt;&lt;ignore-big-mood n1_mageSight n1_magicPhase n1_smashed&gt;&gt;
 &lt;&lt;set $n1_barbs = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8306,7 +8367,7 @@ well, it was worth a shot, learned something
 stuff about anti-magic.
 
 $n1_afterAction
-</tw-passagedata><tw-passagedata pid="316" name="testing 2" tags="" position="4300,475" size="100,100">testing 2</tw-passagedata><tw-passagedata pid="317" name="=n1x Window" tags="has-hole" position="7225,1575" size="100,100">The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
+</tw-passagedata><tw-passagedata pid="316" name="testing 2" tags="" position="4300,475" size="100,100">testing 2</tw-passagedata><tw-passagedata pid="317" name="@n1x Window" tags="has-hole" position="7225,1575" size="100,100">The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n2_free&gt;&gt;
@@ -8443,7 +8504,7 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 
 [[Continue|=n1c Ivex Intro]]</tw-passagedata><tw-passagedata pid="331" name="=n1c Ivex Intro 2" tags="" position="3975,675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_mageSight false&gt;&gt;
-&lt;&lt;assert-true $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
+&lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
 &lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -8485,20 +8546,20 @@ Nero refrains from comment. Not that the lupine mage wouldn&#39;t defend his abi
 
 Ivex laughs again. &quot;Let me show you what a real mage can do. I am Ivex the Magnificent, and I&#39;ve got something way better than your pathetic Raven&#39;s Diversion. Behold, a spell called, &lt;em&gt;Ivex the Magnificent&#39;s Diversion&lt;/em&gt;!&quot;
 
-Ivex &quot;the Magnificent&quot; theatrically raises his left arm, then snaps his fingers.
+Ivex &quot;the Magnificent&quot; theatrically raises his left arm, then snaps his fingers...
 
 [[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="333" name="=n1a Endgame 4" tags="big-mood" position="3800,325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;set $n1_naked = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
-Ivex touches the claw of his index finger to Nero&#39;s helplessly revealed left nipple, not hurting it, just teasing it, almost tickling it. The wolf tries to evade the touch, but the leather straps are firm and keep him vulnerable to the rude attention.
+Ivex touches the claw of his index finger to Nero&#39;s helplessly revealed left nipple, without hurting it, just teasing it, almost tickling it. The wolf tries to evade the touch, but the leather straps are firm and keep him vulnerable to the rude attention.
 
 The panther says, &quot;Ivex the Magnificent&#39;s Diversion is just a small taste of my powers.&quot; The claw trails across Nero&#39;s bare chest to his other nipple, which perks a bit in apprehension. The panther&#39;s maneuvers are uncomfortably intimate.
 
 &quot;Answer my questions,&quot; said Ivex, &quot;and I will show you much, much more.&quot;
 
-Was that a promise or a threat? Nero&#39;s ear twitches, but he holds his head still, careful not to stare or look away, and tries to pretend that there&#39;s nothing unusual about being bound and completely nude in front of a fully dressed degenerate.
+Was that a promise or a threat? Nero&#39;s ear twitches, but he holds his head still, careful not to stare or look away. He tries to pretend that there&#39;s nothing unusual about being bound and completely nude in front of a fully dressed degenerate.
 
 &quot;If you don&#39;t cooperate...&quot; Ivex runs his fingers down the fur covering the bare wolf&#39;s ribs, moving slowly down the abdomen, toward Nero&#39;s exposed crotch...
 
@@ -8593,7 +8654,7 @@ The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|=n1p Naked]]</tw-passagedata><tw-passagedata pid="339" name="=n1p Barbs" tags="" position="4700,950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_mageSight&gt;&gt;
+&lt;&lt;ignore-big-mood n1_mageSight n1_magicPhase n1_smashed&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Nero usually enjoyed field games at the Windbone Magic Academy, but on that fateful day, he took an awkward step while trying to intercept a passing ball. His ankle twisted, and he fell to the ground in distress. The athletics coach took only a brief look at the injury before declaring it was reason enough to dismiss Nero early.
@@ -8606,7 +8667,7 @@ It wasn&#39;t until after he finished washing, when he started toweling himself 
 &lt;&lt;if $n1_patienceExhausted&gt;&gt;
     &lt;&lt;set $n1_magicAction = null&gt;&gt;
 &lt;&lt;else&gt;&gt;
-    &lt;&lt;include [[=n1x Look]]&gt;&gt;
+    &lt;&lt;include [[@n1x Look]]&gt;&gt;
     &lt;br&gt;&lt;br&gt;
     &lt;&lt;include [[=n1x Magic]]&gt;&gt;
     &lt;br&gt;&lt;br&gt;
@@ -8703,7 +8764,7 @@ Ah well. It wouldn&#39;t be his first encounter with an indelicate feline cock.
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="349" name="=n1p Barbs 2" tags="" position="4800,950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_mageSight&gt;&gt;
+&lt;&lt;ignore-big-mood n1_mageSight n1_magicPhase n1_smashed&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 The bin for used towels was stationed at a pillar near the entrance to the changing area. And on the other side of the pillar, on a bench not visible from the entrance, a tiger lounged in light and shadow.
@@ -8727,6 +8788,7 @@ The tiger spoke with a voice that was low and friendly. He said...
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="350" name="=n1p Barbs End" tags="" position="5150,975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
+&lt;&lt;ignore-big-mood n1_mageSight n1_magicPhase n1_smashed&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;&lt;nobr&gt;&gt;
@@ -8734,7 +8796,7 @@ It&#39;s an embarrassing memory from his naive, younger self.
 &lt;&lt;if !$n1_sawBarbsExtra&gt;&gt;
     And that wasn&#39;t even the [[worst bit...|=n1p Barbs Extra]]
 &lt;&lt;else&gt;&gt;
-    And he&#39;ll never forget [[Mica&#39;s entrance...|=n1p Barbs Extra]]
+    He&#39;ll never forget [[Mica&#39;s astonishing appearance...|=n1p Barbs Extra]]
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
@@ -8755,9 +8817,13 @@ The strongest type of anti-magic simply applies all of its power to the indiscri
 
 But in less organized situations, mages usually prefer to suppress hostile magic without also sabotaging their own abilities. So a typical mage&#39;s anti-magic field is a subtle construction that selectively permits the actions of only those spells deemed &quot;correct&quot;.
 
-This is an exceptionally complicated proposition. Lammada&#39;s Theorem proves that it&#39;s impossible for any spell to perfectly distinguish between correct and incorrect spells. (If such a spell existed, it would be possible to construct a projection of that spell, which would declare itself incorrect, thereby suppressing and contradicting itself.) So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
+This is an exceptionally complicated proposition. Lammada&#39;s Theorem proves that it&#39;s impossible for any spell to perfectly distinguish between correct and incorrect spells. (If such a spell existed, it would be possible to construct a projection of that spell, which would declare itself incorrect, thereby suppressing and contradicting itself.)
 
-In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. The selectiveness does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction. The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
+So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
+
+In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. The selectiveness does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction.
+
+The best anti-magic spells from reputable mage agencies are quite thorough, but also quite expensive, requiring continual expert maintenance to thwart newly developed attacks.
 
 Nero is one such expert. Which incidentally also makes him an expert in &lt;em&gt;bypassing&lt;/em&gt; the anti-magic fields of other mages.
 
@@ -8809,7 +8875,7 @@ mirror is a sprite, sort of an AI assistant. cheerily says &quot;Welcome Ivex th
 sprite responds to you psychically, but requres you to talk to it out loud.
 
 $n1_afterAction
-</tw-passagedata><tw-passagedata pid="356" name="=n1a Hangover Info" tags="noreturn" position="3350,625" size="100,100">Pearson&#39;s Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It&#39;s often the first off-book spell that academy students learn, because of its usefulness, of course. But the main reason it&#39;s popular is because older students find it immensely funny when a novice attempts it while drunk.
+</tw-passagedata><tw-passagedata pid="356" name="=n1a Hangover Info" tags="noreturn" position="3350,625" size="100,100">Pearson&#39;s Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It&#39;s often the first off-book spell that academy students learn, because of its usefulness in mitigating alcoholic indulgence, of course. But the main reason it&#39;s popular is because older students find it immensely funny when a novice attempts it while drunk.
 
 Most spoken spells require extremely precise enunciation to have any effect at all. Pearson&#39;s is different. It works if you say it correctly, yes. But if you slur or stumble its invocation, it doesn&#39;t merely fail. It turns your fur bright pink for the day.
 
@@ -9012,7 +9078,7 @@ Ivex lifts his paw off the wolf&#39;s crotch, but leaves it poised right above i
 
 [[Continue|@n1d Get Creepy 3]]</tw-passagedata><tw-passagedata pid="376" name="=n1p Barbs Yes 2" tags="" position="5025,900" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_mageSight&gt;&gt;
+&lt;&lt;ignore-big-mood n1_mageSight n1_magicPhase n1_smashed&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Nero struggled to put on his clothes while his fur was still damp.
@@ -9025,6 +9091,7 @@ The young wolf, in a panic, threw the towel at the tiger and fled as quickly as 
 
 [[Continue|=n1p Barbs End]]</tw-passagedata><tw-passagedata pid="377" name="=n1p Barbs No 2" tags="" position="5025,1025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
+&lt;&lt;ignore-big-mood n1_mageSight n1_magicPhase n1_smashed&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Nero hurriedly continued to dry himself and scramble into his clothes, nodding at what seemed like appropriate times, trying to maintain a friendly distance while also trying to avoid giving the impression that he had any interest in the topic.
@@ -9116,11 +9183,23 @@ There are plenty of other paths to victory. Nero is, after all, an accomplished 
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_magicPhase &gt;= MP_triedMagic&gt;&gt;
-    The anti-magic field is a difficulty,
+    &lt;&lt;if $n1_naked&gt;&gt;
+        His nakedness deprives him of several magical aids
+        that are hidden in his clothes,
+        and the anti-magic field is an inconvenience,
+    &lt;&lt;else&gt;&gt;
+        The anti-magic field adds some slight complications
+        to his current endeavor,
+    &lt;&lt;/if&gt;&gt;
     but [[countering anti-magic|=n1c Anti-magic]]
     is one of Nero&#39;s specialties.
     He&#39;s confident that he can find a flaw in Nero&#39;s construction
-    and exploit it, when the time is right.
+    and exploit it,
+    &lt;&lt;if $n1_smashed&gt;&gt;
+        and perhaps even get revenge for the distress to his balls.
+    &lt;&lt;else&gt;&gt;
+        when the time is right.
+    &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
     The bindings restricting the wolf&#39;s body are a slight impediment,
@@ -9490,7 +9569,7 @@ player is here at most 6 turns.
 6 different texts, always advance one, maybe jump more.
 &lt;br&gt;&lt;br&gt;
 &lt;&lt;/nobr&gt;&gt;\
-</tw-passagedata><tw-passagedata pid="395" name="@n2a Struggle" tags="" position="4250,3375" size="100,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="395" name="@n2a Struggle" tags="" position="4500,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if !$n2_candleMax&gt;&gt;
 
     XXX can be here twice before final struggle.
@@ -9851,7 +9930,7 @@ now naked, after casting mage-sight.
 mage-sight not a total loss, can see stuff.
 
 $n1_afterAction
-</tw-passagedata><tw-passagedata pid="410" name="n1x Take Mirror" tags="" position="6400,2125" size="100,100">need state for mirror location
+</tw-passagedata><tw-passagedata pid="410" name="n1x Take Mirror" tags="" position="6125,2150" size="100,100">need state for mirror location
 
 $n1_afterAction
 </tw-passagedata></tw-storydata>
