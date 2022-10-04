@@ -426,7 +426,7 @@ ul.actions li {
 /* var-info */
 
 .var-info {
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(17, 17, 17, 0.8);
   color: #999;
   cursor: default;
   font-size: 12px;
@@ -592,9 +592,9 @@ ul.actions li {
   outline: 1px solid #9cc;
 }
 
-/* draft/outline indicator */
-.draft-sign {
-  color: rgba(70, 200, 255, 0.2);
+/* passage draft status */
+
+.stat-sign {
   font-size: 120px;
   pointer-events: none;
   position: fixed;
@@ -604,24 +604,52 @@ ul.actions li {
   white-space: pre-line;
   z-index: 1;
 }
-.nero-outline .draft-sign {
+.stat-draft {
+  color: rgba(70, 200, 255, 0.2);
+}
+.stat-plan {
+  color: rgba(200, 200, 200, 0.2);
+}
+.stat-vary {
   color: rgba(200, 200, 200, 0.2);
 }
 
-/* links to draft passages */
-a[data-passage^="@n"] {
-  color: #7bd;
-}
-a[data-passage^="@n"]:hover {
-  color: #48e;
-}
-
-/* links to outline passages */
 a[data-passage^="n"] {
   color: #666;
 }
 a[data-passage^="n"]:hover {
   color: #99f;
+}
+
+a[data-passage*="/d "] {
+  color: #7bd;
+}
+a[data-passage*="/d "]:hover {
+  color: #48e;
+}
+
+a[data-passage*="/f "] {
+  color: #ffa000;
+}
+a[data-passage*="/f "]:hover {
+  color: #c67100;
+}
+
+a[data-passage*="/p "] {
+  color: #666;
+}
+a[data-passage*="/p "]:hover {
+  color: #99f;
+}
+
+a[data-passage*="/v "] {
+  color: #ffa000;
+}
+a[data-passage*="/v "]:hover {
+  color: #c67100;
+}
+a[data-passage*="/v "]::after {
+  content: "\1f6a7";
 }
 
 /* messages and assertions */
@@ -941,7 +969,12 @@ Macro.add("assert-fail", {
   }
 });
 
-function addTo_do(text) {
+/*** to-do */
+let has_to_do = false;
+$(document).on(":passagestart", () => has_to_do = false);
+
+function add_to_do(text) {
+  has_to_do = true;
   let list = $("#messages-to-do > ul");
   if (list.length !== 1) {
     $("#messages-to-do").remove();
@@ -960,18 +993,18 @@ function addTo_do(text) {
 Macro.add("TO"+"DO", {
   skipArgs: true,
   handler: function() {
-    addTo_do(this.args.raw);
+    add_to_do(this.args.raw);
   }
 });
 
 /*** Big Mood */
 
 const bigMoodIgnore = new Set();
-const bigMoodTo_do = new Set();
+const bigMood_to_do = new Set();
 
 $(document).on(":passagestart", () => {
   bigMoodIgnore.clear();
-  bigMoodTo_do.clear();
+  bigMood_to_do.clear();
 });
 function assertBigMood(vname, exp, raw, context) {
   const actual = actualVars[vname];
@@ -986,7 +1019,7 @@ function assertBigMood(vname, exp, raw, context) {
   } else {
     assertionFailed(`bigMood $${vname} === ${exp}`, context);
   }
-}  
+}
 Macro.add("assert-big-mood", {
   handler: function() {
     const vname = this.args[0];
@@ -1001,8 +1034,9 @@ Macro.add("ignore-big-mood", {
 });
 Macro.add("TO"+"DO-big-mood", {
   handler: function() {
+    has_to_do = true;
     this.args.forEach(v => {
-      bigMoodTo_do.add(v)
+      bigMood_to_do.add(v)
     });
   }
 });
@@ -1241,7 +1275,7 @@ function varInfoSetup() {
       const el = $("<span class=var-info-big-mood>").appendTo(outer);
       [...bigMood].sort().forEach(v => {
         const but = varButton(v).appendTo(el);
-        if (bigMoodTo_do.has(v)) {
+        if (bigMood_to_do.has(v)) {
           but.addClass("var-info-to-do");
         } else if (!varsRead.has(v) && !bigMoodIgnore.has(v)) {
           but.addClass("var-info-warning");
@@ -1372,16 +1406,40 @@ Macro.add("n1-patience", {
   }
 });
 
-/** Draft and skeleton passages */
-$(document).on(":passagestart", ev => {
-  $("html").removeClass("nero-draft nero-outline");
-  $(".draft-sign").remove();
-  if (/^n\d/.test(ev.passage.title)) {
-    $("html").addClass("nero-outline");
-    $("<div>").addClass("draft-sign").text("outline").appendTo("body");
-  } else if (/^@n/.test(ev.passage.title)) {
-    $('html').addClass("nero-draft");
-    $("<div>").addClass("draft-sign").text("draft").appendTo("body");
+/** Passage draft status */
+$(document).on(":passageend", ev => {
+  $(".stat-sign").remove();
+  const here = ev.passage.title;
+
+  const m = /([/]\w) /.exec(here);
+  if (m == null && !/^n\d/.test(here)) return;
+
+  const tag = m[1] || "";
+
+  if (tag === "/f") {
+    if (has_to_do) assertionFailed("/f has no TO"+"DO items");
+    return;
+  }
+
+  const stat = $("<div class=stat-sign>").appendTo("body");
+  switch (tag) {
+    case "":
+      stat.text("(plan)").addClass("stat-plan stat-null");
+      break;
+    case "/d":
+      stat.text("draft").addClass("stat-draft");
+      break;
+    case "/p":
+      stat.text("plan").addClass("stat-plan");
+      break;
+    case "/v":
+      stat.text("variations\nmissing").addClass("stat-vary");
+      if (!has_to_do) assertionFailed("/v has TO"+"DO items");
+      break;
+    default:
+      stat.text("[plan]").addClass("stat-plan stat-invalid");
+      assertionFailed(`Passage tag ${tag} is valid`);
+      break;
   }
 });
 
@@ -1444,17 +1502,17 @@ The Mage's Tower (Nero)
 [[Archives]]
 [[Credits]]
 <<if setup.enableDebugMenu>>
-    <<link "&#x23e9; Title" "Title Screen">><</link>>
-    <<link "&#x23e9; Nero Start" "=n1a Start">>
+    <<link "\u23e9 Title" "Title Screen">><</link>>
+    <<link "\u23e9 Nero Start" "n1a/f Start">>
         <<delete-vars n1_ n2_>>
     <</link>>
-    <<link "&#x23e9; Nero Actions" "=n1c Ivex Repeat (4,2)">>
+    <<link "&#x23e9; Nero Actions" "n1c/f Ivex Repeat (4,2)">>
         <<delete-vars n1_ n2_>>
     <</link>>
-    <<link "&#x23e9; Nero Candle" "=n1d Start Candle">>
+    <<link "&#x23e9; Nero Candle" "n1d/f Start Candle">>
         <<delete-vars n1_ n2_>>
     <</link>>
-    <<link "&#x23e9; Nero Alone" "=n2a Start">>
+    <<link "&#x23e9; Nero Alone" "n2a/f Start">>
         <<delete-vars n1_ n2_>>
         <<set $n1_naked = true>>
     <</link>>
@@ -7749,19 +7807,19 @@ Thank you so much!
 
 <br><br>
 <ul class="actions">
-    <li>[[Continue as Nero|=n1a Start]]</li>
+    <li>[[Continue as Nero|n1a/f Start]]</li>
 </ul>
 </div>
 <</nobr>>
 
 
-:: =n1a Start [section-start] {"position":"3350,500","size":"100,100"}
+:: n1a/f Start [section-start] {"position":"3350,500","size":"100,100"}
 <<nobr>>
 <<delete-vars n1_ n2_>>
 <<set $n1_magicPhase = MP_beforeCast>>
 <</nobr>>\
 \
-Nero's head feels stuffed, like it's crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically prepares to recite [[Pearson's Hangover Cantrip|=n1a Hangover Info]], but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
+Nero's head feels stuffed, like it's crammed full with pebbles that shift a little painfully when he moves his head. He almost automatically prepares to recite [[Pearson's Hangover Cantrip|n1a/f Hangover Info]], but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 
 "Last chance, buddy. Wake up, or else..." says the voice, with a hint of sadistic glee.
 
@@ -7769,14 +7827,14 @@ Nero considers his next move.
 
 <<nobr>>
 <ul class="actions">
-    <li>[[Feign sleep to learn more about the situation.|=n1a Feign Sleep]]</li>
-    <li>[[Try to sweet talk his way through this.|=n1a Hello]]</li>
-    <li>[[Activate his emergency protection spell.|=n1a Endgame]]</li>
+    <li>[[Feign sleep to learn more about the situation.|n1a/f Feign Sleep]]</li>
+    <li>[[Try to sweet talk his way through this.|n1a/f Hello]]</li>
+    <li>[[Activate his emergency protection spell.|n1a/f Endgame]]</li>
 </ul>
 <</nobr>>
 
 
-:: =n1c Ivex Repeat (4,2) {"position":"3950,825","size":"100,200"}
+:: n1c/f Ivex Repeat (4,2) {"position":"3950,825","size":"100,200"}
 <<nobr>>
 <<set $n1_ivexReceptive = false>>
 <<n1-patience 6 2
@@ -7787,10 +7845,10 @@ Nero considers his next move.
 <</nobr>>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 <ul class="actions">
-    <li>[[`"There's been a misunderstanding..."`|=n1c Charm]]</li>
-    <li>[[Growl at Ivex.|=n1c Resist]]</li>
+    <li>[[`"There's been a misunderstanding..."`|n1c/f Charm]]</li>
+    <li>[[Growl at Ivex.|n1c/f Resist]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
@@ -7806,7 +7864,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 [[timing test 2]]
 
 
-:: @n1x Look {"position":"6875,1825","size":"200,100"}
+:: n1x/d Look {"position":"6875,1825","size":"200,100"}
 <<nobr>>
 
 <<if $n1_candleHorny>>
@@ -7837,16 +7895,16 @@ $(document).on(":passageinit", ev => console.log(ev));
         He's bound
     <</if>>
     with leather restraints to a
-    [[wooden cross|@n1x Cross]]
+    [[wooden cross|n1x/d Cross]]
     <<if $n1_sawGems>>
-        that has [[glowing gems|@n1x Grav Gems]],
+        that has [[glowing gems|n1x/d Grav Gems]],
     <</if>>
 <</if>>
 
 <<if !$n1_sawStudy>>
-    in what looks like a [[mage's study|=n1x Study]].
+    in what looks like a [[mage's study|n1x/f Study]].
 <<else>>
-    in middle of [[Ivex's study|=n1x Study]].
+    in middle of [[Ivex's study|n1x/f Study]].
     The study is furnished with
     <<if $n1_sawDesk || $n1_sawMirror || $n1_candleLit>>
         a desk,
@@ -7871,17 +7929,17 @@ $(document).on(":passageinit", ev => console.log(ev));
     <<else>>
         The far wall has
     <</if>>
-    a [[prominent round window|@n1x Window]]
-    and [[some decorations|@n1x Wall]] adorning it.
+    a [[prominent round window|n1x/d Window]]
+    and [[some decorations|n1x/d Wall]] adorning it.
 <</if>>
 
 <<if $n1_sawWall>>
     <<if $n2_free>>
-        One [[wall|@n1x Wall]] has
+        One [[wall|n1x/d Wall]] has
     <<else>>
-        The [[far wall|@n1x Wall]] has
+        The [[far wall|n1x/d Wall]] has
     <</if>>
-    a [[prominent round window|@n1x Window]],
+    a [[prominent round window|n1x/d Window]],
     a [[large map|n1x map]],
     <<if $n1_knowsMom>>
         and a [[portrait of Ivex's mother|n1x portrait]].
@@ -7902,7 +7960,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 <<if !$n1_sawDesk && $n1_sawMirror>>
     The desk has
     <<if $n1_sawMirror>>
-        a [[small mirror|@n1x Mirror]]
+        a [[small mirror|n1x/d Mirror]]
     <</if>>
     among its [[clutter|n1x Desk]].
 <</if>>
@@ -7911,7 +7969,7 @@ $(document).on(":passageinit", ev => console.log(ev));
     The [[desk|n1x Desk]] has
     a [[letter opener|n1x Knife]],
     a [[snow globe|n1x Globe]],
-    and a [[small mirror|@n1x Mirror]].
+    and a [[small mirror|n1x/d Mirror]].
 <</if>>
 
 <<if $n1_sawCabinet>>
@@ -7950,7 +8008,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 <</nobr>>
 
 
-:: =n1a Feign Sleep {"position":"3500,500","size":"100,100"}
+:: n1a/f Feign Sleep {"position":"3500,500","size":"100,100"}
 Best to play it safe and gather more information before acting.
 
 Nero can feel leather straps on his arms and legs and torso, holding him upright and spread-eagled against something sturdy, probably made of wood.
@@ -7959,10 +8017,10 @@ Other than the sounds made by his unknown companion, it's eerily quiet. It feels
 
 Nero ventures to open his eyelids slightly to peer through the slits...
 
-[[Continue|=n1a Feign Sleep 2]]
+[[Continue|n1a/f Feign Sleep 2]]
 
 
-:: =n1a Hello {"position":"3500,650","size":"100,100"}
+:: n1a/f Hello {"position":"3500,650","size":"100,100"}
 Nero has resolved many difficult situations by simply talking and engaging the aggrieved persons with dialogue, courtesy, and respect. It's certainly worth trying now.
 
 He opens his eyes and struggles to focus.
@@ -7975,10 +8033,10 @@ After a few more rapid blinks, along with some shaking of his aching head, Nero'
 
 The blurry figure becomes a person...
 
-[[Continue|=n1a Hello 2]]
+[[Continue|n1a/f Hello 2]]
 
 
-:: =n1c Ivex Intro {"position":"3875,675","size":"100,100"}
+:: n1c/f Ivex Intro {"position":"3875,675","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
 <<ignore-big-mood n1_magicPhase>>
@@ -7998,7 +8056,7 @@ Ivex (the Magnificent) moves away from the
 and settles against the edge of a cluttered desk.
 <</nobr>>
 
-He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier come from school portraits that were created several years ago, so it isn't too surprising that the panther has grown a bit since then.
+He's a [[pretentiously dressed black panther|n1c/f Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier come from school portraits that were created several years ago, so it isn't too surprising that the panther has grown a bit since then.
 
  Ivex speaks. "So let me make a proposal."
 
@@ -8043,12 +8101,12 @@ He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger tha
 
 <<nobr>>
 <ul class="actions">
-    <li>[['"There must be some mistake..."'|=n1c Ivex Intro 2]]</li>
+    <li>[['"There must be some mistake..."'|n1c/f Ivex Intro 2]]</li>
 </ul>
 <</nobr>>
 
 
-:: @n1x Cross {"position":"6450,2325","size":"100,100"}
+:: n1x/d Cross {"position":"6450,2325","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n2_clever false>>
 <<assert-big-mood n2_extraHorny false>>
@@ -8074,7 +8132,7 @@ He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger tha
     It's sturdy wood, and the leather straps are thick
     and quite secure,
     but it's not immediately obvious what's keeping the
-    cross fastened in place in the [[room|=n1x Study]].
+    cross fastened in place in the [[room|n1x/f Study]].
 
     <<if $n2_ivexGone>>
         <br><br>
@@ -8092,12 +8150,12 @@ He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger tha
     <</if>>
     arms and legs spread wide against the sturdy wooden cross.
     But in the reflection from the
-    [[mirror|@n1x Mirror]] on [[Ivex's desk|n1x Desk]],,
+    [[mirror|n1x/d Mirror]] on [[Ivex's desk|n1x Desk]],,
     Nero can see that the cross is not actually attached
-    to anything in the [[study|=n1x Study]].
+    to anything in the [[study|n1x/f Study]].
     Rather, it is held in place with an arrangement
-    of [[gravity gems|@n1x Grav Gems]].
-    
+    of [[gravity gems|n1x/d Grav Gems]].
+
 <</if>>
 <</nobr>>
 
@@ -8111,7 +8169,7 @@ He's a [[pretentiously dressed black panther|=n1c Ivex Description]], larger tha
 <</nobr>>
 
 
-:: =n1x Study {"position":"7150,2400","size":"100,100"}
+:: n1x/f Study {"position":"7150,2400","size":"100,100"}
 <<nobr>>
 <<set $n1_sawStudy = true>>
 
@@ -8121,20 +8179,20 @@ The room is on the small side, not much larger than an ordinary room at an inn. 
 <<nobr>>
 Nero often finds that the furnishings of a person's private quarters reflects the furnishings of their mind, and if that's true in this case, Ivex's mind is colorful, childish, dirty, and dominated by
 <<if $n2_free>>
-    the [[wooden cross|@n1x Cross]] that's fallen over and
+    the [[wooden cross|n1x/d Cross]] that's fallen over and
     leaning on the [[cluttered desk|n1x Desk]]
-    by the [[prominent round window|@n1x Window]].
+    by the [[prominent round window|n1x/d Window]].
 
     <br><br>
-    The wall with the window is bare except for [[some decorations|@n1x Wall]].
+    The wall with the window is bare except for [[some decorations|n1x/d Wall]].
     The opposite wall has a [[sturdy door|n2x Door]].
 
 <<else>>
-    the [[wooden cross|@n1x Cross]] that's holding Nero in place.
+    the [[wooden cross|n1x/d Cross]] that's holding Nero in place.
 
     <br><br>
-    One wall is bare except for [[some decorations|@n1x Wall]]
-    and a [[prominent round window|@n1x Window]].
+    One wall is bare except for [[some decorations|n1x/d Wall]]
+    and a [[prominent round window|n1x/d Window]].
 <</if>>
 
 The other walls are lined with many [[wooden cabinets|n1x cabinet]]
@@ -8152,7 +8210,7 @@ and [[bookshelves|n1x Bookshelf]].
 <</nobr>>
 
 
-:: @n1x Grav Gems {"position":"6275,1950","size":"100,100"}
+:: n1x/d Grav Gems {"position":"6275,1950","size":"100,100"}
 <<nobr>>
 <<assert-true $n1_sawMirror>>
 <<assert-true !$n2_free>>
@@ -8174,7 +8232,7 @@ and [[bookshelves|n1x Bookshelf]].
 <<nobr>>
 <ul class="actions">
     <<if !$n1_knowGems>>
-        <li>[[Ask Ivex about gems|@n1x Ask Grav Gems]]</li>
+        <li>[[Ask Ivex about gems|n1x/d Ask Grav Gems]]</li>
     <</if>>
   <li>$n1_afterLook</li>
 </ul>
@@ -8190,7 +8248,7 @@ if not free, most interesting thing is a [[letter opener|n1x Knife]], if only th
 
 if candle lit, mention [[n1x Candle]]
 
-if mirror broken, mention [[broken mirror|@n1x Mirror]], and [[snow globe|n1x Globe]].
+if mirror broken, mention [[broken mirror|n1x/d Mirror]], and [[snow globe|n1x Globe]].
 
 if mirror not broken and not free, propped up against a snow globe is a mirror, which might show you more of the room.
 
@@ -8224,7 +8282,7 @@ if free, boxes of xxx
 <</nobr>>
 
 
-:: @n1x Mirror {"position":"6275,2125","size":"100,100"}
+:: n1x/d Mirror {"position":"6275,2125","size":"100,100"}
 <<nobr>>
 <<if $n2_mirrorBroken>>
 
@@ -8246,7 +8304,7 @@ if free, boxes of xxx
     <</if>>
 
     <br><br>
-    in reflection, [[glowing gems|@n1x Grav Gems]]
+    in reflection, [[glowing gems|n1x/d Grav Gems]]
 
     <<if $n1_mageSight>>
         <br><br>
@@ -8258,7 +8316,7 @@ if free, boxes of xxx
 <<nobr>>
 <ul class="actions">
   <<if !$n2_mirrorBroken && $n1_magicPhase === MP_magicSight>>
-      <li>[[Connect to the mirror|@n1x Connect]]</li>
+      <li>[[Connect to the mirror|n1x/d Connect]]</li>
   <<elseif $n2_free>>
       <li>[[Take mirror|n1x Take Mirror]]</li>
   <</if>>
@@ -8354,7 +8412,7 @@ if want touch and ivex here, [[n1x Ask Cards]]
 <</nobr>>
 
 
-:: @n1x Wall {"position":"7950,1800","size":"100,100"}
+:: n1x/d Wall {"position":"7950,1800","size":"100,100"}
 <<nobr>>
 <<set $n1_sawWall = true>>
 
@@ -8362,7 +8420,7 @@ The far wall, on the other side of the desk, is the only wall in the room that d
 <</nobr>>
 
 <<nobr>>
-There's a solitary [[round window|@n1x Window]] exactly in the center of the wall. The daytime sky beyond the window's glass gives it the appearance of a giant blue eye that's
+There's a solitary [[round window|n1x/d Window]] exactly in the center of the wall. The daytime sky beyond the window's glass gives it the appearance of a giant blue eye that's
 <<if $n1_naked || $n2_free>>
     leering at the completely naked wolf.
 <<else>>
@@ -8465,17 +8523,17 @@ if free and asked wand, can [[n2x Use Wand]]
 <</nobr>>
 
 
-:: =n1a Endgame {"position":"3500,350","size":"100,100"}
+:: n1a/f Endgame {"position":"3500,350","size":"100,100"}
 Nero's limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And his tongue feels too numb to enunciate anything complicated just yet.
 
-All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn't need broad gestures or precisely spoken words. He's kept the spell's construction a secret, so it doesn't have a proper name yet. Privately he thinks of it as [[Nero's Endgame|=n1a Endgame Info]]. It's a spell of last resort, but bound and helpless as he is now, this seems a good time to use it.
+All this would be an overwhelming disadvantage to most spellcasters, but Nero always has one spell ready to cast, which doesn't need broad gestures or precisely spoken words. He's kept the spell's construction a secret, so it doesn't have a proper name yet. Privately he thinks of it as [[Nero's Endgame|n1a/f Endgame Info]]. It's a spell of last resort, but bound and helpless as he is now, this seems a good time to use it.
 
 He prepares the spell's image in his mind, and then <em>twists</em> it...
 
-[[Continue|=n1a Endgame 2]]
+[[Continue|n1a/f Endgame 2]]
 
 
-:: =n1c Charm {"position":"3850,1050","size":"100,100"}
+:: n1c/f Charm {"position":"3850,1050","size":"100,100"}
 "There's been a misunderstanding," says Nero. "I wasn't <em>given</em> your dossier. I <em>stole</em> it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore."
 
 <<nobr>>
@@ -8540,7 +8598,7 @@ Ivex grins back. "Now that you've found me, what do you want?"
 </ul><</nobr>>
 
 
-:: =n1c Resist {"position":"3200,1550","size":"100,100"}
+:: n1c/f Resist {"position":"3200,1550","size":"100,100"}
 <<nobr>>
 <<set $n1_triedSomething = true>>
 
@@ -8578,10 +8636,10 @@ betrayed his client's confidence.
 
 That statement seems ominous. Still, Nero thinks he can provoke the panther into making a careless mistake, which should allow him to finish the mission and escape with minimal distress.
 
-[[Continue|=n1d Start Candle]]
+[[Continue|n1d/f Start Candle]]
 
 
-:: =n1x Magic {"position":"5475,2300","size":"100,200"}
+:: n1x/f Magic {"position":"5475,2300","size":"100,200"}
 <<nobr>>
 <!--
 flags
@@ -8605,24 +8663,24 @@ output
 `>>
 
 <<if $n2_free>>
-    <<include [[@n1x Magic Free]]>>
+    <<include [[n1x/d Magic Free]]>>
 <<elseif $n1_candleHorny>>
-    <<include [[@n1x Magic Horny]]>>
+    <<include [[n1x/d Magic Horny]]>>
 <<elseif $n2_ivexGone>>
-    <<include [[@n1x Magic Ivex Gone]]>>
+    <<include [[n1x/d Magic Ivex Gone]]>>
 <<elseif $n1_ivexReceptive>>
-    <<include [[@n1x Magic Receptive]]>>
+    <<include [[n1x/d Magic Receptive]]>>
 <<else>>
-    <<include [[@n1x Magic Covert]]>>
+    <<include [[n1x/d Magic Covert]]>>
 <</if>>
 
 <<if !$n2_mirrorBroken>>
-    <<include [[@n1x Magic Sprite]]>>
+    <<include [[n1x/d Magic Sprite]]>>
 <</if>>
 <</nobr>>\
 
 
-:: =n1a Endgame Info [noreturn] {"position":"3500,225","size":"100,100"}
+:: n1a/f Endgame Info [noreturn] {"position":"3500,225","size":"100,100"}
 Nero's Endgame is an unusual spell construction. He realized he needed it during the Triestorm incident.
 
 It had begun with a simple request. Lord Estrivar of the Triestorm Council had asked him to find Perosolamew, the Lord's missing parrot. This was a trivial divination that Nero would normally decline and post on a student jobs board, but Estrivar was insistent and pleasant and offered an extremely generous retainer.
@@ -8633,10 +8691,10 @@ Back then, Nero's entire magic repertoire required either spoken words, large ge
 
 So when the Upper Cobbler finished sharpening his knife and brought it toward Nero's naked crotch, Nero made a solemn vow to never be this helpless again. Provided of course he survived the situation...
 
-[[Continue|=n1a Endgame Info 2]]
+[[Continue|n1a/f Endgame Info 2]]
 
 
-:: =n1a Endgame 2 {"position":"3600,350","size":"100,100"}
+:: n1a/f Endgame 2 {"position":"3600,350","size":"100,100"}
 Nero feels a familiar tingle from the unleashing of the spell inscribed on his ass. And then...
 <!-- no passage break here; too early in the story -->\
 
@@ -8650,10 +8708,10 @@ It's <em>him</em>.
 
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
-[[Continue|=n1a Endgame 3]]
+[[Continue|n1a/f Endgame 3]]
 
 
-:: =n1d Start Candle {"position":"3700,2325","size":"100,100"}
+:: n1d/f Start Candle {"position":"3700,2325","size":"100,100"}
 <<nobr>>
 <<set $n1_candleLit = true>>
 <<set $n1_ivexReceptive = false>>
@@ -8733,7 +8791,7 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 [[Continue|=n1p Barbs Yes 2]]
 
 
-:: =n2a Start [section-start] {"position":"4650,2850","size":"100,100"}
+:: n2a/f Start [section-start] {"position":"4650,2850","size":"100,100"}
 <<nobr>>
 <<delete-vars n2_>>
 <<set $n1_candleHorny = false>>
@@ -8762,7 +8820,7 @@ Well, that's a question to be deferred to some other time. What's important now 
 :: @n2a Alone (6,2) {"position":"4200,3100","size":"200,200"}
 <<nobr>>
 <<n1-patience 6 2
-    "<<include [[=n2a Compute Arousal]]>>"
+    "<<include [[n2a/f Compute Arousal]]>>"
 >>
 
 Candle's Influence:
@@ -8786,7 +8844,7 @@ Candle's Influence:
 <<include [[@n2a Lust]]>>
 @@
 @@.beat-2.beat.hidden;
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 <<include [[@n2a More Magic]]>>
 <ul class="actions">
     <li>[[Struggle...|@n2a Struggle]]</li>
@@ -8839,8 +8897,8 @@ ivex calls nero a good doggy, gets nero to reveal all. nero senses something wro
 
 sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
 
-[[Return to the moment Ivex teleported away.|=n2a Start]]
-[[Return to the start of Nero's story|=n1a Start]]
+[[Return to the moment Ivex teleported away.|n2a/f Start]]
+[[Return to the start of Nero's story|n1a/f Start]]
 [[Return to the title screen|Title Screen]]
 
 
@@ -8859,8 +8917,8 @@ nero whines. dumps all his info amid torture, feels ashamed at failing, but ends
 
 sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
-[[Return to the moment Ivex teleported away.|=n2a Start]]
-[[Return to the start of Nero's story.|=n1a Start]]
+[[Return to the moment Ivex teleported away.|n2a/f Start]]
+[[Return to the start of Nero's story.|n1a/f Start]]
 [[Return to the title screen.|Title Screen]]
 
 
@@ -9164,7 +9222,7 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 </div>
 
 
-:: @n1x Cast Attack {"position":"5725,1875","size":"100,100"}
+:: n1x/d Cast Attack {"position":"5725,1875","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <</nobr>>\
@@ -9185,10 +9243,10 @@ $n1_afterAction
 <!-- Charm branch never casts attack, so don't need a transition out of charm. -->
 
 
-:: @n1x Cast Reveal {"position":"5525,2050","size":"100,100"}
+:: n1x/d Cast Reveal {"position":"5525,2050","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_magicSight>>
-<<set $n1_afterNaked = "[[Continue|@n1x After Naked]]">>
+<<set $n1_afterNaked = "[[Continue|n1x/d After Naked]]">>
 <</nobr>>\
 \
 cast mage-sight.
@@ -9199,7 +9257,7 @@ ivex mocks:
     aren't you already revealed enough?
 
     <br><br>
-    [[Continue|@n1x After Naked]]
+    [[Continue|n1x/d After Naked]]
 <<else>>
     you want reveal? lemme show you reveal.
 
@@ -9223,7 +9281,7 @@ sprite: password incorrect, try again.
 $n1_afterAction
 
 
-:: =n1a Feign Sleep 2 {"position":"3600,500","size":"100,100"}
+:: n1a/f Feign Sleep 2 {"position":"3600,500","size":"100,100"}
 Suddenly, a hand grabs at the crotch of Nero's trousers. The fingers dig in and curl around one of the wolf's testicles. And then the fingers squeeze. Hard.
 
 Nero's eyes fly wide open and he stifles a yelp.
@@ -9238,10 +9296,10 @@ Nero blinks rapidly to shake loose whatever dust is causing his eyes to water. A
 
 Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 
-[[Continue|=n1a Feign Sleep 3]]
+[[Continue|n1a/f Feign Sleep 3]]
 
 
-:: =n1a Feign Sleep 3 [big-mood] {"position":"3700,500","size":"100,100"}
+:: n1a/f Feign Sleep 3 [big-mood] {"position":"3700,500","size":"100,100"}
 <<nobr>>
 <<set $n1_smashed = true>>
 <</nobr>>\
@@ -9264,28 +9322,28 @@ Well. Nero had thought that locating Ivex would be the difficult part of this ta
 
 Still, whatever route brought him here, a success is a success. The rest of the errand should be quite easy.
 
-[[Continue|=n1c Ivex Intro]]
+[[Continue|n1c/f Ivex Intro]]
 
 
-:: @n1x Sprite Help {"position":"5450,1500","size":"100,100"}
+:: n1x/d Sprite Help {"position":"5450,1500","size":"100,100"}
 <<nobr>>
 <<if $n1_magicPhase === MP_wantDevice || $n1_magicPhase === MP_wantName>>
 
     ask, what is there?
-    
+
     <br><br>
     ivex: what is there? what is there but despair.
-    
+
     <br><br>
     sprite: device listing follows.. remember to implement this some day.
-    
+
     <br><br>
     well that's unfortunate.
-    
+
 <<elseif $n1_magicPhase === MP_wantTouch>>
 
     ask, help?
-    
+
     <br><br>
     ivex sneers: there's no help for you
 
@@ -9300,7 +9358,7 @@ Still, whatever route brought him here, a success is a success. The rest of the 
 $n1_afterAction
 
 
-:: @n1x Say Name {"position":"5325,1450","size":"100,100"}
+:: n1x/d Say Name {"position":"5325,1450","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_wantTouch>>
 <</nobr>>\
@@ -9324,7 +9382,7 @@ ok, that's a standard security barrier, just need to get ivex to touch the hole,
 $n1_afterAction
 
 
-:: @n1x Say Device {"position":"5200,1425","size":"100,100"}
+:: n1x/d Say Device {"position":"5200,1425","size":"100,100"}
 <<set $n1_magicPhase = MP_wantName>>\
 \
 say, the poltergeist device.
@@ -9348,7 +9406,7 @@ $n1_afterAction
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[really, equal partnership is fair|@n1c Reject Equality]]</li>
@@ -9368,7 +9426,7 @@ $n1_afterAction
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[no, I'm a cog in something larger|@n1c Secret Society]]</li>
@@ -9395,7 +9453,7 @@ nero: I have much to teach you, and perhaps you have some things to show me as w
 
 ivex, disgusted. smashes balls.
 
-[[Continue|=n1d Start Candle]]
+[[Continue|n1d/f Start Candle]]
 
 
 :: @n1c Reject Equality [big-mood] {"position":"3825,2000","size":"100,100"}
@@ -9407,7 +9465,7 @@ nero: really, equality is good.
 
 ivex: no way. smashes balls.
 
-[[Continue|=n1d Start Candle]]
+[[Continue|n1d/f Start Candle]]
 
 
 :: @n1c Ivex Demanding (4,3) {"position":"4000,1750","size":"100,200"}
@@ -9420,7 +9478,7 @@ ivex: no way. smashes balls.
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[within reason|@n1c Subby][$n1_resisting = true]]</li>
@@ -9448,7 +9506,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[lick eagerly|@n1c Licking][$n1_resisting = false]]</li>
@@ -9468,7 +9526,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[yes please|@n1c Reject Mercy][$n1_resisting = false]]</li>
@@ -9478,7 +9536,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 <</nobr>>
 
 
-:: =n1d Comfortable? (1,1) {"position":"4550,2275","size":"100,200"}
+:: n1d/f Comfortable? (1,1) {"position":"4550,2275","size":"100,200"}
 <<nobr>>
 <<set $n1_ivexReceptive = false>>
 <</nobr>>\
@@ -9488,15 +9546,15 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <<if $n1_naked>>
-        <li>[['"I'm quite relaxed..."'|=n1d Naked Submit]]</li>
-        <li>[[Sneer at Ivex.|=n1d Naked Resist]]</li>
+        <li>[['"I'm quite relaxed..."'|n1d/f Naked Submit]]</li>
+        <li>[[Sneer at Ivex.|n1d/f Naked Resist]]</li>
     <<else>>
-        <li>[['"I'm quite relaxed..."'|=n1d Strip Submit]]</li>
-        <li>[[Sneer at Ivex.|=n1d Strip Resist]]</li>
+        <li>[['"I'm quite relaxed..."'|n1d/f Strip Submit]]</li>
+        <li>[[Sneer at Ivex.|n1d/f Strip Resist]]</li>
     <</if>>
     <<optional-action $n1_magicAction>>
 </ul><</nobr>>
@@ -9514,7 +9572,7 @@ Nero is not completely averse to dalliances with pretty men when there are no re
 [[Continue|@n1d Get Creepy 2]]
 
 
-:: =n1d Heavy Squeeze (1,1) {"position":"5325,2675","size":"100,200"}
+:: n1d/f Heavy Squeeze (1,1) {"position":"5325,2675","size":"100,200"}
 <<nobr>>
 <<set $n1_candleHorny = true>>
 <<n1-patience 1 1
@@ -9523,7 +9581,7 @@ Nero is not completely averse to dalliances with pretty men when there are no re
 <</nobr>>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 <ul class="actions">
     <li>[[Whine with frustration.|@n1d Alarm]]</li>
     <li>[[Growl with anger and lust.|@n1d Alarm]]</li>
@@ -9532,7 +9590,7 @@ Nero is not completely averse to dalliances with pretty men when there are no re
 <</nobr>>
 
 
-:: @n1x Cast Strength {"position":"5900,1975","size":"100,100"}
+:: n1x/d Cast Strength {"position":"5900,1975","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <</nobr>>\
@@ -9557,7 +9615,7 @@ $n1_afterAction
 testing 2
 
 
-:: @n1x Window [has-hole] {"position":"7225,1575","size":"100,100"}
+:: n1x/d Window [has-hole] {"position":"7225,1575","size":"100,100"}
 The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
 <<nobr>>
@@ -9635,7 +9693,7 @@ The only window in the room is round and about a meter in diameter. The window h
 <<link $n1_afterAction>><</link>>
 
 
-:: @n1x Ask Grav Gems {"position":"6225,1800","size":"100,100"}
+:: n1x/d Ask Grav Gems {"position":"6225,1800","size":"100,100"}
 <<nobr>>
 <<assert-true !$n1_knowsGems>>
 <<set $n1_knowsGems = true>>
@@ -9711,7 +9769,7 @@ ivex tells you his remote-control innovation, and tells you the device is named 
 <<link $n1_afterAction>><</link>>
 
 
-:: =n1a Hello 2 {"position":"3600,650","size":"100,100"}
+:: n1a/f Hello 2 {"position":"3600,650","size":"100,100"}
 It's <em>him</em>.
 
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
@@ -9728,10 +9786,10 @@ And then it gets even more awkward. Ivex leans forward, bringing his head toward
 
 The panther's muzzle comes uncomfortably close to Nero's crotch...
 
-[[Continue|=n1a Hello 3]]
+[[Continue|n1a/f Hello 3]]
 
 
-:: =n1a Hello 3 {"position":"3700,650","size":"100,100"}
+:: n1a/f Hello 3 {"position":"3700,650","size":"100,100"}
 Ivex's feline nose is right in front of the wolf's trousers, millimeters away from Nero's crotch. The panther closes his eyes and inhales deeply.
 
 Nero is aghast. What is the panther doing? Is he... <em>sniffing</em> me? What a freak!
@@ -9744,10 +9802,10 @@ The panther speaks lightly. "Welcome to my little world. I am Ivex the Magnifice
 
 Well. <em>That</em> sort of posturing is familiar. Nero has encountered many braggarts in his adventures before. And here in front of him is another. It should be quite easy to fulfill his commission and escape this weird mage's residence.
 
-[[Continue|=n1c Ivex Intro]]
+[[Continue|n1c/f Ivex Intro]]
 
 
-:: =n1c Ivex Intro 2 {"position":"3975,675","size":"100,100"}
+:: n1c/f Ivex Intro 2 {"position":"3975,675","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
 <<ignore-big-mood n1_magicPhase>>
@@ -9778,12 +9836,12 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 
 Nero mentally crosses off one branch of actions from his strategic map. Feigning ignorance was a long shot, but it had been worth trying.
 
-[[Continue|=n1c Ivex Intro 3]]
+[[Continue|n1c/f Ivex Intro 3]]
 
 
-:: =n1a Endgame 3 {"position":"3700,350","size":"100,100"}
+:: n1a/f Endgame 3 {"position":"3700,350","size":"100,100"}
 <<nobr>>
-<<set $n1_afterNaked = "[[Continue|=n1a Endgame 4]]">>
+<<set $n1_afterNaked = "[[Continue|n1a/f Endgame 4]]">>
 <</nobr>>\
 \
 The panther notices that Nero is watching, and he emits a giggle. "That tickled! What was that?"
@@ -9801,7 +9859,7 @@ Ivex "the Magnificent" theatrically raises his left arm, then snaps his fingers.
 [[Continue|=n1p Naked]]
 
 
-:: =n1a Endgame 4 [big-mood] {"position":"3800,325","size":"100,100"}
+:: n1a/f Endgame 4 [big-mood] {"position":"3800,325","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <<set $n1_naked = true>>
@@ -9821,7 +9879,7 @@ When the panther's paw stops, his palm is resting against Nero's sheath, and all
 
 Threat. Yes. That was a threat.
 
-[[Continue|=n1c Ivex Intro]]
+[[Continue|n1c/f Ivex Intro]]
 
 
 :: @n1c Ivex Skeptical (4,3) {"position":"3625,1350","size":"100,200"}
@@ -9834,7 +9892,7 @@ Threat. Yes. That was a threat.
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[we're a secret inside the WAG|@n1c Very Secret]]</li>
@@ -9853,7 +9911,7 @@ Threat. Yes. That was a threat.
 >>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[...yes|@n1c Reject Fantasy][$n1_resisting = false]]</li>
@@ -9863,7 +9921,7 @@ Threat. Yes. That was a threat.
 <</nobr>>
 
 
-:: =n1d Light Squeeze (1,1) {"position":"4950,2475","size":"100,200"}
+:: n1d/f Light Squeeze (1,1) {"position":"4950,2475","size":"100,200"}
 <<nobr>>
 <<set $n1_candleHorny = true>>
 <<n1-patience 1 1
@@ -9872,7 +9930,7 @@ Threat. Yes. That was a threat.
 <</nobr>>
 
 <<nobr>>
-<<include [[=n1x Look and Magic]]>>
+<<include [[n1x/f Look and Magic]]>>
 
 <ul class="actions">
     <li>[[`"I... can't..."`|@n1d Ball Submit]]</li>
@@ -9891,10 +9949,10 @@ Ivex places the leather tip of the riding crop against the wolf's bare thigh, an
 
 Ivex lifts the riding crop off the wolf's balls, and draws his arm back slowly, preparing to strike...
 
-[[Continue|=n1d Alarm 2]]
+[[Continue|n1d/f Alarm 2]]
 
 
-:: =n1d Strip Resist {"position":"4800,2175","size":"100,100"}
+:: n1d/f Strip Resist {"position":"4800,2175","size":"100,100"}
 <<nobr>>
 <<set $n1_afterNaked = "[[Continue|@n1d Get Creepy]]">>
 <<assert-big-mood n1_licked false>>
@@ -9944,14 +10002,14 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 [[Continue|=n1p Barbs 2]]
 
 
-:: =n1x Look and Magic {"position":"4450,1375","size":"100,200"}
+:: n1x/f Look and Magic {"position":"4450,1375","size":"100,200"}
 <<nobr>>
 <<if $n1_patienceExhausted>>
     <<set $n1_magicAction = null>>
 <<else>>
-    <<include [[@n1x Look]]>>
+    <<include [[n1x/d Look]]>>
     <br><br>
-    <<include [[=n1x Magic]]>>
+    <<include [[n1x/f Magic]]>>
     <br><br>
 <</if>>
 <</nobr>>
@@ -10030,7 +10088,7 @@ you need to demonstrate loyalty
 
 ivex: well, whether you're real or not, it won't matter soon.
 
-[[Continue|=n1d Start Candle]]
+[[Continue|n1d/f Start Candle]]
 
 
 :: @n1c Reject Fantasy {"position":"3800,1575","size":"100,100"}
@@ -10044,7 +10102,7 @@ ivex: well, whether you're real or not, it won't matter soon.
 
 ivex: nice try, but I think you're lying... we'll see.
 
-[[Continue|=n1d Start Candle]]
+[[Continue|n1d/f Start Candle]]
 
 
 :: =n1p Naked 2 [big-mood] {"position":"4575,900","size":"100,100"}
@@ -10129,7 +10187,7 @@ Such as, the noticeably horny panther mage who has just magicked away the wolf's
 <<link $n1_afterNaked>><</link>>
 
 
-:: =n1c Anti-magic [noreturn] {"position":"4150,800","size":"100,100"}
+:: n1c/f Anti-magic [noreturn] {"position":"4150,800","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
 <<assert-big-mood n1_magicPhase `MP_triedMagic`>>
@@ -10158,7 +10216,7 @@ It's a skill that's been quite useful in his unconventional career.
 <<link "Return" $return>><</link>>
 
 
-:: =n1a Endgame Info 2 [noreturn] {"position":"3600,225","size":"100,100"}
+:: n1a/f Endgame Info 2 [noreturn] {"position":"3600,225","size":"100,100"}
 Two weeks later, Nero enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It's a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It's not a spell he can use often, but it's extremely useful when there are no better options.
 
 All he has to do is hold in his mind an image of the glyphs on his shaven ass as he's seen in a mirror, and mentally <em>twist</em> their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
@@ -10205,7 +10263,7 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 <<link Return $return>><</link>>
 
 
-:: @n1x Connect {"position":"6250,2250","size":"100,100"}
+:: n1x/d Connect {"position":"6250,2250","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_wantDevice>>
 <</nobr>>\
@@ -10219,7 +10277,7 @@ sprite responds to you psychically, but requres you to talk to it out loud.
 $n1_afterAction
 
 
-:: =n1a Hangover Info [noreturn] {"position":"3350,625","size":"100,100"}
+:: n1a/f Hangover Info [noreturn] {"position":"3350,625","size":"100,100"}
 Pearson's Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It's often the first off-book spell that academy students learn, because of its usefulness in mitigating alcoholic indulgence, of course. But the main reason it's popular is because older students find it immensely funny when a novice attempts it while drunk.
 
 Most spoken spells require extremely precise enunciation to have any effect at all. Pearson's is different. It works if you say it correctly, yes. But if you slur or stumble its invocation, it doesn't merely fail. It turns your fur bright pink for the day.
@@ -10229,7 +10287,7 @@ Needless to say, Nero only made that mistake once.
 <<link Return $return>><</link>>
 
 
-:: =n1c Ivex Description [noreturn] {"position":"3800,775","size":"100,100"}
+:: n1c/f Ivex Description [noreturn] {"position":"3800,775","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
 <<ignore-big-mood n1_magicPhase>>
@@ -10434,10 +10492,10 @@ The candle's flame is orange with a hint of green, and the smoke is a light gray
 
 The wolf considers holding his breath to avoid whatever is in the candle's fumes, but of course he'll have to breathe eventually. No point delaying the inevitable. Perhaps with measured, cautious breaths, he can slowly acclimate himself, and limit whatever effects the candle might have.
 
-[[Continue|=n1d Comfortable? (1,1)]]
+[[Continue|n1d/f Comfortable? (1,1)]]
 
 
-:: =n1d Naked Resist {"position":"4700,2425","size":"100,100"}
+:: n1d/f Naked Resist {"position":"4700,2425","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_naked true>>
 <<TODO-big-mood n1_licked n1_smashed>>
@@ -10486,7 +10544,7 @@ Ivex leans his body into the wolf, and brings his muzzle close to the wolf's ear
 
 The panther takes hold of Nero's balls. Not squeezing, not yet. Just cupping them, gently, as Nero's cock continues to strain its way to becoming fully, glisteningly erect.
 
-[[Continue|=n1d Light Squeeze (1,1)]]
+[[Continue|n1d/f Light Squeeze (1,1)]]
 
 
 :: @n1d Get Creepy 2 {"position":"4825,2475","size":"100,100"}
@@ -10621,7 +10679,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 <<link Return $return>><</link>>
 
 
-:: =n1c Ivex Intro 3 {"position":"4075,675","size":"100,100"}
+:: n1c/f Ivex Intro 3 {"position":"4075,675","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
 <<assert-true $n1_magicPhase <= MP_triedMagic>>
@@ -10639,7 +10697,7 @@ There are plenty of other paths to victory. Nero is, after all, an accomplished 
         The anti-magic field adds some slight complications
         to his current endeavor,
     <</if>>
-    but [[countering anti-magic|=n1c Anti-magic]]
+    but [[countering anti-magic|n1c/f Anti-magic]]
     is one of Nero's specialties.
     He's confident that he can find a flaw in Nero's construction
     and exploit it,
@@ -10665,7 +10723,7 @@ There are plenty of other paths to victory. Nero is, after all, an accomplished 
 <</if>>
 <</nobr>>
 
-[[Continue|=n1c Ivex Repeat (4,2)]]
+[[Continue|n1c/f Ivex Repeat (4,2)]]
 
 
 :: @n1d Ball Submit {"position":"5075,2500","size":"100,100"}
@@ -10708,7 +10766,7 @@ Ivex anticipates the wolf's snapping jaws and smoothly dips his head below where
 [[Continue|@n1d Pull]]
 
 
-:: =n1d Naked Submit {"position":"4700,2325","size":"100,100"}
+:: n1d/f Naked Submit {"position":"4700,2325","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_naked true>>
 <<TODO-big-mood n1_licked n1_smashed>>
@@ -10741,7 +10799,7 @@ and roughly strokes the fur on the wolf's naked chest.
 [[Continue|@n1d Get Creepy]]
 
 
-:: =n1d Strip Submit {"position":"4675,2150","size":"100,100"}
+:: n1d/f Strip Submit {"position":"4675,2150","size":"100,100"}
 <<nobr>>
 <<set $n1_afterNaked = "[[Continue|@n1d Get Creepy]]">>
 <<assert-big-mood n1_licked false>>
@@ -10817,7 +10875,7 @@ Especially at the tip of his cock...
 
 Ivex curls his other paw into a fist, and pulls back his arm...
 
-[[Continue|=n1d Punch]]
+[[Continue|n1d/f Punch]]
 
 
 :: timing test 2 {"position":"4550,350","size":"100,100"}
@@ -10970,7 +11028,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 <</nobr>>
 
 
-:: =n1d Punch {"position":"5200,2675","size":"100,100"}
+:: n1d/f Punch {"position":"5200,2675","size":"100,100"}
 The punch landing on Nero's balls is another fire radiating through his body, intertwining with the candle's smoke that's filling him up. The intense pain does not dampen his erection. If anything, his cock becomes harder and straighter and oozes copious amounts of pre-cum that gleams like honey in the flickering of the candle's light.
 
 <em>Fuck!</em>
@@ -10983,10 +11041,10 @@ Nero whines.
 
 Ivex lowers his head toward the wolf's crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf's needy cock. And then the panther pulls his head back, taking a smear of pre-cum with it, which shines in the candle light, like drool dripping from the teeth that are painted on his mask.
 
-[[Continue|=n1d Heavy Squeeze (1,1)]]
+[[Continue|n1d/f Heavy Squeeze (1,1)]]
 
 
-:: =n1d Alarm 2 {"position":"5175,3075","size":"100,100"}
+:: n1d/f Alarm 2 {"position":"5175,3075","size":"100,100"}
 The panther suddenly looks away, distracted.
 
 Ivex releases his grasp of the wolf's balls and stands up straight. His head is tilted, as if he's listening to something that only he can hear. He moves toward the window, but he doesn't seem to be looking at anything in particular.
@@ -10997,7 +11055,7 @@ He glances at the agitated wolf. "We'll have to continue this friendly discussio
 
 The panther mage pulls a red gem out from a pocket, and then disappears in a <em>fwoosh</em>.
 
-[[Continue|=n2a Start]]
+[[Continue|n2a/f Start]]
 
 
 :: @n2a Start {"position":"4650,2950","size":"100,100"}
@@ -11077,17 +11135,17 @@ player is here at most 6 turns.
 <<elseif !$n1_magicSight && !$n1_sawGems>>
 
     XXX no magic sight, haven't seen gems, final struggle fails.
-    
+
     <br><br>
     [[Continue|@n2a Failed Escape]]
 
 <<else>>
 
     XXX struggle succeeds. grav gems implode.
-    
+
     <br><br>
     [[Continue|@n2a Grav Disrupted]]
-    
+
 <</if>>
 <</nobr>>
 
@@ -11113,7 +11171,7 @@ player is here at most 6 turns.
 <</nobr>>\
 
 
-:: =n2a Compute Arousal {"position":"4425,2975","size":"100,100"}
+:: n2a/f Compute Arousal {"position":"4425,2975","size":"100,100"}
 <<script>>
 const v = State.variables;
 const actions = Math.max(v.n1_patienceActions, 0);
@@ -11139,7 +11197,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</script>>\
 
 
-:: @n1x Magic Free {"position":"5650,2525","size":"100,100"}
+:: n1x/d Magic Free {"position":"5650,2525","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -11150,12 +11208,12 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_beforeCast`>>
 
     XXX cast escape
-    <<set $n1_magicAction = '[[Cast Lust|@n1x Cast Escape]]">>
+    <<set $n1_magicAction = '[[Cast Lust|n1x/d Cast Escape]]">>
 
 <<case `MP_triedMagic`>>
 
     XXX cast mage-sight
-    <<set $n1_magicAction = "[[Cast mage-sight.|@n1x Cast Sight]]">>
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x/d Cast Sight]]">>
 
 <<case `MP_magicSight`>>
 
@@ -11181,7 +11239,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Ivex Gone {"position":"5750,2275","size":"100,100"}
+:: n1x/d Magic Ivex Gone {"position":"5750,2275","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -11192,12 +11250,12 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_beforeCast`>>
 
     XXX ivex gone, cast something big and useful
-    <<set $n1_magicAction = "[[Cast escape.|@n1x Cast Escape]]">>
+    <<set $n1_magicAction = "[[Cast escape.|n1x/d Cast Escape]]">>
 
 <<case `MP_triedMagic`>>
 
     XXX mage-sight
-    <<set $n1_magicAction = "[[Cast mage-sight.|@n1x Cast Sight]]">>
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x/d Cast Sight]]">>
 
 <<case `MP_magicSight`>>
 
@@ -11223,7 +11281,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Receptive {"position":"5725,2150","size":"100,100"}
+:: n1x/d Magic Receptive {"position":"5725,2150","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive true>>
@@ -11237,14 +11295,14 @@ v.n2_candleMax = looks === 0 || actions === 0;
     Perhaps this is a good time for Nero to impress him
     with a flashy but harmless spell,
     ideally one that would also bring him closer to escape.
-    <<set $n1_magicAction = "[[Cast a flashy spell.|@n1x Cast Strength]]">>
+    <<set $n1_magicAction = "[[Cast a flashy spell.|n1x/d Cast Strength]]">>
 
 <<case `MP_triedMagic`>>
 
     Perhaps it's time to cast mage-sight and look for a flaw in Ivex's anti-magic field.
     Ivex is watching, but mage-sight is a conventional move in tactical magic,
     and it might reassure the panther about the wolf mage's competence.
-    <<set $n1_magicAction = "[[Cast mage-sight.|@n1x Cast Reveal]]">>
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x/d Cast Reveal]]">>
 
 <<case `MP_magicSight`>>
 
@@ -11270,7 +11328,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Covert {"position":"5725,2000","size":"100,100"}
+:: n1x/d Magic Covert {"position":"5725,2000","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny false>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -11284,19 +11342,19 @@ v.n2_candleMax = looks === 0 || actions === 0;
     <<if !$n1_triedSomething>>
         Or perhaps he should try something else first.
     <</if>>
-    <<set $n1_magicAction = "[[Cast an attack spell.|@n1x Cast Attack]]">>
+    <<set $n1_magicAction = "[[Cast an attack spell.|n1x/d Cast Attack]]">>
 
 <<case `MP_triedMagic`>>
 
     Perhaps it's time to cast mage-sight and look for a flaw in Ivex's anti-magic field.
     Ivex is watching, but it'll be too quick for him to stop,
     and Nero needs every advantage he can get.
-    <<set $n1_magicAction = "[[Cast mage-sight.|@n1x Cast Reveal]]">>
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x/d Cast Reveal]]">>
 
 <<case `MP_magicSight`>>
 
      XXX mage-sight shows energy diverters and firewalls,
- 
+
 <<case `MP_wantDevice`>>
 
 <<case `MP_wantName`>>
@@ -11317,7 +11375,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Sprite {"position":"5175,1675","size":"100,100"}
+:: n1x/d Magic Sprite {"position":"5175,1675","size":"100,100"}
 <<nobr>>
 <<assert-true !$n2_mirrorBroken>>
 
@@ -11328,15 +11386,15 @@ v.n2_candleMax = looks === 0 || actions === 0;
     <!-- nothing -->
 <<case `MP_magicSight`>>
 
-    the [[mirror|@n1x Mirror]] isn't firewalled.
+    the [[mirror|n1x/d Mirror]] isn't firewalled.
 
 <<case `MP_wantDevice`>>
 
     XXX sprite: which device do you want to access.
     <<if $n1_sawBottle>>
-        <<set $n1_magicAction = '[[`"Nackle\'s Poltergeist Device..."`|@n1x Say Device]]'>>
+        <<set $n1_magicAction = '[[`"Nackle\'s Poltergeist Device..."`|n1x/d Say Device]]'>>
     <<else>>
-        <<set $n1_magicAction = '[[`"What is there...?"`|@n1x Sprite Help]]'>>
+        <<set $n1_magicAction = '[[`"What is there...?"`|n1x/d Sprite Help]]'>>
     <</if>>
 
 <<case `MP_wantName`>>
@@ -11344,16 +11402,16 @@ v.n2_candleMax = looks === 0 || actions === 0;
     sprite: there's more than one poltergeist device available,
     which one do you want to access.
     <<if $n1_knowsName>>
-        <<set $n1_magicAction = '[[`"Lance Rockhard..."`|@n1x Say Name]]'>>
+        <<set $n1_magicAction = '[[`"Lance Rockhard..."`|n1x/d Say Name]]'>>
     <<else>>
-        <<set $n1_magicAction = '[[`"What is there...?"`|@n1x Sprite Help]]'>>
+        <<set $n1_magicAction = '[[`"What is there...?"`|n1x/d Sprite Help]]'>>
     <</if>>
 
 <<case `MP_wantTouch`>>
 
     sprite: psi metrics have diverged. please touch my hole to
     re-establish identification.
-    <<set $n1_magicAction = '[[`"Help..?"`|@n1x Sprite Help]]'>>
+    <<set $n1_magicAction = '[[`"Help..?"`|n1x/d Sprite Help]]'>>
 
 <<case `MP_wantPassword`>>
 
@@ -11378,7 +11436,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Magic Horny {"position":"5700,2400","size":"100,100"}
+:: n1x/d Magic Horny {"position":"5700,2400","size":"100,100"}
 <<nobr>>
 <<assert-big-mood n1_candleHorny true>>
 <<assert-big-mood n1_ivexReceptive false>>
@@ -11389,12 +11447,12 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<case `MP_beforeCast`>>
 
     XXX cast lust spell
-    <<set $n1_magicAction = "[[Cast Lust|@n1x Cast Escape]]">>
+    <<set $n1_magicAction = "[[Cast Lust|n1x/d Cast Escape]]">>
 
 <<case `MP_triedMagic`>>
 
     XXX cast mage-sight
-    <<set $n1_magicAction = "[[Cast mage-sight.|@n1x Cast Sight]]">>
+    <<set $n1_magicAction = "[[Cast mage-sight.|n1x/d Cast Sight]]">>
 
 <<case `MP_magicSight`>>
 
@@ -11420,7 +11478,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</nobr>>\
 
 
-:: @n1x Cast Escape {"position":"5950,2500","size":"100,100"}
+:: n1x/d Cast Escape {"position":"5950,2500","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <</nobr>>\
@@ -11432,7 +11490,7 @@ stuff about anti-magic
 $n1_afterAction
 
 
-:: @n1x Cast Sight {"position":"5875,2650","size":"100,100"}
+:: n1x/d Cast Sight {"position":"5875,2650","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_magicSight>>
 <<set $n1_magicSight = true>>
@@ -11469,7 +11527,7 @@ XXX magic attempt fails
 $n1_afterAction
 
 
-:: @n1x After Naked {"position":"5550,1925","size":"100,100"}
+:: n1x/d After Naked {"position":"5550,1925","size":"100,100"}
 <<nobr>>
 <<set $n1_mageSight = true>>
 <</nobr>>\
