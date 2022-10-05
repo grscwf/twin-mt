@@ -561,6 +561,15 @@ ul.actions li {
   text-overflow: ellipsis;
 }
 
+#var-info-to-do {
+  border-radius: 2px;
+  display: inline-block;
+  padding: 4px 2px;
+}
+#var-info-to-do:hover {
+  background-color: #332;
+}
+
 /* random walk */
 .random-walk {
   bottom: 180px;
@@ -680,6 +689,7 @@ a.messages-close:hover {
   color: #000;
   font-size: 12px;
   margin-bottom: 8px;
+  min-width: 10em;
   padding: 8px 8px 4px 8px;
   text-align: left;
 }
@@ -692,6 +702,8 @@ a.messages-close:hover {
   margin-left: 2em;
 }
 
+#messages-to-do {
+}
 #messages-to-do > ul {
   margin: 0;
   padding-inline-start: 16px;
@@ -699,6 +711,9 @@ a.messages-close:hover {
 .messages-to-do-label {
   font-weight: bold;
   margin-right: 4px;
+}
+.messages-to-do-hidden {
+  display: none;
 }
 
 /* make debug bar fit on small screens */
@@ -976,6 +991,7 @@ function add_to_do(text) {
   if (list.length !== 1) {
     $("#messages-to-do").remove();
     const div = $("<div id=messages-to-do class=messages-item>");
+    div.addClass("messages-to-do-hidden");
     addMessage(div);
     $("<a class=messages-close>[close]</a>").on("click", () => {
       div.remove();
@@ -1010,18 +1026,26 @@ function assertBigMood(vname, exp, raw, context) {
     bigMoodIgnore.add(vname);
     return;
   }
-  const m = /`\s*(.*?)\s*`/.exec(raw);
-  if (m != null) {
-    assertionFailed(`bigMood $${vname} === (${m[1]})`, context);
-  } else {
-    assertionFailed(`bigMood $${vname} === ${exp}`, context);
-  }
+  const expr = raw.replace(/^\s*`\s*(.*?)\s*`\s*$/, "$1");
+  assertionFailed(`bigMood $${vname} === (${expr})`, context);
 }
 Macro.add("assert-big-mood", {
   handler: function() {
     const vname = this.args[0];
     const exp = this.args[1];
     assertBigMood(vname, exp, this.args.raw, this);
+  }
+});
+Macro.add("when-big-mood", {
+  handler: function() {
+    const vname = this.args[0];
+    const exp = this.args[1];
+    if (actualVars[vname] && !exp) {
+      const expr = this.args.raw
+        .replace(/^\s*\w+\s+/, '')
+        .replace(/^\s*`\s*(.*?)\s*`\s*$/, "$1");
+      assertionFailed(`bigMood $${vname} implies (${expr})`, this);
+    }
   }
 });
 Macro.add("ignore-big-mood", {
@@ -1286,6 +1310,14 @@ function varInfoSetup() {
     }
     $("<span class=var-info-separator>").appendTo(outer);
     $("<span class=var-info-passage>").text(here).appendTo(outer);
+    if ($("#messages-to-do").length > 0) {
+      $("<span id=var-info-to-do>")
+        .text("\uD83D\uDEA7")
+        .on("click", () => {
+          $("#messages-to-do")
+            .toggleClass("messages-to-do-hidden");
+        }).appendTo(outer);
+    }
   });
 }
 
@@ -7899,9 +7931,9 @@ $(document).on(":passageinit", ev => console.log(ev));
 <</if>>
 
 <<if !$n1_sawStudy>>
-    in what looks like a [[mage's study|n1x/F Study]].
+    in what looks like a [[mage's study|n1x/V Study]].
 <<else>>
-    in middle of [[Ivex's study|n1x/F Study]].
+    in middle of [[Ivex's study|n1x/V Study]].
     The study is furnished with
     <<if $n1_sawDesk || $n1_sawMirror || $n1_candleLit>>
         a desk,
@@ -7926,7 +7958,7 @@ $(document).on(":passageinit", ev => console.log(ev));
     <<else>>
         The far wall has
     <</if>>
-    a [[prominent round window|n1x/D Window]]
+    a [[prominent round window|n1x/V Window]]
     and [[some decorations|n1x/D Wall]] adorning it.
 <</if>>
 
@@ -7936,7 +7968,7 @@ $(document).on(":passageinit", ev => console.log(ev));
     <<else>>
         The [[far wall|n1x/D Wall]] has
     <</if>>
-    a [[prominent round window|n1x/D Window]],
+    a [[prominent round window|n1x/V Window]],
     a [[large map|n1x/P map]],
     <<if $n1_knowsMom>>
         and a [[portrait of Ivex's mother|n1x/P portrait]].
@@ -8087,7 +8119,9 @@ He's a [[pretentiously dressed black panther|n1c/F Ivex Description]], larger th
     Nero tries to gather what dignity he can in his helplessly exposed state,
     and prepares his opening gambit.
 <<elseif $n1_smashed>>
-    Avoiding further torture might take a little finesse.
+    Not an unexpected question.
+    One that Nero certainly doesn't want to answer truthfully.
+    Avoiding further torture might take some finesse.
     Nero prepares his opening gambit.
 <<else>>
     Nero has successfully charmed his way through
@@ -8129,7 +8163,7 @@ He's a [[pretentiously dressed black panther|n1c/F Ivex Description]], larger th
     It's sturdy wood, and the leather straps are thick
     and quite secure,
     but it's not immediately obvious what's keeping the
-    cross fastened in place in the [[room|n1x/F Study]].
+    cross fastened in place in the [[room|n1x/V Study]].
 
     <<if $n2_ivexGone>>
         <br><br>
@@ -8149,7 +8183,7 @@ He's a [[pretentiously dressed black panther|n1c/F Ivex Description]], larger th
     But in the reflection from the
     [[mirror|n1x/D Mirror]] on [[Ivex's desk|n1x/P Desk]],,
     Nero can see that the cross is not actually attached
-    to anything in the [[study|n1x/F Study]].
+    to anything in the [[study|n1x/V Study]].
     Rather, it is held in place with an arrangement
     of [[gravity gems|n1x/D Grav Gems]].
 
@@ -8166,7 +8200,7 @@ He's a [[pretentiously dressed black panther|n1c/F Ivex Description]], larger th
 <</nobr>>
 
 
-:: n1x/F Study {"position":"7150,2400","size":"100,100"}
+:: n1x/V Study {"position":"7150,2400","size":"100,100"}
 <<nobr>>
 <<set $n1_sawStudy = true>>
 
@@ -8178,7 +8212,7 @@ Nero often finds that the furnishings of a person's private quarters reflects th
 <<if $n2_free>>
     the [[wooden cross|n1x/V Cross]] that's fallen over and
     leaning on the [[cluttered desk|n1x/P Desk]]
-    by the [[prominent round window|n1x/D Window]].
+    by the [[prominent round window|n1x/V Window]].
 
     <br><br>
     The wall with the window is bare except for [[some decorations|n1x/D Wall]].
@@ -8189,7 +8223,7 @@ Nero often finds that the furnishings of a person's private quarters reflects th
 
     <br><br>
     One wall is bare except for [[some decorations|n1x/D Wall]]
-    and a [[prominent round window|n1x/D Window]].
+    and a [[prominent round window|n1x/V Window]].
 <</if>>
 
 The other walls are lined with many [[wooden cabinets|n1x/P cabinet]]
@@ -8417,7 +8451,7 @@ The far wall, on the other side of the desk, is the only wall in the room that d
 <</nobr>>
 
 <<nobr>>
-There's a solitary [[round window|n1x/D Window]] exactly in the center of the wall. The daytime sky beyond the window's glass gives it the appearance of a giant blue eye that's
+There's a solitary [[round window|n1x/V Window]] exactly in the center of the wall. The daytime sky beyond the window's glass gives it the appearance of a giant blue eye that's
 <<if $n1_naked || $n2_free>>
     leering at the completely naked wolf.
 <<else>>
@@ -8654,10 +8688,6 @@ output
 
 <<set $n1_magicPhase ||= MP_beforeCast>>
 <<set $n1_magicAction = null>>
-
-<<assert-big-mood n1_mageSight `
-    $n1_magicPhase >= MP_magicSight && !$n2_mirrorBroken
-`>>
 
 <<if $n2_free>>
     <<include [[n1x/D Magic Free]]>>
@@ -9295,7 +9325,7 @@ Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 \
 A fist smashes into Nero's crotch, thumping hard against his other ball and briefly making it ache stronger than the one held tight.
 
-The wolf cannot suppress a whine. The sound is embarrassing and pathetic, and a moment later, the hand on his ball releases its grasp.
+The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fills the air of the room. and a moment later, the hand on his ball releases its grasp.
 
 "There we go," says the voice. "That's a fun start! I <em>knew</em> you were awake."
 
@@ -9604,11 +9634,23 @@ $n1_afterAction
 testing 2
 
 
-:: n1x/D Window [has-hole] {"position":"7225,1575","size":"100,100"}
+:: n1x/V Window [has-hole] {"position":"7225,1575","size":"100,100"}
+<<nobr>>
+<<TODO-big-mood n1_candleHorny n1_candleLit>>
+<<TODO-big-mood n1_ivexReceptive n2_ivexGone>>
+<<TODO-big-mood n1_mageSight>>
+<<TODO-big-mood n1_naked>>
+<<TODO-big-mood n2_extraHorny>>
+
+<<ignore-big-mood n1_licked n1_smashed>>
+<<ignore-big-mood n2_clever n2_mirrorBroken>>
+<</nobr>>\
+\
 The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
 <<nobr>>
 <<if $n2_free>>
+    <<ignore-big-mood n2_ivexGone>>
     And there doesn't seem to be anything other than clear blue sky.
     This room appears to be at the top floor of an extremely tall tower.
     The outer surface of the wall is smooth stone that continues downward
@@ -11532,5 +11574,43 @@ $n1_afterAction
 need state for mirror location
 
 $n1_afterAction
+
+
+:: PassageHeader {"position":"3000,100","size":"100,100"}
+<<nobr>>
+<<if /^n/.test(State.passage)>>
+    <<when-big-mood n1_candleHorny `
+        $n1_candleLit
+    `>>
+    <<when-big-mood n1_candleLit `
+        $n1_naked
+    `>>
+    <<when-big-mood n1_ivexReceptive `
+        !$n2_ivexGone
+    `>>
+    <!-- no constraints on n1_licked -->
+    <<assert-big-mood n1_mageSight `
+        $n1_magicPhase >= MP_magicSight && !$n2_mirrorBroken
+    `>>
+    <!-- no constraints on n1_naked -->
+    <!-- no contraints on n1_smashed -->
+
+    <<when-big-mood n2_clever `
+        !$n2_extraHorny && $n2_free
+    `>>
+    <<when-big-mood n2_extraHorny `
+        $n2_free && !$n2_clever
+    `>>
+    <<when-big-mood n2_free `
+        $n1_naked && $n2_ivexGone
+    `>>
+    <<when-big-mood n2_ivexGone `
+        !$n1_ivexReceptive && $n1_naked
+    `>>
+    <<when-big-mood n2_mirrorBroken `
+        $n2_free
+    `>>
+<</if>>
+<</nobr>>\
 
 
