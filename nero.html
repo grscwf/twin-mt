@@ -963,9 +963,11 @@ $(document).on(":passagestart", () => {
   $("html").removeClass("redisplay-passage");
 });
 
+/*** var tracing */
+let actualVars = null;
+
 /*** Messages and assertions */
 
-let actualVars = null;
 let assertionDebug = false;
 
 $(document).on(":passagestart", () => {
@@ -1133,7 +1135,13 @@ Macro.add("TO"+"DO-big-mood", {
  *   by the passage.
  */
 function varInfoSetup() {
-  if (!Config.debug) return;
+  if (!Config.debug) {
+    Macro.add("no-trace", {
+      tags: [],
+      handler: () => {}
+    });
+    return;
+  }
 
   const varTypes = {
     n1_magicPhase: "MagicPhase",
@@ -1259,6 +1267,17 @@ function varInfoSetup() {
         return Reflect.set(...arguments);
       }
     })
+  });
+
+  Macro.add("no-trace", {
+    tags: [],
+    handler: function() {
+      const body = this.payload[0].contents;
+      const proxy = State.active.variables;
+      State.active.variables = actualVars;
+      $(this.output).wiki(body);
+      State.active.variables = proxy;
+    }
   });
 
   // note: sugarcube overrides JSON.stringify to handle "undefined" and a few other cases specially
@@ -1535,7 +1554,7 @@ $(document).on(":passageend", ev => {
   }
 });
 
-/*---- Actions */
+/*** Action list */
 
 const actionList = [];
 $(document).on(":passagestart", () => {
@@ -1555,7 +1574,21 @@ Macro.add("get-actions", {
     }
     actionList.length = 0;
   }
-});</script><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;nobr&gt;&gt;
+});
+
+/*** fade-in */
+Macro.add("fade-in", {
+  tags: ["next"],
+  handler: function() {
+    // XXX Util.fromCssTime to parse delay
+    // XXX Engine.minDomActionDelay
+    // XXX render each payload segment with faded
+    // XXX queue timers to remove faded
+    // XXX start timer
+    // XXX click on segment to advance timer
+    console.log(this.payload);
+  }
+});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $passedContentWarning = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -6997,7 +7030,8 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
 &lt;&lt;/script&gt;&gt;
 [[testing 2]]
 [[timing test 1]]
-[[timing test 2]]</tw-passagedata><tw-passagedata pid="240" name="n1x/V Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
+[[timing test 2]]
+[[timing test 3]]</tw-passagedata><tw-passagedata pid="240" name="n1x/V Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;if $n1_candleHorny&gt;&gt;
     Nero &lt;&lt;= either(
@@ -7160,7 +7194,9 @@ The blurry figure becomes a person...
 [[Continue|n1a/F Hello 2]]</tw-passagedata><tw-passagedata pid="243" name="n1c/F Ivex Intro" tags="" position="3875,675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_mageSight false&gt;&gt;
 &lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
-&lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
+&lt;&lt;no-trace&gt;&gt;
+  &lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
+&lt;&lt;/no-trace&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;&lt;nobr&gt;&gt;
@@ -9426,7 +9462,13 @@ Especially at the tip of his cock...
 
 Ivex curls his other paw into a fist, and pulls back his arm...
 
-[[Continue|n1d/D Punch]]</tw-passagedata><tw-passagedata pid="387" name="timing test 2" tags="" position="4550,350" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1d/D Punch]]</tw-passagedata><tw-passagedata pid="387" name="timing test 3" tags="" position="4550,350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;fade-in 0s&gt;&gt;
+one
+&lt;&lt;next 2s&gt;&gt;
+two
+&lt;&lt;/fade-in&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="388" name="timing test 2" tags="" position="4550,350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
   if (Macro.has(&quot;timed-beat&quot;)) Macro.delete(&quot;timed-beat&quot;);
   const beats = [];
@@ -9445,7 +9487,6 @@ Ivex curls his other paw into a fist, and pulls back his arm...
         .append(button).appendTo(outer);
       $(this.output).append(outer);
       button.on(&quot;click&quot;, () =&gt; {
-        console.log(&quot;click&quot;, beats);
         beats[0].removeClass(&quot;timed-beat-current&quot;).addClass(&quot;timed-beat-done&quot;);
         beats.shift();
         if (beats[0] != null) {
@@ -9528,7 +9569,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
     Do you even know the difference?&quot;
 &lt;&lt;/timed-beat&gt;&gt;
 
-[[testing 2]]</tw-passagedata><tw-passagedata pid="388" name="timing test 1" tags="" position="4400,350" size="100,100">&quot;I...@@#beat-1.beat-removed; can&#39;t...@@&quot;
+[[testing 2]]</tw-passagedata><tw-passagedata pid="389" name="timing test 1" tags="" position="4400,350" size="100,100">&quot;I...@@#beat-1.beat-removed; can&#39;t...@@&quot;
 
 @@#beat-2.beat-hidden;Can&#39;t what?@@ @@#beat-3.beat-hidden;Nero doesn&#39;t remember what he was trying to say.@@
 
@@ -9568,7 +9609,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 &lt;&lt;next _long&gt;&gt;
     &lt;&lt;removeclass #beat-9 beat-hidden&gt;&gt;
 &lt;&lt;/timed&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="389" name="n1d/D Punch" tags="" position="5200,2675" size="100,100">The punch landing on Nero&#39;s balls is another fire radiating through his body, intertwining with the candle&#39;s smoke that&#39;s filling him up. The intense pain does not dampen his erection. If anything, his cock becomes harder and straighter and oozes copious amounts of pre-cum that gleams like honey in the flickering of the candle&#39;s light.
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="390" name="n1d/D Punch" tags="" position="5200,2675" size="100,100">The punch landing on Nero&#39;s balls is another fire radiating through his body, intertwining with the candle&#39;s smoke that&#39;s filling him up. The intense pain does not dampen his erection. If anything, his cock becomes harder and straighter and oozes copious amounts of pre-cum that gleams like honey in the flickering of the candle&#39;s light.
 
 &lt;em&gt;Fuck!&lt;/em&gt;
 
@@ -9580,7 +9621,7 @@ Nero whines.
 
 Ivex lowers his head toward the wolf&#39;s crotch. The panther moves his muzzle, so that one side of his grinning mask slowly approaches, to lightly touch the tip of the wolf&#39;s needy cock. And then the panther pulls his head back, taking a smear of pre-cum with it, which shines in the candle light, like drool dripping from the teeth that are painted on his mask.
 
-[[Continue|n1d/D Heavy Squeeze (1,1)]]</tw-passagedata><tw-passagedata pid="390" name="n1d/D Alarm 2" tags="" position="5175,3075" size="100,100">The panther suddenly looks away, distracted.
+[[Continue|n1d/D Heavy Squeeze (1,1)]]</tw-passagedata><tw-passagedata pid="391" name="n1d/D Alarm 2" tags="" position="5175,3075" size="100,100">The panther suddenly looks away, distracted.
 
 Ivex releases his grasp of the wolf&#39;s balls and stands up straight. His head is tilted, as if he&#39;s listening to something that only he can hear. He moves toward the window, but he doesn&#39;t seem to be looking at anything in particular.
 
@@ -9590,11 +9631,11 @@ He glances at the agitated wolf. &quot;We&#39;ll have to continue this friendly 
 
 The panther mage pulls a red gem out from a pocket, and then disappears in a &lt;em&gt;fwoosh&lt;/em&gt;.
 
-[[Continue|n2a/V Start]]</tw-passagedata><tw-passagedata pid="391" name="n2a/D Start" tags="" position="4650,2950" size="100,100">A flicker in the corner of Nero&#39;s eye catches his attention.
+[[Continue|n2a/V Start]]</tw-passagedata><tw-passagedata pid="392" name="n2a/D Start" tags="" position="4650,2950" size="100,100">A flicker in the corner of Nero&#39;s eye catches his attention.
 
 The candle has lit itself again!
 
-[[Continue|n2a/D Start 3]]</tw-passagedata><tw-passagedata pid="392" name="n2a/D Start 3" tags="" position="4650,3050" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n2a/D Start 3]]</tw-passagedata><tw-passagedata pid="393" name="n2a/D Start 3" tags="" position="4650,3050" size="100,100">&lt;&lt;nobr&gt;&gt;
 @@#beat-1.beat.hidden;Candle&#39;s Influence:@@
 
 &lt;&lt;arousalbar 20 100 0&gt;&gt;
@@ -9638,12 +9679,12 @@ It&#39;s just a matter of finding the right angle...
 &lt;&lt;next 2s&gt;&gt;
     &lt;&lt;removeclass #beat-7 hidden&gt;&gt;
 &lt;&lt;/timed&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="393" name="n2a/D Lust" tags="" position="4300,2875" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="394" name="n2a/D Lust" tags="" position="4300,2875" size="100,100">&lt;&lt;nobr&gt;&gt;
 XXX progressive text about lust, based on arousal
 player is here at most 6 turns.
 6 different texts, always advance one, maybe jump more.
 &lt;br&gt;&lt;br&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="394" name="n2a/D Struggle" tags="" position="4500,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="395" name="n2a/D Struggle" tags="" position="4500,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if !$n2_candleMax&gt;&gt;
 
     XXX can be here twice before final struggle.
@@ -9666,7 +9707,7 @@ player is here at most 6 turns.
     [[Continue|n2a/D Grav Disrupted]]
 
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="395" name="n2a/D More Magic" tags="" position="4075,2975" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="396" name="n2a/D More Magic" tags="" position="4075,2975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n2_candleMax&gt;&gt;
 
     &lt;&lt;set $n2_moreMagicAction = &quot;[[Desperate magic|n2a/D Desperate Magic]]&quot;&gt;&gt;
@@ -9683,7 +9724,7 @@ player is here at most 6 turns.
     &lt;br&gt;&lt;br&gt;
 
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="396" name="n2a/F Compute Arousal" tags="" position="4425,2975" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="397" name="n2a/F Compute Arousal" tags="" position="4425,2975" size="100,100">&lt;&lt;script&gt;&gt;
 const v = State.variables;
 const actions = Math.max(v.n1_patienceActions, 0);
 const looks = Math.max(v.n1_patienceLooks, 0);
@@ -9705,7 +9746,7 @@ if (actions &gt; 2 || looks &gt; 6) {
 v.n2_candleHorny = v.n2_arousal &gt; 80;
 v.n2_candleStrong = looks === 1 || actions === 1;
 v.n2_candleMax = looks === 0 || actions === 0;
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="397" name="n1x/D Magic Free" tags="" position="5650,2525" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="398" name="n1x/D Magic Free" tags="" position="5650,2525" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone true&gt;&gt;
@@ -9743,7 +9784,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="398" name="n1x/D Magic Ivex Gone" tags="" position="5750,2275" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="399" name="n1x/D Magic Ivex Gone" tags="" position="5750,2275" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone true&gt;&gt;
@@ -9781,7 +9822,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="399" name="n1x/D Magic Receptive" tags="" position="5725,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="400" name="n1x/D Magic Receptive" tags="" position="5725,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive true&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone false&gt;&gt;
@@ -9824,7 +9865,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="400" name="n1x/D Magic Covert" tags="" position="5725,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="401" name="n1x/D Magic Covert" tags="" position="5725,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny false&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;&lt;assert-big-mood n2_ivexGone false&gt;&gt;
@@ -9867,7 +9908,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="401" name="n1x/D Magic Sprite" tags="" position="5175,1675" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="402" name="n1x/D Magic Sprite" tags="" position="5175,1675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-true !$n2_mirrorBroken&gt;&gt;
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
@@ -9924,7 +9965,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="402" name="n1x/D Magic Horny" tags="" position="5700,2400" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="403" name="n1x/D Magic Horny" tags="" position="5700,2400" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-big-mood n1_candleHorny true&gt;&gt;
 &lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
 &lt;!-- n2_ivexGone can be true or false --&gt;
@@ -9962,7 +10003,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="403" name="n1x/D Cast Escape" tags="" position="5950,2500" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="404" name="n1x/D Cast Escape" tags="" position="5950,2500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -9970,7 +10011,7 @@ ivex gone.
 try casting a generic escape spell, fails.
 stuff about anti-magic
 
-$n1_afterAction</tw-passagedata><tw-passagedata pid="404" name="n1x/D Cast Sight" tags="" position="5875,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
+$n1_afterAction</tw-passagedata><tw-passagedata pid="405" name="n1x/D Cast Sight" tags="" position="5875,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_magicSight&gt;&gt;
 &lt;&lt;set $n1_magicSight = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
@@ -9981,26 +10022,27 @@ reveals intricate energy network, highly firewalled.
 maybe more on anti-magic.
 the mirror is unusual, doesn&#39;t have a firewall.
 
-$n1_afterAction</tw-passagedata><tw-passagedata pid="405" name="n1c/D Subby Strip" tags="" position="4225,1675" size="100,100">&lt;&lt;nobr&gt;&gt;
+$n1_afterAction</tw-passagedata><tw-passagedata pid="406" name="n1c/D Subby Strip" tags="" position="4225,1675" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[n1c/D Subby Naked]]&quot;&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 subby gets stripped.
 
-[[Continue|n1p/F Naked]]</tw-passagedata><tw-passagedata pid="406" name="n2a/D Desperate Magic" tags="" position="3925,3050" size="100,100">XXX desperation magic fails
+[[Continue|n1p/F Naked]]</tw-passagedata><tw-passagedata pid="407" name="n2a/D Desperate Magic" tags="" position="3925,3050" size="100,100">XXX desperation magic fails
 
-[[Continue|n2a/D Failed Escape]]</tw-passagedata><tw-passagedata pid="407" name="n2a/P Futile Magic" tags="" position="3950,2850" size="100,100">XXX magic attempt fails
+[[Continue|n2a/D Failed Escape]]</tw-passagedata><tw-passagedata pid="408" name="n2a/P Futile Magic" tags="" position="3950,2850" size="100,100">XXX magic attempt fails
 
-$n1_afterAction</tw-passagedata><tw-passagedata pid="408" name="n1x/D After Naked" tags="" position="5550,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
+$n1_afterAction</tw-passagedata><tw-passagedata pid="409" name="n1x/D After Naked" tags="" position="5550,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_mageSight = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 now naked, after casting mage-sight.
 mage-sight not a total loss, can see stuff.
 
-$n1_afterAction</tw-passagedata><tw-passagedata pid="409" name="n1x/P Take Mirror" tags="" position="6075,2100" size="100,100">need state for mirror location
+$n1_afterAction</tw-passagedata><tw-passagedata pid="410" name="n1x/P Take Mirror" tags="" position="6075,2100" size="100,100">need state for mirror location
 
-$n1_afterAction</tw-passagedata><tw-passagedata pid="410" name="PassageHeader" tags="" position="3000,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+$n1_afterAction</tw-passagedata><tw-passagedata pid="411" name="PassageHeader" tags="" position="3000,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;no-trace&gt;&gt;
 &lt;&lt;if /^n/.test(State.passage)&gt;&gt;
     &lt;&lt;when-big-mood n1_candleHorny `
         $n1_candleLit
@@ -10034,6 +10076,7 @@ $n1_afterAction</tw-passagedata><tw-passagedata pid="410" name="PassageHeader" t
         $n2_free
     `&gt;&gt;
 &lt;&lt;/if&gt;&gt;
+&lt;&lt;/no-trace&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
 	/*! SugarCube JS */

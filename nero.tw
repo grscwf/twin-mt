@@ -900,9 +900,11 @@ $(document).on(":passagestart", () => {
   $("html").removeClass("redisplay-passage");
 });
 
+/*** var tracing */
+let actualVars = null;
+
 /*** Messages and assertions */
 
-let actualVars = null;
 let assertionDebug = false;
 
 $(document).on(":passagestart", () => {
@@ -1070,7 +1072,13 @@ Macro.add("TO"+"DO-big-mood", {
  *   by the passage.
  */
 function varInfoSetup() {
-  if (!Config.debug) return;
+  if (!Config.debug) {
+    Macro.add("no-trace", {
+      tags: [],
+      handler: () => {}
+    });
+    return;
+  }
 
   const varTypes = {
     n1_magicPhase: "MagicPhase",
@@ -1196,6 +1204,17 @@ function varInfoSetup() {
         return Reflect.set(...arguments);
       }
     })
+  });
+
+  Macro.add("no-trace", {
+    tags: [],
+    handler: function() {
+      const body = this.payload[0].contents;
+      const proxy = State.active.variables;
+      State.active.variables = actualVars;
+      $(this.output).wiki(body);
+      State.active.variables = proxy;
+    }
   });
 
   // note: sugarcube overrides JSON.stringify to handle "undefined" and a few other cases specially
@@ -1472,7 +1491,7 @@ $(document).on(":passageend", ev => {
   }
 });
 
-/*---- Actions */
+/*** Action list */
 
 const actionList = [];
 $(document).on(":passagestart", () => {
@@ -1491,6 +1510,20 @@ Macro.add("get-actions", {
       $(this.output).wiki('<li>' + action + '</li>');
     }
     actionList.length = 0;
+  }
+});
+
+/*** fade-in */
+Macro.add("fade-in", {
+  tags: ["next"],
+  handler: function() {
+    // XXX Util.fromCssTime to parse delay
+    // XXX Engine.minDomActionDelay
+    // XXX render each payload segment with faded
+    // XXX queue timers to remove faded
+    // XXX start timer
+    // XXX click on segment to advance timer
+    console.log(this.payload);
   }
 });
 
@@ -7891,6 +7924,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 [[testing 2]]
 [[timing test 1]]
 [[timing test 2]]
+[[timing test 3]]
 
 
 :: n1x/V Look {"position":"6875,1825","size":"200,100"}
@@ -8069,7 +8103,9 @@ The blurry figure becomes a person...
 <<nobr>>
 <<assert-big-mood n1_mageSight false>>
 <<ignore-big-mood n1_magicPhase>>
-<<assert-true !($n1_naked && $n1_smashed)>>
+<<no-trace>>
+  <<assert-true !($n1_naked && $n1_smashed)>>
+<</no-trace>>
 <</nobr>>\
 \
 <<nobr>>
@@ -10909,6 +10945,15 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 
 [[Continue|n1d/D Punch]]
 
+:: timing test 3 {"position":"4550,350","size":"100,100"}
+<<nobr>>
+<<fade-in 0s>>
+one
+<<next 2s>>
+two
+<</fade-in>>
+<</nobr>>
+
 
 :: timing test 2 {"position":"4550,350","size":"100,100"}
 <<nobr>>
@@ -10930,7 +10975,6 @@ Ivex curls his other paw into a fist, and pulls back his arm...
         .append(button).appendTo(outer);
       $(this.output).append(outer);
       button.on("click", () => {
-        console.log("click", beats);
         beats[0].removeClass("timed-beat-current").addClass("timed-beat-done");
         beats.shift();
         if (beats[0] != null) {
@@ -11578,6 +11622,7 @@ $n1_afterAction
 
 :: PassageHeader {"position":"3000,100","size":"100,100"}
 <<nobr>>
+<<no-trace>>
 <<if /^n/.test(State.passage)>>
     <<when-big-mood n1_candleHorny `
         $n1_candleLit
@@ -11611,6 +11656,7 @@ $n1_afterAction
         $n2_free
     `>>
 <</if>>
+<</no-trace>>
 <</nobr>>\
 
 
