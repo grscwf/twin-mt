@@ -543,6 +543,10 @@ ul.actions li {
   text-decoration: line-through;
 }
 
+.var-info-req {
+  opacity: 0.6;
+}
+
 .var-info-to-do {
   /* background-color: #400; */
 }
@@ -1131,15 +1135,19 @@ Macro.add("TO"+"DO", {
 
 /*** Big Mood */
 
-const bigMoodIgnore = new Set();
 const bigMood_to_do = new Set();
+const bigMoodIgnore = new Set();
+let bigMoodImplies = {};
+let bigMoodReq = {};
 
 $(document).on(":passagestart", () => {
-  bigMoodIgnore.clear();
   bigMood_to_do.clear();
+  bigMoodIgnore.clear();
+  bigMoodImplies = {};
+  bigMoodReq = {};
 });
 
-const bigMoodRe =/^\s*[$]?(\w+)\s+(?:(deterministic|ignore|TO[D]O|vary)|(always|assert|implies)\s+(.*))\s*$/
+const bigMoodRe =/^\s*[$]?(\w+)\s+(?:(ignore|TO[D]O|vary)|(always|assert|implies)\s+(.*))\s*$/
 
 Macro.add("big-mood", {
   skipArgs: true,
@@ -1151,9 +1159,6 @@ Macro.add("big-mood", {
     const vn = m[1];
 
     switch (m[2]) {
-      case "deterministic":
-        // nothing. no constraint on value, but shouldn't be ignored.
-        return;
       case "ignore":
         bigMoodIgnore.add(vn);
         return;
@@ -1179,9 +1184,23 @@ Macro.add("big-mood", {
       case 'assert':
         ok = val;
         break;
-      case 'implies':
+      case 'implies': {
         ok = actual == null || actual === false || val;
+        const m2 = /^\s*([!]?)[$](\w+)\s*$/.exec(m[4]);
+        if (m2 == null) break;
+
+        const bool = m2[1] !== "!";
+        const v2 = m2[2];
+        bigMoodImplies[vn] ??= [];
+        bigMoodImplies[vn].push([bool, v2]);
+        if (!actual) break;
+        
+        if (bigMoodReq[v2] != null && bigMoodReq[v2] !== bool) {
+          assertionFailed(`Implication rules for ${v2}`);
+        }
+        bigMoodReq[v2] = bool;
         break;
+      }
       default:
         throw new Error("bug");
     }
@@ -1320,6 +1339,7 @@ function varInfoSetup() {
     if (varsRead.has(vname)) outer.addClass("var-info-was-read");
     if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
     if (!varsRead.has(vname) && !varsWritten.has(vname)) outer.addClass("var-info-was-ignored");
+    if (bigMoodReq[vname] != null && bigMoodReq[vname] === v[vname]) outer.addClass("var-info-req");
 
     const label = $("<span class=var-info-button-label>").appendTo(outer);
 
@@ -1341,10 +1361,16 @@ function varInfoSetup() {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
       label.text(vname);
-      if (varsRead.has(vname) && !bigMoodIgnore.has(vname)) {
+      if (varsRead.has(vname)) {
         outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = !v0[vname];
+          const imp = bigMoodImplies[vname];
+          if (v[vname] && imp != null) {
+            for (const [b, v2] of imp) {
+              v[v2] = b;
+            }
+          }
           redisplay();
         });
       }
@@ -1359,7 +1385,7 @@ function varInfoSetup() {
       const sameType = Object.values(varTypes).filter(t => t === vtype).length;
       label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
-      if (varsRead.has(vname) && !bigMoodIgnore.has(vname)) {
+      if (varsRead.has(vname)) {
         if (0 < v[vname]) {
           const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
           left.on("click", () => {
@@ -1418,7 +1444,7 @@ function varInfoSetup() {
         const but = varButton(v).appendTo(el);
         if (bigMood_to_do.has(v)) {
           but.addClass("var-info-to-do");
-        } else if (!varsRead.has(v) && !bigMoodIgnore.has(v)) {
+        } else if (!varsRead.has(v) && !bigMoodIgnore.has(v) && bigMoodReq[v] == null) {
           but.addClass("var-info-warning");
         }
       });
@@ -1660,6 +1686,8 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
         &lt;&lt;set $n1_naked = true&gt;&gt;
     &lt;&lt;/link&gt;&gt;
     &lt;&lt;link &quot;&amp;#x23e9; Testing&quot; &quot;testing&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
+    &lt;&lt;link &quot;&amp;#x23e9; Nero Look isolate&quot; &quot;n1x/F Look&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
+    &lt;&lt;link &quot;&amp;#x23e9; Nero Magic isolate&quot; &quot;n1m/F Magic&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="Soft Awakening" tags="" position="900,625" size="100,100">&lt;&lt;set $warrior = true&gt;&gt;\
 It takes some effort, but the wolf opens his eyes. It takes a few seconds to regain their focus. At the same time, the stiffness of his body feels worse than ever. This nap was anything but comfortable.
 
@@ -7069,7 +7097,11 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
 [[testing 2]]
 [[timing test 1]]
 [[timing test 2]]
-[[timing test 3]]</tw-passagedata><tw-passagedata pid="240" name="n1x/V Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
+[[timing test 3]]</tw-passagedata><tw-passagedata pid="240" name="n1x/F Look" tags="" position="6875,1825" size="200,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive ignore&gt;&gt;
+&lt;&lt;big-mood n1_licked ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone ignore&gt;&gt;
 
 &lt;&lt;if $n2_candleHorny&gt;&gt;
     Nero &lt;&lt;= either(
@@ -7084,7 +7116,7 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
     his situation.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n2_free &amp;&amp; $n2_tooClever&gt;&gt;
+&lt;&lt;if $n2_tooClever&gt;&gt;
     He and his tortured balls are standing naked
 &lt;&lt;elseif $n2_free&gt;&gt;
     He&#39;s standing naked
@@ -7109,6 +7141,14 @@ $(document).on(&quot;:passageinit&quot;, ev =&gt; console.log(ev));
     in what looks like a [[mage&#39;s study|n1x/V Study]].
 &lt;&lt;else&gt;&gt;
     in middle of [[Ivex&#39;s study|n1x/V Study]].
+&lt;&lt;/if&gt;&gt;
+
+&lt;&lt;if $n1_magicSight&gt;&gt;
+    An unusually dense mesh of magical energy permeates the space.
+    &lt;br&gt;&lt;br&gt;
+&lt;&lt;/if&gt;&gt;
+
+&lt;&lt;if $n1_studySeen&gt;&gt;
     The study is furnished with
     &lt;&lt;if $n1_deskSeen || $n1_mirrorSeen || $n1_candleLit&gt;&gt;
         a desk,
@@ -7238,7 +7278,6 @@ The blurry figure becomes a person...
 
 Ivex (the Magnificent) moves away from the
 &lt;&lt;if $n1_smashed&gt;&gt;
-    &lt;&lt;run $n1_naked&gt;&gt;
     bound wolf&#39;s abused balls,
 &lt;&lt;elseif $n1_naked&gt;&gt;
     bound, naked wolf,
@@ -8811,7 +8850,6 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 
 &quot;There must be some mistake,&quot;
 &lt;&lt;if $n1_smashed&gt;&gt;
-    &lt;&lt;run $n1_naked&gt;&gt;
     says Nero, as he tries to use his twitching tail to shelter his aching balls.
 &lt;&lt;elseif $n1_naked&gt;&gt;
     says Nero, as he tries unsuccessfully to use his
@@ -8967,7 +9005,7 @@ It wasn&#39;t until after he finished washing, when he started toweling himself 
 &lt;&lt;if $n1_patienceExhausted&gt;&gt;
     &lt;&lt;set $n1_magicAction = null&gt;&gt;
 &lt;&lt;else&gt;&gt;
-    &lt;&lt;include [[n1x/V Look]]&gt;&gt;
+    &lt;&lt;include [[n1x/F Look]]&gt;&gt;
     &lt;br&gt;&lt;br&gt;
     &lt;&lt;include [[n1m/F Magic]]&gt;&gt;
     &lt;br&gt;&lt;br&gt;
@@ -9492,7 +9530,6 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 \
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_smashed&gt;&gt;
-    &lt;&lt;run $n1_naked&gt;&gt;
     Nero mentally checks off one step in his strategic map.
     He of course did not expect Ivex to believe a tale of ignorance.
     But offering a small bit of resistance will make his lies more
@@ -10257,23 +10294,73 @@ mage-sight not a total loss, can see stuff.
 
 $n1_afterAction</tw-passagedata><tw-passagedata pid="410" name="n1x/P Take Mirror" tags="" position="6075,2100" size="100,100">need state for mirror location
 
-$n1_afterAction</tw-passagedata><tw-passagedata pid="411" name="PassageHeader" tags="" position="3000,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+$n1_afterAction</tw-passagedata><tw-passagedata pid="411" name="PassageHeader" tags="" position="3200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;no-trace&gt;&gt;
 &lt;&lt;if /^n/.test(State.passage)&gt;&gt;
+    &lt;&lt;set $n1_magicPhase ||= 0&gt;&gt;
+    &lt;&lt;big-mood n1_candleLit implies !$n1_ivexReceptive&gt;&gt;
     &lt;&lt;big-mood n1_candleLit implies $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n1_candleLit implies !$n2_free&gt;&gt;
+    &lt;&lt;big-mood n1_candleLit implies !$n2_tooClever&gt;&gt;
+
+    &lt;&lt;big-mood n1_ivexReceptive implies !$n1_candleLit&gt;&gt;
+    &lt;&lt;big-mood n1_ivexReceptive implies !$n2_candleHorny&gt;&gt;
+    &lt;&lt;big-mood n1_ivexReceptive implies !$n2_extraHorny&gt;&gt;
+    &lt;&lt;big-mood n1_ivexReceptive implies !$n2_free&gt;&gt;
     &lt;&lt;big-mood n1_ivexReceptive implies !$n2_ivexGone&gt;&gt;
+    &lt;&lt;big-mood n1_ivexReceptive implies !$n2_tooClever&gt;&gt;
+
     &lt;!-- no constraints on n1_licked --&gt;
-    &lt;&lt;big-mood n1_magicSight implies
-        $n1_magicPhase &gt;= MP_magicSight &amp;&amp; !$n2_mirrorBroken
+
+    &lt;&lt;big-mood n1_magicPhase assert
+    	$n1_magicPhase &lt; MP_magicSight || !$n1_magicSight || $n2_mirrorBroken
     &gt;&gt;
+    &lt;&lt;big-mood n1_magicPhase assert
+        $n1_magicPhase &lt; MP_magicSight || $n1_naked
+    &gt;&gt;
+
+    &lt;&lt;big-mood n1_magicSight implies $n1_magicPhase &gt;= MP_magicSight&gt;&gt;
+    &lt;&lt;big-mood n1_magicSight implies $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n1_magicSight implies !$n2_mirrorBroken&gt;&gt;
+
     &lt;!-- no constraints on n1_naked --&gt;
+
     &lt;!-- no contraints on n1_smashed --&gt;
 
     &lt;&lt;big-mood n2_candleHorny implies $n1_candleLit&gt;&gt;
-    &lt;&lt;big-mood n2_extraHorny implies $n2_free &amp;&amp; !$n2_tooClever&gt;&gt;
-    &lt;&lt;big-mood n2_free implies $n1_naked &amp;&amp; $n2_ivexGone&gt;&gt;
-    &lt;&lt;big-mood n2_ivexGone implies !$n1_ivexReceptive &amp;&amp; $n1_naked&gt;&gt;
-    &lt;&lt;big-mood n2_tooClever implies !$n2_extraHorny &amp;&amp; $n2_free&gt;&gt;
+    &lt;&lt;big-mood n2_candleHorny implies !$n1_ivexReceptive&gt;&gt;
+    &lt;&lt;big-mood n2_candleHorny implies $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n2_candleHorny implies !$n2_free&gt;&gt;
+    &lt;&lt;big-mood n2_candleHorny implies $n2_ivexGone&gt;&gt;
+    &lt;&lt;big-mood n2_candleHorny implies !$n2_tooClever&gt;&gt;
+
+    &lt;&lt;big-mood n2_extraHorny implies !$n1_candleLit&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies !$n1_ivexReceptive&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies !$n1_magicSight&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies $n2_free&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies $n2_ivexGone&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies $n2_mirrorBroken&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies !$n2_tooClever&gt;&gt;
+
+    &lt;&lt;big-mood n2_free implies !$n1_candleLit&gt;&gt;
+    &lt;&lt;big-mood n2_free implies !$n1_ivexReceptive&gt;&gt;
+    &lt;&lt;big-mood n2_free implies $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n2_free implies !$n2_candleHorny&gt;&gt;
+    &lt;&lt;big-mood n2_free implies $n2_ivexGone&gt;&gt;
+
+    &lt;&lt;big-mood n2_ivexGone implies !$n1_ivexReceptive&gt;&gt;
+    &lt;&lt;big-mood n2_ivexGone implies $n1_naked&gt;&gt;
+
+    &lt;&lt;big-mood n2_tooClever implies !$n1_candleLit&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies !$n1_ivexReceptive&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies $n1_magicPhase &gt;= MP_wantPassword&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies $n1_magicSight&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies !$n2_candleHorny&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies !$n2_extraHorny&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies $n2_free&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies $n2_ivexGone&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/no-trace&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="412" name="big-mood template" tags="" position="7600,1500" size="100,100">&lt;&lt;nobr&gt;&gt;
