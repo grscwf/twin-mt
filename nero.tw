@@ -1250,6 +1250,7 @@ function varInfoSetup() {
 
   const varButton = vname => {
     const v = actualVars ?? State.active.variables;
+    const v0 = State.current.variables;
 
     const outer = $("<span class=var-info-button-outer>");
 
@@ -1260,7 +1261,12 @@ function varInfoSetup() {
     const label = $("<span class=var-info-button-label>").appendTo(outer);
 
     const jval = str(v[vname]);
-    outer.attr("title", vname + "=" + jval);
+    if (varsWritten.has(vname)) {
+      const jval0 = str(v0[vname]);
+      outer.attr("title", `${vname}=${jval0} ->\n${vname}=${jval}`);
+    } else {
+      outer.attr("title", `${vname}=${jval}`);
+    }
     $("<span class=var-info-vname>").text(vname).appendTo(label);
     label.append("=");
     $("<span class=var-info-value>").text(jval).appendTo(label);
@@ -1275,7 +1281,7 @@ function varInfoSetup() {
       if (varsRead.has(vname) && !bigMoodIgnore.has(vname)) {
         outer.addClass("var-info-can-change");
         outer.on("click", () => {
-          v[vname] = !v[vname];
+          v[vname] = !v0[vname];
           redisplay();
         });
       }
@@ -8009,7 +8015,7 @@ $(document).on(":passageinit", ev => console.log(ev));
     <<if $n1_cabinetSeen>>
         several wooden cabinets,
     <<else>>
-        several [[wooden cabinets|n1x/P cabinet]],
+        several [[wooden cabinets|n1x/D cabinet]],
     <</if>>
     <<if $n1_bookshelfSeen>>
         and many bookshelves.
@@ -8035,7 +8041,7 @@ $(document).on(":passageinit", ev => console.log(ev));
         The [[far wall|n1x/V Wall]] has
     <</if>>
     a [[prominent round window|n1x/V Window]],
-    a [[large map|n1x/P map]],
+    a [[large map|n1x/D map]],
     <<if $n1_portraitMomKnown>>
         and a [[portrait of Ivex's mother|n1x/P portrait]].
     <<else>>
@@ -8068,7 +8074,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 <</if>>
 
 <<if $n1_cabinetSeen>>
-    On top of the [[cabinets|n1x/P cabinet]] is
+    On top of one [[cabinet|n1x/D cabinet]] is
     <<if $n1_bottleSeen>>
         a [[bottled poltergeist device|n1x/P bottle]]
     <<else>>
@@ -8215,12 +8221,12 @@ He's a [[pretentiously dressed black panther|n1c/F Ivex Description]], larger th
 <<big-mood n1_magicPhase ignore>>
 <<big-mood n1_naked TODO>>
 <<big-mood n1_smashed ignore>>
+
 <<big-mood n2_candleHorny TODO>>
 <<big-mood n2_extraHorny always false>>
 <<big-mood n2_free always false>>
 <<big-mood n2_ivexGone TODO>>
 <<big-mood n2_tooClever always false>>
-
 <</nobr>>\
 \
 <<nobr>>
@@ -8234,7 +8240,7 @@ He's a [[pretentiously dressed black panther|n1c/F Ivex Description]], larger th
     It's made of sturdy wood, and the leather straps are thick
     and quite secure.
     But it's not immediately obvious what's keeping the
-    cross fastened in place in the room.
+    cross fastened in place in the [[room|n1x/V Study]].
 
     <<if $n2_ivexGone>>
         <br><br>
@@ -8310,7 +8316,7 @@ Nero often finds that the furnishings of a person's private quarters reflects th
     and a [[prominent round window|n1x/V Window]].
 <</if>>
 
-The other walls are lined with many [[wooden cabinets|n1x/P cabinet]]
+The other walls are lined with many [[wooden cabinets|n1x/D cabinet]]
 and [[bookshelves|n1x/P Bookshelf]].
 
 <<if !$n2_free>>
@@ -8327,8 +8333,8 @@ and [[bookshelves|n1x/P Bookshelf]].
 
 :: n1x/D Grav Gems {"position":"6275,1950","size":"100,100"}
 <<nobr>>
-<<big-mood n2_free always false>>
 <<assert-true $n1_mirrorSeen>>
+<<assert-true !$n2_free>>
 <</nobr>>\
 \
 <<nobr>>
@@ -8502,15 +8508,66 @@ if want touch
 </ul>
 
 
-:: n1x/P cabinet {"position":"7875,2150","size":"100,100"}
-[[n1x/P bottle]]
-[[n1x/P penguin]]
-\
-<<set $n1_cabinetSeen = true>>\
-\
-<ul class="actions">\
-  <li><<link $n1_afterLook>><</link>></li>\
-</ul>\
+:: n1x/D cabinet {"position":"7875,2150","size":"100,100"}
+<<nobr>>
+<<set $n1_cabinetSeen = true>>
+
+<<big-mood n1_candleLit TODO>>
+<<big-mood n1_ivexReceptive TODO>>
+<<big-mood n1_licked ignore>>
+<<big-mood n1_magicSight TODO>>
+<<big-mood n1_magicPhase TODO>>
+<<big-mood n1_naked ignore>>
+<<big-mood n1_smashed ignore>>
+
+<<big-mood n2_candleHorny TODO>>
+<<big-mood n2_extraHorny TODO>>
+<<big-mood n2_free vary>>
+<<big-mood n2_ivexGone TODO>>
+<<big-mood n2_tooClever TODO>>
+
+Against the walls of the room are several cabinets with
+<<if !$n2_free>>
+    various colored doors and drawers, all closed,
+    and not particularly helpful to Nero in his current bound state.
+<<else>>
+    various colored doors and drawers.
+    <<if $n2_cabinetOpened>>
+        Most of the cabinets are locked. The unlocked ones are filled
+        with useless (and disturbing) junk.
+    <<else>>
+        <<set $n2_cabinetOpened = true>>
+        Most of the cabinets seem to be locked, or lack an obvious
+        way to open and examine their contents.
+        But a few have ordinary drawers that can be pulled out.
+        
+        <br><br>
+        The first drawer Nero opens appears to contain used underwear.
+        
+        <br><br>
+        The next one has an assortment of dildos of various shapes
+        and sizes... apparently still sticky.
+        
+        <br><br>
+        Nero decides that searching the remaining cabinets is a waste of time.
+        There are better things to do before Ivex returns.
+    <</if>>
+<</if>>
+
+<br><br>
+On top of one cabinet is
+<<if $n1_bottleSeen>>
+    a [[bottled poltergeist device|n1x/P bottle]]
+<<else>>
+    a [[large glass bottle|n1x/P bottle]]
+<</if>>
+and a [[stuffed penguin|n1x/P penguin]].
+
+<br><br>
+<ul class="actions">
+    <li>$n1_afterLook</li>
+</ul>
+<</nobr>>
 
 
 :: n1x/P Cards [key has-hole] {"position":"7875,2775","size":"100,100"}
@@ -8559,7 +8616,7 @@ There's a solitary [[round window|n1x/V Window]] exactly in the center of the wa
 <</nobr>>
 
 <<nobr>>
-To the left of the window is a [[large map|n1x/P map]] of the continent with political boundaries marked in bright primary colors. On the opposite side of the window is
+To the left of the window is a [[large map|n1x/D map]] of the continent with political boundaries marked in bright primary colors. On the opposite side of the window is
 <<if $n1_portraitMomKnown>>
     a [[portrait of Ivex's mother|n1x/P portrait]]
 <<else>>
@@ -8593,15 +8650,37 @@ plus he's given it a name.
 </ul>\
 
 
-:: n1x/P map [maybe-password] {"position":"8100,1675","size":"100,100"}
-map of the area.
+:: n1x/D map [maybe-password] {"position":"8100,1675","size":"100,100"}
+<<nobr>>
+<<big-mood n1_candleLit TODO>>
+<<big-mood n1_ivexReceptive TODO>>
+<<big-mood n1_licked TODO>>
+<<big-mood n1_magicSight TODO>>
+<<big-mood n1_magicPhase vary>>
+<<big-mood n1_naked ignore>>
+<<big-mood n1_smashed ignore>>
 
-password: birthplace
-\
-<ul class="actions">\
-  <<if !$n1_ivexGone>><li>[[Ask Ivex|n1x/P ask map]]</li><</if>>\
-  <li><<link $n1_afterLook>><</link>></li>\
-</ul>\
+<<big-mood n2_candleHorny TODO>>
+<<big-mood n2_extraHorny TODO>>
+<<big-mood n2_free TODO>>
+<<big-mood n2_ivexGone TODO>>
+<<big-mood n2_tooClever TODO>>
+
+map has several markings.
+
+<<if $n1_magicPhase === MP_wantPassword && !$n1_ivexGone>>
+    <br><br>
+    maybe one of the marked places is important,
+    perhaps the city Ivex was born?
+    <<add-action [[Ask Ivex about map|n1x/P ask map]]>>
+<</if>>
+
+<br><br>
+<ul class="actions">
+    <<get-actions>>
+    <li>$n1_afterLook</li>
+</ul>
+<</nobr>>
 
 
 :: n1x/P portrait [has-hole maybe-password] {"position":"8125,1975","size":"100,100"}
@@ -9749,7 +9828,7 @@ testing 2
 
 <<big-mood n2_candleHorny TODO>>
 <<big-mood n2_extraHorny TODO>>
-<<big-mood n2_free TODO>>
+<<big-mood n2_free vary>>
 <<big-mood n2_ivexGone TODO>>
 <<big-mood n2_tooClever ignore>>
 <</nobr>>\
@@ -9776,7 +9855,8 @@ The only window in the room is round and about a meter in diameter. The window h
     XXX can't escape this way. variants on mage sight.
 
 <<else>>
-    From his bound position, Nero cannot see anything else outside.
+    From his position, bound on a [[wooden cross|n1x/V Cross]],
+    Nero cannot see anything else outside.
 <</if>>
 
 <<if $n1_magicPhase === MP_wantTouch>>
