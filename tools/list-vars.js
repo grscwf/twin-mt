@@ -32,13 +32,12 @@ function listVars(twFile, varListTxt, regexFilter) {
   let passage = "-";
 
   lines.forEach((line, lno) => {
-
     const addMatch = (v, start) => {
       vars[v] ??= new Set();
       vars[v].add(lno);
       contexts[v] ??= [];
       contexts[v][lno] = trimContext(line, start);
-    }
+    };
 
     const m = /^:: (.*)/.exec(line);
     if (m != null) {
@@ -58,10 +57,14 @@ function listVars(twFile, varListTxt, regexFilter) {
     for (const m of line.matchAll(/\b(setup[.]\w+)/g)) {
       addMatch(m[1], m.index);
     }
+    // big-mood
+    for (const m of line.matchAll(/[<]big-mood\s+[$]?(\w+)/g)) {
+      addMatch(m[1], m.index);
+    }
     // assert-big-mood
     for (const m of line.matchAll(/assert-big-mood (\w+)/g)) {
       addMatch(m[1], m.index);
-    };
+    }
     // TO[D]O-big-mood
     for (const m of line.matchAll(/TO[D]O-big-mood ([\w\s]+)/g)) {
       for (const m2 of m[1].matchAll(/\w+/g)) {
@@ -72,22 +75,22 @@ function listVars(twFile, varListTxt, regexFilter) {
 
   let varnames = Object.keys(vars).sort();
 
-  if (regexFilter != null && regexFilter !== '') {
+  if (regexFilter != null && regexFilter !== "") {
     const regex = new RegExp(regexFilter);
-    varnames = varnames.filter(v => regex.test(v));
+    varnames = varnames.filter((v) => regex.test(v));
   }
 
   const counts = [];
   varnames.forEach((v) => (counts[v] = vars[v].size));
 
   const unknown = new Set();
-  if (varListTxt != null && varListTxt !== '') {
-    const varList = fs.readFileSync(varListTxt, 'utf-8');
+  if (varListTxt != null && varListTxt !== "") {
+    const varList = fs.readFileSync(varListTxt, "utf-8");
     const known = new Set();
     for (const m of varList.matchAll(/^\s*(\w+)/gm)) {
       known.add(m[1]);
     }
-    for (const vn of varnames.filter(vn => !known.has(vn))) {
+    for (const vn of varnames.filter((vn) => !known.has(vn))) {
       unknown.add(vn);
     }
     if (unknown.size > 0) {

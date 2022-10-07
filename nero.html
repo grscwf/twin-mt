@@ -964,7 +964,64 @@ $(document).on(":passagestart", () => {
 });
 
 /*** var tracing */
+
 let actualVars = null;
+const varsRead = new Set();
+const varsWritten = new Set();
+
+function actualVar(vname) {
+  if (actualVars != null) return actualVars[vname];
+  return State.active.variables[vname];
+}
+
+function startTrace() {
+  if (!Config.debug) return;
+  varsRead.clear();
+  varsWritten.clear();
+  actualVars = State.active.variables;
+  State.active.variables = new Proxy(actualVars, {
+    defineProperty(o, prop) {
+      if (typeof prop === "string") varsWritten.add(prop);
+      return Reflect.defineProperty(...arguments);
+    },
+    get(o, prop) {
+      if (typeof prop === "string") varsRead.add(prop);
+      return Reflect.get(...arguments);
+    },
+    set(o, prop) {
+      if (typeof prop === "string") varsWritten.add(prop);
+      return Reflect.set(...arguments);
+    }
+  });
+}
+
+function stopTrace() {
+  if (actualVars != null) {
+    State.active.variables = actualVars;
+    actualVars = null;
+  }
+}
+
+function noTrace(fn) {
+  if (actualVars == null) return fn();
+  const proxy = State.active.variables;
+  State.active.variables = actualVars;
+  try {
+    return fn();
+  } finally {
+    State.active.variables = proxy;
+  }
+}
+
+Macro.add("no-trace", {
+  tags: [],
+  handler: function() {
+    noTrace(() => {
+      const body = this.payload[0].contents;
+      $(this.output).wiki(body);
+    });
+  }
+});
 
 /*** Messages and assertions */
 
@@ -1029,10 +1086,7 @@ function assertionFailed(expr, context) {
 Macro.add("assert-true", {
   skipArgs: true,
   handler: function() {
-    const proxy = State.active.variables;
-    if (actualVars != null) State.active.variables = actualVars;
-    const val = eval(this.args.full);
-    State.active.variables = proxy;
+    const val = noTrace(() => eval(this.args.full));
     if (!val) {
       assertionFailed(this.args.raw, this);
     }
@@ -1084,48 +1138,68 @@ $(document).on(":passagestart", () => {
   bigMoodIgnore.clear();
   bigMood_to_do.clear();
 });
-function assertBigMood(vname, exp, raw, context) {
-  const actual = actualVars[vname];
-  const ok = exp === actual || (exp === false && actual == null);
-  if (ok) {
-    bigMoodIgnore.add(vname);
-    return;
-  }
-  const expr = raw.replace(/^\s*`\s*(.*?)\s*`\s*$/, "$1");
-  assertionFailed(`bigMood $${vname} === (${expr})`, context);
-}
-Macro.add("assert-big-mood", {
+
+const bigMoodRe =/^\s*[$]?(\w+)\s+(?:(deterministic|ignore|TO[D]O|vary)|(always|assert|implies)\s+(.*))\s*$/
+
+Macro.add("big-mood", {
+  skipArgs: true,
   handler: function() {
-    const vname = this.args[0];
-    const exp = this.args[1];
-    assertBigMood(vname, exp, this.args.raw, this);
-  }
-});
-Macro.add("when-big-mood", {
-  handler: function() {
-    const vname = this.args[0];
-    const exp = this.args[1];
-    if (actualVars[vname] && !exp) {
-      const expr = this.args.raw
-        .replace(/^\s*\w+\s+/, '')
-        .replace(/^\s*`\s*(.*?)\s*`\s*$/, "$1");
-      assertionFailed(`bigMood $${vname} implies (${expr})`, this);
+    if (!Config.debug) return;
+
+    const m = bigMoodRe.exec(this.args.raw);
+    if (m == null) throw new Error(`big-mood: bad args ${this.args.raw}`);
+    const vn = m[1];
+
+    switch (m[2]) {
+      case "deterministic":
+        // nothing. no constraint on value, but shouldn't be ignored.
+        return;
+      case "ignore":
+        bigMoodIgnore.add(vn);
+        return;
+      case "TO"+"DO":
+        has_to_do = true;
+        bigMood_to_do.add(vn);
+        return;
+      case "vary":
+        // nothing. no constraint on value, but shouldn't be ignored.
+        return;
+    }
+
+    if (m[2] != null || m[3] == null || m[4] == null) throw new Error("bug");
+
+    const actual = actualVar(vn);
+    const val = noTrace(() => Scripting.evalTwineScript(m[4]));
+    let ok = false;
+    switch (m[3]) {
+      case 'always':
+        ok = actual === val || (actual == null && val === false);
+        if (ok) bigMoodIgnore.add(vn);
+        break;
+      case 'assert':
+        ok = val;
+        break;
+      case 'implies':
+        ok = actual == null || actual === false || val;
+        break;
+      default:
+        throw new Error("bug");
+    }
+    if (!ok) {
+      assertionFailed(`big-mood ${vn} ${m[3]} ${m[4]}`, this);
     }
   }
-});
-Macro.add("ignore-big-mood", {
-  handler: function() {
-    this.args.forEach(v => bigMoodIgnore.add(v));
+})
+
+function assertBigMood(vn, val, expr) {
+  const actual = actualVar(vn);
+  const ok = actual === val || (actual == null && val === false);
+  if (ok) {
+    bigMoodIgnore.add(vn);
+    return;
   }
-});
-Macro.add("TO"+"DO-big-mood", {
-  handler: function() {
-    has_to_do = true;
-    this.args.forEach(v => {
-      bigMood_to_do.add(v)
-    });
-  }
-});
+  assertionFailed(`big-mood ${vn} always ${expr}`);
+}
 
 /**
  * var-info - show vars and allow toggling flags.
@@ -1135,13 +1209,7 @@ Macro.add("TO"+"DO-big-mood", {
  *   by the passage.
  */
 function varInfoSetup() {
-  if (!Config.debug) {
-    Macro.add("no-trace", {
-      tags: [],
-      handler: () => {}
-    });
-    return;
-  }
+  if (!Config.debug) return;
 
   const varTypes = {
     n1_magicPhase: "MagicPhase",
@@ -1240,45 +1308,11 @@ function varInfoSetup() {
     ],
   ];
 
-  const varsRead = new Set();
-  const varsWritten = new Set();
-
-  $(document).on(":passagestart", () => {
-    varsRead.clear();
-    varsWritten.clear();
-    actualVars = State.active.variables;
-    State.active.variables = new Proxy(actualVars, {
-      defineProperty(o, prop) {
-        if (typeof prop === "string") varsWritten.add(prop);
-        return Reflect.defineProperty(...arguments);
-      },
-      get(o, prop) {
-        if (typeof prop === "string") varsRead.add(prop);
-        return Reflect.get(...arguments);
-      },
-      set(o, prop) {
-        if (typeof prop === "string") varsWritten.add(prop);
-        return Reflect.set(...arguments);
-      }
-    })
-  });
-
-  Macro.add("no-trace", {
-    tags: [],
-    handler: function() {
-      const body = this.payload[0].contents;
-      const proxy = State.active.variables;
-      State.active.variables = actualVars;
-      $(this.output).wiki(body);
-      State.active.variables = proxy;
-    }
-  });
-
   // note: sugarcube overrides JSON.stringify to handle "undefined" and a few other cases specially
   const str = val => val == null ? String(val) : JSON.stringify(val);
 
   const varButton = vname => {
-    const v = actualVars;
+    const v = actualVars ?? State.active.variables;
 
     const outer = $("<span class=var-info-button-outer>");
 
@@ -1342,9 +1376,13 @@ function varInfoSetup() {
     return outer;
   };
 
+  $(document).on(":passagestart", () => {
+    startTrace();
+  });
+
   $(document).on(":passageend", () => {
     $(".var-info").remove();
-    State.active.variables = actualVars;
+    stopTrace();
 
     const touched = new Set();
     [...varsRead].forEach(v => touched.add(v));
@@ -1582,7 +1620,7 @@ Macro.add("fade-in", {
     // XXX click on segment to advance timer
     console.log(this.payload);
   }
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="end" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="green"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="Bound" tags="" position="2500,175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $passedContentWarning = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7186,17 +7224,17 @@ After a few more rapid blinks, along with some shaking of his aching head, Nero&
 The blurry figure becomes a person...
 
 [[Continue|n1a/F Hello 2]]</tw-passagedata><tw-passagedata pid="243" name="n1c/F Ivex Intro" tags="" position="3875,675" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_magicSight false&gt;&gt;
-&lt;&lt;assert-true $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
-&lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
+&lt;&lt;big-mood n1_magicSight always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase assert $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_naked implies !$n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_smashed implies !$n1_naked&gt;&gt;
 
-&lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;&lt;nobr&gt;&gt;
 Ivex (the Magnificent) moves away from the
 &lt;&lt;if $n1_naked&gt;&gt;
-    &lt;&lt;ignore-big-mood n1_smashed&gt;&gt;
     bound, naked wolf,
 &lt;&lt;elseif $n1_smashed&gt;&gt;
     bound wolf&#39;s abused balls,
@@ -7257,18 +7295,19 @@ He&#39;s a [[pretentiously dressed black panther|n1c/F Ivex Description]], large
     &lt;li&gt;[[&#39;&quot;There must be some mistake...&quot;&#39;|n1c/F Ivex Intro 2]]&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="n1x/V Cross" tags="" position="6500,2225" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;TODO-big-mood n1_candleLit&gt;&gt;
-&lt;&lt;ignore-big-mood n1_ivexReceptive&gt;&gt;
-&lt;&lt;ignore-big-mood n1_licked&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicSight&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
-&lt;&lt;TODO-big-mood n1_naked&gt;&gt;
-&lt;&lt;ignore-big-mood n1_smashed&gt;&gt;
-&lt;&lt;TODO-big-mood n2_candleHorny&gt;&gt;
-&lt;&lt;assert-big-mood n2_extraHorny false&gt;&gt;
-&lt;&lt;assert-big-mood n2_free false&gt;&gt;
-&lt;&lt;TODO-big-mood n2_ivexGone&gt;&gt;
-&lt;&lt;assert-big-mood n2_tooClever false&gt;&gt;
+&lt;&lt;big-mood n1_candleLit TODO&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive ignore&gt;&gt;
+&lt;&lt;big-mood n1_licked ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight TODO&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_naked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_extraHorny always false&gt;&gt;
+&lt;&lt;big-mood n2_free always false&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone TODO&gt;&gt;
+&lt;&lt;big-mood n2_tooClever always false&gt;&gt;
+
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;&lt;nobr&gt;&gt;
@@ -7319,17 +7358,17 @@ He&#39;s a [[pretentiously dressed black panther|n1c/F Ivex Description]], large
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="245" name="n1x/V Study" tags="" position="7150,2400" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_studySeen = true&gt;&gt;
 
-&lt;&lt;TODO-big-mood n1_candleLit&gt;&gt;
-&lt;&lt;TODO-big-mood n1_ivexReceptive&gt;&gt;
-&lt;&lt;ignore-big-mood n1_licked&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicSight&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
-&lt;&lt;TODO-big-mood n1_naked&gt;&gt;
-&lt;&lt;ignore-big-mood n1_smashed&gt;&gt;
-&lt;&lt;TODO-big-mood n2_candleHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_extraHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_ivexGone&gt;&gt;
-&lt;&lt;ignore-big-mood n2_tooClever&gt;&gt;
+&lt;&lt;big-mood n1_candleLit TODO&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive TODO&gt;&gt;
+&lt;&lt;big-mood n1_licked ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight TODO&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_naked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_extraHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone TODO&gt;&gt;
+&lt;&lt;big-mood n2_tooClever ignore&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7531,19 +7570,19 @@ if want touch and ivex here, [[n1x/P Ask Cards]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="n1x/V Wall" tags="" position="7950,1800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_wallSeen = true&gt;&gt;
 
-&lt;&lt;ignore-big-mood n1_candleLit&gt;&gt;
-&lt;&lt;TODO-big-mood n1_ivexReceptive&gt;&gt;
-&lt;&lt;TODO-big-mood n1_licked&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicSight&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicPhase&gt;&gt;
-&lt;&lt;TODO-big-mood n1_naked&gt;&gt;
-&lt;&lt;TODO-big-mood n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit ignore&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive TODO&gt;&gt;
+&lt;&lt;big-mood n1_licked TODO&gt;&gt;
+&lt;&lt;big-mood n1_magicSight TODO&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase TODO&gt;&gt;
+&lt;&lt;big-mood n1_naked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed TODO&gt;&gt;
 
-&lt;&lt;TODO-big-mood n2_candleHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_extraHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_free&gt;&gt;
-&lt;&lt;TODO-big-mood n2_ivexGone&gt;&gt;
-&lt;&lt;TODO-big-mood n2_tooClever&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_extraHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_free TODO&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone TODO&gt;&gt;
+&lt;&lt;big-mood n2_tooClever TODO&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7823,8 +7862,10 @@ And the spell&#39;s trigger was such a small, ambiguous gesture. Nero starts ske
 &lt;&lt;/nobr&gt;&gt;
 
 [[Continue|n1p/F Naked 2]]</tw-passagedata><tw-passagedata pid="270" name="n1p/F Barbs No" tags="" position="4925,1025" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicSight n1_magicPhase n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
+&lt;&lt;big-mood n1_magicSight ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
 &lt;&lt;set $n1_barbs = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7839,8 +7880,10 @@ The young wolf wrapped his too-small towel around his nakedness, trying to make 
 The tiger continued with confidence. &quot;It&#39;s true that feral feline species, many of them, have keratinous spines on their penis. But we appear to have lost them sometime in the evolution of an upright posture. There&#39;s ongoing debate on the subject. Penises are not particularly well preserved in archeological or fossil records. Much of the debate centers on interpretation of some historical writings that appear to mention penile barbs. The most well-known instance is an uncharacteristically vulgar play that is attributed to Jocoros of Ancient Parenthia. But even if the authorship weren&#39;t in doubt, the penile-barbed lynx in the play is a manifestation of the god Torna, who represents, among other things, the bestial impulses that arise when people engage in war, and love...&quot;
 
 [[Continue|n1p/F Barbs No 2]]</tw-passagedata><tw-passagedata pid="271" name="n1p/F Barbs Yes" tags="" position="4925,900" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicSight n1_magicPhase n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
+&lt;&lt;big-mood n1_magicSight ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
 &lt;&lt;set $n1_barbs = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -7859,7 +7902,7 @@ The tiger seemed unaware of the awkwardness of the situation. &quot;Most feline 
 &lt;&lt;set $n1_candleLit = false&gt;&gt;
 &lt;&lt;set $n2_candleHorny = false&gt;&gt;
 &lt;&lt;set $n2_ivexGone = true&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicPhase&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase TODO&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Ivex&#39;s exit by teleportation has created a sudden rush of air that causes the candle&#39;s smoke to scatter.
@@ -8456,7 +8499,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;optional-action $n1_magicAction&gt;&gt;
 &lt;/ul&gt;&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="312" name="n1d/D Get Creepy" tags="" position="4825,2375" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_naked true&gt;&gt;
+&lt;&lt;big-mood n1_naked always true&gt;&gt;
 
 The panther&#39;s musk is quite noticeable now. Perhaps Nero&#39;s sense of smell has become sensitized by his attempts at identifying the mysterious red candle. Whatever the cause, Nero finds himself unreasonably aware of the bulge at the panther&#39;s crotch, and he discovers his mind has formed a clear image of the leaking fluid at the tip of the panther&#39;s cock.
 &lt;&lt;/nobr&gt;&gt;
@@ -8495,25 +8538,25 @@ well, it was worth a shot, learned something
 stuff about anti-magic.
 
 $n1_afterAction</tw-passagedata><tw-passagedata pid="315" name="testing 2" tags="" position="4300,475" size="100,100">testing 2</tw-passagedata><tw-passagedata pid="316" name="n1x/V Window" tags="has-hole" position="7225,1575" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;TODO-big-mood n1_candleLit&gt;&gt;
-&lt;&lt;TODO-big-mood n1_ivexReceptive&gt;&gt;
-&lt;&lt;ignore-big-mood n1_licked&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicSight&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicPhase&gt;&gt;
-&lt;&lt;TODO-big-mood n1_naked&gt;&gt;
-&lt;&lt;ignore-big-mood n1_smashed&gt;&gt;
-&lt;&lt;TODO-big-mood n2_candleHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_extraHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_free&gt;&gt;
-&lt;&lt;TODO-big-mood n2_ivexGone&gt;&gt;
-&lt;&lt;ignore-big-mood n2_tooClever&gt;&gt;
+&lt;&lt;big-mood n1_candleLit TODO&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive TODO&gt;&gt;
+&lt;&lt;big-mood n1_licked ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight TODO&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase TODO&gt;&gt;
+&lt;&lt;big-mood n1_naked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
+
+&lt;&lt;big-mood n2_candleHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_extraHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_free TODO&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone TODO&gt;&gt;
+&lt;&lt;big-mood n2_tooClever ignore&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n2_free&gt;&gt;
-    &lt;&lt;ignore-big-mood n2_ivexGone&gt;&gt;
     And there doesn&#39;t seem to be anything other than clear blue sky.
     This room appears to be at the top floor of an extremely tall tower.
     The outer surface of the wall is smooth stone that continues downward
@@ -8645,17 +8688,15 @@ The panther speaks lightly. &quot;Welcome to my little world. I am Ivex the Magn
 Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encountered many braggarts in his adventures before. And here in front of him is another. It should be quite easy to fulfill his commission and escape this weird mage&#39;s residence.
 
 [[Continue|n1c/F Ivex Intro]]</tw-passagedata><tw-passagedata pid="330" name="n1c/F Ivex Intro 2" tags="" position="3975,675" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_magicSight false&gt;&gt;
-&lt;&lt;assert-true $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
-&lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
-
-&lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
+&lt;&lt;big-mood n1_magicSight always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase assert $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;&gt;
+&lt;&lt;big-mood n1_naked implies !$n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_smashed implies !$n1_naked&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;&lt;nobr&gt;&gt;
 &quot;There must be some mistake,&quot;
 &lt;&lt;if $n1_naked&gt;&gt;
-    &lt;&lt;ignore-big-mood n1_smashed&gt;&gt;
     says Nero, as he tries to use his
     bushy wolf tail to cover his bare crotch, unsuccessfully.
 &lt;&lt;elseif $n1_smashed&gt;&gt;
@@ -8765,8 +8806,8 @@ Ivex lifts the riding crop off the wolf&#39;s balls, and draws his arm back slow
 
 [[Continue|n1d/D Alarm 2]]</tw-passagedata><tw-passagedata pid="337" name="n1d/D Strip Resist" tags="" position="4800,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[Continue|n1d/D Get Creepy]]&quot;&gt;&gt;
-&lt;&lt;assert-big-mood n1_licked false&gt;&gt;
-&lt;&lt;assert-big-mood n1_naked false&gt;&gt;
+&lt;&lt;big-mood n1_licked always false&gt;&gt;
+&lt;&lt;big-mood n1_naked always false&gt;&gt;
 
 Nero sneers, almost a snarl.
 This concern expressed by the panther for the wolf&#39;s comfort
@@ -8795,8 +8836,10 @@ A moment later, the grinning-masked panther says, &quot;I know &lt;em&gt;exactly
 The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|n1p/F Naked]]</tw-passagedata><tw-passagedata pid="338" name="n1p/F Barbs" tags="" position="4700,950" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicSight n1_magicPhase n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight ignore&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Nero usually enjoyed field games at the Windbone Magic Academy, but on that fateful day, he took an awkward step while trying to intercept a passing ball. His ankle twisted, and he fell to the ground in distress. The athletics coach took only a brief look at the injury before declaring it was reason enough to dismiss Nero early.
@@ -8905,8 +8948,10 @@ Ah well. It wouldn&#39;t be his first encounter with an indelicate feline cock.
     [[Continue|n1p/F Barbs]]
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="348" name="n1p/F Barbs 2" tags="" position="4800,950" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicSight n1_magicPhase n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight ignore&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 The bin for used towels was stationed at a pillar near the entrance to the changing area. And on the other side of the pillar, on a bench not visible from the entrance, a tiger lounged in light and shadow.
@@ -8929,8 +8974,10 @@ The tiger spoke with a voice that was low and friendly. He said...
     &lt;li&gt;[[`&quot;Penile barbs are a myth.&quot;`|n1p/F Barbs No]]&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="349" name="n1p/F Barbs End" tags="" position="5150,975" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicSight n1_magicPhase n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight ignore&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;&lt;nobr&gt;&gt;
@@ -8947,10 +8994,10 @@ Nero shakes off the memories of feline penises from that... complicated year. Th
 Such as, the noticeably horny panther mage who has just magicked away the wolf&#39;s clothes, and is now fingering the exposed fur on Nero&#39;s naked chest.
 
 &lt;&lt;link $n1_afterNaked&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="350" name="n1c/F Anti-magic" tags="noreturn" position="4150,800" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_magicSight false&gt;&gt;
-&lt;&lt;assert-big-mood n1_magicPhase `MP_triedMagic`&gt;&gt;
-&lt;&lt;assert-big-mood n1_naked true&gt;&gt;
-&lt;&lt;assert-big-mood n1_smashed false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase always MP_triedMagic&gt;&gt;
+&lt;&lt;big-mood n1_magicSight always false&gt;&gt;
+&lt;&lt;big-mood n1_naked always true&gt;&gt;
+&lt;&lt;big-mood n1_smashed always false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Anti-magic fields are broadly divided into two categories.
@@ -8986,7 +9033,7 @@ It&#39;s saved his life more than once.
 &lt;&lt;link &quot;Return&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="352" name="n1z Under Construction" tags="" position="2725,200" size="100,100">&lt;em&gt;Congratulations. You&#39;ve reached an &quot;Under Construction&quot; point in Nero&#39;s story.&lt;/em&gt;
 
 [[Back to Title|Title Screen]]</tw-passagedata><tw-passagedata pid="353" name="n1p/F Barbs Extra" tags="noreturn" position="5275,975" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
 &lt;&lt;set $n1_barbsExtraSeen = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
@@ -9023,9 +9070,10 @@ Most spoken spells require extremely precise enunciation to have any effect at a
 Needless to say, Nero only made that mistake once.
 
 &lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="356" name="n1c/F Ivex Description" tags="noreturn" position="3800,775" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_magicSight false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicPhase&gt;&gt;
-&lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight always false&gt;&gt;
+&lt;&lt;big-mood n1_naked implies !$n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_smashed implies !$n1_naked&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
@@ -9038,7 +9086,6 @@ Or he could be, if he dressed better. His clothes are the facile fashion of a us
 It all feels like a poor person&#39;s idea of what a rich person would wear.
 Not that Nero would ever tell that to his
 &lt;&lt;if $n1_smashed&gt;&gt;
-    &lt;&lt;ignore-big-mood n1_naked&gt;&gt;
     captor.
 
     &lt;br&gt;&lt;br&gt;
@@ -9168,8 +9215,9 @@ $n1_afterAction</tw-passagedata><tw-passagedata pid="370" name="n1c/D Subby Nake
 The wolf considers holding his breath to avoid whatever is in the candle&#39;s fumes, but of course he&#39;ll have to breathe eventually. No point delaying the inevitable. Perhaps with measured, cautious breaths, he can slowly acclimate himself, and limit whatever effects the candle might have.
 
 [[Continue|n1d/D Comfortable? (1,1)]]</tw-passagedata><tw-passagedata pid="372" name="n1d/V Naked Resist" tags="" position="4700,2425" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_naked true&gt;&gt;
-&lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_naked always true&gt;&gt;
+&lt;&lt;big-mood n1_licked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed TODO&gt;&gt;
 
 Nero sneers at the pretentious scoundrel.
 The panther&#39;s lewd inquiry is hardly subtle,
@@ -9198,7 +9246,8 @@ fur of the wolf&#39;s bare chest.
 &lt;&lt;/nobr&gt;&gt;
 
 [[Continue|n1d/D Get Creepy]]</tw-passagedata><tw-passagedata pid="373" name="n1d/D Get Creepy 3" tags="" position="4825,2575" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_licked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed TODO&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;em&gt;Why am I so horny?&lt;/em&gt; Nero is aghast at his body&#39;s reaction. But it&#39;s not just his body. His mind is also becoming engorged with primal emotions. He is weirdly hyperaware of the panther&#39;s rising lust, and he feels a deeply rooted desire to meet it, or exceed it, with a feral lust of his own. Is this feeling arising from a sense of competition between rivals, or is he being drawn somehow into a candlelight courtship dance? Is there even a difference between those possibilities?
@@ -9218,8 +9267,10 @@ The panther speaks in a low throaty register that reverberates through the mask.
 Ivex lifts his paw off the wolf&#39;s crotch, but leaves it poised right above it, centimeters away. He chuckles under the mask, as the wolf&#39;s member bulges and struggles outward, seeking attention...
 
 [[Continue|n1d/D Get Creepy 3]]</tw-passagedata><tw-passagedata pid="375" name="n1p/F Barbs Yes 2" tags="" position="5025,900" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicSight n1_magicPhase n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight ignore&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Nero struggled to put on his clothes while his fur was still damp.
@@ -9231,8 +9282,10 @@ Nero approached the bin to deposit his used towel. He tried to make it clear tha
 The young wolf, in a panic, threw the towel at the tiger and fled as quickly as he could on his injured ankle. The tiger&#39;s laughter reverberated in his head, even after he was far beyond earshot of the showers.
 
 [[Continue|n1p/F Barbs End]]</tw-passagedata><tw-passagedata pid="376" name="n1p/F Barbs No 2" tags="" position="5025,1025" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_candleLit false&gt;&gt;
-&lt;&lt;ignore-big-mood n1_magicSight n1_magicPhase n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_candleLit always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase ignore&gt;&gt;
+&lt;&lt;big-mood n1_magicSight ignore&gt;&gt;
+&lt;&lt;big-mood n1_smashed ignore&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 Nero hurriedly continued to dry himself and scramble into his clothes, nodding at what seemed like appropriate times, trying to maintain a friendly distance while also trying to avoid giving the impression that he had any interest in the topic.
@@ -9316,9 +9369,10 @@ The cheetah, Lady Pevin... her strength and flexibility... and Lord Temesca&#39;
 But his rational mind reminds him of his immediate peril, and he manages to shove away those intoxicating memories, for now.
 
 &lt;&lt;link Return $return&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="381" name="n1c/F Ivex Intro 3" tags="" position="4075,675" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_magicSight false&gt;&gt;
-&lt;&lt;assert-true $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
-&lt;&lt;assert-true !($n1_naked &amp;&amp; $n1_smashed)&gt;&gt;
+&lt;&lt;big-mood n1_magicSight always false&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase assert n1_magicPhase &lt;= MP_triedMAgic&gt;&gt;
+&lt;&lt;big-mood n1_naked implies !$n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_smashed implies !$n1_naked&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 &lt;&lt;nobr&gt;&gt;
@@ -9407,8 +9461,9 @@ What is he doing...
 Ivex anticipates the wolf&#39;s snapping jaws and smoothly dips his head below where the wolf can reach. &quot;Were you trying to snatch my mask?&quot; he asks. &quot;Naughty boy...&quot;
 
 [[Continue|n1d/V Pull]]</tw-passagedata><tw-passagedata pid="384" name="n1d/V Naked Submit" tags="" position="4700,2325" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_naked true&gt;&gt;
-&lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_naked always true&gt;&gt;
+&lt;&lt;big-mood n1_licked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed TODO&gt;&gt;
 
 &quot;I&#39;m quite relaxed,&quot; says the wolf. &quot;Just a little bit of chill.&quot;
 The moment Nero says that, he regrets it.
@@ -9437,8 +9492,8 @@ and roughly strokes the fur on the wolf&#39;s naked chest.
 
 [[Continue|n1d/D Get Creepy]]</tw-passagedata><tw-passagedata pid="385" name="n1d/D Strip Submit" tags="" position="4675,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_afterNaked = &quot;[[Continue|n1d/D Get Creepy]]&quot;&gt;&gt;
-&lt;&lt;assert-big-mood n1_licked false&gt;&gt;
-&lt;&lt;assert-big-mood n1_naked false&gt;&gt;
+&lt;&lt;big-mood n1_licked always false&gt;&gt;
+&lt;&lt;big-mood n1_naked always false&gt;&gt;
 
 &lt;&lt;if $n1_smashed&gt;&gt;
 
@@ -9485,7 +9540,8 @@ and roughly strokes the fur on the wolf&#39;s naked chest.
 The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|n1p/F Naked]]</tw-passagedata><tw-passagedata pid="386" name="n1d/V Pull" tags="" position="5200,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;TODO-big-mood n1_licked n1_smashed&gt;&gt;
+&lt;&lt;big-mood n1_licked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed TODO&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
 The panther forms a ring with his fingers around the wolf&#39;s scrotum, above the wolf&#39;s balls, and starts pulling them out, stretching the wolf&#39;s sack tight against his nuts.
@@ -9791,10 +9847,10 @@ v.n2_candleHorny = v.n2_arousal &gt; 80;
 v.n2_candleNearMax = looks === 1 || actions === 1;
 v.n2_candleMax = looks === 0 || actions === 0;
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="398" name="n1x/D Magic Free" tags="" position="5650,2525" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
-&lt;&lt;assert-big-mood n2_candleHorny false&gt;&gt;
-&lt;&lt;assert-big-mood n2_ivexGone true&gt;&gt;
-&lt;&lt;assert-big-mood n2_free true&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive always false&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny always false&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone always true&gt;&gt;
+&lt;&lt;big-mood n2_free always true&gt;&gt;
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
@@ -9829,10 +9885,10 @@ v.n2_candleMax = looks === 0 || actions === 0;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="399" name="n1x/D Magic Ivex Gone" tags="" position="5750,2275" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
-&lt;&lt;assert-big-mood n2_candleHorny false&gt;&gt;
-&lt;&lt;assert-big-mood n2_ivexGone true&gt;&gt;
-&lt;&lt;assert-big-mood n2_free false&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive always false&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny always false&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone always true&gt;&gt;
+&lt;&lt;big-mood n2_free always false&gt;&gt;
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
@@ -9867,10 +9923,10 @@ v.n2_candleMax = looks === 0 || actions === 0;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="400" name="n1x/D Magic Receptive" tags="" position="5725,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_ivexReceptive true&gt;&gt;
-&lt;&lt;assert-big-mood n2_candleHorny false&gt;&gt;
-&lt;&lt;assert-big-mood n2_ivexGone false&gt;&gt;
-&lt;&lt;assert-big-mood n2_free false&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive always true&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny always false&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone always false&gt;&gt;
+&lt;&lt;big-mood n2_free always false&gt;&gt;
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
@@ -9910,10 +9966,10 @@ v.n2_candleMax = looks === 0 || actions === 0;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="401" name="n1x/D Magic Covert" tags="" position="5725,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
-&lt;&lt;assert-big-mood n2_candleHorny false&gt;&gt;
-&lt;&lt;assert-big-mood n2_ivexGone false&gt;&gt;
-&lt;&lt;assert-big-mood n2_free false&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive always false&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny always false&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone always false&gt;&gt;
+&lt;&lt;big-mood n2_free always false&gt;&gt;
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
@@ -10010,10 +10066,10 @@ v.n2_candleMax = looks === 0 || actions === 0;
     &lt;&lt;run throw new Error(&quot;bug&quot;)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="403" name="n1x/D Magic Horny" tags="" position="5700,2400" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;assert-big-mood n1_ivexReceptive false&gt;&gt;
-&lt;&lt;assert-big-mood n2_candleHorny true&gt;&gt;
-&lt;!-- n2_ivexGone can be true or false --&gt;
-&lt;&lt;assert-big-mood n2_free false&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive always false&gt;&gt;
+&lt;&lt;big-mood n2_candleHorny always true&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone TODO&gt;&gt;
+&lt;&lt;big-mood n2_free always false&gt;&gt;
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
@@ -10088,49 +10144,36 @@ $n1_afterAction</tw-passagedata><tw-passagedata pid="410" name="n1x/P Take Mirro
 $n1_afterAction</tw-passagedata><tw-passagedata pid="411" name="PassageHeader" tags="" position="3000,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;no-trace&gt;&gt;
 &lt;&lt;if /^n/.test(State.passage)&gt;&gt;
-    &lt;&lt;when-big-mood n1_candleLit `
-        $n1_naked
-    `&gt;&gt;
-    &lt;&lt;when-big-mood n1_ivexReceptive `
-        !$n2_ivexGone
-    `&gt;&gt;
+    &lt;&lt;big-mood n1_candleLit implies $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n1_ivexReceptive implies !$n2_ivexGone&gt;&gt;
     &lt;!-- no constraints on n1_licked --&gt;
-    &lt;&lt;assert-big-mood n1_magicSight `
+    &lt;&lt;big-mood n1_magicSight implies
         $n1_magicPhase &gt;= MP_magicSight &amp;&amp; !$n2_mirrorBroken
-    `&gt;&gt;
+    &gt;&gt;
     &lt;!-- no constraints on n1_naked --&gt;
     &lt;!-- no contraints on n1_smashed --&gt;
 
-    &lt;&lt;when-big-mood n2_candleHorny `
-        $n1_candleLit
-    `&gt;&gt;
-    &lt;&lt;when-big-mood n2_extraHorny `
-        $n2_free &amp;&amp; !$n2_tooClever
-    `&gt;&gt;
-    &lt;&lt;when-big-mood n2_free `
-        $n1_naked &amp;&amp; $n2_ivexGone
-    `&gt;&gt;
-    &lt;&lt;when-big-mood n2_ivexGone `
-        !$n1_ivexReceptive &amp;&amp; $n1_naked
-    `&gt;&gt;
-    &lt;&lt;when-big-mood n2_tooClever `
-        !$n2_extraHorny &amp;&amp; $n2_free
-    `&gt;&gt;
+    &lt;&lt;big-mood n2_candleHorny implies $n1_candleLit&gt;&gt;
+    &lt;&lt;big-mood n2_extraHorny implies $n2_free &amp;&amp; !$n2_tooClever&gt;&gt;
+    &lt;&lt;big-mood n2_free implies $n1_naked &amp;&amp; $n2_ivexGone&gt;&gt;
+    &lt;&lt;big-mood n2_ivexGone implies !$n1_ivexReceptive &amp;&amp; $n1_naked&gt;&gt;
+    &lt;&lt;big-mood n2_tooClever implies !$n2_extraHorny &amp;&amp; $n2_free&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/no-trace&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="412" name="TODO-big-mood template" tags="" position="7600,1500" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;TODO-big-mood n1_candleLit&gt;&gt;
-&lt;&lt;TODO-big-mood n1_ivexReceptive&gt;&gt;
-&lt;&lt;TODO-big-mood n1_licked&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicSight&gt;&gt;
-&lt;&lt;TODO-big-mood n1_magicPhase&gt;&gt;
-&lt;&lt;TODO-big-mood n1_naked&gt;&gt;
-&lt;&lt;TODO-big-mood n1_smashed&gt;&gt;
-&lt;&lt;TODO-big-mood n2_candleHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_extraHorny&gt;&gt;
-&lt;&lt;TODO-big-mood n2_free&gt;&gt;
-&lt;&lt;TODO-big-mood n2_ivexGone&gt;&gt;
-&lt;&lt;TODO-big-mood n2_tooClever&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="412" name="big-mood template" tags="" position="7600,1500" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;big-mood n1_candleLit TODO&gt;&gt;
+&lt;&lt;big-mood n1_ivexReceptive TODO&gt;&gt;
+&lt;&lt;big-mood n1_licked TODO&gt;&gt;
+&lt;&lt;big-mood n1_magicSight TODO&gt;&gt;
+&lt;&lt;big-mood n1_magicPhase TODO&gt;&gt;
+&lt;&lt;big-mood n1_naked TODO&gt;&gt;
+&lt;&lt;big-mood n1_smashed TODO&gt;&gt;
+
+&lt;&lt;big-mood n2_candleHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_extraHorny TODO&gt;&gt;
+&lt;&lt;big-mood n2_free TODO&gt;&gt;
+&lt;&lt;big-mood n2_ivexGone TODO&gt;&gt;
+&lt;&lt;big-mood n2_tooClever TODO&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
