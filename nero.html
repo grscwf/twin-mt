@@ -737,12 +737,15 @@ a[data-passage*="/V "]:hover {
   line-height: 1.5;
   text-align: center;
   margin: 12px 0;
+  pointer-events: none;
   white-space: pre-line;
   width: 100%;
   z-index: 99991;
 }
 #messages-inner {
   display: inline-block;
+  margin: 0 12px;
+  pointer-events: auto;
 }
 a.messages-close {
   color: #55f;
@@ -1064,8 +1067,6 @@ function assertionFailed(expr, context) {
     inner = $("<div id=messages-assert class=messages-item>");
     addMessage(inner);
     const info = $("<div id=messages-assert-info>").appendTo(inner);
-    info.text("This state should be impossible.");
-    info.append(" Passage is not expected to make sense. ");
     $("<a class=messages-close>[close]</a>").on("click", () => {
       inner.remove();
     }).appendTo(info);
@@ -1073,6 +1074,9 @@ function assertionFailed(expr, context) {
       assertionDebug = true;
       redisplay();
     }).appendTo(info);
+    info.append("This state should be impossible.");
+    info.append(" Passage is not expected to make sense");
+    info.append(" if it reads vars in the assertion.");
   }
   const fail = $("<div class=messages-assert-fail>").appendTo(inner);
   fail.append("Assertion failed: ");
@@ -1138,12 +1142,14 @@ Macro.add("TO"+"DO", {
 const bigMood_to_do = new Set();
 const bigMoodIgnore = new Set();
 let bigMoodImplies = {};
+let bigMoodFalseImplies = {};
 let bigMoodReq = {};
 
 $(document).on(":passagestart", () => {
   bigMood_to_do.clear();
   bigMoodIgnore.clear();
   bigMoodImplies = {};
+  bigMoodFalseImplies = {};
   bigMoodReq = {};
 });
 
@@ -1185,7 +1191,7 @@ Macro.add("big-mood", {
         ok = val;
         break;
       case 'implies': {
-        ok = actual == null || actual === false || val;
+        ok = !!actual === false || val;
         const m2 = /^\s*([!]?)[$](\w+)\s*$/.exec(m[4]);
         if (m2 == null) break;
 
@@ -1193,12 +1199,28 @@ Macro.add("big-mood", {
         const v2 = m2[2];
         bigMoodImplies[vn] ??= [];
         bigMoodImplies[vn].push([bool, v2]);
-        if (!actual) break;
-        
-        if (bigMoodReq[v2] != null && bigMoodReq[v2] !== bool) {
-          assertionFailed(`Implication rules for ${v2}`);
+
+        if (actual) {
+          if (bigMoodReq[v2] != null && bigMoodReq[v2] !== bool) {
+            assertionFailed(`Implication rules for ${v2}`);
+          }
+          bigMoodReq[v2] = bool;
         }
-        bigMoodReq[v2] = bool;
+
+        // contrapositive
+        if (bool) {
+          bigMoodFalseImplies[v2] ??= [];
+          bigMoodFalseImplies[v2].push([false, vn]);
+        } else {
+          bigMoodImplies[v2] ??= [];
+          bigMoodImplies[v2].push([false, vn]);
+        }
+        if (!!actualVar(v2) === !bool) {
+          if (bigMoodReq[vn] != null && bigMoodReq[vn] !== false) {
+            assertionFailed(`Contrapositive rules for ${vn}`);
+          }
+          bigMoodReq[vn] = false;
+        }
         break;
       }
       default:
@@ -1367,9 +1389,11 @@ function varInfoSetup() {
           v[vname] = !v0[vname];
           const imp = bigMoodImplies[vname];
           if (v[vname] && imp != null) {
-            for (const [b, v2] of imp) {
-              v[v2] = b;
-            }
+            imp.forEach(([b, v2]) => v[v2] = b);
+          }
+          const fimp = bigMoodFalseImplies[vname];
+          if (!v[vname] && fimp != null) {
+            fimp.forEach(([b, v2]) => v[v2] = b);
           }
           redisplay();
         });
@@ -10298,6 +10322,7 @@ $n1_afterAction</tw-passagedata><tw-passagedata pid="411" name="PassageHeader" t
 &lt;&lt;no-trace&gt;&gt;
 &lt;&lt;if /^n/.test(State.passage)&gt;&gt;
     &lt;&lt;set $n1_magicPhase ||= 0&gt;&gt;
+
     &lt;&lt;big-mood n1_candleLit implies !$n1_ivexReceptive&gt;&gt;
     &lt;&lt;big-mood n1_candleLit implies $n1_naked&gt;&gt;
     &lt;&lt;big-mood n1_candleLit implies !$n2_free&gt;&gt;
