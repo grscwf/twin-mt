@@ -11,6 +11,9 @@ story-to-tw:
 	TWEEGO_PATH=./assets \
 		tweego -d index.html -o story.tw
 
+nero-check:
+	clear; node tools/list-vars.js nero.tw nero-vars.txt '^n\d'
+
 nero-to-html:
 	WSLENV=$$WSLENV:TWEEGO_PATH/l \
 	TWEEGO_PATH=./assets \

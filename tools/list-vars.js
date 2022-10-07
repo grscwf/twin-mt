@@ -1,24 +1,29 @@
 #!/usr/bin/env node
 /**
- * Usage: node list-vars.js $twFile
+ * Usage: node list-vars.js $twFile [$varListTxt [$regexFilter]]
  *
  * Lists all vars and their usages in $twFile. Useful for spotting typos
  * and unused vars.
+ *
+ * If $varListTxt is non-empty, it's a file of expected var names,
+ * one per line. Vars that are not in that file are flagged.
+ *
+ * If $regexFilter is non-empty, only vars that match that regex are shown.
  */
 
 const fs = require("fs");
 
 function usage() {
-  console.log("Usage: node list-vars.js $twFile");
+  console.log("Usage: node list-vars.js $twFile [$varListTxt [$regexFilter]]");
   process.exit(1);
 }
 
 function main(args) {
-  if (args.length !== 1) usage();
-  listVars(args[0]);
+  if (args.length < 1 || 3 < args.length) usage();
+  listVars(args[0], args[1], args[2]);
 }
 
-function listVars(twFile) {
+function listVars(twFile, varListTxt, regexFilter) {
   const text = fs.readFileSync(twFile, "utf-8");
   const lines = text.split(/\r?\n/);
   const vars = [];
@@ -53,33 +58,62 @@ function listVars(twFile) {
     for (const m of line.matchAll(/\b(setup[.]\w+)/g)) {
       addMatch(m[1], m.index);
     }
+    // assert-big-mood
+    for (const m of line.matchAll(/assert-big-mood (\w+)/g)) {
+      addMatch(m[1], m.index);
+    };
+    // TO[D]O-big-mood
+    for (const m of line.matchAll(/TO[D]O-big-mood ([\w\s]+)/g)) {
+      for (const m2 of m[1].matchAll(/\w+/g)) {
+        addMatch(m2[0], m.index + m2.index);
+      }
+    }
   });
 
-  const varnames = Object.keys(vars).sort();
+  let varnames = Object.keys(vars).sort();
+
+  if (regexFilter != null && regexFilter !== '') {
+    const regex = new RegExp(regexFilter);
+    varnames = varnames.filter(v => regex.test(v));
+  }
+
   const counts = [];
   varnames.forEach((v) => (counts[v] = vars[v].size));
 
-  const many = 5;
-
-  for (let c = 1; c < many; ++c) {
-    const subset = varnames.filter((v) => counts[v] === c);
-    if (subset.length !== 0) {
-      console.log(`=== count ${c} ===`);
-      console.log("");
-      list(subset);
-      console.log("");
+  const unknown = new Set();
+  if (varListTxt != null && varListTxt !== '') {
+    const varList = fs.readFileSync(varListTxt, 'utf-8');
+    const known = new Set();
+    for (const m of varList.matchAll(/^\s*(\w+)/gm)) {
+      known.add(m[1]);
+    }
+    for (const vn of varnames.filter(vn => !known.has(vn))) {
+      unknown.add(vn);
+    }
+    if (unknown.size > 0) {
+      console.log("unknown vars:");
+      for (const vn of [...unknown].sort()) {
+        console.log(`    ${vn}`);
+      }
     }
   }
 
-  console.log("=== count any ===");
   list(varnames);
 
   function list(subset) {
-    for (const varname of subset) {
-      console.log(varname);
-      const lnos = Array.from(vars[varname]).sort((a, b) => b - a);
+    for (const vn of subset) {
+      const lnos = Array.from(vars[vn]).sort((a, b) => b - a);
+      if (unknown.has(vn)) {
+        console.log(`${vn} \x1b[41m*** not known ***\x1b[0m`);
+      } else if (lnos.length === 1) {
+        console.log(`${vn} \x1b[41m*** used once ***\x1b[0m`);
+      } else if (lnos.length === 2) {
+        console.log(`${vn} \x1b[43m(used twice)\x1b[0m`);
+      } else {
+        console.log(vn);
+      }
       for (const lno of lnos) {
-        console.log(`    [[${passageMap[lno]}]] ${lno}: ${contexts[varname][lno]}`);
+        console.log(`    [[${passageMap[lno]}]] ${lno}: ${contexts[vn][lno]}`);
       }
     }
   }
