@@ -908,6 +908,11 @@ function redisplay() {
 $(document).on(":passagestart", () => {
   $("html").removeClass("redisplay-passage");
 });
+Macro.add("redisplay-passage", {
+  handler: function() {
+    setTimeout(redisplay, 0);
+  }
+});
 
 /*** var tracing */
 
@@ -8025,7 +8030,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 [[timing test 3]]
 
 
-:: n1x/F Look {"position":"6900,1300","size":"200,100"}
+:: n1x/F Look {"position":"6925,1325","size":"200,100"}
 <<nobr>>
 <<if "[" + "[" + State.passage + "]]" === "[[n1x/F Look]]">>
     (look isolate)
@@ -8036,12 +8041,12 @@ $(document).on(":passageinit", ev => console.log(ev));
     <<big-mood n2_ivexGone ignore>>
 <</if>>
 
-<<if $n2_free>>
-    <<include [[n1x/D Look Free]]>>
-<<elseif $n2_candleHorny>>
-    <<include [[n1x/D Look Horny]]>>
+<<if $n2_candleHorny>>
+    <<include [[n1x/V Look Horny]]>>
+<<elseif $n2_free>>
+    <<include [[n1x/F Look Free]]>>
 <<else>>
-    <<include [[n1x/D Look Bound]]>>
+    <<include [[n1x/F Look Bound]]>>
 <</if>>
 <</nobr>>\
 
@@ -8300,7 +8305,7 @@ desk has assorted papers in disarray.
 
 if not free, most interesting thing is a [[letter opener|n1x/P Knife]], if only there were some way to get to it.
 
-if candle lit, mention [[n1x/P Candle]]
+if candle lit, mention [[n1x/F Candle]]
 
 if mirror broken, mention [[broken mirror|n1x/D Mirror]], and [[snow globe|n1x/P Globe]].
 
@@ -8410,16 +8415,112 @@ if free, can also see porn mags and something fascist.
 </ul>
 
 
-:: n1x/P Candle [maybe-password] {"position":"6750,2750","size":"100,100"}
-assert candle is lit and not free
+:: n1x/F Candle [maybe-password] {"position":"6775,2750","size":"100,100"}
+<<nobr>>
+<<big-mood n1_candleLit always true>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_licked ignore>>
+<<big-mood n1_magicSight vary>>
+<<big-mood n1_magicPhase ignore>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_smashed ignore>>
 
-scent is intoxicating, and staring at it makes you hornier.
+<<big-mood n2_candleHorny vary>>
+<<big-mood n2_extraHorny always false>>
+<<big-mood n2_free always false>>
+<<big-mood n2_ivexGone vary>>
+<<big-mood n2_tooClever always false>>
 
-if want password and ivex here, ask favorite color [[n1x/P Ask Candle]]
+<<if $n1_magicSight>>
+    Exotic magic energies enter the base of the candle's holder
+    and flow upward, dispersing outward in a mist-like spray.
+<</if>>
 
+<<if $n2_candleHorny>>
+    The flame at the tip of the slender red candle seems to flicker
+    in time with the pulse of Nero's blood as he watches.
+    
+    The reflection of the candle in the nearby [[mirror|n1x/D Mirror]]
+    shows a drip of wax down the far side of the candle,
+    with a bead of congealed wax near the top, like a drop of pre-cum
+    <<if !$n2_ivexGone>>
+        that Nero imagines on the tip of Ivex's
+        <<assert-true $n1_barbs != null>>
+        <<if $n1_barbs>>barbed<<else>>smooth<</if>>
+        feline cock. Why is he even thinking such a thing?
+        
+        <<if !$n1_candleAskedHorny>>
+            <<add-action [['"That candle...!"'|n1x/D Candle Ask Horny]]>>
+        <</if>>
+    <<else>>
+        that Nero can feel dripping from the tip of his cock,
+        which twitches upwards, straining toward the wolf's
+        muzzle which bends down and extends a long tongue
+        that tries to lick, but isn't long enough to reach his
+        quivering cock.
+    <</if>>
+
+<<else>>
+
+    The candle is tall and slender, smooth at the top,
+    but patterned with ridges that bulge and spiral down the
+    length of its body. Its color is a rich, dark red, like newly
+    butchered blood, but something about the way it glistens makes
+    Nero think of something more sensual than meat.
+
+	<!-- TODO this could be conditional-choice -->
+    <<if $n0_pevinSeen>>
+        <br><br>
+        It's like the taste of blood on Lady Pevin's lips after she's
+        bitten the ear of her cuckolded cheetah husband...
+    <<elseif $n0_micaSeen>>
+        <br><br>
+        It's like the splatter of blood on Professor Mica's face after he...
+    <</if>>
+
+    <br><br>
+    ... Nero's getting distracted again. He shakes his head to focus.
+
+    <<if $n2_ivexGone>>
+        The sensuous vapors emitted by the candle are already
+        affecting his ability to concentrate on anything other than his
+        sorely deprived cock. He'd better hurry and find an escape
+        before he's completely overwhelmed by lust.
+    <<else>>
+        The delicious vapors emitted by the candle's flame seem to be
+        affecting his mind and making it difficult to concentrate on
+        outsmarting the obnoxious panther mage.
+        <<if !$n1_candleAsked>>
+            <<add-action [['"About that candle..."'|n1x/D Candle Ask]]>>
+        <</if>>
+    <</if>>
+    
+    <<if $n1_magicPhase === MP_wantPassword>>
+        <br><br>
+        There are many things in the room that have a similar
+        shade of red: bookshelves and books, cabinets and doors,
+        the map and the portrait on the far wall.
+        Perhaps the color is special to Ivex?
+        <<if $n1_triedBloodRed>>
+            <br><br>
+            Neither "red" nor "blood red" were fruitful. There are of course
+            dozens of other names and shades of red that Nero could try,
+            but this seems like a dead end.
+        <<elseif $n1_triedRed>>
+            "Red" didn't work, but maybe it's a more specific shade of red?
+            <<add-action [['"Please: Blood, or blood red."|n1m/D Say Password][$n1_password = "Blood, or blood red", $n1_triedBloodRed = true]]>>
+        <<else>>
+            <<add-action [['"Please: Red."'|n1m/D Say Password][$n1_password = "Red", $n1_triedRed = true]]>>
+        <</if>>
+    <</if>>
+<</if>>
+
+<br><br>
 <ul class="actions">
-  <li><<link $n1_afterLook>><</link>></li>
+    <<get-actions>>
+    <li>$n1_afterLook</li>
 </ul>
+<</nobr>>
 
 
 :: n1x/P Knife [has-hole] {"position":"7275,2775","size":"100,100"}
@@ -9655,24 +9756,23 @@ testing 2
 
 :: n1x/V Window [has-hole] {"position":"7725,1150","size":"100,100"}
 <<nobr>>
-<<big-mood n1_candleLit TODO>>
+<<big-mood n1_candleLit ignore>>
 <<big-mood n1_ivexReceptive TODO>>
 <<big-mood n1_licked ignore>>
 <<big-mood n1_magicSight TODO>>
-<<big-mood n1_magicPhase TODO>>
-<<big-mood n1_naked TODO>>
+<<big-mood n1_magicPhase ignore>>
+<<big-mood n1_naked ignore>>
 <<big-mood n1_smashed ignore>>
 
 <<big-mood n2_candleHorny TODO>>
-<<big-mood n2_extraHorny TODO>>
+<<big-mood n2_extraHorny ignore>>
 <<big-mood n2_free vary>>
 <<big-mood n2_ivexGone TODO>>
 <<big-mood n2_tooClever ignore>>
-<</nobr>>\
-\
+
 The only window in the room is round and about a meter in diameter. The window has glass panes arranged in a radial pattern that bulges outward slightly, like a lens, and perhaps the window would have a magnifying effect, if there were anything to magnify other than the clear blue sky.
 
-<<nobr>>
+<br><br>
 <<if $n2_free>>
     And there doesn't seem to be anything other than clear blue sky.
     This room appears to be at the top floor of an extremely tall tower.
@@ -9787,10 +9887,18 @@ ivex not receptive, gets threatening with letter opener.
 <<link $n1_afterAction>><</link>>
 
 
-:: n1x/P Ask Candle {"position":"6875,2775","size":"100,100"}
-ivex says creepy-lewd nonsense about candle, not useful.
+:: n1x/D Candle Ask {"position":"6875,2900","size":"100,100"}
+<<nobr>>
+<<set $n1_candleAsked = true>>
 
-<<link $n1_afterAction>><</link>>
+  "About that candle," says Nero. "I'm finding the effects quite fascinating."
+  Not that he understands what the effects are yet, but perhaps he can
+  lure Ivex into a monologue of information.
+<</nobr>>
+
+ivex nonsense monologue.
+
+$n1_afterAction
 
 
 :: n1x/P Ask Wand {"position":"7600,2750","size":"100,100"}
@@ -10205,13 +10313,12 @@ The tiger spoke with a voice that was low and friendly. He said...
 
 :: n1p/F Barbs End {"position":"5400,925","size":"100,100"}
 <<nobr>>
+<<set $n0_micaSeen = true>>
 <<big-mood n1_candleLit always false>>
 <<big-mood n1_magicPhase ignore>>
 <<big-mood n1_magicSight ignore>>
 <<big-mood n1_smashed ignore>>
-<</nobr>>\
-\
-<<nobr>>
+
 It's an embarrassing memory from his naive, younger self.
 <<if !$n1_barbsExtraSeen>>
     And that wasn't even the [[worst bit...|n1p/F Barbs Extra]]
@@ -10513,7 +10620,7 @@ sprite doesn't respond. option to [[n2x/P Use Wand]], or maybe this is the same 
 <<link $n1_afterAction>><</link>>
 
 
-:: n1m/D Say Password {"position":"6975,1050","size":"100,100"}
+:: n1m/D Say Password {"position":"6900,925","size":"100,100"}
 <<big-mood n2_candleHorny TODO>>
 
 from any place that has a suggested password.
@@ -10587,7 +10694,7 @@ fur of the wolf's bare chest.
 
 Ivex continues to speak in a growly voice that causes the wolf's skin to shiver. "What I love the most about wolves is how <em>proud</em> they are, Every one of you is a delightful struggle. Some of you try to fight and tough it out. Others try to seduce or trick me. And none of you realize how futile it all is..."
 
-Ivex leans his body into the wolf, and brings his muzzle close to the wolf's ear, as if to whisper a secret.
+Ivex leans his body into the wolf, and brings his muzzle close to the wolf's ear, warm breath tickling the delicate hairs within, as if to whisper a secret.
 
 "All of you believe, that there is something you can do, that will save you from ending up, <em>here</em>..."
 
@@ -10699,6 +10806,8 @@ Lord Temesca was livid, but still helplessly strapped to the workshop table. Lad
 
 :: n1p/F Fast Barbs End {"position":"4850,600","size":"100,100"}
 <<nobr>>
+<<set $n0_pevinSeen = true>>
+
 It's an intensely sexy memory,
 <<if $n1_barbsFastExtraSeen>>
     and it was the start of...
@@ -11995,7 +12104,7 @@ Just last year, late in the spring season...
 [[Continue|n1p/F Fast Barbs 1]]
 
 
-:: n1x/D Look Free {"position":"7100,1450","size":"100,100"}
+:: n1x/F Look Free {"position":"7075,1475","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleLit always false>>
 <<big-mood n2_candleHorny always false>>
@@ -12065,7 +12174,7 @@ and a [[magic wand|n1x/P Wand]].
 <</nobr>>
 
 
-:: n1x/D Look Bound {"position":"7000,1450","size":"100,100"}
+:: n1x/F Look Bound {"position":"6975,1475","size":"100,100"}
 <<nobr>>
 <<big-mood n2_candleHorny always false>>
 <<big-mood n2_free always false>>
@@ -12182,58 +12291,109 @@ with leather restraints to a
 
 <<if $n1_candleLit>>
     <br><br>
-    A [[lit candle|n1x/P Candle]] on the desk is
-    emitting a tantalizing, spicy smoke.
+    A [[flickering red candle|n1x/F Candle]] on the desk is
+    emitting a tantalizing, spicy odor.
 <</if>>
 <</nobr>>\
 
 
-:: n1x/D Look Horny {"position":"6500,1525","size":"100,100"}
+:: n1x/V Look Horny {"position":"6825,1425","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleLit always true>>
+<<big-mood n1_licked TODO>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_smashed TODO>>
 <<big-mood n2_candleHorny always true>>
 <<big-mood n2_free always false>>
-<<big-mood n2_ivexGone TODO>>
 
-<<switch random(0, 4)>>
-<<case 0>>
-    Nero gasps.
-<<case 1>>
-    Nero pants.
-<<case 2>>
-    Nero shakes his head.
-<<case 3>>
-    Nero shivers.
-<<case 4>>
-    Nero trembles.
-<</switch>>
-
-<<if $n1_smashed && $n1_naked>>
-    He and his aching, naked balls are bound
-<<elseif $n1_smashed>>
-    He and his aching balls are bound
-<<elseif $n1_naked>>
-    He's naked and bound
-<<else>>
-    He's bound
-<</if>>
-with leather restraints to a
-[[wooden cross|n1x/V Cross]]
-
-in middle of [[Ivex's study|n1x/V Study]].
-
-<<if $n1_magicSight>>
-    A dense mesh of exotic magical energy permeates the space.
+<<if Config.debug>>
+    <<link "(show another)">><<redisplay-passage>><</link>>
+    <br>
 <</if>>
 
-<br><br>
+<<script>>
+  const v = State.variables;
+  v.n2_hornySeen || (v.n2_hornySeen = []);
+  const choices = [];
 
-<<switch random(0, 0)>>
-<<case 0>>
-    A [[candle|n1x/P Candle]] on the [[desk|n1x/P Desk]] is
-    burning with an intense, spicy heat that the wolf can feel from
-    the other side of the room.
-<</switch>>
+  choices.push(`
+    Nero gasps and struggles against the leather bonds that
+    are holding him tight against the [[wooden cross|n1x/V Cross]].
+    The [[red candle|n1x/F Candle]] on the desk is
+    burning with an intense, spicy heat that
+    <<if $n1_magicSight>>
+      shimmers in the exotic energy permeating the room.
+    <<else>>
+      the wolf can feel from across the room.
+    <</if>>
+  `);
+  
+  choices.push(v.n2_ivexGone && `
+    Nero pants, long gasping breaths, that fill his lungs with
+    spicy heat from the [[intense red candle|n1x/F Candle]].
+    It's a heat that spreads outward through his body,
+    flling his limbs and making them writhe against
+    the [[wooden cross|n1x/V Cross]]
+    <<if $n1_magicSight>>
+      in synchrony with the pulsing exotic energies in the room.
+    <<else>>
+      standing in Ivex's study.
+    <</if>>
+  `);
+  
+  choices.push(!v.n2_ivexGone && `
+    Nero stares at the panther with an intense hunger for
+    something that isn't food. The wolf can almost taste the salt
+    of the panther's blood on his lips, kissed with wisps of smoke
+    from the [[spicy red candle|n1x/F Candle]] shining brightly
+    <<if $n1_magicSight>>
+      through the exotic energies of the room.
+    <<else>>
+      on the other side of the room.
+    <</if>>
+    He struggles against the [[cross|n1x/V Cross]]
+    to try to consume more of whatever it is that he wants,
+    that he doesn't yet have.
+  `);
+
+  const avail = [];
+  for (let i = 0; i < choices.length; i++) {
+    if (choices[i]) avail.push(i);
+  }
+
+  const unseen = [];
+  for (const i of avail) {
+    if (v.n2_hornySeen.indexOf(i) < 0) unseen.push(i);
+  }
+  if (unseen.length === 0) {
+    const last = v.n2_hornySeen.pop();
+    v.n2_hornySeen = [];
+    for (const i of avail) {
+      if (i !== last) unseen.push(i);
+    }
+    if (unseen.length === 0) unseen.push(last);
+  }
+
+  const pick = either(unseen);
+  v.n2_hornySeen.push(pick);
+  $(output).wiki(choices[pick]);
+<</script>>
+
+
+<!-- gasps, pants, shivers, trembles, shakes his head. -->
+
 <</nobr>>
+
+
+:: n1x/D Candle Ask Horny {"position":"6700,2900","size":"100,100"}
+<<nobr>>
+<<set $n1_candleAskedHorny = true>>
+
+"That candle...!" says Nero, barely able to emit a coherent sentence.
+<</nobr>>
+
+some ivex nonsense.
+
+$n1_afterAction
 
 
