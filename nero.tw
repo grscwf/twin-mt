@@ -730,28 +730,6 @@ a.messages-close:hover {
   max-width: calc(100% - 3em);
 }
 
-/* timed passages */
-.beat {
-  transition: color 400ms ease-in;
-}
-.beat.hidden {
-  color: rgba(255, 255, 255, 0.1);
-}
-
-.beat.hidden ul.actions li {
-  background-image: unset;
-}
-
-.beat a {
-  transition: opacity 400ms ease-in;
-}
-.beat.hidden a {
-  opacity: 0.1;
-}
-.beat.hidden a:hover {
-  opacity: 1;
-}
-
 /* fast redisplay */
 .redisplay-passage, .redisplay-passage * {
   transition: none !important;
@@ -769,14 +747,14 @@ a.messages-close:hover {
 }
 
 .fade-in-hidden {
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.1);
 }
 
 .fade-in a {
   transition: opacity .4s ease-in;
 }
 .fade-in-hidden a {
-  opacity: 0.2;
+  opacity: 0.1;
 }
 .fade-in-hidden a:hover {
   opacity: 1;
@@ -785,7 +763,6 @@ a.messages-close:hover {
 .fade-in-hidden ul.actions li {
   background-image: unset;
 }
-
 
 
 :: Story JavaScript [script]
@@ -1229,10 +1206,10 @@ function varInfoSetup() {
       // Naked/barbs choice.
       /^n1p/,
 
-      'n1_candleLit',
+      ['n1_candleLit', 'ignore'],
       ['n1_ivexReceptive', false],
       ['n1_licked', false],
-      'n1_magicSight',
+      ['n1_magicSight', false],
       ['n1_naked', 'ignore'],
       'n1_smashed',
     ],
@@ -1578,7 +1555,7 @@ $(document).on(":passageend", ev => {
   const tag = m[1] || "";
 
   if (tag === "/F") {
-    if (has_to_do) assertionFailed("/f has no TO"+"DO items");
+    if (has_to_do) assertionFailed("/F should not have TO"+"DO items");
     return;
   }
 
@@ -1595,7 +1572,7 @@ $(document).on(":passageend", ev => {
       break;
     case "/V":
       stat.text("variants\nmissing").addClass("stat-vary");
-      if (!has_to_do) assertionFailed("/v has TO"+"DO items");
+      if (!has_to_do) assertionFailed("/V should have TO"+"DO items");
       break;
     default:
       stat.text("[plan]").addClass("stat-plan stat-invalid");
@@ -8076,9 +8053,7 @@ testing<mark>hello</mark>
 $(document).on(":passageinit", ev => console.log(ev));
 <</script>>
 [[testing 2]]
-[[timing test 1]]
-[[timing test 2]]
-[[timing test 3]]
+[[fade-in test]]
 
 
 :: n1x/F Look {"position":"6925,1325","size":"200,100"}
@@ -8101,7 +8076,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 <</nobr>>\
 
 
-:: n1a/F Feign Sleep {"position":"3500,500","size":"100,100"}
+:: n1a/F Feign Sleep {"position":"3475,500","size":"100,100"}
 Best to play it safe and gather more information before acting.
 
 Nero can feel leather straps on his arms and legs and torso, holding him upright and spread-eagled against something sturdy, probably made of wood.
@@ -8129,7 +8104,7 @@ The blurry figure becomes a person...
 [[Continue|n1a/F Hello 2]]
 
 
-:: n1c/F Ivex Intro {"position":"3875,675","size":"100,100"}
+:: n1c/F Ivex Intro {"position":"3900,675","size":"100,100"}
 <<nobr>>
 <<assert-true $n1_magicPhase <= MP_triedMagic>>
 <<big-mood n1_magicSight always false>>
@@ -8915,8 +8890,10 @@ Ivex grins back. "Now that you've found me, what do you want?"
 :: n1c/F Resist {"position":"3200,1550","size":"100,100"}
 <<nobr>>
 <<set $n1_triedSomething = true>>
+<<big-mood n1_magicSight ignore>>
 
 <<if $n1_smashed>>
+    <<big-mood n1_naked ignore>>
     Nero lets out a soft growl. His brutally abused balls argue against
     antagonizing his captor, but he has little hope that cooperation,
     or the pretense of cooperation, will do much to improve his
@@ -9007,10 +8984,11 @@ So when the Upper Cobbler finished sharpening his knife and brought it toward Ne
 
 :: n1a/F Endgame 2 {"position":"3600,350","size":"100,100"}
 Nero feels a familiar tingle from the unleashing of the spell inscribed on his ass. And then...
-<!-- no passage break here; too early in the story; maybe use fade-in -->\
 
+<<fade-in 1.5s>>\
 Nothing happens.
 
+<<next 1.5s>>\
 He's still bound to the wooden contraption, and now his head is feeling even more nauseous.
 
 Nero opens his eyes and struggles to focus. It takes a few blinks and some shaking of his aching head before he can see clearly.
@@ -9022,6 +9000,7 @@ It's <em>him</em>.
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
 [[Continue|n1a/F Endgame 3]]
+<</fade-in>>
 
 
 :: n1d/F Start Candle {"position":"3700,2325","size":"100,100"}
@@ -9089,6 +9068,7 @@ to wear a mask in preparation.
 :: n1p/F Naked [big-mood] {"position":"4525,1050","size":"100,100"}
 <<nobr>>
 <<set $n1_naked = true>>
+<<big-mood n1_smashed ignore>>
 
 All of Nero's clothes disappear.
 
@@ -9155,9 +9135,12 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 <<set $n1_candleLit = false>>
 <<set $n2_candleHorny = false>>
 <<set $n2_ivexGone = true>>
-<</nobr>>\
-\
+<<big-mood n1_licked TODO>>
+<<big-mood n1_magicSight TODO>>
+<<big-mood n1_smashed ignore>>
+
 Ivex's exit by teleportation has created a sudden rush of air that causes the candle's smoke to scatter.
+<</nobr>>
 
 The candle flickers, and goes out.
 
@@ -9176,7 +9159,9 @@ Well, that's a question to be deferred to some other time. What's important now 
 
 :: n2a/D Alone (6,2) {"position":"4175,3075","size":"200,200"}
 <<nobr>>
-<<big-mood $n2_candleHorny TODO>>
+<<big-mood n1_licked ignore>>
+<<big-mood n2_candleHorny TODO>>
+
 <<n1-patience 6 2
     "<<include [[n2a/F Compute Arousal]]>>"
 >>
@@ -9184,7 +9169,8 @@ Well, that's a question to be deferred to some other time. What's important now 
 Candle's Influence:
 <<arousalbar $n2_arousal 100 $n2_arousalBefore>>
 <<set $n2_arousalBefore = $n2_arousal>>
-<<timed 0s t8n>>
+
+<<done>>
     <<if $n2_candleMax>>
         <<addclass #horizontalhealthbar pulsingmax>>
     <<elseif $n2_candleNearMax>>
@@ -9192,24 +9178,21 @@ Candle's Influence:
     <<else>>
         <<addclass #horizontalhealthbar pulsingbar>>
     <</if>>
-<<next 2s>>
-    <<removeclass .beat-1 hidden>>
-<<next 2s>>
-    <<removeclass .beat-2 hidden>>
-<</timed>>
+<</done>>
+
 <br>
-@@.beat-1.beat.hidden;
-<<include [[n2a/P Lust Text]]>>
-@@
-@@.beat-2.beat.hidden;
-<<include [[n1x/F Look and Magic]]>>
-<<include [[n2a/D More Magic]]>>
-<ul class="actions">
-    <li>[[Struggle...|n2a/D Struggle]]</li>
-    <<optional-action $n1_magicAction>>
-    <<optional-action $n2_moreMagicAction>>
-</ul>
-@@
+<<fade-in 2s>>
+    <<include [[n2a/P Lust Text]]>>
+
+<<next 3s>>
+    <<include [[n1x/F Look and Magic]]>>
+    <<include [[n2a/D More Magic]]>>
+    <ul class="actions">
+        <li>[[Struggle...|n2a/D Struggle]]</li>
+        <<optional-action $n1_magicAction>>
+        <<optional-action $n2_moreMagicAction>>
+    </ul>
+<</fade-in>>
 <</nobr>>
 
 
@@ -9593,7 +9576,7 @@ offer a list of plausible passwords based on things you've seen, plus a few gene
 [[n1m/D Say Password]]
 
 
-:: n1a/F Feign Sleep 2 {"position":"3600,500","size":"100,100"}
+:: n1a/F Feign Sleep 2 {"position":"3575,500","size":"100,100"}
 Suddenly, a hand grabs at the crotch of Nero's trousers. The fingers dig in and curl around one of the wolf's testicles. And then the fingers squeeze. Hard.
 
 Nero's eyes fly wide open and he stifles a yelp.
@@ -9611,7 +9594,7 @@ Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 [[Continue|n1a/F Feign Sleep 3]]
 
 
-:: n1a/F Feign Sleep 3 [big-mood] {"position":"3700,500","size":"100,100"}
+:: n1a/F Feign Sleep 3 [big-mood] {"position":"3675,500","size":"100,100"}
 <<nobr>>
 <<set $n1_smashed = true>>
 <</nobr>>\
@@ -9622,19 +9605,7 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 
 "There we go," says the voice. "That's a fun start! I <em>knew</em> you were awake."
 
-Nero's vision clears. The vague shape of his tormentor snaps into focus.
-
-It's <em>him</em>.
-
-It's Ivex, the panther mage who's the reason for Nero's current "errand".
-
-The panther says brightly, "Welcome to my world, foolish wolf. I am Ivex <em>the Magnificent.</em>"
-
-Well. Nero had thought that locating Ivex would be the difficult part of this task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, <em>notice</em> the trap before stepping into it. His aching balls agreed with that.
-
-Still, whatever route brought him here, a success is a success. The rest of the errand should be quite easy.
-
-[[Continue|n1c/F Ivex Intro]]
+[[Continue|n1a/F Feign Sleep 4]]
 
 
 :: n1c/D Ivex Disdainful (1,1) {"position":"3875,1750","size":"100,200"}
@@ -10049,7 +10020,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 [[Continue|n1c/F Ivex Intro]]
 
 
-:: n1c/F Ivex Intro 2 {"position":"3975,675","size":"100,100"}
+:: n1c/F Ivex Intro 2 {"position":"4000,675","size":"100,100"}
 <<nobr>>
 <<assert-true $n1_magicPhase <= MP_triedMagic>>
 <<big-mood n1_magicSight always false>>
@@ -10343,7 +10314,11 @@ ivex: nice try, but I think you're lying... we'll see.
 
 
 :: n1p/F Naked 3 {"position":"4800,900","size":"100,100"}
+<<nobr>>
+<<big-mood n1_smashed ignore>>
+
 A moment later, a different thought lands in Nero's brain.
+<</nobr>>
 
 Ivex has <em>specifically prepared</em> a complicated spell that will quickly remove all the clothes from a bound prisoner.
 
@@ -10400,11 +10375,20 @@ It's an embarrassing memory from his naive, younger self.
 <<if !$n1_barbsExtraSeen>>
     And that wasn't even the [[worst bit...|n1p/F Barbs Extra]]
 <<else>>
-    He'll never forget [[Mica's astonishing appearance...|n1p/F Barbs Extra]]
+    And he'll never forget [[Mica's surprising appearance...|n1p/F Barbs Extra]]
 <</if>>
 <</nobr>>
 
-Nero shakes off the memories of feline penises from that... complicated year. There are much more urgent matters to consider.
+<<nobr>>
+Nero shakes off the memories of
+<<if $n1_barbs>>
+    barbed
+<<else>>
+    smooth
+<</if>>
+feline penises from that... complicated year.
+There are much more urgent matters to consider.
+<</nobr>>
 
 Such as, the noticeably horny panther mage who has just magicked away the wolf's clothes, and is now fingering the exposed fur on Nero's naked chest.
 
@@ -10464,27 +10448,17 @@ It's saved his life more than once.
 
 :: n1p/F Barbs Extra [noreturn] {"position":"5525,925","size":"100,100"}
 <<nobr>>
-<<big-mood n1_candleLit always false>>
 <<set $n1_barbsExtraSeen = true>>
-<</nobr>>\
-\
+<<big-mood n1_smashed ignore>>
+
 The day after the encounter in the showers, Nero saw the tiger again in his third-hour class.
+<</nobr>>
 
 Cryptomancy 1 was a perennial favorite of novice students, who always enjoyed the dynamic teaching methodology of the effervescent Magister Starpaw. But a few weeks into the second semester, the magister suffered grave injury in an unpleasant encounter with her ex, and she was given leave for the rest of the semester to recover.
 
 Fortunately for her students, who would otherwise fall behind in their studies, the Academy was quick to entice an accomplished industrial cryptomancer, Mica Tebron, to take her place. There was some excitement about the appointment. Mica was said to have lost his right arm in a lab accident, and instead of having a healer grow a replacement, he had built one himself out of mechanics and magic, imbuing it with fantastic powers that he was occasionally willing to demonstrate.
 
-The day of the professor's inaugural appearance, Nero arrived late. The lecture hall was already overflowing with many more students than were officially enrolled in the class. Nero shoved his way through throngs of eager students, trying to reach his canine friends. But the audience was too packed and chaotic. There was little chance of him reaching such a specific goal, so he settled for trying to find a place to stand that would give him a view of the lectern, currently occupied by the Academy Chancellor in the middle of a flavorless introduction.
-
-Nero's motion through the crowd stopped when he became stuck in a cluster of older feline students, who were not at all pleased to accommodate him there. The nearest one grimaced at him, and a skinny lion behind him proceeded to insult the young wolf's ancestry.
-
-But the obnoxious lion, and the entire room of students, went completely silent when Mica entered the room. The new professor walked in with his artificial arm raised and surrounded by a swirl of glowing stripes. And as he brought his hand down and across his chest in a confident sixth-weave pattern, an orb of intertwined water and fire appeared in his palm.
-
-Mica turned his palm to face the audience. The orb started to grow and spin in a hypnotic pattern. Eventually, the globe of fire and water grew as large as the professor's head, and then it became an explosion of ice that sprinkled the nearest students with glittery snow.
-
-Everyone was astonished at the sight. Nero especially so. His ears were completely flat. Mica was the tiger from the showers.
-
-<<link Return $return>><</link>>
+[[Continue|n1p/F Barbs Extra 2]]
 
 
 :: n1x/D Connect {"position":"6100,1900","size":"100,100"}
@@ -10917,7 +10891,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 <<link Return $return>><</link>>
 
 
-:: n1c/F Ivex Intro 3 {"position":"4075,675","size":"100,100"}
+:: n1c/F Ivex Intro 3 {"position":"4100,675","size":"100,100"}
 <<nobr>>
 <<assert-true $n1_magicPhase <= MP_triedMagic>>
 <<big-mood n1_magicSight always false>>
@@ -11132,7 +11106,7 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 [[Continue|n1d/D Punch]]
 
 
-:: timing test 3 {"position":"4375,425","size":"100,100"}
+:: fade-in test {"position":"4350,300","size":"100,100"}
 <<nobr>>
 <<fade-in 0s>>
 one
@@ -11146,155 +11120,6 @@ hello my old friend
 [[testing 2]]
 hello some more
 <</fade-in>>
-<</nobr>>
-
-
-:: timing test 2 {"position":"4425,300","size":"100,100"}
-<<nobr>>
-<<script>>
-  if (Macro.has("timed-beat")) Macro.delete("timed-beat");
-  const beats = [];
-  $(document).on(":passagestart", () => {
-    beats.length = 0;
-  });
-  Macro.add("timed-beat", {
-    tags: [],
-    handler: function() {
-      const time = this.args[0];
-      const before = this.args[1] || "";
-      const after = this.payload[0].contents.replace(/\n+/g, "");
-      const outer = $("<span class=timed-beat>").wiki(after);
-      const button = $("<span class=timed-beat-button>").text(">>>");
-      $("<span class=timed-beat-before>").wiki(before)
-        .append(button).appendTo(outer);
-      $(this.output).append(outer);
-      button.on("click", () => {
-        beats[0].removeClass("timed-beat-current").addClass("timed-beat-done");
-        beats.shift();
-        if (beats[0] != null) {
-          beats[0].addClass("timed-beat-current");
-        }
-      });
-      beats.push(outer);
-      if (beats.length === 1) {
-        outer.addClass("timed-beat-current");
-      }
-    }
-  });
-<</script>>
-
-<style>
-  .timed-beat {
-    display: inline-block;
-    position: relative;
-    visibility: hidden;
-  }
-  .timed-beat .timed-beat-before {
-    left: 0;
-    position: absolute;
-    top: 0;
-    white-space: nowrap;
-    visibility: visible;
-  }
-  .timed-beat .timed-beat-button {
-    cursor: pointer;
-    visibility: hidden;
-  }
-
-  .timed-beat-current .timed-beat-button {
-    color: #ffa000;
-    visibility: visible;
-  }
-  .timed-beat-current .timed-beat-button:hover {
-    color: #cca000;
-  }
-
-  .timed-beat-done {
-    visibility: visible;
-  }
-  .timed-beat-done .timed-beat-before {
-    display: none;
-  }
-</style>
-
-"I...<<timed-beat +2s '" '>>can't..."<</timed-beat>>
-<</nobr>>
-
-<<timed-beat +2s>>
-    Can't what?
-<</timed-beat>> <<timed-beat +2s>>
-    Nero doesn't remember what he was trying to say.
-<</timed-beat>>
-
-<<timed-beat +4s>>
-     All he can think about is...
- <</timed-beat>>
-
-<<timed-beat +2s>>
-    The panther's grasp on the wolf's balls...
-<</timed-beat>>
-
-<<timed-beat +2s>>
-    The pressure of the paw pads on his scrotum...
-<</timed-beat>>
-
-<<timed-beat +2s>>
-    His pulse beating beneath the fingers...
-<</timed-beat>>
-
-<<timed-beat +2s>>
-    Each beat making his cock twitch.
-<</timed-beat>>
-
-<<timed-beat +4s>>
-    Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em>
-    Do you even know the difference?"
-<</timed-beat>>
-
-[[testing 2]]
-
-
-:: timing test 1 {"position":"4425,175","size":"100,100"}
-"I...@@#beat-1.beat-removed; can't...@@"
-
-@@#beat-2.beat-hidden;Can't what?@@ @@#beat-3.beat-hidden;Nero doesn't remember what he was trying to say.@@
-
-@@#beat-4.beat-hidden;All he can think about is...@@
-
-@@#beat-5.beat-hidden;The panther's grasp on the wolf's balls...@@
-
-@@#beat-6.beat-hidden;The pressure of the paw pads on his sack...@@
-
-@@#beat-7.beat-hidden;His pulse beating beneath the fingers...@@
-
-@@#beat-8.beat-hidden;Each beat making his cock twitch...@@
-
-@@#beat-9.beat-hidden;Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em>  Do you even know the difference?"@@
-
-[[testing 2]]
-<<nobr>>
-<<set _short = "2s">>
-<<set _long = "4s">>
-
-<<timed _short t8n>>
-    <<removeclass #beat-1 beat-removed>>
-<<next _short>>
-    <<removeclass #beat-2 beat-hidden>>
-<<next _short>>
-    <<removeclass #beat-3 beat-hidden>>
-<<next _long>>
-    <<removeclass #beat-4 beat-hidden>>
-<<next _short>>
-    <<removeclass #beat-5 beat-hidden>>
-<<next _short>>
-    <<removeclass #beat-6 beat-hidden>>
-<<next _short>>
-    <<removeclass #beat-7 beat-hidden>>
-<<next _short>>
-    <<removeclass #beat-8 beat-hidden>>
-<<next _long>>
-    <<removeclass #beat-9 beat-hidden>>
-<</timed>>
 <</nobr>>
 
 
@@ -11338,50 +11163,27 @@ The candle has lit itself again!
 
 :: n2a/D Start 3 {"position":"4650,3050","size":"100,100"}
 <<nobr>>
-@@#beat-1.beat.hidden;Candle's Influence:@@
-
+<<fade-in 2s>>
+    Candle's Influence:
+<</fade-in>>
 <<arousalbar 20 100 0>>
 <<set $n2_arousalBefore = 20>>
+<</nobr>>\
 
-<</nobr>>
-@@#beat-2.beat.hidden;
-It's bad enough that Ivex could return at any moment.
-@@
-@@#beat-3.beat.hidden;
-There's now another urgent deadline, inflicted by the distressing, rekindled candle.
-@@
-@@#beat-4.beat.hidden;
-Can Nero escape before his mind is overwhelmed by unthinking lust?
-@@
-@@#beat-5.beat.hidden;
-Of course he can.
-@@
-@@#beat-6.beat.hidden;
-It's just a matter of finding the right angle...
-@@
-@@#beat-7.beat.hidden;
-[[Continue|n2a/D Alone (6,2)]]
-@@
+<<fade-in 4s>>\
+    It's bad enough that Ivex could return at any moment.
 
-<<nobr>>
-<<timed 0s t8n>>
-    <<addclass #horizontalhealthbar pulsingbar>>
-<<next 2s>>
-    <<removeclass #beat-1 hidden>>
-<<next 2s>>
-    <<removeclass #beat-2 hidden>>
-<<next 2s>>
-    <<removeclass #beat-3 hidden>>
-<<next 2s>>
-    <<removeclass #beat-4 hidden>>
-<<next 2s>>
-    <<removeclass #beat-5 hidden>>
-<<next 2s>>
-    <<removeclass #beat-6 hidden>>
-<<next 2s>>
-    <<removeclass #beat-7 hidden>>
-<</timed>>
-<</nobr>>
+    There's now another urgent deadline, inflicted by the distressing,\
+    rekindled candle.
+
+    Can Nero escape before his mind is overwhelmed by unthinking lust?
+
+    Of course he can.
+
+    It's just a matter of finding the right angle...
+
+    [[Continue|n2a/D Alone (6,2)]]
+<</fade-in>>
 
 
 :: n2a/P Lust Text {"position":"4300,2875","size":"100,100"}
@@ -12472,5 +12274,47 @@ with leather restraints to a
 some ivex nonsense.
 
 $n1_afterAction
+
+
+:: n1a/F Feign Sleep 4 {"position":"3775,500","size":"100,100"}
+Nero's vision clears. The vague shape of his tormentor snaps into focus.
+
+It's <em>him</em>.
+
+It's Ivex, the panther mage who's the reason for Nero's current "errand".
+
+The panther says brightly, "Welcome to my world, foolish wolf. I am Ivex <em>the Magnificent.</em>"
+
+Well. Nero had thought that locating Ivex would be the difficult part of this task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, <em>notice</em> the trap before stepping into it. His aching balls agreed with that.
+
+Still, whatever route brought him here, a success is a success. The rest of the errand should be quite easy.
+
+[[Continue|n1c/F Ivex Intro]]
+
+
+:: n1p/F Barbs Extra 2 [noreturn] {"position":"5625,925","size":"100,100"}
+<<nobr>>
+<<big-mood n1_smashed ignore>>
+
+The day of the professor's inaugural appearance, Nero arrived late. The lecture hall was already overflowing with many more students than were officially enrolled in the class. Nero shoved his way through throngs of eager students, trying to reach his canine friends. But the audience was too packed and chaotic. There was little chance of him reaching such a specific goal, so he settled for trying to find a place to stand that would give him a view of the lectern, currently occupied by the Academy Chancellor in the middle of a flavorless introduction.
+<</nobr>>
+
+Nero's motion through the crowd stopped when he became stuck in a cluster of older feline students, who were not at all pleased to accommodate him there. The nearest one grimaced at him, and a skinny lion behind him proceeded to insult the young wolf's ancestry.
+
+[[Continue|n1p/F Barbs Extra 3]]
+
+
+:: n1p/F Barbs Extra 3 [noreturn] {"position":"5725,925","size":"100,100"}
+<<nobr>>
+<<big-mood n1_smashed ignore>>
+
+But the obnoxious lion, and the entire room of students, went completely silent when Mica entered the room. The new professor walked in with his artificial arm raised and surrounded by a swirl of glowing stripes. And as he brought his hand down and across his chest in a confident sixth-weave pattern, an orb of intertwined water and fire appeared in his palm.
+<</nobr>>
+
+Mica turned his palm to face the audience. The orb started to grow and spin in a hypnotic pattern. Eventually, the globe of fire and water grew as large as the professor's head, and then it became an explosion of ice that sprinkled the nearest students with glittery snow.
+
+Everyone was astonished at the sight. Nero especially so. His ears were completely flat. Mica was the tiger from the showers.
+
+<<link Return $return>><</link>>
 
 
