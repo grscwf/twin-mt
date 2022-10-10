@@ -763,6 +763,30 @@ a.messages-close:hover {
   opacity: 1;
 }
 
+/* fade-in */
+.fade-in {
+  transition: color .4s ease-in;
+}
+
+.fade-in-hidden {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.fade-in a {
+  transition: opacity .4s ease-in;
+}
+.fade-in-hidden a {
+  opacity: 0.2;
+}
+.fade-in-hidden a:hover {
+  opacity: 1;
+  transition: opacity .1s;
+}
+.fade-in-hidden ul.actions li {
+  background-image: unset;
+}
+
+
 
 :: Story JavaScript [script]
 Config.saves.id = 'sleth-mages-tower-2';
@@ -1606,13 +1630,46 @@ Macro.add("get-actions", {
 Macro.add("fade-in", {
   tags: ["next"],
   handler: function() {
-    // XXX Util.fromCssTime to parse delay
-    // XXX Engine.minDomActionDelay
-    // XXX render each payload segment with faded
-    // XXX queue timers to remove faded
-    // XXX start timer
-    // XXX click on segment to advance timer
-    console.log(this.payload);
+    const spans = [];
+    let timer = null;
+    const next = () => {
+      if (spans.length === 0) return;
+      const cur = spans[0];
+      const delay = cur[0];
+      const span = cur[1];
+      timer = setTimeout(() => {
+        span.removeClass("fade-in-hidden");
+        spans.shift();
+        if (document.contains(span[0])) next();
+      }, delay);
+    };
+    const skipToPos = i => {
+      if (timer != null) clearTimeout(timer);
+      timer = null;
+      for (let j = 0; j <= i; j++) {
+        spans[j][1].removeClass("fade-in-hidden");
+      }
+      spans.splice(0, i + 1);
+      next();
+    };
+    const skipTo = jq => {
+      for (let i = 0; i < spans.length; i++) {
+        if (spans[i][1] === jq) {
+          skipToPos(i);
+          return;
+        }
+      }
+    };
+    for (const section of this.payload) {
+      let delay = Util.fromCssTime(section.args[0]);
+      delay = Math.max(delay, Engine.minDomActionDelay);
+      const span = $("<span>").addClass("fade-in fade-in-hidden")
+        .wiki(section.contents);
+      span.one("click", () => skipTo(span));
+      $(this.output).append(span);
+      spans.push([delay, span]);
+    }
+    setTimeout(next, 0);
   }
 });
 
@@ -11081,6 +11138,13 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 one
 <<next 2s>>
 two
+<<next 50s>>
+<br><br>
+hello my old friend
+<<next 5s>>
+<br><br>
+[[testing 2]]
+hello some more
 <</fade-in>>
 <</nobr>>
 
