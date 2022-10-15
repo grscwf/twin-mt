@@ -13,13 +13,14 @@ nero
 		"big-mood": "purple",
 		"done": "purple",
 		"end": "red",
-		"has-hole": "yellow",
+		"has-hole": "blue",
+		"inclusion": "orange",
 		"incomplete": "red",
 		"init": "blue",
 		"ivex-advances": "orange",
 		"ivex-repeats": "yellow",
-		"key": "orange",
-		"maybe-password": "green",
+		"key": "yellow",
+		"maybe-password": "purple",
 		"must-fix": "orange",
 		"noreturn": "yellow",
 		"section-start": "green",
@@ -1055,7 +1056,11 @@ Macro.add("assert-fail", {
 
 /*** to-do */
 let has_to_do = false;
-$(document).on(":passagestart", () => has_to_do = false);
+let has_warning = false;
+$(document).on(":passagestart", () => {
+  has_to_do = false;
+  has_warning = false;
+});
 
 function add_to_do(text) {
   has_to_do = true;
@@ -1406,8 +1411,10 @@ function varInfoSetup() {
       [...bigMood].sort().forEach(v => {
         const but = varButton(v).appendTo(el);
         if (bigMood_to_do.has(v)) {
+          has_to_do = true;
           but.addClass("var-info-to-do");
         } else if (!varsRead.has(v) && !bigMoodIgnore.has(v) && bigMoodReq[v] == null) {
+          has_warning = true;
           but.addClass("var-info-warning");
         }
       });
@@ -1554,10 +1561,14 @@ $(document).on(":passageend", ev => {
 
   const tag = m[1] || "";
 
-  if (tag === "/F") {
-    if (has_to_do) assertionFailed("/F should not have TO"+"DO items");
-    return;
+  if (has_to_do && tag !== "/P") {
+    assertionFailed("Only /P passages should have TO"+"DO");
   }
+  if (has_warning && tag === "/F") {
+    assertionFailed("/F passages should not have warnings");
+  }
+  
+  if (tag === "/F") return;
 
   const stat = $("<div class=stat-sign>").appendTo("body");
   switch (tag) {
@@ -1569,10 +1580,6 @@ $(document).on(":passageend", ev => {
       break;
     case "/P":
       stat.text("plan").addClass("stat-plan");
-      break;
-    case "/V":
-      stat.text("variants\nmissing").addClass("stat-vary");
-      if (!has_to_do) assertionFailed("/V should have TO"+"DO items");
       break;
     default:
       stat.text("[plan]").addClass("stat-plan stat-invalid");
@@ -1704,6 +1711,9 @@ The Mage's Tower (Nero)
 [[Credits]]
 <<if setup.enableDebugMenu>>
     <<link "\u23e9 Title" "Title Screen">><</link>>
+    <<link "\uD83D\uDCA3 Nero Reset" `State.passage`>>
+        <<delete-vars n0_ n1_ n2_>>
+    <</link>>
     <<link "\u23e9 Nero Start" "n1a/F Start">>
         <<delete-vars n1_ n2_>>
     <</link>>
@@ -1713,7 +1723,7 @@ The Mage's Tower (Nero)
     <<link "&#x23e9; Nero 1F Candle" "n1d/F Start Candle">>
         <<delete-vars n1_ n2_>>
     <</link>>
-    <<link "&#x23e9; Nero 1F Alone" "n2a/D Start">>
+    <<link "&#x23e9; Nero 1F Alone" "n2a/F Start">>
         <<delete-vars n1_ n2_>>
         <<set $n1_naked = true>>
     <</link>>
@@ -8056,7 +8066,7 @@ Nero considers his next move.
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[`"There's been a misunderstanding..."`|n1c/F Charm]]</li>
+    <li>[[`"There's been a misunderstanding..."`|n1c/D Charm]]</li>
     <li>[[Growl at Ivex.|n1c/F Resist]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
@@ -8072,7 +8082,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 [[fade-in test]]
 
 
-:: n1x/F Look {"position":"5850,3525","size":"100,200"}
+:: n1x/F Look [inclusion] {"position":"5850,3525","size":"100,200"}
 <<nobr>>
 <<if "[" + "[" + State.passage + "]]" === "[[n1x/F Look]]">>
     (look isolate)
@@ -8284,7 +8294,7 @@ Ivex speaks. "So let me make a proposal."
 <br><br>
 <ul class="actions">
     <<if $n2_ivexGone>>
-        <li>[[Struggle on the cross.|n2a/D Struggle]]</li>
+        <li>[[Struggle on the cross.|n2a/P Struggle]]</li>
     <</if>>
     <li>$n1_afterLook</li>
 </ul>
@@ -8503,7 +8513,7 @@ if free, it's a lewd snowdragon grabbing his cock, and the slogan is "CARPE DICK
 - already did password check
 
 if not free and want password
-- suggest "carpe diem" [[n1m/D Say Password]]
+- suggest "carpe diem" [[n1m/P Say Password]]
 - suggest plausible completions of place name
 
 if want pasword and ivex here, [[n1x/P Ask Globe]]
@@ -8618,9 +8628,9 @@ if free, can also see porn mags and something fascist.
             but this seems like a dead end.
         <<elseif $n1_triedRed>>
             "Red" didn't work, but maybe it's a more specific shade of red?
-            <<add-action [['"Please: Blood, red."|n1m/D Say Password][$n1_triedBloodRed = true]]>>
+            <<add-action [['"Please: Blood, red."|n1m/P Say Password][$n1_triedBloodRed = true]]>>
         <<else>>
-            <<add-action [['"Please: Red."'|n1m/D Say Password][$n1_triedRed = true]]>>
+            <<add-action [['"Please: Red."'|n1m/P Say Password][$n1_triedRed = true]]>>
         <</if>>
     <</if>>
 <</if>>
@@ -9079,7 +9089,7 @@ if want hole, maybe that's the hole
 
 if want password
 - if not know wand and ivex here, ask wand.
-- if know wand, can try password [[n1m/D Say Password]]
+- if know wand, can try password [[n1m/P Say Password]]
 
 if free and asked wand, can [[n2x/P Use Wand]]
 
@@ -9100,7 +9110,7 @@ He prepares the spell's image in his mind, and then <em>twists</em> it...
 [[Continue|n1a/F Endgame 2]]
 
 
-:: n1c/F Charm {"position":"4100,925","size":"100,100"}
+:: n1c/D Charm {"position":"4100,925","size":"100,100"}
 "There's been a misunderstanding," says Nero. "I wasn't <em>given</em> your dossier. I <em>stole</em> it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore."
 
 <<nobr>>
@@ -9193,7 +9203,7 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 [[Continue|n1d/F Start Candle]]
 
 
-:: n1m/F Magic {"position":"5800,2600","size":"200,100"}
+:: n1m/F Magic [inclusion] {"position":"5800,2600","size":"200,100"}
 <<nobr>>
 <!--
     - in: n1_afterAction - continue link when action is done
@@ -9328,7 +9338,7 @@ to wear a mask in preparation.
 "Oh it's hardly poisonous," Ivex replies. "Much the opposite." Ivex's voice is muffled and hollowed by the grinning mask. "I'd tell you all about it, but why spoil the surprise. A clever wolf like you will figure it out soon enough."
 
 <br><br>
-[[Continue|n1d/D Start Candle 2]]
+[[Continue|n1d/P Start Candle 2]]
 <</nobr>>
 
 
@@ -9396,17 +9406,21 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 [[Continue|n1p/F Barbs Yes 2]]
 
 
-:: n2a/D Start [section-start] {"position":"4700,4200","size":"100,100"}
+:: n2a/F Start [section-start] {"position":"4700,4200","size":"100,100"}
 <<nobr>>
 <<delete-vars n2_>>
 <<set $n1_candleLit = false>>
 <<set $n1_candleHorny = false>>
 <<set $n2_ivexGone = true>>
-<<big-mood n1_licked TODO>>
-<<big-mood n1_mageSight TODO>>
+<<big-mood n1_licked ignore>>
+<<big-mood n1_mageSight vary>>
 <<big-mood n1_smashed ignore>>
 
-Ivex's exit by teleportation has created a sudden rush of air that causes the candle's smoke to scatter.
+Ivex's exit by teleportation has created
+<<if $n1_mageSight>>
+    a swirl of exotic energies and
+<</if>>
+a sudden rush of air that causes the candle's smoke to scatter.
 <</nobr>>
 
 The candle flickers, and goes out.
@@ -9424,7 +9438,7 @@ Well, that's a question to be deferred to some other time. What's important now 
 [[Continue|n2a/D Start 2]]
 
 
-:: n2a/D Alone (6,2) {"position":"5050,4250","size":"200,200"}
+:: n2a/P Alone (6,2) {"position":"5050,4250","size":"200,200"}
 <<nobr>>
 <<big-mood n1_licked ignore>>
 <<big-mood n1_candleHorny TODO>>
@@ -9453,9 +9467,9 @@ Candle's Influence:
 
 <<next 3s>>
     <<include [[n1x/F Look and Magic]]>>
-    <<include [[n2a/D More Magic]]>>
+    <<include [[n2a/P More Magic]]>>
     <ul class="actions">
-        <li>[[Struggle...|n2a/D Struggle]]</li>
+        <li>[[Struggle...|n2a/P Struggle]]</li>
         <<optional-action $n1_magicAction>>
         <<optional-action $n2_moreMagicAction>>
     </ul>
@@ -9493,8 +9507,6 @@ nero is still strapped to cross, and extremely horny.
 
 
 :: n2a/P Tamed Mild [end] {"position":"3125,4875","size":"100,100"}
-XXX bad ending unlocked
-
 nero thinks, lemme satisfy him, and then there will be another opportunity to escape.
 suppresses distaste.
 
@@ -9505,7 +9517,14 @@ ivex calls nero a good doggy, gets nero to reveal all. nero senses something wro
 
 sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
 
-[[Return to the moment Ivex teleported away.|n2a/D Start]]
+<<nobr>>
+<<if !$n0_unlockedTamedMild>>
+    <<set $n0_unlockedTamedMild>>
+    <mark>Bad Ending: Nero: Tamed (Mild)</mark> is unlocked in the Archive.
+    <br><br>
+<</if>>
+
+[[Return to the moment Ivex teleported away.|n2a/F Start]]
 [[Return to the start of Nero's story|n1a/F Start]]
 [[Return to the title screen|Title Screen]]
 
@@ -9525,7 +9544,7 @@ nero whines. dumps all his info amid torture, feels ashamed at failing, but ends
 
 sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
-[[Return to the moment Ivex teleported away.|n2a/D Start]]
+[[Return to the moment Ivex teleported away.|n2a/F Start]]
 [[Return to the start of Nero's story.|n1a/F Start]]
 [[Return to the title screen.|Title Screen]]
 
@@ -9849,7 +9868,7 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 
 offer a list of plausible passwords based on things you've seen, plus a few generic guesses.
 
-[[n1m/D Say Password]]
+[[n1m/P Say Password]]
 
 
 :: n1a/F Feign Sleep 2 {"position":"3525,500","size":"100,100"}
@@ -10034,8 +10053,8 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 
 <ul class="actions">
     <<if $n1_naked>>
-        <li>[['"I'm quite relaxed..."'|n1d/D Naked Submit]]</li>
-        <li>[[Sneer at Ivex.|n1d/D Naked Resist]]</li>
+        <li>[['"I'm quite relaxed..."'|n1d/P Naked Submit]]</li>
+        <li>[[Sneer at Ivex.|n1d/P Naked Resist]]</li>
     <<else>>
         <li>[['"I'm quite relaxed..."'|n1d/D Strip Submit]]</li>
         <li>[[Sneer at Ivex.|n1d/D Strip Resist]]</li>
@@ -10249,7 +10268,7 @@ tells you its name
 :: n1x/P Ask Books {"position":"7375,3450","size":"100,100"}
 trying to get Ivex to say what his school name is
 
-[[n1m/D Say Password]]
+[[n1m/P Say Password]]
 
 <<link $n1_afterAction>><</link>>
 
@@ -10487,7 +10506,7 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 [[Continue|n1p/F Barbs 2]]
 
 
-:: n1x/F Look and Magic {"position":"5250,2450","size":"100,200"}
+:: n1x/F Look and Magic [inclusion] {"position":"5250,2450","size":"100,200"}
 <<nobr>>
 <<if $n1_patienceExhausted>>
     <<set $n1_magicAction = null>>
@@ -10671,9 +10690,9 @@ Such as, the noticeably horny panther mage who has just magicked away the wolf's
 <<link $n1_afterNaked>><</link>>
 
 
-:: n1c/F Anti-magic [noreturn] {"position":"4200,525","size":"100,100"}
+:: n1c/F Anti-magic [noreturn] {"position":"4200,550","size":"100,100"}
 <<nobr>>
-<<assert-true $m1_magicPhase === MP_triedMagic>>
+<<assert-true $n1_magicPhase === MP_triedMagic>>
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked always true>>
 <<big-mood n1_smashed always false>>
@@ -10946,7 +10965,7 @@ sprite doesn't respond. option to [[n2x/P Use Wand]], or maybe this is the same 
 <<link $n1_afterAction>><</link>>
 
 
-:: n1m/D Say Password {"position":"7925,4375","size":"100,100"}
+:: n1m/P Say Password {"position":"7925,4375","size":"100,100"}
 <<big-mood n1_candleHorny TODO>>
 
 from any place that has a suggested password.
@@ -10967,7 +10986,7 @@ subby and naked. ivex creeps.
 [[Continue|n1c/D Ivex Dominant (4,3)]]
 
 
-:: n1d/D Start Candle 2 {"position":"3800,3100","size":"100,100"}
+:: n1d/P Start Candle 2 {"position":"3800,3100","size":"100,100"}
 <<nobr>>
 <<big-mood n1_licked ignore>>
 <<big-mood n1_mageSight TODO>>
@@ -10982,7 +11001,7 @@ The wolf considers holding his breath to avoid whatever is in the candle's fumes
 [[Continue|n1d/F Comfortable? (1,1)]]
 
 
-:: n1d/D Naked Resist {"position":"4275,3250","size":"100,100"}
+:: n1d/P Naked Resist {"position":"4275,3250","size":"100,100"}
 <<nobr>>
 <<big-mood n1_naked always true>>
 <<big-mood n1_licked TODO>>
@@ -11017,7 +11036,7 @@ fur of the wolf's bare chest.
 [[Continue|n1d/D Get Creepy]]
 
 
-:: n1d/D Get Creepy 3 {"position":"4625,3400","size":"100,100"}
+:: n1d/P Get Creepy 3 {"position":"4625,3400","size":"100,100"}
 <<nobr>>
 <<big-mood n1_licked TODO>>
 <<big-mood n1_smashed TODO>>
@@ -11043,7 +11062,7 @@ The panther speaks in a low throaty register that reverberates through the mask.
 
 Ivex lifts his paw off the wolf's crotch, but leaves it poised right above it, centimeters away. He chuckles under the mask, as the wolf's member bulges and struggles outward, seeking attention...
 
-[[Continue|n1d/D Get Creepy 3]]
+[[Continue|n1d/P Get Creepy 3]]
 
 
 :: n1p/F Barbs Yes 2 {"position":"5850,1725","size":"100,100"}
@@ -11245,7 +11264,7 @@ Each beat making his cock twitch...
 
 Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em> Do you even know the difference?
 
-[[Continue|n1d/D Pull]]
+[[Continue|n1d/P Pull]]
 
 
 :: n1d/D Ball Resist {"position":"4750,3650","size":"100,100"}
@@ -11265,10 +11284,10 @@ What is he doing...
 
 Ivex anticipates the wolf's snapping jaws and smoothly dips his head below where the wolf can reach. "Were you trying to snatch my mask?" he asks. "Naughty boy..."
 
-[[Continue|n1d/D Pull]]
+[[Continue|n1d/P Pull]]
 
 
-:: n1d/D Naked Submit {"position":"4375,3250","size":"100,100"}
+:: n1d/P Naked Submit {"position":"4375,3250","size":"100,100"}
 <<nobr>>
 <<big-mood n1_naked always true>>
 <<big-mood n1_licked TODO>>
@@ -11355,7 +11374,7 @@ The panther mage raises an arm, and snaps his fingers.
 [[Continue|n1p/F Fast Naked]]
 
 
-:: n1d/D Pull {"position":"4700,3775","size":"100,100"}
+:: n1d/P Pull {"position":"4700,3775","size":"100,100"}
 <<nobr>>
 <<big-mood n1_licked TODO>>
 <<big-mood n1_smashed TODO>>
@@ -11426,7 +11445,7 @@ He glances at the agitated wolf. "We'll have to continue this friendly discussio
 
 The panther mage pulls a red gem out from a pocket, and then disappears in a <em>fwoosh</em>.
 
-[[Continue|n2a/D Start]]
+[[Continue|n2a/F Start]]
 
 
 :: n2a/D Start 2 {"position":"4800,4200","size":"100,100"}
@@ -11458,11 +11477,11 @@ The candle has lit itself again!
 
     It's just a matter of finding the right angle...
 
-    [[Continue|n2a/D Alone (6,2)]]
+    [[Continue|n2a/P Alone (6,2)]]
 <</fade-in>>
 
 
-:: n2a/P Lust Text {"position":"5300,4225","size":"100,100"}
+:: n2a/P Lust Text [inclusion] {"position":"5275,4250","size":"100,100"}
 <<nobr>>
 XXX progressive text about lust, based on arousal
 player is here at most 6 turns.
@@ -11471,7 +11490,7 @@ player is here at most 6 turns.
 <</nobr>>\
 
 
-:: n2a/D Struggle {"position":"5025,4525","size":"100,100"}
+:: n2a/P Struggle {"position":"5025,4525","size":"100,100"}
 <<nobr>>
 <<big-mood $n1_candleHorny TODO>>
 <<if !$n2_candleMax>>
@@ -11499,7 +11518,7 @@ player is here at most 6 turns.
 <</nobr>>
 
 
-:: n2a/D More Magic {"position":"4900,4400","size":"100,100"}
+:: n2a/P More Magic [inclusion] {"position":"4925,4350","size":"100,100"}
 <<nobr>>
 <<big-mood $n1_candleHorny TODO>>
 
@@ -11513,7 +11532,7 @@ player is here at most 6 turns.
     <!-- nothing -->
 
 <<else>>
-    <<set $n2_moreMagicAction = "[[Futile magic|n2a/D Futile Magic]]">>
+    <<set $n2_moreMagicAction = "[[Futile magic|n2a/P Futile Magic]]">>
 
     can be here twice. some interesting-sounding but useless spells.
     <br><br>
@@ -11522,7 +11541,7 @@ player is here at most 6 turns.
 <</nobr>>\
 
 
-:: n2a/F Compute Arousal {"position":"5200,4100","size":"100,100"}
+:: n2a/F Compute Arousal [inclusion] {"position":"5150,4125","size":"100,100"}
 <<script>>
 const v = State.variables;
 const actions = Math.max(v.n1_patienceActions, 0);
@@ -11548,7 +11567,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <</script>>\
 
 
-:: n1m/D Cast Escape {"position":"5875,2475","size":"100,100"}
+:: n1m/D Cast Escape {"position":"5925,2350","size":"100,100"}
 <<nobr>>
 <<assert-true $n1_magicPhase === MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
@@ -11608,7 +11627,7 @@ XXX desperation magic fails
 [[Continue|n2a/D Failed Escape]]
 
 
-:: n2a/D Futile Magic {"position":"4775,4400","size":"100,100"}
+:: n2a/P Futile Magic {"position":"4775,4400","size":"100,100"}
 <<big-mood $n1_candleHorny TODO>>
 
 can be here twice. Two different interesting but futile spells.
@@ -11691,7 +11710,7 @@ $n1_afterAction
 <</nobr>>\
 
 
-:: big-mood template {"position":"5975,3325","size":"100,100"}
+:: big-mood template {"position":"6725,3500","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleLit TODO>>
 <<big-mood n1_ivexReceptive TODO>>
@@ -11713,7 +11732,7 @@ $n1_afterAction
 <</nobr>>
 
 
-:: n1m/F Before Cast {"position":"5750,2475","size":"100,100"}
+:: n1m/F Before Cast [inclusion] {"position":"5800,2475","size":"100,100"}
 <<nobr>>
 <!-- easy escape requires magicSight, hard escape requires wantPassword -->
 <<big-mood n2_free always false>>
@@ -11747,7 +11766,7 @@ $n1_afterAction
 <</nobr>>\
 
 
-:: n1m/D Tried Magic {"position":"5825,2725","size":"100,100"}
+:: n1m/D Tried Magic [inclusion] {"position":"5825,2725","size":"100,100"}
 <<nobr>>
 <!-- easy escape requires magicSight, hard escape requires wantPassword -->
 <<big-mood n2_free always false>>
@@ -11772,7 +11791,7 @@ $n1_afterAction
 <</nobr>>\
 
 
-:: n1m/D Magic Sight {"position":"6000,2475","size":"100,100"}
+:: n1m/D Magic Sight [inclusion] {"position":"5925,2475","size":"100,100"}
 <<nobr>>
 <<if $n2_mirrorBroken>>
     Mirror broken, magic energy low.
@@ -11788,7 +11807,7 @@ $n1_afterAction
 <</nobr>>\
 
 
-:: n1m/D Cast Itch {"position":"5750,2350","size":"100,100"}
+:: n1m/D Cast Itch {"position":"5675,2350","size":"100,100"}
 <<nobr>>
 <<assert-true $n1_magicPhase === MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
@@ -11817,7 +11836,7 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
 <</nobr>>
 
 
-:: n1m/D After Itch {"position":"5625,2475","size":"100,100"}
+:: n1m/D After Itch {"position":"5550,2350","size":"100,100"}
 Ivex being lewd about scratching itches, saunters back to desk.
 
 info about anti-magic.
@@ -11825,7 +11844,7 @@ info about anti-magic.
 $n1_afterAction
 
 
-:: n1m/D Cast Slippery {"position":"5875,2350","size":"100,100"}
+:: n1m/D Cast Slippery {"position":"5800,2350","size":"100,100"}
 <<nobr>>
 <<assert-true $n1_magicPhase === MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
@@ -11849,7 +11868,7 @@ spell fizzes. Ivex recognizes it.
 <</nobr>>
 
 
-:: n1m/D After Slippery {"position":"5875,2225","size":"100,100"}
+:: n1m/D After Slippery {"position":"5825,2225","size":"100,100"}
 Ivex being lewd about slippery. saunters back to desk.
 
 info about anti-magic.
@@ -11857,7 +11876,7 @@ info about anti-magic.
 $n1_afterAction
 
 
-:: n1m/F Sprite {"position":"6025,2600","size":"200,100"}
+:: n1m/F Sprite [inclusion] {"position":"6025,2600","size":"200,100"}
 <<nobr>>
 <<if $n1_candleHorny>>
     <<switch random(0, 2)>>
@@ -11877,9 +11896,9 @@ $n1_afterAction
 <<case `MP_wantDevice`>>
     "What magical device in this room do you wish to control, Master?"
     <<if $n1_bottleSeen>>
-        <<set $n1_magicAction = "[[`\"Please, Nackle's Poltergeist Device.\"`|n1m/D Say Device]]">>
+        <<set $n1_magicAction = "[[`\"Please, Nackle's Poltergeist Device.\"`|n1m/P Say Device]]">>
     <<elseif !$n1_helpDeviceSeen>>
-        <<set $n1_magicAction = "[[Ask sprite for help.|n1m/D Help Device]]">>
+        <<set $n1_magicAction = "[[Ask sprite for help.|n1m/P Help Device]]">>
     <</if>>
 
 <<case `MP_wantName`>>
@@ -11887,13 +11906,13 @@ $n1_afterAction
     <<if $n1_bottleNameKnown>>
         <<set $n1_magicAction = "[['\"Please, Lance Rockhard\"'|n1m/D Say Lance]]">>
     <<elseif !$n1_helpDeviceSeen>>
-        <<set $n1_magicAction = "[['\"Please, help.\"'|n1m/D Help Device]]">>
+        <<set $n1_magicAction = "[['\"Please, help.\"'|n1m/P Help Device]]">>
     <</if>>
 
 <<case `MP_wantTouch`>>
     "Please touch my hole, Master."
     <<if !$n1_helpTouchSeen>>
-        <<set $n1_magicAction = "[['\"Please, help.\"'|n1m/D Help Touch]]">>
+        <<set $n1_magicAction = "[['\"Please, help.\"'|n1m/P Help Touch]]">>
     <</if>>
 
 <<case `MP_wantPassword`>>
@@ -11908,7 +11927,7 @@ $n1_afterAction
     <<set $n1_magicAction = "[[Use Lance Rockhard.|n1m/D Use Lance]]">>
 
 <<case `MP_lockedOut`>>
-    <<include [[n1m/F Locked Out]]>>
+    <<include [[n1m/P Locked Out]]>>
 
 <<default>>
     <<run throw new Error("bug")>>
@@ -11918,7 +11937,7 @@ $n1_afterAction
 <</nobr>>\
 
 
-:: n1m/F Mirror Broken {"position":"5700,2725","size":"100,100"}
+:: n1m/F Mirror Broken [inclusion] {"position":"5700,2725","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleHorny always false>>
 <<big-mood n2_free always true>>
@@ -11929,7 +11948,7 @@ He'll have to rely on wits alone now.
 <</nobr>>\
 
 
-:: n1m/D Help Device {"position":"5950,2850","size":"100,100"}
+:: n1m/P Help Device {"position":"5950,2850","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleHorny TODO>>
 <<set $n1_helpDeviceSeen = true>>
@@ -11961,7 +11980,7 @@ $n1_afterAction
 <</nobr>>
 
 
-:: n1m/D Impatient {"position":"6425,2625","size":"100,100"}
+:: n1m/P Impatient {"position":"6375,2600","size":"100,100"}
 <<big-mood n1_candleHorny TODO>>
 <<big-mood $n1_magicPhase always MP_wantPassword>>
 <<set _maxTries = 2>>
@@ -12018,7 +12037,7 @@ $n1_afterAction
 <</nobr>>
 
 
-:: n1m/D Say Device {"position":"6075,2850","size":"100,100"}
+:: n1m/P Say Device {"position":"6075,2850","size":"100,100"}
 <<big-mood n1_candleHorny TODO>>
 <<assert-true $n1_magicPhase === MP_wantDevice>>
 <<set $n1_magicPhase = MP_wantName>>
@@ -12056,7 +12075,7 @@ Nero thoughts.
 $n1_afterAction
 
 
-:: n1x/D Scan {"position":"6200,2300","size":"100,100"}
+:: n1x/D Scan {"position":"6150,2300","size":"100,100"}
 <<big-mood n2_mirrorBroken always false>>
 
 after spending a little time trying to understand the exotic energy, Nero notices that the mirror is not firewalled, and he can connect to it.
@@ -12072,7 +12091,7 @@ after spending a little time trying to understand the exotic energy, Nero notice
 <</nobr>>
 
 
-:: n1m/F Locked Out {"position":"6150,2475","size":"100,100"}
+:: n1m/P Locked Out [inclusion] {"position":"6075,2475","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleHorny TODO>>
 
@@ -12136,7 +12155,7 @@ before trying again."
 <</nobr>>\
 
 
-:: n1m/D Help Touch {"position":"6200,2850","size":"100,100"}
+:: n1m/P Help Touch {"position":"6200,2850","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleHorny TODO>>
 <<set $n1_helpTouchSeen = true>>
@@ -12163,7 +12182,7 @@ $n1_afterAction
 <</nobr>>
 
 
-:: n1m/D On Hold {"position":"6300,2625","size":"100,100"}
+:: n1m/D On Hold [inclusion] {"position":"6250,2600","size":"100,100"}
 <<nobr>>
 "Checking password... Please hold, Master."
 
@@ -12178,16 +12197,16 @@ It continues to hum
 
 <<if ($n1_passwordTries || 0) === 0 >>
     <<set $n1_impatient = "stop">>
-    <<set $n1_magicAction = "[['\"Please, stop the music!\"'|n1m/D Impatient]]">>
+    <<set $n1_magicAction = "[['\"Please, stop the music!\"'|n1m/P Impatient]]">>
 <<else>>
     <<set $n1_impatient = "quiet">>
-    <<set $n1_magicAction = "[['\"Please, shut up!\"'|n1m/D Impatient]]">>
+    <<set $n1_magicAction = "[['\"Please, shut up!\"'|n1m/P Impatient]]">>
 <</if>>
 
 <</nobr>>\
 
 
-:: n1p/F Naked 2 {"position":"5300,1800","size":"100,100"}
+:: n1p/F Naked 2 [inclusion] {"position":"5300,1800","size":"100,100"}
 <<nobr>>
 <<set $n0_nakedSeen = true>>
 <<big-mood n1_smashed ignore>>
@@ -12256,7 +12275,7 @@ Events have progressed beyond simple interrogation.
 <</nobr>>
 
 
-:: n1p/F Fast Naked 2 {"position":"5300,1550","size":"100,100"}
+:: n1p/F Fast Naked 2 [inclusion] {"position":"5300,1550","size":"100,100"}
 <<nobr>>
 <<set $n0_fastNakedSeen = true>>
 <<big-mood n1_smashed ignore>>
@@ -12274,7 +12293,7 @@ Just last year, late in the spring season...
 [[Continue|n1p/F Fast Barbs 1]]
 
 
-:: n1x/F Look Free {"position":"6000,3700","size":"100,100"}
+:: n1x/F Look Free [inclusion] {"position":"6000,3700","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleLit always false>>
 <<big-mood n1_candleHorny always false>>
@@ -12344,7 +12363,7 @@ and a [[magic wand|n1x/P Wand]].
 <</nobr>>
 
 
-:: n1x/F Look Bound {"position":"6000,3600","size":"100,100"}
+:: n1x/F Look Bound [inclusion] {"position":"6000,3600","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleHorny always false>>
 <<big-mood n2_free always false>>
@@ -12467,7 +12486,7 @@ with leather restraints to a
 <</nobr>>\
 
 
-:: n1x/D Look Horny {"position":"5850,3775","size":"100,100"}
+:: n1x/D Look Horny [inclusion] {"position":"5850,3775","size":"100,100"}
 <<nobr>>
 <<big-mood n1_candleLit always true>>
 <<big-mood n1_licked vary>>
@@ -12669,7 +12688,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 [[Continue|n1c/F Ivex Intro]]
 
 
-:: n1m/D Itch [noreturn] {"position":"5625,2350","size":"100,100"}
+:: n1m/D Itch [noreturn] {"position":"5550,2250","size":"100,100"}
 Wicked Itch (not to be confused with the pilgrim's charm called Wicket Twitch), is a popular prank spell that nobody uses any more, because it's trivially reversed onto the caster if the target has any type of spell ward, even something as weak as the "Lucky Penny" that's a common carnival prize.
 
 The spell and its related family of minor nerve agonists have never been a serious weapon in mage fights, but on one inebriated night with the fabulous Ms. Tara, Nero discovered a curious property of Wicked Itch.
