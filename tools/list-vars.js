@@ -87,11 +87,20 @@ function listVars(twFile, varListTxt, regexFilter) {
   if (varListTxt != null && varListTxt !== "") {
     const varList = fs.readFileSync(varListTxt, "utf-8");
     const known = new Set();
+    const unused = new Set();
     for (const m of varList.matchAll(/^\s*(\w+)/gm)) {
       known.add(m[1]);
+      unused.add(m[1]);
     }
-    for (const vn of varnames.filter((vn) => !known.has(vn))) {
-      unknown.add(vn);
+    for (const vn of varnames) {
+      unused.delete(vn);
+      if (!known.has(vn)) unknown.add(vn);
+    }
+    if (unused.size > 0) {
+      console.log("unused vars:")
+      for (const vn of [...unused].sort()) {
+        console.log(`   ${vn}`);
+      }
     }
     if (unknown.size > 0) {
       console.log("unknown vars:");
