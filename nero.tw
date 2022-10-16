@@ -807,17 +807,6 @@ $(document).on(':passagestart', function (ev) {
     }
 });
 
-// intercept at under-construction passages.
-if (!Config.debug) {
-    Config.navigation.override = destination => {
-        const passage = Story.get(destination);
-        if (passage.tags.includes("under-construction")) {
-            return "n2 Under Construction";
-        }
-        return false;
-    };
-}
-
 /* Health Bar code - Start */
 window.Health = function (CurHP, MaxHP, BarID, Horizontal, Container, AnimateFrom) {
     if (Container == undefined) {
@@ -1291,6 +1280,11 @@ function varInfoSetup() {
       ['n2_ivexGone', true],
       'n2_tooClever',
     ],
+    [
+      // Endings
+      /^n9/,
+      'n1_spines',
+    ],
   ];
 
   // note: sugarcube overrides JSON.stringify to handle "undefined" and a few other cases specially
@@ -1556,8 +1550,8 @@ $(document).on(":passageend", ev => {
   $(".stat-sign").remove();
   const here = ev.passage.title;
 
-  const m = /([/]\w) /.exec(here);
-  if (m == null && !/^n\d/.test(here)) return;
+  const m = /^n\d\w*([/]\w) /.exec(here);
+  if (m == null) return;
 
   const tag = m[1] || "";
 
@@ -3786,31 +3780,30 @@ To change the adventurer's fate, you can...
 
 :: Archives [noreturn] {"position":"2400,700","size":"100,100"}
 <<link "Return to the game" $return>><</link>>\
-\
-<h1>Archives</h1>\
-Welcome to the Mage's Tower Archives.
+<h1>Welcome to the Mage's Tower Archives</h1>\
+Here you can revisit the different endings the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
 
-Here you can revisit the different endings the adventurer has met in his time in the Mage's Tower. When the adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
+Grayed out endings and variations are paths that have not yet been found, shown with hints to what path the adventurer should take to reach them.
 
-Grayed out endings are paths that have not yet been found, although there are hints under them as to what path the adventurer should take to reach them. The same applies to different variations of endings.
+<<nobr>>
+<mark>Unlocked endings are only kept within a save.</mark> To keep all unlocked endings, make sure to always use and load the same save file.
 
-<i>Unlocked endings are only kept within a save. To keep all unlocked endings, make sure to always use and load the same save file.</i>
-\
-<hr>\
-<h2>Endings unlocked:</h2>\
-<<include [[Interrogation Archive Display]]>>\
-\
-<<include [[Enthrallment Archive Display]]>>\
-\
-<<include [[Extraction Archive Display]]>>\
-\
-<<include [[Ivex Punishment Archive Display]]>>\
-\
-<<include [[Ivex Enthrallment Archive Display]]>>\
-\
-<<include [[Ivex Extraction Archive Display]]>>\
+<hr>
+<h2>Drekkar Endings</h2>
+<<include [[Interrogation Archive Display]]>>
+<<include [[Enthrallment Archive Display]]>>
+<<include [[Extraction Archive Display]]>>
+<<include [[Ivex Punishment Archive Display]]>>
+<<include [[Ivex Enthrallment Archive Display]]>>
+<<include [[Ivex Extraction Archive Display]]>>
 
-<<link "Return to the game" $return>><</link>>\
+<hr>
+<h2>Nero Endings</h2>
+<<include [[n0/P Nero Endings]]>>
+
+<br><br>
+<<link "Return to the game" $return>><</link>>
+<</nobr>>
 
 
 :: The Desk {"position":"900,4350","size":"100,100"}
@@ -4580,7 +4573,7 @@ For some reason, that smell feels incredibly <b>arousing</b>. If he could look a
 No matter how much he tries, $name cannot find a way out. He's trapped there grinding herbs and getting aroused by it until who knows how long after that, Ivex himself opens the door.
 
 
-:: Interrogation Archive Display [noreturn] {"position":"1700,1000","size":"100,100"}
+:: Interrogation Archive Display [inclusion] {"position":"1700,1000","size":"100,100"}
 <<silently>>
   <<if $interrogationEndingFreeze && $interrogationEndingShock>>
     <<set $interrogationSpell = 'freeze'>>
@@ -4779,7 +4772,7 @@ But there's no decision to be made. After being exposed to that candle for so lo
 [[Return to the Archives|Archives]]
 
 
-:: Enthrallment Archive Display [noreturn] {"position":"1825,1000","size":"100,100"}
+:: Enthrallment Archive Display [inclusion] {"position":"1825,1000","size":"100,100"}
 <<silently>>\
   <<set $lionFuck = false>>
 <</silently>>\
@@ -5712,7 +5705,7 @@ With a drawn-out moan, the wolf's exposed cock starts pulsing inside the slime a
 It doesn't stop there, and neither does the slime. All the stimulation keeps going as the wolf's orgasm hits, shooting jet after jet of cum into the slime. His seed seems to be 'caught' by the blob. The white, pearly substance is gathered just above his cock, melding together as the wolf is encouraged to shoot more and more. The slime keeps milking him, kneading his cock, his knot, and inflicting pleasure all around his body until the wolf's cock is reduced to quick throbs, spurting the last remnants of his orgasm. Only then does the slime start slowing down, although the stimulation doesn't truly stop. It allows the wolf to catch his breath, though. And as he looks down…
 
 
-:: Extraction Archive Display [noreturn] {"position":"1950,1000","size":"100,100"}
+:: Extraction Archive Display [inclusion] {"position":"1950,1000","size":"100,100"}
 <<silently>>\
   <<if $extractionGentleEnd && $extractionForcefulEnd>>
     <<set $extractionVariant = 'gentle'>>
@@ -7414,7 +7407,7 @@ With a handsome amount of gold in his hands, the wolf moves on. The life of an a
 Or, at least, he will try to.
 
 
-:: Ivex Enthrallment Archive Display [noreturn] {"position":"2200,1000","size":"100,100"}
+:: Ivex Enthrallment Archive Display [inclusion] {"position":"2200,1000","size":"100,100"}
 <<if $enthralmentIvexEnding>>\
   <b>[[Ending: A New Servant|Ivex Enthrallment Archive]]</b>
 <<else>>\
@@ -7449,7 +7442,7 @@ Or, at least, he will try to.
 [[Return to the Archives|Archives]]
 
 
-:: Ivex Extraction Archive Display [noreturn] {"position":"2325,1000","size":"100,100"}
+:: Ivex Extraction Archive Display [inclusion] {"position":"2325,1000","size":"100,100"}
 <<if $extractionIvexEnding>>\
   <b>[[Ending: Energy Supply|Ivex Extraction Archive]]</b>
 <<else>>\
@@ -7480,7 +7473,7 @@ Or, at least, he will try to.
 [[Return to the Archives|Archives]]
 
 
-:: Ivex Punishment Archive Display [noreturn] {"position":"2075,1000","size":"100,100"}
+:: Ivex Punishment Archive Display [inclusion] {"position":"2075,1000","size":"100,100"}
 <<if $personalEnding>>\
   <b>[[Ending: Punishment|Ivex Punishment Archive]]</b>
 <<else>>\
@@ -9406,7 +9399,7 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 [[Continue|n1p/F Barbs Yes 2]]
 
 
-:: n2a/F Start [section-start] {"position":"4700,4200","size":"100,100"}
+:: n2a/F Start [section-start] {"position":"4150,4250","size":"100,100"}
 <<nobr>>
 <<delete-vars n2_>>
 <<set $n1_candleLit = false>>
@@ -9478,6 +9471,8 @@ Candle's Influence:
 
 
 :: n2a/D Failed Escape {"position":"4900,4650","size":"100,100"}
+<span class="bad-ending">Bad Ending: <i>Tamed</i></span>
+
 candle maxed, desperation action failed.
 Nero stuck in mindless lust until Ivex returns.
 
@@ -9487,8 +9482,8 @@ inverts cross and presents cock for sucking
 
 <<nobr>>
 <ul class="actions">
-    <li>[[Suck reluctantly|n2a/P Tamed Mild]]</li>
-    <li>[[Refuse|n2a/P Tamed Harsh]]</li>
+    <li>[[Suck reluctantly|n9a/P Tamed Mild]]</li>
+    <li>[[Refuse|n9a/P Tamed Harsh]]</li>
 </ul>
 <</nobr>>
 
@@ -9506,7 +9501,9 @@ nero is still strapped to cross, and extremely horny.
 <</nobr>>
 
 
-:: n2a/P Tamed Mild [end] {"position":"3125,4875","size":"100,100"}
+:: n9a/P Tamed Mild [end] {"position":"3125,4875","size":"100,100"}
+<<big-mood n1_spines TODO>>
+
 nero thinks, lemme satisfy him, and then there will be another opportunity to escape.
 suppresses distaste.
 
@@ -9518,19 +9515,34 @@ ivex calls nero a good doggy, gets nero to reveal all. nero senses something wro
 sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
 
 <<nobr>>
-<<if !$n0_unlockedTamedMild>>
-    <<set $n0_unlockedTamedMild>>
-    <mark>Bad Ending: Nero: Tamed (Mild)</mark> is unlocked in the Archive.
-    <br><br>
+<<if $n1_spines>>
+    <<if $n0_unlockedTamedMildSpines>>
+        <span class="bad-ending">Bad Ending: Tamed (mild, spines)</span>
+    <<else>>
+        <<set $n0_unlockedTamedMildSpines = true>>
+        Nero's <mark>Bad Ending: Tamed (mild, spines)</mark>
+        is now unlocked in the Archive.
+    <</if>>
+<<else>>
+    <<if $n0_unlockedTamedMildNoSpines>>
+        <span class="bad-ending">Bad Ending: Tamed (mild, no spines)</span>
+    <<else>>
+        <<set $n0_unlockedTamedMildNoSpines = true>>
+        Nero's <mark>Bad Ending: Tamed (mild, no spines)</mark>
+        is now unlocked in the Archive.
+    <</if>>
 <</if>>
 
-[[Return to the moment Ivex teleported away.|n2a/F Start]]
-[[Return to the start of Nero's story|n1a/F Start]]
-[[Return to the title screen|Title Screen]]
+<br><br>
+<ul class="actions">
+    <li>[[Try again from Ivex's disappearance.|n2a/F Start]]</li>
+    <li>[[Try again from the beginning.|Title Screen]]</li>
+</ul>
+<</nobr>>
 
 
-:: n2a/P Tamed Harsh [end] {"position":"3125,4975","size":"100,100"}
-XXX bad ending unlocked
+:: n9a/P Tamed Harsh [end] {"position":"3125,4975","size":"100,100"}
+<<big-mood n1_spines TODO>>
 
 no way is nero sucking ivex off. he's escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
 
@@ -9544,9 +9556,31 @@ nero whines. dumps all his info amid torture, feels ashamed at failing, but ends
 
 sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
-[[Return to the moment Ivex teleported away.|n2a/F Start]]
-[[Return to the start of Nero's story.|n1a/F Start]]
-[[Return to the title screen.|Title Screen]]
+<<nobr>>
+<<if $n1_spines>>
+    <<if $n0_unlockedTamedHarshSpines>>
+        <span class="bad-ending">Bad Ending: Tamed (harsh, spines)</span>
+    <<else>>
+        <<set $n0_unlockedTamedHarshSpines = true>>
+        Nero's <mark>Bad Ending: Tamed (harsh, spines)</mark>
+        is now unlocked in the Archive.
+    <</if>>
+<<else>>
+    <<if $n0_unlockedTamedHarshNoSpines>>
+        <span class="bad-ending">Bad Ending: Tamed (harsh, no spines)</span>
+    <<else>>
+        <<set $n0_unlockedTamedHarshNoSpines = true>>
+        Nero's <mark>Bad Ending: Tamed (harsh, no spines)</mark>
+        is now unlocked in the Archive.
+    <</if>>
+<</if>>
+
+<br><br>
+<ul class="actions">
+    <li>[[Try again from Ivex's disappearance.|n2a/F Start]]</li>
+    <li>[[Try again from the beginning.|Title Screen]]</li>
+</ul>
+<</nobr>>
 
 
 :: n2a/D Snuff Candle {"position":"5225,4700","size":"100,100"}
@@ -9580,16 +9614,17 @@ after it's out, pause.
 <</nobr>>
 
 
-:: n3a/P start [section-start under-construction] {"position":"5500,5300","size":"100,100"}
+:: n3a/P start [section-start] {"position":"3900,5200","size":"100,100"}
 2f door closes behind him, no apparent way to open it again.
 
 if gotMirror, at least he's got the mirror. and he's still horny, but manageable.
 else, regret about the mirror. extremely horny, might be distracting.
 
-[[n3a/P hallway]]
+<<set $n0_afterConstruction = "[[n3a/P hallway]]">>
+[[Continue|n0/F Under Construction]]
 
 
-:: n2a/P tamed desperate [end under-construction] {"position":"7575,4600","size":"100,100"}
+:: n2a/P tamed desperate [end] {"position":"7625,4750","size":"100,100"}
 bad ending unlocked
 
 ivex returns and laughs at the sight. says horny dog needs some discipline.
@@ -9608,7 +9643,7 @@ restart at n2a Ivex Leaves
 restart from beginning
 
 
-:: n3a/P hallway {"position":"5025,5550","size":"200,200"}
+:: n3a/P hallway {"position":"4675,5675","size":"200,200"}
 there's an obnoxious statue of Ivex here, enormous erection
 
 lion room door is glass, can see through.
@@ -9635,7 +9670,7 @@ maybe tk matrix in this room too
 [[n3a/P extraction room]]
 
 
-:: n3a/P lion room {"position":"4800,5550","size":"200,200"}
+:: n3a/P lion room {"position":"4350,5700","size":"200,200"}
 nero recognizes thrall spell.
 nero never sees journal entry about lion.
 
@@ -9680,7 +9715,7 @@ this is bad ending: hunted
 [[n3a/P hunted]]
 
 
-:: n3a/P extraction room {"position":"5025,5900","size":"200,200"}
+:: n3a/P extraction room {"position":"4675,6025","size":"200,200"}
 examine blob and altar
 examine desk and books.
 
@@ -9720,7 +9755,7 @@ harsh is when lion is hunting you [[n3a/P stiffened harsh]]
 [[n4a/P escaped]]
 
 
-:: n4a/P escaped [section-start end] {"position":"5025,6425","size":"100,100"}
+:: n4a/P escaped [section-start end] {"position":"4675,6550","size":"100,100"}
 there are two paths into here.
 made-gem means lion is available for punishment.
 rescued-gem means lion is trapped in blob, not available.
@@ -9746,15 +9781,15 @@ if had tamed end, can use dumb on ivex after fuck.
 
 when lion is free, he asks you to rescue companion. you do, and find companion asks to be un-rescued. (maybe only do this when take-over is an option)
 
-if all of the above, can "rescue" ivex and take over his domain.
+if all of the above, can "rehabilitate" ivex and take over his domain.
 otherwise, fulfill contract.
 
 Nero's contract is rescuing his patron's cock, but he doesn't know that. he's told it's an ornate box with something precious or blackmaily. Ivex has applied portal chastity to a couple useful people, and is using that for things like gem supply. it's a cabinet somewhere in the tower, there's maybe 4-6 boxes, not labelled.
 
-in most endings, Nero just returns them all to his patron, without opening them. in some ending, Nero is frustrated enough with what he's been through, that he's tempted to open to box to see what the fuss was all about. maybe this is in the unlock-everything ending, but maybe better to put this somwhere intermediate.
+in most endings, Nero just returns them all to his patron, without opening them. in some ending, Nero is frustrated enough with what he's been through, that he's tempted to open to box to see what the fuss was all about. maybe this is in the unlock-everything ending, but maybe better to put this somewhere intermediate.
 
 
-:: n3a/P hunted {"position":"4650,5600","size":"100,100"}
+:: n3a/P hunted {"position":"4200,5750","size":"100,100"}
 XXX got here because lion is rapey, and you've lost the slippery ring
 
 you can try to satisfy the lion, or try to continue to escape
@@ -9765,7 +9800,7 @@ maybe, leave harsh for the ring+lion ending
 [[n3a hunted harsh]]
 
 
-:: n3a/P hunted mild [end] {"position":"4525,5525","size":"100,100"}
+:: n3a/P hunted mild [end] {"position":"4075,5675","size":"100,100"}
 XXX lion is rapey, nero tries to satisfy him
 uses his paw. lion cums, lion forces nero to lick it up, and then immediately gets rapey again.
 the cum is aphrodisiac, nero ends up pawing himself too
@@ -9774,7 +9809,7 @@ he's stuck in a loop pawing with lion and licking it up until Ivex returns.
 Ivex is amused and decides to chain nero to the lion as part of an assembly line, the lion can continually grind while nero continually paws. nero isn't compelled by anything but horniness and fear of the lion.
 
 
-:: n3a hunted harsh [end] {"position":"4525,5700","size":"100,100"}
+:: n3a hunted harsh [end] {"position":"4075,5850","size":"100,100"}
 XXX lion is rapey, nero tries to evade.
 gets caught, pinned down and raped.
 it's over quick, lion takes a rest,
@@ -9784,7 +9819,7 @@ it's an endless loop until Ivex arrives.
 Ivex is amused and makes nero permanent prey. safe hole in keep, lust spell, inhibitor spell. can get relief by grabbing a one-time remedy from lion, but locked out from safe hole for n minutes, have to keep evading lion.
 
 
-:: n3a/P stiffened mild [end] {"position":"4525,5975","size":"100,100"}
+:: n3a/P stiffened mild [end] {"position":"4175,6100","size":"100,100"}
 slippery ring is locked on. lion isn't hunting you.
 
 if lion was following, he puts the thrall gem on you and goes back to what he was doing, you momentarily fight the thrall spell, and manage to remove it because of the slippery ring.
@@ -9796,7 +9831,7 @@ nero struggles to reduce the contact area, ends up perched on the toes of one fo
 ivex returns and is amused, turns nero into an office ornament. likes to push nero and watch him collapse to the ground and then struggle to get back up.
 
 
-:: n3a/P stiffened harsh [end] {"position":"4525,6125","size":"100,100"}
+:: n3a/P stiffened harsh [end] {"position":"4175,6250","size":"100,100"}
 slippery ring locks on, and lion is hunting.
 
 lion rapes, extreme overstimulation.
@@ -10687,7 +10722,7 @@ There are much more urgent matters to consider.
 
 Such as, the noticeably horny panther mage who has just magicked away the wolf's clothes, and is now fingering the exposed fur on Nero's naked chest.
 
-<<link $n1_afterNaked>><</link>>
+$n1_afterNaked
 
 
 :: n1c/F Anti-magic [noreturn] {"position":"4200,550","size":"100,100"}
@@ -10735,10 +10770,21 @@ It's saved his life more than once.
 <<link "Return" $return>><</link>>
 
 
-:: n1z Under Construction {"position":"2725,200","size":"100,100"}
-<em>Congratulations. You've reached an "Under Construction" point in Nero's story.</em>
+:: n0/F Under Construction [end] {"position":"3500,1575","size":"100,100"}
+<h1>Under Construction&#x1f6a7;</h1>\
+Congratulations! You've reached an "Under Construction" point in Nero's story. Thanks for playing so far!
 
-[[Back to Title|Title Screen]]
+<<include [[n0/F Project Status]]>>
+
+<<nobr>>
+<ul class="actions">
+    <<if Config.debug && $n0_afterConstruction>>
+        <li>$n0_enterConstruction</li>
+    <</if>>
+    <li>[[Try again from Ivex's disappearance.|n2a/F Start]]</li>
+    <li>[[Try again from the beginning.|Title Screen]]</li>
+</ul>
+<</nobr>>
 
 
 :: n1p/F Barbs Extra [noreturn] {"position":"6100,1800","size":"100,100"}
@@ -11169,7 +11215,7 @@ It's an intensely sexy memory,
 
 Such as, the noticeably horny panther mage who has just magicked away the wolf's clothes, and is now fingering the exposed fur on Nero's naked chest.
 
-<<link $n1_afterNaked>><</link>>
+$n1_afterNaked
 
 
 :: n1p/F Fast Barbs Extra [noreturn] {"position":"5850,1550","size":"100,100"}
@@ -11448,7 +11494,7 @@ The panther mage pulls a red gem out from a pocket, and then disappears in a <em
 [[Continue|n2a/F Start]]
 
 
-:: n2a/D Start 2 {"position":"4800,4200","size":"100,100"}
+:: n2a/D Start 2 {"position":"4250,4250","size":"100,100"}
 A flicker in the corner of Nero's eye catches his attention.
 
 The candle has lit itself again!
@@ -11456,7 +11502,7 @@ The candle has lit itself again!
 [[Continue|n2a/D Start 3]]
 
 
-:: n2a/D Start 3 {"position":"4900,4200","size":"100,100"}
+:: n2a/D Start 3 {"position":"4350,4250","size":"100,100"}
 <<nobr>>
 <<fade-in 2s>>
     Candle's Influence:
@@ -12698,5 +12744,37 @@ The spell and its related family of minor nerve agonists have never been a serio
 
 
 :: n1x/P touch bottle {"position":"7375,3300","size":"100,100"}
+
+
+:: n0/P Nero Endings [inclusion] {"position":"3000,925","size":"100,100"}
+Bad Ending: Tamed
+Variation: Mild | Harsh | ??? (Desperate)
+Spines: No | Yes
+
+Bad Ending: Hunted
+Variation: Mild | Harsh
+Spines: No | Yes
+
+Bad Ending: Stiffened
+Variation: Mild | Harsh
+Spines: No | Yes
+
+Ending: Escaped
+Variation: Lawful | Vengeful
+Spines: No | Yes
+Chastity: No | Yes
+Collar: No | Yes
+??? (Lion): No | Yes
+??? (Tame): No | Yes
+??? (Rescue): No | Yes
+??? (Ascend): No | Yes
+
+
+:: n0/F Project Status [end inclusion] {"position":"3325,1700","size":"100,100"}
+Nero has a few Bad Endings that are already finished. Check out the [[Archives]] (always available in the sidebar menu) to see which endings are available. For the endings you haven't seen yet, there are some hints on how to reach them.
+
+We're expecting the rest of Nero's story to be released to <a target="_blank" href="https://www.patreon.com/sleth">Sleth's Patreon</a> in January 2023. Public release will be a month later.
+
+Feedback is always welcome! XXX\
 
 
