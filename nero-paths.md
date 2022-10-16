@@ -6,7 +6,7 @@
 - Easy is available after Ivex leaves, if the player misses the Hard solution.
 
 ### 1st Floor Easy
-- At the restart point, Nero is bound to the cross, Ivex is gone, the lust candle is lit.
+- At the Ivex-gone restart point, Nero is bound to the cross, Ivex is gone, the lust candle is lit.
 - Player can do N looks and M actions before the lust candle is maxed.
 - Most actions here are not useful. They're either teases, or they provide hints for the next attempt at 1st Floor Hard.
 - These actions can be done earlier, or can be done here:
@@ -25,9 +25,9 @@
 - After disrupting the grav gems, there's a choice between getting the knife first or snuffing the candle first.
   - Unlike Drekkar's story, both options are always successful. There's no trap here.
 - Easy solution will break the mirror, making it unavailable on the 2nd Floor, and making the 2nd Floor Easy solution unavailable.
-- There's an additional Bad Ending here:
-  - Bad Ending: Tamed Desperate - with high lust, look at wand and use it.
-  - This is meant to be a little hard to find.
+- There are additional Bad Endings here:
+  - Bad Ending: Caged Mild - paw off before leaving.
+  - Bad Ending: Caged Harsh - paw off with wand before leaving. This is meant to be a little hard to find.
 
 ### 1st Floor Hard
 - This is designed to be very unlikely to do on 1st playthrough, but not too hard after a few playthroughs.
@@ -62,6 +62,8 @@
   - Lead the player through a section that feels like "crap, another obstacle, what else do I have to do to get past this."
   - But this turns out to actually work anyway. Nero is free.
 - The mirror is saved. It can be used for 2nd Floor Easy escape.
+- There's a special Bad Ending here:
+  - Bad Ending: Dominated - use wand after escaping.
 
 ## 2nd Floor
 - There are two solutions to the 2nd floor: Easy and Hard.
@@ -87,8 +89,9 @@
     - Wearing it makes it glow green.
     - After one action, it glows yellow.
     - If Nero doesn't take it off when it's yellow, it turns red and locks on.
-      - Bad Ending: Stiff Mild - lion is not hunting.
-      - Bad Ending: Stiff Harsh - lion is hunting.
+      - Bad Ending: Tickled Mild - lion is not following or hunting.
+      - Bad Ending: Tickled Harsh - lion is following.
+      - Bad Ending: Destroyed - lion is hunting.
   - Entering the blob alone will not get the gem.
     - This can be repeated, as long as the player remembers to remove the ring after.
     - After two failures, suggest doing something else.
@@ -96,7 +99,7 @@
     - Nero is not able to overpower the lion.
     - Nero has to get the lion to chase him into the blob.
   - The lion has two chase modes:
-    - "Assimilate" is slow and relentless.
+    - "Follow" is slow and relentless.
       - Nero can evade the lion indefinitely in a room, and take any number of actions in the room.
       - Moving to another room will drop everything Nero is holding, but not the ring if he's wearing it.
       - The lion is not going to chase Nero into the blob.
@@ -107,7 +110,7 @@
     - Put on ring, it turns green.
     - Start lion hunting, ring turns yellow and Nero is starting to feel stiff.
     - Any action other than removing the ring will fail to evade the lion.
-      - Bad Ending: Hunted Harsh.
+      - Bad Ending: Destroyed.
   - To enter the blob with the lion:
     - Nero has to be wearing the ring, and the lion has to be hunting.
     - He can't start this in the Extraction room:
@@ -145,11 +148,12 @@
   - (14) Teleport out. Once Nero is out, he has magic back and can defuse the ring.
 - Ways to fail
   - Wear the ring too long:
-    - Bad Ending: Stiff Mild - lion is not hunting.
-    - Bad Ending: Stiff Harsh - lion is hunting.
+    - Bad Ending: Tickled Mild - lion is not following or hunting.
+    - Bad Ending: Tickled Harsh - lion is following.
+    - Bad Ending: Destroyed - lion is hunting.
   - Lose ring while hunted:
-    - Bad Ending: Hunted Mild - cooperate
-    - Bad Ending: Hunted Harsh - resist
+    - Bad Ending: Hunted Mild - cooperate.
+    - Bad Ending: Hunted Harsh - resist.
   - Neither of these has much warning before it happens, but once the player knows they can happen, they're easy to avoid:
     - Take off the ring as soon as it's yellow.
     - Don't activate lion hunting until everything is ready.
