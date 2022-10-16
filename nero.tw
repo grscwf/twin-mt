@@ -1133,7 +1133,7 @@ Macro.add("big-mood", {
     let ok = false;
     switch (m[3]) {
       case 'always':
-        bigMoodAlways[vn] = val;
+        if (!withinInclude(this)) bigMoodAlways[vn] = val;
         ok = actual === val || (actual == null && val === false);
         if (ok) bigMoodIgnore.add(vn);
         break;
@@ -1192,6 +1192,13 @@ function assertBigMood(vn, val, expr) {
   assertionFailed(`big-mood ${vn} always ${expr}`);
 }
 
+function withinInclude(context) {
+  for (; context != null; context = context.parent) {
+    if (context.displayName === "include") return true;
+  }
+  return false;
+}
+
 /**
  * var-info - show vars and allow toggling flags.
  *
@@ -1207,6 +1214,10 @@ function varInfoSetup() {
   };
 
   const bigMoodVars = [
+    [
+      // Nero sections without big-moods
+      /^n0|^n1a/,
+    ],
     [
       // Naked/barbs choice.
       /^n1p/,
@@ -1408,11 +1419,9 @@ function varInfoSetup() {
     [...varsRead].forEach(v => touched.add(v));
     [...varsWritten].forEach(v => touched.add(v));
     
-    for (const vn of varsRead) {
-      if (vn in bigMoodAlways) {
-        assertionFailed(`passage should not read ${vn} (always ${bigMoodAlways[vn]}`);
-      }
-    }
+    [...varsRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
+      assertionFailed(`passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
+    });
 
     const here = State.passage;
     const bigMood = new Set();
