@@ -692,7 +692,7 @@ ul.actions li {
 .stat-plan {
   color: rgba(200, 200, 200, 0.2);
 }
-.stat-vary {
+.stat-sketch {
   color: rgba(200, 200, 200, 0.2);
 }
 
@@ -724,10 +724,10 @@ a[data-passage*="/P "]:hover {
   color: #99f;
 }
 
-a[data-passage*="/V "] {
+a[data-passage*="/S "] {
   color: #ffe000;
 }
-a[data-passage*="/V "]:hover {
+a[data-passage*="/S "]:hover {
   color: #dd9900;
 }
 
@@ -1150,6 +1150,7 @@ Macro.add("TO"+"DO", {
 
 const bigMood_to_do = new Set();
 const bigMoodIgnore = new Set();
+let bigMoodAlways = {};
 let bigMoodImplies = {};
 let bigMoodFalseImplies = {};
 let bigMoodReq = {};
@@ -1157,6 +1158,7 @@ let bigMoodReq = {};
 $(document).on(":passagestart", () => {
   bigMood_to_do.clear();
   bigMoodIgnore.clear();
+  bigMoodAlways = {};
   bigMoodImplies = {};
   bigMoodFalseImplies = {};
   bigMoodReq = {};
@@ -1193,6 +1195,7 @@ Macro.add("big-mood", {
     let ok = false;
     switch (m[3]) {
       case 'always':
+        bigMoodAlways[vn] = val;
         ok = actual === val || (actual == null && val === false);
         if (ok) bigMoodIgnore.add(vn);
         break;
@@ -1466,11 +1469,19 @@ function varInfoSetup() {
     const touched = new Set();
     [...varsRead].forEach(v => touched.add(v));
     [...varsWritten].forEach(v => touched.add(v));
+    
+    for (const vn of varsRead) {
+      if (vn in bigMoodAlways) {
+        assertionFailed(`passage should not read ${vn} (always ${bigMoodAlways[vn]}`);
+      }
+    }
 
     const here = State.passage;
     const bigMood = new Set();
+    let anyMatched = false;
     for (const [re, ...vars] of bigMoodVars) {
       if (re.test(here)) {
+        anyMatched = true;
         for (const vname of vars) {
           if (!Array.isArray(vname)) {
             bigMood.add(vname);
@@ -1481,6 +1492,9 @@ function varInfoSetup() {
           }
         }
       }
+    }
+    if (!anyMatched) {
+      assertionFailed(`${here} should match some bigMoodVars rule`);
     }
 
     const outer = $("<div class=var-info>").prependTo("#story");
@@ -1652,7 +1666,7 @@ $(document).on(":passageend", ev => {
   const stat = $("<div class=stat-sign>").appendTo("body");
   switch (tag) {
     case "":
-      stat.text("(plan)").addClass("stat-plan stat-null");
+      stat.text("(sketch)").addClass("stat-sketch stat-null");
       break;
     case "/D":
       stat.text("draft").addClass("stat-draft");
@@ -1660,9 +1674,11 @@ $(document).on(":passageend", ev => {
     case "/P":
       stat.text("plan").addClass("stat-plan");
       break;
+    case "/S":
+      stat.text("sketch").addClass("stat-sketch");
     default:
-      stat.text("[plan]").addClass("stat-plan stat-invalid");
-      assertionFailed(`Passage tag ${tag} is valid`);
+      stat.text("[sketch]").addClass("stat-sketch stat-invalid");
+      assertionFailed(`Passage tag ${tag} should be /F /D /P or /S`);
       break;
   }
 });
@@ -8536,7 +8552,7 @@ after it&#39;s out, pause.
 if gotMirror, at least he&#39;s got the mirror. and he&#39;s still horny, but manageable.
 else, regret about the mirror. extremely horny, might be distracting.
 
-&lt;&lt;set $n0_afterConstruction = &quot;[[n3a/P hallway]]&quot;&gt;&gt;
+&lt;&lt;set $n0_afterConstruction = &quot;[[n3a/S hallway]]&quot;&gt;&gt;
 [[Continue|n0/F Under Construction]]</tw-passagedata><tw-passagedata pid="282" name="n9b/P Tamed Desperate" tags="end" position="7625,4750" size="100,100">bad ending unlocked
 
 ivex returns and laughs at the sight. says horny dog needs some discipline.
@@ -8552,7 +8568,7 @@ maybe: ivex gives nero more freedom as dependence becomes firm. nero manages to 
 gives up, mental suicide with dumb gem.
 
 restart at n2a Ivex Leaves
-restart from beginning</tw-passagedata><tw-passagedata pid="283" name="n3a/P hallway" tags="" position="4675,5675" size="200,200">there&#39;s an obnoxious statue of Ivex here, enormous erection
+restart from beginning</tw-passagedata><tw-passagedata pid="283" name="n3a/S hallway" tags="" position="4675,5675" size="200,200">there&#39;s an obnoxious statue of Ivex here, enormous erection
 
 lion room door is glass, can see through.
 opens easily with a push, never closes.
@@ -8574,8 +8590,8 @@ if door isn&#39;t already open
 
 maybe tk matrix in this room too
 
-[[n3a/P lion room]]
-[[n3a/P extraction room]]</tw-passagedata><tw-passagedata pid="284" name="n3a/P lion room" tags="" position="4350,5700" size="200,200">nero recognizes thrall spell.
+[[n3a/S lion room]]
+[[n3a/S extraction room]]</tw-passagedata><tw-passagedata pid="284" name="n3a/S lion room" tags="" position="4350,5700" size="200,200">nero recognizes thrall spell.
 nero never sees journal entry about lion.
 
 if gotMirror, nero can connect to another tk matrix, can immobilize the lion.
@@ -8616,7 +8632,7 @@ in the hallway, it rolls to the lion room.
 in the lion room, it falls into a drain.
 this is bad ending: hunted
 
-[[n3a/P hunted]]</tw-passagedata><tw-passagedata pid="285" name="n3a/P extraction room" tags="" position="4675,6025" size="200,200">examine blob and altar
+[[n3a/S hunted]]</tw-passagedata><tw-passagedata pid="285" name="n3a/S extraction room" tags="" position="4675,6025" size="200,200">examine blob and altar
 examine desk and books.
 
 nero knows enough to not mess with the blob.
@@ -8649,10 +8665,10 @@ put it on, you get a green glow.
 after 1 action, glow turns yellow, ring starts shrinking.
 if you don&#39;t take it off when yellow, any other action locks it down, glow turns red.
 this is bad ending: stiffened
-mild is when the lion isn&#39;t hunting you [[n9d/P stiffened mild]]
-harsh is when lion is hunting you [[n9d/P stiffened harsh]]
+mild is when the lion isn&#39;t hunting you [[n9d/S stiffened mild]]
+harsh is when lion is hunting you [[n9d/S stiffened harsh]]
 
-[[n9x/P escaped]]</tw-passagedata><tw-passagedata pid="286" name="n9x/P escaped" tags="section-start end" position="4675,6550" size="100,100">there are two paths into here.
+[[n9x/S escaped]]</tw-passagedata><tw-passagedata pid="286" name="n9x/S escaped" tags="section-start end" position="4675,6550" size="100,100">there are two paths into here.
 made-gem means lion is available for punishment.
 rescued-gem means lion is trapped in blob, not available.
 
@@ -8682,25 +8698,25 @@ otherwise, fulfill contract.
 
 Nero&#39;s contract is rescuing his patron&#39;s cock, but he doesn&#39;t know that. he&#39;s told it&#39;s an ornate box with something precious or blackmaily. Ivex has applied portal chastity to a couple useful people, and is using that for things like gem supply. it&#39;s a cabinet somewhere in the tower, there&#39;s maybe 4-6 boxes, not labelled.
 
-in most endings, Nero just returns them all to his patron, without opening them. in some ending, Nero is frustrated enough with what he&#39;s been through, that he&#39;s tempted to open to box to see what the fuss was all about. maybe this is in the unlock-everything ending, but maybe better to put this somewhere intermediate.</tw-passagedata><tw-passagedata pid="287" name="n3a/P hunted" tags="" position="4200,5750" size="100,100">XXX got here because lion is rapey, and you&#39;ve lost the slippery ring
+in most endings, Nero just returns them all to his patron, without opening them. in some ending, Nero is frustrated enough with what he&#39;s been through, that he&#39;s tempted to open to box to see what the fuss was all about. maybe this is in the unlock-everything ending, but maybe better to put this somewhere intermediate.</tw-passagedata><tw-passagedata pid="287" name="n3a/S hunted" tags="" position="4200,5750" size="100,100">XXX got here because lion is rapey, and you&#39;ve lost the slippery ring
 
 you can try to satisfy the lion, or try to continue to escape
 
 maybe, leave harsh for the ring+lion ending
 
-[[n9c/P hunted mild]]
-[[n9c/P hunted harsh]]</tw-passagedata><tw-passagedata pid="288" name="n9c/P hunted mild" tags="end" position="3850,5675" size="100,100">XXX lion is rapey, nero tries to satisfy him
+[[n9c/S hunted mild]]
+[[n9c/S hunted harsh]]</tw-passagedata><tw-passagedata pid="288" name="n9c/S hunted mild" tags="end" position="3850,5675" size="100,100">XXX lion is rapey, nero tries to satisfy him
 uses his paw. lion cums, lion forces nero to lick it up, and then immediately gets rapey again.
 the cum is aphrodisiac, nero ends up pawing himself too
 he&#39;s stuck in a loop pawing with lion and licking it up until Ivex returns.
 
-Ivex is amused and decides to chain nero to the lion as part of an assembly line, the lion can continually grind while nero continually paws. nero isn&#39;t compelled by anything but horniness and fear of the lion.</tw-passagedata><tw-passagedata pid="289" name="n9c/P hunted harsh" tags="end" position="3850,5850" size="100,100">XXX lion is rapey, nero tries to evade.
+Ivex is amused and decides to chain nero to the lion as part of an assembly line, the lion can continually grind while nero continually paws. nero isn&#39;t compelled by anything but horniness and fear of the lion.</tw-passagedata><tw-passagedata pid="289" name="n9c/S hunted harsh" tags="end" position="3850,5850" size="100,100">XXX lion is rapey, nero tries to evade.
 gets caught, pinned down and raped.
 it&#39;s over quick, lion takes a rest,
 nero tries to escape again, lion gets rapey again, pursues again.
 it&#39;s an endless loop until Ivex arrives.
 
-Ivex is amused and makes nero permanent prey. safe hole in keep, lust spell, inhibitor spell. can get relief by grabbing a one-time remedy from lion, but locked out from safe hole for n minutes, have to keep evading lion.</tw-passagedata><tw-passagedata pid="290" name="n9d/P stiffened mild" tags="end" position="3925,6175" size="100,100">slippery ring is locked on. lion isn&#39;t hunting you.
+Ivex is amused and makes nero permanent prey. safe hole in keep, lust spell, inhibitor spell. can get relief by grabbing a one-time remedy from lion, but locked out from safe hole for n minutes, have to keep evading lion.</tw-passagedata><tw-passagedata pid="290" name="n9d/S stiffened mild" tags="end" position="3925,6175" size="100,100">slippery ring is locked on. lion isn&#39;t hunting you.
 
 if lion was following, he puts the thrall gem on you and goes back to what he was doing, you momentarily fight the thrall spell, and manage to remove it because of the slippery ring.
 
@@ -8708,7 +8724,7 @@ nero is stiffened and oversensitized. movement is hard, and any touch is oversti
 
 nero struggles to reduce the contact area, ends up perched on the toes of one foot.
 
-ivex returns and is amused, turns nero into an office ornament. likes to push nero and watch him collapse to the ground and then struggle to get back up.</tw-passagedata><tw-passagedata pid="291" name="n9d/P stiffened harsh" tags="end" position="3925,6325" size="100,100">slippery ring locks on, and lion is hunting.
+ivex returns and is amused, turns nero into an office ornament. likes to push nero and watch him collapse to the ground and then struggle to get back up.</tw-passagedata><tw-passagedata pid="291" name="n9d/S stiffened harsh" tags="end" position="3925,6325" size="100,100">slippery ring locks on, and lion is hunting.
 
 lion rapes, extreme overstimulation.
 
@@ -9517,7 +9533,7 @@ if ivex not receptive and already tried, angry reaction, set failed true.
 otherwise, set tried true. ivex goes to look
 - if want touch and not touched, touches window. sprite doesn&#39;t respond
 
-&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="354" name="n2b/P Touch Door" tags="" position="5850,4875" size="100,100">door swings inward. look through. a moment later, door swings shut.
+&lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="354" name="n2b/P Touch Door" tags="" position="5825,4875" size="100,100">door swings inward. look through. a moment later, door swings shut.
 no handle on other side of door, so this looks like a one-way trip.
 
 &lt;&lt;link $n1_afterAction&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="355" name="n2b/P Last Chance" tags="" position="5600,5100" size="200,100">forward into uncertainty and adventure.
@@ -10152,7 +10168,7 @@ subby gets stripped.
 
 [[Continue|n1p/F Naked]]</tw-passagedata><tw-passagedata pid="393" name="n2a/D Desperate Magic" tags="" position="4900,4525" size="100,100">XXX desperation magic fails
 
-[[Continue|n2a/D Failed Escape]]</tw-passagedata><tw-passagedata pid="394" name="n2a/P Futile Magic" tags="" position="4775,4400" size="100,100">&lt;&lt;big-mood $n1_candleHorny TODO&gt;&gt;
+[[Continue|n2a/D Failed Escape]]</tw-passagedata><tw-passagedata pid="394" name="n2a/P Futile Magic" tags="" position="4800,4350" size="100,100">&lt;&lt;big-mood $n1_candleHorny TODO&gt;&gt;
 
 can be here twice. Two different interesting but futile spells.
 
@@ -11079,7 +11095,14 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 [[Continue|n1c/F Ivex Intro]]</tw-passagedata><tw-passagedata pid="430" name="n1m/D Itch" tags="noreturn" position="5550,2250" size="100,100">Wicked Itch (not to be confused with the pilgrim&#39;s charm called Wicket Twitch), is a popular prank spell that nobody uses any more, because it&#39;s trivially reversed onto the caster if the target has any type of spell ward, even something as weak as the &quot;Lucky Penny&quot; that&#39;s a common carnival prize.
 
 The spell and its related family of minor nerve agonists have never been a serious weapon in mage fights, but on one inebriated night with the fabulous Ms. Tara, Nero discovered a curious property of Wicked Itch.</tw-passagedata><tw-passagedata pid="431" name="n1x/P Take Knife" tags="" position="7275,4625" size="100,100"></tw-passagedata><tw-passagedata pid="432" name="n1x/P touch bottle" tags="" position="7375,3300" size="100,100"></tw-passagedata><tw-passagedata pid="433" name="n0/P Nero Endings" tags="inclusion" position="3000,925" size="100,100">Bad Ending: Tamed
-Variation: Mild | Harsh | ??? (Desperate)
+Variation: Mild | Harsh
+Spines: No | Yes
+
+Bad Ending:  Caged
+Variation: Mild | Harsh
+Spines: No | Yes
+
+Bad Ending: ??? (Desperate)
 Spines: No | Yes
 
 Bad Ending: Hunted
@@ -11093,14 +11116,14 @@ Spines: No | Yes
 Ending: Escaped
 Variation: Lawful | Vengeful
 Spines: No | Yes
-Chastity: No | Yes
+Chastity: No | Yes | ???
 Collar: No | Yes
 ??? (Lion): No | Yes
 ??? (Tame): No | Yes
 ??? (Rescue): No | Yes
 ??? (Ascend): No | Yes</tw-passagedata><tw-passagedata pid="434" name="n0/F Project Status" tags="end inclusion" position="3325,1700" size="100,100">Nero has a few Bad Endings that are already finished. Check out the [[Archives]] (always available in the sidebar menu) to see which endings are available. For the endings you haven&#39;t seen yet, there are some hints on how to reach them.
 
-We&#39;re expecting the rest of Nero&#39;s story to be released to &lt;a target=&quot;_blank&quot; href=&quot;https://www.patreon.com/sleth&quot;&gt;Sleth&#39;s Patreon&lt;/a&gt; in January 2023. Public release will be a month later.
+We&#39;re expecting the rest of Nero&#39;s story to be released to &lt;a target=&quot;_blank&quot; href=&quot;https://www.patreon.com/sleth&quot;&gt;Sleth&#39;s Patreon&lt;/a&gt; in March 2023. Public release will be a month later.
 
 Feedback is always welcome! XXX\</tw-passagedata><tw-passagedata pid="435" name="n1c/F Anti-magic 2" tags="noreturn" position="4300,550" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;assert-true $n1_magicPhase === MP_triedMagic&gt;&gt;
