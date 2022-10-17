@@ -84,10 +84,10 @@ function listVars(twFile, varListTxt, regexFilter) {
   varnames.forEach((v) => (counts[v] = vars[v].size));
 
   const unknown = new Set();
+  const unused = new Set();
   if (varListTxt != null && varListTxt !== "") {
     const varList = fs.readFileSync(varListTxt, "utf-8");
     const known = new Set();
-    const unused = new Set();
     for (const m of varList.matchAll(/^\s*(\w+)/gm)) {
       known.add(m[1]);
       unused.add(m[1]);
@@ -96,21 +96,22 @@ function listVars(twFile, varListTxt, regexFilter) {
       unused.delete(vn);
       if (!known.has(vn)) unknown.add(vn);
     }
-    if (unused.size > 0) {
-      console.log("unused vars:")
-      for (const vn of [...unused].sort()) {
-        console.log(`   ${vn}`);
-      }
-    }
-    if (unknown.size > 0) {
-      console.log("unknown vars:");
-      for (const vn of [...unknown].sort()) {
-        console.log(`    ${vn}`);
-      }
-    }
   }
 
   list(varnames);
+
+  if (unused.size > 0) {
+    console.log("unused vars:")
+    for (const vn of [...unused].sort()) {
+      console.log(`   ${vn}`);
+    }
+  }
+  if (unknown.size > 0) {
+    console.log("unknown vars:");
+    for (const vn of [...unknown].sort()) {
+      console.log(`    ${vn}`);
+    }
+  }
 
   function list(subset) {
     for (const vn of subset) {
