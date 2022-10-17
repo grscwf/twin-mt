@@ -10,6 +10,9 @@ function main(args) {
   if (args.length !== 1) usage();
   const fname = args[0];
   const twText = fs.readFileSync(fname, "utf-8");
+  const mtime = fs.statSync(fname).mtime;
+  const timestamp = mtime.toISOString()
+    .replace(/T/, ' ').replace(/\..*/, '');
 
   const passages = {};
   const words = {};
@@ -37,7 +40,7 @@ function main(args) {
   }
 
   // one-line summary
-  let sum = 'nero stats: ';
+  let sum = `nero stats ${timestamp} UTC - `;
   sum += `${words["total /F"] || 0} (${passages["total /F"] || 0}) /F`;
   sum += ` - ${words["total /D"] || 0} (${passages["total /D"] || 0}) /D`;
   sum += ` - ${words["total /P"] || 0} (${passages["total /P"] || 0}) /P`;

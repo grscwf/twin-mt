@@ -103,13 +103,13 @@ function listVars(twFile, varListTxt, regexFilter) {
   if (unused.size > 0) {
     console.log("unused vars:")
     for (const vn of [...unused].sort()) {
-      console.log(`   ${vn}`);
+      console.log(`  ${vn}`);
     }
   }
   if (unknown.size > 0) {
     console.log("unknown vars:");
     for (const vn of [...unknown].sort()) {
-      console.log(`    ${vn}`);
+      console.log(`  ${vn}`);
     }
   }
 
