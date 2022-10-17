@@ -40,11 +40,12 @@ function main(args) {
   }
 
   // one-line summary
-  let sum = `nero stats ${timestamp} UTC - `;
-  sum += `${words["total /F"] || 0} (${passages["total /F"] || 0}) /F`;
-  sum += ` - ${words["total /D"] || 0} (${passages["total /D"] || 0}) /D`;
-  sum += ` - ${words["total /P"] || 0} (${passages["total /P"] || 0}) /P`;
-  sum += ` - ${words["total /S"] || 0} (${passages["total /S"] || 0}) /S`;
+  let sum = `nero# `;
+  sum += `${words["total /F"] || 0}-${passages["total /F"] || 0}/F`;
+  sum += ` : ${words["total /D"] || 0}-${passages["total /D"] || 0}/D`;
+  sum += ` : ${words["total /P"] || 0}-${passages["total /P"] || 0}/P`;
+  sum += ` : ${words["total /S"] || 0}-${passages["total /S"] || 0}/S`;
+  sum += ` : ${timestamp} UTC`;
   console.log(sum);
 }
 
