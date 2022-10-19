@@ -43,15 +43,18 @@ function main(args) {
   }
 
   // one-line summary
-  const pct = Math.floor(
-    100 * passages["total /F"] / passages["total /FDP"]
-  );
+  const all = passages["total /FDP"];
+  const pctF = Math.floor(100 * passages["total /F"] / all);
+  const pctD = Math.floor(100 * passages["total /D"] / all);
+  const pctP = Math.floor(100 * passages["total /P"] / all);
   let sum = `nero#`;
   sum += ` ${words["total /FDP"] || 0}-${passages["total /FDP"] || 0}/FDP`;
   sum += ` : ${words["total /F"] || 0}-${passages["total /F"] || 0}/F`;
-  sum += ` ${pct.toFixed(0)}%`;
+  sum += ` ${pctF}%`;
   sum += ` : ${words["total /D"] || 0}-${passages["total /D"] || 0}/D`;
+  sum += ` ${pctD}%`;
   sum += ` : ${words["total /P"] || 0}-${passages["total /P"] || 0}/P`;
+  sum += ` ${pctP}%`;
   sum += ` : ${words["total /S"] || 0}-${passages["total /S"] || 0}/S`;
   sum += ` : ${timestamp} UTC`;
   console.log(sum);
