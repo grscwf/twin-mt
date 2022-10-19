@@ -24,13 +24,16 @@ function main(args) {
 
   const split = twText.split(/^(:: .*)$/m);
   split.forEach((part, i) => {
-    const m = /^:: ((n\d+)\w*(\/\w)?) /.exec(part);
+    const m = /^:: ((n\d+)\w*\/(\w)?) /.exec(part);
     if (m == null) return;
     const wc = wordCount(split[i + 1]);
     addTo(`section ${m[2]}`, wc);
-    addTo(`section ${m[2]}${m[3]}`, wc);
+    addTo(`section ${m[2]}/${m[3]}`, wc);
     addTo("total", wc);
-    addTo(`total ${m[3]}`, wc);
+    addTo(`total /${m[3]}`, wc);
+    if (/^[FDP]$/.test(m[3])) {
+      addTo(`total /FDP`, wc);
+    }
   });
 
   for (const counter of Object.keys(passages).sort()) {
@@ -40,8 +43,13 @@ function main(args) {
   }
 
   // one-line summary
-  let sum = `nero# `;
-  sum += `${words["total /F"] || 0}-${passages["total /F"] || 0}/F`;
+  const pct = Math.floor(
+    100 * passages["total /F"] / passages["total /FDP"]
+  );
+  let sum = `nero#`;
+  sum += ` ${words["total /FDP"] || 0}-${passages["total /FDP"] || 0}/FDP`;
+  sum += ` : ${words["total /F"] || 0}-${passages["total /F"] || 0}/F`;
+  sum += ` ${pct.toFixed(0)}%`;
   sum += ` : ${words["total /D"] || 0}-${passages["total /D"] || 0}/D`;
   sum += ` : ${words["total /P"] || 0}-${passages["total /P"] || 0}/P`;
   sum += ` : ${words["total /S"] || 0}-${passages["total /S"] || 0}/S`;
