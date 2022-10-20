@@ -27,7 +27,7 @@ nero
 		"text": "blue",
 		"under-construction": "red"
 	},
-	"zoom": 0.3
+	"zoom": 0.6
 }
 
 
@@ -1643,7 +1643,7 @@ $(document).on(":passageend", ev => {
 });
 
 
-:: Bound {"position":"2600,1125","size":"100,100"}
+:: Bound {"position":"2800,1025","size":"100,100"}
 <<nobr>>
 <<set $passedContentWarning = true>>
 <</nobr>>\
@@ -1677,7 +1677,7 @@ by <a href="http://www.slethstories.com/" target="_blank">Sleth</a>
 The Mage's Tower (Nero)
 
 
-:: StoryMenu [inclusion] {"position":"2600,1400","size":"100,100"}
+:: StoryMenu [inclusion] {"position":"2550,1400","size":"100,100"}
 [[Archives]]
 [[Credits]]
 <<if setup.enableDebugMenu>>
@@ -1882,6 +1882,10 @@ With a spring to his step, the panther approaches, closing in the last distance 
 
 
 :: StoryInit [inclusion] {"position":"2600,150","size":"100,100"}
+<<script>>
+  window.Tower || (window.Tower = {});
+<</script>>
+<<include [[Init Archive]]>>
 <<include [[Init Sidebar]]>>
 <<include [[Init Drekkar]]>>
 <<include [[Init Nero]]>>
@@ -3692,13 +3696,26 @@ To change the adventurer's fate, you can...
 
 
 :: Archives [noreturn] {"position":"2525,1525","size":"100,100"}
-<<link "Return to the game" $return>><</link>>\
-<h1>Welcome to the Mage's Tower Archives</h1>\
-Here you can revisit the different endings the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
-
-Grayed out endings and variations are paths that have not yet been found, shown with hints to what path the adventurer should take to reach them.
-
 <<nobr>>
+<<link "Return to the game" $return>><</link>>
+
+<h1>Welcome to the Mage's Tower Archives</h1>
+
+Here you can revisit different endings 
+<<set _detail = `that the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
+<br><br>
+Grayed out endings and variations are paths that have not yet been found, shown with hints to what path the adventurer should take to reach them.
+`>>
+<<if !$t0_archiveDetailSeen>>
+    <<= _detail>>
+    <<set $t0_archiveDetailSeen = true>>
+<<else>>
+    <<linkreplace "... (more)" t8n>>
+        <<= _detail>>
+    <</linkreplace>>
+<</if>>
+
+<br><br>
 <mark>Unlocked endings are only kept within a save.</mark> To keep all unlocked endings, make sure to always use and load the same save file.
 
 <hr>
@@ -4487,88 +4504,40 @@ No matter how much he tries, $name cannot find a way out. He's trapped there gri
 
 
 :: Interrogation Archive Display [inclusion] {"position":"1800,1775","size":"100,100"}
-<<silently>>
-  <<if $interrogationEndingFreeze && $interrogationEndingShock>>
-    <<set $interrogationSpell = 'freeze'>>
-  <<elseif $interrogationEndingFreeze && !$interrogationEndingShock>>
-    <<set $interrogationSpell = 'freeze'>>
-  <<elseif !$interrogationEndingFreeze && $interrogationEndingShock>>
-    <<set $interrogationSpell = 'shock'>>
-  <<else>>
-    <<set $interrogationSpell = ''>>
-  <</if>>
-  <<if $interrogationEndingMild && $interrogationEndingRough>>
-    <<set $interrogationEnd = 'mild'>>
-  <<elseif $interrogationEndingMild && !$interrogationEndingRough>>
-    <<set $interrogationEnd = 'mild'>>
-  <<elseif !$interrogationEndingMild && $interrogationEndingRough>>
-    <<set $interrogationEnd = 'rough'>>
-  <<else>>
-    <<set $interrogationEnd = ''>>
-  <</if>>
-<</silently>>\
-\
-<<if $interrogationEnding>>\
-  <b>[[Bad Ending: Interrogation|Interrogation Archive]]</b>
-  Variation 1: <<nobr>>
-  <<if $interrogationEndingFreeze>>
-    <label><<radiobutton "$interrogationSpell" "freeze" autocheck>> Freeze</label>
-  <<else>>
-    <span class="helper-container">
-      <span><label><<radiobutton "$interrogationSpell" "">> <span class="disabled">Freeze</span></label></span>
-      <small class="helper-text">Ivex has a special treatment for northern wolves that like the cold...</small>
-    </span>
-    <<done>><<script>>
-    document.getElementById("radiobutton-interrogationspell-0").disabled = true;
-    <</script>><</done>>
-  <</if>>
-  <</nobr>>\
-   | <<nobr>>
-    <<if $interrogationEndingShock>>
-        <label><<radiobutton "$interrogationSpell" "shock" autocheck>> Shock</label>
-      <<else>>
-        <span class="helper-container">
-          <span><label><<radiobutton "$interrogationSpell" "">> <span class="disabled">Shock</span></label></span>
-          <small class="helper-text">Ivex has a special treatment for southern wolves that hate the cold...</small>
-        </span>
-        <<done>><<script>>
-            document.getElementById("radiobutton-interrogationspell-1").disabled = true;
-        <</script>><</done>>
-    <</if>>
-  <</nobr>>
+<<nobr>>
+<<if !$interrogationEnding>>
+    <div class="archive-ending">
+        <div class="archive-title archive-disabled">
+            Bad Ending: Interrogation
+        </div>
+        <div class="archive-hint">
+            Interrogation by the hands of the wizard is the first step
+            that awaits those that cannot escape his contraptions...
+        </div>
+    </div>
 
-  Variation 2: <<nobr>>
-  <<if $interrogationEndingMild>>
-    <label><label><<radiobutton "$interrogationEnd" "mild" autocheck>> Mild</label>
-  <<else>>
-    <span class="helper-container">
-      <span><label><<radiobutton "$interrogationEnd" "">> <span class="disabled">Mild</span></label></span>
-      <small class="helper-text">Ivex treats those that choose collaboration over defiance with "kindness"...</small>
-    </span>
-    <<done>><<script>>
-    document.getElementById("radiobutton-interrogationend-0").disabled = true;
-    <</script>><</done>>
-  <</if>>
-  <</nobr>>\
-   | <<nobr>>
-    <<if $interrogationEndingRough>>
-      <label><<radiobutton "$interrogationEnd" "rough" autocheck>> Harsh</label>
-    <<else>>
-      <span class="helper-container">
-      <span><label><<radiobutton "$interrogationEnd" "">> <span class="disabled">Rough</span></label></span>
-      <small class="helper-text">Ivex has a special disdain for those that dare defy his wishes...</small>
-      </span>
-      <<done>><<script>>
-      document.getElementById("radiobutton-interrogationend-1").disabled = true;
-      <</script>><</done>>
-    <</if>>
-  <</nobr>>
-<<else>>\
-  <span class="helper-container">
-      <b><span class="disabled">Bad Ending: Interrogation</span></b>
-    <small class="helper-text">Interrogation by the hands of the wizard is the first step that awaits those that cannot escape his contraptions...</small>
-  </span>
-<</if>>\
+<<else>>
+    <div class="archive-ending">
+        <div class="archive-title">
+            [[Bad Ending: Interrogation|Interrogation Archive]]
+        </div>
+        
+        <<archive-variant "Variant 1:" interrogationSpell>>
+        <<archive-option freeze "Freeze" $interrogationEndingFreeze>>
+            Ivex has a special treatment for northern wolves that like the cold...
+        <<archive-option shock "Shock" $interrogationEndingShock>>
+            Ivex has a special treatment for southern wolves that hate the cold...
+        <</archive-variant>>
+        
+        <<archive-variant "Variant 2:" interrogationEnd>>
+        <<archive-option mild "Mild" $interrogationEndingMild>>
+            Ivex treats those that choose collaboration over defiance with "kindness"...
+        <<archive-option harsh "Harsh" $interrogationEndingHarsh>>
+            Ivex has a special disdain for those that dare defy his wishes...
+        <</archive-variant>>
+    </div>
+<</if>>
+<</nobr>>
 
 
 :: Enthrallment 1 (Text) [text] {"position":"1675,3900","size":"100,100"}
@@ -4654,7 +4623,7 @@ $name blinks. Through his fucking, he didn't realize the lion had freed his othe
 
 
 :: Enthrallment Archive [noreturn] {"position":"1925,1875","size":"100,100"}
-<<if $lionFuck>>\
+<<if $lionFuck === "yes">>\
 <<include "Lion Fight (Text)">>
 
 <<include "Lion Pindown (Text)">>
@@ -4670,7 +4639,7 @@ But there's no decision to be made. After being exposed to that candle for so lo
 <<include "Lion Knotting (Text)">>
 
 <<include "Mind Capture (Knot) (Text)">>
-<<else>>
+<<else>>\
 <<include "Mind Capture (Text)">>
 <</if>>\
 
@@ -4686,34 +4655,31 @@ But there's no decision to be made. After being exposed to that candle for so lo
 
 
 :: Enthrallment Archive Display [inclusion] {"position":"1925,1775","size":"100,100"}
-<<silently>>\
-  <<set $lionFuck = false>>
-<</silently>>\
-\
-<<if $enthrallmentEnding>>\
-  <b>[[Bad Ending: Enthrallment|Enthrallment Archive]]</b>
-  Variation: <<nobr>>
-    <label><<radiobutton "$lionFuck" false checked>> None</label>
-  <</nobr>>\
-   | <<nobr>>
-    <<if $enthrallmentLion>>
-        <label><<radiobutton "$lionFuck" true>> Lion</label>
-      <<else>>
-        <span class="helper-container">
-          <span><label><<radiobutton "$lionFuck" "">> <span class="disabled">Lion</span></label></span>
-          <small class="helper-text">Engaging in arousing activities while overtaken by previous magical lust makes some things impossible to resist...</small>
-        </span>
-        <<done>><<script>>
-            document.getElementById("radiobutton-lionfuck-1").disabled = true;
-        <</script>><</done>>
-    <</if>>
-  <</nobr>>
-<<else>>\
-  <span class="helper-container">
-      <b><span class="disabled">Bad Ending: Enthrallment</span></b>
-    <small class="helper-text">Sometimes a magical accessory is for more than just the looks...</small>
-  </span>
-<</if>>\
+<<nobr>>
+<<if !$enthrallmentEnding>>
+    <div class="archive-ending">
+        <div class="archive-title archive-disabled">
+            Bad Ending: Enthrallment
+        </div>
+        <div class="archive-hint">
+            Sometimes a magical accessory is for more than just the looks...
+        </div>
+    </div>
+
+<<else>>
+    <div class="archive-ending">
+        <div class="archive-title">
+            [[Bad Ending: Enthrallment|Enthrallment Archive]]
+        </div>
+        
+        <<archive-variant "Variant:" lionFuck>>
+        <<archive-option no "None" true>>
+        <<archive-option yes "Lion" $enthrallmentLion>>
+            Engaging in arousing activities while overtaken by previous magical lust makes some things impossible to resist...
+        <</archive-variant>>
+    </div>
+<</if>>
+<</nobr>>
 
 
 :: Lion Pindown (Text) [text] {"position":"1200,4375","size":"100,100"}
@@ -5619,52 +5585,32 @@ It doesn't stop there, and neither does the slime. All the stimulation keeps goi
 
 
 :: Extraction Archive Display [inclusion] {"position":"2050,1775","size":"100,100"}
-<<silently>>\
-  <<if $extractionGentleEnd && $extractionForcefulEnd>>
-    <<set $extractionVariant = 'gentle'>>
-  <<elseif $extractionGentleEnd && !$extractionForcefulEnd>>
-    <<set $extractionVariant = 'gentle'>>
-  <<elseif !$extractionGentleEnd && $extractionForcefulEnd>>
-    <<set $extractionVariant = 'forceful'>>
-  <<else>>
-    <<set $extractionVariant = ''>>
-  <</if>>
-<</silently>>\
-\
-<<if $extractionEnding>>\
-  <b>[[Bad Ending: Extraction|Extraction Archive]]</b>
-  Variation: <<nobr>>
-  <<if $extractionGentleEnd>>
-    <label><<radiobutton "$extractionVariant" "gentle" autocheck>> Gentle</label>
-  <<else>>
-    <span class="helper-container">
-      <span><label><<radiobutton "$extractionVariant" "">> <span class="disabled">Gentle</span></label></span>
-      <small class="helper-text">The slime is fine-tuned to reward those that let it do its work...</small>
-    </span>
-    <<done>><<script>>
-    document.getElementById("radiobutton-extractionvariant-0").disabled = true;
-    <</script>><</done>>
-  <</if>>
-  <</nobr>>\
-   | <<nobr>>
-    <<if $extractionForcefulEnd>>
-        <label><<radiobutton "$extractionVariant" "forceful" autocheck>> Forceful</label>
-      <<else>>
-        <span class="helper-container">
-          <span><label><<radiobutton "$extractionVariant" "">> <span class="disabled">Forceful</span></label></span>
-          <small class="helper-text">The slime is fine-tuned to go rougher on those that insist on fighting it...</small>
-        </span>
-        <<done>><<script>>
-            document.getElementById("radiobutton-extractionvariant-1").disabled = true;
-        <</script>><</done>>
-    <</if>>
-  <</nobr>>
-<<else>>\
-  <span class="helper-container">
-      <b><span class="disabled">Bad Ending: Extraction</span></b>
-    <small class="helper-text">Touching unknown magical things always ends badly...</small>
-  </span>
-<</if>>\
+<<nobr>>
+<<if !$extractionEnding>>
+    <div class="archive-ending">
+        <div class="archive-title archive-disabled">
+            Bad Ending: Extraction
+        </div>
+        <div class="archive-hint">
+            Touching unknown magical things always ends badly...
+        </div>
+    </div>
+
+<<else>>
+    <div class="archive-ending">
+        <div class="archive-title">
+            [[Bad Ending: Extraction|Extraction Archive]]
+        </div>
+        
+        <<archive-variant "Variant:" extractionVariant>>
+        <<archive-option gentle "Gentle" $extractionGentleEnd>>
+            The slime is fine-tuned to reward those that let it do its work...
+        <<archive-option forceful "Forceful" $extractionForcefulEnd>>
+            The slime is fine-tuned to go rougher on those that insist on fighting it...
+        <</archive-variant>>
+    </div>
+<</if>>
+<</nobr>>
 
 
 :: Extraction Archive [noreturn] {"position":"2050,1875","size":"100,100"}
@@ -7321,14 +7267,25 @@ Or, at least, he will try to.
 
 
 :: Ivex Enthrallment Archive Display [inclusion] {"position":"2300,1775","size":"100,100"}
-<<if $enthralmentIvexEnding>>\
-  <b>[[Ending: A New Servant|Ivex Enthrallment Archive]]</b>
-<<else>>\
-  <span class="helper-container">
-      <b><span class="disabled">Ending: A New Servant</span></b>
-    <small class="helper-text">New punishment ideas might come to the adventurer if he has experienced terrible things in different timelines...</small>
-  </span>
-<</if>>\
+<<nobr>>
+<<if !$enthralmentIvexEnding>>
+    <div class="archive-ending">
+        <div class="archive-title archive-disabled">
+            Ending: A New Servant
+        </div>
+        <div class="archive-hint">
+            New punishment ideas might come to the adventurer
+            if he has experienced terrible things in different timelines...
+        </div>
+    </div>
+<<else>>
+    <div class="archive-ending">
+        <div class="archive-title">
+            [[Ending: A New Servant|Ivex Enthrallment Archive]]
+        </div>
+    </div>
+<</if>>
+<</nobr>>
 
 
 :: Ivex Enthrallment Archive [noreturn] {"position":"2300,1875","size":"100,100"}
@@ -7356,14 +7313,25 @@ Or, at least, he will try to.
 
 
 :: Ivex Extraction Archive Display [inclusion] {"position":"2425,1775","size":"100,100"}
-<<if $extractionIvexEnding>>\
-  <b>[[Ending: Energy Supply|Ivex Extraction Archive]]</b>
-<<else>>\
-  <span class="helper-container">
-      <b><span class="disabled">Ending: Energy Supply</span></b>
-    <small class="helper-text">New punishment ideas might come to the adventurer if he has experienced terrible things in different timelines...</small>
-  </span>
-<</if>>\
+<<nobr>>
+<<if !$extractionIvexEnding>>
+    <div class="archive-ending">
+        <div class="archive-title archive-disabled">
+            Ending: Energy Supply
+        </div>
+        <div class="archive-hint">
+            New punishment ideas might come to the adventurer
+            if he has experienced terrible things in different timelines...
+        </div>
+    </div>
+<<else>>
+    <div class="archive-ending">
+        <div class="archive-title">
+            [[Ending: Energy Supply|Ivex Extraction Archive]]
+        </div>
+    </div>
+<</if>>
+<</nobr>>
 
 
 :: Ivex Extraction Archive [noreturn] {"position":"2425,1875","size":"100,100"}
@@ -7387,14 +7355,24 @@ Or, at least, he will try to.
 
 
 :: Ivex Punishment Archive Display [inclusion] {"position":"2175,1775","size":"100,100"}
-<<if $personalEnding>>\
-  <b>[[Ending: Punishment|Ivex Punishment Archive]]</b>
-<<else>>\
-  <span class="helper-container">
-      <b><span class="disabled">Ending: Punishment</span></b>
-    <small class="helper-text">The spoils of victory...</small>
-  </span>
-<</if>>\
+<<nobr>>
+<<if !$personalEnding>>
+    <div class="archive-ending">
+        <div class="archive-title archive-disabled">
+            Ending: Punishment
+        </div>
+        <div class="archive-hint">
+            The spoils of victory...
+        </div>
+    </div>
+<<else>>
+    <div class="archive-ending">
+        <div class="archive-title">
+            [[Ending: Punishment|Ivex Punishment Archive]]
+        </div>
+    </div>
+<</if>>
+<</nobr>>
 
 
 :: Ivex Punishment Archive [noreturn] {"position":"2175,1875","size":"100,100"}
@@ -7777,7 +7755,7 @@ Or, at least, he will try to.
 [[Return to the Archives|Archives]]
 
 
-:: Credits [noreturn] {"position":"2675,1525","size":"100,100"}
+:: Credits [noreturn] {"position":"2675,1450","size":"100,100"}
 <<nobr>>
 <<link "Return to the game" $return>><</link>>
 
@@ -7918,7 +7896,7 @@ Thank you so much!
 <<link "Return to the game" $return>><</link>>
 
 
-:: Choose Character {"position":"2600,1250","size":"100,100"}
+:: Choose Character {"position":"2600,1275","size":"100,100"}
 <em>Choose Your Adventurer</em>
 
 <<nobr>>
@@ -9940,7 +9918,7 @@ can't get tamed-desperate from here, but give strong hint how to get there.
 [[n2b/D Free Action]]
 
 
-:: Content Warning [inclusion] {"position":"2750,1075","size":"100,100"}
+:: Content Warning [inclusion] {"position":"2725,900","size":"100,100"}
 This interactive story contains content of an adult nature. If you are easily offended or are under the age of 18, please exit now.
 
 Moreover, this story contains elements that depict dubious or lack of consent, as well as other fetish sexual topics such as mind control, CBT, chastity, and others. If these themes make you uncomfortable or are not enjoyable for you, proceed only at your own discretion.
@@ -13359,7 +13337,7 @@ The spell and its related family of minor nerve agonists have never been a serio
 :: n1x/P touch bottle {"position":"7475,4075","size":"100,100"}
 
 
-:: n0/P Nero Endings [inclusion] {"position":"3100,1775","size":"100,100"}
+:: n0/P Nero Endings [inclusion] {"position":"3200,1800","size":"100,100"}
 Bad Ending: Tamed
 Variant: Mild | Harsh
 Variant: Smooth | Barbs
@@ -14051,5 +14029,115 @@ drop knife
 <</nobr>>
 
 [[Continue|n2b/D Leave]]
+
+
+:: Init Archive [inclusion] {"position":"2275,225","size":"100,100"}
+<<script>>
+const Tower = window.Tower;
+
+$('head').append(`
+<style>
+  #passage-archives h1 {
+    font-size: 1.5em;
+    margin: 0.5em 0 1em 0;
+  }
+  #passage-archives h2 {
+    font-size: 1.5em;
+    margin: 0.5em 0 0.5em 0;
+  }
+  .archive-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .archive-title {
+    font-weight: bold;
+  }
+  .archive-variant {
+    margin-left: 1.5em;
+  }
+  .archive-variant label {
+    margin-left: 1em;
+  }
+  .archive-variant input {
+    margin-right: 0.2em;
+  }
+  .archive-hint {
+    font-size: small;
+    font-style: italic;
+    margin-left: 1.5em;
+  }
+</style>
+`);
+
+Tower.setVariantDefault = function (varname, rules) {
+  const v = State.variables;
+  if (v[varname] != null && v[varname] !== "") return;
+  for (const key of Object.keys(rules)) {
+    if (rules[key]) {
+      v[varname] = key;
+      return;
+    }
+  }
+};
+
+Macro.add("archive-variant", {
+  tags: ["archive-option"],
+  handler: function() {
+    const v = State.variables;
+
+    if (this.args.length !== 2) throw new Error("expected archive-variant args: varname label");
+    const label = this.args[0];
+    const varname = this.args[1];
+
+    const outer = $("<div class=archive-variant>").appendTo(this.output);
+    outer.append(label);
+    
+    const choices = this.payload.slice(1);
+
+    // If value doesn't match an enabled choice, unset it. (should only happen when debugging)
+    let matched = false;
+    for (const ch of choices) {
+      if (v[varname] === ch.args[0] && ch.args[2]) {
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) v[varname] = null;
+    
+    // If value is not set, set it to the first enabled choice.
+    if (v[varname] == null || v[varname] === "") {
+      for (const ch of choices) {
+        if (ch.args[2]) {
+          v[varname] = ch.args[0];
+          break;
+        }
+      }
+    }
+
+    let hint = null;
+    for (const ch of choices) {
+      if (ch.args.length !== 3) {
+        throw new Error("expected choice args: value text boolean");
+      }
+      const value = ch.args[0];
+      const text = ch.args[1];
+      const enabled = ch.args[2];
+      if (enabled && (v[varname] == null || v[varname] === "")) {
+        v[varname] = text;
+      }
+      const label = $("<label>").wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
+      label.append(text).appendTo(outer);
+      if (!enabled) {
+        if (hint == null) hint = ch.contents;
+        label.addClass("archive-disabled");
+        label.find("input").attr("disabled", "disabled");
+      }
+    }
+    if (hint != null) {
+      const div = $("<div class=archive-hint>").wiki(hint).appendTo(outer);
+    }
+  }
+});
+<</script>>
 
 
