@@ -441,6 +441,17 @@ ul.actions li {
   top: 0;
 }
 
+.var-info > label {
+  cursor: pointer;
+}
+.var-info > label:hover {
+  background-color: #222;
+}
+
+.var-info-hidden > span {
+  display: none;
+}
+
 .var-info-separator {
   border-left: 5px double #555;
   margin-left: 16px;
@@ -656,10 +667,10 @@ a[data-passage*="/F "]:hover {
 }
 
 a[data-passage*="/P "] {
-  color: #666;
+  color: #c7c;
 }
 a[data-passage*="/P "]:hover {
-  color: #99f;
+  color: #fcf;
 }
 
 a[data-passage*="/S "] {
@@ -863,12 +874,20 @@ defineEnum("MagicPhase", [
 ]);
 
 /** Redisplay current passage. */
+let redisplayTop = null;
 function redisplay() {
+  redisplayTop = $("html").prop("scrollTop");
+  console.log('in', redisplayTop);
   Engine.play(State.passage);
   $("html").addClass("redisplay-passage");
 }
-$(document).on(":passagestart", () => {
+$(document).on(":passageend", () => {
   $("html").removeClass("redisplay-passage");
+  if (redisplayTop != null) {
+    $("html")[0].scroll(0, redisplayTop);
+    console.log('out', redisplayTop);
+    redisplayTop = null;
+  }
 });
 Macro.add("redisplay-passage", {
   handler: function() {
@@ -1185,6 +1204,8 @@ function varInfoSetup() {
     n1_magicPhase: "MagicPhase",
   };
 
+  let varInfoShow = State.metadata.get("varInfoShow");
+  
   const bigMoodVars = [
     [
       // Nero sections without big-moods, and non-Nero passages
@@ -1327,6 +1348,10 @@ function varInfoSetup() {
       /^n9/,
       'n1_barbs',
     ],
+    [
+      // Archive
+      /^nA/,
+    ],
   ];
 
   // note: sugarcube overrides JSON.stringify to handle "undefined" and a few other cases specially
@@ -1450,7 +1475,14 @@ function varInfoSetup() {
     }
 
     const outer = $("<div class=var-info>").prependTo("#story");
-    $("<label>").text("var-info").appendTo(outer);
+    outer.toggleClass("var-info-hidden", !varInfoShow);
+    const lab = $("<label>").text("var-info").appendTo(outer);
+    lab.click(() => {
+      varInfoShow = !varInfoShow;
+      State.metadata.set("varInfoShow", varInfoShow);
+      outer.toggleClass("var-info-hidden", !varInfoShow);
+    });
+
     if (bigMood.size) {
       const el = $("<span class=var-info-big-mood>").appendTo(outer);
       [...bigMood].sort().forEach(v => {
@@ -3697,12 +3729,33 @@ To change the adventurer's fate, you can...
 
 :: Archives [noreturn] {"position":"2525,1525","size":"100,100"}
 <<nobr>>
+<style>
+  #passage-archives hr {
+    border: 0;
+    border-top: 1px solid #333;
+    height: 1px;
+  }
+  #passage-archives h2 {
+    font-size: 1.1em;
+    margin: 0.5em 0 0.5em 0;
+  }
+  #passage-archives .intro {
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+  #passage-archives .more {
+    font-size: 0.8em;
+    margin-left: 0.5em;
+  }
+  #passage-archives .archive-body {
+    margin-left: 2em;
+  }
+</style>
+
 <<link "Return to the game" $return>><</link>>
-
-<h1>Welcome to the Mage's Tower Archives</h1>
-
-Here you can revisit different endings 
-<<set _detail = `that the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
+<hr>
+<span class="intro">Welcome to the Mage's Tower Archives</span>
+<<set _detail = `<br><br>Here you can revisit different endings that the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
 <br><br>
 Grayed out endings and variations are paths that have not yet been found, shown with hints to what path the adventurer should take to reach them.
 `>>
@@ -3710,7 +3763,7 @@ Grayed out endings and variations are paths that have not yet been found, shown 
     <<= _detail>>
     <<set $t0_archiveDetailSeen = true>>
 <<else>>
-    <<linkreplace "... (more)" t8n>>
+    <<linkreplace '<span class="more">(...more)</span>' t8n>>
         <<= _detail>>
     <</linkreplace>>
 <</if>>
@@ -3720,18 +3773,22 @@ Grayed out endings and variations are paths that have not yet been found, shown 
 
 <hr>
 <h2>Drekkar Endings</h2>
-<<include [[Interrogation Archive Display]]>>
-<<include [[Enthrallment Archive Display]]>>
-<<include [[Extraction Archive Display]]>>
-<<include [[Ivex Punishment Archive Display]]>>
-<<include [[Ivex Enthrallment Archive Display]]>>
-<<include [[Ivex Extraction Archive Display]]>>
-
+<div class="archive-body">
+    <<include [[Interrogation Archive Display]]>>
+    <<include [[Enthrallment Archive Display]]>>
+    <<include [[Extraction Archive Display]]>>
+    <hr>
+    <<include [[Ivex Punishment Archive Display]]>>
+    <<include [[Ivex Enthrallment Archive Display]]>>
+    <<include [[Ivex Extraction Archive Display]]>>
+</div>
 <hr>
 <h2>Nero Endings</h2>
-<<include [[n0/P Nero Endings]]>>
+<div class="archive-body">
+    <<include [[n0/F Nero Endings]]>>
+</div>
 
-<br><br>
+<hr>
 <<link "Return to the game" $return>><</link>>
 <</nobr>>
 
@@ -4511,21 +4568,21 @@ No matter how much he tries, $name cannot find a way out. He's trapped there gri
     Interrogation by the hands of the wizard is the first step
     that awaits those that cannot escape his contraptions...
 <<archive-variants>>
-    <<archive-variant "Variant 1:" interrogationSpell>>
+    <<archive-variant "Variant:" interrogationSpell>>
     <<archive-option freeze "Freeze" $interrogationEndingFreeze>>
         Ivex has a special treatment for northern wolves that like the cold...
     <<archive-option shock "Shock" $interrogationEndingShock>>
         Ivex has a special treatment for southern wolves that hate the cold...
     <</archive-variant>>
 
-    <<archive-variant "Variant 2:" interrogationEnd>>
+    <<archive-variant "Variant:" interrogationEnd>>
     <<archive-option mild "Mild" $interrogationEndingMild>>
         Ivex treats those that choose collaboration over defiance with "kindness"...
     <<archive-option harsh "Harsh" $interrogationEndingHarsh>>
         Ivex has a special disdain for those that dare defy his wishes...
     <</archive-variant>>
 <</archive-ending>>
-<</nobr>>
+<</nobr>>\
 
 
 :: Enthrallment 1 (Text) [text] {"position":"1675,3900","size":"100,100"}
@@ -4655,7 +4712,7 @@ But there's no decision to be made. After being exposed to that candle for so lo
         Engaging in arousing activities while overtaken by previous magical lust makes some things impossible to resist...
     <</archive-variant>>
 <</archive-ending>>
-<</nobr>>
+<</nobr>>\
 
 
 :: Lion Pindown (Text) [text] {"position":"1200,4375","size":"100,100"}
@@ -5574,7 +5631,7 @@ It doesn't stop there, and neither does the slime. All the stimulation keeps goi
         The slime is fine-tuned to go rougher on those that insist on fighting it...
     <</archive-variant>>
 <</archive-ending>>
-<</nobr>>
+<</nobr>>\
 
 
 :: Extraction Archive [noreturn] {"position":"2050,1875","size":"100,100"}
@@ -7238,7 +7295,7 @@ Or, at least, he will try to.
     New punishment ideas might come to the adventurer
     if he has experienced terrible things in different timelines...
 <</archive-ending>>
-<</nobr>>
+<</nobr>>\
 
 
 :: Ivex Enthrallment Archive [noreturn] {"position":"2300,1875","size":"100,100"}
@@ -7273,7 +7330,7 @@ Or, at least, he will try to.
     New punishment ideas might come to the adventurer
     if he has experienced terrible things in different timelines...
 <</archive-ending>>
-<</nobr>>
+<</nobr>>\
 
 
 :: Ivex Extraction Archive [noreturn] {"position":"2425,1875","size":"100,100"}
@@ -7303,7 +7360,7 @@ Or, at least, he will try to.
 >>
     The spoils of victory...
 <</archive-ending>>
-<</nobr>>
+<</nobr>>\
 
 
 :: Ivex Punishment Archive [noreturn] {"position":"2175,1875","size":"100,100"}
@@ -9586,7 +9643,7 @@ reminisce on 1F experience, vary on n1_abused and n1_subby. clear implication th
 <</nobr>>
 
 
-:: n9a/P Dominated [end] {"position":"7750,5800","size":"100,100"}
+:: n9a/P Broken [end] {"position":"7750,5800","size":"100,100"}
 bad ending unlocked
 
 nero clever escape, balls aching, only mildly horny, tries wand, an obvious bad idea.
@@ -9715,14 +9772,14 @@ put it on, you get a green glow.
 after 1 action, glow turns yellow, ring starts shrinking.
 if you don't take it off when yellow, any other action locks it down, glow turns red.
 this is several bad endings:
-lion is hunting you [[n9e/S destroyed]]
+lion is hunting you [[n9e/S ruined]]
 lion is following you [[n9e/S tickled harsh]]
 lion not hunting or following [[n9e/S tickled mild]]
 
-[[n9x/S escaped]]
+[[n9x/S dominant]]
 
 
-:: n9x/S escaped [end] {"position":"4500,7850","size":"100,100"}
+:: n9x/S dominant [end] {"position":"4500,7850","size":"100,100"}
 there are two paths into here.
 made-gem means lion is available for punishment.
 rescued-gem means lion is trapped in blob, not available.
@@ -10561,7 +10618,7 @@ The panther tosses his head. A cabinet drawer opens, and out comes a riding crop
 
 Ivex places the leather tip of the riding crop against the wolf's bare thigh, and drags it up the fur toward the wolf's groin. He moves the crop in a small circle at the base of the wolf's sheath, then presses the leather firmly on the wolf's balls, which are still held, firmly captive, in the panther's other hand.
 
-Ivex lifts the riding crop off the wolf's balls, and draws his arm back slowly, preparing to strike...
+Ivex lifts the riding crop off the wolf's balls, and draws his arm back slowly, preparing to strike... XXX add light tap
 
 [[Continue|n1e/P Alarm 2]]
 
@@ -11165,10 +11222,10 @@ magic sight fades, was dependent on energy channel through mirror.
 :: n2x/P Use Wand {"position":"7650,5525","size":"100,100"}
 assert nero is free
 
-if asked wand and low lust, [[n9a/P Dominated]]
-if asked wand and high lust, [[n9a/P Caged Harsh]]
+if asked wand, low lust and subby, [[n9a/P Broken]]
+if asked wand, high lust, [[n9a/P Caged Harsh]]
 
-otherwise, set high lust and refuse to use again
+if asked wand, low lust and not subby, set high lust and refuse to use again
 
 <<link $n1_afterAction>><</link>>
 
@@ -11814,6 +11871,7 @@ The panther mage pulls a red gem out from a pocket, and then disappears in a <em
 <<big-mood n1_mageSight TODO>>
 <<big-mood n1_subby TODO>>
 
+<<set $n1_candleLit = true>>
 A flicker in the corner of Nero's eye catches his attention.
 
 The candle has lit itself again!
@@ -13268,41 +13326,132 @@ The spell and its related family of minor nerve agonists have never been a serio
 :: n1x/P touch bottle {"position":"7475,4075","size":"100,100"}
 
 
-:: n0/P Nero Endings [inclusion] {"position":"3200,1800","size":"100,100"}
-Bad Ending: Tamed
-Variant: Mild | Harsh
-Variant: Smooth | Barbs
+:: n0/F Nero Endings [inclusion] {"position":"3175,1725","size":"100,100"}
+<<nobr>>
+<<script>>
+  const v = State.variables;
+  const t = State.temporary;
 
-Bad Ending:  Caged
-Variant: Mild | Harsh
-Variant: Smooth | Barbs
+  /**
+   * Sets temp vars that combine n9 variant flags.
+   * Eg, rollup('stem', ['A', 'B'], ['X', 'Y']) will set:
+   *   _stemA = $n9_stemAX || $n9_stemAY;
+   *   _stemB = $n9_stemBX || $n9_stemBY;
+   *   _stemX = $n9_stemAX || $n9_stemBX;
+   *   _stemY = $n9_stemAY || $n9_stemBY;
+   *   _stem = _stemA || _stemB;
+   */
+  function rollup(stem, var1, var2) {
+    t[stem] = false;
+    for (const v1 of var1) t[`${stem}${v1}`] = false;
+    for (const v2 of var2) t[`${stem}${v2}`] = false;
+    for (const v1 of var1) {
+      for (const v2 of var2) {
+        if (v[`n9_${stem}${v1}${v2}`]) {
+          t[stem] = true;
+          t[`${stem}${v1}`] = true;
+          t[`${stem}${v2}`] = true;
+        }
+      }
+    }
+  }
 
-Bad Ending: ??? (Dominated)
-Variant: Smooth | Barbs
+  rollup('tamed', ['Mild', 'Harsh'], ['Smooth', 'Barbs']);
+  rollup('caged', ['Mild', 'Harsh'], ['Smooth', 'Barbs']);
+  rollup('broken', ['Smooth', 'Barbs'], ['']);
 
-Bad Ending: Hunted
-Variant: Mild | Harsh
-Variant: Smooth | Barbs
+<</script>>
 
-Bad Ending: Tickled
-Variant: Mild | Harsh
-Variant: Smooth | Barbs
+<<archive-ending _tamed [[Bad Ending: Tamed|nA/P Tamed]]>>
+    Struggling is hopeless...
+<<archive-variants>>
+    <<archive-barbs nA_tamedBarbs _tamedSmooth _tamedBarbs>>
+    <<archive-variant "Variant:" nA_tamed>>
+    <<archive-option mild "Mild" _tamedMild>>
+        Ivex enjoys cooperative victims...
+    <<archive-option harsh "Harsh" _tamedHarsh>>
+        Ivex enjoys reluctant victims...
+    <</archive-variant>>
+<</archive-ending>>
 
-Bad Ending: ??? (Destroyed)
-Variant: Smooth | Barbs
+<<archive-ending _caged [[Bad Ending: Caged|nA/P Caged]]>>
+    Self-control is overrated...
+<<archive-variants>>
+    <<archive-barbs nA_cagedBarbs _cagedSmooth _cagedBarbs>>
+    <<archive-variant "Variant:" nA_caged>>
+    <<archive-option mild "Mild" _cagedMild>>
+        Sometimes all that's needed is a paw...
+    <<archive-option harsh "Harsh" _cagedHarsh>>
+        Sometimes a paw is not enough...
+    <</archive-variant>>
+<</archive-ending>>
 
-Ending: Escaped (lawful, box not opened)
-maybe variant: smooth (mica) | barbs (pevin)
+<<archive-ending _broken [[Bad Ending: Broken|nA/P Broken]]>>
+    <<if _tamed && _caged && _escaped>>
+        After a taste of Ivex's power, does Nero really want to escape?
+    <<else>>
+        ???
+    <</if>>
+<<archive-variants>>
+    <<archive-barbs nA_brokenBarbs _brokenSmooth _brokenBarbs>>
+<</archive-ending>>
 
-Ending: Revenge
-Variant: Smooth | Barbs
-Chastity: No | Yes | ???
-Chase: No | Yes
-Collar: No | Yes
-Tame: No | Yes
-??? (Lion): No | Yes
-??? (Rescue): No | Yes
-??? (Ascend): No | Yes
+<hr>
+
+<<archive-ending false "Bad Ending: Hunted">>
+    Under construction.
+<<archive-variants>>
+    <<archive-barbs nA_huntedBarbs false false>>
+    <<archive-variant "Variant:" nA_hunted>>
+    <<archive-option mild "Mild" false>>
+    <<archive-option harsh "Harsh" false>>
+    <</archive-variant>>
+<</archive-ending>>
+
+<<archive-ending false "Bad Ending: Tickled">>
+    Under construction.
+<<archive-variants>>
+    <<archive-barbs nA_tickledBarbs false false>>
+    <<archive-variant "Variant:" nA_tickled>>
+    <<archive-option mild "Mild" false>>
+    <<archive-option harsh "Harsh" false>>
+    <</archive-variant>>
+<</archive-ending>>
+
+<<archive-ending false "Bad Ending: Ruined">>
+    Under construction.
+<<archive-variants>>
+    <<archive-barbs nA_ruinedBarbs false false>>
+<</archive-ending>>
+
+<hr>
+
+<<archive-ending false "Ending: Satisfied">>
+    Under construction.
+<<archive-variants>>
+    <<archive-barbs nA_fulfilledBarbs false false>>
+<</archive-ending>>
+
+<<archive-ending false "Ending: Dominant">>
+    Under construction.
+<<archive-variants>>
+    <<archive-barbs nA_dominantBarbs false false>>
+    <!--
+        Chase: No | Yes
+        Collar: No | Yes
+        Tame: No | Yes
+        ??? (Lion): No | Yes
+        ??? (Rescue): No | Yes
+        ??? (Ascend): No | Yes
+    -->
+<</archive-ending>>
+
+<<archive-ending false "Ending: Ascendant">>
+    Under construction.
+<<archive-variants>>
+    <<archive-barbs nA_ascendantBarbs false false>>
+<</archive-ending>>
+<</nobr>>\
 
 
 :: n0/F Project Status [end inclusion] {"position":"3475,2350","size":"100,100"}
@@ -13596,7 +13745,7 @@ Ivex returns, is amused that nero almost escapes, is amused that he's struggling
 applies portal-box chastity in overstim mode. keeps nero in a cage until he surrenders, applies taming to finish.
 
 
-:: n9e/S destroyed [end] {"position":"3900,7750","size":"100,100"}
+:: n9e/S ruined [end] {"position":"3900,7750","size":"100,100"}
 slippery ring locks on, and lion is hunting.
 
 lion rapes, extreme overstimulation.
@@ -13968,14 +14117,7 @@ const Tower = window.Tower;
 
 $('head').append(`
 <style>
-  #passage-archives h1 {
-    font-size: 1.5em;
-    margin: 0.5em 0 1em 0;
-  }
-  #passage-archives h2 {
-    font-size: 1.5em;
-    margin: 0.5em 0 0.5em 0;
-  }
+
   .archive-disabled {
     opacity: 0.4;
     pointer-events: none;
@@ -14079,7 +14221,7 @@ Macro.add("archive-ending", {
     const enabled = this.args[0];
     const link = this.args[1];
     const isLink = typeof link === "object" && link.isLink;
-    let offText = this.args[2] || isLink ? link.text : link;
+    let offText = this.args[2] || (isLink ? link.text : link);
     
     const outer = $("<div class=archive-ending>").appendTo(this.output);
     if (!enabled) {
@@ -14087,16 +14229,38 @@ Macro.add("archive-ending", {
       $('<div class="archive-hint">').wiki(this.payload[0].contents).appendTo(outer);
       return;
     }
-    $("<div class=archive-title>").wiki(isLink ? `[[${link.text}|${link.link}]]` : link).appendTo(outer);
+    $("<div class=archive-title>").wiki(isLink ? '[' + `[${link.text}|${link.link}]]` : link).appendTo(outer);
     if (this.payload[1] != null) {
       outer.wiki(this.payload[1].contents);
     }
   }
 });
 
+Macro.add("archive-barbs", {
+  handler: function() {
+    if (this.args.length !== 3) {
+      throw new Error("expected archive-barbs args: varname boolean boolean");
+    }
+    const varname = this.args[0];
+    const smooth = this.args[1];
+    const barbs = this.args[2];
+    $(this.output).wiki(
+      `<<archive-variant "Variant:" ${varname}>>` +
+      `<<archive-option smooth "Smooth" ${smooth}>>` +
+      `<<archive-option barbs "Barbs" ${barbs}>>` +
+      `<</archive-variant>>`
+    );
+  }
+});
 <</script>>
 
 
-:: $\{link.link\} {"position":"2275,350","size":"100,100"}
+:: nA/P Tamed [noreturn] {"position":"3325,1725","size":"100,100"}
+
+
+:: nA/P Caged [noreturn] {"position":"3450,1725","size":"100,100"}
+
+
+:: nA/P Broken [noreturn] {"position":"3575,1725","size":"100,100"}
 
 

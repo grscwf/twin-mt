@@ -63,7 +63,7 @@
   - But this turns out to actually work anyway. Nero is free.
 - The mirror is saved. It can be used for 2nd Floor Easy escape.
 - There's a special Bad Ending here:
-  - Bad Ending: Dominated - use wand after escaping.
+  - Bad Ending: Broken - follow subby branch, escape, use wand.
 
 ## 2nd Floor
 - There are two solutions to the 2nd floor: Easy and Hard.
