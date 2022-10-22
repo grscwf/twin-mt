@@ -49,8 +49,8 @@ function listVars(twFile, varListTxt, regexFilter) {
     for (const m of line.matchAll(/[$](\w+)/g)) {
       addMatch(m[1], m.index);
     }
-    // v.varname
-    for (const m of line.matchAll(/\bv[.](\w+)/g)) {
+    // V.varname
+    for (const m of line.matchAll(/\b[vV][.](\w+)/g)) {
       addMatch(m[1], m.index);
     }
     // setup.name

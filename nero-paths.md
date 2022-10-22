@@ -106,11 +106,12 @@
     - "Hunt" is fast and feral:
       - After any action, Nero is forced into an adjacent room after dropping everything (but not the ring, if he's wearing it).
       - The lion will chase Nero into the blob.
+    - TODO: need a timing subtlety that allows Nero to get enthralled and hunted while wearing ring
   - Nero has to start the lion hunting before wearing the ring. The other order never works:
     - Put on ring, it turns green.
     - Start lion hunting, ring turns yellow and Nero is starting to feel stiff.
     - Any action other than removing the ring will fail to evade the lion.
-      - Bad Ending: Destroyed.
+      - Bad Ending: Ruined. (and thrall is involved)
   - To enter the blob with the lion:
     - Nero has to be wearing the ring, and the lion has to be hunting.
     - He can't start this in the Extraction room:
@@ -150,7 +151,7 @@
   - Wear the ring too long:
     - Bad Ending: Tickled Mild - lion is not following or hunting.
     - Bad Ending: Tickled Harsh - lion is following.
-    - Bad Ending: Destroyed - lion is hunting.
+    - Bad Ending: Ruined - lion is hunting (and probably Thrall is involved).
   - Lose ring while hunted:
     - Bad Ending: Hunted Mild - cooperate.
     - Bad Ending: Hunted Harsh - resist.
