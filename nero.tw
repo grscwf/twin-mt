@@ -1273,6 +1273,10 @@ function varInfoSetup() {
       'n1_subby',
     ],
     [
+      // Restart at Ivex gone
+      /^n2z/,
+    ],
+    [
       // Ivex gone, still bound.
       /^n2a/,
 
@@ -1311,8 +1315,8 @@ function varInfoSetup() {
       /^n3a/,
       
       'n2_extraHorny',
-      'n2_knifeHeld',
-      'n2_mirrorHeld',
+      'n2_knifeTaken',
+      'n2_mirrorTaken',
       'n2_tooClever',
     ],
     [
@@ -1410,6 +1414,21 @@ function varInfoSetup() {
   };
 
   $(document).on(":passagestart", () => {
+    const here = State.passage;
+    let anyMatched = false;
+    for (const [re, ...vars] of bigMoodVars) {
+      if (!re.test(here)) continue;
+      anyMatched = true;
+      for (const vname of vars) {
+        if (Array.isArray(vname) && vname[1] !== 'ignore') {
+          const x = `\`${vname[1]} in ${re}\``;
+          assertBigMood(vname[0], vname[1], x);
+        }
+      }
+    }
+    if (!anyMatched) {
+      assertionFailed(`Passage should match some bigMoodVars rule`);
+    }
     startTrace();
   });
 
@@ -1427,24 +1446,16 @@ function varInfoSetup() {
 
     const here = State.passage;
     const bigMood = new Set();
-    let anyMatched = false;
     for (const [re, ...vars] of bigMoodVars) {
-      if (re.test(here)) {
-        anyMatched = true;
-        for (const vname of vars) {
-          if (!Array.isArray(vname)) {
-            bigMood.add(vname);
-            touched.delete(vname);
-          } else if (vname[1] !== 'ignore') {
-            const x = `\`${vname[1]} in ${re}\``;
-            assertBigMood(vname[0], vname[1], x);
-          }
+      if (!re.test(here)) continue;
+      for (const vname of vars) {
+        if (!Array.isArray(vname)) {
+          bigMood.add(vname);
+          touched.delete(vname);
         }
       }
     }
-    if (!anyMatched) {
-      assertionFailed(`Passage should match some bigMoodVars rule`);
-    }
+
     for (const vn of bigMoodDeclared) {
       bigMood.add(vn);
       touched.delete(vn);
@@ -1593,16 +1604,16 @@ The Mage's Tower (Nero)
     <<link "&#x23e9; Nero 1F Actions" "n1cn/F Ivex Repeat (4,2)">>
         <<delete-vars n1_ n2_>>
     <</link>>
-    <<link "&#x23e9; Nero 1F Candle" "n1d/F Start Candle">>
+    <<link "&#x23e9; Nero 1F Candle" "n1cn/F Start Candle">>
         <<delete-vars n1_ n2_>>
     <</link>>
-    <<link "&#x23e9; Nero 1F Horny" "n1e/P Candle Horny">>
+    <<link "&#x23e9; Nero 1F Horny" "n1d/P Candle Horny">>
         <<delete-vars n1_ n2_>>
         <<set $n1_barbs = true>>
         <<set $n1_candleLit = true>>
         <<set $n1_naked = true>>
     <</link>>
-    <<link "&#x23e9; Nero 1F Alone" "n2a/F Start">>
+    <<link "&#x23e9; Nero 1F Alone" "n2z/F Start">>
         <<delete-vars n1_ n2_>>
         <<set $n1_barbs = true>>
         <<set $n1_naked = true>>
@@ -7631,7 +7642,7 @@ Or, at least, he will try to.
 The writing and development of this interactive story was made by me, [[Sleth|http://www.slethstories.com/]].
 <</nobr>>
 
-Nero's story was contributed by <a target="_blank" href="https://twitter.com/gsw7ad">Grayscale</a>, who's always happy to receive feedback at his Twitter.
+Nero's story and additional coding was contributed by <a target="_blank" href="https://twitter.com/gsw7ad">Grayscale</a>, who's always happy to receive feedback at his Twitter.
 
 The amazing artwork you see in the game, including the character art and the Mage's Tower logo, was done by commission by [[BlainWolf|https://twitter.com/Blain_Wolf]]. You can check out more of his stuff in his [[Twitter|https://twitter.com/Blain_Wolf]] or [[FurAffinity|https://www.furaffinity.net/user/blainwolf]] pages!
 
@@ -9013,7 +9024,7 @@ betrayed his client's confidence.
 
 That statement seems ominous. Still, Nero thinks he can provoke the panther into making a careless mistake, which should allow him to finish the mission and escape with minimal distress.
 
-[[Continue|n1d/F Start Candle]]
+[[Continue|n1cn/F Start Candle]]
 
 
 :: n1m/F Magic [inclusion] {"position":"5900,3375","size":"200,100"}
@@ -9093,7 +9104,7 @@ It's Ivex, the panther mage who's the reason for Nero's current "errand".
 <</fade-in>>
 
 
-:: n1d/F Start Candle {"position":"3875,3775","size":"100,100"}
+:: n1cn/F Start Candle {"position":"3875,3775","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight vary>>
@@ -9239,11 +9250,11 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 [[Continue|n1p/F Barbs Yes 2]]
 
 
-:: n2a/F Start [section-start] {"position":"4250,5125","size":"100,100"}
+:: n2z/F Start [section-start] {"position":"4225,5025","size":"100,100"}
 <<nobr>>
 <<delete-vars n2_>>
 <<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleHorny ignore>>
 <<big-mood n1_mageSight vary>>
 <<big-mood n1_subby ignore>>
 
@@ -9276,10 +9287,10 @@ Well, that's a question to be deferred to some other time. What's important now 
 
 :: n2a/D Alone (6,2) {"position":"5150,5225","size":"200,200"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby vary>>
-<<big-mood n1_candleHorny vary>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_mageSight ignore>>
+<<big-mood n1_subby ignore>>
+<<big-mood n1_candleHorny ignore>>
 
 <<n1-patience 6 2 "">>
 
@@ -9409,7 +9420,7 @@ sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 
 
 <br><br>
 <ul class="actions">
-    <li>[[Try again from Ivex's disappearance.|n2a/F Start]]</li>
+    <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 <</nobr>>
@@ -9459,7 +9470,7 @@ sketch ongoing life as a dumb abused dog craving correction, tease bits of thing
 
 <br><br>
 <ul class="actions">
-    <li>[[Try again from Ivex's disappearance.|n2a/F Start]]</li>
+    <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 <</nobr>>
@@ -9907,7 +9918,7 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 
 <ul class="actions">
     <li>[[really, equal partnership is fair|n1cn/P Reject Equality]]</li>
-    <li>[[perhaps I could apprentice|n1cr/P Apprentice]]</li>
+    <li>[[perhaps I could apprentice|n1cn/P Apprentice]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
@@ -9928,14 +9939,14 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[no, I'm a cog in something larger|n1cr/P Secret Society]]</li>
+    <li>[[no, I'm a cog in something larger|n1cn/P Secret Society]]</li>
     <li>[[not a minion, an apprentice|n1cn/P Reject Demotion]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
 
 
-:: n1cr/P Secret Society {"position":"4200,2100","size":"100,100"}
+:: n1cn/P Secret Society {"position":"4200,2075","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -9966,7 +9977,7 @@ nero: I have much to teach you, and perhaps you have some things to show me as w
 
 ivex, disgusted. smashes balls.
 
-[[Continue|n1d/F Start Candle]]
+[[Continue|n1cn/F Start Candle]]
 
 
 :: n1cn/P Reject Equality [big-mood] {"position":"4050,2700","size":"100,100"}
@@ -9984,7 +9995,7 @@ nero: really, equality is good.
 
 ivex: no way. smashes balls.
 
-[[Continue|n1d/F Start Candle]]
+[[Continue|n1cn/F Start Candle]]
 
 
 :: n1cr/P Ivex Demanding (4,3) {"position":"4400,2925","size":"200,100"}
@@ -10002,8 +10013,8 @@ ivex: no way. smashes balls.
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[within reason|n1cs/P Subby][$n1_resisting = true]]</li>
-    <li>[[anything at all|n1cs/P Subby][$n1_resisting = false]]</li>
+    <li>[[within reason|n1cr/P Subby][$n1_resisting = true]]</li>
+    <li>[[anything at all|n1cr/P Subby][$n1_resisting = false]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
@@ -10502,8 +10513,8 @@ Threat. Yes. That was a threat.
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[...yes|n1cn/P Reject Fantasy][$n1_resisting = false]]</li>
-    <li>[[...um, no|n1cn/P Reject Fantasy][$n1_resisting = true]]</li>
+    <li>[[...yes|n1cr/P Reject Fantasy][$n1_resisting = false]]</li>
+    <li>[[...um, no|n1cr/P Reject Fantasy][$n1_resisting = true]]</li>
     <<optional-action $n1_magicAction>>
 </ul>
 <</nobr>>
@@ -10637,7 +10648,7 @@ ivex incredulous at the audacity
 [[Continue|n1cn/P Ivex Disdainful (1,1)]]
 
 
-:: n1cr/P Apprentice {"position":"4400,2800","size":"100,100"}
+:: n1cn/P Apprentice {"position":"4400,2800","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10655,10 +10666,11 @@ starts into creepy-lewd
 [[Continue|n1cr/P Ivex Demanding (4,3)]]
 
 
-:: n1cs/P Subby {"position":"4525,3050","size":"100,100"}
+:: n1cr/P Subby {"position":"4525,3050","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused TODO>>
+<<big-mood n1_abused TODO>>'
 <<big-mood n1_mageSight TODO>>
+<<big-mood n1_naked vary>>
 <</nobr>>
 
 <<nobr>>
@@ -10720,10 +10732,10 @@ you need to demonstrate loyalty
 
 ivex: well, whether you're real or not, it won't matter soon.
 
-[[Continue|n1d/F Start Candle]]
+[[Continue|n1cn/F Start Candle]]
 
 
-:: n1cn/P Reject Fantasy {"position":"4050,2475","size":"100,100"}
+:: n1cr/P Reject Fantasy {"position":"4050,2475","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10740,7 +10752,7 @@ ivex: well, whether you're real or not, it won't matter soon.
 
 ivex: nice try, but I think you're lying... we'll see.
 
-[[Continue|n1d/F Start Candle]]
+[[Continue|n1cn/F Start Candle]]
 
 
 :: n1p/F Naked 3 {"position":"5500,2575","size":"100,100"}
@@ -10871,7 +10883,7 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
     <<if Config.debug && $n0_afterConstruction>>
         <li>$n0_afterConstruction</li>
     <</if>>
-    <li>[[Try again from Ivex's disappearance.|n2a/F Start]]</li>
+    <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 <</nobr>>
@@ -11247,7 +11259,7 @@ subby and naked. ivex is near, creeps.
 [[Continue|n1cs/P Ivex Dominant (4,3)]]
 
 
-:: n1d/F Start Candle 2 {"position":"3875,3875","size":"100,100"}
+:: n1d/F Start Candle 2 {"position":"3875,3900","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_mageSight vary>>
@@ -11325,13 +11337,14 @@ fur of the wolf's bare chest.
 [[Continue|n1d/P Get Creepy]]
 
 
-:: n1e/P Candle Horny {"position":"4775,4275","size":"100,100"}
+:: n1d/P Candle Horny {"position":"4775,4275","size":"100,100"}
 <<nobr>>
-<<set $n1_candleHorny = true>>
-
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
+<<big-mood n1_naked always true>>
 <<big-mood n1_subby TODO>>
+
+<<set $n1_candleHorny = true>>
 
 <em>Why am I so horny?</em> Nero is aghast at his body's reaction. But it's not just his body. His mind is also becoming engorged with primal emotions. He is weirdly hyperaware of the panther's rising lust, and he feels a deeply rooted desire to meet it, or exceed it, with a feral lust of his own. Is this feeling arising from a sense of competition between rivals, or is he being drawn somehow into a candlelight courtship dance? Is there even a difference between those possibilities? XXX daytime
 <</nobr>>
@@ -11361,7 +11374,7 @@ The panther speaks in a low throaty register that reverberates through the mask.
 
 Ivex lifts his paw off the wolf's crotch, but leaves it poised right above it, centimeters away. He chuckles under the mask, as the wolf's member bulges and struggles outward, seeking attention...
 
-[[Continue|n1e/P Candle Horny]]
+[[Continue|n1d/P Candle Horny]]
 
 
 :: n1p/F Barbs Yes 2 {"position":"5950,2500","size":"100,100"}
@@ -11783,7 +11796,7 @@ He glances at the agitated wolf, who's still struggling against the bonds with a
 
 The panther mage pulls a red gem out from a pocket, and then disappears in a <em>fwoosh</em>.
 
-[[Continue|n2a/F Start]]
+[[Continue|n2z/F Start]]
 
 
 :: n2a/P Start 2 {"position":"4350,5125","size":"100,100"}
