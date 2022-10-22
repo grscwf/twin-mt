@@ -24,7 +24,7 @@ function main(args) {
 
   const split = twText.split(/^(:: .*)$/m);
   split.forEach((part, i) => {
-    const m = /^:: ((n\d+)\w*\/(\w)?) /.exec(part);
+    const m = /^:: ((n[A\d])\w*\/(\w)?) /.exec(part);
     if (m == null) return;
     const wc = wordCount(split[i + 1]);
     addTo(`section ${m[2]}`, wc);

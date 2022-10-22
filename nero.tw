@@ -290,6 +290,10 @@ ul.actions li {
   background-image: url("https://magestower.slethstories.com/images/quote.png");
 }
 
+x.fade-in-hidden ul.actions li {
+  background-image: unset;
+}
+
 /* Action Box - End */
 
 
@@ -590,37 +594,6 @@ ul.actions li {
 }
 #var-info-to-do:hover {
   background-color: #332;
-}
-
-/* random walk */
-.random-walk {
-  bottom: 180px;
-  display: flex;
-  flex-direction: column;
-  font-size: 18px;
-  gap: 20px;
-  position: fixed;
-  right: 4px;
-}
-
-.random-walk a {
-  background-color: #eee;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: #000;
-  cursor: pointer;
-  opacity: 0.3;
-  padding: 2px 4px;
-}
-
-.random-walk a:hover {
-  background-color: #333;
-  border-color: #eee;
-  color: #eee;
-}
-
-.random-walk-chosen {
-  outline: 1px solid #9cc;
 }
 
 /* passage draft status */
@@ -1186,6 +1159,8 @@ function assertBigMood(vn, val, expr) {
 function withinInclude(context) {
   for (; context != null; context = context.parent) {
     if (context.displayName === "include") return true;
+    // XXX hack
+    if (context.displayName === "no-trace") return true;
   }
   return false;
 }
@@ -1473,6 +1448,10 @@ function varInfoSetup() {
     if (!anyMatched) {
       assertionFailed(`Passage should match some bigMoodVars rule`);
     }
+    for (const vn of bigMoodDeclared) {
+      bigMood.add(vn);
+      touched.delete(vn);
+    }
 
     const outer = $("<div class=var-info>").prependTo("#story");
     outer.toggleClass("var-info-hidden", !varInfoShow);
@@ -1520,77 +1499,7 @@ function varInfoSetup() {
 
 varInfoSetup();
 
-/** Random walk */
-function randomWalkSetup() {
-  if (!Config.debug) return;
 
-  const back = () => {
-    const chosen = $('#passages .random-walk-chosen');
-    if (chosen.length > 0) {
-      chosen.removeClass('random-walk-chosen');
-    } else {
-      Engine.backward();
-    }
-  };
-
-  const visited = new Set();
-  const lastPick = {};
-  const id = el => [$(el).attr('data-passage'), $(el).text()].join('|');
-  const walk = () => {
-    const chosen = $('#passages .random-walk-chosen');
-    if (chosen.length === 1) {
-      chosen.click();
-      return;
-    }
-    chosen.removeClass('random-walk-chosen');
-
-    const here = State.passage;
-    const all = $('#passages a[data-passage]');
-    if (all.length === 0) return;
-
-    let avail = all.filter((i, el) => !visited.has(id(el)));
-    if (avail.length === 0) {
-      all.each((i, el) => visited.delete(id(el)));
-      avail = all;
-      if (avail.length !== 1) {
-        avail = avail.filter((i, el) => id(el) !== lastPick[here]);
-      }
-    }
-
-    const i = random(avail.length - 1);
-    $(avail[i]).addClass('random-walk-chosen');
-    avail[i].scrollIntoView();
-    lastPick[here] = id(avail[i]);
-    visited.add(lastPick[here]);
-  };
-
-  $(document).on(":passageend", () => {
-    $(".random-walk").remove();
-    const div = $("<div>").addClass("random-walk");
-    $("#story").append(div);
-
-    const backDiv = $("<a>").addClass("random-walk-back");
-    backDiv.text("back");
-    backDiv.attr("title", "<comma> backward");
-    backDiv.on("click", back);
-    div.append(backDiv);
-
-    const walkDiv = $("<a>").addClass("random-walk-go");
-    walkDiv.text("walk");
-    walkDiv.attr("title", "<period> forward");
-    walkDiv.on("click", walk);
-    div.append(walkDiv);
-  });
-
-  $(document).on("keydown", ev => {
-    switch (ev.key) {
-      case ",": back(); break;
-      case ".": walk(); break;
-    }
-  });
-}
-
-randomWalkSetup();
 
 /** Patience */
 Macro.add("n1-patience", {
@@ -1714,7 +1623,7 @@ The Mage's Tower (Nero)
 [[Credits]]
 <<if setup.enableDebugMenu>>
     <<link "\u23e9 Title" "Title Screen">><</link>>
-    <<link "\uD83D\uDCA3 Nero Reset" `State.passage`>>
+    <<link "\uD83D\uDCA3 Nero Reset Vars" `State.passage`>>
         <<delete-vars n0_ n1_ n2_>>
     <</link>>
     <<link "\u23e9 Nero Start" "n1a/F Start">>
@@ -1917,8 +1826,14 @@ With a spring to his step, the panther approaches, closing in the last distance 
 <<script>>
   window.Tower || (window.Tower = {});
 <</script>>
+
+<!-- Var Trace adds a passagestart hook that should happen as early as possible -->
+<<include [[Init Var Trace]]>>
+
 <<include [[Init Archive]]>>
+<<include [[Init Random Walk]]>>
 <<include [[Init Sidebar]]>>
+
 <<include [[Init Drekkar]]>>
 <<include [[Init Nero]]>>
 
@@ -3763,7 +3678,7 @@ Grayed out endings and variations are paths that have not yet been found, shown 
     <<= _detail>>
     <<set $t0_archiveDetailSeen = true>>
 <<else>>
-    <<linkreplace '<span class="more">(...more)</span>' t8n>>
+    <<linkreplace '<span class="more">... more information</span>' t8n>>
         <<= _detail>>
     <</linkreplace>>
 <</if>>
@@ -7958,6 +7873,7 @@ $(document).on(":passageinit", ev => console.log(ev));
 <</script>>
 [[testing 2]]
 [[fade-in test]]
+[[var-info test]]
 
 
 :: n1x/F Look [inclusion] {"position":"5950,4300","size":"100,200"}
@@ -9169,7 +9085,7 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
-    <<include [[n1m/F Before Cast]]>>
+    <<include [[n1m/D Before Cast]]>>
 <<case `MP_triedMagic`>>
     <<include [[n1m/D Tried Magic]]>>
 <<case `MP_magicSight`>>
@@ -9883,10 +9799,11 @@ ivex realizes you're getting the password, scolds you for being naughty.
 
 candle if not.
 
+if naked, ivex approaches.
 if not naked, [[n1p/F Naked]] and <<announce-barbs maybe>>
 
 picks out another grav gem and attaches it to your balls.
-if smashed, this is worse than before.
+if abused, this is worse than before.
 
 you're extremely distracted, and Ivex is extremely turned on.
 
@@ -10064,7 +9981,7 @@ ivex: no way. smashes balls.
 [[Continue|n1d/F Start Candle]]
 
 
-:: n1cr/P Ivex Demanding (4,3) {"position":"4450,2950","size":"200,100"}
+:: n1cr/P Ivex Demanding (4,3) {"position":"4400,2925","size":"200,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10100,7 +10017,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 [[Continue|n1cr/P Ivex Intrigued (4,3)]]
 
 
-:: n1cs/P Ivex Dominant (4,3) {"position":"4400,3375","size":"200,100"}
+:: n1cs/P Ivex Dominant (4,3) {"position":"4400,3175","size":"200,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10125,7 +10042,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 <</nobr>>
 
 
-:: n1cs/P Ivex Cruel (4,3) {"position":"4400,3625","size":"200,100"}
+:: n1cs/P Ivex Cruel (4,3) {"position":"4400,3425","size":"200,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10517,7 +10434,7 @@ Ivex "the Magnificent" theatrically raises his left arm, then snaps his fingers.
 <<set $n1_afterNaked = "[[Continue|n1a/F Endgame 4]]">>
 
 
-:: n1a/F Endgame 4 [big-mood] {"position":"3850,1100","size":"100,100"}
+:: n1a/F Endgame 4 [big-mood] {"position":"3850,1125","size":"100,100"}
 <<nobr>>
 <<set $n1_magicPhase = MP_triedMagic>>
 <<set $n1_naked = true>>
@@ -10625,8 +10542,6 @@ Ivex lifts the riding crop off the wolf's balls, and draws his arm back slowly, 
 
 :: n1d/P Strip Resist {"position":"4575,4075","size":"100,100"}
 <<nobr>>
-<<set $n1_afterNaked = "[[Continue|n1d/P Get Creepy]]">>
-
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight TODO>>
 <<big-mood n1_naked always false>>
@@ -10641,7 +10556,6 @@ is clearly false.
     Well, he can have it.
     Nero is not going to be cowed by this bully
     and his ridiculous red candle.
-
 <<else>>
     Otherwise Nero wouldn't be strapped to a cross at all,
     breathing the fumes of whatever that candle might be.
@@ -10659,6 +10573,7 @@ A moment later, the grinning-masked panther says, "I know <em>exactly</em> what 
 The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|n1p/F Fast Naked]]
+<<set $n1_afterNaked = "[[Continue|n1d/P Get Creepy]]">>
 
 
 :: n1p/F Barbs {"position":"5625,2575","size":"100,100"}
@@ -10715,7 +10630,7 @@ ivex incredulous at the audacity
 [[Continue|n1cn/P Ivex Disdainful (1,1)]]
 
 
-:: n1cr/P Apprentice {"position":"4450,2825","size":"100,100"}
+:: n1cr/P Apprentice {"position":"4400,2800","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10733,7 +10648,7 @@ starts into creepy-lewd
 [[Continue|n1cr/P Ivex Demanding (4,3)]]
 
 
-:: n1cs/P Subby {"position":"4525,3125","size":"100,100"}
+:: n1cs/P Subby {"position":"4525,3050","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10751,14 +10666,18 @@ starts into creepy-lewd
 
 <<nobr>>
 <<if !$n1_naked>>
-    [[Continue|n1cs/P Subby Strip]]
+    subby gets stripped.
+
+    [[Continue|n1p/F Naked]]
+    <<set $n1_afterNaked = "[[n1cs/P Subby Naked]]">>
 <<else>>
+    ivex approaches
     [[Continue|n1cs/P Subby Naked]]
 <</if>>
 <</nobr>>
 
 
-:: n1cs/P Licking {"position":"4400,3500","size":"100,100"}
+:: n1cs/P Licking {"position":"4400,3300","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -10778,7 +10697,7 @@ you need to demonstrate loyalty
 [[Continue|n1cs/P Ivex Cruel (4,3)]]
 
 
-:: n1cs/P Reject Mercy {"position":"4275,3675","size":"100,100"}
+:: n1cs/P Reject Mercy {"position":"4275,3475","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -11303,7 +11222,7 @@ sprite says, ok, thinking.
 $n1_afterAction
 
 
-:: n1cs/P Subby Naked [big-mood] {"position":"4525,3250","size":"100,100"}
+:: n1cs/P Subby Naked [big-mood] {"position":"4400,3050","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
@@ -11311,7 +11230,7 @@ $n1_afterAction
 
 <<announce-barbs maybe>>
 
-subby and naked. ivex creeps.
+subby and naked. ivex is near, creeps.
 
 [[Continue|n1cs/P Ivex Dominant (4,3)]]
 
@@ -11728,58 +11647,48 @@ and roughly strokes the fur on the wolf's naked chest.
 
 :: n1d/P Strip Submit {"position":"4675,4075","size":"100,100"}
 <<nobr>>
-<<set $n1_afterNaked = "[[Continue|n1d/P Get Creepy]]">>
-
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight TODO>>
 <<big-mood n1_naked always false>>
 <<big-mood n1_subby always false>>
 
 <<if $n1_abused>>
-
     "I'm quite relaxed," says Nero.
     It's a lie, of course, and he tries to make it clear that it is.
     The candle is a lurking menace,
     and Ivex's punch to the wolf's crotch is still quite vivid in his memory.
     He's wary of attracting another.
-
     <br><br>
     Perhaps if he acts cowed, without actually cooperating,
     he can satisfy the panther's sadism and forestall further abuse.
-
     <br><br>
     "Good! I'm quite pleased to hear that."
     Ivex claps his hands and makes a purring sound,
     which is quite eerie and menacing with the mask.
     "But I think I know something that
     will make you even more comfortable."
-
 <<else>>
-
     "I'm quite relaxed," says the wolf. "No complaints."
-
     <br><br>
     Nero looks away from the suspicious candle.
     There's nothing Nero can do about that for now,
     so he focuses his attention on Ivex's mood, and tries a slight provocation.
-
     <br><br>
     "Well... One complaint.
     Perhaps you could release me from <em>these</em>..."
     He wiggles his arms as much as he can within their restraints.
     "And then we can sit down and have a friendly chat over a cup of mead?"
-
     <br><br>
     "Of course!" says Ivex beneath the grinning mask.
     "I must apologize for my poor manners.
     Let me help you remove that."
-
 <</if>>
 <</nobr>>
 
 The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|n1p/F Fast Naked]]
+<<set $n1_afterNaked = "[[Continue|n1d/P Get Creepy]]">>
 
 
 :: n1e/P Pull {"position":"4850,4650","size":"100,100"}
@@ -12000,28 +11909,22 @@ v.n2_candleMax = looks === 0 || actions === 0;
 :: n1m/P Cast Escape {"position":"6025,3125","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
-<<big-mood n1_candleHorny TODO>>
+<<big-mood n1_candleHorny always false>>
 <<big-mood n1_candleLit TODO>>
 <<big-mood n1_ivexReceptive always false>>
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked always true>>
 <<big-mood n1_subby TODO>>
 
-<<big-mood n2_extraHorny TODO>>
-<<big-mood n2_free TODO>>
+<<big-mood n2_extraHorny always false>>
+<<big-mood n2_free always false>>
 <<big-mood n2_ivexGone always true>>
 <<big-mood n2_tooClever always false>>
-
-XXX separate bound-escape from free-escape
 
 <<assert-true $n1_magicPhase === MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
-<<if $n1_candleHorny>>
-    escape fizzles, still horny. horny info about anti-magic.
-<<else>>
-    escape fizzles. info about anti-magic.
-<</if>>
+escape fizzles. info about anti-magic.
 
 $n1_afterAction
 <</nobr>>
@@ -12069,21 +11972,6 @@ $n1_afterAction
 <</nobr>>
 
 
-:: n1cs/P Subby Strip {"position":"4650,3175","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused TODO>>
-<<big-mood n1_mageSight TODO>>
-<</nobr>>
-
-<<nobr>>
-<<set $n1_afterNaked = "[[n1cs/P Subby Naked]]">>
-<</nobr>>\
-\
-subby gets stripped.
-
-[[Continue|n1p/F Naked]]
-
-
 :: n2a/P Desperate Magic {"position":"4975,5450","size":"100,100"}
 XXX desperation magic fails
 
@@ -12104,7 +11992,7 @@ need state for mirror location
 $n1_afterAction
 
 
-:: PassageHeader [inclusion] {"position":"3000,800","size":"100,100"}
+:: PassageHeader [inclusion] {"position":"3000,700","size":"100,100"}
 <<nobr>>
 <<no-trace>>
 <<if /^n/.test(State.passage)>>
@@ -12196,7 +12084,7 @@ $n1_afterAction
 <</nobr>>
 
 
-:: n1m/F Before Cast [inclusion] {"position":"5900,3250","size":"100,100"}
+:: n1m/D Before Cast [inclusion] {"position":"5900,3250","size":"100,100"}
 <<nobr>>
 <!-- easy escape requires magicSight, hard escape requires wantPassword -->
 <<big-mood n2_free always false>>
@@ -12205,7 +12093,7 @@ $n1_afterAction
 <<if $n1_candleHorny>>
     The wolf mage desperately wants to grab his throbbing cock.
     His mind focuses on a powerful spell that will break his bonds.
-    <<set $n1_magicAction = "[[Cast an escape spell.|n1m/P Cast Escape]]">>
+    <<set $n1_magicAction = "[[Cast an escape spell.|n1m/P Cast Horny]]">>
 
 <<elseif $n2_ivexGone>>
     Now that Ivex is gone, Nero can cast a powerful escape spell
@@ -12218,12 +12106,17 @@ $n1_afterAction
     with a flashy escape spell.
     <<set $n1_magicAction = "[[Cast an escape spell.|n1m/P Cast Slippery]]">>
 
+<<elseif $n1_subby>>
+    XXX something subby
+    <<set $n1_magicAction = "[[Cast an escape spell.|n1m/P Cast Slippery]]">>
+
 <<else>>
-    Ivex is staring like a predator, so if Nero tries a spell, it should be fast and decisive.
+    Ivex is staring like a predator, so if Nero tries a spell,
+    it should be fast and decisive.
     <<if !$n1_didSomeAction>>
         Or perhaps he should try something else first.
     <</if>>
-    <<set $n1_magicAction = "[[Cast an attack spell.|n1m/P Cast Itch]]">>
+    <<set $n1_magicAction = "[[Cast an attack spell.|n1m/D Cast Itch]]">>
 <</if>>
 
 <br><br>
@@ -12271,15 +12164,15 @@ $n1_afterAction
 <</nobr>>\
 
 
-:: n1m/P Cast Itch {"position":"5775,3125","size":"100,100"}
+:: n1m/D Cast Itch {"position":"5775,3125","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused TODO>>
-<<big-mood n1_candleHorny TODO>>
-<<big-mood n1_candleLit TODO>>
-<<big-mood n1_ivexReceptive TODO>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive always false>>
 <<big-mood n1_mageSight always false>>
-<<big-mood n1_naked TODO>>
-<<big-mood n1_subby TODO>>
+<<big-mood n1_naked vary>>
+<<big-mood n1_subby always false>>
 
 <<big-mood n2_extraHorny always false>>
 <<big-mood n2_free always false>>
@@ -12289,13 +12182,13 @@ $n1_afterAction
 <<big-mood n1_magicPhase always MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
-Nero begins the mage fight by wriggling his fingers and moaning the syllables of his special variation of [[Wicked Itch|n1m/P Itch]]. Not the flashiest of combat spells, but the wolf often finds it advantageous to use the unconventional and unexpected.
+Nero begins the mage fight by wriggling his fingers and moaning the syllables of his special version of [[Superb Itch|n1m/D Itch]]. Not the flashiest of combat spells, but the wolf often finds it advantageous to use the unconventional and unexpected.
 
 <br><br>
 spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bit.
 
 <<if $n1_naked>>
-    Nero writhes in his bonds. Ivex is amused for a bit, then dismisses the spell.
+    Nero writhes in his bonds. Ivex is amused for a bit, dismisses spell.
 
     <br><br>
     $n1_afterAction
@@ -12316,12 +12209,12 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
 :: n1m/P After Itch {"position":"5650,3125","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
-<<big-mood n1_candleHorny TODO>>
-<<big-mood n1_candleLit TODO>>
-<<big-mood n1_ivexReceptive TODO>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive always false>>
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked always true>>
-<<big-mood n1_subby TODO>>
+<<big-mood n1_subby always false>>
 
 <<big-mood n2_extraHorny always false>>
 <<big-mood n2_free always false>>
@@ -12332,8 +12225,13 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
 
 <<announce-barbs maybe>>
 
-Ivex being lewd about scratching itches, saunters back to desk.
+Ivex being lewd about scratching itches
+<<if $n1_abused>>
+<<else>>
+<</if>>
+saunters back to desk.
 <</nobr>>
+
 
 info about anti-magic.
 
@@ -13314,10 +13212,27 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 [[Continue|n1cn/F Ivex Intro]]
 
 
-:: n1m/P Itch [noreturn] {"position":"5600,2975","size":"100,100"}
-Wicked Itch (not to be confused with the pilgrim's charm called Wicket Twitch), is a popular prank spell that nobody uses any more, because it's trivially reversed onto the caster if the target has any type of spell ward, even something as weak as the "Lucky Penny" that's a common carnival prize.
+:: n1m/D Itch [noreturn] {"position":"5600,2975","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight always false>>
+<<big-mood n1_naked ignore>>
+<<big-mood n1_subby always false>>
 
-The spell and its related family of minor nerve agonists have never been a serious weapon in mage fights, but on one inebriated night with the fabulous Ms. Tara, Nero discovered a curious property of Wicked Itch.
+<<big-mood n2_extraHorny always false>>
+<<big-mood n2_free always false>>
+<<big-mood n2_ivexGone always false>>
+<<big-mood n2_tooClever always false>>
+
+Superb Itch is a popular prank spell that nobody uses any more, because it's trivially reversed onto the caster if the target has any type of spell ward, even something as weak as the "Lucky Penny" that's a common carnival prize.
+<</nobr>>
+
+The spell and its related family of minor nerve agonists have never been a serious weapon in mage fights, but on one inebriated night with the fabulous Ms. Tara, Nero discovered a curious property of Superb Itch.
+
+<<link Return $return>>
 
 
 :: n1x/P Take Knife {"position":"7375,5400","size":"100,100"}
@@ -13763,7 +13678,7 @@ thrall and tickle fight each other. thrall is a mindl program but can't override
 ivex returns and is amused by the glitch, lets the glitch continue forever, plays with it sometimes.
 
 
-:: Init Drekkar [inclusion] {"position":"2500,300","size":"100,100"}
+:: Init Drekkar [inclusion] {"position":"2525,350","size":"100,100"}
 <<script>>
 const v = variables();
 v.name = "Drekkar";
@@ -13824,7 +13739,7 @@ v.personalEnding = false;
 <</script>>
 
 
-:: Init Nero [inclusion] {"position":"2700,300","size":"100,100"}
+:: Init Nero [inclusion] {"position":"2700,350","size":"100,100"}
 <<script>>
   window.Nero || (window.Nero = {});
 <</script>>
@@ -13832,6 +13747,7 @@ v.personalEnding = false;
 <<include [[Init Nero Barbs]]>>
 <<include [[Init Nero Fade-In]]>>
 <<include [[Init Nero Password]]>>
+<<include [[Init Nero Vars]]>>
 
 
 :: Init Sidebar [inclusion] {"position":"2375,225","size":"100,100"}
@@ -13980,37 +13896,76 @@ Macro.add("optional-action", {
 
 
 :: Init Nero Fade-In [inclusion] {"position":"3025,400","size":"100,100"}
-<<script>>
+//<<script>>
+/*
+ * This description assumes you're using the default style.
+ * <<fade-in 1.5s>>
+ *    A blinking "..." appears here.
+ *    After 1.5 seconds, this section's text fades in.
+ *    Click/tap on the "..." will skip the delay.
+ *    Links in this section are shown without delay, in their proper location,
+ *    but blocked out with a gray rectangle.
+ *    Click/tap on any blocked-out link will also skip the delay.
+ * <<next 1s>>
+ *    After the first section has faded-in, the "..." appears here.
+ *    After another 1s, this section's text fades in.
+ *    There can be any number of "next" sections.
+ * <</fade-in>>
+ */
+
+$("#fade-in-style").remove();
 $('head').append(`
-  <style>
+  <style id="fade-in-style">
+    /* <span> for each fade-in section */
     .fade-in {
-      transition: color .4s ease-in;
+      transition: all .4s ease-in;
     }
-    .fade-in-hidden {
-      color: rgba(255, 255, 255, 0);
+
+    /*
+     * Hide text. Note: using opacity or filter here will make it impossible
+     * to have links visible (child filter cannot override parent).
+     * The :not clause gives this rule a high CSS specificity, making this
+     * more likely to override complex selectors elsewhere.
+     */
+    .fade-in-hidden,
+    .fade-in-hidden:not(#give#this#rule#high#specificity) * {
+      background-image: unset;
+      color: rgba(0, 0, 0, 0);
       pointer-events: none;
     }
-    .fade-in-next::before {
-      color: rgba(255, 255, 255, 0.5);
+    
+    /* Hide media. */
+    .fade-in-hidden:not(#give#this#rule#high#specificity) img,
+    .fade-in-hidden:not(#give#this#rule#high#specificity) video {
+      opacity: 0;
+    }
+
+    /* Block-out hidden links. */
+    .fade-in-hidden:not(#give#this#rule#high#specificity) a {
+      background-color: #222;
+      border-radius: 4px;
+      color: rgba(0, 0, 0, 0);
+      pointer-events: auto;
+    }
+    .fade-in-hidden:not(#give#this#rule#high#specificity) a:hover {
+      background-color: #333;
+      color: rgba(0, 0, 0, 0);
+    }
+
+    /* Put flashing dots at the section that will be revealed next. */
+    .fade-in-next:not(#give#this#rule#high#specificity)::before {
+      animation: 0.5s 1s ease-in-out alternate both infinite fade-in-blink;
+      color: #fff;
       content: ". . .";
       cursor: pointer;
       display: inline-block;
+      font-weight: bold;
       pointer-events: auto;
       position: absolute;
     }
-    .fade-in a {
-      transition: opacity .4s ease-in;
-    }
-    .fade-in-hidden a {
-      opacity: 0.4;
-      pointer-events: auto;
-    }
-    .fade-in-hidden a:hover {
-      opacity: 1;
-      transition: opacity .1s;
-    }
-    .fade-in-hidden ul.actions li {
-      background-image: unset;
+    @keyframes fade-in-blink {
+      from { opacity: 0.4; }
+      to { opacity: 1; }
     }
   </style>
 `);
@@ -14018,67 +13973,52 @@ $('head').append(`
 Macro.add("fade-in", {
   tags: ["next"],
   handler: function() {
-    const spans = [];
-    let timer = null;
+    const queue = [];
+    let timeout = null;
+
     const next = () => {
-      if (spans.length === 0) return;
-      const cur = spans[0];
-      const delay = cur[0];
-      const span = cur[1];
+      if (queue.length === 0) return;
+      const [delay, span] = queue[0];
       span.addClass("fade-in-next");
-      timer = setTimeout(() => {
+      if (timeout != null) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        queue.shift();
         span.removeClass("fade-in-hidden fade-in-next");
-        spans.shift();
         if (document.contains(span[0])) next();
       }, delay);
     };
-    const skipToPos = i => {
-      if (timer != null) clearTimeout(timer);
-      timer = null;
-      for (let j = 0; j <= i; j++) {
-        spans[j][1].removeClass("fade-in-hidden fade-in-next");
+
+    const skipTo = jq => {
+      const pos = queue.findIndex(q => q[1] === jq);
+      if (pos < 0) return;
+      for (let i = 0; i <= pos; i++) {
+        queue.shift()[1].removeClass("fade-in-hidden fade-in-next");
       }
-      spans.splice(0, i + 1);
       next();
     };
-    const skipTo = jq => {
-      for (let i = 0; i < spans.length; i++) {
-        if (spans[i][1] === jq) {
-          skipToPos(i);
-          return;
-        }
-      }
-    };
+
     for (const section of this.payload) {
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
-      const span = $("<span>").addClass("fade-in fade-in-hidden")
-        .wiki(section.contents);
+      const span = $("<span>")
+      	.addClass("fade-in fade-in-hidden")
+        .wiki(section.contents)
+        .appendTo(this.output);
       const hurry = ev => {
         span[0].removeEventListener("click", hurry, true);
         if (!span.hasClass("fade-in-hidden")) return;
-        /*
-         * If links are revealed on hover (eg, when using a mouse or pen),
-         * we should let the click visit the link right away.
-         * Since touch clicks don't normally have hover,
-         * we inhibit the link click for touch (until the section is revealed).
-         */
-        const t = ev.pointerType;
         ev.preventDefault();
         ev.stopPropagation();
-        if (t !== "touch") {
-          setTimeout(() => ev.target.click(), 500);
-        }
         skipTo(span);
       };
       span[0].addEventListener("click", hurry, true);
-      $(this.output).append(span);
-      spans.push([delay, span]);
+      queue.push([delay, span]);
     }
-    setTimeout(next, 0);
+
+    setTimeout(next);
   }
 });
-<</script>>
+//<</script>>
 
 
 :: n2b/D Leave {"position":"5550,6375","size":"100,100"}
@@ -14111,7 +14051,7 @@ drop knife
 [[Continue|n2b/D Leave]]
 
 
-:: Init Archive [inclusion] {"position":"2275,225","size":"100,100"}
+:: Init Archive [inclusion] {"position":"2175,225","size":"100,100"}
 <<script>>
 const Tower = window.Tower;
 
@@ -14262,5 +14202,286 @@ Macro.add("archive-barbs", {
 
 
 :: nA/P Broken [noreturn] {"position":"3575,1725","size":"100,100"}
+
+
+:: n1m/P Cast Horny {"position":"5775,3250","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused TODO>>
+<<big-mood n1_candleHorny always true>>
+<<big-mood n1_candleLit always true>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight always false>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby TODO>>
+
+<<big-mood n2_extraHorny always false>>
+<<big-mood n2_free always false>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever always false>>
+
+<<assert-true $n1_magicPhase === MP_beforeCast>>
+<<set $n1_magicPhase = MP_triedMagic>>
+
+escape fizzles, still horny. horny info about anti-magic.
+
+$n1_afterAction
+<</nobr>>
+
+
+:: Init Nero Vars [inclusion] {"position":"2825,500","size":"100,100"}
+<<script>>
+// This defines some inferred temp vars for convenience
+
+// Define temp var with a getter, so read tracking works.
+function def(vname, fn) {
+  Object.defineProperty(State.temporary, vname, { enumerable: true, get: fn });
+}
+
+$(document).on(":passagestart", () => {
+    const v = State.variables;
+    def('ivexNear', () => v.n1_candleHorny && !v.n2_ivexGone);
+});
+<</script>>
+
+
+:: Init Var Trace [inclusion] {"position":"2175,100","size":"100,100"}
+<<script>>
+window.VarTrace || (window.VarTrace = {});
+const vt = window.VarTrace;
+
+/** Variables that were read. */
+vt.wasRead = new Set();
+
+/** Variables that were set. */
+vt.wasSet = new Set();
+
+/** Variables that were deleted. */
+vt.wasDeleted = new Set();
+
+vt._unproxied = null;
+const myBrand = Symbol("VarTraceBrand");
+
+Macro.add("var-trace-off", {
+  tags: [],
+  handler: function() {
+    const body = this.payload[0].contents;
+    vt.noTraceDo(() => $(this.output).wiki(body));
+  }
+});
+
+/** Start tracing. */
+vt.start = () => {
+  vt.stop();
+  vt.wasRead.clear();
+  vt.wasSet.clear();
+  vt.wasDeleted.clear();
+  vt._unproxied = State.active.variables;
+  Object.defineProperty(vt._unproxied, '_varTrace', {
+    value: myBrand,
+    configurable: true,
+  });
+  State.active.variables = new Proxy(vt._unproxied, {
+    defineProperty(o, prop) {
+      if (typeof prop === "string") vt.wasSet.add(prop);
+      return Reflect.defineProperty(...arguments);
+    },
+    delete(o, prop) {
+      if (typeof prop === "string") vt.wasDeleted.add(prop);
+      return Reflect.delete(...arguments);
+    },
+    get(o, prop) {
+      if (typeof prop === "string") vt.wasRead.add(prop);
+      return Reflect.get(...arguments);
+    },
+    set(o, prop) {
+      if (typeof prop === "string") vt.wasSet.add(prop);
+      return Reflect.set(...arguments);
+    },
+  });
+};
+
+/** Stop tracing. */
+vt.stop = () => {
+  if ((State.active.variables._varTrace ?? myBrand) !== myBrand) {
+    throw new Error("Multiple instances of Var Trace in conflict.");
+  }
+  if (vt._unproxied != null) {
+    State.active.variables = vt._unproxied;
+    vt._unproxed = null;
+  }
+};
+
+/** Get vname's value without tracing it. */
+vt.noTraceGet = vname => {
+  return (vt._unproxied ?? State.active.variables)[vname];
+}
+
+/** Set vname's value without tracing it. */
+vt.noTraceSet = (vname, value) => {
+  (vt._unproxied ?? State.active.variables)[vname] = value;
+};
+
+/** Delete vname's value without tracing it. */
+vt.noTraceDelete = vname => {
+  delete (vt._unproxied ?? State.active.variables)[vname];
+};
+
+/** Run fn without tracing any variables during its execution. */
+vt.noTraceDo = fn => {
+  if (vt._unproxied == null) return fn();
+  const proxy = State.active.variables;
+  State.active.variables = vt._unproxied;
+  try {
+    return fn();
+  } finally {
+    State.active.variables = proxy;
+  }
+};
+
+<</script>>
+
+
+:: Init Random Walk [inclusion] {"position":"2275,225","size":"100,100"}
+<<script>>
+/** Random walk */
+function randomWalkSetup() {
+  if (!Config.debug) return;
+  
+  $("#random-walk-style").remove();
+  $('head').append(`
+    <style id="random-walk-style">
+      #random-walk {
+        top: 20px;
+        display: flex;
+        flex-direction: column;
+        font-size: 18px;
+        gap: 20px;
+        position: fixed;
+        right: 4px;
+      }
+
+      #random-walk a {
+        background-color: #eee;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        color: #000;
+        cursor: pointer;
+        opacity: 0.3;
+        padding: 2px 4px;
+      }
+
+      #random-walk a:hover {
+        background-color: #333;
+        border-color: #eee;
+        color: #eee;
+      }
+
+      .random-walk-chosen {
+        outline: 1px solid #9cc;
+      }
+    </style>
+  `);
+
+  const visited = new Set();
+  const lastPick = {};
+  
+  const idOf = el => `${$(el).attr("data-passage")} | ${$(el).text()}`;
+  
+  const back = () => {
+    const chosen = $("#passages .random-walk-chosen");
+    if (chosen.length > 0) {
+      chosen.removeClass("random-walk-chosen");
+    } else {
+      Engine.backward();
+    }
+  };
+
+  const forward = () => {
+    const chosen = $("#passages .random-walk-chosen");
+    if (chosen.length === 1) {
+      chosen.click();
+      return;
+    }
+    chosen.removeClass("random-walk-chosen");
+
+    const here = State.passage;
+    const all = $("#passages a[data-passage]");
+    if (all.length === 0) return;
+
+    let avail = all.filter((i, el) => !visited.has(idOf(el)));
+    if (avail.length === 0) {
+      all.each((i, el) => visited.delete(idOf(el)));
+      avail = all;
+      if (avail.length > 1) {
+        // avoid picking the link we just picked
+        avail = avail.filter((i, el) => idOf(el) !== lastPick[here]);
+      }
+    }
+
+    const i = random(avail.length - 1);
+    $(avail[i]).addClass("random-walk-chosen");
+    avail[i].scrollIntoView();
+    lastPick[here] = idOf(avail[i]);
+    visited.add(lastPick[here]);
+  };
+
+  $(document).on(":passageend", () => {
+    $("#random-walk").remove();
+    const outer = $("<div>")
+      .attr("id", "random-walk")
+      .appendTo("#story");
+    $("<a>")
+      .attr("title", "<comma> backward")
+      .text("back")
+      .click(back)
+      .appendTo(outer);
+    $("<a>")
+      .attr("title", "<period> forward")
+      .text("walk")
+      .click(forward)
+      .appendTo(outer);
+  });
+
+  $(document).on("keydown", ev => {
+    switch (ev.key) {
+      case ",": back(); break;
+      case ".": walk(); break;
+    }
+  });
+}
+
+randomWalkSetup();
+<</script>>
+
+
+:: var-info test {"position":"4600,400","size":"100,100"}
+<<nobr>>
+<<big-mood dead ignore>>
+<<big-mood isHappy TODO>>
+<<big-mood hasTea implies $isHappy>>
+<<big-mood hasTea vary>>
+
+<<assert-true !!$flag2 !== !!$flag3>>
+<<set $str = "some string value">>
+
+var-info test<br>
+
+<<set $flag1 = true>>
+
+<<if $flag2>>
+   flag2 is true<br>
+<</if>>
+
+<<if !$flag3>>
+  <<set $flag3 = true>>
+  flag3 was false and is now true<br>
+<</if>>
+
+<<if $hasTea>>
+  has tea<br>
+<<else>>
+  no tea<br>
+<</if>>
+<</nobr>>
 
 
