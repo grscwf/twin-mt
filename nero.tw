@@ -809,20 +809,6 @@ macros.arousalbar = {
 }
 /* Arousal Bar Macro - End */
 
-/** Deletes all state vars whose name starts with prefix. */
-Macro.add("delete-vars", {
-  handler: function() {
-    const vars = State.variables;
-    const names = Object.keys(vars);
-    for (const prefix of this.args) {
-      for (const name of names) {
-        if (name.startsWith(prefix)) {
-          delete vars[name];
-        }
-      }
-    }
-  }
-});
 
 /*** Enums */
 
@@ -1500,47 +1486,6 @@ function varInfoSetup() {
 varInfoSetup();
 
 
-
-/** Patience */
-Macro.add("n1-patience", {
-  handler: function() {
-    const looks = this.args[0];
-    const actions = this.args[1];
-    const patientText = this.args[2];
-    const impatientText = this.args[3] || patientText;
-    const angryText = this.args[4] || impatientText;
-    const v = State.variables;
-    const here = State.passage;
-    // Only if we've moved here (instead of redisplay or reload)
-    if (State.peek(-1).title !== here || v.n1_patiencePassage == null) {
-      // If we're at a new action node, reset patience and aggro
-      if (v.n1_patiencePassage !== here) {
-        v.n1_patienceLooks = looks;
-        v.n1_patienceActions = actions;
-        v.n1_patiencePassage = here;
-        v.n1_patienceAggro = 0;
-      }
-      // If we've exhausted patience, start aggro.
-      if (v.n1_patienceAggro || v.n1_patienceLooks <= 1 || v.n1_patienceActions <= 1) {
-        v.n1_patienceAggro++;
-      }
-      // warning on aggro
-      v.n1_patienceWarning = v.n1_patienceAggro === 1;
-      // forced response
-      v.n1_patienceExhausted = v.n1_patienceAggro > 1;
-      // set return links
-      v.n1_afterLook = "[[Do something else.|" + here + "][$n1_patienceLooks -= 1]]";
-      v.n1_afterAction = "[[Continue|" + here + "][$n1_patienceActions -= 1; $n1_didSomeAction = true]]";
-    }
-    // Patience text
-    switch (v.n1_patienceAggro) {
-      case 0: $(this.output).wiki(patientText); break;
-      case 1: $(this.output).wiki(impatientText); break;
-      default: $(this.output).wiki(angryText); break;
-    }
-  }
-});
-
 /** Passage draft status */
 $(document).on(":passageend", ev => {
   $(".stat-sign").remove();
@@ -1824,13 +1769,15 @@ With a spring to his step, the panther approaches, closing in the last distance 
 
 :: StoryInit [inclusion] {"position":"2600,150","size":"100,100"}
 <<script>>
-  window.Tower || (window.Tower = {});
+  window.MagesTower || (window.MagesTower = {});
 <</script>>
 
 <!-- Var Trace adds a passagestart hook that should happen as early as possible -->
 <<include [[Init Var Trace]]>>
 
 <<include [[Init Archive]]>>
+<<include [[Init Delete-Vars]]>>
+<<include [[Init Fade-In]]>>
 <<include [[Init Random Walk]]>>
 <<include [[Init Sidebar]]>>
 
@@ -9567,7 +9514,7 @@ nero clever escape, balls aching, only mildly horny, tries wand, an obvious bad 
 gets trapped in endless pleasant horny.
 
 ivex returns and laughs at the sight. says horny dog needs some discipline.
-applies phase chastity.
+applies phase chastity. pretty different from portal-box, no confined feeling, different desperation
 
 nero becomes desperate, fights a little, but can't focus on anything clever. this is a slow degradation, maybe start with paw worship while ivex jerks off.
 
@@ -11992,7 +11939,7 @@ need state for mirror location
 $n1_afterAction
 
 
-:: PassageHeader [inclusion] {"position":"3000,700","size":"100,100"}
+:: PassageHeader [inclusion] {"position":"3100,700","size":"100,100"}
 <<nobr>>
 <<no-trace>>
 <<if /^n/.test(State.passage)>>
@@ -13232,7 +13179,7 @@ Superb Itch is a popular prank spell that nobody uses any more, because it's tri
 
 The spell and its related family of minor nerve agonists have never been a serious weapon in mage fights, but on one inebriated night with the fabulous Ms. Tara, Nero discovered a curious property of Superb Itch.
 
-<<link Return $return>>
+<<link Return $return>><</link>>
 
 
 :: n1x/P Take Knife {"position":"7375,5400","size":"100,100"}
@@ -13649,6 +13596,8 @@ Ivex returns and finds Nero in paw-off loop. mocks Nero for almost escaping, but
 
 applies portal-box chastity, keeps Nero caged until he's desperate and submits, applies taming to finish.
 
+important: portal-box is small, strong feeling of confined
+
 
 :: n9a/P Caged Harsh [end] {"position":"7550,5800","size":"100,100"}
 nero escaped, very horny, resisted pawing off, but didn't resist using wand. defeated by horny curiosity.
@@ -13663,9 +13612,11 @@ applies portal-box chastity in overstim mode. keeps nero in a cage until he surr
 :: n9e/S ruined [end] {"position":"3900,7750","size":"100,100"}
 slippery ring locks on, and lion is hunting.
 
+should probably also make this require thrall (to match ivex ending), which means adding a little complexity to the lion transitions. (or else change the ivex ending)
+
 lion rapes, extreme overstimulation.
 
-Ivex is amused and turns nero into lion's toy.
+Ivex is amused and turns nero into lion's toy? doesn't fit with lion's role. also could be stronger.
 
 
 :: n9e/S tickled harsh [end] {"position":"3775,7550","size":"100,100"}
@@ -13678,7 +13629,7 @@ thrall and tickle fight each other. thrall is a mindl program but can't override
 ivex returns and is amused by the glitch, lets the glitch continue forever, plays with it sometimes.
 
 
-:: Init Drekkar [inclusion] {"position":"2525,350","size":"100,100"}
+:: Init Drekkar [inclusion] {"position":"2525,400","size":"100,100"}
 <<script>>
 const v = variables();
 v.name = "Drekkar";
@@ -13739,18 +13690,18 @@ v.personalEnding = false;
 <</script>>
 
 
-:: Init Nero [inclusion] {"position":"2700,350","size":"100,100"}
+:: Init Nero [inclusion] {"position":"2700,400","size":"100,100"}
 <<script>>
   window.Nero || (window.Nero = {});
 <</script>>
 <<include [[Init Nero Actions]]>>
 <<include [[Init Nero Barbs]]>>
-<<include [[Init Nero Fade-In]]>>
 <<include [[Init Nero Password]]>>
+<<include [[Init Nero Patience]]>>
 <<include [[Init Nero Vars]]>>
 
 
-:: Init Sidebar [inclusion] {"position":"2375,225","size":"100,100"}
+:: Init Sidebar [inclusion] {"position":"2350,325","size":"100,100"}
 <<nobr>>
 <<append "#ui-bar-body">>
   <div id="ui-bar-footer">
@@ -13768,7 +13719,7 @@ v.personalEnding = false;
 <</nobr>>
 
 
-:: Init Nero Password [inclusion] {"position":"3125,400","size":"100,100"}
+:: Init Nero Password [inclusion] {"position":"3125,425","size":"100,100"}
 <!--
     <<pw-choice Red>>
         Perhaps the password is "Red"?
@@ -13823,7 +13774,7 @@ Macro.add("pw-choice", {
 <</script>>
 
 
-:: Init Nero Barbs [inclusion] {"position":"2925,400","size":"100,100"}
+:: Init Nero Barbs [inclusion] {"position":"2925,525","size":"100,100"}
 <<script>>
 function announceBarbs(output) {
   const v = State.variables;
@@ -13854,7 +13805,7 @@ Macro.add("announce-barbs", {
 <</script>>
 
 
-:: Init Nero Actions [inclusion] {"position":"2825,400","size":"100,100"}
+:: Init Nero Actions [inclusion] {"position":"2825,525","size":"100,100"}
 <<script>>
 const Nero = window.Nero;
 const actionList = [];
@@ -13895,7 +13846,7 @@ Macro.add("optional-action", {
 <</script>>
 
 
-:: Init Nero Fade-In [inclusion] {"position":"3025,400","size":"100,100"}
+:: Init Fade-In [inclusion] {"position":"2150,325","size":"100,100"}
 //<<script>>
 /*
  * This description assumes you're using the default style.
@@ -14051,9 +14002,10 @@ drop knife
 [[Continue|n2b/D Leave]]
 
 
-:: Init Archive [inclusion] {"position":"2175,225","size":"100,100"}
+:: Init Archive [inclusion] {"position":"1950,325","size":"100,100"}
 <<script>>
-const Tower = window.Tower;
+window.MagesTower || (window.MagesTower = {});
+const MT = window.MagesTower;
 
 $('head').append(`
 <style>
@@ -14082,7 +14034,7 @@ $('head').append(`
 </style>
 `);
 
-Tower.setVariantDefault = function (varname, rules) {
+MT.setVariantDefault = function (varname, rules) {
   const v = State.variables;
   if (v[varname] != null && v[varname] !== "") return;
   for (const key of Object.keys(rules)) {
@@ -14228,7 +14180,7 @@ $n1_afterAction
 <</nobr>>
 
 
-:: Init Nero Vars [inclusion] {"position":"2825,500","size":"100,100"}
+:: Init Nero Vars [inclusion] {"position":"3125,525","size":"100,100"}
 <<script>>
 // This defines some inferred temp vars for convenience
 
@@ -14244,7 +14196,7 @@ $(document).on(":passagestart", () => {
 <</script>>
 
 
-:: Init Var Trace [inclusion] {"position":"2175,100","size":"100,100"}
+:: Init Var Trace [inclusion] {"position":"1950,200","size":"100,100"}
 <<script>>
 window.VarTrace || (window.VarTrace = {});
 const vt = window.VarTrace;
@@ -14341,7 +14293,7 @@ vt.noTraceDo = fn => {
 <</script>>
 
 
-:: Init Random Walk [inclusion] {"position":"2275,225","size":"100,100"}
+:: Init Random Walk [inclusion] {"position":"2250,325","size":"100,100"}
 <<script>>
 /** Random walk */
 function randomWalkSetup() {
@@ -14483,5 +14435,67 @@ var-info test<br>
   no tea<br>
 <</if>>
 <</nobr>>
+
+
+:: Init Nero Patience [inclusion] {"position":"3025,525","size":"100,100"}
+<<script>>
+Macro.add("n1-patience", {
+  handler: function() {
+    const looks = this.args[0];
+    const actions = this.args[1];
+    const patientText = this.args[2];
+    const impatientText = this.args[3] || patientText;
+    const angryText = this.args[4] || impatientText;
+    const v = State.variables;
+    const here = State.passage;
+    // Only if we've moved here (instead of redisplay or reload)
+    if (State.peek(-1).title !== here || v.n1_patiencePassage == null) {
+      // If we're at a new action node, reset patience and aggro
+      if (v.n1_patiencePassage !== here) {
+        v.n1_patienceLooks = looks;
+        v.n1_patienceActions = actions;
+        v.n1_patiencePassage = here;
+        v.n1_patienceAggro = 0;
+      }
+      // If we've exhausted patience, start aggro.
+      if (v.n1_patienceAggro || v.n1_patienceLooks <= 1 || v.n1_patienceActions <= 1) {
+        v.n1_patienceAggro++;
+      }
+      // warning on aggro
+      v.n1_patienceWarning = v.n1_patienceAggro === 1;
+      // forced response
+      v.n1_patienceExhausted = v.n1_patienceAggro > 1;
+      // set return links
+      v.n1_afterLook = "[" + "[Do something else.|" + here + "][$n1_patienceLooks -= 1]]";
+      v.n1_afterAction = "[" + "[Continue|" + here + "][$n1_patienceActions -= 1; $n1_didSomeAction = true]]";
+    }
+    // Patience text
+    switch (v.n1_patienceAggro) {
+      case 0: $(this.output).wiki(patientText); break;
+      case 1: $(this.output).wiki(impatientText); break;
+      default: $(this.output).wiki(angryText); break;
+    }
+  }
+});
+<</script>>
+
+
+:: Init Delete-Vars [inclusion] {"position":"2050,325","size":"100,100"}
+<<script>>
+/** Deletes all state vars whose name starts with prefix. */
+Macro.add("delete-vars", {
+  handler: function() {
+    const vars = State.variables;
+    const names = Object.keys(vars);
+    for (const prefix of this.args) {
+      for (const name of names) {
+        if (name.startsWith(prefix)) {
+          delete vars[name];
+        }
+      }
+    }
+  }
+});
+<</script>>
 
 
