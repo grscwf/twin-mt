@@ -455,6 +455,17 @@ x.fade-in-hidden ul.actions li {
 .var-info-hidden > span {
   display: none;
 }
+.var-info-hidden > .var-info-passage {
+  display: inline;
+}
+
+.var-info-hidden:not(.var-info-to-do) > label::after {
+  content: "\2713";
+  margin-left: .5em;
+}
+.var-info-hidden.var-info-to-do > label::after {
+  content: "\1f6a7";
+}
 
 .var-info-separator {
   border-left: 5px double #555;
@@ -498,7 +509,7 @@ x.fade-in-hidden ul.actions li {
   opacity: 0.6;
 }
 
-.var-info-to-do::after {
+span.var-info-to-do::after {
   content: "\1f6a7";
 }
 
@@ -517,7 +528,7 @@ x.fade-in-hidden ul.actions li {
 }
 
 /* warning is only on vars that aren't read */
-.var-info-warning::after {
+span.var-info-warning::after {
   content: "\26a0";
   padding-left: 2px;
   color: #fd8;
@@ -1473,12 +1484,16 @@ function varInfoSetup() {
     $("<span class=var-info-separator>").appendTo(outer);
     $("<span class=var-info-passage>").text(here).appendTo(outer);
     if ($("#messages-to-do").length > 0) {
+      outer.addClass("var-info-to-do");
       $("<span id=var-info-to-do>")
         .text("\uD83D\uDEA7")
         .on("click", () => {
           $("#messages-to-do")
             .toggleClass("messages-to-do-hidden");
         }).appendTo(outer);
+    }
+    if (outer.find(".var-info-to-do, .var-info-warning").length > 0) {
+      outer.addClass("var-info-to-do");
     }
   });
 }
@@ -1503,7 +1518,7 @@ $(document).on(":passageend", ev => {
     assertionFailed("/F and /D passages should not have warnings");
   }
   if (has_undeclared && /^[DF]$/.test(tag)) {
-    assertionFailed("/F and /D passages should not have undeclared");
+    assertionFailed("/F and /D passages should not have undeclared big-mood");
   }
 
   if (tag === "F") return;
@@ -1521,6 +1536,7 @@ $(document).on(":passageend", ev => {
       break;
     case "S":
       stat.text("sketch").addClass("stat-sketch");
+      break;
     default:
       stat.text("[sketch]").addClass("stat-sketch stat-invalid");
       assertionFailed(`Passage tag /${tag} should be /F /D /P or /S`);
@@ -7890,7 +7906,7 @@ Ivex (the Magnificent) moves away from the
 and settles against the edge of a cluttered desk.
 
 <br><br>
-He's a [[pretentiously dressed black panther|n1cn/F Ivex Description]], larger than Nero expected from the dossier. But the images in the dossier come from school portraits that were created several years ago, so it isn't too surprising that the panther has grown a bit since then.
+He's a [[pretentiously dressed black panther|n1cn/F Ivex Desc]], larger than Nero expected from the dossier. But the images in the dossier come from school portraits that were created several years ago, so it isn't too surprising that the panther has grown a bit since then.
 
 <br><br>
 Ivex speaks. "So let me make a proposal."
@@ -7910,7 +7926,7 @@ Ivex speaks. "So let me make a proposal."
     The condition of Nero's balls leads him to suspect that Ivex would prefer
     the hard way.
 <<elseif $n1_naked>>
-    The wolf shivers in the chill air and looks away from the panther's intense stare.
+    The wolf shivers in the chill air and avoids the panther's intense stare.
 <<else>>
     As if there were such a thing as a right choice
     in this strange situation.
@@ -8022,6 +8038,7 @@ Ivex speaks. "So let me make a proposal."
 <<big-mood n1_subby ignore>>
 
 <<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free vary>>
 <<big-mood n2_ivexGone ignore>>
 <<big-mood n2_tooClever ignore>>
 
@@ -8052,8 +8069,8 @@ childish, dirty, and dominated by
     <br><br>
     The wall with the window is bare except for [[some decorations|n1x/F Wall]].
     The opposite wall has a [[sturdy door|n2b/D Door]].
-    The other walls are lined with many [[wooden cabinets|n1x/D Cabinets]]
-    and [[bookshelves|n1x/D Bookshelves]].
+    The other walls are lined with many [[wooden cabinets|n1x/F Cabinets]]
+    and [[bookshelves|n1x/F Bookshelves]].
 
     <br><br>
     Nero scans the room for something to wear, but there doesn't seem to
@@ -8065,8 +8082,8 @@ childish, dirty, and dominated by
     <br><br>
     One wall is bare except for [[some decorations|n1x/F Wall]]
     and a [[prominent round window|n1x/D Window]].
-    The other walls are lined with many [[wooden cabinets|n1x/D Cabinets]]
-    and [[bookshelves|n1x/D Bookshelves]].
+    The other walls are lined with many [[wooden cabinets|n1x/F Cabinets]]
+    and [[bookshelves|n1x/F Bookshelves]].
     The only other furniture is a [[cluttered desk|n1x/D Desk]] near the window.
 <</if>>
 
@@ -8209,7 +8226,7 @@ childish, dirty, and dominated by
 <</nobr>>
 
 
-:: n1x/D Bookshelves {"position":"7200,4500","size":"100,200"}
+:: n1x/F Bookshelves {"position":"7200,4500","size":"100,200"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -8224,47 +8241,38 @@ childish, dirty, and dominated by
 <<big-mood n2_ivexGone ignore>>
 <<big-mood n2_tooClever ignore>>
 
-<<set $n1_mageSight // used when n2_free>>
+The room's walls are lined with several similar bookshelves
+that are fillled with many [[books|n1x/P Books]]
+<<if $n1_mageSight>>
+    that radiate exotic magic energy. They're neatly shelved,
+<<else>>
+    that are neatly shelved
+<</if>>
+and apparently arranged by color.
 
-The room's walls are lined with several bookshelves
-that are fillled with many [[books|n1x/P Books]], stacked haphazardly.
-The bookshelf nearest to the desk is more boxes than books,
-except for one shelf that has
+<br><br>
+The bookshelf nearest to the desk
+has one shelf with
 a [[deck of cards|n1x/P Cards]]
 <<if $n1_cardsSeen>>
     weighted down by a [[coin|n1x/P Coin]],
 <</if>>
 and a [[large magic wand|n1x/P Wand]].
+The rest of the shelves have only a few books.
+Most of the space is taken up by boxes
 
-<<if $n2_free>>
-    <br><br>
-    The boxes are the type commonly used for storage: plain wood with
-    simple lids.  Nero peers into a few of them.
-
-    <!-- XXX maybe use conditional-choice -->
-    <<if !$n1_mageSight>>
-        The first two are empty. The third is
+<<if !$n2_free>>
+    that Nero can't examine, since he's still bound to the cross.
+<<else>>
+    of a type that are commonly used for storage:
+    plain wood with simple lids.
+    
+    <<if !$n2_bookshelfSearched>>
+        <<add-action [[Search the boxes.|n1x/F Bookshelf Search]]>>
     <<else>>
-        The first one is empty.
-        The second has a large slug-like blob of exotic energy
-        that moves slowly toward the box's opening, as if it were alive.
-
-        <br><br>
-        Nero hastily closes the lid and puts the box back.
-        <br><br>
-        The third box is
+        Nero vividly remembers his futile
+        [[search of the boxes|n1x/F Bookshelf Search]].
     <</if>>
-
-    filled with an assortment of leather bindings that
-    stink of sweat and other bodily emissions.
-
-    <br><br>
-    The fourth box is filled with a clear, viscous liquid that clings
-    to the sides when the box is tilted.
-
-    <br><br>
-    Nero decides that searching the remaining boxes is a waste of time.
-    There are better things to do before Ivex returns.
 <</if>>
 
 <<set $n1_bookshelfSeen = true>>
@@ -8352,11 +8360,13 @@ if want pasword and ivex here, [[n1x/P Ask Globe]]
 
 :: n1x/P Books [maybe-password] {"position":"7350,4225","size":"100,100"}
 magic texts nero recognizes, boring.
+multiple copies of same books.
+
 a school almanac, class of X, can't read school name.
 
 if want password and ivex here, the school almanac is interesting, [[n1x/P Ask Books]]
 
-if free, can also see porn mags and something fascist.
+if free, can also see porn mags and something cringe.
 
 <ul class="actions">
   <li><<link $n1_afterLook>><</link>></li>
@@ -8499,7 +8509,7 @@ Nero think of something more sensual than meat.
 <</nobr>>
 
 
-:: n1x/D Cabinets {"position":"7200,3875","size":"100,200"}
+:: n1x/F Cabinets {"position":"7200,3875","size":"100,200"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -8514,49 +8524,23 @@ Nero think of something more sensual than meat.
 <<big-mood n2_ivexGone ignore>>
 <<big-mood n2_tooClever ignore>>
 
+Against the walls of the room are several wooden cabinets
+that seem identical in shape and size, but painted differently,
+with distinctly colored doors and
+
 <<if !$n2_free>>
-    Against the walls of the room are several wooden cabinets with
-    various colored doors and drawers, all closed,
+    drawers, all closed.
     <<if $n1_mageSight>>
         Strands of exotic magical energy are threaded throughout,
-        except one plain-looking cabinet appears to have no magical
-        energy at all.
+        except for the one unpainted cabinet that appears to have
+        no magical energy at all.
     <</if>>
-    None of the cabinets seem particularly helpful to Nero in his
-    current bound state.
 
 <<else>>
-
-    Against the walls of the room are several wooden cabinets with
-    various colored doors and drawers.
+    drawers.
     <<if $n1_mageSight>>
         Strands of exotic magical energy are threaded throughout.
     <</if>>
-
-    Most of the cabinets seem to be locked, or lack an obvious
-    way to open and examine their contents.
-
-    <<if $n1_mageSight>>
-        But one plain-looking cabinet lacks magical energy,
-        and has ordinary drawers that can be pulled out.
-    <<else>>
-        But one plain-looking cabinet has ordinary drawers that
-        can be pulled out.
-    <</if>>
-
-    <!-- this could be conditional-choice -->
-    <br><br>
-    The first drawer Nero opens appears to contain used underwear.
-    The wolf considers using one to remedy his nakedness,
-    but immediately reacts strongly against the idea.
-
-    <br><br>
-    The next drawer has an assortment of dildos of various shapes
-    and sizes... apparently still sticky.
-
-    <br><br>
-    Nero decides that searching the remaining cabinets is a waste of time.
-    There are better things to do before Ivex returns.
 <</if>>
 
 <br><br>
@@ -8567,11 +8551,36 @@ On top of one cabinet is
     a [[large glass bottle|n1x/P Bottle]]
 <</if>>
 and a [[stuffed penguin|n1x/P penguin]].
+The others are bare.
+
+<br><br>
+<<if !$n2_free>>
+    None of the cabinets seem particularly helpful to Nero in his
+    current bound state.
+<<else>>
+    Most of the cabinets seem to be locked, or lack an obvious
+    way to open and examine their contents.
+    
+    <<if $n1_mageSight>>
+        But the one cabinet that lacks paint, also lacks magical energy,
+        and it has ordinary drawers that can be pulled out.
+    <<else>>
+        But the one unpainted cabinet has ordinary drawers that
+        can be pulled out.
+    <</if>>
+    
+    <<if $n2_cabinetSearched>>
+        Nero cringes at the memory of [[what was in them|n1x/F Cabinet Search]].
+    <<else>>
+        <<add-action [[Search the unpainted cabinet.|n1x/F Cabinet Search]]>>
+    <</if>>
+<</if>>
 
 <<set $n1_cabinetSeen = true>>
 
 <br><br>
 <ul class="actions">
+    <<get-actions>>
     <li>$n1_afterLook</li>
 </ul>
 <</nobr>>
@@ -9049,7 +9058,7 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 <</nobr>>\
 
 
-:: n1a/F Endgame Info [noreturn] {"position":"3550,1000","size":"100,100"}
+:: n1a/F Endgame Info {"position":"3500,1000","size":"100,100"}
 Nero's Endgame is an unusual spell construction. He realized he needed it during the Triestorm incident.
 
 It had begun with a simple request. Lord Estrivar of the Triestorm Council had asked him to find Perosolamew, the Lord's missing parrot. This was a trivial divination that Nero would normally decline and post on a student jobs board, but Estrivar was insistent and pleasant and offered an extremely generous retainer.
@@ -9058,7 +9067,7 @@ Five days later, Nero was naked, gagged, and bound to a stone altar in the secre
 
 Back then, Nero's entire magic repertoire required either spoken words, large gestures, or specially prepared materials. None of which were available to him at that moment. Nobody even knew he was there. Escape was impossible.
 
-So when the Upper Cobbler finished sharpening his knife and brought it toward Nero's naked crotch, Nero made a solemn vow to never be this helpless again. Provided of course he survived the situation...
+So when the Upper Cobbler finished sharpening his knife and brought it toward Nero's exposed crotch, Nero made a solemn vow to never be this helpless again. Provided of course he survived the situation...
 
 [[Continue|n1a/F Endgame Info 2]]
 
@@ -9647,6 +9656,7 @@ in the hallway, it rolls to the lion room.
 in the lion room, it falls into a drain.
 this is bad ending: hunted
 
+[[n3a/S hallway]]
 [[n9e/S hunted]]
 
 
@@ -9688,10 +9698,12 @@ lion is hunting you [[n9e/S ruined]]
 lion is following you [[n9e/S tickled harsh]]
 lion not hunting or following [[n9e/S tickled mild]]
 
-[[n9x/S dominant]]
+[[n3a/S hallway]]
+
+[[n3a/S escaped]]
 
 
-:: n9x/S dominant [end] {"position":"4500,7850","size":"100,100"}
+:: n9x/S dominant [end] {"position":"4600,7850","size":"100,100"}
 there are two paths into here.
 made-gem means lion is available for punishment.
 rescued-gem means lion is trapped in blob, not available.
@@ -9858,7 +9870,7 @@ Nero's eyes fly wide open and he stifles a yelp.
 
 The voice chuckles. "I said, wakey wakey..."
 
-The pain is excruciating and twists deeply in his gut. Nero's instinct is to struggle to escape the grasping paw, but even a slight motion causes the pressure on his captive ball to send sharp aches into his diaphragm. So he makes himself stay still.
+The pain is excruciating and twists deeply in his gut. Nero's instinct is to struggle to escape the invasive, grasping paw, but even a slight motion causes the pressure on his captive ball to send sharp aches into his diaphragm. So he makes himself stay still.
 
 His vision is cloudy. Probably the after-effects of whatever knocked him out. It isn't tears of pain, certainly not.
 
@@ -9874,7 +9886,7 @@ A fist smashes into Nero's crotch, thumping hard against his other ball and brie
 
 The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fills the air of the room. and a moment later, the hand on his ball releases its grasp.
 
-"There we go," says the voice. "That's a promising start. I'm glad to see you're finally awake."
+"There we go," says the voice. "That's a promising start. I'm so glad to see you're finally awake."
 
 [[Continue|n1a/F Feign Sleep 4]]
 
@@ -10390,7 +10402,8 @@ Nero has learned of many different greeting rituals from the various foreign lec
 
 "There must be some mistake,"
 <<if $n1_abused>>
-    says Nero, as he tries to use his twitching tail to shelter his aching balls.
+    says Nero, as he tries unsuccessfully to use his
+    twitching tail to shelter his aching balls.
 <<elseif $n1_naked>>
     says Nero, as he tries unsuccessfully to use his
     bushy wolf tail to cover his bare crotch.
@@ -10402,7 +10415,7 @@ Nero has learned of many different greeting rituals from the various foreign lec
 
 Ivex flattens his ears and growls. "Don't try to play dumb with me!" He grabs a sheet of paper from the desk. "I found this in your satchel."
 
-He raises the paper and reads from it. "Ivex Darkshadow. Probably not his birth name. No documentation prior to his enrollment at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with blah blah blah..."
+He raises the paper and reads from it. "Ivex Darkshadow. Probably not his birth name. No documentation prior to his enrollment at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with... et cetera..."
 
 Ivex throws the paper into the air and makes a gesture, causing it to burst into flames.
 
@@ -10809,7 +10822,7 @@ Such as, the noticeably horny panther mage who has just magicked away the wolf's
 $n1_afterNaked
 
 
-:: n1cn/F Anti-magic [noreturn] {"position":"4300,1325","size":"100,100"}
+:: n1cn/F Anti-magic {"position":"4300,1300","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused always false>>
 <<big-mood n1_mageSight always false>>
@@ -10831,20 +10844,20 @@ So in the abstract, theoretical world, selective anti-magic is a pointless endea
 [[Continue|n1cn/F Anti-magic 2]]
 
 
-:: n1a/F Endgame Info 2 [noreturn] {"position":"3550,900","size":"100,100"}
+:: n1a/F Endgame Info 2 {"position":"3600,1000","size":"100,100"}
 Two weeks later, Nero enlisted the aid of the luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It's a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It's not a spell he can use often, but it's extremely useful when there are no better options.
 
 All he has to do is hold in his mind an image of the glyphs on his shaven ass as he's seen in a mirror, and mentally <em>twist</em> their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
 
 First comes Raven's Diversion, which can absorb up to 68 joules of energy from both magical and physical sources of harm. 68 joules is not the upper limit of Raven's spell, but it's the best that Nero can do with the constraints imposed by the canvas of his ass.
 
-And then comes Mudge's Invisibility, which is not so much an invisibility spell as a "shrink a person to the size of an acorn" spell. Since the person's clothes and other accessories are not also shrunk, the spell is more a bawdy parlor trick than a regular tool of working mages. But it has the virtue of being the shortest glyph-stream that's likely to free Nero from any type of physical restraint.
+And then comes Mudge's Invisibility, which is not so much an invisibility spell as a "shrink a person to the size of an acorn" spell. Since the person's clothes and other accessories are not also shrunk, the spell is more a ribald parlor trick than a regular tool of working mages. But it has the virtue of being the shortest glyph-stream that's likely to free Nero from any type of physical restraint.
 
 The unusual ass-inscribed construction has another limitation: neither spell will last very long. About 3 seconds. Maybe another second if his bladder is full. Still, it's enough to rescue Nero from immediate peril, and it lets him prepare more substantial spells, ones that do require gestures or words.
 
 It's saved his life more than once.
 
-<<link "Return" $return>><</link>>
+[[Continue|n1a/F Endgame]]
 
 
 :: n0/F Under Construction [end] {"position":"3600,2350","size":"100,100"}
@@ -10864,7 +10877,7 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 <</nobr>>
 
 
-:: n1p/F Barbs Extra [noreturn] {"position":"6200,2575","size":"100,100"}
+:: n1p/F Barbs Extra {"position":"6225,2475","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 
@@ -10913,17 +10926,17 @@ activation word is "please", has note to change it.
 $n1_afterAction
 
 
-:: n1a/F Hangover Info [noreturn] {"position":"3400,1125","size":"100,100"}
+:: n1a/F Hangover Info {"position":"3375,1100","size":"100,100"}
 Pearson's Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It's often the first off-book spell that academy students learn, because of its usefulness in mitigating alcoholic indulgence, of course. But the main reason it's popular is because older students find it hilarious when a novice attempts it while drunk.
 
 Most spoken spells require extremely precise enunciation to have any effect at all. Pearson's is different. It works if you say it correctly, yes. But if you slur or stumble its invocation, it doesn't merely fail. It turns your fur bright pink for the day.
 
 Needless to say, Nero only made that mistake once.
 
-<<link Return $return>><</link>>
+[[Continue|n1a/F Start]]
 
 
-:: n1cn/F Ivex Description [noreturn] {"position":"3925,1575","size":"100,100"}
+:: n1cn/F Ivex Desc {"position":"3925,1575","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused implies !$n1_naked>>
 <<big-mood n1_mageSight always false>>
@@ -10949,14 +10962,14 @@ Not that Nero would ever tell that to his
     captor.
 
     <br><br>
-    Especially since Nero is completely undressed at the moment.
+    Especially since Nero is himself completely undressed at the moment.
 
 <<else>>
     captor, of course.
 <</if>>
 <</nobr>>
 
-<<link "Return" $return>><</link>>
+[[Continue|n1cn/F Ivex Intro]]
 
 
 :: n2b/D Door {"position":"5825,6325","size":"100,100"}
@@ -11319,9 +11332,9 @@ fur of the wolf's bare chest.
 <<big-mood n1_abused TODO>>
 <<big-mood n1_mageSight TODO>>
 <<big-mood n1_subby TODO>>
-<</nobr>>\
-\
+
 <em>Why am I so horny?</em> Nero is aghast at his body's reaction. But it's not just his body. His mind is also becoming engorged with primal emotions. He is weirdly hyperaware of the panther's rising lust, and he feels a deeply rooted desire to meet it, or exceed it, with a feral lust of his own. Is this feeling arising from a sense of competition between rivals, or is he being drawn somehow into a candlelight courtship dance? Is there even a difference between those possibilities? XXX daytime
+<</nobr>>
 
 Ivex continues to speak in a growly voice that causes the wolf's skin to shiver. "What I love the most about wolves is how <em>proud</em> they are, Every one of you is a delightful struggle. Some of you try to fight and tough it out. Others try to seduce or trick me. And none of you realize how futile it all is..."
 
@@ -11458,7 +11471,7 @@ Such as, the noticeably horny panther mage who has just magicked away the wolf's
 $n1_afterNaked
 
 
-:: n1p/F Fast Barbs Extra [noreturn] {"position":"5950,2325","size":"100,100"}
+:: n1p/F Fast Barbs Extra {"position":"5975,2325","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 
@@ -11471,7 +11484,7 @@ Nero's mind is overwhelmed with a cascade of incredibly erotic memories...
 
 But his rational mind reminds him of his immediate peril, and he manages to shove away those intoxicating memories, for now.
 
-<<link Return $return>><</link>>
+[[Continue|n1p/F Fast Barbs End]]
 
 
 :: n1cn/F Ivex Intro 3 {"position":"4200,1450","size":"100,100"}
@@ -11485,7 +11498,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 <<if $n1_abused>>
     Nero mentally checks off one step in his strategic map.
     He of course did not expect Ivex to believe a tale of ignorance.
-    But offering a small bit of resistance will make his lies more
+    But offering a small bit of resistance will make the wolf's lies more
     plausible when Ivex "succeeds" in forcing them out.
    <br><br>
     That is, if the panther even manages to reach that point.
@@ -11510,7 +11523,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
     <</if>>
     but [[countering anti-magic|n1cn/F Anti-magic]]
     is one of Nero's specialties.
-    He's confident that he can find a flaw in Nero's construction
+    He's confident that he can find a flaw in Ivex's construction
     and exploit it,
     <<if $n1_abused>>
         and perhaps even get revenge for the distress to his balls.
@@ -12924,7 +12937,7 @@ his situation.
 <<else>>
 
     <<if $n1_abused && $n1_naked>>
-        He and his aching, naked balls are bound
+        He and his aching, exposed balls are bound
     <<elseif $n1_abused>>
         He and his aching balls are bound
     <<elseif $n1_naked>>
@@ -12960,12 +12973,12 @@ his situation.
     <<if $n1_cabinetSeen>>
         several wooden cabinets,
     <<else>>
-        several [[wooden cabinets|n1x/D Cabinets]],
+        several [[wooden cabinets|n1x/F Cabinets]],
     <</if>>
     <<if $n1_bookshelfSeen>>
         and many bookshelves.
     <<else>>
-        and many [[bookshelves|n1x/D Bookshelves]].
+        and many [[bookshelves|n1x/F Bookshelves]].
     <</if>>
 <</if>>
 
@@ -13027,7 +13040,7 @@ his situation.
 <</if>>
 
 <<if $n1_cabinetSeen>>
-    On top of one [[cabinet|n1x/D Cabinets]] is
+    On top of one [[cabinet|n1x/F Cabinets]] is
     <<if $n1_bottleSeen>>
         a [[bottled poltergeist device|n1x/P Bottle]]
     <<else>>
@@ -13037,7 +13050,7 @@ his situation.
 <</if>>
 
 <<if $n1_bookshelfSeen>>
-    The [[bookshelves|n1x/D Bookshelves]] have
+    The [[bookshelves|n1x/F Bookshelves]] have
     numerous [[books|n1x/P Books]],
     <<if $n1_cardsSeen>>
         a [[deck of cards|n1x/P Cards]] weighted down by a [[coin|n1x/P Coin]],
@@ -13187,16 +13200,16 @@ It's <em>him</em>.
 
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
-The panther says brightly, "Welcome to my world, foolish wolf. My name is Ivex the Magnificent, and you should pay careful attention when I speak to you."
+The panther says brightly, "Welcome to my world, foolish wolf. My name is Ivex the Magnificent, and you really should pay careful attention when I'm speaking to you."
 
-Well. Nero had thought that locating Ivex would be the difficult part of this task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, <em>notice</em> the trap before stepping into it. His aching balls agreed with that.
+Well. Nero had thought that locating the malevolent mage would be the difficult part of the task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, <em>notice</em> the trap before stepping into it. His aching balls agreed with that.
 
-Still, whatever route brought him here, a success is a success. The rest of the errand should be quite easy.
+Still, whatever route brought him to Ivex's lair, a success is a success. The rest of the errand should be quite easy.
 
 [[Continue|n1cn/F Ivex Intro]]
 
 
-:: n1p/F Barbs Extra 2 [noreturn] {"position":"6300,2575","size":"100,100"}
+:: n1p/F Barbs Extra 2 {"position":"6225,2575","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 
@@ -13208,7 +13221,7 @@ Nero's motion through the crowd stopped when he became stuck in a cluster of old
 [[Continue|n1p/F Barbs Extra 3]]
 
 
-:: n1p/F Barbs Extra 3 [noreturn] {"position":"6400,2575","size":"100,100"}
+:: n1p/F Barbs Extra 3 {"position":"6225,2675","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 
@@ -13219,7 +13232,7 @@ Mica turned his palm to face the audience. The orb started to grow and spin in a
 
 Everyone was astonished at the sight. Nero especially so. His ears were completely flat. Mica was the tiger from the showers.
 
-<<link Return $return>><</link>>
+[[Continue|n1p/F Barbs End]]
 
 
 :: n1p/F Fast Barbs 2 {"position":"5625,2325","size":"100,100"}
@@ -13263,7 +13276,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 [[Continue|n1cn/F Ivex Intro]]
 
 
-:: n1m/D Itch [noreturn] {"position":"5600,2975","size":"100,100"}
+:: n1m/D Itch {"position":"5600,2975","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -13283,7 +13296,7 @@ Superb Itch is a popular prank spell that nobody uses any more, because it's tri
 
 The spell and its related family of minor nerve agonists have never been a serious weapon in mage fights, but on one inebriated night with the fabulous Ms. Tara, Nero discovered a curious property of Superb Itch.
 
-<<link Return $return>><</link>>
+[[Continue|n1m/D Cast Itch]]
 
 
 :: n1x/P Take Knife {"position":"7375,5400","size":"100,100"}
@@ -13428,7 +13441,7 @@ We're expecting the rest of Nero's story to be released to <a target="_blank" hr
 Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com/gsw7ad">Grayscale</a> at Twitter if you see a bug or have suggestions.
 
 
-:: n1cn/F Anti-magic 2 [noreturn] {"position":"4400,1325","size":"100,100"}
+:: n1cn/F Anti-magic 2 {"position":"4400,1300","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused always false>>
 <<big-mood n1_mageSight always false>>
@@ -13445,7 +13458,7 @@ Nero is one such expert. Which incidentally also makes him an expert in <em>bypa
 
 It's a skill that's been quite useful in his unconventional career.
 
-<<link "Return" $return>><</link>>
+[[Continue|n1cn/F Ivex Intro 3]]
 
 
 :: n1x/P Horny Candle [maybe-password] {"position":"6425,5950","size":"100,100"}
@@ -14661,5 +14674,113 @@ struggle succeeds. grav gems implode.
 <br><br>
 [[Continue|n2a/P Grav Disrupted]]
 <</nobr>>
+
+
+:: n1x/F Cabinet Search {"position":"7075,3900","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive ignore>>
+<<big-mood n1_mageSight ignore>>
+<<big-mood n1_naked ignore>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone ignore>>
+<<big-mood n2_tooClever ignore>>
+
+<<set _again = (a, b) => $n2_cabinetSearched ? a : b>>
+
+The first drawer <<= _again('appeared', 'Nero opens appears')>>
+to contain used underwear.
+<<= _again('Nero again considers', 'The wolf considers')>>
+using one to remedy his nakedness,
+but immediately reacts strongly against the idea.
+
+<br><br>
+The next drawer <<= _again('had', 'has')>>
+an assortment of dildos of various shapes
+and <<= _again('sizes,', 'sizes... apparently')>> still sticky.
+
+<br><br>
+Nero decides <<= _again('(again)', '')>>
+that searching the <<= _again('', 'remaining')>> drawers of the
+unpainted cabinet is a waste of time.
+There are better things to do before Ivex returns.
+
+<br><br>
+<<= _again($n1_afterLook, $n1_afterAction)>>
+<<set $n2_cabinetSearched = true>>
+<</nobr>>
+
+
+:: n1x/F Bookshelf Search {"position":"7075,4575","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive ignore>>
+<<big-mood n1_mageSight ignore>>
+<<big-mood n1_naked ignore>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone ignore>>
+<<big-mood n2_tooClever ignore>>
+
+<<set $n2_bookshelfSearchMageSight != null || ($n2_bookshelfSearchMageSight = $n1_mageSight)>>
+
+<<set _again = (a, b) => $n2_bookshelfSearched ? a : b>>
+
+Nero <<= _again('only looked in', 'peers into')>> a few of the storage boxes.
+
+<<if !$n2_bookshelfSearchMageSight>>
+    The first two <<= _again('were', 'are')>> empty.
+    The third <<= _again('was', 'is')>>
+<<else>>
+    The first one <<= _again('was', 'is')>> empty.
+    The second <<= _again('had', 'has')>> a large slug-like blob
+    of exotic energy that <<= _again('moved', 'moves')>>
+    slowly toward the box's opening, as if it were alive.
+
+    <<= _again(
+        'Nero definitely does not want to open that one again.',
+        '<br><br>Nero hastily closes the lid and puts the box back.')>>
+    <br><br>
+    The third box <<= _again('was', 'is')>>
+<</if>>
+
+filled with an assortment of leather bindings that
+<<= _again('reeked', 'reek')>> of sweat and other bodily emissions.
+
+<br><br>
+The fourth box <<= _again('was', 'is')>> filled with
+a clear, viscous liquid that <<= _again('clung', 'clings')>>
+to the sides when the box <<= _again('was', 'is')>> tilted.
+
+<br><br>
+Nero decides <<= _again('(again)', '')>>
+that searching the <<= _again('', 'remaining')>> boxes is a waste of time.
+There are better things to do before Ivex returns.
+
+<br><br>
+<<= _again($n1_afterLook, $n1_afterAction)>>
+<<set $n2_bookshelfSearched = true>>
+<</nobr>>
+
+
+:: n3a/S escaped {"position":"4625,7675","size":"100,100"}
+boyscout choice: [[n9x/S dominant]]
+revenge on ivex: [[n9x/S satisfied]]
+lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
+
+
+:: n9x/S satisfied [end] {"position":"4450,7850","size":"100,100"}
+
+
+:: n9x/S ascendant [end] {"position":"4750,7850","size":"100,100"}
 
 
