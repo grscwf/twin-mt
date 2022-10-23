@@ -1593,7 +1593,9 @@ The Mage's Tower (Nero)
 :: StoryMenu [inclusion] {"position":"2550,1400","size":"100,100"}
 [[Archives]]
 [[Credits]]
-[[Passage Notes|Passage Notes Top]]
+<<if window.PassageNotes && window.PassageNotes.isUsable>>
+    [[Passage Notes|Passage Notes Top]]
+<</if>>
 <<if setup.enableDebugMenu>>
     <<link "\u23e9 Title" "Title Screen">><</link>>
     <<link "\uD83D\uDCA3 Nero Reset Vars" `State.passage`>>
@@ -13898,7 +13900,7 @@ v.personalEnding = false;
 -->
 <<script>>
 const Nero = window.Nero;
-const sayPassword = "[[n1m/P Say Password]]".replace(/[\[\]]/g, '');
+const sayPassword = "[[n1m/P Say Password]]".slice(2, -2);
 
 Macro.add("pw-choice", {
   tags: ["pw-another", "pw-fail"],
@@ -14834,20 +14836,21 @@ lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 :: n9x/S ascendant [end] {"position":"4750,7850","size":"100,100"}
 
 
-:: Init Passage Notes [inclusion] {"position":"2250,325","size":"100,100"}
+:: Init Passage Notes [inclusion] {"position":"2300,325","size":"100,100"}
 <<script>>
 $("#notes-style").remove();
 $("head").append(`
 <style id="notes-style">
 #notes-button {
-  background-color: #eee;
+  background-color: rgba(255, 255, 255, 0.3);
   border: 1px solid transparent;
   border-radius: 4px;
   color: #000;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  opacity: 0.3;
+  gap: 4px;
+  opacity: 0.8;
   padding: 2px 4px;
   position: fixed;
   right: 4px;
@@ -14858,53 +14861,162 @@ $("head").append(`
   background-color: #333;
   border-color: #eee;
   color: #eee;
+  opacity: 1;
 }
 #notes-button label {
   cursor: pointer;
   font-size: 18px;
 }
+#notes-button.notes-has-note label::before {
+  color: #cc0;
+  content: "\ue800 ";
+  font-family: tme-fa-icons;
+}
 #notes-button span {
   font-size: 12px;
-}
-#notes-here {
-  margin-top: 3px;
 }
 </style>`);
 
 window.PassageNotes || (window.PassageNotes = {});
 const PN = window.PassageNotes;
 
-PN.isUsable = null;
-PN.isEnabled = State.metadata.get("notesEnabled") || false;
+const KEY = "passage-notes-1";
+
+// matches lines that are `[some text]`, no leading spaces, possibly trailing spaces
+const headerRE = /^(\[[^\r\n\]]*\][ \t]*\r?(?:\n|$))/m;
+
+// matches passage name in header lines like `[passage xxx]`
+const passageHeaderRE = /^\[\s*passage\s+([^\]]+)\s*\]/;
+
+PN.isUsable = checkUsable();
+PN.isEnabled = PN.isUsable && (State.metadata.get("notesEnabled") || false);
 
 PN.enable = (flag) => {
-  PN.isEnabled = !!flag;
+  PN.isEnabled = PN.isUsable && !!flag;
   State.metadata.set("notesEnabled", PN.isEnabled);
   renderButton();
 };
 
 PN.gotoPassageNote = () => {
-  // capture current state
-  const dest = "[[Passage Notes Single]]".replaceAll(/[\[\]]/g, '');
+  State.variables.t0_notesOrigin = State.passage;
+  const dest = "[[Passage Notes Single]]".slice(2, -2);
   Engine.play(dest);
 };
 
-PN.get = (passage) => {};
-PN.set = (passage, text) => {};
-PN.getDiagnostics = () => {};
+PN._unparsed = null;
+PN._parsed = null;
 
-PN.getAllText = () => { return ''; };
-PN.setAllText = (text) => {};
-PN.saveFile = () => {};
-PN.loadFile = () => {};
-PN.share = () => {};
+function invalidate(text) {
+  if (PN._unparsed !== text) {
+    PN._unparsed = null;
+    PN._parsed = null;
+  }
+}
 
-function countHere() {
-  return 3;
+PN.getAll = () => {
+  if (!PN.isUsable) return "";
+  const ss = window.sessionStorage;
+  const text = ss.getItem(KEY) || "";
+  invalidate(text);
+  return text;
+};
+
+PN.setAll = (text) => {
+  if (!PN.isUsable) return;
+  const ss = window.sessionStorage;
+  ss.setItem(KEY, text || "");
+  invalidate(text);
+};
+
+function parsed() {
+  const text = PN.getAll();
+  if (PN._unparsed !== text) {
+  	PN._parsed = parse(text);
+    PN._unparsed = text;
+  }
+  return PN._parsed;
 }
-function countAll() {
-  return 5;
+
+function parse(text) {
+  // the tricky part is the text can be freeform edited.
+  // we want to update structured per-passage sections without damaging
+  // whatever other text there might be.
+  const parts = text.split(headerRE);
+  if (/\S/.test(parts[0])) {
+    parts.unshift("");
+  } else {
+    parts.shift();
+  }
+  const isPassage = [];
+  const isRepeated = {};
+  const passageIndex = {};
+  for (let i = 0; i < parts.length; i += 2) {
+    const header = parts[i];
+    const m = passageHeaderRE.exec(header);
+    if (m == null) continue;
+    const p = m[1];
+    if (passageIndex[p] == null) {
+      // passage not yet seen
+      passageIndex[p] = i;
+      isPassage[i] = true;
+    } else if (/\S/.test(parts[i + 1])) {
+      // passage already seen, and body is not empty. last one wins
+      isRepeated[p] = true;
+      isPassage[passageIndex[p]] = false;
+      isPassage[i] = true;
+      passageIndex[p] = i;
+    }
+  }
+  return {
+    parts: parts,
+    isPassage: isPassage,
+    isRepeated: isRepeated,
+    passageIndex: passageIndex,
+  };
 }
+
+function unparse(p) {
+  let text = "";
+  for (let i = 0; i < p.parts.length; i += 2) {
+    // can skip empty passages that are not repeated
+    if (p.isPassage[i] && !p.isRepeated[i] && !/\S/.test(p.parts[i + 1])) continue;
+    text += p.parts[i] + p.parts[i + 1];
+    if (!/\n$/.test(text)) text += "\n";
+  }
+  return text;
+}
+
+PN.getPassage = (passage) => {
+  if (!PN.isUsable) return "";
+  const p = parsed();
+  const i = p.passageIndex[passage];
+  return i == null ? "" : p.parts[i + 1];
+};
+
+PN.setPassage = (passage, text) => {
+  if (!PN.isUsable) return;
+  let all = "";
+  const p = parsed();
+  let i = p.passageIndex[passage];
+  if (text == null || !/\S/.test(text)) {
+    // delete passage
+    if (i == null) return;
+    p.parts[i +1] = "";
+  } else if (i != null) {
+    // replace passage
+    if (text === p.parts[i + 1]) return;
+    p.parts[i + 1] = text;
+  } else {
+    // add new passage
+    i = p.parts.length;
+    p.isPassage[i] = true;
+    p.passageIndex[passage] = i;
+    p.parts[i] = `[passage ${passage}]\n`;
+    p.parts[i + 1] = text;
+  }
+  const u = unparse(p);
+  PN.setAll(u);
+};
 
 function renderButton() {
   $("#notes-button").remove();
@@ -14914,17 +15026,34 @@ function renderButton() {
     .click(() => PN.gotoPassageNote())
     .appendTo("#story");
   $("<label>").text("notes").appendTo(outer);
-  $("<span>").attr("id", "notes-here").appendTo(outer);
   $("<span>").attr("id", "notes-total").appendTo(outer);
-  updateCounts();
+  updateStatus();
 }
 
-function updateCounts() {
+function updateStatus() {
   if (!PN.isEnabled) return;
-  const here = countHere();
-  const all = countAll();
-  $("#notes-here").text(here ? `${here} here` : '');
-  $("#notes-total").text(all ? `${all} total` : '');
+  const p = parsed();
+  console.log(p);
+  const yes = p.passageIndex[State.passage] != null;
+  const total = p.parts.length / 2;
+  $("#notes-button").toggleClass("notes-has-note", yes);
+  $("#notes-total").toggleClass("notes-non-zero", total > 0).text(total > 0 ? `${total} total` : "");
+}
+
+function checkUsable() {
+  try {
+    const ss = window.sessionStorage;
+    const key = "passage-notes-test";
+    const r0 = String(Math.random());
+    ss.setItem(key, r0);
+    const r1 = ss.getItem(key);
+    ss.removeItem(key);
+    if (r0 === r1) return true;
+    console.error("PassageNotes not usable: roundtrip failed", [r0, r1]);
+  } catch (e) {
+    console.error("PassageNotes not usable: sessionStorage threw error", e);
+  }
+  return false;
 }
 
 $(document).on(":passagedisplay", () => renderButton());
@@ -14940,12 +15069,10 @@ $(document).on(":passagedisplay", () => renderButton());
   margin-left: 1.5em;
 }
 </style>
-
 <<script>>
   const PN = PassageNotes;
   const T = State.temporary;
   T.enabled = !!PN.isEnabled;
-  
   $(document).one(":passagedisplay", () => {
     $("#notes-enable input").on("change", ev => {
       PN.enable(ev.target.checked);
@@ -15017,5 +15144,8 @@ $("head").append(`
 :: Passage Notes Single [noreturn] {"position":"2300,975","size":"100,100"}
 <<link "Return to the game" $return>><</link>>
 <hr>
+
+
+:: ^\\r\\n\\ {"position":"2300,450","size":"100,100"}
 
 
