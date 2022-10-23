@@ -1572,7 +1572,7 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 [[Choose your adventurer|Choose Character]]
 
 
-:: StoryAuthor {"position":"1850,500","size":"100,100"}
+:: StoryAuthor {"position":"1475,325","size":"100,100"}
 <<nobr>>
 by <a href="http://www.slethstories.com/" target="_blank">Sleth</a>
 <div id="story-version">
@@ -1581,18 +1581,19 @@ by <a href="http://www.slethstories.com/" target="_blank">Sleth</a>
 <</nobr>>
 
 
-:: StoryBanner {"position":"2100,500","size":"100,100"}
+:: StoryBanner {"position":"1725,325","size":"100,100"}
 <img src="images/logo_tr.png" width="220">\
 <div class="divider div-transparent div-arrow-down"></div>
 
 
-:: StoryDisplayTitle {"position":"1975,500","size":"100,100"}
+:: StoryDisplayTitle {"position":"1600,325","size":"100,100"}
 The Mage's Tower (Nero)
 
 
 :: StoryMenu [inclusion] {"position":"2550,1400","size":"100,100"}
 [[Archives]]
 [[Credits]]
+[[Passage Notes|Passage Notes Top]]
 <<if setup.enableDebugMenu>>
     <<link "\u23e9 Title" "Title Screen">><</link>>
     <<link "\uD83D\uDCA3 Nero Reset Vars" `State.passage`>>
@@ -1805,8 +1806,10 @@ With a spring to his step, the panther approaches, closing in the last distance 
 <<include [[Init Archive]]>>
 <<include [[Init Delete-Vars]]>>
 <<include [[Init Fade-In]]>>
+<<include [[Init Passage Notes]]>>
 <<include [[Init Random Walk]]>>
 <<include [[Init Sidebar]]>>
+<<include [[Init UI Style]]>>
 
 <<include [[Init Drekkar]]>>
 <<include [[Init Nero]]>>
@@ -3618,43 +3621,27 @@ To change the adventurer's fate, you can...
 
 :: Archives [noreturn] {"position":"2525,1525","size":"100,100"}
 <<nobr>>
-<style>
-  #passage-archives hr {
-    border: 0;
-    border-top: 1px solid #333;
-    height: 1px;
-  }
-  #passage-archives h2 {
-    font-size: 1.1em;
-    margin: 0.5em 0 0.5em 0;
-  }
-  #passage-archives .intro {
-    font-size: 1.1em;
-    font-weight: bold;
-  }
-  #passage-archives .more {
-    font-size: 0.8em;
-    margin-left: 0.5em;
-  }
-  #passage-archives .archive-body {
-    margin-left: 2em;
-  }
-</style>
-
 <<link "Return to the game" $return>><</link>>
+
 <hr>
-<span class="intro">Welcome to the Mage's Tower Archives</span>
-<<set _detail = `<br><br>Here you can revisit different endings that the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
+<span class="ui-title">
+    Welcome to the Mage's Tower Archives
+</span>
+
+<<set _detail = `
+<br><br>
+Here you can revisit different endings that the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
 <br><br>
 Grayed out endings and variations are paths that have not yet been found. Most of them are shown with a hint as to what path the adventurer should take to reach them.
 <br><br>
 The endings here are all static, with no choices beyond the selection of variations on this page. A few of the actual endings have choices that are more complicated than what can be selected below. If you want to re-experience those dynamic endings, not just the static version offered here, I suggest you save a game at the point the ending begins.
 `>>
+
 <<if !$t0_archiveDetailSeen>>
     <<= _detail>>
     <<set $t0_archiveDetailSeen = true>>
 <<else>>
-    <<linkreplace '<span class="more">... more information</span>' t8n>>
+    <<linkreplace '<span class="ui-title-more">... more information</span>' t8n>>
         <<= _detail>>
     <</linkreplace>>
 <</if>>
@@ -3663,7 +3650,9 @@ The endings here are all static, with no choices beyond the selection of variati
 <mark>Unlocked endings are only kept within a save.</mark> To keep all unlocked endings, make sure to always use and load the same save file.
 
 <hr>
-<h2>Drekkar Endings</h2>
+<div class="ui-subtitle">
+    Drekkar Endings
+</div>
 <div class="archive-body">
     <<include [[Interrogation Archive Display]]>>
     <<include [[Enthrallment Archive Display]]>>
@@ -3674,7 +3663,9 @@ The endings here are all static, with no choices beyond the selection of variati
     <<include [[Ivex Extraction Archive Display]]>>
 </div>
 <hr>
-<h2>Nero Endings</h2>
+<div class="ui-subtitle">
+    Nero Endings
+</div>
 <div class="archive-body">
     <<include [[n0/F Nero Endings]]>>
 </div>
@@ -13875,7 +13866,7 @@ v.personalEnding = false;
 <<include [[Init Nero Vars]]>>
 
 
-:: Init Sidebar [inclusion] {"position":"2350,325","size":"100,100"}
+:: Init Sidebar [inclusion] {"position":"2050,425","size":"100,100"}
 <<nobr>>
 <<append "#ui-bar-body">>
   <div id="ui-bar-footer">
@@ -14181,32 +14172,34 @@ drop knife
 window.MagesTower || (window.MagesTower = {});
 const MT = window.MagesTower;
 
-$('head').append(`
-<style>
-
-  .archive-disabled {
-    opacity: 0.4;
-    pointer-events: none;
-  }
-  .archive-title {
-    font-weight: bold;
-  }
-  .archive-variant {
-    margin-left: 1.5em;
-  }
-  .archive-variant label {
-    margin-left: 1em;
-  }
-  .archive-variant input {
-    margin-right: 0.2em;
-  }
-  .archive-hint {
-    font-size: small;
-    font-style: italic;
-    margin-left: 1.5em;
-  }
-</style>
-`);
+$("#archive-style").remove();
+$("head").append(`
+<style id="archive-style">
+.archive-body {
+  margin-left: 1.5rem;
+}
+.archive-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.archive-title {
+  font-weight: bold;
+}
+.archive-variant {
+  margin-left: 1.5rem;
+}
+.archive-variant label {
+  margin-left: 1em;
+}
+.archive-variant input[type=radio] {
+  margin-right: 0.4em;
+}
+.archive-hint {
+  font-size: small;
+  font-style: italic;
+  margin-left: 1.5rem;
+}
+</style>`);
 
 MT.setVariantDefault = function (varname, rules) {
   const v = State.variables;
@@ -14467,7 +14460,7 @@ vt.noTraceDo = fn => {
 <</script>>
 
 
-:: Init Random Walk [inclusion] {"position":"2250,325","size":"100,100"}
+:: Init Random Walk [inclusion] {"position":"1950,425","size":"100,100"}
 <<script>>
 /** Random walk */
 function randomWalkSetup() {
@@ -14477,7 +14470,7 @@ function randomWalkSetup() {
   $('head').append(`
     <style id="random-walk-style">
       #random-walk {
-        top: 20px;
+        top: max(5rem, 50vh - 5rem);
         display: flex;
         flex-direction: column;
         font-size: 18px;
@@ -14839,5 +14832,190 @@ lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 
 
 :: n9x/S ascendant [end] {"position":"4750,7850","size":"100,100"}
+
+
+:: Init Passage Notes [inclusion] {"position":"2250,325","size":"100,100"}
+<<script>>
+$("#notes-style").remove();
+$("head").append(`
+<style id="notes-style">
+#notes-button {
+  background-color: #eee;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #000;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  opacity: 0.3;
+  padding: 2px 4px;
+  position: fixed;
+  right: 4px;
+  text-align: right;
+  top: 20px;
+}
+#notes-button:hover {
+  background-color: #333;
+  border-color: #eee;
+  color: #eee;
+}
+#notes-button label {
+  cursor: pointer;
+  font-size: 18px;
+}
+#notes-button span {
+  font-size: 12px;
+}
+#notes-here {
+  margin-top: 3px;
+}
+</style>`);
+
+window.PassageNotes || (window.PassageNotes = {});
+const PN = window.PassageNotes;
+
+PN.isUsable = null;
+PN.isEnabled = State.metadata.get("notesEnabled") || false;
+
+PN.enable = (flag) => {
+  PN.isEnabled = !!flag;
+  State.metadata.set("notesEnabled", PN.isEnabled);
+  renderButton();
+};
+
+PN.gotoPassageNote = () => {
+  // capture current state
+  const dest = "[[Passage Notes Single]]".replaceAll(/[\[\]]/g, '');
+  Engine.play(dest);
+};
+
+PN.get = (passage) => {};
+PN.set = (passage, text) => {};
+PN.getDiagnostics = () => {};
+
+PN.getAllText = () => { return ''; };
+PN.setAllText = (text) => {};
+PN.saveFile = () => {};
+PN.loadFile = () => {};
+PN.share = () => {};
+
+function countHere() {
+  return 3;
+}
+function countAll() {
+  return 5;
+}
+
+function renderButton() {
+  $("#notes-button").remove();
+  if (!PN.isEnabled) return;
+  const outer = $("<div>")
+    .attr("id", "notes-button")
+    .click(() => PN.gotoPassageNote())
+    .appendTo("#story");
+  $("<label>").text("notes").appendTo(outer);
+  $("<span>").attr("id", "notes-here").appendTo(outer);
+  $("<span>").attr("id", "notes-total").appendTo(outer);
+  updateCounts();
+}
+
+function updateCounts() {
+  if (!PN.isEnabled) return;
+  const here = countHere();
+  const all = countAll();
+  $("#notes-here").text(here ? `${here} here` : '');
+  $("#notes-total").text(all ? `${all} total` : '');
+}
+
+$(document).on(":passagedisplay", () => renderButton());
+
+<</script>>
+
+
+:: Passage Notes Top [noreturn] {"position":"2100,1300","size":"100,100"}
+<<nobr>>
+<style>
+#notes-enable .notes-detail {
+  font-size: 0.8em;
+  margin-left: 1.5em;
+}
+</style>
+
+<<script>>
+  const PN = PassageNotes;
+  const T = State.temporary;
+  T.enabled = !!PN.isEnabled;
+  
+  $(document).one(":passagedisplay", () => {
+    $("#notes-enable input").on("change", ev => {
+      PN.enable(ev.target.checked);
+    });
+  });
+<</script>>
+
+<<link "Return to the game" $return>><</link>>
+<hr>
+
+<span class="ui-title">Passage Notes</span>
+is a system for attaching notes to individual passages.
+<<set _detail = `
+It's intended for play-testers to record bugs and feedback as they play, but you can also use it for personal notes.
+<br><br>
+When enabled, the "Notes" button in the upper right will allow you to add or edit a note for the current passage. You can also edit all the notes in the textbox below.
+<br><br>
+These notes are stored in your browser's local storage, and they will be erased if you clear browser data for this site. The browser may also automatically delete the data if you have certain privacy settings enabled, or if the browser thinks it needs to reduce this site's storage usage. If you want to keep the notes more permanently, export the data to a file.
+<br><br>
+Nothing here is ever shared automatically. To send feedback, either copy and paste the text below, or export to a file and send that, or use the "Share" button which will ask for confirmation.
+`>>
+<<if !$t0_notesDetailSeen>>
+    <<= _detail>>
+    <<set $t0_notesDetailSeen = true>>
+<<else>>
+    <<linkreplace '<span class="ui-title-more">... more information</span>' t8n>>
+        <<= _detail>>
+    <</linkreplace>>
+<</if>>
+
+<br><br>
+<div id="notes-enable">
+    <label>
+        <<checkbox "_enabled" false true autocheck>>
+        Show the Notes button.
+    </label>
+</div>
+
+<</nobr>>
+
+
+:: Init UI Style [inclusion] {"position":"2150,425","size":"100,100"}
+<<script>>
+$("#ui-style").remove();
+$("head").append(`
+<style id="ui-style">
+#passages hr {
+  border: 0;
+  border-top: 1px solid #333;
+  height: 1px;
+}
+#passages .ui-title {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+#passages .ui-title-more {
+  font-size: 0.8em;
+  margin-left: 0.5em;
+}
+#passages .ui-subtitle {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 0.5em 0 0.5em 0;
+}
+</style>`);
+<</script>>
+
+
+:: Passage Notes Single [noreturn] {"position":"1975,1300","size":"100,100"}
+<<link "Return to the game" $return>><</link>>
+<hr>
 
 
