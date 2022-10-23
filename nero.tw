@@ -10170,6 +10170,9 @@ Nero is not completely averse to dalliances with shy, soft men when there are no
 
 :: testing 2 {"position":"4800,575","size":"100,100"}
 testing 2
+<<set _t = 1 + (_t ?? 1)>>
+<<run console.log(_t) >>
+<textarea id="hello"></textarea>
 
 
 :: n1x/D Window [has-hole] {"position":"7350,3350","size":"100,100"}
@@ -14552,22 +14555,25 @@ function randomWalkSetup() {
       .attr("id", "random-walk")
       .appendTo("#story");
     $("<a>")
-      .attr("title", "<comma> backward")
+      .attr("title", "<ctrl-comma> backward")
       .text("back")
       .click(back)
       .appendTo(outer);
     $("<a>")
-      .attr("title", "<period> forward")
+      .attr("title", "<ctrl-period> forward")
       .text("walk")
       .click(forward)
       .appendTo(outer);
   });
 
+  // ctrl-comma doesn't generate keypress events
   $(document).on("keydown", ev => {
-    switch (ev.key) {
-      case ",": back(); break;
-      case ".": forward(); break;
-    }
+    if (!ev.ctrlKey) return;
+    const focus = document.activeElement;
+    const tag = focus != null ? focus.tagName : "";
+    if (/^(textarea|input|select)$/i.test(tag)) return;
+    if (ev.key === ",") return back();
+    if (ev.key === ".") return forward();
   });
 }
 
@@ -14849,6 +14855,7 @@ $("head").append(`
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  font-size: 14px;
   gap: 4px;
   opacity: 0.8;
   padding: 2px 4px;
@@ -14857,23 +14864,60 @@ $("head").append(`
   text-align: right;
   top: 20px;
 }
+#notes-line-1 {
+  font-size: 18px;
+}
+#notes-button.notes-non-zero {
+  border-color: #fff;
+}
+.notes-non-zero #notes-count {
+  color: #fff;
+  font-weight: bold;
+}
 #notes-button:hover {
   background-color: #333;
   border-color: #eee;
   color: #eee;
   opacity: 1;
 }
-#notes-button label {
-  cursor: pointer;
-  font-size: 18px;
-}
-#notes-button.notes-has-note label::before {
-  color: #cc0;
-  content: "\ue800 ";
+#notes-line-2::before {
+  content: "\ue801 ";
   font-family: tme-fa-icons;
 }
-#notes-button span {
-  font-size: 12px;
+.notes-has-note #notes-line-2::before {
+  color: #cc0;
+  content: "\ue800 ";
+}
+.notes-buttons button {
+  background-color: #000;
+  border-color: #840;
+  border-radius: 8px;
+  color: #ffa000;
+  margin: .2rem .2rem .5rem 0;
+  padding: .3rem .4rem;
+}
+.notes-buttons button:disabled {
+  border-color: #444;
+  color: #444;
+}
+.notes-buttons button:hover:not(:disabled) {
+  background-color: #c67100;
+  color: #fff;
+}
+#notes-input,
+#notes-conflict textarea {
+  border-radius: 8px;
+  height: 9em;
+  line-height: 1.4;
+  max-width: 100%;
+  min-width: 5em;
+  width: min(90%, 30em);
+}
+#notes-conflict {
+  display: none;
+}
+#notes-conflict.notes-has-conflict {
+  display: block;
 }
 </style>`);
 
@@ -14881,12 +14925,7 @@ window.PassageNotes || (window.PassageNotes = {});
 const PN = window.PassageNotes;
 
 const KEY = "passage-notes-1";
-
-// matches lines that are `[some text]`, no leading spaces, possibly trailing spaces
-const headerRE = /^(\[[^\r\n\]]*\][ \t]*\r?(?:\n|$))/m;
-
-// matches passage name in header lines like `[passage xxx]`
-const passageHeaderRE = /^\[\s*passage\s+([^\]]+)\s*\]/;
+const persist = window.localStorage;
 
 PN.isUsable = checkUsable();
 PN.isEnabled = PN.isUsable && (State.metadata.get("notesEnabled") || false);
@@ -14903,119 +14942,60 @@ PN.gotoPassageNote = () => {
   Engine.play(dest);
 };
 
-PN._unparsed = null;
-PN._parsed = null;
-
-function invalidate(text) {
-  if (PN._unparsed !== text) {
-    PN._unparsed = null;
-    PN._parsed = null;
-  }
-}
-
-PN.getAll = () => {
+PN.getFull = () => {
   if (!PN.isUsable) return "";
-  const ss = window.sessionStorage;
-  const text = ss.getItem(KEY) || "";
-  invalidate(text);
-  return text;
+  return persist.getItem(KEY) ?? "";
 };
 
-PN.setAll = (text) => {
-  if (!PN.isUsable) return;
-  const ss = window.sessionStorage;
-  ss.setItem(KEY, text || "");
-  invalidate(text);
+PN.replaceFull = (old, val) => {
+  if (!PN.isUsable) throw new Error("PassageNotes can't save data.");
+  const cur = persist.getItem(KEY) ?? "";
+  if (old.trimEnd() !== cur.trimEnd()) return false;
+  persist.setItem(KEY, val);
+  updateStatus();
+  return true;
 };
 
-function parsed() {
-  const text = PN.getAll();
-  if (PN._unparsed !== text) {
-  	PN._parsed = parse(text);
-    PN._unparsed = text;
-  }
-  return PN._parsed;
-}
-
-function parse(text) {
-  // the tricky part is the text can be freeform edited.
-  // we want to update structured per-passage sections without damaging
-  // whatever other text there might be.
-  const parts = text.split(headerRE);
-  if (/\S/.test(parts[0])) {
-    parts.unshift("");
-  } else {
-    parts.shift();
-  }
-  const isPassage = [];
-  const isRepeated = {};
-  const passageIndex = {};
-  for (let i = 0; i < parts.length; i += 2) {
-    const header = parts[i];
-    const m = passageHeaderRE.exec(header);
-    if (m == null) continue;
-    const p = m[1];
-    if (passageIndex[p] == null) {
-      // passage not yet seen
-      passageIndex[p] = i;
-      isPassage[i] = true;
-    } else if (/\S/.test(parts[i + 1])) {
-      // passage already seen, and body is not empty. last one wins
-      isRepeated[p] = true;
-      isPassage[passageIndex[p]] = false;
-      isPassage[i] = true;
-      passageIndex[p] = i;
-    }
+function splitAt(passage, text) {
+  let ntext = "\n" + text;
+  if (ntext.slice(-1) !== "\n") ntext += "\n";
+  const nheader = `\n[passage ${passage}]\n`;
+  let pos = 0;
+  while ((pos = ntext.indexOf(nheader, pos)) >= 0) {
+    let end = ntext.indexOf("\n[passage ", pos + 1);
+    if (end < 0) end = ntext.length;
+    return {
+      before: ntext.slice(1, pos + 1),
+      header: ntext.slice(pos + 1, pos + nheader.length),
+      body: ntext.slice(pos + nheader.length, end + 1),
+      after: ntext.slice(end + 1),
+    };
   }
   return {
-    parts: parts,
-    isPassage: isPassage,
-    isRepeated: isRepeated,
-    passageIndex: passageIndex,
+    before: ntext.slice(1),
+    header: nheader.slice(1),
+    body: "",
+    after: "",
   };
 }
 
-function unparse(p) {
-  let text = "";
-  for (let i = 0; i < p.parts.length; i += 2) {
-    // can skip empty passages that are not repeated
-    if (p.isPassage[i] && !p.isRepeated[i] && !/\S/.test(p.parts[i + 1])) continue;
-    text += p.parts[i] + p.parts[i + 1];
-    if (!/\n$/.test(text)) text += "\n";
-  }
-  return text;
-}
-
-PN.getPassage = (passage) => {
+PN.getOne = (passage) => {
   if (!PN.isUsable) return "";
-  const p = parsed();
-  const i = p.passageIndex[passage];
-  return i == null ? "" : p.parts[i + 1];
+  const full = window.localStorage.getItem(KEY) || "";
+  const split = splitAt(passage, full);
+  return split.body;
 };
 
-PN.setPassage = (passage, text) => {
-  if (!PN.isUsable) return;
-  let all = "";
-  const p = parsed();
-  let i = p.passageIndex[passage];
-  if (text == null || !/\S/.test(text)) {
-    // delete passage
-    if (i == null) return;
-    p.parts[i +1] = "";
-  } else if (i != null) {
-    // replace passage
-    if (text === p.parts[i + 1]) return;
-    p.parts[i + 1] = text;
-  } else {
-    // add new passage
-    i = p.parts.length;
-    p.isPassage[i] = true;
-    p.passageIndex[passage] = i;
-    p.parts[i] = `[passage ${passage}]\n`;
-    p.parts[i + 1] = text;
-  }
-  const u = unparse(p);
-  PN.setAll(u);
+PN.replaceOne = (passage, old, val) => {
+  if (!PN.isUsable) throw new Error("PassageNotes can't save data");
+  const full = persist.getItem(KEY) || "";
+  const sp = splitAt(passage, full);
+  if (sp.body.trimEnd() !== old.trimEnd()) return false;
+  const replace = /\S/.test(val) ? sp.header + val.trimEnd() +"\n" : "";
+  const next = sp.before + replace + sp.after;
+  persist.setItem(KEY, next);
+  updateStatus();
+  return true;
 };
 
 function renderButton() {
@@ -15025,59 +15005,205 @@ function renderButton() {
     .attr("id", "notes-button")
     .click(() => PN.gotoPassageNote())
     .appendTo("#story");
-  $("<label>").text("notes").appendTo(outer);
-  $("<span>").attr("id", "notes-total").appendTo(outer);
+  $("<div>").attr("id", "notes-line-1").text("notes").appendTo(outer);
+  const line2 = $("<div>").attr("id", "notes-line-2").appendTo(outer);
+  $("<span>").attr("id", "notes-count").appendTo(line2);
   updateStatus();
+}
+
+function getStats(passage) {
+  let count = 0;
+  let hasNoteHere = false;
+  if (!PN.isUsable) return { count, hasNoteHere };
+  const nfull = "\n" + (persist.getItem(KEY) || "");
+  for (const m of nfull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
+    count += 1;
+    if (m[1] === passage) hasNoteHere = true;
+  }
+  return { count, hasNoteHere };
 }
 
 function updateStatus() {
   if (!PN.isEnabled) return;
-  const p = parsed();
-  console.log(p);
-  const yes = p.passageIndex[State.passage] != null;
-  const total = p.parts.length / 2;
-  $("#notes-button").toggleClass("notes-has-note", yes);
-  $("#notes-total").toggleClass("notes-non-zero", total > 0).text(total > 0 ? `${total} total` : "");
+  const st = getStats(State.passage);
+  $("#notes-button").toggleClass("notes-has-note", st.hasNoteHere);
+  $("#notes-button").toggleClass("notes-non-zero", st.count > 0);
+  $("#notes-count").text(`${st.count}`);
 }
 
 function checkUsable() {
   try {
-    const ss = window.sessionStorage;
-    const key = "passage-notes-test";
     const r0 = String(Math.random());
-    ss.setItem(key, r0);
-    const r1 = ss.getItem(key);
-    ss.removeItem(key);
+    const key = "passage-notes-test";
+    persist.setItem(key, r0);
+    const r1 = persist.getItem(key);
+    persist.removeItem(key);
     if (r0 === r1) return true;
     console.error("PassageNotes not usable: roundtrip failed", [r0, r1]);
   } catch (e) {
-    console.error("PassageNotes not usable: sessionStorage threw error", e);
+    console.error("PassageNotes not usable: localStorage threw error", e);
   }
   return false;
 }
 
-$(document).on(":passagedisplay", () => renderButton());
-
+$(document).on(":passagedisplay", renderButton);
 <</script>>
 
 
 :: Passage Notes Top [noreturn] {"position":"2300,1100","size":"100,100"}
 <<nobr>>
 <style>
-#notes-enable .notes-detail {
-  font-size: 0.8em;
-  margin-left: 1.5em;
-}
+  #notes-load-file {
+    visibility: hidden;
+    position: absolute;
+    pointer-events: none;
+  }
 </style>
 <<script>>
   const PN = PassageNotes;
   const T = State.temporary;
-  T.enabled = !!PN.isEnabled;
+  const V = State.variables;
+  const session = window.sessionStorage;
+  
+  T.savedVal = "";
+  T.sessionVal = "";
+  T.hasConflict = false;
+  
+  T.canShare = navigator.canShare && navigator.canShare({ title: "1", text: "2" });
+
   $(document).one(":passagedisplay", () => {
-    $("#notes-enable input").on("change", ev => {
-      PN.enable(ev.target.checked);
-    });
+    $("#notes-checkbox").on("change", toggleButton);
+    $("#notes-input").on("input", onInput);
+    $("#notes-copy").click(copyToClipboard);
+    $("#notes-delete").click(confirmDelete);
+    $("#notes-lose").click(confirmLose);
+    $("#notes-overwrite").click(confirmOverwrite);
+    $("#notes-save").click(saveToFile);
+    $("#notes-load").click(loadFromFile);
+    $("#notes-load-file").on("change", loadFilePicked);
+    $("#notes-share").prop("disabled", T.canShare).click(doShare);
+    restoreSession();
+    uiUpdate();
   });
+  
+  function restoreSession() {
+    $("#notes-checkbox").prop("checked", PN.isEnabled);
+    T.savedVal = PN.getFull();
+    T.sessionVal = session.getItem("notes-full") ?? T.savedVal;
+    $("#notes-input").val(T.sessionVal);
+    T.hasConflict = T.savedVal.trimRight() !== T.sessionVal.trimRight();
+  }
+  
+  function uiUpdate() {
+    $("#notes-conflict").toggleClass("notes-has-conflict", T.hasConflict);
+    if (T.hasConflict) $("#notes-conflict textarea").val(T.savedVal);
+    const hasSession = T.sessionVal.trimRight() !== "";
+    const hasData = T.savedVal.trimRight() !== "" || hasSession;
+    $("#notes-delete").prop("disabled", !hasData || T.hasConflict);
+    $("#notes-copy").prop("disabled", !hasSession);
+    $("#notes-save").prop("disabled", !hasSession);
+    $("#notes-load").prop("disabled", T.hasConflict);
+    $("#notes-share").prop("disabled", !hasSession);
+  }
+  
+  function toggleButton() {
+    PN.enable($("#notes-checkbox").prop("checked"));
+  }
+  
+  function onInput() {
+    saveValue($("#notes-input").val(), false);
+  }
+  
+  function overwriteValue(val) {
+    $("#notes-input").val(val);
+    saveValue(val, true);
+  }
+  
+  function saveValue(val, overwrite) {
+    T.sessionVal = val;
+    session.setItem("notes-full", T.sessionVal);
+    if (overwrite || !T.hasConflict) {
+      T.hasConflict = !PN.replaceFull(T.savedVal, T.sessionVal);
+      if (!T.hasConflict) T.savedVal = T.sessionVal;
+      uiUpdate();
+    }
+  }
+    
+  T.doDelete = () => overwriteValue("");
+  function confirmDelete() {
+    Dialog.setup("Confirm Delete All");
+    Dialog.wiki(`
+      Are you sure you want to delete ALL notes?<br><br>
+      <<button "Delete all">><<run Dialog.close(); _doDelete()>><</button>>
+    `);;
+    Dialog.open();
+  }
+  
+  T.doLose = () => overwriteValue(T.savedVal);
+  function confirmLose() {
+    Dialog.setup("Confirm Lose Edits");
+    Dialog.wiki(`
+      Are you sure you want to lose your edits and revert to the conflicting value?<br><br>
+      <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
+    `);;
+    Dialog.open();
+  }
+    
+  T.doOverwrite = () => overwriteValue(T.sessionVal);
+  function confirmOverwrite() {
+    Dialog.setup("Confirm Overwrite Conflict");
+    Dialog.wiki(`
+      Are you sure you want to overwrite the conflicting value with your edits?<br><br>
+      <<button "Overwrite conflict">><<run Dialog.close(); _doOverwrite()>><</button>>
+    `);
+    Dialog.open();
+  }
+  
+  function copyToClipboard() {
+    let text = T.sessionVal;
+    if (text.slice(-1) !== "\n") text += "\n";
+    navigator.clipboard.writeText(text);
+    Dialog.setup();
+    Dialog.wiki("All notes copied to clipboard");
+    Dialog.open();
+  }
+  
+  function makeTitle() {
+    const now = new Date();
+    const yyyy = String(now.getFullYear());
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const HH = String(now.getHours()).padStart(2, "0");
+    const MM = String(now.getMinutes()).padStart(2, "0");
+    const SS = String(now.getSeconds()).padStart(2, "0");
+    const title = `MagesTowerNotes-${yyyy}-${mm}-${dd}-${HH}${MM}${SS}.txt`;
+    return title;
+  }
+  
+  function saveToFile() {
+    const fname = makeTitle();
+    const blob = new Blob([T.sessionVal], { type: 'text/plain;charset=UTF-8' });
+    /* saveAs is from filesaver.js, bundled with sugarcube-2 */
+    saveAs(blob, fname);
+  }
+  
+  function loadFromFile() {
+    $("#notes-load-file").click();
+  }
+  function loadFilePicked(ev) {
+    const reader = new FileReader();
+    $(reader).one("loadend", () => {
+      if (reader.error) throw reader.error;
+      overwriteValue(reader.result);
+    });
+  	const file = ev.target.files[0];
+    reader.readAsText(file);
+  }
+  
+  function doShare() {
+    const title = makeTitle();
+    navigator.share({ title, text: T.sessionVal });
+  }
 <</script>>
 
 <<link "Return to the game" $return>><</link>>
@@ -15088,11 +15214,14 @@ is a system for attaching notes to individual passages.
 <<set _detail = `
 It's intended for play-testers to record bugs and feedback as they play, but you can also use it for personal notes.
 <br><br>
-When enabled, the "Notes" button in the upper right will allow you to add or edit a note for the current passage. You can also edit all the notes in the textbox below.
+When enabled, the "notes" button in the upper right will allow you to create or edit a note for the current passage. You can also edit all the notes in the textbox below.
 <br><br>
-These notes are stored in your browser's local storage, and they will be erased if you clear browser data for this site. The browser may also automatically delete the data if you have certain privacy settings enabled, or if the browser thinks it needs to reduce this site's storage usage. If you want to keep the notes more permanently, export the data to a file.
+These notes are stored in your browser's local storage, and they will be erased if you clear browser data for this site. The browser may also automatically delete the data (which can happen if you have certain privacy settings enabled, or if the browser wants to reduce storage usage). To keep the notes more permanently, export the data to a file.
 <br><br>
-Nothing here is ever shared automatically. To send feedback, either copy and paste the text below, or export to a file and send that, or use the "Share" button which will ask for confirmation.
+Nothing here is ever shared automatically. To send feedback, either copy and paste the text below, or export a file to send.
+In some browsers, you can also use the "Share" button, which will ask for confirmation.
+<br><br>
+If you have this game opened in multiple browser tabs, editing a note in one tab may cause an edit conflict in another tab. When that happens, the conflicting value will be shown, and you will have the option of choosing which version to keep.
 `>>
 <<if !$t0_notesDetailSeen>>
     <<= _detail>>
@@ -15106,11 +15235,35 @@ Nothing here is ever shared automatically. To send feedback, either copy and pas
 <br><br>
 <div id="notes-enable">
     <label>
-        <<checkbox "_enabled" false true autocheck>>
-        Show the Notes button.
+        <input id="notes-checkbox" type="checkbox">
+        Show the notes button
     </label>
 </div>
 
+<hr>
+<div id="notes-full">
+    <div class="ui-subtitle">All Notes</div>
+    <textarea id="notes-input"></textarea>
+    <div class="notes-buttons">
+        <button id="notes-delete">Delete all</button>
+        <button id="notes-copy">Copy to clipboard</button>
+        <button id="notes-save">Save to file</button>
+        <button id="notes-load">Load from file</button>
+        <button id="notes-share">Share via...</button>
+        <input type="file" id="notes-load-file">
+    </div>
+</div>
+<div id="notes-conflict">
+    <div class="notes-buttons">
+        <button id="notes-lose">&#x21d1; Lose edits</button>
+        <button id="notes-overwrite">&#x21d3; Overwrite conflict</button>
+    </div>
+    <div class="ui-subtitle">Conflicting update</div>
+    <textarea disabled></textarea>
+</div>
+
+<hr>
+<<link "Return to the game" $return>><</link>>
 <</nobr>>
 
 
@@ -15123,6 +15276,11 @@ $("head").append(`
   border: 0;
   border-top: 1px solid #333;
   height: 1px;
+}
+#passages .ui-links-sep {
+  border-left: 2px solid #333;
+  margin: 0 .5em 0 .4em;
+  width: 0;
 }
 #passages .ui-title {
   font-size: 1.1em;
@@ -15142,10 +15300,111 @@ $("head").append(`
 
 
 :: Passage Notes Single [noreturn] {"position":"2300,975","size":"100,100"}
+<<nobr>>
+<<script>>
+  const PN = window.PassageNotes;
+  const T = State.temporary;
+  const V = State.variables;
+  const session = window.sessionStorage;
+  
+  T.savedVal = "";
+  T.sessionVal = "";
+  T.hasConflict = false;
+
+  $(document).one(":passagedisplay", () => {
+    $("#notes-input").on("input", onInput);
+    $("#notes-delete").click(confirmDelete);
+    $("#notes-lose").click(confirmLose);
+    $("#notes-force").click(confirmOverwrite);
+    restoreSession();
+    uiUpdate();
+  });
+
+  function restoreSession() {
+    T.savedVal = PN.getOne(V.t0_notesOrigin);
+    T.sessionVal = session.getItem("notes-single:" + V.t0_notesOrigin) ?? T.savedVal;
+    $("#notes-input").val(T.sessionVal);
+    T.hasConflict = T.savedVal.trimRight() !== T.sessionVal.trimRight();
+  }
+  
+  function uiUpdate() {
+    $("#notes-conflict").toggleClass("notes-has-conflict", T.hasConflict);
+    if (T.hasConflict) $("#notes-conflict textarea").val(T.savedVal);
+    const hasData = T.savedVal.trimRight() !== "" || T.sessionVal.trimRight() !== "";
+    $("#notes-delete").prop("disabled", !hasData || T.hasConflict);
+  }
+
+  function onInput(ev) {
+    saveValue($("#notes-input").val(), false);
+  }
+  
+  function overwriteValue(val) {
+  	$("#notes-input").val(val);
+    saveValue(val, true);
+  }
+  
+  function saveValue(val, overwrite) {
+    T.sessionVal = val;
+    session.setItem("notes-single:" + V.t0_notesOrigin, val);
+    if (overwrite || !T.hasConflict) {
+      T.hasConflict = !PN.replaceOne(V.t0_notesOrigin, T.savedVal, T.sessionVal);
+      if (!T.hasConflict) T.savedVal = T.sessionVal;
+      uiUpdate();
+    }
+  }
+
+  T.doDelete = () => overwriteValue("");
+  function confirmDelete() {
+    Dialog.setup("Confirm Delete");
+    Dialog.wiki(`
+      Are you sure you want to delete this note?<br><br>
+      <<button Delete>><<run Dialog.close(); _doDelete()>><</button>>
+    `);;
+    Dialog.open();
+  }
+  
+  T.doLose = () => overwriteValue(T.savedVal);
+  function confirmLose() {
+    Dialog.setup("Confirm Lose Edits");
+    Dialog.wiki(`
+      Are you sure you want to lose your edits and revert to the conflicting value?<br><br>
+      <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
+    `);;
+    Dialog.open();
+  }
+    
+  T.doOverwrite = () => overwriteValue(T.sessionVal);
+  function confirmOverwrite() {
+    Dialog.setup("Confirm Overwrite Conflict");
+    Dialog.wiki(`
+      Are you sure you want to overwrite the conflicting value with your edits?<br><br>
+      <<button "Overwrite conflict">><<run Dialog.close(); _doOverwrite()>><</button>>
+    `);
+    Dialog.open();
+  }
+<</script>>
+
 <<link "Return to the game" $return>><</link>>
+<span class="ui-links-sep"></span>
+[[View all notes|Passage Notes Top]]
+
 <hr>
+<div class="ui-subtitle">
+    Notes for [passage $t0_notesOrigin]
+</div>
+<textarea id="notes-input" placeholder="Enter text here"></textarea>
+<div class="notes-buttons">
+  <button id="notes-delete">Delete note</button>
+</div>
 
-
-:: ^\\r\\n\\ {"position":"2300,450","size":"100,100"}
+<div id="notes-conflict">
+    <div class="notes-buttons">
+        <button id="notes-lose">Lose edits &#x21d1;</button>
+        <button id="notes-force">&#x21d3; Overwrite conflict</button>
+    </div>
+    <div class="ui-subtitle">Local storage has a conflicting value:</div>
+    <textarea disabled></textarea>
+</div>
+<</nobr>>
 
 
