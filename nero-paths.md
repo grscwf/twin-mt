@@ -89,9 +89,9 @@
     - Wearing it makes it glow green.
     - After one action, it glows yellow.
     - If Nero doesn't take it off when it's yellow, it turns red and locks on.
-      - Bad Ending: Tickled Mild - lion is not following or hunting.
-      - Bad Ending: Tickled Harsh - lion is following.
-      - Bad Ending: Destroyed - lion is hunting.
+      - Bad Ending: Overwhelmed Mild - lion is not following or hunting.
+      - Bad Ending: Overwhelmed Harsh - lion is following.
+      - Bad Ending: Wrecked - lion is hunting.
   - Entering the blob alone will not get the gem.
     - This can be repeated, as long as the player remembers to remove the ring after.
     - After two failures, suggest doing something else.
@@ -111,7 +111,7 @@
     - Put on ring, it turns green.
     - Start lion hunting, ring turns yellow and Nero is starting to feel stiff.
     - Any action other than removing the ring will fail to evade the lion.
-      - Bad Ending: Ruined. (and thrall is involved)
+      - Bad Ending: Wrecked. (and thrall is involved)
   - To enter the blob with the lion:
     - Nero has to be wearing the ring, and the lion has to be hunting.
     - He can't start this in the Extraction room:
@@ -149,9 +149,9 @@
   - (14) Teleport out. Once Nero is out, he has magic back and can defuse the ring.
 - Ways to fail
   - Wear the ring too long:
-    - Bad Ending: Tickled Mild - lion is not following or hunting.
-    - Bad Ending: Tickled Harsh - lion is following.
-    - Bad Ending: Ruined - lion is hunting (and probably Thrall is involved).
+    - Bad Ending: Overwhelmed Mild - lion is not following or hunting.
+    - Bad Ending: Overwhelmed Harsh - lion is following.
+    - Bad Ending: Wrecked - lion is hunting (and probably Thrall is involved).
   - Lose ring while hunted:
     - Bad Ending: Hunted Mild - cooperate.
     - Bad Ending: Hunted Harsh - resist.
