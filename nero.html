@@ -12308,7 +12308,7 @@ $(&#39;head&#39;).append(`
      * The :not clause gives this rule a high CSS specificity, making this
      * more likely to override complex selectors elsewhere.
      */
-    .fade-in-hidden,
+    .fade-in-hidden:not(#give#this#rule#high#specificity),
     .fade-in-hidden:not(#give#this#rule#high#specificity) * {
       background-image: unset;
       color: rgba(0, 0, 0, 0);
@@ -12348,8 +12348,28 @@ $(&#39;head&#39;).append(`
       from { opacity: 0.4; }
       to { opacity: 1; }
     }
+    
+    /* Absorb clicks for a small amount of time after fade-in. */
+    .fade-in-absorb:not(#give#this#rule#high#specificity),
+    .fade-in-absorb:not(#give#this#rule#high#specificity) *,
+    .fade-in-absorb:not(#give#this#rule#high#specificity) *:hover {
+      cursor: wait;
+    }
+    .fade-in-absorb:not(#give#this#rule#high#specificity) a,
+    .fade-in-absorb:not(#give#this#rule#high#specifiicty) a:hover {
+      color: rgb(100, 100, 100, 1);
+    }
   &lt;/style&gt;
 `);
+
+/*
+ * Sometimes a player will click with intent to skip, but fade-in will
+ * happen almost at the same time, and the click will land after the
+ * fade-in happens. This is annoying if the click lands on a link and
+ * follows it. So we absorb clicks a small amount of time after
+ * automatic fade-in.
+ */
+const absorbMsec = 1000;
 
 Macro.add(&quot;fade-in&quot;, {
   tags: [&quot;next&quot;],
@@ -12364,6 +12384,10 @@ Macro.add(&quot;fade-in&quot;, {
       if (timeout != null) clearTimeout(timeout);
       timeout = setTimeout(() =&gt; {
         queue.shift();
+        if (span.hasClass(&quot;fade-in-hidden&quot;)) {
+          span.addClass(&quot;fade-in-absorb&quot;);
+          setTimeout(() =&gt; span.removeClass(&quot;fade-in-absorb&quot;), absorbMsec);
+        }
         span.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
         if (document.contains(span[0])) next();
       }, delay);
@@ -12373,7 +12397,7 @@ Macro.add(&quot;fade-in&quot;, {
       const pos = queue.findIndex(q =&gt; q[1] === jq);
       if (pos &lt; 0) return;
       for (let i = 0; i &lt;= pos; i++) {
-        queue.shift()[1].removeClass(&quot;fade-in-hidden fade-in-next&quot;);
+        queue.shift()[1].removeClass(&quot;fade-in-hidden fade-in-next fade-in-absorb&quot;);
       }
       next();
     };
@@ -12387,10 +12411,12 @@ Macro.add(&quot;fade-in&quot;, {
         .appendTo(this.output);
       const hurry = ev =&gt; {
         span[0].removeEventListener(&quot;click&quot;, hurry, true);
-        if (!span.hasClass(&quot;fade-in-hidden&quot;)) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        skipTo(span);
+        if (span.hasClass(&quot;fade-in-hidden&quot;) || span.hasClass(&quot;fade-in-absorb&quot;)) {
+          span.removeClass(&quot;fade-in-hidden fade-in-absorb&quot;);
+          ev.preventDefault();
+          ev.stopPropagation();
+          skipTo(span);
+        }
       };
       span[0].addEventListener(&quot;click&quot;, hurry, true);
       queue.push([delay, span]);
