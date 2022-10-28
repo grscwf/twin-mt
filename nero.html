@@ -12594,10 +12594,6 @@ VT.start = () =&gt; {
   VT.wasSet.clear();
   VT.wasDeleted.clear();
   VT._unproxied = State.active.variables;
-  Object.defineProperty(VT._unproxied, &#39;_varTrace&#39;, {
-    value: myBrand,
-    configurable: true,
-  });
   State.active.variables = new Proxy(VT._unproxied, {
     defineProperty(o, prop) {
       if (typeof prop === &quot;string&quot;) VT.wasSet.add(prop);
@@ -12608,7 +12604,8 @@ VT.start = () =&gt; {
       return Reflect.delete(...arguments);
     },
     get(o, prop) {
-      if (typeof prop === &quot;string&quot; &amp;&amp; prop !== &quot;_varTrace&quot;) VT.wasRead.add(prop);
+      if (prop === &quot;_varTrace&quot;) return myBrand;
+      if (typeof prop === &quot;string&quot;) VT.wasRead.add(prop);
       return Reflect.get(...arguments);
     },
     set(o, prop) {
@@ -12625,7 +12622,7 @@ VT.stop = () =&gt; {
   }
   if (VT._unproxied != null) {
     State.active.variables = VT._unproxied;
-    VT._unproxed = null;
+    VT._unproxied = null;
   }
 };
 
