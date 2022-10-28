@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="169" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<tw-storydata name="nero" startnode="169" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position:relative;
 }
@@ -13085,12 +13085,6 @@ PN.enable = (flag) =&gt; {
   renderButton();
 };
 
-PN.gotoPassageNote = () =&gt; {
-  State.variables.t0_notesOrigin = State.passage;
-  const dest = &quot;[[Passage Notes Single]]&quot;.slice(2, -2);
-  Engine.play(dest);
-};
-
 PN.getFull = () =&gt; {
   if (!PN.isUsable) return &quot;&quot;;
   return persist.getItem(KEY) ?? &quot;&quot;;
@@ -13169,12 +13163,21 @@ PN.tryReplaceOne = (passage, old, val) =&gt; {
   return val.trimEnd();
 };
 
+function openPopup() {
+  State.variables.t0_notesOrigin = State.passage;
+  const popupTitle = &quot;[[Passage Notes Popup]]&quot;.slice(2, -2);
+  const popupText = Story.get(popupTitle).text;
+  Dialog.setup(&quot;&quot;);
+  Dialog.wiki(popupText);
+  Dialog.open();
+}
+
 function renderButton() {
   $(&quot;#notes-button&quot;).remove();
   if (!PN.isEnabled) return;
   const outer = $(&quot;&lt;div&gt;&quot;)
     .attr(&quot;id&quot;, &quot;notes-button&quot;)
-    .click(() =&gt; PN.gotoPassageNote())
+    .click(openPopup)
     .appendTo(&quot;#story&quot;);
   $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-1&quot;).text(&quot;notes&quot;).appendTo(outer);
   const line2 = $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-2&quot;).appendTo(outer);
@@ -13218,7 +13221,7 @@ function checkUsable() {
 }
 
 $(document).on(&quot;:passagedisplay&quot;, renderButton);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="475" name="Passage Notes Top" tags="noreturn" position="2300,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="475" name="Passage Notes Top" tags="noreturn" position="2300,1000" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;style&gt;
   #notes-load-file {
     height: 1px;
@@ -13488,7 +13491,7 @@ $(&quot;head&quot;).append(`
   margin: 0.5em 0 0.5em 0;
 }
 &lt;/style&gt;`);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="477" name="Passage Notes Single" tags="noreturn" position="2300,975" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="477" name="Passage Notes Single" tags="noreturn" position="2175,1000" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
   const PN = window.PassageNotes;
   const T = State.temporary;
@@ -14002,6 +14005,90 @@ This isn&#39;t the hole it wants touched.
 &lt;br&gt;&lt;br&gt;
 $n1_afterAction
 &lt;&lt;/fade-in&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="493" name="Passage Notes Popup" tags="inclusion" position="2300,850" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;script&gt;&gt;
+  const PN = window.PassageNotes;
+  const T = State.temporary;
+  const V = State.variables;
+  const session = window.sessionStorage;
+  
+  T.savedVal = &quot;&quot;;
+  T.editVal = &quot;&quot;;
+  T.hasConflict = false;
+
+  $(document).one(&quot;:dialogopening&quot;, () =&gt; {
+    $(&quot;#NP-input&quot;).on(&quot;input&quot;, onInput);
+    restoreSession();
+    uiUpdate();
+  });
+
+  function restoreSession() {
+    T.savedVal = PN.getOne(V.t0_notesOrigin);
+    T.editVal = session.getItem(&quot;notes-single:&quot; + V.t0_notesOrigin) ?? T.savedVal;
+    $(&quot;#NP-input&quot;).val(T.editVal);
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+  }
+  
+  function uiUpdate() {
+    $(&quot;#NP-conflict&quot;).toggleClass(&quot;NP-conflict-hidden&quot;, !T.hasConflict);
+  }
+
+  function onInput(ev) {
+    saveValue($(&quot;#NP-input&quot;).val(), false);
+  }
+  
+  function overwriteValue(val) {
+  	$(&quot;#NP-input&quot;).val(val);
+    saveValue(val, true);
+  }
+  
+  function saveValue(val, overwrite) {
+    T.editVal = val;
+    if (overwrite || !T.hasConflict) {
+      T.savedVal = PN.tryReplaceOne(V.t0_notesOrigin, T.savedVal, T.editVal);
+    }
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    const key = &quot;notes-single:&quot; + V.t0_notesOrigin;
+    if (T.hasConflict) {
+      session.setItem(key, val);
+    } else {
+      session.removeItem(key);
+    }
+    uiUpdate();
+  }
+&lt;&lt;/script&gt;&gt;
+&lt;style&gt;
+  .NP-subtitle {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 0 0 0.5em 0;
+  }
+  #NP-input {
+    min-width: 10em;
+    width: 95%;
+  }
+  .NP-conflict-hidden {
+    display: none;
+  }
+  .NP-conflict-important {
+    color: #fe9;
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+&lt;/style&gt;
+&lt;div class=&quot;NP-subtitle&quot;&gt;
+    Notes for [passage $t0_notesOrigin]
+&lt;/div&gt;
+&lt;textarea id=&quot;NP-input&quot; rows=&quot;10&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
+&lt;br&gt;
+&lt;div id=&quot;NP-conflict&quot;&gt;
+  &lt;div class=&quot;NP-conflict-important&quot;&gt;
+      Notes for this passage has an edit conflict!
+  &lt;/div&gt;
+  [[See conflict|Passage Notes Single][Dialog.close()]]
+&lt;/div&gt;
+[[View all notes|Passage Notes Top][Dialog.close()]]
+&lt;br&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
 	/*! SugarCube JS */

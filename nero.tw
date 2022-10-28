@@ -14908,12 +14908,6 @@ PN.enable = (flag) => {
   renderButton();
 };
 
-PN.gotoPassageNote = () => {
-  State.variables.t0_notesOrigin = State.passage;
-  const dest = "[[Passage Notes Single]]".slice(2, -2);
-  Engine.play(dest);
-};
-
 PN.getFull = () => {
   if (!PN.isUsable) return "";
   return persist.getItem(KEY) ?? "";
@@ -14992,12 +14986,21 @@ PN.tryReplaceOne = (passage, old, val) => {
   return val.trimEnd();
 };
 
+function openPopup() {
+  State.variables.t0_notesOrigin = State.passage;
+  const popupTitle = "[[Passage Notes Popup]]".slice(2, -2);
+  const popupText = Story.get(popupTitle).text;
+  Dialog.setup("");
+  Dialog.wiki(popupText);
+  Dialog.open();
+}
+
 function renderButton() {
   $("#notes-button").remove();
   if (!PN.isEnabled) return;
   const outer = $("<div>")
     .attr("id", "notes-button")
-    .click(() => PN.gotoPassageNote())
+    .click(openPopup)
     .appendTo("#story");
   $("<div>").attr("id", "notes-line-1").text("notes").appendTo(outer);
   const line2 = $("<div>").attr("id", "notes-line-2").appendTo(outer);
@@ -15044,7 +15047,7 @@ $(document).on(":passagedisplay", renderButton);
 <</script>>
 
 
-:: Passage Notes Top [noreturn] {"position":"2300,1100","size":"100,100"}
+:: Passage Notes Top [noreturn] {"position":"2300,1000","size":"100,100"}
 <<nobr>>
 <style>
   #notes-load-file {
@@ -15322,7 +15325,7 @@ $("head").append(`
 <</script>>
 
 
-:: Passage Notes Single [noreturn] {"position":"2300,975","size":"100,100"}
+:: Passage Notes Single [noreturn] {"position":"2175,1000","size":"100,100"}
 <<nobr>>
 <<script>>
   const PN = window.PassageNotes;
@@ -15896,6 +15899,94 @@ This isn't the hole it wants touched.
 <br><br>
 $n1_afterAction
 <</fade-in>>
+<</nobr>>
+
+
+:: Passage Notes Popup [inclusion] {"position":"2300,850","size":"100,100"}
+<<nobr>>
+<<script>>
+  const PN = window.PassageNotes;
+  const T = State.temporary;
+  const V = State.variables;
+  const session = window.sessionStorage;
+  
+  T.savedVal = "";
+  T.editVal = "";
+  T.hasConflict = false;
+
+  $(document).one(":dialogopening", () => {
+    $("#NP-input").on("input", onInput);
+    restoreSession();
+    uiUpdate();
+  });
+
+  function restoreSession() {
+    T.savedVal = PN.getOne(V.t0_notesOrigin);
+    T.editVal = session.getItem("notes-single:" + V.t0_notesOrigin) ?? T.savedVal;
+    $("#NP-input").val(T.editVal);
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+  }
+  
+  function uiUpdate() {
+    $("#NP-conflict").toggleClass("NP-conflict-hidden", !T.hasConflict);
+  }
+
+  function onInput(ev) {
+    saveValue($("#NP-input").val(), false);
+  }
+  
+  function overwriteValue(val) {
+  	$("#NP-input").val(val);
+    saveValue(val, true);
+  }
+  
+  function saveValue(val, overwrite) {
+    T.editVal = val;
+    if (overwrite || !T.hasConflict) {
+      T.savedVal = PN.tryReplaceOne(V.t0_notesOrigin, T.savedVal, T.editVal);
+    }
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    const key = "notes-single:" + V.t0_notesOrigin;
+    if (T.hasConflict) {
+      session.setItem(key, val);
+    } else {
+      session.removeItem(key);
+    }
+    uiUpdate();
+  }
+<</script>>
+<style>
+  .NP-subtitle {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 0 0 0.5em 0;
+  }
+  #NP-input {
+    min-width: 10em;
+    width: 95%;
+  }
+  .NP-conflict-hidden {
+    display: none;
+  }
+  .NP-conflict-important {
+    color: #fe9;
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+</style>
+<div class="NP-subtitle">
+    Notes for [passage $t0_notesOrigin]
+</div>
+<textarea id="NP-input" rows="10" placeholder="Enter text here"></textarea>
+<br>
+<div id="NP-conflict">
+  <div class="NP-conflict-important">
+      Notes for this passage has an edit conflict!
+  </div>
+  [[See conflict|Passage Notes Single][Dialog.close()]]
+</div>
+[[View all notes|Passage Notes Top][Dialog.close()]]
+<br>
 <</nobr>>
 
 
