@@ -806,65 +806,9 @@ Macro.add("redisplay-passage", {
   }
 });
 
-/*** var tracing */
-
-let actualVars = null;
-const varsRead = new Set();
-const varsWritten = new Set();
-
-function actualVar(vname) {
-  if (actualVars != null) return actualVars[vname];
-  return State.active.variables[vname];
-}
-
-function startTrace() {
-  if (!Config.debug) return;
-  varsRead.clear();
-  varsWritten.clear();
-  actualVars = State.active.variables;
-  State.active.variables = new Proxy(actualVars, {
-    defineProperty(o, prop) {
-      if (typeof prop === "string") varsWritten.add(prop);
-      return Reflect.defineProperty(...arguments);
-    },
-    get(o, prop) {
-      if (typeof prop === "string") varsRead.add(prop);
-      return Reflect.get(...arguments);
-    },
-    set(o, prop) {
-      if (typeof prop === "string") varsWritten.add(prop);
-      return Reflect.set(...arguments);
-    }
-  });
-}
-
-function stopTrace() {
-  if (actualVars != null) {
-    State.active.variables = actualVars;
-    actualVars = null;
-  }
-}
-
-function noTrace(fn) {
-  if (actualVars == null) return fn();
-  const proxy = State.active.variables;
-  State.active.variables = actualVars;
-  try {
-    return fn();
-  } finally {
-    State.active.variables = proxy;
-  }
-}
-
-Macro.add("no-trace", {
-  tags: [],
-  handler: function() {
-    noTrace(() => {
-      const body = this.payload[0].contents;
-      $(this.output).wiki(body);
-    });
-  }
-});
+/** var tracing, forward decl */
+window.VarTrace || (window.VarTrace = {});
+const VT = window.VarTrace;
 
 /*** Messages and assertions */
 
@@ -932,7 +876,7 @@ MT.assert = (val, msg, ctx) => val || MT.fail(msg, ctx);
 Macro.add("assert-true", {
   skipArgs: true,
   handler: function() {
-    const val = noTrace(() => eval(this.args.full));
+    const val = VT.ignore(() => eval(this.args.full));
     MT.assert(val, this.args.raw, this);
   }
 });
@@ -1009,7 +953,7 @@ Macro.add("big-mood", {
     if (m == null) throw new Error(`big-mood: bad args ${this.args.raw}`);
     const vn = m[1];
 
-    if (!withinInclude(this)) bigMoodDeclared.add(vn);
+    if (!withinIncludeOrIgnore(this)) bigMoodDeclared.add(vn);
 
     switch (m[2]) {
       case "ignore":
@@ -1027,12 +971,12 @@ Macro.add("big-mood", {
 
     if (m[2] != null || m[3] == null || m[4] == null) throw new Error("bug");
 
-    const actual = actualVar(vn);
-    const val = noTrace(() => Scripting.evalTwineScript(m[4]));
+    const actual = VT.untracedGet(vn);
+    const val = VT.ignore(() => Scripting.evalTwineScript(m[4]));
     let ok = false;
     switch (m[3]) {
       case 'always':
-        if (!withinInclude(this)) bigMoodAlways[vn] = val;
+        if (!withinIncludeOrIgnore(this)) bigMoodAlways[vn] = val;
         ok = actual === val || (actual == null && val === false);
         if (ok) bigMoodIgnore.add(vn);
         break;
@@ -1064,7 +1008,7 @@ Macro.add("big-mood", {
           bigMoodImplies[v2] ??= [];
           bigMoodImplies[v2].push([false, vn]);
         }
-        if (!!actualVar(v2) === !bool) {
+        if (!!VT.untracedGet(v2) === !bool) {
           if (bigMoodReq[vn] != null && bigMoodReq[vn] !== false) {
             assertionFailed(`Should satisfy contrapositive for ${vn}`);
           }
@@ -1082,7 +1026,7 @@ Macro.add("big-mood", {
 })
 
 function assertBigMood(vn, val, expr) {
-  const actual = actualVar(vn);
+  const actual = VT.untracedGet(vn);
   const ok = actual === val || (actual == null && val === false);
   if (ok) {
     bigMoodIgnore.add(vn);
@@ -1091,11 +1035,10 @@ function assertBigMood(vn, val, expr) {
   assertionFailed(`Expected big-mood ${vn} to be ${expr}`);
 }
 
-function withinInclude(context) {
+function withinIncludeOrIgnore(context) {
   for (; context != null; context = context.parent) {
     if (context.displayName === "include") return true;
-    // XXX hack
-    if (context.displayName === "no-trace") return true;
+    if (context.displayName === "var-trace-ignore") return true;
   }
   return false;
 }
@@ -1274,20 +1217,20 @@ function varInfoSetup() {
   const str = val => val == null ? String(val) : JSON.stringify(val);
 
   const varButton = vname => {
-    const v = actualVars ?? State.active.variables;
+    const v = VT.untracedVariables();
     const v0 = State.current.variables;
 
     const outer = $("<span class=var-info-button-outer>");
 
-    if (varsRead.has(vname)) outer.addClass("var-info-was-read");
-    if (varsWritten.has(vname)) outer.addClass("var-info-was-written");
-    if (!varsRead.has(vname) && !varsWritten.has(vname)) outer.addClass("var-info-was-ignored");
+    if (VT.wasRead.has(vname)) outer.addClass("var-info-was-read");
+    if (VT.wasSet.has(vname)) outer.addClass("var-info-was-written");
+    if (!VT.wasRead.has(vname) && !VT.wasSet.has(vname)) outer.addClass("var-info-was-ignored");
     if (bigMoodReq[vname] != null && bigMoodReq[vname] === v[vname]) outer.addClass("var-info-req");
 
     const label = $("<span class=var-info-button-label>").appendTo(outer);
 
     const jval = str(v[vname]);
-    if (varsWritten.has(vname)) {
+    if (VT.wasSet.has(vname)) {
       const jval0 = str(v0[vname]);
       outer.attr("title", `${vname}=${jval0} ->\n${vname}=${jval}`);
     } else {
@@ -1304,7 +1247,7 @@ function varInfoSetup() {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
       label.text(vname);
-      if (varsRead.has(vname)) {
+      if (VT.wasRead.has(vname)) {
         outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = !v0[vname];
@@ -1330,7 +1273,7 @@ function varInfoSetup() {
       const sameType = Object.values(varTypes).filter(t => t === vtype).length;
       label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
-      if (varsRead.has(vname)) {
+      if (VT.wasRead.has(vname)) {
         if (0 < v[vname]) {
           const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
           left.on("click", () => {
@@ -1369,18 +1312,18 @@ function varInfoSetup() {
     if (!anyMatched) {
       assertionFailed(`Passage should match some bigMoodVars rule`);
     }
-    startTrace();
+    VT.start();
   });
 
   $(document).on(":passageend", () => {
     $(".var-info").remove();
-    stopTrace();
+    VT.stop();
 
     const touched = new Set();
-    [...varsRead].forEach(v => touched.add(v));
-    [...varsWritten].forEach(v => touched.add(v));
+    [...VT.wasRead].forEach(v => touched.add(v));
+    [...VT.wasSet].forEach(v => touched.add(v));
 
-    [...varsRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
+    [...VT.wasRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
       assertionFailed(`Passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
     });
 
@@ -1417,7 +1360,7 @@ function varInfoSetup() {
         if (bigMood_to_do.has(v)) {
           MT.has_to_do = true;
           but.addClass("var-info-to-do");
-        } else if (!varsRead.has(v) && !bigMoodIgnore.has(v) && bigMoodReq[v] == null && bigMoodAlways[v] == null) {
+        } else if (!VT.wasRead.has(v) && !bigMoodIgnore.has(v) && bigMoodReq[v] == null && bigMoodAlways[v] == null) {
           MT.has_warning = true;
           but.addClass("var-info-warning");
         }
@@ -1706,7 +1649,7 @@ With a spring to his step, the panther approaches, closing in the last distance 
 <<include [[Init Draft Sign]]>>
 <<include [[Init Fade-In]]>>
 <<include [[Init Passage Notes]]>>
-<<include [[Init Conditional]]>>
+<<include [[Init Pick Unseen]]>>
 <<include [[Init Random Walk]]>>
 <<include [[Init Sidebar]]>>
 <<include [[Init UI Style]]>>
@@ -12135,7 +12078,7 @@ $n1_afterAction
 
 :: PassageHeader [inclusion] {"position":"3100,700","size":"100,100"}
 <<nobr>>
-<<no-trace>>
+<<var-trace-ignore>>
 <<if /^n/.test(State.passage)>>
     <<set $n1_magicPhase || ($n1_magicPhase = 0)>>
 
@@ -12198,7 +12141,7 @@ $n1_afterAction
     <<big-mood n2_tooClever implies $n2_free>>
     <<big-mood n2_tooClever implies $n2_ivexGone>>
 <</if>>
-<</no-trace>>
+<</var-trace-ignore>>
 <</nobr>>\
 
 
@@ -13865,7 +13808,7 @@ v.personalEnding = false;
 <<include [[Init Nero Vars]]>>
 
 
-:: Init Sidebar [inclusion] {"position":"2000,425","size":"100,100"}
+:: Init Sidebar [inclusion] {"position":"2100,425","size":"100,100"}
 <<nobr>>
 <<append "#ui-bar-body">>
   <div id="ui-bar-footer">
@@ -14391,90 +14334,94 @@ $(document).on(":passagestart", () => {
 :: Init Var Trace [inclusion] {"position":"1900,200","size":"100,100"}
 <<script>>
 window.VarTrace || (window.VarTrace = {});
-const vt = window.VarTrace;
+const VT = window.VarTrace;
 
 /** Variables that were read. */
-vt.wasRead = new Set();
+VT.wasRead = new Set();
 
 /** Variables that were set. */
-vt.wasSet = new Set();
+VT.wasSet = new Set();
 
 /** Variables that were deleted. */
-vt.wasDeleted = new Set();
+VT.wasDeleted = new Set();
 
-vt._unproxied = null;
+VT._unproxied = null;
 const myBrand = Symbol("VarTraceBrand");
 
-Macro.add("var-trace-off", {
+Macro.add("var-trace-ignore", {
   tags: [],
   handler: function() {
     const body = this.payload[0].contents;
-    vt.noTraceDo(() => $(this.output).wiki(body));
+    VT.ignore(() => $(this.output).wiki(body));
   }
 });
 
 /** Start tracing. */
-vt.start = () => {
-  vt.stop();
-  vt.wasRead.clear();
-  vt.wasSet.clear();
-  vt.wasDeleted.clear();
-  vt._unproxied = State.active.variables;
-  Object.defineProperty(vt._unproxied, '_varTrace', {
+VT.start = () => {
+  VT.stop();
+  VT.wasRead.clear();
+  VT.wasSet.clear();
+  VT.wasDeleted.clear();
+  VT._unproxied = State.active.variables;
+  Object.defineProperty(VT._unproxied, '_varTrace', {
     value: myBrand,
     configurable: true,
   });
-  State.active.variables = new Proxy(vt._unproxied, {
+  State.active.variables = new Proxy(VT._unproxied, {
     defineProperty(o, prop) {
-      if (typeof prop === "string") vt.wasSet.add(prop);
+      if (typeof prop === "string") VT.wasSet.add(prop);
       return Reflect.defineProperty(...arguments);
     },
     delete(o, prop) {
-      if (typeof prop === "string") vt.wasDeleted.add(prop);
+      if (typeof prop === "string") VT.wasDeleted.add(prop);
       return Reflect.delete(...arguments);
     },
     get(o, prop) {
-      if (typeof prop === "string") vt.wasRead.add(prop);
+      if (typeof prop === "string" && prop !== "_varTrace") VT.wasRead.add(prop);
       return Reflect.get(...arguments);
     },
     set(o, prop) {
-      if (typeof prop === "string") vt.wasSet.add(prop);
+      if (typeof prop === "string") VT.wasSet.add(prop);
       return Reflect.set(...arguments);
     },
   });
 };
 
 /** Stop tracing. */
-vt.stop = () => {
+VT.stop = () => {
   if ((State.active.variables._varTrace ?? myBrand) !== myBrand) {
     throw new Error("Multiple instances of Var Trace in conflict.");
   }
-  if (vt._unproxied != null) {
-    State.active.variables = vt._unproxied;
-    vt._unproxed = null;
+  if (VT._unproxied != null) {
+    State.active.variables = VT._unproxied;
+    VT._unproxed = null;
   }
 };
 
 /** Get vname's value without tracing it. */
-vt.noTraceGet = vname => {
-  return (vt._unproxied ?? State.active.variables)[vname];
+VT.untracedGet = vname => {
+  return (VT._unproxied ?? State.active.variables)[vname];
 }
 
 /** Set vname's value without tracing it. */
-vt.noTraceSet = (vname, value) => {
-  (vt._unproxied ?? State.active.variables)[vname] = value;
+VT.untracedSet = (vname, value) => {
+  (VT._unproxied ?? State.active.variables)[vname] = value;
 };
 
 /** Delete vname's value without tracing it. */
-vt.noTraceDelete = vname => {
-  delete (vt._unproxied ?? State.active.variables)[vname];
+VT.untracedDelete = vname => {
+  delete (VT._unproxied ?? State.active.variables)[vname];
 };
 
+VT.untracedVariables = () => {
+  return VT._unproxied ?? State.active.variables;
+}
+
 /** Run fn without tracing any variables during its execution. */
-vt.noTraceDo = fn => {
-  if (vt._unproxied == null) return fn();
+VT.ignore = fn => {
+  if (VT._unproxied == null) return fn();
   const proxy = State.active.variables;
-  State.active.variables = vt._unproxied;
+  State.active.variables = VT._unproxied;
   try {
     return fn();
   } finally {
@@ -14485,7 +14432,7 @@ vt.noTraceDo = fn => {
 <</script>>
 
 
-:: Init Random Walk [inclusion] {"position":"1900,425","size":"100,100"}
+:: Init Random Walk [inclusion] {"position":"2000,425","size":"100,100"}
 <<script>>
 /** Random walk */
 function randomWalkSetup() {
@@ -14982,6 +14929,26 @@ PN.tryReplaceFull = (old, val) => {
   return val;
 };
 
+PN.cleanup = (text) => {
+  text = "\n" + text + "\n";
+  const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
+  const before = parts.shift().trimEnd().slice(1);
+  const keep = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const passage = parts[i].trim();
+    const body = parts[i+1].trimEnd();
+    if (body === "") continue;
+    keep.push([passage, body]);
+  }
+  keep.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? +1 : 0);
+  let result = "";
+  if (before !== "") result += before + "\n";
+  for (const [passage, body] of keep) {
+    result += `[passage ${passage}]\n${body}\n\n`;
+  }
+  return result;
+};
+
 function splitAt(passage, text) {
   let ntext = "\n" + text;
   if (ntext.slice(-1) !== "\n") ntext += "\n";
@@ -15081,9 +15048,13 @@ $(document).on(":passagedisplay", renderButton);
 <<nobr>>
 <style>
   #notes-load-file {
-    visibility: hidden;
+    height: 1px;
+    left: 0;
     position: absolute;
     pointer-events: none;
+    top: 0;
+    width: 1px;
+    visibility: hidden;
   }
 </style>
 <<script>>
@@ -15102,6 +15073,7 @@ $(document).on(":passagedisplay", renderButton);
     $("#notes-checkbox").on("change", toggleButton);
     $("#notes-input").on("input", onInput);
     $("#notes-copy").click(copyToClipboard);
+    $("#notes-clean").click(confirmClean);
     $("#notes-delete").click(confirmDelete);
     $("#notes-lose").click(confirmLose);
     $("#notes-overwrite").click(confirmOverwrite);
@@ -15127,6 +15099,7 @@ $(document).on(":passagedisplay", renderButton);
     const hasEdit = T.editVal.trimEnd() !== "";
     const hasData = T.savedVal.trimEnd() !== "" || hasEdit;
     $("#notes-delete").prop("disabled", !hasData || T.hasConflict);
+    $("#notes-clean").prop("disabled", !hasEdit);
     $("#notes-copy").prop("disabled", !hasEdit);
     $("#notes-save").prop("disabled", !hasEdit);
     $("#notes-load").prop("disabled", T.hasConflict);
@@ -15159,6 +15132,24 @@ $(document).on(":passagedisplay", renderButton);
     }
     uiUpdate();
   }
+
+  function cleanNotes() {
+
+  }
+
+  T.doClean = () => {
+    saveValue(PN.cleanup(T.editVal), false);
+    $("#notes-input").val(T.editVal);
+  };
+  function confirmClean() {
+    Dialog.setup("Confirm Clean Up");
+    Dialog.wiki(`
+      Clean-up will remove empty notes and the remaining notes
+      by passage name.<br><br>
+      <<button "Clean up">><<run Dialog.close(); _doClean()>><</button>>
+    `);
+    Dialog.open();
+  }
     
   T.doDelete = () => overwriteValue("");
   function confirmDelete() {
@@ -15166,7 +15157,7 @@ $(document).on(":passagedisplay", renderButton);
     Dialog.wiki(`
       Are you sure you want to delete ALL notes?<br><br>
       <<button "Delete all">><<run Dialog.close(); _doDelete()>><</button>>
-    `);;
+    `);
     Dialog.open();
   }
   
@@ -15176,7 +15167,7 @@ $(document).on(":passagedisplay", renderButton);
     Dialog.wiki(`
       Are you sure you want to lose your edits and revert to the conflicting value?<br><br>
       <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
-    `);;
+    `);
     Dialog.open();
   }
     
@@ -15277,6 +15268,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
     <textarea id="notes-input"></textarea>
     <div class="notes-buttons">
         <button id="notes-delete">Delete all</button>
+        <button id="notes-clean">Cleanup notes</button>
         <button id="notes-copy">Copy to clipboard</button>
         <button id="notes-save">Save to file</button>
         <button id="notes-load">Load from file</button>
@@ -15298,7 +15290,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 <</nobr>>
 
 
-:: Init UI Style [inclusion] {"position":"2100,425","size":"100,100"}
+:: Init UI Style [inclusion] {"position":"2200,425","size":"100,100"}
 <<script>>
 $("#ui-style").remove();
 $("head").append(`
@@ -15547,39 +15539,8 @@ spell fizzes. Ivex recognizes it.
 [[Continue|n1m/P Cast Slippery]]
 
 
-:: Init Conditional [inclusion] {"position":"2200,425","size":"100,100"}
+:: Init Pick Unseen [inclusion] {"position":"1900,425","size":"100,100"}
 <<script>>
-/**
- * Similar to if/elseif, but marks all condition vars as potentially-read.
- * <<if expr1...>>
- *    this text shows if expr1 is true. vars in expr2 are potentially-read.
- * <<elseif expr2...>>
- *    this text shows if expr1 is false and expr2 is true.
- * <<else>>
- *    this text shows if none of the previous exprs are true.
- * <</if>>
- */
-Macro.add("maybe", {
-  tags: ["or"],
-  skipArgs: true,
-  handler: function() {
-    let p = 0;
-    console.log(this.payload);
-    for (; p < this.payload.length; ++p) {
-      const clause = this.payload[p];
-      const expr = clause.args.full;
-      if (expr === "" || eval(expr)) {
-        $(this.output).wiki(clause.contents);
-        break;
-      }
-    }
-    for (; p < this.payload.length; ++p) {
-      const clause = this.payload[p];
-      // TODO: mark vars as potentially-read
-    }
-  }
-});
-
 /**
  * Show an option that hasn't been shown yet, if possible.
  * <<pick-unseen memory_var>>
