@@ -14037,11 +14037,6 @@ $n1_afterAction
     saveValue($(&quot;#NP-input&quot;).val(), false);
   }
   
-  function overwriteValue(val) {
-  	$(&quot;#NP-input&quot;).val(val);
-    saveValue(val, true);
-  }
-  
   function saveValue(val, overwrite) {
     T.editVal = val;
     if (overwrite || !T.hasConflict) {
@@ -14055,6 +14050,20 @@ $n1_afterAction
       session.removeItem(key);
     }
     uiUpdate();
+  }
+  
+  T.addCurrentState = () =&gt; {
+    const wasRead = [...window.VarTrace.wasRead].sort();
+    const obj = {};
+    for (const vn of wasRead) {
+      const val = State.current.variables[vn];
+      if (val != null) obj[vn] = val;
+    }
+    const json = JSON.stringify(obj);
+    const text = `enterState = ${json}`;
+    const newVal = T.editVal + &quot;\n&quot; + text;
+    $(&quot;#NP-input&quot;).val(newVal);
+    saveValue(newVal, false);
   }
 &lt;&lt;/script&gt;&gt;
 &lt;style&gt;
@@ -14075,11 +14084,15 @@ $n1_afterAction
     font-size: 1.1em;
     font-weight: bold;
   }
+  #ui-dialog-body a {
+    display: inline-block;
+    margin-top: .5em;
+  }
 &lt;/style&gt;
 &lt;div class=&quot;NP-subtitle&quot;&gt;
     Notes for [passage $t0_notesOrigin]
 &lt;/div&gt;
-&lt;textarea id=&quot;NP-input&quot; rows=&quot;10&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
+&lt;textarea id=&quot;NP-input&quot; rows=&quot;8&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
 &lt;br&gt;
 &lt;div id=&quot;NP-conflict&quot;&gt;
   &lt;div class=&quot;NP-conflict-important&quot;&gt;
@@ -14087,6 +14100,10 @@ $n1_afterAction
   &lt;/div&gt;
   [[See conflict|Passage Notes Single][Dialog.close()]]
 &lt;/div&gt;
+&lt;&lt;link &quot;Add current state to note&quot;&gt;&gt;
+    &lt;&lt;run _addCurrentState()&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+&lt;br&gt;
 [[View all notes|Passage Notes Top][Dialog.close()]]
 &lt;br&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata></tw-storydata>

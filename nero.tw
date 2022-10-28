@@ -15935,11 +15935,6 @@ $n1_afterAction
     saveValue($("#NP-input").val(), false);
   }
   
-  function overwriteValue(val) {
-  	$("#NP-input").val(val);
-    saveValue(val, true);
-  }
-  
   function saveValue(val, overwrite) {
     T.editVal = val;
     if (overwrite || !T.hasConflict) {
@@ -15953,6 +15948,20 @@ $n1_afterAction
       session.removeItem(key);
     }
     uiUpdate();
+  }
+  
+  T.addCurrentState = () => {
+    const wasRead = [...window.VarTrace.wasRead].sort();
+    const obj = {};
+    for (const vn of wasRead) {
+      const val = State.current.variables[vn];
+      if (val != null) obj[vn] = val;
+    }
+    const json = JSON.stringify(obj);
+    const text = `enterState = ${json}`;
+    const newVal = T.editVal + "\n" + text;
+    $("#NP-input").val(newVal);
+    saveValue(newVal, false);
   }
 <</script>>
 <style>
@@ -15973,11 +15982,15 @@ $n1_afterAction
     font-size: 1.1em;
     font-weight: bold;
   }
+  #ui-dialog-body a {
+    display: inline-block;
+    margin-top: .5em;
+  }
 </style>
 <div class="NP-subtitle">
     Notes for [passage $t0_notesOrigin]
 </div>
-<textarea id="NP-input" rows="10" placeholder="Enter text here"></textarea>
+<textarea id="NP-input" rows="8" placeholder="Enter text here"></textarea>
 <br>
 <div id="NP-conflict">
   <div class="NP-conflict-important">
@@ -15985,6 +15998,10 @@ $n1_afterAction
   </div>
   [[See conflict|Passage Notes Single][Dialog.close()]]
 </div>
+<<link "Add current state to note">>
+    <<run _addCurrentState()>>
+<</link>>
+<br>
 [[View all notes|Passage Notes Top][Dialog.close()]]
 <br>
 <</nobr>>
