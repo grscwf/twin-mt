@@ -7547,7 +7547,7 @@ Nero considers his next move.
 
 :: n1cn/F Ivex Repeat (4,2) {"position":"4200,1575","size":"200,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
+<<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked ignore>>
 
@@ -7562,7 +7562,11 @@ Nero considers his next move.
 
 <ul class="actions">
     <li>[[`"There's been a misunderstanding..."`|n1cn/F Charm]]</li>
-    <li>[[Growl at Ivex.|n1cn/F Resist]]</li>
+    <<if $n1_abused>>
+        <li>[[Growl softly at Ivex.|n1cn/F Resist]]</li>
+    <<else>>
+        <li>[[Growl at Ivex.|n1cn/F Resist]]</li>
+    <</if>>
     <<actions-optional $n1_magicAction>>
 </ul>
 <</nobr>>
@@ -9715,7 +9719,7 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 
 :: n1cn/F Ivex Disdainful (1,1) {"position":"4350,2675","size":"200,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
+<<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked ignore>>
 
@@ -9728,7 +9732,11 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[`"Would you prefer a 60% share?"`|n1cn/P Reject Equality]]</li>
+    <<if $n1_abused>>
+        <li>[[`"You can have 80%!"`|n1cn/P Reject Equality]]</li>
+    <<else>>
+        <li>[[`"Would you prefer a 60% share?"`|n1cn/P Reject Equality]]</li>
+    <</if>>
     <li>[[`"Perhaps I could apprentice..."`|n1cn/P Apprentice]]</li>
     <<actions-optional $n1_magicAction>>
 </ul>
@@ -9737,7 +9745,7 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 
 :: n1cn/D Ivex Offended (1,1) {"position":"4100,1950","size":"200,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
+<<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked ignore>>
 
@@ -9750,13 +9758,11 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 
 <ul class="actions">
     <li>[[`"Not for myself..."`|n1cn/P Secret Society]]</li>
-    <li>
-        <<if $n1_abused>>
-            [[`"No, not like that! I have a support group."`|n1cn/D Reject Demotion]]
-        <<else>>
-            [[`"Not at all! You'd be my apprentice."`|n1cn/D Reject Demotion]]
-        <</if>>
-    </li>
+    <<if $n1_abused>>
+        <li>[[`"No, not like that! I have a support group."`|n1cn/D Reject Demotion]]</li>
+    <<else>>
+        <li>[[`"Not at all! You'd be my apprentice."`|n1cn/D Reject Demotion]]</li>
+    <</if>>
     <<actions-optional $n1_magicAction>>
 </ul>
 <</nobr>>
@@ -12008,7 +12014,7 @@ need state for mirror location
 $n1_afterAction
 
 
-:: PassageHeader [inclusion] {"position":"3100,700","size":"100,100"}
+:: PassageHeader [inclusion] {"position":"3100,750","size":"100,100"}
 <<nobr>>
 <<var-trace-ignore>>
 <<if /^n/.test(State.passage)>>
@@ -13689,7 +13695,7 @@ thrall and tickle fight each other. thrall is a mindl program but can't override
 ivex returns and is amused by the glitch, lets the glitch continue forever, plays with it sometimes.
 
 
-:: Init Drekkar [inclusion] {"position":"2525,400","size":"100,100"}
+:: Init Drekkar [inclusion] {"position":"2525,425","size":"100,100"}
 <<script>>
 const v = variables();
 v.name = "Drekkar";
@@ -13750,7 +13756,7 @@ v.personalEnding = false;
 <</script>>
 
 
-:: Init Nero [inclusion] {"position":"2700,400","size":"100,100"}
+:: Init Nero [inclusion] {"position":"2700,425","size":"100,100"}
 <<script>>
   window.Nero || (window.Nero = {});
 <</script>>
@@ -13797,7 +13803,7 @@ Macro.add("sidebar-auto-stow", {
 <</nobr>>
 
 
-:: Init Nero Password [inclusion] {"position":"3125,400","size":"100,100"}
+:: Init Nero Password [inclusion] {"position":"3125,475","size":"100,100"}
 <!--
     <<pw-choice Red>>
         Perhaps the password is "Red"?
@@ -13852,28 +13858,28 @@ Macro.add("pw-choice", {
 <</script>>
 
 
-:: Init Nero Barbs [inclusion] {"position":"2925,525","size":"100,100"}
+:: Init Nero Barbs [inclusion] {"position":"2925,600","size":"100,100"}
 <<script>>
 function announceBarbs(output) {
-  const v = State.variables;
-  v.n1_announceBarbsSoon = false;
-  const barbs = v.n1_barbsGlitch ? "Barbs?" : v.n1_barbs ? "Barbs" : "Smooth";
-  $(output).wiki(`<mark><i>Story Variant (${barbs})</i><br><br></mark>`);
+  const V = State.variables;
+  V.n1_announceBarbsSoon = false;
+  const barbs = V.n1_barbsGlitch ? "Barbs?" : v.n1_barbs ? "Barbs" : "Smooth";
+  $(output).wiki(`<meta-text>Story Variant (${barbs})</meta-text><br><br>`);
 }
 
 Macro.add("barbs-announce", {
   handler: function() {
     if (this.args.length !== 1) throw new Error("expected 1 arg");
-    const v = State.variables;
+    const V = State.variables;
     switch (this.args[0]) {
     case "now":
       announceBarbs(this.output);
       break;
     case "soon":
-      v.n1_announceBarbsSoon = true;
+      V.n1_announceBarbsSoon = true;
       return;
     case "maybe":
-      if (v.n1_announceBarbsSoon) announceBarbs(this.output);
+      if (V.n1_announceBarbsSoon) announceBarbs(this.output);
       break;
     default:
       throw new Error(`Unexpected arg ${this.args[0]}`);
@@ -13883,7 +13889,7 @@ Macro.add("barbs-announce", {
 <</script>>
 
 
-:: Init Nero Actions [inclusion] {"position":"2825,525","size":"100,100"}
+:: Init Nero Actions [inclusion] {"position":"2825,600","size":"100,100"}
 <<script>>
 const Nero = window.Nero;
 const actionList = [];
@@ -14283,7 +14289,7 @@ $n1_afterAction
 <</nobr>>
 
 
-:: Init Nero Vars [inclusion] {"position":"3125,525","size":"100,100"}
+:: Init Nero Vars [inclusion] {"position":"3125,600","size":"100,100"}
 <<script>>
 // This defines some inferred temp vars for convenience
 
@@ -14541,7 +14547,7 @@ var-info test<br>
 <</nobr>>
 
 
-:: Init Nero Patience [inclusion] {"position":"3025,525","size":"100,100"}
+:: Init Nero Patience [inclusion] {"position":"3025,600","size":"100,100"}
 <<script>>
 Macro.add("n1-patience", {
   handler: function() {
