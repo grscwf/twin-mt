@@ -650,28 +650,6 @@ $(document).on(':passagestart', function (ev) {
 });
 
 
-/*** Enums */
-
-let enums = {};
-
-function defineEnum(enumName, valueNames) {
-  enums[enumName] = valueNames;
-  valueNames.forEach((n, i) => window[n] = i);
-}
-
-defineEnum("MagicPhase", [
-  "MP_beforeCast",
-  "MP_triedMagic",
-  "MP_mageSight",
-  "MP_wantDevice",
-  "MP_wantName",
-  "MP_wantTouch",
-  "MP_wantPassword",
-  "MP_onHold",
-  "MP_connected",
-  "MP_lockedOut",
-]);
-
 /** Redisplay current passage. */
 let redisplayTop = null;
 function redisplay() {
@@ -693,8 +671,9 @@ Macro.add("redisplay-passage", {
 });
 
 /** forward decls */
-const VT = window.VarTrace || (window.VarTrace = {});
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const ET = window.EnumType || (window.EnumType = {});
+const VT = window.VarTrace || (window.VarTrace = {});
 
 /*** to-do */
 $(document).on(":passagestart", () => {
@@ -861,10 +840,6 @@ function withinIncludeOrIgnore(context) {
 function varInfoSetup() {
   if (!Config.debug) return;
 
-  const varTypes = {
-    n1_magicPhase: "MagicPhase",
-  };
-
   let varInfoShow = State.metadata.get("varInfoShow");
   
   const bigMoodVars = [
@@ -1030,15 +1005,15 @@ function varInfoSetup() {
 
     const outer = $("<span class=var-info-button-outer>");
 
-    if (VT.wasRead.has(vname)) outer.addClass("var-info-was-read");
-    if (VT.wasSet.has(vname)) outer.addClass("var-info-was-written");
-    if (!VT.wasRead.has(vname) && !VT.wasSet.has(vname)) outer.addClass("var-info-was-ignored");
+    if (VT.ctx.wasRead.has(vname)) outer.addClass("var-info-was-read");
+    if (VT.ctx.wasSet.has(vname)) outer.addClass("var-info-was-written");
+    if (!VT.ctx.wasRead.has(vname) && !VT.ctx.wasSet.has(vname)) outer.addClass("var-info-was-ignored");
     if (bigMoodReq[vname] != null && bigMoodReq[vname] === v[vname]) outer.addClass("var-info-req");
 
     const label = $("<span class=var-info-button-label>").appendTo(outer);
 
     const jval = str(v[vname]);
-    if (VT.wasSet.has(vname)) {
+    if (VT.ctx.wasSet.has(vname)) {
       const jval0 = str(v0[vname]);
       outer.attr("title", `${vname}=${jval0} ->\n${vname}=${jval}`);
     } else {
@@ -1049,13 +1024,13 @@ function varInfoSetup() {
     $("<span class=var-info-value>").text(jval).appendTo(label);
 
     // assume unset is boolean
-    const vtype = varTypes[vname] || (vname in v ? typeof v[vname] : "boolean");
+    const vtype = ET.vars[vname] || (vname in v ? typeof v[vname] : "boolean");
 
     if (vtype === "boolean") {
       outer.addClass("var-info-boolean");
       outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
       label.text(vname);
-      if (VT.wasRead.has(vname)) {
+      if (VT.ctx.wasRead.has(vname)) {
         outer.addClass("var-info-can-change");
         outer.on("click", () => {
           v[vname] = !v0[vname];
@@ -1073,15 +1048,15 @@ function varInfoSetup() {
       return outer;
     }
 
-    const enumList = enums[vtype];
+    const enumList = ET.enums[vtype];
     if (enumList != null) {
       outer.addClass("var-info-enum");
       outer.addClass("var-info-enum-" + vtype);
       const sym = enumList[v[vname] || 0];
-      const sameType = Object.values(varTypes).filter(t => t === vtype).length;
+      const sameType = Object.values(ET.vars).filter(t => t === vtype).length;
       label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
-      if (VT.wasRead.has(vname)) {
+      if (VT.ctx.wasRead.has(vname)) {
         if (0 < v[vname]) {
           const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
           left.on("click", () => {
@@ -1128,10 +1103,10 @@ function varInfoSetup() {
     VT.stop();
 
     const touched = new Set();
-    [...VT.wasRead].forEach(v => touched.add(v));
-    [...VT.wasSet].forEach(v => touched.add(v));
+    [...VT.ctx.wasRead].forEach(v => touched.add(v));
+    [...VT.ctx.wasSet].forEach(v => touched.add(v));
 
-    [...VT.wasRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
+    [...VT.ctx.wasRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
       EM.fail(`Passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
     });
 
@@ -1168,7 +1143,7 @@ function varInfoSetup() {
         if (bigMood_to_do.has(v)) {
           MT.has_to_do = true;
           but.addClass("var-info-to-do");
-        } else if (!VT.wasRead.has(v) && !bigMoodIgnore.has(v) && bigMoodReq[v] == null && bigMoodAlways[v] == null) {
+        } else if (!VT.ctx.wasRead.has(v) && !bigMoodIgnore.has(v) && bigMoodReq[v] == null && bigMoodAlways[v] == null) {
           MT.has_warning = true;
           but.addClass("var-info-warning");
         }
@@ -1447,6 +1422,7 @@ With a spring to his step, the panther approaches, closing in the last distance 
 :: StoryInit [inclusion] {"position":"2600,100","size":"100,100"}
 <<script>>
   // global modules
+  window.EnumType || (window.EnumType = {});
   window.ErrorMessage || (window.ErrorMessage = {});
   window.MagesTower || (window.MagesTower = {});
   window.Nero || (window.Nero = {});
@@ -1461,6 +1437,7 @@ With a spring to his step, the panther approaches, closing in the last distance 
 <<include [[Init Arousal Bar]]>>
 <<include [[Init Delete Vars]]>>
 <<include [[Init Draft Sign]]>>
+<<include [[Init Enum Type]]>>
 <<include [[Init Error Message]]>>
 <<include [[Init Fade-In]]>>
 <<include [[Init Meta Text]]>>
@@ -8845,7 +8822,7 @@ Nero feels a familiar tingle from the unleashing of the spell inscribed on his a
 <<fade-in 3s>>\
 Nothing happens.
 
-<<next 2s>>\
+<<fade-next 2s>>\
 He's still bound to the wooden contraption, and now his head is feeling even more nauseous. Well, so much for the chance of a quick resolution to whatever predicament he's in. The failure is still useful information.
 
 Nero opens his eyes and struggles to focus. This is definitely not just a hangover. It feels a bit like teleportation sickness and a blunt sleep spell, probably mixed with some neutralization spells for good measure. It takes several blinks and some shaking of his aching head before he can see clearly.
@@ -9077,7 +9054,7 @@ Candle's Influence:
     <<include [[n2a/D Lust Text]]>>
     <br><br>
 
-<<next 3s>>
+<<fade-next 3s>>
     <<include [[n1x/F Look and Magic]]>>
     <<include [[n2a/D More Magic]]>>
 
@@ -9941,7 +9918,21 @@ Nero is not completely averse to dalliances with shy, gentle men when there are 
 
 
 :: testing 2 {"position":"4800,575","size":"100,100"}
-<<n1-no-loop [[testing 3]]>>
+hello
+
+<<fade-in 3s>>
+one
+<<fade-next 3s>>
+one.five
+<</fade-in>>
+
+two
+
+<<fade-in 3s>>
+three
+<<fade-next 3s>>
+four
+<</fade-in>>
 
 
 :: n1x/F Window [has-hole] {"position":"7350,3350","size":"100,100"}
@@ -11637,12 +11628,12 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 <<nobr>>
 <<fade-in 0s>>
 one
-<<next 2s>>
+<<fade-next 2s>>
 two
-<<next 50s>>
+<<fade-next 50s>>
 <br><br>
 hello my old friend
-<<next 5s>>
+<<fade-next 5s>>
 <br><br>
 [[testing 2]]
 hello some more
@@ -13711,7 +13702,7 @@ v.personalEnding = false;
 <<include [[Init Nero Vars]]>>
 
 
-:: Init Sidebar [inclusion] {"position":"2000,525","size":"100,100"}
+:: Init Sidebar [inclusion] {"position":"2000,625","size":"100,100"}
 <<script>>
 Macro.add("sidebar-auto-stow", {
   handler: function() {
@@ -13874,7 +13865,7 @@ Macro.add("actions-optional", {
 <</script>>
 
 
-:: Init Fade-In [inclusion] {"position":"2000,425","size":"100,100"}
+:: Init Fade-In [inclusion] {"position":"2000,525","size":"100,100"}
 <!--
 /*
  * This description assumes you're using the default style.
@@ -13885,7 +13876,7 @@ Macro.add("actions-optional", {
  *    Links in this section are shown without delay, in their proper location,
  *    but blocked out with a gray rectangle.
  *    Click/tap on any blocked-out link will also skip the delay.
- * <<next 1s>>
+ * <<fade-next 1s>>
  *    After the first section has faded-in, the "..." appears here.
  *    After another 1s, this section's text fades in.
  *    There can be any number of "next" sections.
@@ -13969,7 +13960,7 @@ Macro.add("actions-optional", {
 const absorbMsec = 1000;
 
 Macro.add("fade-in", {
-  tags: ["next"],
+  tags: ["fade-next"],
   handler: function() {
     const queue = [];
     let timeout = null;
@@ -14235,7 +14226,19 @@ $n1_afterAction
 
 :: Init Nero Vars [inclusion] {"position":"3125,600","size":"100,100"}
 <<script>>
-// This defines some inferred temp vars for convenience
+EnumType.define("MagicPhase", [
+  "MP_beforeCast",
+  "MP_triedMagic",
+  "MP_mageSight",
+  "MP_wantDevice",
+  "MP_wantName",
+  "MP_wantTouch",
+  "MP_wantPassword",
+  "MP_onHold",
+  "MP_connected",
+  "MP_lockedOut",
+]);
+EnumType.declareVar("n1_magicPhase", "MagicPhase");
 
 // Define temp var with a getter, so read tracking works.
 function def(vname, fn) {
@@ -14254,17 +14257,18 @@ $(document).on(":passagestart", () => {
 window.VarTrace || (window.VarTrace = {});
 const VT = window.VarTrace;
 
-/** Variables that were read. */
-VT.wasRead = new Set();
-
-/** Variables that were set. */
-VT.wasSet = new Set();
-
-/** Variables that were deleted. */
-VT.wasDeleted = new Set();
+VT.ctx = newContext();
 
 VT._unproxied = null;
 const myBrand = Symbol("VarTraceBrand");
+
+function newContext() {
+  return {
+    wasRead: new Set(),
+    wasSet: new Set(),
+    wasDeleted: new Set(),
+  };
+}
 
 Macro.add("var-trace-ignore", {
   tags: [],
@@ -14277,26 +14281,24 @@ Macro.add("var-trace-ignore", {
 /** Start tracing. */
 VT.start = () => {
   VT.stop();
-  VT.wasRead.clear();
-  VT.wasSet.clear();
-  VT.wasDeleted.clear();
+  VT.ctx = newContext();
   VT._unproxied = State.active.variables;
   State.active.variables = new Proxy(VT._unproxied, {
     defineProperty(o, prop) {
-      if (typeof prop === "string") VT.wasSet.add(prop);
+      if (typeof prop === "string") VT.ctx.wasSet.add(prop);
       return Reflect.defineProperty(...arguments);
     },
     delete(o, prop) {
-      if (typeof prop === "string") VT.wasDeleted.add(prop);
+      if (typeof prop === "string") VT.ctx.wasDeleted.add(prop);
       return Reflect.delete(...arguments);
     },
     get(o, prop) {
       if (prop === "_varTrace") return myBrand;
-      if (typeof prop === "string") VT.wasRead.add(prop);
+      if (typeof prop === "string") VT.ctx.wasRead.add(prop);
       return Reflect.get(...arguments);
     },
     set(o, prop) {
-      if (typeof prop === "string") VT.wasSet.add(prop);
+      if (typeof prop === "string") VT.ctx.wasSet.add(prop);
       return Reflect.set(...arguments);
     },
   });
@@ -14347,7 +14349,7 @@ VT.ignore = fn => {
 <</script>>
 
 
-:: Init Random Walk [inclusion] {"position":"1900,525","size":"100,100"}
+:: Init Random Walk [inclusion] {"position":"1900,625","size":"100,100"}
 <<append head>><style>
   #random-walk {
     top: max(5rem, 50vh - 5rem);
@@ -14792,12 +14794,12 @@ lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
     opacity: 1;
   }
   #notes-line-2::before {
-    content: "\ue801 ";
+    content: "\e801\0020";
     font-family: tme-fa-icons;
   }
   .notes-has-note #notes-line-2::before {
     color: #cc0;
-    content: "\ue800 ";
+    content: "\e800\0020";
   }
   .notes-buttons button {
     background-color: #000;
@@ -15235,7 +15237,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 <</nobr>>
 
 
-:: Init UI Style [inclusion] {"position":"2100,525","size":"100,100"}
+:: Init UI Style [inclusion] {"position":"2100,625","size":"100,100"}
 <<append head>><style>
   #passages hr {
     border: 0;
@@ -15480,7 +15482,7 @@ spell fizzes. Ivex recognizes it.
 [[Continue|n1m/P Cast Slippery]]
 
 
-:: Init Pick Unseen [inclusion] {"position":"2200,425","size":"100,100"}
+:: Init Pick Unseen [inclusion] {"position":"2200,525","size":"100,100"}
 <<script>>
 /**
  * Show an option that hasn't been shown yet, if possible.
@@ -15506,7 +15508,7 @@ spell fizzes. Ivex recognizes it.
 <</script>>
 
 
-:: Init Draft Sign [inclusion] {"position":"1900,425","size":"100,100"}
+:: Init Draft Sign [inclusion] {"position":"1900,525","size":"100,100"}
 <<append head>><style>
   #draft-sign {
     font-size: 120px;
@@ -16166,7 +16168,7 @@ Macro.add("arousalbar", {
 <</script>>
 
 
-:: Init Meta Text [inclusion] {"position":"2100,425","size":"100,100"}
+:: Init Meta Text [inclusion] {"position":"2100,525","size":"100,100"}
 <<append head>><style>
   meta-text {
     background-color: transparent;
@@ -16180,7 +16182,7 @@ Macro.add("arousalbar", {
 :: n1x/D Desk Search {"position":"6925,4925","size":"100,100"}
 
 
-:: Init Error Message [inclusion] {"position":"2200,325","size":"100,100"}
+:: Init Error Message [inclusion] {"position":"2000,425","size":"100,100"}
 <<append head>><style>
   #EM-outer {
     position: fixed;
@@ -16337,5 +16339,38 @@ function getFails() {
 
 :: testing 3 {"position":"4925,700","size":"100,100"}
 <<em-assert throw new Error(3)>>
+
+
+:: Init Enum Type [inclusion] {"position":"1900,425","size":"100,100"}
+<<script>>
+const ET = window.EnumType || (window.EnumType = {});
+
+ET.enums = {};
+ET.vars = {};
+
+/**
+ * Define an enum. Value names are added as window globals,
+ * so that typoing an enum value will throw an error.
+ */
+ET.define = (enumName, valueNames) => {
+  ET.enums[enumName] = valueNames;
+  valueNames.forEach((n, i) => window[n] = i);
+};
+Macro.add("enum-define", {
+  handler: function() {
+    ET.define(this.args[0], this.args.slice(1));
+  }
+});
+
+ET.declareVar = (varName, enumName) => {
+  if (!ET.enums[enumName]) throw new Error(`No enum named ${enumName}`);
+  ET.vars[varName] = enumName;
+};
+Macro.add("enum-var", {
+  handler: function() {
+    ET.declareVar(this.args[0], this.args[1]);
+  }
+});
+<</script>>
 
 
