@@ -692,87 +692,9 @@ Macro.add("redisplay-passage", {
   }
 });
 
-/** var tracing, forward decl */
-window.VarTrace || (window.VarTrace = {});
-const VT = window.VarTrace;
-
-/*** Messages and assertions */
-
-let assertionDebug = false;
-
-$(document).on(":passagestart", () => {
-  $("#messages-outer").remove();
-});
-
-function addMessage(jq) {
-  let outer = $("#messages-outer");
-  let inner = $("#messages-inner");
-  if (outer.length !== 1) {
-    outer.remove();
-    outer = $("<div id=messages-outer>").appendTo("#story");
-    inner = $("<div id=messages-inner>").appendTo(outer);
-  }
-  jq.appendTo(inner);
-  return jq;
-}
-
-function macroBacktrace(context) {
-  let trace = "";
-  for (; context != null; context = context.parent) {
-    if (context.displayName === "include") {
-      trace += context.source + "\n";
-    }
-  }
-  return trace;
-}
-
-function assertionFailed(expr, context) {
-  let inner = $("#messages-assert");
-  if (inner.length !== 1) {
-    inner.remove();
-    inner = $("<div id=messages-assert class=messages-item>");
-    addMessage(inner);
-    const info = $("<div id=messages-assert-info>").appendTo(inner);
-    $("<a class=messages-close>[close]</a>").on("click", () => {
-      inner.remove();
-    }).appendTo(info);
-    $("<a class=messages-close>[debug]</a>").on("click", () => {
-      assertionDebug = true;
-      redisplay();
-    }).appendTo(info);
-    info.append("Passage is not expected to make sense");
-    info.append(" if it reads vars in failed assertion.");
-  }
-  const fail = $("<div class=messages-assert-fail>").appendTo(inner);
-  fail.append("Assertion failed: ");
-  const trace = macroBacktrace(context);
-  $("<code>").text(expr).attr("title", trace).appendTo(fail);
-  if (trace !== "") {
-    $("<div class=messages-assert-trace>").text(trace).appendTo(fail);
-  }
-  if (assertionDebug) {
-    assertionDebug = false;
-    debugger;
-  }
-}
-
-MT.fail = (msg, ctx) => assertionFailed(msg, ctx);
-MT.assert = (val, msg, ctx) => val || MT.fail(msg, ctx);
-
-Macro.add("assert-true", {
-  skipArgs: true,
-  handler: function() {
-    const val = VT.ignore(() => eval(this.args.full));
-    MT.assert(val, this.args.raw, this);
-  }
-});
-
-Macro.add("assert-fail", {
-  skipArgs: true,
-  handler: function() {
-    MT.fail(this.args.raw, this);
-  }
-});
+/** forward decls */
+const VT = window.VarTrace || (window.VarTrace = {});
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
 
 /*** to-do */
 $(document).on(":passagestart", () => {
@@ -788,7 +710,7 @@ function add_to_do(text) {
     $("#messages-to-do").remove();
     const div = $("<div id=messages-to-do class=messages-item>");
     div.addClass("messages-to-do-hidden");
-    addMessage(div);
+    EM.note("").append(div);
     $("<a class=messages-close>[close]</a>").on("click", () => {
       div.remove();
     }).appendTo(div);
@@ -881,7 +803,7 @@ Macro.add("big-mood", {
 
         if (actual) {
           if (bigMoodReq[v2] != null && bigMoodReq[v2] !== bool) {
-            assertionFailed(`Shold satisfy implication for ${v2}`);
+            EM.fail(`Shold satisfy implication for ${v2}`, this);
           }
           bigMoodReq[v2] = bool;
         }
@@ -896,7 +818,7 @@ Macro.add("big-mood", {
         }
         if (!!VT.untracedGet(v2) === !bool) {
           if (bigMoodReq[vn] != null && bigMoodReq[vn] !== false) {
-            assertionFailed(`Should satisfy contrapositive for ${vn}`);
+            EM.fail(`Should satisfy contrapositive for ${vn}`, this);
           }
           bigMoodReq[vn] = false;
         }
@@ -906,7 +828,7 @@ Macro.add("big-mood", {
         throw new Error("bug");
     }
     if (!ok) {
-      assertionFailed(`Expected big-mood ${vn} ${m[3]} ${m[4]}`, this);
+      EM.fail(`Expected big-mood ${vn} ${m[3]} ${m[4]}`, this);
     }
   }
 })
@@ -918,7 +840,7 @@ function assertBigMood(vn, val, expr) {
     bigMoodIgnore.add(vn);
     return;
   }
-  assertionFailed(`Expected big-mood ${vn} to be ${expr}`);
+  EM.fail(`Expected big-mood ${vn} to be ${expr}`);
 }
 
 function withinIncludeOrIgnore(context) {
@@ -1196,7 +1118,7 @@ function varInfoSetup() {
       }
     }
     if (!anyMatched) {
-      assertionFailed(`Passage should match some bigMoodVars rule`);
+      EM.fail(`Passage should match some bigMoodVars rule`);
     }
     VT.start();
   });
@@ -1210,7 +1132,7 @@ function varInfoSetup() {
     [...VT.wasSet].forEach(v => touched.add(v));
 
     [...VT.wasRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
-      assertionFailed(`Passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
+      EM.fail(`Passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
     });
 
     const here = State.passage;
@@ -1522,18 +1444,24 @@ With a spring to his step, the panther approaches, closing in the last distance 
 </div>
 
 
-:: StoryInit [inclusion] {"position":"2600,150","size":"100,100"}
+:: StoryInit [inclusion] {"position":"2600,100","size":"100,100"}
 <<script>>
+  // global modules
+  window.ErrorMessage || (window.ErrorMessage = {});
   window.MagesTower || (window.MagesTower = {});
+  window.Nero || (window.Nero = {});
+  window.PassageNotes || (window.PassageNotes = {});
+  window.VarTrace || (window.VarTrace = {});
 <</script>>
 
-<!-- Init 0 modules should happen before other Init modules -->
+<!-- should happen before other modules -->
 <<include [[Init 0 Var Trace]]>>
 
 <<include [[Init Archive]]>>
 <<include [[Init Arousal Bar]]>>
-<<include [[Init Delete-Vars]]>>
+<<include [[Init Delete Vars]]>>
 <<include [[Init Draft Sign]]>>
+<<include [[Init Error Message]]>>
 <<include [[Init Fade-In]]>>
 <<include [[Init Meta Text]]>>
 <<include [[Init Passage Notes]]>>
@@ -7634,7 +7562,7 @@ The blurry figure becomes a person...
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked implies !$n1_abused>>
 
-<<assert-true $n1_magicPhase <= MP_triedMagic>>
+<<em-assert $n1_magicPhase <= MP_triedMagic>>
 
 Ivex (the Magnificent) moves away from the
 <<if $n1_abused>>
@@ -7862,8 +7790,8 @@ pompous, dirty, and dominated by
 
 :: n1x/P Gems {"position":"6375,5125","size":"100,100"}
 <<nobr>>
-<<assert-true $n1_mirrorSeen>>
-<<assert-true !$n2_free>>
+<<em-assert $n1_mirrorSeen>>
+<<em-assert !$n2_free>>
 <</nobr>>\
 \
 <<nobr>>
@@ -8236,7 +8164,7 @@ Nero think of something more sensual than meat.
 <<big-mood n2_tooClever ignore>>
 
 <<if $n2_free>>
-    <<assert-true !$n2_knifeTaken>>
+    <<em-assert !$n2_knifeTaken>>
     letter opener, kinda sharp
     <<if $n1_mageSight>>
         nothing magical, but still a sharp blade is useful.
@@ -8603,7 +8531,7 @@ map has several markings.
 <<set _wantPassword = $n1_magicPhase === MP_wantPassword>>
 
 <<if $n2_extraHorny>>
-    <<assert-true $n2_ivexGone>>
+    <<em-assert $n2_ivexGone>>
     The large portrait beside the window
     depicts a plump black pantheress reclining on a couch
     in a strongly suggestive pose.
@@ -9996,10 +9924,9 @@ Nero is not completely averse to dalliances with shy, gentle men when there are 
 
 
 :: testing 2 {"position":"4800,575","size":"100,100"}
-testing 2
-<<set _t = 1 + (_t ?? 1)>>
-<<run console.log(_t) >>
-<textarea id="hello"></textarea>
+<<em-fail "hello world">>
+
+<<include [[testing 3]]>>
 
 
 :: n1x/F Window [has-hole] {"position":"7350,3350","size":"100,100"}
@@ -10119,7 +10046,7 @@ The only window in the room is round and about a meter in diameter. The window h
 
 <<set _wantTouch = $n1_magicPhase === MP_wantTouch>>
 <<set _wantPassword = $n1_magicPhase === MP_wantPassword>>
-<<assert-true _wantTouch || _wantPassword>>
+<<em-assert _wantTouch || _wantPassword>>
 
 <</nobr>>
 
@@ -10151,7 +10078,7 @@ $n1_afterAction
 
 :: n1x/P Ask Grav Gems {"position":"6375,5250","size":"100,100"}
 <<nobr>>
-<<assert-true !$n1_gemsKnown>>
+<<em-assert !$n1_gemsKnown>>
 <<set $n1_gemsKnown = true>>
 <</nobr>>\
 \
@@ -10261,7 +10188,7 @@ Nero has learned of many different greeting rituals from the various foreign lec
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked implies !$n1_abused>>
 
-<<assert-true $n1_magicPhase <= MP_triedMagic>>
+<<em-assert $n1_magicPhase <= MP_triedMagic>>
 
 "There must be some mistake,"
 <<if $n1_abused>>
@@ -10745,7 +10672,7 @@ $n1_afterNaked
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked always true>>
 
-<<assert-true $n1_magicPhase === MP_triedMagic>>
+<<em-assert $n1_magicPhase === MP_triedMagic>>
 
 Anti-magic fields are broadly divided into two categories.
 <</nobr>>
@@ -11450,7 +11377,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked implies !$n1_abused>>
 
-<<assert-true $n1_magicPhase <= MP_triedMagic>>
+<<em-assert $n1_magicPhase <= MP_triedMagic>>
 
 <<if $n1_abused>>
     Nero mentally checks off one step in his strategic map.
@@ -11917,7 +11844,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<big-mood n2_ivexGone always true>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true $n1_magicPhase === MP_beforeCast>>
+<<em-assert $n1_magicPhase === MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
 escape fizzles. info about anti-magic.
@@ -11942,8 +11869,8 @@ $n1_afterAction
 <<big-mood n2_ivexGone TODO>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true !$n2_mirrorBroken>>
-<<assert-true $n1_magicPhase === MP_triedMagic>>
+<<em-assert !$n2_mirrorBroken>>
+<<em-assert $n1_magicPhase === MP_triedMagic>>
 <<set $n1_magicPhase = MP_mageSight>>
 <<set $n1_mageSight = true>>
 
@@ -12022,9 +11949,9 @@ $n1_afterAction
 <<if /^n/.test(State.passage)>>
     <<set $n1_magicPhase || ($n1_magicPhase = 0)>>
 
-    <<assert-true
+    <<em-assert
         $n1_magicPhase < MP_mageSight || $n1_mageSight || $n2_mirrorBroken>>
-    <<assert-true $n1_magicPhase < MP_mageSight || $n1_naked>>
+    <<em-assert $n1_magicPhase < MP_mageSight || $n1_naked>>
 
     <<big-mood n1_candleLit implies !$n1_ivexReceptive>>
     <<big-mood n1_candleLit implies !$n2_free>>
@@ -12263,7 +12190,7 @@ $n1_afterAction
 <<big-mood n2_ivexGone always false>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true $n1_magicPhase === MP_beforeCast>>
+<<em-assert $n1_magicPhase === MP_beforeCast>>
 
 Nero casts [[slippery spell|n1m/P Slippery]] to escape bonds.
 
@@ -12520,7 +12447,7 @@ $n1_afterAction
 <<big-mood n2_tooClever always false>>
 <</nobr>>
 <<big-mood n1_candleHorny vary>>
-<<assert-true $n1_magicPhase === MP_wantDevice>>
+<<em-assert $n1_magicPhase === MP_wantDevice>>
 <<set $n1_magicPhase = MP_wantName>>
 
 Nero says, "poltergeist device".
@@ -12555,7 +12482,7 @@ $n1_afterAction
 <<big-mood n2_ivexGone TODO>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true $n1_magicPhase === MP_wantName>>
+<<em-assert $n1_magicPhase === MP_wantName>>
 <<set $n1_magicPhase = MP_wantTouch>>
 
 Nero says, "Lance Rockhard".
@@ -12589,8 +12516,8 @@ $n1_afterAction
 <<big-mood n2_ivexGone TODO>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true !$n2_mirrorBroken>>
-<<assert-true $n1_magicPhase === MP_mageSight>>
+<<em-assert !$n2_mirrorBroken>>
+<<em-assert $n1_magicPhase === MP_mageSight>>
 
 after spending a little time trying to understand the exotic energy, Nero notices that the mirror is not firewalled, and he can connect to it.
 
@@ -13243,7 +13170,7 @@ The spell and its related family of minor nerve agonists have never been a serio
 <<big-mood n2_ivexGone always false>>
 <<big-mood n2_tooClever ignore>>
 
-<<assert-true !$n2_knifeTaken>>
+<<em-assert !$n2_knifeTaken>>
 <<set $n2_knifeTaken = true>>
 
 take the knife. awkward cuz naked.
@@ -13398,7 +13325,7 @@ Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com
 <<big-mood n1_mageSight always false>>
 <<big-mood n1_naked always true>>
 
-<<assert-true $n1_magicPhase === MP_triedMagic>>
+<<em-assert $n1_magicPhase === MP_triedMagic>>
 
 In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. The selectiveness does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction.
 <</nobr>>
@@ -13449,7 +13376,7 @@ with a bead of congealed wax near the top, like a drop of pre-cum
     quivering cock.
 <<else>>
     that Nero imagines on the tip of Ivex's
-    <<assert-true $n1_barbs != null>>
+    <<em-assert $n1_barbs != null>>
     <<if $n1_barbs>>barbed<<else>>smooth<</if>>
     feline cock. Why is he even thinking such a thing?
 
@@ -13759,9 +13686,6 @@ v.personalEnding = false;
 
 
 :: Init Nero [inclusion] {"position":"2700,425","size":"100,100"}
-<<script>>
-  window.Nero || (window.Nero = {});
-<</script>>
 <<include [[Init Nero Actions]]>>
 <<include [[Init Nero Barbs]]>>
 <<include [[Init Nero Password]]>>
@@ -14282,7 +14206,7 @@ Macro.add("archive-barbs", {
 <<big-mood n2_ivexGone always true>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true $n1_magicPhase === MP_beforeCast>>
+<<em-assert $n1_magicPhase === MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
 escape fizzles, still horny. horny info about anti-magic.
@@ -14525,7 +14449,7 @@ randomWalkSetup();
 <<big-mood hasTea implies $isHappy>>
 <<big-mood hasTea vary>>
 
-<<assert-true !!$flag2 !== !!$flag3>>
+<<em-assert !!$flag2 !== !!$flag3>>
 <<set $str = "some string value">>
 
 var-info test<br>
@@ -14597,7 +14521,7 @@ Macro.add("n1-patience", {
 <</script>>
 
 
-:: Init Delete-Vars [inclusion] {"position":"2100,325","size":"100,100"}
+:: Init Delete Vars [inclusion] {"position":"2100,325","size":"100,100"}
 <<script>>
 /** Deletes all state vars whose name starts with prefix. */
 Macro.add("delete-vars", {
@@ -15464,7 +15388,7 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
 <<big-mood n2_ivexGone always false>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true $n1_magicPhase === MP_beforeCast>>
+<<em-assert $n1_magicPhase === MP_beforeCast>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
 spell fizzes. Ivex recognizes it.
@@ -15577,18 +15501,19 @@ spell fizzes. Ivex recognizes it.
 </style><</append>>
 
 <<script>>
-const MT = MagesTower;
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const MT = window.MagesTower || (window.MagesTower = {});
 
 $(document).on(":passageend", () => {
   $("#draft-sign").remove();
   const m = /[/](\w) /.exec(State.passage);
   if (m == null) return;
   const tag = m[1];
-  MT.assert(/[FDPS]/.test(tag), `Passage tag /${tag} should be /F /D /P or /S`);
+  EM.assert(/[FDPS]/.test(tag), `Passage tag /${tag} should be /F /D /P or /S`);
   if (/^[DF]$/.test(tag)) {
-    MT.assert(!MT.has_to_do, "/F and /D passages should not have TO"+"DO");
-    MT.assert(!MT.has_warning, "/F and /D passages should not have warnings");
-    MT.assert(!MT.has_undeclared, "/F and /D passages should not have undeclared big-mood");
+    EM.assert(!MT.has_to_do, "/F and /D passages should not have TO"+"DO");
+    EM.assert(!MT.has_warning, "/F and /D passages should not have warnings");
+    EM.assert(!MT.has_undeclared, "/F and /D passages should not have undeclared big-mood");
   }
   if (tag !== "F") {
     $("<div>").attr("id", "draft-sign").addClass(`draft-${tag}`).appendTo("body");
@@ -15755,10 +15680,10 @@ $n1_afterAction
 <<big-mood n2_ivexGone always false>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true !$n1_bottleAskedAgain>>
+<<em-assert !$n1_bottleAskedAgain>>
 <<set $n1_bottleAskedAgain = $n1_bottleAsked>>
 
-<<assert-true !$n1_bottleAsked>>
+<<em-assert !$n1_bottleAsked>>
 <<set $n1_bottleAsked = true>>
 
 Nero's phrasing depends on mood, and what he's currently trying to do.
@@ -15789,7 +15714,7 @@ $n1_afterAction
 <<big-mood n2_ivexGone always true>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true !$n1_bottleTouched>>
+<<em-assert !$n1_bottleTouched>>
 <<set $n1_bottleTouched = true>>
 
 touch bottle, wait, nothing happens.
@@ -16013,7 +15938,7 @@ $n1_afterAction
 <<big-mood n2_ivexGone always true>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true $n1_magicPhase === MP_wantTouch>>
+<<em-assert $n1_magicPhase === MP_wantTouch>>
 
 <<if $n2_extraHorny>>
     <<if $n1_portraitMomKnown>>
@@ -16052,7 +15977,7 @@ wait. nothing happens
 <<big-mood n2_ivexGone always true>>
 <<big-mood n2_tooClever always false>>
 
-<<assert-true $n1_magicPhase === MP_wantTouch>>
+<<em-assert $n1_magicPhase === MP_wantTouch>>
 
 <<if $n1_portraitMomKnown>>
     remember Ivex using tongue
@@ -16205,5 +16130,164 @@ Macro.add("arousalbar", {
 
 
 :: n1x/D Desk Search {"position":"6925,4925","size":"100,100"}
+
+
+:: Init Error Message [inclusion] {"position":"2200,325","size":"100,100"}
+<<append head>><style>
+  #EM-outer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    line-height: 1.5;
+    text-align: center;
+    margin: 12px 0;
+    pointer-events: none;
+    width: 100%;
+    z-index: 99991;
+  }
+  #EM-inner {
+    display: inline-block;
+    margin: 0 12px;
+    pointer-events: auto;
+  }
+  .EM-note {
+    background-color: #cc4;
+    border-radius: 4px;
+    color: #000;
+    font-size: 12px;
+    margin-bottom: 8px;
+    padding: 8px 8px 4px 8px;
+    text-align: left;
+  }
+  a.EM-button {
+    color: #55f;
+    float: right;
+    font-weight: bold;
+    margin-top: -2px;
+    padding-left: 8px;
+  }
+  a.EM-button:hover {
+    color: #c55;
+  }
+  .EM-fail {
+    color: #f33;
+    font-weight: bold;
+  }
+  .EM-trace {
+    color: #000;
+    font-weight: normal;
+    margin-left: 1.5em;
+    white-space: pre-line;
+  }
+</style><</append>>
+
+<<script>>
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+
+EM.debugStop = false;
+
+$(document).on(":passagestart", () => {
+  $("#EM-outer").remove();
+});
+
+/** Add str as a new error-message note. */
+EM.note = (str) => {
+  const note = $(`
+    <div class=EM-note>
+      <a class="EM-close EM-button">[close]</a>
+    </div>
+  `).appendTo(getInner());
+  note.append(document.createTextNode(str));
+  note.find("#EM-close").click(() => note.remove());
+  return note;
+};
+Macro.add("em-note", {
+  handler: function() {
+    EM.note(this.args.join(" "), this);
+  }
+});
+
+/** Add str as a new error-message assertion failure. */
+EM.fail = (str, context) => {
+  if (EM.debugStop) {
+    debugger;
+    EM.debugStop = false;
+  }
+  const fail = $("<div class=EM-fail>").text(str)
+    .appendTo(getFails());
+  const trace = backtrace(context);
+  if (trace != null && trace !== "") {
+    $("<div class=EM-trace>").text(trace)
+      .appendTo(fail);
+  }
+  return fail;
+};
+Macro.add("em-fail", {
+  handler: function() {
+    EM.fail(this.args.join(" "), this);
+  }
+});
+
+EM.assert = (val, str, context) => {
+  if (val) return;
+  EM.fail(str, context);
+}
+Macro.add("em-assert", {
+  skipArgs: true,
+  handler: function() {
+    const val = VT.ignore(() => eval(this.args.full));
+    EM.assert(val, this.args.raw, this);
+  }
+});
+
+function backtrace(ctx) {
+  let trace = "";
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === "include") {
+      trace += ctx.source + "\n";
+    }
+  }
+  return trace;
+}
+
+function getInner() {
+  let inner = $("#EM-inner");
+  if (inner.length === 1) return inner;
+  inner.remove();
+  $("#EM-outer").remove();
+  const outer = $(`
+    <div id=EM-outer>
+      <div id=EM-inner></div>
+    </div>
+  `).appendTo("#story");
+  inner = outer.find("#EM-inner");
+  return inner;
+}
+
+function getFails() {
+  let fails = $("#EM-fails");
+  if (fails.length === 1) return fails;
+  fails.remove();
+  fails = EM.note("");
+  fails.attr("id", "EM-fails");
+  fails.append(`
+    <a id=EM-debug class=EM-button>[debug]</a>
+    <div id=EM-fail-intro>
+      Assertions failed.
+      Passage is not expected to make sense.
+    </div>
+  `);
+  fails.find("#EM-debug").click(() => {
+    EM.debugStop = true;
+    Engine.play(State.passage, true);
+  });
+  return fails;
+}
+<</script>>
+
+
+:: testing 3 {"position":"4925,700","size":"100,100"}
+<<em-assert throw new Error(3)>>
 
 
