@@ -473,6 +473,14 @@ x.fade-in-hidden ul.actions li {
   white-space: nowrap;
 }
 
+.var-info-expand {
+  display: inline-block;
+  margin-right: 0.5em;
+}
+.var-info-expand:hover {
+  background-color: #333;
+}
+
 .var-info label {
   color: #666;
   margin-right: 8px;
@@ -735,6 +743,7 @@ Macro.add("redisplay-passage", {
 /** forward decls */
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
 const ET = window.EnumType || (window.EnumType = {});
+const EV = window.ExpandVariants || (window.ExpandVariants = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
 /*** to-do */
@@ -844,7 +853,7 @@ Macro.add("big-mood", {
 
         if (actual) {
           if (bigMoodReq[v2] != null && bigMoodReq[v2] !== bool) {
-            EM.fail(`Shold satisfy implication for ${v2}`, this);
+            EM.fail(`Should satisfy implication for ${v2}`, this);
           }
           bigMoodReq[v2] = bool;
         }
@@ -1058,7 +1067,6 @@ function varInfoSetup() {
     ],
   ];
 
-  // note: sugarcube overrides JSON.stringify to handle "undefined" and a few other cases specially
   const str = val => val == null ? String(val) : JSON.stringify(val);
 
   const varButton = vname => {
@@ -1197,6 +1205,9 @@ function varInfoSetup() {
       State.metadata.set("varInfoShow", varInfoShow);
       outer.toggleClass("var-info-hidden", !varInfoShow);
     });
+    $("<div class=var-info-expand>[expand]</div>")
+      .click(() => EV.render())
+      .appendTo(outer);
 
     if (bigMood.size) {
       const el = $("<span class=var-info-big-mood>").appendTo(outer);
@@ -1428,8 +1439,8 @@ With a spring to his step, the panther approaches, closing in the last distance 
   &lt;/ul&gt;\
 &lt;/div&gt;</tw-passagedata><tw-passagedata pid="14" name="StoryInit" tags="inclusion" position="2600,100" size="100,100">&lt;&lt;script&gt;&gt;
   // global modules
-  window.EnumType || (window.EnumType = {});
   window.ErrorMessage || (window.ErrorMessage = {});
+  window.EnumType || (window.EnumType = {});
   window.MagesTower || (window.MagesTower = {});
   window.Nero || (window.Nero = {});
   window.PassageNotes || (window.PassageNotes = {});
@@ -1445,6 +1456,7 @@ With a spring to his step, the panther approaches, closing in the last distance 
 &lt;&lt;include [[Init Draft Sign]]&gt;&gt;
 &lt;&lt;include [[Init Enum Type]]&gt;&gt;
 &lt;&lt;include [[Init Error Message]]&gt;&gt;
+&lt;&lt;include [[Init Expand Variants]]&gt;&gt;
 &lt;&lt;include [[Init Fade-In]]&gt;&gt;
 &lt;&lt;include [[Init Meta Text]]&gt;&gt;
 &lt;&lt;include [[Init Passage Notes]]&gt;&gt;
@@ -6896,6 +6908,16 @@ pompous, dirty, and dominated by the
 &lt;&lt;big-mood n2_ivexGone ignore&gt;&gt;
 &lt;&lt;big-mood n2_tooClever ignore&gt;&gt;
 
+&lt;&lt;expand-ignore n1_globeSeen n2_deskSearched n2_ivexGone&gt;&gt;
+&lt;&lt;em-assert !$n1_bottleSeen || $n2_free&gt;&gt;
+&lt;&lt;em-assert !$n1_candleLit || !$n2_free&gt;&gt;
+&lt;&lt;em-assert !$n1_mageSight || !$n2_mirrorBroken&gt;&gt;
+&lt;&lt;em-assert !$n2_free || $n2_mirrorBroken || $n2_mirrorTaken&gt;&gt;
+&lt;&lt;em-assert !$n2_knifeTaken || $n2_free&gt;&gt;
+&lt;&lt;em-assert !$n2_mirrorBroken || $n2_free&gt;&gt;
+&lt;&lt;em-assert !$n2_mirrorBroken || !$n2_mirrorTaken&gt;&gt;
+&lt;&lt;em-assert !$n2_mirrorTaken || $n2_free&gt;&gt;
+
 The grandiose desk does not have joints or seams, and the wood grain
 is continuous and uninterrupted across all of its visible surfaces.
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -6917,11 +6939,10 @@ is continuous and uninterrupted across all of its visible surfaces.
     &lt;&lt;else&gt;&gt;
         At one corner of the desk is a candleholder with
     &lt;&lt;/if&gt;&gt;
-    Ivex&#39;s
     &lt;&lt;if $n2_ivexGone&gt;&gt;
-        &lt;&lt;n1-no-loop [[Lust Scenter candle|n1x/F Candle]]&gt;&gt;,
+        Ivex&#39;s &lt;&lt;n1-no-loop [[Lust Scenter candle|n1x/F Candle]]&gt;&gt;,
     &lt;&lt;else&gt;&gt;
-        &lt;&lt;n1-no-loop [[strange red candle|n1x/F Candle]]&gt;&gt;,
+        a &lt;&lt;n1-no-loop [[strange red candle|n1x/F Candle]]&gt;&gt;,
     &lt;&lt;/if&gt;&gt;
     flickering ominously.  Nearby, there is
 &lt;&lt;else&gt;&gt;
@@ -6933,7 +6954,7 @@ is continuous and uninterrupted across all of its visible surfaces.
 &lt;&lt;elseif !$n2_mirrorTaken&gt;&gt;
     a &lt;&lt;n1-no-loop [[small mirror|n1x/P Mirror]]&gt;&gt;
     &lt;&lt;if $n1_mageSight&gt;&gt;
-        that glows with &lt;em&gt;perfectly ordinary&lt;/em&gt; magical energy,
+        that glows with &lt;em&gt;normal&lt;/em&gt; magical energy,
     &lt;&lt;/if&gt;&gt;
     resting against
 &lt;&lt;/if&gt;&gt;
@@ -7934,6 +7955,7 @@ The wolf shivers slightly from mild embarrassment and the sudden chill.
 &lt;&lt;big-mood n1_abused ignore&gt;&gt;
 
 &lt;&lt;set $n1_barbs = false&gt;&gt;
+&lt;&lt;em-assert !$n1_barbsGlitch&gt;&gt;
 &lt;&lt;barbs-announce now&gt;&gt;
 
 He said, &quot;Penile barbs are a myth.&quot;
@@ -7951,6 +7973,7 @@ The tiger continued with confidence. &quot;It&#39;s true that feral feline speci
 &lt;&lt;big-mood n1_abused ignore&gt;&gt;
 
 &lt;&lt;set $n1_barbs = true&gt;&gt;
+&lt;&lt;em-assert !$n1_barbsGlitch&gt;&gt;
 &lt;&lt;barbs-announce now&gt;&gt;
 
 He said, &quot;The barbs aren&#39;t sharp.&quot;
@@ -10462,9 +10485,11 @@ $n1_afterAction</tw-passagedata><tw-passagedata pid="390" name="PassageHeader" t
 &lt;&lt;if /^n/.test(State.passage)&gt;&gt;
     &lt;&lt;set $n1_magicPhase || ($n1_magicPhase = 0)&gt;&gt;
 
+&lt;!--
     &lt;&lt;em-assert
         $n1_magicPhase &lt; MP_mageSight || $n1_mageSight || $n2_mirrorBroken&gt;&gt;
     &lt;&lt;em-assert $n1_magicPhase &lt; MP_mageSight || $n1_naked&gt;&gt;
+--&gt;
 
     &lt;&lt;big-mood n1_candleLit implies !$n1_ivexReceptive&gt;&gt;
     &lt;&lt;big-mood n1_candleLit implies !$n2_free&gt;&gt;
@@ -10479,7 +10504,7 @@ $n1_afterAction</tw-passagedata><tw-passagedata pid="390" name="PassageHeader" t
 
     &lt;&lt;big-mood n1_subby implies $n1_naked&gt;&gt;
 
-    &lt;&lt;big-mood n1_mageSight implies $n1_magicPhase &gt;= MP_mageSight&gt;&gt;
+&lt;!--    &lt;&lt;big-mood n1_mageSight implies $n1_magicPhase &gt;= MP_mageSight&gt;&gt; --&gt;
     &lt;&lt;big-mood n1_mageSight implies $n1_naked&gt;&gt;
     &lt;&lt;big-mood n1_mageSight implies !$n2_mirrorBroken&gt;&gt;
 
@@ -10513,7 +10538,7 @@ $n1_afterAction</tw-passagedata><tw-passagedata pid="390" name="PassageHeader" t
 
     &lt;&lt;big-mood n2_tooClever implies !$n1_candleLit&gt;&gt;
     &lt;&lt;big-mood n2_tooClever implies !$n1_ivexReceptive&gt;&gt;
-    &lt;&lt;big-mood n2_tooClever implies $n1_magicPhase &gt;= MP_wantPassword&gt;&gt;
+&lt;!--    &lt;&lt;big-mood n2_tooClever implies $n1_magicPhase &gt;= MP_wantPassword&gt;&gt; --&gt;
     &lt;&lt;big-mood n2_tooClever implies $n1_mageSight&gt;&gt;
     &lt;&lt;big-mood n2_tooClever implies $n1_naked&gt;&gt;
     &lt;&lt;big-mood n2_tooClever implies !$n1_candleHorny&gt;&gt;
@@ -12080,7 +12105,7 @@ Macro.add(&quot;pw-choice&quot;, {
 function announceBarbs(output) {
   const V = State.variables;
   V.n1_announceBarbsSoon = false;
-  const barbs = V.n1_barbsGlitch ? &quot;Barbs?&quot; : v.n1_barbs ? &quot;Barbs&quot; : &quot;Smooth&quot;;
+  const barbs = V.n1_barbsGlitch ? &quot;Barbs?&quot; : V.n1_barbs ? &quot;Barbs&quot; : &quot;Smooth&quot;;
   $(output).wiki(`&lt;meta-text&gt;Story Variant (${barbs})&lt;/meta-text&gt;&lt;br&gt;&lt;br&gt;`);
 }
 
@@ -14331,10 +14356,28 @@ const EM = window.ErrorMessage || (window.ErrorMessage = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
 EM.debugStop = false;
+EM.hasFails = false;
+EM.noMessage = false;
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
   $(&quot;#EM-outer&quot;).remove();
+  EM.hasFails = false;
 });
+
+EM.runsWithoutFail = (fn) =&gt; {
+  const save = { hf: EM.hasFails, nm: EM.noMessage };
+  try {
+    EM.hasFails = false;
+    EM.noMessage = true;
+    fn();
+    return !EM.hasFails;
+  } catch (e) {
+    return false;
+  } finally {
+    EM.hasFails = save.hf;
+    EM.noMessage = save.nm;
+  }
+};
 
 /** Add str as a new error-message note. */
 EM.note = (str) =&gt; {
@@ -14355,6 +14398,11 @@ Macro.add(&quot;em-note&quot;, {
 
 /** Add str as a new error-message assertion failure. */
 EM.fail = (str, context) =&gt; {
+  EM.hasFails = true;
+  if (EM.noMessage) {
+    console.warn(str);
+    return;
+  }
   if (EM.debugStop) {
     debugger;
     EM.debugStop = false;
@@ -14460,6 +14508,210 @@ Macro.add(&quot;enum-var&quot;, {
     ET.declareVar(this.args[0], this.args[1]);
   }
 });
+&lt;&lt;/script&gt;&gt;
+</tw-passagedata><tw-passagedata pid="500" name="Init Expand Variants" tags="inclusion" position="2100,425" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+  .ev-state {
+    color: #39f;
+    font-family: monospace;
+    font-size: 14px;
+  }
+  .ev-states {
+    margin-bottom: .5em;
+  }
+  .ev-var {
+    margin-right: 0.5em;
+  }
+  .ev-true {
+    color: #6a6;
+  }
+  .ev-false {
+    color: #c88;
+  }
+  .ev-enum {
+    color: #88c;
+  }
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const ET = window.EnumType || (window.EnumType = {});
+const EV = window.ExpandVariants || (window.ExpandVariants = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+
+EV.ignore = new Set();
+
+Macro.add(&quot;expand-ignore&quot;, {
+  handler: function() {
+    for (let vn of this.args) {
+      vn = vn.replace(/^\$/, &#39;&#39;);
+      EV.ignore.add(vn);
+    }
+  }
+});
+
+EV.render = function() {
+  VT.stop();
+  EV.ignore = new Set();
+  const beginState = clone(State.current.variables);
+  const nowState = clone(State.active.variables);
+  const nowTemps = clone(State.temporary);
+  
+  const zeroState = clone(beginState);
+  for (const k of Object.keys(zeroState)) {
+    if (typeof zeroState[k] === &quot;boolean&quot;) {
+      zeroState[k] = false;
+    } else if (ET.vars[k] != null) {
+      zeroState[k] = 0;
+    } else {
+      EV.ignore.add(k);
+    }
+  }
+  for (const k of Object.keys(nowState)) {
+    if (typeof nowState[k] !== &quot;boolean&quot; &amp;&amp; ET.vars[k] == null) {
+      EV.ignore.add(k);
+    }
+  }
+  
+  let varsUsed = [];
+  const done = [];
+  const todo = [zeroState];
+
+  const header = Story.get(&quot;PassageHeader&quot;).text;
+  const text = Story.get(State.passage).text;
+  const renders = [];
+  const messages = [];
+  
+  // XXX should use deterministic RNG, but functions like choice()
+  // capture Math.random and can&#39;t be intercepted easily.
+  
+  const tryOne = () =&gt; {
+    const state = todo.pop();
+    done.push(state);
+    console.log(&quot;Trying&quot;, objSelect(state, varsUsed));
+    State.active.variables = clone(state);
+    State.clearTemporary();
+    const output = $(&quot;&lt;div class=passage&gt;&quot;);
+    VT.start();
+    let ok = true;
+    // at the moment, more useful to ignore the header assertions
+    // ok = ok &amp;&amp; EM.runsWithoutFail(() =&gt; output.wiki(header));
+    output.empty();
+    ok = ok &amp;&amp; EM.runsWithoutFail(() =&gt; output.wiki(text));
+    VT.stop();
+    varsUsed = varsUsed.filter(vn =&gt; !EV.ignore.has(vn));
+    if (!ok) return;
+    
+    [...VT.ctx.wasRead].forEach(vn =&gt; {
+      if (varsUsed.includes(vn)) return;
+      if (EV.ignore.has(vn)) return;
+      if (varsUsed.length &gt;= 10) {
+        messages.push(`ignoring var ${vn} (max 10)`);
+        EV.ignore.add(vn);
+        return;
+      }
+      if (ET.vars[vn] != null) {
+        varsUsed.push(vn);
+        // we&#39;ve just rendered null or 0, add the rest of the enum values.
+        const start = state[vn] == null ? 0 : 1;
+        const end = ET.enums[ET.vars[vn]].length;
+        [...done, ...todo].forEach(st1 =&gt; {
+          for (let i = start; i &lt; end; i++) {
+            const st2 = clone(st1);
+            st2[vn] = i;
+            todo.push(st2);
+          }
+        });
+      } else if (state[vn] == null || state[vn] === false) {
+        varsUsed.push(vn);
+        [...done, ...todo].forEach(st1 =&gt; {
+          // we&#39;ve just rendered false/null, add true
+          const st2 = clone(st1);
+          st2[vn] = true;
+          todo.push(st2);
+        });
+      }
+    });
+
+    const html = output[0].innerHTML;
+    renders[html] ??= {
+      dom: output[0],
+      states: [],
+    };
+    renders[html].states.push(objSelect(state, varsUsed));
+  };
+
+  const finish = () =&gt; {
+    varsUsed.sort();
+    const variants = Object.values(renders);
+    variants.forEach(r =&gt; {
+      r.states = r.states.map(st =&gt; {
+        const obj = objSelect(st, varsUsed);
+        const json = JSON._real_stringify(obj);
+        return { json, obj };
+      });
+      r.states.sort((a, b) =&gt; a.json &lt; b.json ? -1 : a.json &gt; b.json ? +1 : 0);
+    });
+    variants.sort((a, b) =&gt; {
+      const aj = a.states[0].json;
+      const bj = b.states[0].json;
+      return aj &lt; bj ? -1 : aj &gt; bj ? +1 : 0;
+    });
+    const pos = $(&quot;#passages&quot;);
+    pos.empty();
+    const sum = $(&quot;&lt;div id=ev-summary&gt;&quot;).appendTo(pos);
+    $(&quot;&lt;div&gt;&quot;).text(`${variants.length} variants`).appendTo(sum);
+    messages.forEach(m =&gt; $(&quot;&lt;div&gt;&quot;).text(m).appendTo(sum));
+    for (const variant of variants) {
+      pos.append(&quot;&lt;hr&gt;&quot;);
+      const outer = $(&quot;&lt;div class=ev-states&gt;&quot;).appendTo(pos);
+      variant.states.forEach(st =&gt; {
+        const inner = $(&quot;&lt;div class=ev-state&gt;&quot;).appendTo(outer);
+        for (const vn of varsUsed) {
+          const val = st.obj[vn];
+          if (ET.vars[vn] != null) {
+            const str = ET.enum[ET.vars[vn]][val] || `${vn}=${val}`;
+            $(`&lt;span class=&quot;ev-var ev-enum&quot;&gt;`).text(str).appendTo(inner);
+          } else if (val == null) {
+            $(`&lt;span class=&quot;ev-var ev-false&quot;&gt;`).text(vn).appendTo(inner);
+          } else if (val === true) {
+            $(`&lt;span class=&quot;ev-var ev-true&quot;&gt;`).text(vn).appendTo(inner);
+          } else {
+            const str = JSON._real_stringify(val);
+            $(`&lt;span class=&quot;ev-var ev-other&quot;&gt;`).text(`${vn}=${str}`).appendTo(inner);
+          }
+        }
+      });
+      pos.append(variant.dom);
+    }
+    State.active.variables = nowState;
+    State.clearTemporary();
+    for (const k of Object.keys(nowTemps)) {
+      State.temporary[k] = nowTemps[k];
+    }
+  };
+
+  let tries = 0;
+  const tryNext = () =&gt; {
+    tries++;
+    if (tries &gt;= 2000) {
+      messages.push(`Stopping at ${tries} tries`);
+      todo.length = 0;
+    }
+    if (todo.length === 0) {
+      finish();
+    } else {
+      tryOne();
+      setTimeout(tryNext);
+    }
+  };
+  tryNext();
+}
+
+function objSelect(obj, keys) {
+  const result = {};
+  keys.forEach(k =&gt; result[k] = obj[k] ?? null);
+  return result;
+}
 &lt;&lt;/script&gt;&gt;
 </tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
