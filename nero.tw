@@ -1143,7 +1143,7 @@ function varInfoSetup() {
       State.metadata.set("varInfoShow", varInfoShow);
       outer.toggleClass("var-info-hidden", !varInfoShow);
     });
-    $("<div class=var-info-expand>[expand]</div>")
+    $("<div class=var-info-expand>[compute variants]</div>")
       .click(() => EV.render())
       .appendTo(outer);
 
@@ -7900,7 +7900,7 @@ writing tools: pens and ink, wax seal, blotter, and so forth.
     <<if $n2_free>>
         that was sharp enough to cut Nero's bonds.
         It might be worth taking.
-        <<actions-add [[Take letter opener.|n1x/D Take Knife]]>>
+        <<actions-add [[Take the letter opener.|n1x/D Take Knife]]>>
     <<else>>
         that may be sharp enough to cut Nero's bonds.
         <br><br>
@@ -7915,9 +7915,9 @@ writing tools: pens and ink, wax seal, blotter, and so forth.
 
 <<if $n2_free>>
     <<if $n2_deskSearched>>
-        <<actions-add [[Search the desk again.|n1x/D Desk Search]]>>
+        <<actions-add [[Search the desk again.|n1x/F Desk Search]]>>
     <<else>>
-        <<actions-add [[Search the desk.|n1x/D Desk Search]]>>
+        <<actions-add [[Search the desk.|n1x/F Desk Search]]>>
     <</if>>
 <</if>>
 
@@ -16204,7 +16204,61 @@ Macro.add("arousalbar", {
 </style><</append>>
 
 
-:: n1x/D Desk Search {"position":"6925,4925","size":"100,100"}
+:: n1x/F Desk Search {"position":"6925,4925","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit always false>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight vary>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever ignore>>
+
+The desk should have drawers. It certainly <em>looks</em>
+like it has room for drawers,
+<<if $n1_mageSight>>
+    and there are blobs of magical energy that suggest the presence
+    of magical items within it,
+<</if>>
+but all of the desk's surfaces are a smooth and continuous pattern
+of wood grain, with no apparent way of opening it.
+
+<br><br>
+<<if $n2_deskSearched>>
+    Nero's ears go flat as he remembers the... stickiness of the underside
+    of the desk when he tried searching for a hidden catch.
+    <br><br>
+    He forces himself to consider something else. The papers on the desk.
+    Most of them appear to be overdue library notices,
+    covered with crude doodles insulting the sexual competence
+    of a librarian named Elok. There's nothing useful here.
+    <br><br>
+    Satisfied that he's searched the desk as thoroughly as he can in
+    his current situation, Nero shifts his attention to other things
+    in the room.
+    <br><br>
+    $n1_afterAction
+<<else>>
+    If opening the desk requires magic, then Nero is out of luck.
+    But perhaps there's a mechanical trigger, like a hidden catch?
+    <br><br>
+    Nero quickly runs his hands along the sides of the desk.
+    Finding nothing, he then reaches under the top of the desk,
+    above where the seat of the chair would be when someone
+    is sitting there.
+    <br><br>
+    He fingers brush against something that isn't just smooth surface.
+    It's not a bump. It's a change in texture, a slight irregularity,
+    almost a stickiness.
+    <br><br>
+    [[Continue|n1x/F Desk Search 2]]
+<</if>>
+<</nobr>>
 
 
 :: Init Error Message [inclusion] {"position":"2000,425","size":"100,100"}
@@ -16444,6 +16498,10 @@ Macro.add("enum-var", {
   .ev-enum {
     color: #88c;
   }
+  .ev-diff {
+    background-color: #810;
+    border-radius: 4px;
+  }
 </style><</append>>
 
 <<script>>
@@ -16585,7 +16643,7 @@ EV.render = function() {
           if (ET.vars[vn] != null) {
             const str = ET.enum[ET.vars[vn]][val] || `${vn}=${val}`;
             $(`<span class="ev-var ev-enum">`).text(str).appendTo(inner);
-          } else if (val == null) {
+          } else if (val == null || val === false) {
             $(`<span class="ev-var ev-false">`).text(vn).appendTo(inner);
           } else if (val === true) {
             $(`<span class="ev-var ev-true">`).text(vn).appendTo(inner);
@@ -16602,6 +16660,7 @@ EV.render = function() {
     for (const k of Object.keys(nowTemps)) {
       State.temporary[k] = nowTemps[k];
     }
+    highlightDiffs();
   };
 
   let tries = 0;
@@ -16626,6 +16685,78 @@ function objSelect(obj, keys) {
   keys.forEach(k => result[k] = obj[k] ?? null);
   return result;
 }
+
+function highlightDiffs() {
+  const passages = $(".passage");
+  for (let i = passages.length - 1; i > 0; i--) {
+    diff(passages[i - 1], passages[i]);
+  }
+}
+
+function diff(x, y) {
+  if (x == null) {
+    mark(y);
+  } else if (y == null) {
+    mark(x);
+  } else if (x.nodeType !== y.nodeType) {
+    mark(x), mark(y);
+  } else if (x.nodeType === Node.TEXT_NODE && x.nodeValue !== y.nodeValue) {
+    mark(x), mark(y);
+  } else {
+    // dumb comparison that mostly works because of sugarcube debug annotations
+    let i = 0;
+    for (; i < x.childNodes.length; i++) {
+      diff(x.childNodes[i], y.childNodes[i]);
+    }
+    for (; i < y.childNodes.length; i++) {
+      mark(y.childNodes[i]);
+    }
+  }
+}
+
+function mark(node) {
+  if (node != null && node.nodeType != Node.ELEMENT_NODE) {
+    node = node.parentElement;
+  }
+  if (node != null) {
+    $(node).addClass("ev-diff");
+  }
+}
 <</script>>
+
+
+:: n1x/F Desk Search 2 {"position":"7025,4925","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit always false>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight ignore>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever ignore>>
+
+Excited by his find, Nero crouches down to take a better look
+at the underside of the desk.
+<br><br>
+When he does, he becomes overwhelmed by a stench that had been
+in the background for a while. The whole room smells of Ivex,
+and of his <em>maleness</em>, which is a scent that was only slightly
+masked by the candle. But underneath the desk,
+the musk is pervasive and dominant,
+and it's heavily laden with notes of sweat and sex, pre-cum and spunk.
+<br><br>
+Nero has a horrible thought of what that sticky spot on the underside
+of the desk might be.
+His erect cock awkwardly seems to like the thought, and he
+smells his own pre leaking from the tip.
+The wolf quickly stands up and tries to focus on something else.
+<br><br>
+$n1_afterAction
+<</nobr>>
 
 
