@@ -661,30 +661,11 @@ $(document).on(':passagestart', function (ev) {
 });
 
 
-/** Redisplay current passage. */
-let redisplayTop = null;
-function redisplay() {
-  redisplayTop = $("html").prop("scrollTop");
-  Engine.play(State.passage);
-  $("html").addClass("redisplay-passage");
-}
-$(document).on(":passageend", () => {
-  $("html").removeClass("redisplay-passage");
-  if (redisplayTop != null) {
-    $("html")[0].scroll(0, redisplayTop);
-    redisplayTop = null;
-  }
-});
-Macro.add("redisplay-passage", {
-  handler: function() {
-    setTimeout(redisplay, 0);
-  }
-});
-
 /** forward decls */
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
 const ET = window.EnumType || (window.EnumType = {});
 const EV = window.ExpandVariants || (window.ExpandVariants = {});
+const VI = window.VarInfo || (window.VarInfo = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
 /*** to-do */
@@ -752,11 +733,12 @@ Macro.add("big-mood", {
     if (m == null) throw new Error(`big-mood: bad args ${this.args.raw}`);
     const vn = m[1];
 
-    if (!withinIncludeOrIgnore(this)) bigMoodDeclared.add(vn);
+    const inclusion = withinIncludeOrIgnore(this);
+    if (!inclusion) bigMoodDeclared.add(vn);
 
     switch (m[2]) {
       case "ignore":
-        bigMoodIgnore.add(vn);
+        if (!inclusion) bigMoodIgnore.add(vn);
         return;
       case "TO"+"DO":
         MT.has_to_do = true;
@@ -764,7 +746,7 @@ Macro.add("big-mood", {
         return;
       case "vary":
         // no constraint on value, but shouldn't be ignored.
-        bigMoodVary.add(vn);
+        if (!inclusion) bigMoodVary.add(vn);
         return;
     }
 
@@ -775,7 +757,7 @@ Macro.add("big-mood", {
     let ok = false;
     switch (m[3]) {
       case 'always':
-        if (!withinIncludeOrIgnore(this)) bigMoodAlways[vn] = val;
+        bigMoodAlways[vn] = val;
         ok = actual === val || (actual == null && val === false);
         if (ok) bigMoodIgnore.add(vn);
         break;
@@ -1061,16 +1043,18 @@ function varInfoSetup() {
       if (VT.ctx.wasRead.has(vname)) {
         outer.addClass("var-info-can-change");
         outer.on("click", () => {
-          v[vname] = !v0[vname];
-          const imp = bigMoodImplies[vname];
-          if (v[vname] && imp != null) {
-            imp.forEach(([b, v2]) => v[v2] = b);
-          }
-          const fimp = bigMoodFalseImplies[vname];
-          if (!v[vname] && fimp != null) {
-            fimp.forEach(([b, v2]) => v[v2] = b);
-          }
-          redisplay();
+          let val = !v0[vname];
+          VI.revisitHere(() => {
+            State.variables[vname] = val;
+            const imp = bigMoodImplies[vname];
+            if (val && imp != null) {
+              imp.forEach(([b, v2]) => State.variables[v2] = b);
+            }
+            const fimp = bigMoodFalseImplies[vname];
+            if (!val && fimp != null) {
+              fimp.forEach(([b, v2]) => State.variables[v2] = b);
+            }
+          });
         });
       }
       return outer;
@@ -1088,15 +1072,15 @@ function varInfoSetup() {
         if (0 < v[vname]) {
           const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
           left.on("click", () => {
-            v[vname] -= 1;
-            redisplay();
+            let val = v0[vname] - 1;
+            VI.revisitHere(() => State.variables[vname] = val);
           });
         }
         if (v[vname] < n - 1) {
           const right = $("<span>").addClass("var-info-enum-right var-info-can-change").appendTo(outer);
           right.on("click", () => {
-            v[vname] += 1;
-            redisplay();
+            let val = v0[vname] + 1;
+            VI.revisitHere(() => State.variables[vname] = val);
           });
         }
       }
@@ -1264,7 +1248,7 @@ The Mage's Tower (Nero)
     <<link "&#x23e9; Nero 1F Candle" "n1cx/F Start Candle">>
         <<state-delete n1_ n1t_ n2_ n2t_>>
     <</link>>
-    <<link "&#x23e9; Nero 1F Horny" "n1d/P Candle Horny">>
+    <<link "&#x23e9; Nero 1F Horny" "n1d/D Candle Horny">>
         <<state-delete n1_ n1t_ n2_ n2t_>>
         <<set $n1_barbs = true>>
         <<set $n1_candleLit = true>>
@@ -1460,6 +1444,7 @@ With a spring to his step, the panther approaches, closing in the last distance 
   window.Nero || (window.Nero = {});
   window.PassageNotes || (window.PassageNotes = {});
   window.VarTrace || (window.VarTrace = {});
+  window.VarInfo || (window.VarInfo = {});
 <</script>>
 
 <!-- should happen before other modules -->
@@ -1479,6 +1464,7 @@ With a spring to his step, the panther approaches, closing in the last distance 
 <<include [[Init Sidebar]]>>
 <<include [[Init State]]>>
 <<include [[Init UI Style]]>>
+<<include [[Init Var Info]]>>
 
 <<include [[Init Drekkar]]>>
 <<include [[Init Nero]]>>
@@ -9217,7 +9203,7 @@ Candle's Influence:
 <<nobr>>
 <<big-mood n1_barbs vary>>
 
-<span class="bad-ending">Bad Ending: Tamed</span>
+<meta-ending-bad>Bad Ending: Tamed</meta-ending-bad>
 <</nobr>>
 
 candle maxed, desperation action failed. defeated by wrong choices.
@@ -9285,23 +9271,9 @@ ivex calls nero a good doggy, gets nero to reveal all. nero senses something wro
 sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
 
 <<nobr>>
-<<if $n1_barbs>>
-    <<if $n9_tamedMildBarbs>>
-        <span class="bad-ending">Bad Ending: Tamed (Barbs, Mild)</span>
-    <<else>>
-        <<set $n9_tamedMildBarbs = true>>
-        Nero's <mark>Bad Ending: Tamed (Barbs, Mild)</mark>
-        is now unlocked in the Archive.
-    <</if>>
-<<else>>
-    <<if $n9_tamedMildSmooth>>
-        <span class="bad-ending">Bad Ending: Tamed (Smooth, Mild)</span>
-    <<else>>
-        <<set $n9_tamedMildSmooth = true>>
-        Nero's <mark>Bad Ending: Tamed (Smooth, Mild)</mark>
-        is now unlocked in the Archive.
-    <</if>>
-<</if>>
+<<meta-ending bad
+    n9_tamedMildSmooth "Bad Ending: Tamed (Smooth, Mild)"
+    n9_tamedMildBarbs "Bad Ending: Tamed (Barbs, Mild)">>
 
 <br><br>
 <ul class="actions">
@@ -9335,23 +9307,9 @@ nero whines. dumps all his info amid torture, feels ashamed at failing, but ends
 sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
 <<nobr>>
-<<if $n1_barbs>>
-    <<if $n9_tamedHarshBarbs>>
-        <span class="bad-ending">Bad Ending: Tamed (Barbs, Harsh)</span>
-    <<else>>
-        <<set $n9_tamedHarshBarbs = true>>
-        Nero's <mark>Bad Ending: Tamed (Barbs, Harsh)</mark>
-        is now unlocked in the Archive.
-    <</if>>
-<<else>>
-    <<if $n9_tamedHarshSmooth>>
-        <span class="bad-ending">Bad Ending: Tamed (Smooth, Harsh)</span>
-    <<else>>
-        <<set $n9_tamedHarshSmooth = true>>
-        Nero's <mark>Bad Ending: Tamed (Smooth, Harsh)</mark>
-        is now unlocked in the Archive.
-    <</if>>
-<</if>>
+<<meta-ending bad
+    n9_tamedHarshSmooth "Bad Ending: Tamed (Smooth, Harsh)"
+    n9_tamedHarshBarbs "Bad Ending: Tamed (Barbs, Harsh)">>
 
 <br><br>
 <ul class="actions">
@@ -13308,7 +13266,7 @@ his situation.
 
 <<if Config.debug>>
     <br>
-    <<link "(show another)">><<redisplay-passage>><</link>>
+    <<link "(show another)">><<revisit-here>><</link>>
 <</if>>
 <</nobr>>
 
@@ -14459,6 +14417,8 @@ Macro.add("archive-barbs", {
     );
   }
 });
+
+
 <</script>>
 
 
@@ -14781,7 +14741,7 @@ Macro.add("n1-patience", {
     const ppassage = Story.get(ptitle);
     const ptags = ppassage != null ? ppassage.tags : [];
     // moved here is not redisplay or return
-    const movedHere = ptitle !== here && !ptags.includes("noreturn");
+    const movedHere = !T.revisiting && ptitle !== here && !ptags.includes("noreturn");
     if (movedHere || V.n1t_patiencePassage == null) {
       // If we're at a different action node, reset patience and aggro
       if (V.n1t_patiencePassage !== here) {
@@ -16506,7 +16466,44 @@ Macro.add("arousalbar", {
     display: inline;
     font-style: italic;
   }
+  meta-ending-bad {
+    color: #f44;
+    font-style: italic;
+    font-weight: bold;
+  }
+  meta-ending-good {
+    color: #6e6;
+    font-style: italic;
+    font-weight: bold;
+  }
 </style><</append>>
+
+<<script>>
+
+function announceEnding(output, type, vname, text) {
+  const ending = `<meta-ending-${type}>${text}</meta-ending-${type}>`;
+  if (!State.variables[vname]) {
+    $(output).append(`<meta-text>${ending} is now unlocked in the Archive.</meta-text>`);
+    State.variables[vname] = true;
+  } else {
+    $(output).append(ending);
+  }
+}
+Macro.add("meta-ending", {
+  handler: function() {
+    const type = this.args[0];
+    const vn1 = this.args[1];
+    const text1 = this.args[2];
+    const vn2 = this.args[3];
+    const text2 = this.args[4];
+    if (vn2 != null && State.variables.n1_barbs) {
+      announceEnding(this.output, type, vn2, text2);
+    } else {
+      announceEnding(this.output, type, vn1, text1);
+    }
+  }
+});
+<</script>>
 
 
 :: n1x/F Desk Search {"position":"6925,4925","size":"100,100"}
@@ -17065,5 +17062,46 @@ The wolf quickly stands up and tries to focus on something else.
 $n1t_afterAction
 <<set $n2_deskSearched = true>>
 <</nobr>>
+
+
+:: Init Var Info [inclusion] {"position":"1900,725","size":"100,100"}
+<<append head>><style>
+.revisit-here, .revisit-here * {
+  transition: none !important;
+}
+</style><</append>>
+
+<<script>>
+const VI = window.VarInfo || (window.VarInfo = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+
+let revisitTop = null;
+
+VI.revisitHere = fn => {
+  VT.stop();
+  revisitTop = $("html").prop("scrollTop");
+  State.active.variables = clone(State.current.variables);
+  fn();
+  Engine.play(State.passage);
+  $("html").addClass("revisit-here");
+};
+Macro.add("revisit-here", {
+  handler: () => {
+    setTimeout(revisitHere);
+  }
+});
+
+$(document).on(":passagestart", () => {
+  State.temporary.revisiting = revisitTop != null;
+});
+
+$(document).on(":passageend", () => {
+  $("html").removeClass("revisit-here");
+  if (revisitTop != null) {
+    $("html")[0].scroll(0, revisitTop);
+    revisitTop = null;
+  }
+});
+<</script>>
 
 
