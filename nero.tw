@@ -1119,9 +1119,13 @@ function varInfoSetup() {
     [...VT.ctx.wasSet].forEach(v => touched.add(v));
     [...VT.ctx.wasDeleted].forEach(v => touched.add(v));
 
-    [...VT.ctx.wasRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
-      EM.fail(`Passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
-    });
+    const passageText = Story.get(State.passage).text;
+    if (!/<<include/.test(passageText)) {
+      // ideally the "always" check would be scoped to the passage thet declares it
+      [...VT.ctx.wasRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
+        EM.fail(`Passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
+      });
+    }
 
     const here = State.passage;
     const bigMood = new Set();
@@ -7484,12 +7488,15 @@ Nero considers his next move.
 <br><br>
 <<include [[n1x/F Look and Magic]]>>
 
-XXX maybe vary actions more on abused/naked
 <ul class="actions">
-    <li>[[`"There's been a misunderstanding..."`|n1cn/F Charm]]</li>
     <<if $n1_abused>>
+        <li>[[`"Please, let me explain..."`|n1cn/F Charm]]</li>
         <li>[[Growl softly at Ivex.|n1cn/F Resist]]</li>
+    <<elseif $n1_naked>>
+        <li>[[`"No, you misunderstand..."`|n1cn/F Charm]]</li>
+        <li>[[Snarl at Ivex.|n1cn/F Resist]]</li>
     <<else>>
+        <li>[[`"Ah, I see the misunderstanding..."`|n1cn/F Charm]]</li>
         <li>[[Growl at Ivex.|n1cn/F Resist]]</li>
     <</if>>
     <<actions-optional $n1t_magicAction>>
@@ -7618,7 +7625,6 @@ Ivex speaks. "So let me make a proposal."
 <</if>>
 
 <br><br>
-XXX maybe vary action on abused/naked
 <ul class="actions">
     <li>[['"There must be some mistake..."'|n1cn/F Ivex Intro 2]]</li>
 </ul>
@@ -8785,7 +8791,15 @@ He prepares the spell's image in his mind, and then <em>twists</em> it...
 
 <<set $n1t_didSomeAction = true>>
 
-"There's been a misunderstanding," says Nero. "I wasn't <em>given</em> your dossier. I <em>stole</em> it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore."
+<<if $n1_abused>>
+    "Please, let me explain," says Nero.
+<<elseif $n1_naked>>
+    "No, you misunderstand," says Nero.
+<<else>>
+    "Ah, I see the misunderstanding," says Nero.
+<</if>>
+
+"I wasn't <em>given</em> your dossier. I <em>stole</em> it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore."
 
 <br><br>
 <<if $n1_magicPhase < MP_triedMagic>>
@@ -8796,17 +8810,17 @@ He prepares the spell's image in his mind, and then <em>twists</em> it...
     Ivex seems intrigued. Spinning an enticing tale
     should distract the panther long enough
     for Nero to exploit some flaw in his anti-magic field.
-<<elseif $n1_magicPhase < MP_wantTouch>>
+<<elseif $n1_magicPhase !== MP_wantTouch>>
     Ivex seems intrigued and willing to listen to Nero spin a fanciful tale.
-    This will make it easier to speak some unnoticed instructions
+    This should make it easier to speak some unnoticed instructions
     to the Sprite.
 <<else>>
-    Ivex seems intrigued. A little more seduction,
+    Ivex seems intrigued. A little more manipulation,
     and soon Nero will have the keys to the panther mage's kingdom.
 <</if>>
 <</nobr>>
 
-Nero continues. "The ship captain was kind enough to let me search the bounty hunter's luggage, and in his papers I found your dossier. It's astonishing. When I read about your exploits, I knew I had to meet you."
+Nero continues. "The ship's captain was kind enough to let me search the bounty hunter's luggage, and in his papers I found your dossier. It's astonishing. When I read about your exploits, I knew I had to meet you."
 
 "Finally!" says Ivex. "... I mean, it's funny that all those idiot bounty hunters continue to fall into my traps. But I've been trying to meet other types of people. You're not what I expected. But we all have to start somewhere, right?"
 
@@ -8822,24 +8836,27 @@ Nero continues. "The ship captain was kind enough to let me search the bounty hu
     on a cross is just an ordinary day's adventure.
     Nothing to worry about.
 <<else>>
-    Nero makes a pleasant but noncommittal sound.
-    Ivex seems quite volatile, and it's probably best to be cautious
-    about saying anything that might offend him.
+    It's not clear what response is appropriate for that nonsense,
+    so Nero smiles and makes a pleasant but noncommittal sound.
 <</if>>
 <</nobr>>
 
 Ivex grins back. "Now that you've found me, what did you have in mind?"
 
 <<nobr>>
-XXX maybe vary actions on abused/naked
 <ul class="actions">
-    <li>[['"I came here to recruit..."'|n1cn/D Recruit]]</li>
-    <li>[['"Perhaps we could collaborate..."'|n1cn/F Partner]]</li>
+    <<if $n1_abused>>
+        <li>[[`"I'm wondering if I can recruit you."`|n1cn/F Recruit]]</li>
+        <li>[['"Perhaps we could collaborate?"'|n1cn/F Collab]]</li>
+    <<else>>
+        <li>[[`"I'm here to recruit you."`|n1cn/F Recruit]]</li>
+        <li>[['"Perhaps we could collaborate..."'|n1cn/F Collab]]</li>
+    <</if>>
 </ul>
 <</nobr>>
 
 
-:: n1cn/F Resist {"position":"4000,1750","size":"100,100"}
+:: n1cn/F Resist {"position":"3975,1725","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
@@ -8850,34 +8867,39 @@ XXX maybe vary actions on abused/naked
 <<if $n1_abused>>
     <<big-mood n1_naked ignore>>
     Nero lets out a soft growl. His brutally abused balls argue against
-    antagonizing his captor, but he has little hope that cooperation,
-    or the pretense of cooperation, will do much to improve his
-    situation.
+    antagonizing his captor, but cooperation, or the pretense of
+    cooperation, seems unlikely to improve his situation.
+    And in any case, he would not have much of a career if he
+    betrayed his client's confidence.
+    <br><br>
+    Ivex's ears momentarily flatten at the sudden growl,
+    but they quickly perk back up as he smiles.
+
 <<elseif $n1_naked>>
-    Nero looses a full-throated growl at the panther mage.
+    The wolf looses a savage snarl at the panther mage.
     Ivex's outrageous stripping of the wolf's clothes (and dignity),
     makes Nero unwiling to cooperate, or even pretend to cooperate.
+    And in any case, he would not have much of a career if he
+    betrayed his client's confidence.
+    <br><br>
+    Ivex's ears twitch at the sudden snarl, but
+    a moment later they perk up, and he smiles.
+
 <<else>>
     Nero looses a full-throated growl at the panther mage.
     Ivex's creepy demeanor toward the restrained wolf makes Nero
     disinclined to cooperate, or even pretend to cooperate.
-<</if>>
-
-And in any case, Nero would not have much of a career if he
-betrayed his client's confidence.
-
-<br><br>
-<<if $n1_abused>>
-    Ivex's ears momentarily flatten at the sudden growl,
-    but they quickly perk up as he smiles.
-<<else>>
+    And in any case, he would not have much of a career if he
+    betrayed his client's confidence.
+    <br><br>
     Ivex momentarily flinches at the sudden growl,
     but he quickly straightens and smiles.
 <</if>>
-"You're much more fun than I expected a mage would be!"
+
+"You're more fun than I expected a mage would be!"
 <</nobr>>
 
-That statement seems ominous. Still, Nero thinks he can provoke the panther into making a careless mistake, which should allow him to finish the mission and escape with minimal distress.
+That statement seems ominous. Still, Nero thinks he can provoke the panther into making a careless mistake. One mistake is all the wolf needs to complete his mission and escape.
 
 [[Continue|n1cx/F Start Candle]]
 
@@ -9421,10 +9443,10 @@ reminisce on 1F experience, vary on n1_abused and n1_subby. clear implication th
 <</nobr>>
 
 
-:: n9a/D Broken [end] {"position":"3950,6375","size":"100,100"}
+:: n9a/D Broken [end] {"position":"3925,6400","size":"100,100"}
 <<big-mood n1_barbs vary>>
 
-bad ending unlocked
+<meta-ending-bad>Bad Ending: Broken</meta-ending-bad>
 
 nero clever escape, balls aching, only mildly horny, tries wand, an obvious bad idea.
 
@@ -9441,6 +9463,10 @@ nero hates himself but can't help himself.
 maybe: ivex gives nero more freedom as dependence becomes firm. nero manages to leave and tries to remove chastity, but it's now too intertwined in his life essence, maybe consults with colleague, ashamed. not helpful, runs back before ivex gets mad.
 
 gives up, mental suicide with dumb gem.
+
+<<meta-ending bad
+    n9_brokenSmooth "Bad Ending: Broken (Smooth)"
+    n9_brokenBarbs "Bad Ending: Broken (Barbs)">>
 
 <ul class="actions">
     <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
@@ -9565,24 +9591,6 @@ lion not hunting or following [[n9e/S overwhelmed mild]]
 
 
 :: n9x/S dominant [end] {"position":"4600,7850","size":"100,100"}
-there are two paths into here.
-made-gem means lion is available for punishment.
-rescued-gem means lion is trapped in blob, not available.
-
-Ivex endings.
-you have magic back, Ivex is helpless without his gems. trap him.
-
-Nero's contract is rescuing his patron's cock, but he doesn't know that. he's told it's an ornate box with something precious or blackmaily. Ivex has applied portal chastity to a couple useful people, and is using that for things like gem supply. it's a cabinet somewhere in the tower, there's maybe 4-6 boxes, not labelled.
-
-retrieve the portal-boxes for your contract.
-if had caged or dominated, can look in boxes.
-
-lawful: fulfill your contract, turn ivex in, let it all go.
-
-archive starts here.
-
-vengeful:
-
 if no bad endings, straightforward fuck, simpler than drekkar's.
 
 if had caged, can use portal-box chastity.
@@ -9767,21 +9775,23 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 <<big-mood n1_naked ignore>>
 
 <<n1-patience 1 1
+    "(bug)"
     "Ivex sneers. \"Do you think you're my equal?\""
+    "Ivex growls and asks again. \"Do you think you're my equal?\""
 >>
 <</nobr>>
 
 <<nobr>>
 <<include [[n1x/F Look and Magic]]>>
 
-XXX maybe vary actions on abused/naked
 <ul class="actions">
     <<if $n1_abused>>
-        <li>[[`"You can have 80%!"`|n1cn/D Reject Equality]]</li>
+        <li>[[`"You can have 80%!"`|n1cn/D Reject Collab]]</li>
+        <li>[[`"Please! I'm hoping you would consider me as an apprentice!"`|n1cn/D Apprentice]]</li>
     <<else>>
-        <li>[[`"Would you prefer a 60% share?"`|n1cn/D Reject Equality]]</li>
+        <li>[[`"Would you prefer a 60% share?"`|n1cn/D Reject Collab]]</li>
+        <li>[[`"Of course not. I'm hoping to be your apprentice!"`|n1cn/D Apprentice]]</li>
     <</if>>
-    <li>[[`"Perhaps I could apprentice..."`|n1cn/D Apprentice]]</li>
     <<actions-optional $n1t_magicAction>>
 </ul>
 <</nobr>>
@@ -9873,24 +9883,35 @@ ivex takes the bait, he's skeptical but interested.
 [[Continue|n1cx/F Start Candle]]
 
 
-:: n1cn/D Reject Equality [big-mood] {"position":"4050,2700","size":"100,100"}
+:: n1cn/D Reject Collab [big-mood] {"position":"4050,2775","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked vary>>
-<</nobr>>
 
-nero: really, equality is good.
 <<if $n1_abused>>
-    abused, cautious.
+    <<big-mood n1_naked ignore>>
+
+    "You can have 80%!" clearly not working, apprehension
+    <br><br>
+    ivex, I think you need a reminder, smashes balls. returns to desk
+
 <<elseif $n1_naked>>
-    naked, awkward dignity
+    "Would you prefer a 60% share?" naked, awkward dignity.
+    
+    <br><br>
+    Ivex, I think you do not understand the power I have here.
+    smashes balls
+    
 <<else>>
-    normal, cajoling.
+    "Would you prefer a 60% share?" normal. cajoling.
+
+    <br><br>
+    Ivex steps close, smiles, smashes balls
 <</if>>
 
-ivex: no way. smashes balls.
 <<set $n1_abused = true>>
+<</nobr>>
 
 [[Continue|n1cx/F Start Candle]]
 
@@ -10588,45 +10609,65 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 <</nobr>>
 
 
-:: n1cn/D Recruit {"position":"4150,1825","size":"100,100"}
+:: n1cn/F Recruit {"position":"4100,1825","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked vary>>
 
-nero, I'd like to recruit you.
-<<if $n1_naked>>
-    naked-nero, awkward to do this while naked, but puts on a bold face
+<<if $n1_abused>>
+    "I'm wondering if can recruit you."
 <<else>>
-    clothed-nero, tries to imply worldly adventurer with a dashing crew,
-    pirates, high seas type of stuff.
+    "I'm here to recruit you."
 <</if>>
 
 <br><br>
-ivex, offended.
-<<if $n1_abused>>
-    abused-nero, very worried he hit the wrong tone.
+<<if $n1_naked>>
+    Nero is acutely aware of how ridiculous that statement sounds
+    when spoken by a naked and helpless prisoner.
+    In fact, he's counting on the absurdity to help sell the story.
+    Nero needs to present himself as relaxed and confident without
+    bravado.
+    <br><br>
+    If he does it right, a tiny bit of doubt will enter
+    Ivex's mind. Maybe not even conscious doubt. Ivex should
+    feel a lurking apprehension about whether he really is in
+    control of this situation.
+    <br><br>
+    And if the panther responds to that anxiety,
+    his actions will reveal <em>what</em>
+    his anxieties are, which Nero can then exploit.
 <<else>>
-    nonabused-nero, satsified that he's found a button to push, knows how to play this.
+    Nero tries to make the statement enigmatic and conspiratorial.
+    He's noticed that Ivex keeps reinforcing the idea that <em>he</em>
+    is the <em>master</em> of <em>his</em> domain.
+    This suggests a certain
+    insecurity and anxiety in the panther.
+    <br><br>
+    The question is, what is the source of this insecurity,
+    and how deep does it go?
+    Is Ivex lashing out against a cruel or inadequate father?
+    Does he have a yearning for a leader he can trust?
+    <br><br>
+    Nero intends to find that out, and exploit it if he can.
 <</if>>
-
 <</nobr>>
 
-[[Continue|n1cn/D Ivex Offended (1,1)]]
+[[Continue|n1cn/D Recruit 2]]
 
 
-:: n1cn/F Partner {"position":"4500,2000","size":"100,100"}
+:: n1cn/F Collab {"position":"4500,1950","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked vary>>
 
 <<if $n1_abused>>
-    Nero hesitates before speaking. "Perhaps we could... collaborate...?"
+    Nero hesitates before speaking. "Perhaps we could collaborate?"
     <br><br>
     That seems sufficiently neutral. Making a suggestion is a more delicate
     matter than spinning intriguing tales. Further elaboration can wait on
-    Ivex's reaction, and then be tailored to the panther's desires.
+    Ivex's reaction, and then the lure can be tailored to the panther's desires.
     Especially since the panther mage
     seems to be quite the blowhard, with every gesture exposing
     the inner workings of his psyche.
@@ -10640,8 +10681,8 @@ ivex, offended.
     Hopefully it isn't due to some sexual association of the word
     in the perverted mage's mind.
 <<else>>
-    Nero grins widely. "Perhaps we could collaborate on some...
-    exceptionally interesting missions that I'm unable to accomplish
+    Nero grins widely. "Perhaps we could collaborate on some
+    exceptionally interesting commissions that I'm unable to accomplish
     by myself."
 
     <br><br>
@@ -10651,11 +10692,12 @@ ivex, offended.
 <</if>>
 
 <br><br>
-Ivex tilts his head and stares at his victim. He shifts his attention to another paper from the desk, reading silently this time.
+Ivex tilts his head and stares at the bound wolf.
+The panther shifts his attention to another paper from the desk, reading silently this time.
 
 <br><br>
-After a moment, he crumples up the paper and throws the wadded ball,
-straight at the bound wolf's startled face.
+After a moment, he crumples up the paper and throws the wadded ball
+straight at Nero's startled face.
 
 <br><br>
 Ivex laughs. "I'll never cease to be amazed by the audacity of wolves.
@@ -10724,7 +10766,11 @@ starts into creepy-lewd
 <<else>>
     <<em-assert !$n1_mageSight>>
     ivex makes a gesture
-    [[Continue|n1p/F Barbs Glitch]]
+    <<if $n0_barbsSlowViewed || $n0_barbsFastViewed>>
+        [[Continue|n1p/F Barbs Glitch]]
+    <<else>>
+        [[Continue|n1p/F Barbs Fast]]
+    <</if>>
     <<set $n1t_afterNaked = "[[n1cs/D Subby Naked]]">>
 <</if>>
 <</nobr>>
@@ -11614,7 +11660,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 <<if $n1_abused>>
     Nero mentally checks off one step in his strategic map.
     He of course did not expect Ivex to believe a tale of ignorance.
-    But offering a small bit of resistance will make the wolf's lies more
+    But offering a small bit of resistance will make the lies more
     plausible when Ivex "succeeds" in forcing them out.
    <br><br>
     That is, if the panther even manages to reach that point.
@@ -13805,10 +13851,10 @@ XXX want to reach it to cut free, too bad you can't
 <</nobr>>
 
 
-:: n9a/D Caged Mild [end] {"position":"3550,6350","size":"100,100"}
+:: n9a/D Caged Mild [end] {"position":"3575,6325","size":"100,100"}
 <<big-mood n1_barbs vary>>
 
-Bad Ending: Caged (Mild)
+<meta-ending-bad>Bad Ending: Caged (Mild)</meta-ending-bad>
 
 Nero, extra horny, and no self-control. paws off. defeated by horny lack of discipline.
 
@@ -13820,6 +13866,10 @@ applies portal-box chastity, keeps Nero caged until he's desperate and submits,
 
 important: portal-box is small, strong feeling of confined
 
+<<meta-ending bad
+    n9_cagedMildSmooth "Bad Ending: Caged (Smooth, Mild)"
+    n9_cagedMildBarbs "Bad Ending: Caged (Barbs, Mild)">>
+
 <ul class="actions">
     <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
     <li>[[Try again from the beginning.|Title Screen]]</li>
@@ -13829,6 +13879,8 @@ important: portal-box is small, strong feeling of confined
 :: n9a/D Caged Harsh [end] {"position":"3700,6425","size":"100,100"}
 <<big-mood n1_barbs vary>>
 
+<meta-ending-bad>Bad Ending: Caged (Harsh)</meta-ending-bad>
+
 nero escaped, very horny, resisted pawing off, but didn't resist using wand. defeated by horny curiosity.
 
 soon after he tries, he realizes his mistake. the wand is stuck, he fights to take it off, but he's unable to, is trapped in a forced orgasm loop.
@@ -13836,6 +13888,10 @@ soon after he tries, he realizes his mistake. the wand is stuck, he fights to ta
 Ivex returns, is amused that nero almost escapes, is amused that he's struggling.
 
 applies portal-box chastity in overstim mode. keeps nero in a cage until he surrenders,
+
+<<meta-ending bad
+    n9_cagedHarshSmooth "Bad Ending: Caged (Smooth, Harsh)"
+    n9_cagedHarshBarbs "Bad Ending: Caged (Barbs, Harsh)">>
 
 <ul class="actions">
     <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
@@ -15036,15 +15092,34 @@ There are better things to do before Ivex returns.
 
 
 :: n3a/S escaped {"position":"4625,7675","size":"100,100"}
-boyscout choice: [[n9x/S dominant]]
-revenge on ivex: [[n9x/S satisfied]]
+there are two paths into here.
+made-gem means lion is available for punishment.
+rescued-gem means lion is trapped in blob, not available.
+
+Neor has magic back, Ivex is helpless without his gems. trap him.
+
+Nero's contract is rescuing his patron's cock, but he doesn't know that. he's told it's an ornate box with something precious or blackmaily. Ivex has applied portal chastity to a couple useful people, and is using that for things like gem supply. it's a cabinet somewhere in the tower, there's maybe 4-6 boxes, not labelled.
+
+retrieve the portal-boxes for your contract.
+if had caged or dominated, can look in boxes.
+
+boyscout choice: [[n9x/S satisfied]]
+revenge on ivex: [[n9x/S dominant]]
 lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 
 
 :: n9x/S satisfied [end] {"position":"4450,7850","size":"100,100"}
+satisfy contract.
+turn ivex into authorities.
+
+horny ending depending on barb choice
+smooth - mica
+barbs - pevin
+glitch - hans
 
 
 :: n9x/S ascendant [end] {"position":"4750,7850","size":"100,100"}
+this is all endings involving the lion
 
 
 :: Init Passage Notes [inclusion] {"position":"2375,425","size":"100,100"}
@@ -16207,7 +16282,7 @@ $n1t_afterAction
   }
 
   T.addCurrentState = () => {
-    const wasRead = [...window.VarTrace.wasRead].sort();
+    const wasRead = [...window.VarTrace.ctx.wasRead].sort();
     const obj = {};
     for (const vn of wasRead) {
       const val = State.current.variables[vn];
@@ -16254,7 +16329,7 @@ $n1t_afterAction
   </div>
   [[See conflict|Passage Notes Single][Dialog.close()]]
 </div>
-<<link "Add current state to note">>
+<<link "Append a summary of the current state">>
     <<run _addCurrentState()>>
 <</link>>
 <br>
@@ -16802,7 +16877,7 @@ Macro.add("enum-var", {
     color: #88c;
   }
   .ev-diff {
-    background-color: #810;
+    background-color: #510;
     border-radius: 4px;
   }
 </style><</append>>
@@ -16944,7 +17019,7 @@ EV.render = function() {
         for (const vn of varsUsed) {
           const val = st.obj[vn];
           if (ET.vars[vn] != null) {
-            const str = ET.enum[ET.vars[vn]][val] || `${vn}=${val}`;
+            const str = ET.enums[ET.vars[vn]][val] || `${vn}=${val}`;
             $(`<span class="ev-var ev-enum">`).text(str).appendTo(inner);
           } else if (val == null || val === false) {
             $(`<span class="ev-var ev-false">`).text(vn).appendTo(inner);
@@ -17103,5 +17178,23 @@ $(document).on(":passageend", () => {
   }
 });
 <</script>>
+
+
+:: n1cn/D Recruit 2 {"position":"4200,1825","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused vary>>
+<<big-mood n1_mageSight ignore>>
+<<big-mood n1_naked ignore>>
+
+ivex, offended.
+<<if $n1_abused>>
+    abused-nero, very worried he hit the wrong tone.
+<<else>>
+    nonabused-nero, satsified that he's found a button to push, knows how to play this.
+<</if>>
+
+<</nobr>>
+
+[[Continue|n1cn/D Ivex Offended (1,1)]]
 
 
