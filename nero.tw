@@ -8951,7 +8951,7 @@ Nero's Endgame is an unusual spell construction. He realized he needed it during
 
 It had begun with a simple request. Lord Estrivar of the Triestorm Council had asked him to find Perosolamew, the Lord's missing parrot. This was a trivial divination that Nero would normally decline and post on a student jobs board, but Estrivar was insistent and pleasant and offered an extremely generous retainer.
 
-Five days later, Nero was naked, gagged, and bound to a stone altar in the secret lair of the Triestorm shoemakers guild, who were preparing to sacrifice him to Perfect Steel Blank, the (probably not real) demigod of Laces and Leather.
+Five days later, Nero was naked, gagged, and bound to a stone altar in the secret lair of the Triestorm shoemakers guild, who were preparing to sacrifice him to Elder Steel Blank, the (probably not real) demigod of Laces and Leather.
 
 Back then, Nero's entire magic repertoire required either spoken words, large gestures, or specially prepared materials. None of which were available to him at that moment. Nobody even knew he was there. Escape was impossible.
 
@@ -9178,14 +9178,14 @@ Well, that's a question to be deferred to some other time. What's important now 
 [[Continue|n2a/D Start 2]]
 
 
-:: n2a/D Alone (6,2) {"position":"5150,5225","size":"200,200"}
+:: n2a/D Alone (6,3) {"position":"5150,5225","size":"200,200"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_subby ignore>>
 <<big-mood n1_candleHorny ignore>>
 
-<<n1-patience 6 2 "">>
+<<n1-patience 6 3 "">>
 
 <<include [[n2a/F Compute Arousal]]>>
 
@@ -11311,7 +11311,7 @@ magic sight fades, was dependent on energy channel through mirror.
 assert nero is free
 
 if asked wand, high lust, then [[n9a/D Caged Harsh]]
-if asked wand, clever escape, subby, 3rd naked then [[n9a/D Broken]]
+if asked wand, clever escape, subby, glitch naked then [[n9a/D Broken]]
 if asked wand, clever escape, not broken, then set high lust and refuse to use again
 
 <<link $n1t_afterAction>><</link>>
@@ -12028,7 +12028,7 @@ Candle's Influence:
     Of course he can.  It's just a matter of finding the right angle...
 
     <br><br>
-    [[Continue|n2a/D Alone (6,2)]]
+    [[Continue|n2a/D Alone (6,3)]]
 <</fade-in>>
 <</nobr>>
 
@@ -12082,7 +12082,7 @@ Candle's Influence:
 <</nobr>>
 
 
-:: n2a/D More Magic [inclusion] {"position":"5025,5325","size":"100,100"}
+:: n2a/D More Magic [inclusion] {"position":"4925,5275","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny vary>>
@@ -12091,29 +12091,44 @@ Candle's Influence:
 
 <<if $n2_candleMax>>
 
-    <<set $n2_moreMagicAction = "[[Desperate magic|n2a/D Desperate Magic]]">>
     desperation magic spell, super horny
+    <<set $n2_moreMagicAction = "[[Desperate magic|n2a/D Desperate Magic]]">>
     <br><br>
 
 <<elseif !$n1_mageSight>>
     <!-- nothing, do base magic first -->
 
-<<else>>
-    <<set $n2_futileMagic = $n2_futileMagic || 0>>
+<<elseif $n1_candleHorny>>
+    <<set $n2_hornyMagic = $n2_hornyMagic || 1>>
+    <!-- max is patience actions -->
+    <<switch $n2_hornyMagic>>
+    <<case 1>>
+        horny, wanna stim cock
+        <<set $n2_moreMagicAction = "[[Horny magic|n2a/D Horny Magic]]">>
+    <<case 2>>
+        something
+        <<set $n2_moreMagicAction = "[[Horny magic|n2a/D Horny Magic]]">>
+    <<case 3>>
+        something
+        <<set $n2_moreMagicAction = "[[Horny magic|n2a/D Horny Magic]]">>
+    <<default>>
+         <<run throw new Error(`bug: hornyMagic ${n2_hornyMagic}`)>>
+     <</switch>>
+    <br><br>
 
-    <!-- this could be conditional-choice -->
-    <<if $n2_futileMagic === 0 && $n1_candleHorny>>
-        <<set $n2_moreMagicAction = "[[Futile magic|n2a/D Futile Magic][$n2_futileMagic = 1]]">>
-        horny futile magic
-    <<elseif $n2_futileMagic === 0>>
-        <<set $n2_moreMagicAction = "[[Futile magic|n2a/D Futile Magic][$n2_futileMagic = 1]]">>
-        non-horny futile magic
-    <<elseif $n2_futileMagic === 1>>
-        <<set $n2_moreMagicAction = "[[Futile magic|n2a/D Futile Magic][$n2_futileMagic = 2]]">>
-        horny and non-horny futile magic 2
-    <<else>>
-        <<run throw new Error("bug")>>
-    <</if>>
+<<else>>
+    <<set $n2_futileMagic = $n2_futileMagic || 1>>
+    <!-- max is patience actions - 1 -->
+    <<switch $n2_futileMagic>>
+    <<case 1>>
+        something
+        <<set $n2_moreMagicAction = "[[Futile magic|n2a/D Futile Magic]]">>
+    <<case 2>>
+        something
+        <<set $n2_moreMagicAction = "[[Futile magic|n2a/D Futile Magic]]">>
+    <<default>>
+         <<run throw new Error(`bug: futileMagic ${n2_futileMagic}`)>>
+     <</switch>>
     <br><br>
 
 <</if>>
@@ -12126,7 +12141,7 @@ const v = State.variables;
 const actions = Math.max(v.n1t_patienceActions, 0);
 const looks = Math.max(v.n1t_patienceLooks, 0);
 
-if (actions > 2 || looks > 6) {
+if (looks > 6) {
   throw new Error("bug");
 } else if (actions === 0 || looks === 0) {
   v.n2_arousal = 100;
@@ -12135,7 +12150,9 @@ if (actions > 2 || looks > 6) {
 } else if (actions === 1) {
   v.n2_arousal = 98 - (looks - 1) * 3;;
 } else if (actions === 2) {
-  v.n2_arousal = 98 - (looks - 1) * 12;
+  v.n2_arousal = 98 - (looks - 1) * 8;
+} else if (actions === 3) {
+  v.n2_arousal = 98 - (looks - 1) * 12
 } else {
   throw new Error("bug");
 }
@@ -12212,7 +12229,7 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: n2a/D Desperate Magic {"position":"4900,5400","size":"100,100"}
+:: n2a/D Desperate Magic {"position":"4750,5400","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always true>>
@@ -12230,24 +12247,24 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: n2a/D Futile Magic {"position":"4900,5275","size":"100,100"}
+:: n2a/D Futile Magic {"position":"5000,5400","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny vary>>
+<<big-mood n1_candleHorny always false>>
 <<big-mood n1_mageSight always true>>
 <<big-mood n1_subby ignore>>
 
-<<run $n2_futileMagic || ($n2_futileMagic = 1)>>
+<<set $n2_futileMagic = $n2_futileMagic || 1>>
+<<switch $n2_futileMagic>>
+<<case 1>>
+    futile magic 1
+<<case 2>>
+    futile magic 2
+<<default>>
+    <<run throw new Error(`bug: futileMagic ${n2_futileMagic}`) >>
+<</switch>>
 
-<<if $n2_futileMagic === 1 && $n1_candleHorny>>
-    futile horny magic
-<<elseif $n2_futileMagic === 1>>
-    futile non-horny magic
-<<elseif $n2_futileMagic === 2>>
-    futile horny and non-horny magic 2
-<<else>>
-    <<run throw new Error("bug")>>
-<</if>>
+<<set $n2_futileMagic = $n2_futileMagic + 1>>
 
 <br><br>
 $n1t_afterAction
@@ -13544,9 +13561,9 @@ $n1t_afterAction
 
 <<archive-ending _broken [[Bad Ending: Broken|nA/P Broken]]>>
     <<if _tamed && _caged && _escaped>>
-        After a taste of Ivex's power, does Nero really want to escape?
-    <<else>>
         ???
+    <<else>>
+        Under construction.
     <</if>>
 <<archive-variants>>
     <<archive-barbs nA_brokenBarbs _brokenSmooth _brokenBarbs>>
@@ -14942,7 +14959,7 @@ Macro.add("state-load", {
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_subby ignore>>
 
-<!-- can only be here once (patience actions - 1) -->
+<!-- can be here 2 times (patience actions - 1) -->
 
 non-horny struggle. breathe lots of candle, feel kinda aroused by the bondage. no, not the bondage, the candle, of course.
 maybe vary by subby or abused?
@@ -14961,7 +14978,7 @@ $n1t_afterAction
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_subby ignore>>
 
-<!-- can be here twice -->
+<!-- can be here 3 times (patience actions) -->
 
 horny struggle. writhe in bonds, really turned on.
 
@@ -14972,7 +14989,7 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: n2a/D Struggle Fail [inclusion] {"position":"5050,5550","size":"100,100"}
+:: n2a/D Struggle Fail [inclusion] {"position":"5025,5525","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always true>>
@@ -17347,5 +17364,31 @@ a .glitch-v {
 }
 </style>
 <</nobr>>\
+
+
+:: n2a/D Horny Magic {"position":"4875,5400","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always true>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_subby ignore>>
+
+<<set $n2_hornyMagic = $n2_hornyMagic || 1>>
+<<switch $n2_hornyMagic>>
+<<case 1>>
+    horny magic 1
+<<case 2>>
+    horny magic 2
+<<case 3>>
+    horny magic 3
+<<default>>
+    <<run throw new Error(`bug: hornyMagic ${n2_hornyMagic}`) >>
+<</switch>>
+
+<<set $n2_hornyMagic = $n2_hornyMagic + 1>>
+
+<br><br>
+$n1t_afterAction
+<</nobr>>
 
 
