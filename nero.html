@@ -1290,6 +1290,11 @@ by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;
     &lt;&lt;link &quot;&amp;#x23e9; Nero 1F Actions&quot; &quot;n1cn/F Ivex Repeat (4,2)&quot;&gt;&gt;
         &lt;&lt;state-delete n1_ n1t_ n2_ n2t_&gt;&gt;
     &lt;&lt;/link&gt;&gt;
+    &lt;&lt;link &quot;&amp;#x23e9; Nero 1F Glitch&quot; &quot;n1cr/D Subby&quot;&gt;&gt;
+        &lt;&lt;state-delete n1_ n1t_ n2_ n2t_&gt;&gt;
+        &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
+        &lt;&lt;set $n0_barbsFastViewed = true&gt;&gt;
+    &lt;&lt;/link&gt;&gt;
     &lt;&lt;link &quot;&amp;#x23e9; Nero 1F Candle&quot; &quot;n1cx/F Start Candle&quot;&gt;&gt;
         &lt;&lt;state-delete n1_ n1t_ n2_ n2t_&gt;&gt;
     &lt;&lt;/link&gt;&gt;
@@ -8393,8 +8398,10 @@ nero becomes desperate, fights a little, but can&#39;t focus on anything clever.
 sketch ongoing life as a pathetic needy bitch.
 nero hates himself but can&#39;t help himself.
 
-maybe: ivex gives nero more freedom as dependence becomes firm. nero manages to leave and tries to remove chastity, but it&#39;s now too intertwined in his life essence, maybe consults with colleague, ashamed. not helpful, runs back before ivex gets mad.
-
+blank finds nero, releases him from gem but isn&#39;t willing to help further.
+nero forgets blank as usual. tries to remove chastity, consults with tara,
+chastity is too entwined with his life essence, there isn&#39;t a simple solution.
+nero is ashamed, doesn&#39;t want to stay, runs back before ivex gets mad.
 gives up, mental suicide with dumb gem.
 
 &lt;&lt;meta-ending bad
@@ -9515,7 +9522,7 @@ starts into creepy-lewd
     &lt;&lt;else&gt;&gt;
         [[Continue|n1p/F Barbs Fast]]
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;set $n1t_afterNaked = &quot;[[n1cs/D Subby Naked]]&quot;&gt;&gt;
+    &lt;&lt;set $n1t_afterNaked = &quot;[[Continue|n1cs/D Subby Naked]]&quot;&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="335" name="n1cs/D Licking" tags="" position="4400,3300" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;big-mood n1_abused ignore&gt;&gt;
@@ -10216,7 +10223,7 @@ Lord Pevin was livid, but still helplessly strapped to the workshop table. Lady 
 &lt;&lt;big-mood n1_abused ignore&gt;&gt;
 
 &lt;&lt;set $n0_barbsFastViewed = true&gt;&gt;
-&lt;&lt;set $n1_barbsFast&gt;&gt;
+&lt;&lt;set $n1_barbsFast = true&gt;&gt;
 
 It&#39;s an intensely sexy memory,
 &lt;&lt;if $n1t_barbsFastExtraViewed&gt;&gt;
@@ -10786,9 +10793,9 @@ $n1t_afterAction
 $n1t_afterAction</tw-passagedata><tw-passagedata pid="390" name="PassageHeader" tags="inclusion" position="3100,750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;var-trace-ignore&gt;&gt;
 &lt;&lt;if /^n/.test(State.passage)&gt;&gt;
-    &lt;&lt;set $n1_magicPhase || ($n1_magicPhase = 0)&gt;&gt;
 
 &lt;!--
+    &lt;&lt;set $n1_magicPhase || ($n1_magicPhase = 0)&gt;&gt;
     &lt;&lt;em-assert
         $n1_magicPhase &lt; MP_mageSight || $n1_mageSight || $n2_mirrorBroken&gt;&gt;
     &lt;&lt;em-assert $n1_magicPhase &lt; MP_mageSight || $n1_naked&gt;&gt;
@@ -15326,50 +15333,50 @@ Macro.delete(&quot;glitch-text&quot;);
 Macro.add(&quot;glitch-text&quot;, {
   tags: [],
   handler: function() {
-    const render = $(&quot;&lt;span id=glitch-2 class=glitch-hidden&gt;&quot;)
-      .wiki(this.payload[0].contents);
-    const dest = $(render[0].cloneNode()).appendTo(this.output);
-    glitchCopy(render, dest, 0);
+    const outer = $(&quot;&lt;span id=glitch-2 class=glitch-hidden&gt;&quot;)
+      .wiki(this.payload[0].contents)
+      .appendTo(this.output);
+    glitchWithin(outer, 0);
   }
 });
-function glitchCopy(jqSrc, jqDest, g) {
-  for (const child of jqSrc.contents()) {
+function glitchWithin(jq, g) {
+  for (const child of jq.contents()) {
     if (child.nodeType === Node.TEXT_NODE) {
-      g = glitchText(child, jqDest, g);
+      g = glitchText(child, g);
     } else {
-      const clone = child.cloneNode();
-      g = glitchCopy($(child), $(clone), g);
-      jqDest.append(clone);
+      g = glitchWithin($(child), g);
     }
   }
   return g;
 }
 const vowels = &quot;áaeiouyAEIOUY&quot;;
-function glitchText(textNode, jqDest, g) {
+function glitchText(textNode, g) {
+  const outer = $(&quot;&lt;span class=glitch-text&gt;&quot;);
+  textNode.parentNode.replaceChild(outer[0], textNode);
   const words = textNode.nodeValue.split(/(\s+)/);
   for (const word of words) {
     if (/\s/.test(word)) {
-      jqDest.append(word);
+     outer.append(word);
     } else if (word === &quot;##barbed-1##&quot;) {
       $(`&lt;span class=&quot;glitch-switch glitch-switch-1&quot;&gt;
         &lt;span class=glitch-barbed&gt;barbed&lt;/span&gt;
         &lt;span class=glitch-smooth&gt;smooth&lt;/span&gt;
-      &lt;/span&gt;`).appendTo(jqDest);
+      &lt;/span&gt;`).appendTo(outer);
     } else if (word === &quot;##barbed-2##&quot;) {
       $(`&lt;span class=&quot;glitch-switch glitch-switch-2&quot;&gt;
         &lt;span class=glitch-smooth&gt;smooth&lt;/span&gt;
         &lt;span class=glitch-barbed&gt;barbed&lt;/span&gt;
-      &lt;/span&gt;`).appendTo(jqDest);
+      &lt;/span&gt;`).appendTo(outer);
     } else {
       const gf = Math.min(Math.floor(g/10), 4);
       g++;
-      const outer = $(`&lt;span class=glitch-word-${gf}&gt;`)
-        .appendTo(jqDest);
+      const inner = $(`&lt;span class=glitch-word-${gf}&gt;`)
+        .appendTo(outer);
       for (const letter of word.split(&quot;&quot;)) {
         if (vowels.includes(letter)) {
-          $(&quot;&lt;span class=glitch-v&gt;&quot;).text(letter).appendTo(outer);
+          $(&quot;&lt;span class=glitch-v&gt;&quot;).text(letter).appendTo(inner);
         } else {
-          $(&quot;&lt;span class=glitch-c&gt;&quot;).text(letter).appendTo(outer);
+          $(&quot;&lt;span class=glitch-c&gt;&quot;).text(letter).appendTo(inner);
         }
       }
     }

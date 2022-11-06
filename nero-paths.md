@@ -2,12 +2,31 @@
 
 This is a description of paths to all of Nero's endings.
 I suggest you don't read this until you've played through at least
-two different endings.
+three different endings.
 
 ## 1st Floor
 - There are two solutions to the 1st floor: Easy and Hard.
 - Hard requires doing the right things before Ivex leaves.
 - Easy is available after Ivex leaves, if the player misses the Hard solution.
+
+### 1st Floor Moods
+- Nero's initial choice is 3 options that converge on Ivex intro, but each
+  option gets there in a different mood/state.
+  - (1) Ivex punches Nero's balls, which puts Nero in "abused" mood.
+    - "abused" affects many descriptions, but doesn't affect gameplay
+      except in one place.
+    - Several later choices can also make Ivex angry and trigger "abused".
+  - (2) Ivex removes Nero's clothes, which puts Nero in "naked" mood.
+    - "naked" just affects descriptions.
+    - At several later points, Ivex will remove Nero's clothes if he's
+      not already naked.
+    - Nero is always naked before Ivex leaves.
+    - Becoming naked also asks barbs/smooth. There are 4 variants of this:
+      Mica, Pevin, glitch, and a skip-story option if the player's already
+      seen that story in a previous playthrough.
+  - (3) "normal" mood. Neither "abused" or "naked".
+- Nero has one more important mood, "subby", which can be triggered by
+  taking the right choices when talking to Ivex.
 
 ### 1st Floor Easy
 - At the Ivex-gone restart point, Nero is bound to the cross, Ivex is gone, the
@@ -23,9 +42,9 @@ two different endings.
   - (4) Look at the grav gems with mage-sight.
   - Optional: Ask Ivex about the grav gems before he leaves, for a hint.
 - (5) When the candle is at max, and Nero has seen the grav gems with
-  mage-sight, Struggle with desperate strength will disrupt the grav gems.
+  mage-sight, Struggle will disrupt the grav gems.
   - Anything other than struggling will fail.
-  - This should basically be a 50/50 choice if the player misses the hints.
+  - This is basically be a 50/50 choice if the player misses the hints.
   - On failure, Nero is overwhelmed by lust, and Ivex returns.
     - Bad Ending: Tamed Mild - cooperate
     - Bad Ending: Tamed Harsh - resist
@@ -58,7 +77,7 @@ two different endings.
 - (6) Ask Ivex about the poltergeist device to get the name.
   - This can be done earlier, anytime after (1).
   - It's possible for this to need another playthrough, if Ivex has left.
-  - But if the player is here on the 2rd playthrough, they've probably looked
+    But if the player is here on the 2rd playthrough, they've probably looked
     at the bottle early enough to have time to ask Ivex. So this probably
     doesn't need another playthrough.
 - (7) Ask the Sprite for access to the named device.
@@ -82,16 +101,16 @@ two different endings.
     another failure.
   - Ivex catches on to what the player is doing, denies access to the password,
     and applies extreme torture with another grav ball.
-  - Lead the player through a section that feels like "crap, another obstacle,
-    what else do I have to do to get past this."
+  - Player goes through another section that feels like "crap, another
+    obstacle, what else do I have to do to get past this."
   - But this turns out to actually work anyway. Nero is free.
 - The mirror is saved. It can be used for 2nd Floor Easy escape.
-- There's a special Bad Ending here:
+- There's a special Bad Ending here that's meant to be hard to find.
   - Bad Ending: Broken
     - You must have seen Mica and Pevin already in other playthroughs.
-    - Pick the neutral start (not naked or abused).
-    - Follow the dialog branches to subby. Should get the "Barbs?" variant.
-    - Do the hard escape.
+    - Pick the neutral starting option (not naked or abused).
+    - Follow the dialog branches to subby. Should get the "Barbs?" glitch.
+    - Finish the hard escape.
     - Use the wand.
 
 ## 2nd Floor

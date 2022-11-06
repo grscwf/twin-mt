@@ -1249,6 +1249,11 @@ The Mage's Tower (Nero)
     <<link "&#x23e9; Nero 1F Actions" "n1cn/F Ivex Repeat (4,2)">>
         <<state-delete n1_ n1t_ n2_ n2t_>>
     <</link>>
+    <<link "&#x23e9; Nero 1F Glitch" "n1cr/D Subby">>
+        <<state-delete n1_ n1t_ n2_ n2t_>>
+        <<set $n0_barbsSlowViewed = true>>
+        <<set $n0_barbsFastViewed = true>>
+    <</link>>
     <<link "&#x23e9; Nero 1F Candle" "n1cx/F Start Candle">>
         <<state-delete n1_ n1t_ n2_ n2t_>>
     <</link>>
@@ -9460,8 +9465,10 @@ nero becomes desperate, fights a little, but can't focus on anything clever. thi
 sketch ongoing life as a pathetic needy bitch.
 nero hates himself but can't help himself.
 
-maybe: ivex gives nero more freedom as dependence becomes firm. nero manages to leave and tries to remove chastity, but it's now too intertwined in his life essence, maybe consults with colleague, ashamed. not helpful, runs back before ivex gets mad.
-
+blank finds nero, releases him from gem but isn't willing to help further.
+nero forgets blank as usual. tries to remove chastity, consults with tara,
+chastity is too entwined with his life essence, there isn't a simple solution.
+nero is ashamed, doesn't want to stay, runs back before ivex gets mad.
 gives up, mental suicide with dumb gem.
 
 <<meta-ending bad
@@ -10787,7 +10794,7 @@ starts into creepy-lewd
     <<else>>
         [[Continue|n1p/F Barbs Fast]]
     <</if>>
-    <<set $n1t_afterNaked = "[[n1cs/D Subby Naked]]">>
+    <<set $n1t_afterNaked = "[[Continue|n1cs/D Subby Naked]]">>
 <</if>>
 <</nobr>>
 
@@ -11624,7 +11631,7 @@ Lord Pevin was livid, but still helplessly strapped to the workshop table. Lady 
 <<big-mood n1_abused ignore>>
 
 <<set $n0_barbsFastViewed = true>>
-<<set $n1_barbsFast>>
+<<set $n1_barbsFast = true>>
 
 It's an intensely sexy memory,
 <<if $n1t_barbsFastExtraViewed>>
@@ -12281,9 +12288,9 @@ $n1t_afterAction
 <<nobr>>
 <<var-trace-ignore>>
 <<if /^n/.test(State.passage)>>
-    <<set $n1_magicPhase || ($n1_magicPhase = 0)>>
 
 <!--
+    <<set $n1_magicPhase || ($n1_magicPhase = 0)>>
     <<em-assert
         $n1_magicPhase < MP_mageSight || $n1_mageSight || $n2_mirrorBroken>>
     <<em-assert $n1_magicPhase < MP_mageSight || $n1_naked>>
@@ -17268,50 +17275,50 @@ Macro.delete("glitch-text");
 Macro.add("glitch-text", {
   tags: [],
   handler: function() {
-    const render = $("<span id=glitch-2 class=glitch-hidden>")
-      .wiki(this.payload[0].contents);
-    const dest = $(render[0].cloneNode()).appendTo(this.output);
-    glitchCopy(render, dest, 0);
+    const outer = $("<span id=glitch-2 class=glitch-hidden>")
+      .wiki(this.payload[0].contents)
+      .appendTo(this.output);
+    glitchWithin(outer, 0);
   }
 });
-function glitchCopy(jqSrc, jqDest, g) {
-  for (const child of jqSrc.contents()) {
+function glitchWithin(jq, g) {
+  for (const child of jq.contents()) {
     if (child.nodeType === Node.TEXT_NODE) {
-      g = glitchText(child, jqDest, g);
+      g = glitchText(child, g);
     } else {
-      const clone = child.cloneNode();
-      g = glitchCopy($(child), $(clone), g);
-      jqDest.append(clone);
+      g = glitchWithin($(child), g);
     }
   }
   return g;
 }
 const vowels = "áaeiouyAEIOUY";
-function glitchText(textNode, jqDest, g) {
+function glitchText(textNode, g) {
+  const outer = $("<span class=glitch-text>");
+  textNode.parentNode.replaceChild(outer[0], textNode);
   const words = textNode.nodeValue.split(/(\s+)/);
   for (const word of words) {
     if (/\s/.test(word)) {
-      jqDest.append(word);
+     outer.append(word);
     } else if (word === "##barbed-1##") {
       $(`<span class="glitch-switch glitch-switch-1">
         <span class=glitch-barbed>barbed</span>
         <span class=glitch-smooth>smooth</span>
-      </span>`).appendTo(jqDest);
+      </span>`).appendTo(outer);
     } else if (word === "##barbed-2##") {
       $(`<span class="glitch-switch glitch-switch-2">
         <span class=glitch-smooth>smooth</span>
         <span class=glitch-barbed>barbed</span>
-      </span>`).appendTo(jqDest);
+      </span>`).appendTo(outer);
     } else {
       const gf = Math.min(Math.floor(g/10), 4);
       g++;
-      const outer = $(`<span class=glitch-word-${gf}>`)
-        .appendTo(jqDest);
+      const inner = $(`<span class=glitch-word-${gf}>`)
+        .appendTo(outer);
       for (const letter of word.split("")) {
         if (vowels.includes(letter)) {
-          $("<span class=glitch-v>").text(letter).appendTo(outer);
+          $("<span class=glitch-v>").text(letter).appendTo(inner);
         } else {
-          $("<span class=glitch-c>").text(letter).appendTo(outer);
+          $("<span class=glitch-c>").text(letter).appendTo(inner);
         }
       }
     }
