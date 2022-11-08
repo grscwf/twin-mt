@@ -1,8 +1,23 @@
 # Nero paths
 
 This is a description of paths to all of Nero's endings.
-I suggest you don't read this until you've played through at least
-three different endings.
+I suggest you don't read this until you've played through
+at least three different Nero endings.
+
+<details>
+  <summary>
+    Spoilers
+  </summary>
+
+Are you sure you want to see this?
+Nero's story has many hints for all the endings,
+and this description reveals many things that are
+much more fun to discover yourself.
+
+<details>
+  <summary>
+    Yes, spoil me
+  </summary>
 
 ## 1st Floor
 - There are two solutions to the 1st floor: Easy and Hard.
@@ -10,10 +25,14 @@ three different endings.
 - Easy is available after Ivex leaves, if the player misses the Hard solution.
 
 ### 1st Floor Moods
+Nero has 4 different moods when interacting with Ivex. They're mostly flavor.
+There's only one path that requires a specific mood.
+<details>
+
 - Nero's initial choice is 3 options that converge on Ivex intro, but each
   option gets there in a different mood/state.
   - (1) Ivex punches Nero's balls, which puts Nero in "abused" mood.
-    - "abused" affects many descriptions, but doesn't affect gameplay
+    - "abused" affects many descriptions, but doesn't change paths
       except in one place.
     - Several later choices can also make Ivex angry and trigger "abused".
   - (2) Ivex removes Nero's clothes, which puts Nero in "naked" mood.
@@ -27,8 +46,18 @@ three different endings.
   - (3) "normal" mood. Neither "abused" or "naked".
 - Nero has one more important mood, "subby", which can be triggered by
   taking the right choices when talking to Ivex.
+</details>
 
 ### 1st Floor Easy
+The easy solution is 4 steps that can be done
+before or after Ivex leaves, and 1 step that
+must be done after he leaves.
+It's a simple sequence of choice and actions.
+The game strongly nudges the player in the right direction.
+A player will probably find this on their 1st or 2nd playthrough.
+
+<details>
+
 - At the Ivex-gone restart point, Nero is bound to the cross, Ivex is gone, the
   candle is lit.
 - Player can do 6 looks and 3 actions before the candle is maxed.
@@ -57,10 +86,22 @@ three different endings.
   - Bad Ending: Caged Mild - paw off before leaving.
   - Bad Ending: Caged Harsh - paw off with wand before leaving. This is meant
     to be a little hard to find.
+</details>
 
 ### 1st Floor Hard
-- This is designed to be very unlikely to do on 1st playthrough, but not too
-  hard after a few playthroughs.
+The hard solution has 9 steps that must be done before Ivex leaves.
+It's designed to be unlikely to be found on the
+1st playthrough, but not too hard to find after a few more playthroughs.
+It's basically an information puzzle. There are a lot of things to look at
+and poke at, but many of them are red herrings, and there's only a limited
+amount of time to do the right sequence of actions.
+
+Whenever a player does the easy solution, they can learn a few more steps
+of the hard solution. They're likely to know the whole solution by
+the 4th or 5th playthrough.
+
+<details>
+
 - (1) Look at the bottle, discover it's a poltergeist device.
   - This should be easy. There are a lot of distractions, but there's plenty
     of time to stumble onto it.
@@ -112,6 +153,7 @@ three different endings.
     - Follow the dialog branches to subby. Should get the "Barbs?" glitch.
     - Finish the hard escape.
     - Use the wand.
+</details>
 
 ## 2nd Floor
 - Under construction. This is the plan, not implemented yet.
@@ -126,13 +168,25 @@ three different endings.
     frustration against Ivex and makes the good ending more satisfying.
 
 ### 2nd Floor Easy
+The easy solution has 4 steps, and it's very easy, basically a reward for
+finding the 1st Floor Hard solution.
+
+<details>
+
 - Player has done 1st Floor Hard. Nero escaped 1st floor and has the mirror.
 - (1) Read spellbook, to find out about gems and teleport spell.
 - (2) Use mirror and poltergeist device in lion room to immobilize lion.
 - (3) Get a blank gem from the lion room.
 - (4) Energize the gem with teleport.
+- (5) Teleport out.
+</details>
 
 ### 2nd Floor Hard
+The hard solution has 14 steps. It's basically a clockwork timing puzzle,
+and will probably take a few tries to get right.
+
+<details>
+
 - Nero escaped 1st floor but doesn't have the mirror.
 - This is a somewhat tricky timing puzzle.
 - Nero needs the gem in the blob.
@@ -231,4 +285,6 @@ three different endings.
 - So this is solvable on 1st - 4th playthrough (1st: fail 1F escape, 2nd: fail
   with ring, 3rd: fail with lion), but the timing puzzle may take several tries
   to get right.
-
+</details>
+</details>
+</details>
