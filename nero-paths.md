@@ -52,8 +52,10 @@ There's only one path that requires a specific mood.
 The easy solution is 4 steps that can be done
 before or after Ivex leaves, and 1 step that
 must be done after he leaves.
-It's a simple sequence of choice and actions.
+
+It's a simple sequence of choices and actions.
 The game strongly nudges the player in the right direction.
+
 A player will probably find this on their 1st or 2nd playthrough.
 
 <details>
@@ -92,6 +94,7 @@ A player will probably find this on their 1st or 2nd playthrough.
 The hard solution has 9 steps that must be done before Ivex leaves.
 It's designed to be unlikely to be found on the
 1st playthrough, but not too hard to find after a few more playthroughs.
+
 It's basically an information puzzle. There are a lot of things to look at
 and poke at, but many of them are red herrings, and there's only a limited
 amount of time to do the right sequence of actions.
@@ -158,18 +161,11 @@ the 4th or 5th playthrough.
 ## 2nd Floor
 - Under construction. This is the plan, not implemented yet.
 - There are two solutions to the 2nd floor: Easy and Hard.
-- Easy is only available after finishing 1st Floor Hard.
-- Hard is tricky, but a little forgiving, and maybe easier than 1st Floor Hard.
-  - There are several retryable loops.
-  - The player can easily avoid a bad ending that they've stumbled into before.
-    The action that leads to the bad ending is obvious, and there's always an
-    alternative.
-  - The bad endings aren't necessarily obvious beforehand. This helps amp up
-    frustration against Ivex and makes the good ending more satisfying.
 
 ### 2nd Floor Easy
-The easy solution has 4 steps, and it's very easy, basically a reward for
-finding the 1st Floor Hard solution.
+The easy solution requires doing the 1st Floor Hard solution.
+It has 4 steps, and it's very easy, basically a reward for
+finding 1st Floor Hard.
 
 <details>
 
@@ -182,8 +178,17 @@ finding the 1st Floor Hard solution.
 </details>
 
 ### 2nd Floor Hard
-The hard solution has 14 steps. It's basically a clockwork timing puzzle,
-and will probably take a few tries to get right.
+The hard solution has 14 steps.
+It's basically a clockwork timing puzzle.
+It's a little tricky, but there are several retryable loops,
+so it's pretty forgiving.
+
+The bad endings here don't have much warning, but once a player has
+reached a bad ending, it's pretty obvious how to avoid it on the
+next playthrough.
+
+The player will probably need a few playthroughs to get this right.
+The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
 
 <details>
 
