@@ -25,7 +25,7 @@ much more fun to discover yourself.
 - Easy is available after Ivex leaves, if the player misses the Hard solution.
 
 ### 1st Floor Moods
-Nero has 4 different moods when interacting with Ivex. They're mostly flavor.
+Nero has 5 different moods when interacting with Ivex. They're mostly flavor.
 There's only one path that requires a specific mood.
 <details>
 
@@ -44,8 +44,10 @@ There's only one path that requires a specific mood.
       Mica, Pevin, glitch, and a skip-story option if the player's already
       seen that story in a previous playthrough.
   - (3) "normal" mood. Neither "abused" or "naked".
-- Nero has one more important mood, "subby", which can be triggered by
-  taking the right choices when talking to Ivex.
+- Another mood "subby" can be triggered by taking the right choices when
+  talking to Ivex. This is needed for reaching one ending.
+- Another mood "super-horny" is triggered when the candle has been lit for
+  a while. This changes most descriptions, and some actions.
 </details>
 
 ### 1st Floor Easy
