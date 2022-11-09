@@ -664,7 +664,7 @@ $(document).on(':passagestart', function (ev) {
 /** forward decls */
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
 const ET = window.EnumType || (window.EnumType = {});
-const EV = window.ExpandVariants || (window.ExpandVariants = {});
+const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VI = window.VarInfo || (window.VarInfo = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
@@ -1153,7 +1153,7 @@ function varInfoSetup() {
       outer.toggleClass("var-info-hidden", !varInfoShow);
     });
     $("<div class=var-info-expand>[compute variants]</div>")
-      .click(() => EV.render())
+      .click(() => CV.render())
       .appendTo(outer);
 
     if (bigMood.size) {
@@ -1464,7 +1464,7 @@ With a spring to his step, the panther approaches, closing in the last distance 
 <<include [[Init Draft Sign]]>>
 <<include [[Init Enum Type]]>>
 <<include [[Init Error Message]]>>
-<<include [[Init Expand Variants]]>>
+<<include [[Init Compute Variants]]>>
 <<include [[Init Fade-In]]>>
 <<include [[Init Meta Text]]>>
 <<include [[Init Passage Notes]]>>
@@ -14295,7 +14295,7 @@ Macro.add("actions-optional", {
 <</script>>
 
 
-:: Init Fade-In [inclusion] {"position":"2000,525","size":"100,100"}
+:: Init Fade-In [inclusion] {"position":"1900,525","size":"100,100"}
 <!--
 /*
  * This description assumes you're using the default style.
@@ -15753,7 +15753,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 <</nobr>>
 
 
-:: Init UI Style [inclusion] {"position":"2200,625","size":"100,100"}
+:: Init UI Style [inclusion] {"position":"2000,725","size":"100,100"}
 <<append head>><style>
   #passages hr {
     border: 0;
@@ -16002,7 +16002,7 @@ info about slippery spell
 [[Continue|n1m/D Cast Slippery]]
 
 
-:: Init Pick Unseen [inclusion] {"position":"2200,525","size":"100,100"}
+:: Init Pick Unseen [inclusion] {"position":"2100,525","size":"100,100"}
 <<script>>
 /**
  * Show an option that hasn't been shown yet, if possible.
@@ -16028,7 +16028,7 @@ info about slippery spell
 <</script>>
 
 
-:: Init Draft Sign [inclusion] {"position":"1900,525","size":"100,100"}
+:: Init Draft Sign [inclusion] {"position":"1900,425","size":"100,100"}
 <<append head>><style>
   #draft-sign {
     font-size: 120px;
@@ -16725,7 +16725,7 @@ Macro.add("arousalbar", {
 <</script>>
 
 
-:: Init Meta Text [inclusion] {"position":"2100,525","size":"100,100"}
+:: Init Meta Text [inclusion] {"position":"2000,525","size":"100,100"}
 <<append head>><style>
   meta-text {
     background-color: transparent;
@@ -16831,7 +16831,7 @@ of wood grain, with no apparent way of opening it.
 <</nobr>>
 
 
-:: Init Error Message [inclusion] {"position":"2000,425","size":"100,100"}
+:: Init Error Message [inclusion] {"position":"2100,425","size":"100,100"}
 <<append head>><style>
   #EM-outer {
     position: fixed;
@@ -17013,7 +17013,7 @@ function getFails() {
 <<em-assert throw new Error(3)>>
 
 
-:: Init Enum Type [inclusion] {"position":"1900,425","size":"100,100"}
+:: Init Enum Type [inclusion] {"position":"2000,425","size":"100,100"}
 <<script>>
 const ET = window.EnumType || (window.EnumType = {});
 
@@ -17046,7 +17046,7 @@ Macro.add("enum-var", {
 <</script>>
 
 
-:: Init Expand Variants [inclusion] {"position":"2100,425","size":"100,100"}
+:: Init Compute Variants [inclusion] {"position":"2100,325","size":"100,100"}
 <<append head>><style>
   .ev-state {
     color: #39f;
@@ -17077,23 +17077,23 @@ Macro.add("enum-var", {
 <<script>>
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
 const ET = window.EnumType || (window.EnumType = {});
-const EV = window.ExpandVariants || (window.ExpandVariants = {});
+const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
-EV.ignore = new Set();
+CV.ignore = new Set();
 
 Macro.add("expand-ignore", {
   handler: function() {
     for (let vn of this.args) {
       vn = vn.replace(/^\$/, '');
-      EV.ignore.add(vn);
+      CV.ignore.add(vn);
     }
   }
 });
 
-EV.render = function() {
+CV.render = function() {
   VT.stop();
-  EV.ignore = new Set();
+  CV.ignore = new Set();
   const beginState = clone(State.current.variables);
   const nowState = clone(State.active.variables);
   const nowTemps = clone(State.temporary);
@@ -17105,12 +17105,12 @@ EV.render = function() {
     } else if (ET.vars[k] != null) {
       zeroState[k] = 0;
     } else {
-      EV.ignore.add(k);
+      CV.ignore.add(k);
     }
   }
   for (const k of Object.keys(nowState)) {
     if (typeof nowState[k] !== "boolean" && ET.vars[k] == null) {
-      EV.ignore.add(k);
+      CV.ignore.add(k);
     }
   }
 
@@ -17140,15 +17140,15 @@ EV.render = function() {
     output.empty();
     ok = ok && EM.runsWithoutFail(() => output.wiki(text));
     VT.stop();
-    varsUsed = varsUsed.filter(vn => !EV.ignore.has(vn));
+    varsUsed = varsUsed.filter(vn => !CV.ignore.has(vn));
     if (!ok) return;
 
     [...VT.ctx.wasRead].forEach(vn => {
       if (varsUsed.includes(vn)) return;
-      if (EV.ignore.has(vn)) return;
+      if (CV.ignore.has(vn)) return;
       if (varsUsed.length >= 10) {
         messages.push(`ignoring var ${vn} (max 10)`);
-        EV.ignore.add(vn);
+        CV.ignore.add(vn);
         return;
       }
       if (ET.vars[vn] != null) {
@@ -17331,7 +17331,7 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: Init Var Info [inclusion] {"position":"2000,725","size":"100,100"}
+:: Init Var Info [inclusion] {"position":"2100,725","size":"100,100"}
 <<append head>><style>
 .revisit-here, .revisit-here * {
   transition: none !important;
