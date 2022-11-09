@@ -9069,13 +9069,13 @@ the candle lights up.
     as he searches his mind for reasons Ivex would wear a mask
     before lighting the candle.
     "You don't have to poison me!" says the wolf.
-    <<set _pwMisfire = "you don't have to poison me">>
+    <<set _pw = "you don't have to poison me">>
 <<elseif $n1_abused>>
     Nero tries to focus his skittering mind on
     why a candle would be hazardous enough to require a mask.
     "I'll tell you what you want to know," he says. "You don't have
     to poison me."
-    <<set _pwMisfire = "I'll tell you what you want to know">>
+    <<set _pw = "I'll tell you what you want to know">
 <<elseif $n1_naked>>
     Nero glares at the masked panther.
     The mask is a small thing, but somehow its addition to the
@@ -9083,14 +9083,14 @@ the candle lights up.
     Still, it seems likely that the reason for the mask is the candle.
     He asks, "Have you ever considered... courting potential lovers
     <em>without</em> tying them down and poisoning them?"
-    <<set _pwMisfire = "have you ever considered">>
+    <<set _pw = "have you ever considered">>
 <<else>>
     Nero tilts his head and reflects on
     what the candle might be, given that Ivex was quite careful
     to wear a mask in preparation.
     "Poisonous fumes are... a hazardous way to torment
     a prisoner in your own office," says the wolf.
-    <<set _pwMisfire = "poisonous fumes are">>
+    <<set _pw = "poisonous fumes are">>
 <</if>>
 
 ?P
@@ -9099,7 +9099,7 @@ Ivex's voice is muffled and hollowed by the grinning mask.
 "I would explain it to you, but why spoil the surprise.
 A clever mage like you should be able to figure it out soon enough."
 
-?pwMisfire
+<<misfire-password _pw>>
 <</nobr>>
 
 [[Continue|n1d/F Start Candle 2]]
@@ -11206,10 +11206,10 @@ Not that Nero would ever tell that to his
     <<if $n1_subby>>
         "I just saw it again! Please believe me! I'm completely at your mercy.
         I have no reason to lie!"
-        <<if $n1_magicPhase >= MP_wantDevice>>
+        <<misfire-please>>
             ?P
-            The Sprite speaks in Nero's ear, "I will always believe you, ?master."
-        <</if>>
+            The Sprite in Nero's ear says, "I will always believe you, ?master"
+        <</misfire-please>>
     <<elseif $n1_abused>>
         He quickly regains his composure and meets Ivex's stare with
         ears stiffly perked, but the wolf flicks his eyes at the window at irregular
@@ -12927,7 +12927,13 @@ $n1t_afterAction
 <<em-assert $n1_magicPhase === MP_wantDevice>>
 <<set $n1_magicPhase = MP_wantName>>
 
-Nero says, "poltergeist device".
+<<if !$n1_rememberPlease>>
+    Nero whispers, "Nackle's Poltergeist Device".
+    no response. realizes he forgot to say please.
+    <<set $n1_rememberPlease = true>>
+<</if>>
+
+Nero says, "Please, Nackle's Poltergeist Device".
 <</nobr>>
 
 <<if !$n2_ivexGone>>
@@ -14187,6 +14193,7 @@ v.personalEnding = false;
 :: Init Nero [inclusion] {"position":"2700,425","size":"100,100"}
 <<include [[Init Nero Actions]]>>
 <<include [[Init Nero Barbs]]>>
+<<include [[Init Nero Misfire]]>>
 <<include [[Init Nero Password]]>>
 <<include [[Init Nero Patience]]>>
 <<include [[Init Nero Templates]]>>
@@ -14727,7 +14734,7 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: Init Nero Vars [inclusion] {"position":"2925,700","size":"100,100"}
+:: Init Nero Vars [inclusion] {"position":"3025,700","size":"100,100"}
 <<script>>
 EnumType.define("MagicPhase", [
   "MP_beforeCast",
@@ -14996,7 +15003,7 @@ var-info test<br>
 <</nobr>>
 
 
-:: Init Nero Patience [inclusion] {"position":"3025,600","size":"100,100"}
+:: Init Nero Patience [inclusion] {"position":"2825,700","size":"100,100"}
 <<script>>
 
 Macro.add("n1-patience", {
@@ -17692,7 +17699,7 @@ Anti-magic fields are broadly divided into two categories. abbreviated horny des
 <</nobr>>\
 
 
-:: Init Nero Templates [inclusion] {"position":"2825,700","size":"100,100"}
+:: Init Nero Templates [inclusion] {"position":"2925,700","size":"100,100"}
 <<append head>><style>
   .master-quiet {
     font-size: 18px;
@@ -17703,7 +17710,6 @@ Anti-magic fields are broadly divided into two categories. abbreviated horny des
 <</append>>
 
 <<script>>
-Template.add("pwMisfire", "<<include [[n1m/D Password Misfire]]>>");
 Template.add("master", () => {
   const V = State.variables;
   if (V.n1_spriteQuiet) {
@@ -17715,15 +17721,31 @@ Template.add("master", () => {
 <</script>>
 
 
-:: n1m/D Password Misfire [inclusion] {"position":"4000,825","size":"100,100"}
-<<nobr>>
-<<if $n1_magicPhase === MP_wantPassword>>
-    ?P
-    The Sprite in Nero's ear says,
-    "Password received. Please wait while I verify it, ?master."
-    
-    <<set $n1_passwordBeingTried = _pwMisfire>>
-<</if>>
-<</nobr>>
+:: Init Nero Misfire [inclusion] {"position":"3025,600","size":"100,100"}
+<<script>>
+
+Macro.add("misfire-password", {
+  handler: function() {
+    const password = this.args[0];
+    const V = State.variables;
+    if (V.n2_mirrorBroken || V.n1_magicPhase !== MP_wantPassword) return;
+    V.n1_passwordBeingTried = password;
+    $(this.output).wiki(`<<nobr>>
+      ?P
+      The Sprite in Nero's ear says,
+      "Password received. Please wait while I verify it, ?master."
+    <</nobr>>`);
+  }
+});
+
+Macro.add("misfire-please", {
+  tags: [],
+  handler: function() {
+    const V = State.variables;
+    if (V.n2_mirrorBroken || v.n1_magicPhase < MP_wantDevice) return;
+    $(this.output).wiki(this.payload[0].contents);
+  }
+});
+<</script>>
 
 
