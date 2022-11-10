@@ -1070,18 +1070,17 @@ function varInfoSetup() {
       label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
       const n = enumList.length;
       if (VT.ctx.wasRead.has(vname)) {
-        if (0 < v[vname]) {
+        const val0 = v0[vname] || 0;
+        if (0 < val0) {
           const left = $("<span>").addClass("var-info-enum-left var-info-can-change").appendTo(outer);
           left.on("click", () => {
-            let val = v0[vname] - 1;
-            VI.revisitHere(() => State.variables[vname] = val);
+            VI.revisitHere(() => State.variables[vname] = val0 - 1);
           });
         }
-        if (v[vname] < n - 1) {
+        if (val0 < n - 1) {
           const right = $("<span>").addClass("var-info-enum-right var-info-can-change").appendTo(outer);
           right.on("click", () => {
-            let val = v0[vname] + 1;
-            VI.revisitHere(() => State.variables[vname] = val);
+            VI.revisitHere(() => State.variables[vname] = val0 + 1);
           });
         }
       }
@@ -7844,7 +7843,7 @@ pompous, dirty, and dominated by the
 <</nobr>>
 
 
-:: n1x/F Desk {"position":"6800,5050","size":"200,100"}
+:: n1x/F Desk {"position":"6875,5075","size":"200,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -7987,7 +7986,7 @@ a [[deck of cards|n1x/P Cards]]
 <<if $n1_cardsViewed>>
     weighted down by a [[coin|n1x/P Coin]],
 <</if>>
-and a [[large magic wand|n1x/P Wand]].
+and a [[large magic wand|n1x/D Wand]].
 The rest of the shelves have only a few books.
 Most of the space is taken up by boxes
 
@@ -8181,7 +8180,7 @@ if free, can also see porn mags and something cringe.
 </ul>
 
 
-:: n1x/D Candle [maybe-password] {"position":"6925,5275","size":"100,100"}
+:: n1x/D Candle [maybe-password] {"position":"6875,5275","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -8211,10 +8210,10 @@ Nero think of something more sensual than meat.
 
 ?P
 <<if $n1_barbsSlow>>
-    It's like the splatter of blood on Professor Mica's face after he... XXX
+    It's like the splatter of blood on Professor Mica's face after... XXX
 <<elseif $n1_barbsFast>>
     It's like the taste of blood on Lady Temesca's lips after she's
-    bitten her husband, Pevin, on his...
+    bitten her husband Pevin on his...
 <<elseif $n1_barbsGlitch>>
     It's like when XXX
 <<else>>
@@ -8234,7 +8233,10 @@ Nero think of something more sensual than meat.
     affecting his mind and making it difficult to concentrate on
     outsmarting the obnoxious panther mage.
     <<if !$n1_candleAsked>>
-        <<actions-add [['"About that candle..."'|n1x/P Candle Ask]]>>
+        <<actions-add [['"About that candle..."'|n1x/D Candle Ask]]>>
+    <<else>>
+        ?P
+        summary of what Ivex said. (not needed when ivex gone)
     <</if>>
 <</if>>
 
@@ -8242,9 +8244,14 @@ Nero think of something more sensual than meat.
     ?P
     There are many things in the room that have a similar
     shade of red: bookshelves and books, cabinets and their doors,
-    the map and the portrait on the far wall.
+    even the flamboyant cape that Ivex
+    <<if $n2_ivexGone>>
+        was wearing.
+    <<else>>
+        is wearing.
+    <</if>>
     <<pw-choice Red>>
-        Perhaps the color is special to Ivex?
+        It could be his favorite color. Perhaps it's also his password?
     <<pw-another Blood>>
         "Red" wasn't the password, but maybe it's a more specific shade of red?
     <<pw-fail>>
@@ -8264,7 +8271,7 @@ Nero think of something more sensual than meat.
 <</nobr>>
 
 
-:: n1x/F Knife {"position":"7250,5275","size":"100,100"}
+:: n1x/F Knife {"position":"7300,5250","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -8773,22 +8780,77 @@ password: pet name
 </ul>\
 
 
-:: n1x/P Wand [has-hole maybe-password] {"position":"7300,4850","size":"100,100"}
-ISO standard magic wand, but an odd ring-shaped attachment on the end.
-
-if want hole, maybe that's the hole
-- if free, [[n1x/P Touch Wand]]
-- if ivex here, [[n1x/P Ask Wand]]
-
-if want password
-- if not know wand and ivex here, ask wand.
-- if know wand, can try password [[n1m/P Say Password]]
-
-if free and asked wand, can [[n2x/P Use Wand]]
-
+:: n1x/D Wand [has-hole maybe-password] {"position":"7225,4875","size":"100,100"}
 <<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive ignore>>
+<<big-mood n1_mageSight vary>>
+<<big-mood n1_naked ignore>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free vary>>
+<<big-mood n2_ivexGone vary>>
+<<big-mood n2_tooClever ignore>>
+
+ISO standard magic wand, but an odd ring-shaped attachment on the end.
+<<if $n1_mageSight>>
+    has weird energy
+<</if>>
+
+<<if MP_wantTouch === $n1_magicPhase>>
+    ?P
+    <<if $n1_wandTouched>>
+        it's not the hole
+    <<else>>
+        maybe that's the hole?
+        <<if $n2_free>>
+            <<actions-add [[Touch the wand.|n1x/D Touch Wand]]>>
+        <<elseif !$n2_ivexGone>>
+            <<actions-add [[Ask Ivex about the wand.|n1x/D Ask Wand]]>>
+        <<else>>
+            too bad can't reach
+        <</if>>
+    <</if>>
+<</if>>
+
+<<if MP_wantPassword === $n1_magicPhase>>
+    ?P
+    <<if $n1_wandAsked>>
+        <<pw-choice wand-name>>
+            maybe password?
+        <<pw-fail>>
+            nope, not password
+        <</pw-choice>>
+    <<elseif !$n2_ivexGone>>
+        maybe password?
+        <<actions-add [[Ask Ivex about the wand.|n1x/D Ask Wand]]>>
+    <<else>>
+        too bad can't ask
+    <</if>>
+<</if>>
+
+<<if $n2_free && Nero.actionsSize() === 0>>
+    ?P
+    <<if $n2_wandUsed>>
+        that was great, but too much. not again.
+    <<elseif $n1_wandAsked>>
+        curiosity about what Ivex said
+        <<actions-add [[Use the wand.|n2x/P Use Wand]]>>
+    <<elseif $n2_wandTried>>
+        vibrating is weird, don't wanna touch it again.
+    <<else>>
+        wands are personal, but maybe this is useful
+        <<actions-add [[Try the wand.|n2x/D Try Wand]]>>
+    <</if>>
+<</if>>
+
+?P
 <ul class="actions">
-  <li><<link $n1t_afterLook>><</link>></li>
+    <<actions-get>>
+    <li>$n1t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -10386,39 +10448,78 @@ ask, is that from X?
 <</nobr>>
 
 
-:: n1x/P Candle Ask {"position":"6925,5400","size":"100,100"}
+:: n1x/D Candle Ask {"position":"6875,5400","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused TODO>>
+<<big-mood n1_abused vary>>
 <<big-mood n1_candleHorny always false>>
 <<big-mood n1_candleLit always true>>
 <<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight TODO>>
-<<big-mood n1_naked TODO>>
-<<big-mood n1_subby TODO>>
+<<big-mood n1_mageSight ignore>>
+<<big-mood n1_naked vary>>
+<<big-mood n1_subby vary>>
 
 <<big-mood n2_extraHorny always false>>
 <<big-mood n2_free always false>>
 <<big-mood n2_ivexGone always false>>
 <<big-mood n2_tooClever always false>>
 
-<<set $n1_candleAsked = true>>
+<<if $n1_subby>>
+    "About that candle," says Nero. XXX
+<<elseif $n1_abused>>
+    "About that candle," says Nero. XXX
+<<elseif $n1_naked>>
+    "About that candle," says Nero. XXX
+<<elseif $n1_mageSight>>
+    "About that candle," says Nero. XXX
+<<else>>
+    "About that candle," says Nero. "I'm finding the effects quite fascinating."
+    Not that he understands what the effects are yet, but perhaps he can
+    lure Ivex into a monologue of information.
+<</if>>
 
-"About that candle," says Nero. "I'm finding the effects quite fascinating."
-Not that he understands what the effects are yet, but perhaps he can
-lure Ivex into a monologue of information.
-
+?P
 ivex nonsense.
 
 ?P
 $n1t_afterAction
+
+<<set $n1_candleAsked = true>>
 <</nobr>>
 
 
-:: n1x/P Ask Wand {"position":"7450,4800","size":"100,100"}
+:: n1x/D Ask Wand {"position":"7550,4750","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused vary>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive ignore>>
+<<big-mood n1_mageSight ignore>>
+<<big-mood n1_naked vary>>
+<<big-mood n1_subby vary>>
+
+<<big-mood n2_extraHorny always false>>
+<<big-mood n2_free always false>>
+<<big-mood n2_ivexGone always false>>
+<<big-mood n2_tooClever always false>>
+
+<<if $n1_subby>>
+    ask wand subby
+<<elseif $n1_abused>>
+    ask wand abused
+<<elseif $n1_naked>>
+    ask wand naked
+<<else>>
+    ask wand
+<</if>>
+
 ivex brags about sex toy he made
 tells you its name
 
-<<link $n1t_afterAction>><</link>>
+<<set $n1_wandAsked = true>>
+
+?P
+$n1t_afterAction
+<</nobr>>
 
 
 :: n1x/P Ask Books {"position":"7475,4225","size":"100,100"}
@@ -11393,14 +11494,46 @@ magic sight fades, was dependent on energy channel through mirror.
 [[Continue|n2b/D Free Action]]
 
 
-:: n2x/P Use Wand {"position":"7475,5650","size":"100,100"}
-assert nero is free
+:: n2x/P Use Wand {"position":"7650,5675","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit always false>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
 
-if asked wand, high lust, then [[n9a/D Caged Harsh]]
-if asked wand, clever escape, subby, glitch naked then [[n9a/D Broken]]
-if asked wand, clever escape, not broken, then set high lust and refuse to use again
+<<big-mood n2_extraHorny vary>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever ignore>>
 
-<<link $n1t_afterAction>><</link>>
+<<em-assert $n1_wandAsked>>
+
+<<if $n2_extraHorny>>
+    feels awesome, can't stop
+    
+    ?P
+    [[Continue|n9a/D Caged Harsh]]
+
+<<elseif $n1_barbsGlitch && $n2_tooClever>>
+    clever and barbs glitch. feels good, don't want to stop.
+
+    ?P
+    [[Continue|n9a/D Broken]]
+
+<<else>>
+    feels good, disturbing. super horny,
+    <<set $n2_wandUsed = true>>
+
+    <br>
+    <ul class=actions>
+        <li>[[Stop before orgasm.|n2x/D Use Wand Stop]]</li>
+        <li>[[Don't stop.|n2x/D Use Wand Continue]]</li>
+    </ul>
+<</if>>
+<</nobr>>
 
 
 :: n1x/P Coin [has-hole] {"position":"7350,4525","size":"100,100"}
@@ -11432,12 +11565,29 @@ set magic phase locked
 <<link $n1t_afterAction>><</link>>
 
 
-:: n1x/P Touch Wand {"position":"7450,4925","size":"100,100"}
-assert nero free and want touch
+:: n1x/D Touch Wand {"position":"7550,4875","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit always false>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
 
-sprite doesn't respond. option to [[n2x/P Use Wand]], or maybe this is the same node as use wand.
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever always false>>
 
-<<link $n1t_afterAction>><</link>>
+<<em-assert MP_wantTouch === $n1_magicPhase>>
+
+touch the hole. sprite doesn't respond.
+<<set $n1_wandTouched = true>>
+
+?P
+$n1t_afterAction
+<</nobr>>
 
 
 :: n1m/P Say Password {"position":"4150,700","size":"100,100"}
@@ -12364,8 +12514,8 @@ $n1t_afterAction
 <<var-trace-ignore>>
 <<if /^n/.test(State.passage)>>
 
-<!--
     <<set $n1_magicPhase || ($n1_magicPhase = 0)>>
+<!--
     <<em-assert
         $n1_magicPhase < MP_mageSight || $n1_mageSight || $n2_mirrorBroken>>
     <<em-assert $n1_magicPhase < MP_mageSight || $n1_naked>>
@@ -12430,7 +12580,7 @@ $n1t_afterAction
 <</nobr>>\
 
 
-:: look template {"position":"7025,4750","size":"100,100"}
+:: look template {"position":"7025,4800","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused TODO>>
 <<big-mood n1_candleHorny always false>>
@@ -13429,7 +13579,7 @@ his situation.
     <<else>>
         a [[deck of cards|n1x/P Cards]],
     <</if>>
-    and a [[magic wand|n1x/P Wand]].
+    and a [[magic wand|n1x/D Wand]].
 <</if>>
 
 <<if $n1_candleLit>>
@@ -14284,7 +14434,7 @@ Macro.add("pw-choice", {
           const text = args[1] == null ? args[0] : args[1];
           if (!v[vn]) {
             $(this.output).wiki(payload.contents);
-            Nero.addAction("[" + `[\`"Please, ${text}."\`|${sayPassword}][$${vn} = true]]`);
+            Nero.actionsAdd("[" + `[\`"Please, ${text}."\`|${sayPassword}][$${vn} = true]]`);
             return;
           }
           break;
@@ -14348,21 +14498,23 @@ Macro.add("barbs-announce", {
 
 :: Init Nero Actions [inclusion] {"position":"2825,600","size":"100,100"}
 <<script>>
-const Nero = window.Nero;
+const Nero = window.Nero || (window.Nero = {});
 const actionList = [];
 
 $(document).on(":passagestart", () => {
   actionList.length = 0;
 });
 
-Nero.addAction = action => {
+Nero.actionsAdd = action => {
   actionList.push(action);
 };
+
+Nero.actionsSize = () => actionList.length;
 
 Macro.add("actions-add", {
   skipArgs: true,
   handler: function() {
-    Nero.addAction(this.args.raw);
+    Nero.actionsAdd(this.args.raw);
   }
 });
 
@@ -15275,7 +15427,7 @@ There are better things to do before Ivex returns.
 <</nobr>>
 
 
-:: n1x/F Bookshelf Search {"position":"7075,4575","size":"100,100"}
+:: n1x/F Bookshelf Search {"position":"7050,4575","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -16868,7 +17020,7 @@ Macro.add("meta-ending", {
 <</script>>
 
 
-:: n1x/F Desk Search {"position":"6925,4925","size":"100,100"}
+:: n1x/F Desk Search {"position":"7000,5275","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -17390,7 +17542,7 @@ function mark(node) {
 <</script>>
 
 
-:: n1x/F Desk Search 2 {"position":"7025,4925","size":"100,100"}
+:: n1x/F Desk Search 2 {"position":"7000,5400","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -17517,14 +17669,14 @@ function glitchText(textNode, g) {
     if (/\s/.test(word)) {
      outer.append(word);
     } else if (word === "##barbed-1##") {
-      $(`<span class="glitch-switch glitch-switch-1">
-        <span class=glitch-barbed>barbed</span>
-        <span class=glitch-smooth>smooth</span>
+      $(`<span class="glitch-switch">
+        <span class=glitch-switch-1>barbed</span>
+        <span class=glitch-switch-2>smooth</span>
       </span>`).appendTo(outer);
     } else if (word === "##barbed-2##") {
-      $(`<span class="glitch-switch glitch-switch-2">
-        <span class=glitch-smooth>smooth</span>
-        <span class=glitch-barbed>barbed</span>
+      $(`<span class="glitch-switch">
+        <span class=glitch-switch-1>smooth</span>
+        <span class=glitch-switch-2>barbed</span>
       </span>`).appendTo(outer);
     } else {
       const gf = Math.min(Math.floor(g/10), 4);
@@ -17551,11 +17703,12 @@ function glitchText(textNode, g) {
 #glitch-1 a {
   background-color: rgb(0, 0, 0, 0.6);
   display: inline-block;
-  left: -1.8em;
+  height: 20px;
+  left: -20px;
   position: relative;
   top: 6px;
   transform: rotate(2deg);
-  width: 2em;
+  width: 30px;
 }
 #glitch-2 {
   transition: opacity 0.5s ease-in;
@@ -17577,7 +17730,7 @@ function glitchText(textNode, g) {
   transition: all 1.5s ease-out;
 }
 a .glitch-v {
-  background-color: #c67100;
+  background-color: #640;
 }
 
 .glitch-switch {
@@ -17587,6 +17740,21 @@ a .glitch-v {
   grid-column: 1/1;
   grid-row: 1/1;
 }
+.glitch-switch-1 {
+  animation: glitch-blink 1.5s linear alternate infinite;
+}
+.glitch-switch-2 {
+  animation: glitch-blink 1.5s linear alternate-reverse infinite;
+}
+@keyframes glitch-blink {
+  0% {
+    opacity: .5;
+  }
+  100% {
+    opacity: .8;
+  }
+}
+
 </style>
 <</nobr>>\
 
@@ -17884,6 +18052,80 @@ Macro.add("misfire-please", {
     <<actions-get>>
     <li>$n1t_afterLook</li>
 </ul>
+<</nobr>>
+
+
+:: n2x/D Try Wand {"position":"7650,5250","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit always false>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever ignore>>
+
+<<em-assert !$n1_wandAsked>>
+
+pick up wand, try to use it, it starts vibrating furiously. skittish, drop it.
+<<set $n2_wandTried = true>>
+
+?P
+$n1t_afterAction
+<</nobr>>
+
+
+:: n2x/D Use Wand Stop {"position":"7675,5800","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit always false>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny always false>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever always true>>
+
+<<em-assert $n1_wandAsked>>
+
+stop before orgasm. frustrated, and now super horny
+<<set $n2_extraHorny = true>>
+
+?P
+$n1t_afterAction
+<</nobr>>
+
+
+:: n2x/D Use Wand Continue {"position":"7550,5800","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always false>>
+<<big-mood n1_candleLit always false>>
+<<big-mood n1_ivexReceptive always false>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny always false>>
+<<big-mood n2_free always true>>
+<<big-mood n2_ivexGone always true>>
+<<big-mood n2_tooClever always true>>
+
+<<em-assert $n1_wandAsked>>
+
+continue past orgasm, can't stop.
+
+?P
+[[Continue|n9a/D Caged Harsh]]
 <</nobr>>
 
 
