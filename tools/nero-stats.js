@@ -24,11 +24,15 @@ function main(args) {
 
   const split = twText.split(/^(:: .*)$/m);
   split.forEach((part, i) => {
-    const m = /^:: ((n[A\d])\w*\/(\w)?) /.exec(part);
+    const m = /^:: ((n[A\d]\w*)\/(\w)?) /.exec(part);
     if (m == null) return;
     const wc = wordCount(split[i + 1]);
-    addTo(`section ${m[2]}`, wc);
-    addTo(`section ${m[2]}/${m[3]}`, wc);
+    // addTo(`section ${m[2]}`, wc);
+    addTo(`section ${m[2]} /${m[3]}`, wc);
+    // if (m[3] != null && m[3] !== "") {
+    //   addTo(`section ${m[2]}${m[3]}`, wc);
+    //   addTo(`section ${m[2]}${m[3]}/${m[4]}`, wc);
+    // }
     addTo("total", wc);
     addTo(`total /${m[3]}`, wc);
     if (/^[FDP]$/.test(m[3])) {
