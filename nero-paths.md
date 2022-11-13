@@ -41,7 +41,7 @@ There's only one path that requires a specific mood.
       not already naked.
     - Nero is always naked before Ivex leaves.
     - Becoming naked also asks barbs/smooth. There are 4 variants of this:
-      Mica, Pevin, glitch, and a skip-story option if the player's already
+      Mica, Pevhin, glitch, and a skip-story option if the player's already
       seen that story in a previous playthrough.
   - (3) "normal" mood. Neither "abused" or "naked".
 - Another mood "subby" can be triggered by taking the right choices when
@@ -153,7 +153,7 @@ the 4th or 5th playthrough.
 - The mirror is saved. It can be used for 2nd Floor Easy escape.
 - There's a special Bad Ending here that's meant to be hard to find.
   - Bad Ending: Broken
-    - You must have seen Mica and Pevin already in other playthroughs.
+    - You must have seen Mica and Pevhin already in other playthroughs.
     - Pick the neutral starting option (not naked or abused).
     - Follow the dialog branches to subby. Should get the "Barbs?" glitch.
     - Finish the hard escape.
