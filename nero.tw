@@ -1152,7 +1152,7 @@ function varInfoSetup() {
       State.metadata.set("varInfoShow", varInfoShow);
       outer.toggleClass("var-info-hidden", !varInfoShow);
     });
-    $("<div class=var-info-expand>[compute variants]</div>")
+    $("<span class=var-info-expand>[compute variants]</span>")
       .click(() => CV.render())
       .appendTo(outer);
 
@@ -9795,10 +9795,10 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 </div>
 
 
-:: n1m/P Guess Password {"position":"4150,825","size":"100,100"}
+:: n1m/F Guess Password {"position":"4150,825","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny TODO>>
+<<big-mood n1_candleHorny vary>>
 <<big-mood n1_candleLit ignore>>
 <<big-mood n1_ivexReceptive ignore>>
 <<big-mood n1_mageSight always true>>
@@ -9810,62 +9810,49 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 <<big-mood n2_ivexGone ignore>>
 <<big-mood n2_tooClever always false>>
 
-<<script>>
-    const V = State.variables;
-    const T = State.temporary;
+<<include [[n1m/F Guess Script]]>>
 
-    V.n1_passwordTries || (V.n1_passwordTries = 0);
-    V.n1_passwordsTried || (V.n1_passwordsTried = []);
-    V.n1_passwordsFound || (V.n1_passwordsFound = []);
-    
-    T.toTry = ['hello', 'world'];
-
-    T.listTried = () => {
-        const tried = V.n1_passwordsTried || [];
-        const desc = i => `"${tried[i]}" (${Nero.pwSource(tried[i])})`;
-        if (tried.length === 1) {
-            return `${desc(0)}.`;
-        } else if (tried.length === 2) {
-            return `${desc(0)} and ${desc(1)}.`;
-        } else {
-            let buf = "";
-            for (let i = 0; i < tried.length - 1; i++) {
-              buf += `${desc(i)}, `;
-            }
-            buf += `and ${desc(tried.length - 1)}.`;
-            return buf;
-        }
-    };
-<</script>>
-
-The Sprite in Nero's ear is asking for a [[password|n1m/D Password Info]].
-
-?P
-<<if $n1_passwordTries > 0>>
-    Nero has already tried <<= _listTried()>>
-<<elseif $n1_passwordsFound.length === 0>>
-    Nero doesn't know much about Ivex, but most people are not creative with their passwords.
-    There are several common choices that he can try.
+<<if $n1_candleHorny>>
+    The flirtatious Sprite in Nero's ear is waiting for him to unlock
+    its promised delights with a password.
 <<else>>
-    Nero has learned a few things about Ivex that suggest potential passwords.
-    And there are also common options.
+    The Sprite in Nero's ear is asking for a password.
+<</if>>
+
+<<if $n1_passwordTries > 0>>
+    ?P
+    Nero has already tried <<= _listTried()>>
 <</if>>
 
 ?P
 <<if _toTry.length === 0>>
-    Nero has tried everything he can think of.
-    Random guessing is no good when there are few tries remaining.
-    Better look around for more clues first.
+    Nero has tried his best guesses.
+    Of course, he can think of many more possibilities,
+    but random guessing is not a good idea when the Sprite
+    will only allow a few more tries.
+    The wolf decides he should look around for more clues first.
     
     $n1t_afterAction
 <<else>>
+    <<if $n1_passwordsFound.length === 0>>
+        Nero does not know much about Ivex
+        (and does not really want to know more),
+        but most people are not creative with their passwords.
+        There are several obvious choices that he can try.
+    <<else>>
+        Nero has learned a few things about Ivex that suggest potential passwords.
+        <<if _hasBasics>>
+            And there are also some obvious choices to try.
+        <</if>>
+    <</if>>
+
+    ?P
     <ul class=actions>
-        <<set _link = "[[n1m/P Say Password]]".slice(2, -2)>>
         <<for _pw range _toTry>>
-            <<set _text = `Try using "${_pw}" (${Nero.pwSource(_pw)}).`>>
+            <<set _text = `Try ${_describe(_pw)}.`>>
             <li>
                 <<capture _pw>>
-                    <<link _text _link>>
+                    <<link _text _sayPassword>>
                         <<set $n1_passwordBeingTried = _pw>>
                     <</link>>
                 <</capture>>
@@ -11684,10 +11671,14 @@ $n1t_afterAction
 
 from any place that has a suggested password.
 
-trying: $n1_passwordBeingTried
+add/remove "please" as necessary for passwordNoPlease.
+dialog tag varies on subby/etc.
+
+no immediate feedback of the password tried. the please-misfire isn't revealed until Impatient.
 
 <<if !$n2_ivexGone>>
     ivex: what was that? speak up.
+    add various lewd responses for specific passwords
 <</if>>
 
 sprite says, ok, thinking.
@@ -12987,7 +12978,7 @@ $n1t_afterAction
 
 <<case `MP_wantPassword`>>
     "Please confirm your password, ?master."
-    <<set $n1t_magicAction = "[[Guess a password.|n1m/P Guess Password]]">>
+    <<set $n1t_magicAction = "[[Guess a password.|n1m/F Guess Password]]">>
 
 <<case `MP_onHold`>>
     <<include [[n1m/D On Hold]]>>
@@ -14550,10 +14541,10 @@ Macro.add("sidebar-auto-stow", {
 <!--
     <<pw-choice Red>>
         Perhaps the password is "Red"?
-    <<pw-another "Blood Red">>
+    <<pw-another "Blood">>
         "Red" didn't work, but maybe it's a more specific shade of red?"
     <<pw-fail>>
-        Neither "Red" nor "Blood Red" were fruitful. There are of course
+        Neither "Red" nor "Blood" were fruitful. There are of course
         dozens of other names and shades of red that Nero could try,
         but this seems like a dead end.
     <</pw-choice>>
@@ -14562,14 +14553,12 @@ Macro.add("sidebar-auto-stow", {
 const Nero = window.Nero;
 const sayPassword = "[[n1m/P Say Password]]".slice(2, -2);
 
-Nero.pwSource = pw => {
-  return "from thin air";
-};
-
 Macro.add("pw-choice", {
   tags: ["pw-another", "pw-fail"],
   handler: function() {
-    const v = State.variables;
+    const V = State.variables;
+    const tried = V.n1_passwordsTried || [];
+    const found = V.n1_passwordsFound || (V.n1_passwordsFound = []);
     for (const payload of this.payload) {
       switch (payload.name) {
         case "pw-choice":
@@ -14578,15 +14567,15 @@ Macro.add("pw-choice", {
           if (args.length !== 1 && args.length !== 2) {
             throw new Error(`Expected 1 or 2 args for ${payload.name}`);
           }
-          const pw = args[0].replace(/\s+/g, '');;
-          if (!/^[A-Z]\w+$/.test(pw)) {
-            throw new Error(`Arg 0 ${pw} should match /^[A-Z][\s\w]*$/`);
-          }
-          const vn = `n1_pwTried${pw}`;
-          const text = args[1] == null ? args[0] : args[1];
-          if (!v[vn]) {
+          const pw = args[0];
+          const please = V.n1_passwordNoPlease ? "" : "Please ";
+          const pleaseComma = V.n1_passwordNoPlease ? "" : "Please, ";
+          if (!tried.includes(pw)) {
+            if (!found.includes(pw)) found.push(pw);
             $(this.output).wiki(payload.contents);
-            Nero.actionsAdd("[" + `[\`"Please, ${text}."\`|${sayPassword}][$${vn} = true]]`);
+            const text =`Tell the Sprite, "${pleaseComma}${pw}."`;
+            const code = `$n1_passwordBeingTried = "${please}${pw}"`;
+            Nero.actionsAdd("[" + `[\`${text}\`|${sayPassword}][${code}]]`);
             return;
           }
           break;
@@ -14602,18 +14591,28 @@ Macro.add("pw-choice", {
   }
 });
 
-Macro.add("pw-history", {
+Macro.add("pw-misfire", {
   handler: function() {
-    $(this.output).wiki("history of password choices");
+    const pw = this.args[0];
+    const V = State.variables;
+    if (V.n2_mirrorBroken || V.n1_magicPhase !== MP_wantPassword) return;
+    V.n1_passwordBeingTried = `#${pw}`;
+    $(this.output).wiki(`<<nobr>>
+      ?P
+      The Sprite in Nero's ear says,
+      "Password received. Please wait while I verify it, ?master."
+      <<if !$n1_passwordNoPlease>>
+          Nero did not say "please". Apparently, the Sprite will consider
+          any utterance he makes to be a password. This will make it somewhat
+          annoying to converse with Ivex at the same time.
+          <<set $n1_passwordNoPlease = true>>
+      <<else>>
+          Again, the Sprite has misinterpreted conversation as a password.
+          Nero wonders what phrase it has picked up this time.
+      <</if>>
+    <</nobr>>`);
   }
 });
-
-Macro.add("pw-choices", {
-  handler: function() {
-    $(this.output).wiki("selection of untried passwords");
-  }
-});
-
 <</script>>
 
 
@@ -18098,21 +18097,6 @@ Template.add("blank",
 
 :: Init Nero Misfire [inclusion] {"position":"3025,600","size":"100,100"}
 <<script>>
-
-Macro.add("misfire-password", {
-  handler: function() {
-    const password = this.args[0];
-    const V = State.variables;
-    if (V.n2_mirrorBroken || V.n1_magicPhase !== MP_wantPassword) return;
-    V.n1_passwordBeingTried = password;
-    $(this.output).wiki(`<<nobr>>
-      ?P
-      The Sprite in Nero's ear says,
-      "Password received. Please wait while I verify it, ?master."
-    <</nobr>>`);
-  }
-});
-
 Macro.add("misfire-please", {
   tags: [],
   handler: function() {
@@ -18318,52 +18302,43 @@ continue past orgasm, can't stop.
 <</nobr>>
 
 
-:: n1m/D Password Info {"position":"4275,825","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny ignore>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive ignore>>
-<<big-mood n1_mageSight always true>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny ignore>>
-<<big-mood n2_free ignore>>
-<<big-mood n2_ivexGone ignore>>
-<<big-mood n2_tooClever always false>>
-
-explanation of passwords and their use in magic.
-
-?P
-[[Continue|n1m/P Guess Password]]
-<</nobr>>
-
-
-:: n0/F Nero Jump {"position":"3200,1375","size":"100,100"}
+:: n0/F Nero Jump {"position":"3200,1300","size":"100,100"}
 Jump to:
 <<link "> Nero 1F start" "n1a/F Start">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
 <</link>>
-<<link "> Nero 1F first action node" "n1cn/F Ivex Repeat (6,3)">>
+<<link "> Nero 1F first action node, neutral mood" "n1cn/F Ivex Repeat (6,3)">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
 <</link>>
-<<link "> Nero 1F sprite ready" "n1cn/F Ivex Disdainful (1,1)">>
+<<link "> Nero 1F earliest sprite ready" "n1cn/F Ivex Repeat (6,3)">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n0_barbsSlowViewed = true>>
+    <<set $n1_barbsSlow = true>>
     <<set $n1_deskViewed = true>>
+    <<set $n1_endgameCast = true>>
     <<set $n1_magicPhase = MP_wantDevice>>
     <<set $n1_mageSight = true>>
+    <<set $n1_mirrorViewed = true>>
     <<set $n1_naked = true>>
     <<set $n1_studyViewed = true>>
+    <<set $n1t_didSomeAction = true>>
+    <<set $n1t_patienceActions = 1>>
+    <<set $n1t_patienceAggro = 0>>
+    <<set $n1t_patienceLooks = 6>>
+    <<set $n1t_patiencePassage = "n1cn/F Ivex Repeat (6,3)">>
 <</link>>
-<<link "> Nero 1F sprite wants password" "n1cr/D Ivex Demanding (4,3)">>
+<<link "> Nero 1F earliest sprite wants password, recruit branch"
+        "n1cr/D Ivex Skeptical (4,3)">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n0_barbsSlowViewed = true>>
+    <<set $n1_barbsSlow = true>>
     <<set $n1_bookshelfViewed = true>>
     <<set $n1_bottleAsked = true>>
     <<set $n1_bottleNameKnown = true>>
     <<set $n1_bottleViewed = true>>
     <<set $n1_cabinetViewed = true>>
     <<set $n1_deskViewed = true>>
+    <<set $n1_endgameCast = true>>
     <<set $n1_ivexReceptive = true>>
     <<set $n1_mageSight = true>>
     <<set $n1_magicPhase = MP_wantPassword>>
@@ -18371,25 +18346,55 @@ Jump to:
     <<set $n1_naked = true>>
     <<set $n1_rememberPlease = true>>
     <<set $n1_studyViewed = true>>
+    <<set $n1t_didSomeAction = true>>
+    <<set $n1t_patienceActions = 2>>
+    <<set $n1t_patienceAggro = 0>>
+    <<set $n1t_patienceLooks = 4>>
+    <<set $n1t_patiencePassage = "n1cr/D Ivex Skeptical (4,3)">>
 <</link>>
-<<link "> Nero 1F before glitch" "n1cr/D Subby">>
+<<link "> Nero 1F earliest sprite wants password, collab branch"
+        "n1cr/D Ivex Demanding (4,3)">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n0_barbsSlowViewed = true>>
+    <<set $n1_barbsSlow = true>>
+    <<set $n1_bookshelfViewed = true>>
+    <<set $n1_bottleAsked = true>>
+    <<set $n1_bottleNameKnown = true>>
+    <<set $n1_bottleViewed = true>>
+    <<set $n1_cabinetViewed = true>>
+    <<set $n1_deskViewed = true>>
+    <<set $n1_endgameCast = true>>
+    <<set $n1_ivexReceptive = true>>
+    <<set $n1_mageSight = true>>
+    <<set $n1_magicPhase = MP_wantPassword>>
+    <<set $n1_mirrorViewed = true>>
+    <<set $n1_naked = true>>
+    <<set $n1_rememberPlease = true>>
+    <<set $n1_studyViewed = true>>
+    <<set $n1t_didSomeAction = true>>
+    <<set $n1t_patienceActions = 2>>
+    <<set $n1t_patienceAggro = 0>>
+    <<set $n1t_patienceLooks = 4>>
+    <<set $n1t_patiencePassage = "n1cr/D Ivex Demanding (4,3)">>
+<</link>>
+<<link "> Nero 1F before glitch&#xb9;" "n1cr/D Subby">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
     <<set $n0_barbsSlowViewed = true>>
     <<set $n0_barbsFastViewed = true>>
 <</link>>
-<<link "> Nero 1F start candle" "n1cx/F Start Candle">>
+<<link "> Nero 1F start candle&#xb9;" "n1cx/F Start Candle">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
 <</link>>
-<<link "> Nero 1F candle horny" "n1d/D Candle Horny">>
+<<link "> Nero 1F candle horny&#xb9;" "n1d/D Candle Horny">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
     <<set $n1_candleLit = true>>
     <<set $n1_naked = true>>
 <</link>>
-<<link "> Nero 1F Ivex gone" "n2z/F Start">>
+<<link "> Nero 1F Ivex gone&#xb9;" "n2z/F Start">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
     <<set $n1_naked = true>>
 <</link>>
-<<link "> Nero 1F easy escape" "n2b/D Free Action">>
+<<link "> Nero 1F easy escape&#xb9;" "n2b/D Free Action">>
     <<state-delete n1_ n1t_ n2_ n2t_>>
     <<set $n1_naked = true>>
     <<set $n1_magicPhase = MP_mageSight>>
@@ -18397,5 +18402,89 @@ Jump to:
     <<set $n2_ivexGone = true>>
     <<set $n2_mirrorBroken = true>>
 <</link>>
+<hr>
+&#xb9; State is incomplete and will not happen in normal play.
+
+
+:: n1m/F Guess Script [inclusion] {"position":"4150,950","size":"100,100"}
+<<script>>
+const V = State.variables;
+const T = State.temporary;
+
+V.n1_passwordTries || (V.n1_passwordTries = 0);
+V.n1_passwordsTried || (V.n1_passwordsTried = []);
+V.n1_passwordsFound || (V.n1_passwordsFound = []);
+
+T.sayPassword = "[[n1m/P Say Password]]".slice(2, -2);
+
+const basicPasswords = {
+  "Ivex the Magnificent": "the egotistical choice",
+  "Password": "a common password",
+  "Xyzzy": "the default password for this series of Sprites",
+};
+const otherSources = {
+  /* candle */
+  "Red": "the color of the candle",
+  "Blood": "another name for the candle's color",
+};
+
+let anotherSeen = {};
+const another = phrase => {
+  if (!/^a /.test(phrase)) {
+    return phrase;
+  } else if (anotherSeen[phrase]) {
+    return `another ${phrase.slice(2)}`;
+  } else {
+    anotherSeen[phrase] = true;
+    return phrase;
+  }
+};
+
+T.describe = pw => {
+  if (/^please/i.test(pw)) {
+    return `"${pw}" (${another("a mistake")})`;
+  } else if (/^#/.test(pw)) {
+    return `"${pw.slice(1)}" (${another("a mistake")})`;
+  } else if (basicPasswords[pw] != null) {
+    return `"${pw}" (${another(basicPasswords[pw])})`;
+  } else if (otherSources[pw] != null) {
+    return `"${pw}" (${another(otherSources[pw])})`;
+  } else {
+    return `"${pw}" (BUG: no source)`;
+  }
+};
+
+T.listTried = () => {
+  const tried = V.n1_passwordsTried || [];
+  const desc = i => T.describe(tried[i]);
+  if (tried.length === 1) {
+    return `${desc(0)}.`;
+  } else if (tried.length === 2) {
+    return `${desc(0)} and ${desc(1)}.`;
+  } else {
+    let buf = "";
+    for (let i = 0; i < tried.length - 1; i++) {
+      buf += `${desc(i)}, `;
+    }
+    buf += `and ${desc(tried.length - 1)}.`;
+    return buf;
+  }
+};
+
+T.toTry = [];
+T.hasBasics = false;
+for (const pw of Object.keys(basicPasswords)) {
+  if (!V.n1_passwordsTried.includes(pw)) {
+    T.toTry.push(pw);
+    T.hasBasics = true;
+  }
+}
+for (const pw of V.n1_passwordsFound) {
+  if (!V.n1_passwordsTried.includes(pw)) {
+    T.toTry.push(pw);
+  }
+}
+T.toTry.sort();
+<</script>>\
 
 
