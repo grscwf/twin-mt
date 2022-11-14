@@ -23,7 +23,7 @@ nero
 		"maybe-password": "purple",
 		"must-fix": "orange",
 		"noreturn": "yellow",
-		"pw-misfire": "blue",
+		"pw-misfire-start": "blue",
 		"section-end": "purple",
 		"section-start": "green",
 		"text": "blue",
@@ -1239,53 +1239,12 @@ The Mage's Tower (Nero)
     [[Passage Notes|Passage Notes Top]]
 <</if>>
 <<if setup.enableDebugMenu>>
-    <<link "\u23e9 Title" "Title Screen">><</link>>
-    <<link "\uD83D\uDCA3 Nero Reset Vars" `State.passage`>>
+    <<link "&#x1f527; Goto Title" "Title Screen">><</link>>
+    <<link "&#x1f527; Goto Nero" "n0/F Nero Jump">><</link>>
+    <<link "&#x1f527; Goto Testing" "testing">><</link>>
+    <<link "&#x1f527; Reset Nero Vars" `State.passage`>>
         <<state-delete n0_ n1_ n1t_ n2_ n2t_>>
     <</link>>
-    <<link "\u23e9 Nero Start" "n1a/F Start">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-    <</link>>
-    <<link "&#x23e9; Nero 1F Actions" "n1cn/F Ivex Repeat (6,3)">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-    <</link>>
-    <<link "&#x23e9; Nero 1F Sprite" "n1cn/F Ivex Disdainful (1,1)">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-        <<set $n1_deskViewed = true>>
-        <<set $n1_magicPhase = MP_wantDevice>>
-        <<set $n1_magicSight = true>>
-        <<set $n1_naked = true>>
-        <<set $n1_studyViewed = true>>
-    <</link>>
-    <<link "&#x23e9; Nero 1F Glitch" "n1cr/D Subby">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-        <<set $n0_barbsSlowViewed = true>>
-        <<set $n0_barbsFastViewed = true>>
-    <</link>>
-    <<link "&#x23e9; Nero 1F Candle" "n1cx/F Start Candle">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-    <</link>>
-    <<link "&#x23e9; Nero 1F Horny" "n1d/D Candle Horny">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-        <<set $n1_barbs = true>>
-        <<set $n1_candleLit = true>>
-        <<set $n1_naked = true>>
-    <</link>>
-    <<link "&#x23e9; Nero 1F Alone" "n2z/F Start">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-        <<set $n1_barbs = true>>
-        <<set $n1_naked = true>>
-    <</link>>
-    <<link "&#x23e9; Nero 1F Free" "n2b/D Free Action">>
-        <<state-delete n1_ n1t_ n2_ n2t_>>
-        <<set $n1_barbs = true>>
-        <<set $n1_naked = true>>
-        <<set $n1_magicPhase = MP_mageSight>>
-        <<set $n2_free = true>>
-        <<set $n2_ivexGone = true>>
-        <<set $n2_mirrorBroken = true>>
-    <</link>>
-    <<link "&#x23e9; Testing" "testing">><</link>>
 <</if>>
 
 
@@ -7537,14 +7496,6 @@ Remember ?blank and talk to him.
 
 :: n1x/F Look [inclusion] {"position":"5900,4300","size":"100,200"}
 <<nobr>>
-<<if "[" + "[" + State.passage + "]]" === "[[n1x/F Look]]">>
-    (look isolate)
-    ?P
-    <<big-mood n1_ivexReceptive ignore>>
-    <<big-mood n1_subby ignore>>
-    <<big-mood n2_ivexGone ignore>>
-<</if>>
-
 <<if $n1_candleHorny>>
     <<include [[n1v/D Horny Look]]>>
 <<else>>
@@ -8645,11 +8596,11 @@ map has several markings.
     <<if $n1_mapAskFailed>>
         ivex not going to answer any more
     <<elseif $n1_mapAskTried>>
-        maybe some place on the map is important?
-        <<actions-add [[Ask Ivex about the map.|n1x/P Map Ask]]>>
-    <<else>>
         maybe some other place on the map is important?
         <<actions-add [[Ask Ivex about the map, again.|n1x/P Map Ask]]>>
+    <<else>>
+        maybe some place on the map is important?
+        <<actions-add [[Ask Ivex about the map.|n1x/P Map Ask]]>>
     <</if>>
 <</if>>
 
@@ -9019,22 +8970,6 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
     - in: n1t_afterAction - continue link when action is done
     - out: n1t_magicAction - provides link for an available magic action
 -->
-<!--
-    (magic isolate)
-    ?P
-    <<big-mood n1_abused ignore>>
-    <<big-mood n1_candleHorny vary>>
-    <<big-mood n1_candleLit ignore>>
-    <<big-mood n1_ivexReceptive vary>>
-    <<big-mood n1_mageSight ignore>>
-    <<big-mood n1_naked ignore>>
-    <<big-mood n1_subby ignore>>
-
-    <<big-mood n2_ivexGone vary>>
-    <<big-mood n2_free vary>>
-    <<big-mood n2_mirrorBroken vary>>
--->
-
 <<set $n1_magicPhase || ($n1_magicPhase = 0)>>
 <<set $n1t_magicAction = null>>
 
@@ -9604,7 +9539,11 @@ gives up, mental suicide with dumb gem.
     n9_brokenBarbs "Bad Ending: Broken (Barbs)">>
 
 <ul class="actions">
-    <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
+    <<if $n2_tooClever>>
+        <li>XXX try again from escape</li>
+    <<else>>
+        <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
+    <</if>>
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 
@@ -9803,6 +9742,8 @@ ivex returns and is amused, turns nero into an office ornament. likes to push ne
 you need a password, and you've asked ivex about the snow globe.
 <</nobr>>
 
+need a state-save here, and a restart point (can reach caged and broken from here). maybe the restart point is before asking about the globe? no. after Ivex leaves is right.
+
 tease that you'll get to see the password (which you don't have reason to believe is correct in this session, but you can have gotten it in a previous session).
 
 ivex starts to preen and show off globe.
@@ -9856,23 +9797,83 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 
 :: n1m/P Guess Password {"position":"4150,825","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused TODO>>
+<<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny TODO>>
-<<big-mood n1_candleLit TODO>>
-<<big-mood n1_ivexReceptive TODO>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive ignore>>
 <<big-mood n1_mageSight always true>>
 <<big-mood n1_naked always true>>
-<<big-mood n1_subby TODO>>
+<<big-mood n1_subby ignore>>
 
-<<big-mood n2_extraHorny TODO>>
-<<big-mood n2_free TODO>>
-<<big-mood n2_ivexGone TODO>>
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free ignore>>
+<<big-mood n2_ivexGone ignore>>
 <<big-mood n2_tooClever always false>>
+
+<<script>>
+    const V = State.variables;
+    const T = State.temporary;
+
+    V.n1_passwordTries || (V.n1_passwordTries = 0);
+    V.n1_passwordsTried || (V.n1_passwordsTried = []);
+    V.n1_passwordsFound || (V.n1_passwordsFound = []);
+    
+    T.toTry = ['hello', 'world'];
+
+    T.listTried = () => {
+        const tried = V.n1_passwordsTried || [];
+        const desc = i => `"${tried[i]}" (${Nero.pwSource(tried[i])})`;
+        if (tried.length === 1) {
+            return `${desc(0)}.`;
+        } else if (tried.length === 2) {
+            return `${desc(0)} and ${desc(1)}.`;
+        } else {
+            let buf = "";
+            for (let i = 0; i < tried.length - 1; i++) {
+              buf += `${desc(i)}, `;
+            }
+            buf += `and ${desc(tried.length - 1)}.`;
+            return buf;
+        }
+    };
+<</script>>
+
+The Sprite in Nero's ear is asking for a [[password|n1m/D Password Info]].
+
+?P
+<<if $n1_passwordTries > 0>>
+    Nero has already tried <<= _listTried()>>
+<<elseif $n1_passwordsFound.length === 0>>
+    Nero doesn't know much about Ivex, but most people are not creative with their passwords.
+    There are several common choices that he can try.
+<<else>>
+    Nero has learned a few things about Ivex that suggest potential passwords.
+    And there are also common options.
+<</if>>
+
+?P
+<<if _toTry.length === 0>>
+    Nero has tried everything he can think of.
+    Random guessing is no good when there are few tries remaining.
+    Better look around for more clues first.
+    
+    $n1t_afterAction
+<<else>>
+    <ul class=actions>
+        <<set _link = "[[n1m/P Say Password]]".slice(2, -2)>>
+        <<for _pw range _toTry>>
+            <<set _text = `Try using "${_pw}" (${Nero.pwSource(_pw)}).`>>
+            <li>
+                <<capture _pw>>
+                    <<link _text _link>>
+                        <<set $n1t_passwordTrying = _pw>>
+                    <</link>>
+                <</capture>>
+            </li>
+        <</for>>
+    </ul>
+<</if>>
 <</nobr>>
-
-offer a list of plausible passwords based on things you've seen, plus a few generic guesses.
-
-[[n1m/P Say Password]]
 
 
 :: n1a/F Feign Sleep 2 {"position":"3625,1275","size":"100,100"}
@@ -10051,30 +10052,36 @@ ivex takes the bait, he's skeptical but interested.
 [[Continue|n1cx/F Start Candle]]
 
 
-:: n1cr/D Ivex Demanding (4,3) {"position":"4400,2925","size":"200,100"}
+:: n1cr/D Ivex Demanding (4,3) [pw-misfire-start] {"position":"4375,2925","size":"200,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked ignore>>
-<</nobr>>
 
 <<n1-patience 4 3
     'Ivex: will you do everything I ask?'
 >>
 
-<<nobr>>
+?P
 <<include [[n1x/F Look and Magic]]>>
 
-XXX maybe vary actions on abused/naked
 <ul class="actions">
-    <li>[[within reason|n1cr/D Subby][$n1t_resisting = true]]</li>
-    <li>[[anything at all|n1cr/D Subby][$n1t_resisting = false]]</li>
+    <<if $n1_abused>>
+        <li>[[within reason|n1cr/D Subby][$n1t_resisting = true]]</li>
+        <li>[[anything at all|n1cr/D Subby][$n1t_resisting = false]]</li>
+    <<elseif $n1_naked>>
+        <li>[[within reason|n1cr/D Subby][$n1t_resisting = true]]</li>
+        <li>[[anything at all|n1cr/D Subby][$n1t_resisting = false]]</li>
+    <<else>>
+        <li>[[within reason|n1cr/D Subby][$n1t_resisting = true]]</li>
+        <li>[[anything at all|n1cr/D Subby][$n1t_resisting = false]]</li>
+    <</if>>
     <<actions-optional $n1t_magicAction>>
 </ul>
 <</nobr>>
 
 
-:: n1cr/D Very Secret [pw-misfire] {"position":"4200,2350","size":"100,100"}
+:: n1cr/D Very Secret {"position":"4200,2350","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
@@ -10394,13 +10401,13 @@ $n1t_afterAction
 
 :: n1x/P Map Ask [maybe-password] {"position":"7475,3525","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused TODO>>
+<<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
 <<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive TODO>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked ignore>>
-<<big-mood n1_subby TODO>>
+<<big-mood n1_ivexReceptive vary>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby vary>>
 
 <<big-mood n2_extraHorny always false>>
 <<big-mood n2_free always false>>
@@ -10412,20 +10419,38 @@ $n1t_afterAction
 <<if $n1_mapAskTried>>
     <<set $n1_mapAskFailed = true>>
     <<if $n1_subby>>
+        subby, second ask
     <<elseif $n1_abused>>
+        abused, second ask
     <<else>>
+        normal, second ask
     <</if>>
+    trying again for birthplace.
+    
+    ?P
+    <<big-mood n1_ivexReceptive ignore>>
+    ivex always annoyed, mentions another place that can be a password.
+    shuts this down.
+
 <<else>>
     <<set $n1_mapAskTried = true>>
     <<if $n1_subby>>
+        subby, first ask
     <<elseif $n1_abused>>
+        abused, first ask
     <<else>>
+        normal, first ask
+    <</if>>
+    about birthplace
+    
+    ?P
+    <<if $n1_ivexReceptive>>
+        ivex receptive, but misunderstands. mentions a place that nero
+        can try for password.
+    <<else>>
+        ivex not receptive. mentions some other place?
     <</if>>
 <</if>>
-
-vary wording and response on receptive, abused, subby.
-
-if not birthplace known, try to ask about birthplace. maybe ivex misunderstands and says something else, which nero can try. eventually, ivex gets annoyed and shuts this down.
 
 $n1t_afterAction
 <</nobr>>
@@ -10675,7 +10700,7 @@ Threat. Yes. That was a threat.
 [[Continue|n1cn/F Ivex Intro]]
 
 
-:: n1cr/D Ivex Skeptical (4,3) {"position":"4200,2225","size":"200,100"}
+:: n1cr/D Ivex Skeptical (4,3) [pw-misfire-start] {"position":"4200,2225","size":"200,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_mageSight ignore>>
@@ -10724,7 +10749,7 @@ XXX maybe vary actions on abused/naked
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby ignore>>
+<<big-mood n1_subby vary>>
 
 <<n1-patience 1 1
     "Ivex closes the paw holding Nero's balls and gently squeezes. \"Tell me, who sent you.\""
@@ -10736,14 +10761,14 @@ XXX maybe vary actions on abused/naked
 
 <ul class="actions">
     <<if $n1_subby>>
-        <li>[[`"I... can't..."`|n1e/P Ball Submit]]</li>
-        <li>[[XXX Snap at Ivex's face.|n1e/P Ball Resist]]</li>
+        <li>[[`"I... can't..."`|n1e/D Ball Submit]]</li>
+        <li>[[XXX Snap at Ivex's face.|n1e/D Ball Resist]]</li>
     <<elseif $n1_abused>>
-        <li>[[`"I... can't..."`|n1e/P Ball Submit]]</li>
-        <li>[[XXX Snap at Ivex's face.|n1e/P Ball Resist]]</li>
+        <li>[[`"I... can't..."`|n1e/D Ball Submit]]</li>
+        <li>[[XXX Snap at Ivex's face.|n1e/D Ball Resist]]</li>
     <<else>>
-        <li>[[`"I... can't..."`|n1e/P Ball Submit]]</li>
-        <li>[[Snap at Ivex's face.|n1e/P Ball Resist]]</li>
+        <li>[[`"I... can't..."`|n1e/D Ball Submit]]</li>
+        <li>[[Snap at Ivex's face.|n1e/D Ball Resist]]</li>
     <</if>>
     <<actions-optional $n1t_magicAction>>
 </ul>
@@ -10983,7 +11008,7 @@ starts into creepy-lewd
 [[Continue|n1cr/D Ivex Demanding (4,3)]]
 
 
-:: n1cr/D Subby [pw-misfire] {"position":"4525,3050","size":"100,100"}
+:: n1cr/D Subby {"position":"4525,3050","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
@@ -11643,21 +11668,23 @@ $n1t_afterAction
 
 :: n1m/P Say Password {"position":"4150,700","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused TODO>>
+<<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny TODO>>
-<<big-mood n1_candleLit TODO>>
-<<big-mood n1_ivexReceptive TODO>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive ignore>>
 <<big-mood n1_mageSight always true>>
 <<big-mood n1_naked always true>>
 <<big-mood n1_subby TODO>>
 
-<<big-mood n2_extraHorny TODO>>
-<<big-mood n2_free TODO>>
-<<big-mood n2_ivexGone TODO>>
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free ignore>>
+<<big-mood n2_ivexGone vary>>
 <<big-mood n2_tooClever always false>>
 <</nobr>>
 
 from any place that has a suggested password.
+
+trying: $n1t_passwordTrying
 
 <<if !$n2_ivexGone>>
     ivex: what was that? speak up.
@@ -12014,10 +12041,20 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 <</nobr>>
 
 
-:: n1e/P Ball Submit {"position":"4850,4250","size":"100,100"}
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
+:: n1e/D Ball Submit {"position":"4850,4250","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_mageSight ignore>>
 <<big-mood n1_subby vary>>
+
+<<if $n1_subby>>
+    subby variant
+<<elseif $n1_abused>>
+    abused variant
+<<else>>
+    normal variant
+<</if>>
+<</nobr>>
 
 "I... can't..."
 
@@ -12035,13 +12072,23 @@ Each beat making his cock twitch...
 
 Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em> Do you even know the difference?
 
-[[Continue|n1e/P Pull]]
+[[Continue|n1e/D Pull]]
 
 
-:: n1e/P Ball Resist {"position":"4750,4250","size":"100,100"}
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
+:: n1e/D Ball Resist {"position":"4750,4250","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_mageSight ignore>>
 <<big-mood n1_subby vary>>
+
+<<if $n1_subby>>
+    subby variant
+<<elseif $n1_abused>>
+    abused variant
+<<else>>
+    normal variant
+<</if>>
+<</nobr>>
 
 Nero snaps his jaws at Ivex's face, trying to...
 
@@ -12059,7 +12106,7 @@ What is he doing...
 
 Ivex anticipates the wolf's snapping jaws and smoothly dips his head below where the wolf can reach. "Were you trying to snatch my mask?" he asks. "Naughty boy..."
 
-[[Continue|n1e/P Pull]]
+[[Continue|n1e/D Pull]]
 
 
 :: n1d/D Naked Submit {"position":"4425,3800","size":"100,100"}
@@ -12166,10 +12213,10 @@ The panther mage raises an arm, and snaps his fingers.
 <<set $n1t_afterNaked = "[[Continue|n1d/D Get Creepy]]">>
 
 
-:: n1e/P Pull {"position":"4775,4375","size":"100,100"}
+:: n1e/D Pull {"position":"4775,4375","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_mageSight ignore>>
 <<big-mood n1_subby vary>>
 <</nobr>>
 
@@ -12178,6 +12225,16 @@ The panther forms a ring with his fingers around the wolf's scrotum, above the w
 Nero looks down and sees his stiff wolf cock, above his furry balls, grasped in the panther's paw, like fruit being pulled off a branch.
 
 The wolf pants, tongue hanging loose...
+
+<<nobr>>
+<<if $n1_subby>>
+    subby variant
+<<elseif $n1_abused>>
+    abused variant
+<<else>>
+    normal variant
+<</if>>
+<</nobr>>
 
 Long gasping breaths...
 
@@ -12437,7 +12494,7 @@ Candle's Influence:
 <</nobr>>\
 
 
-:: n2a/F Compute Arousal [inclusion] {"position":"5300,4800","size":"100,100"}
+:: n2a/F Compute Arousal [inclusion] {"position":"5275,4825","size":"100,100"}
 <<script>>
 const v = State.variables;
 const actions = Math.max(v.n1t_patienceActions, 0);
@@ -13678,11 +13735,6 @@ his situation.
 
 :: n1v/D Horny Look [inclusion] {"position":"6075,5750","size":"100,200"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby vary>>
-<<big-mood n2_ivexGone vary>>
-
 <<script>>
   const v = State.variables;
   v.n2_lookHornyViewed || (v.n2_lookHornyViewed = []);
@@ -14331,7 +14383,11 @@ important: portal-box is small, strong feeling of confined
     n9_cagedMildBarbs "Bad Ending: Caged (Barbs, Mild)">>
 
 <ul class="actions">
-    <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
+    <<if $n2_tooClever>>
+        <li>XXX try again from escape</li>
+    <<else>>
+        <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
+    <</if>>
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 
@@ -14354,7 +14410,11 @@ applies portal-box chastity in overstim mode. keeps nero in a cage until he surr
     n9_cagedHarshBarbs "Bad Ending: Caged (Barbs, Harsh)">>
 
 <ul class="actions">
-    <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
+    <<if $n2_tooClever>>
+        <li>XXX try again from escape</li>
+    <<else>>
+        <li>[[Try again from Ivex's disappearance.|n2z/F Start]]</li>
+    <</if>>
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 
@@ -14501,6 +14561,10 @@ Macro.add("sidebar-auto-stow", {
 <<script>>
 const Nero = window.Nero;
 const sayPassword = "[[n1m/P Say Password]]".slice(2, -2);
+
+Nero.pwSource = pw => {
+  return "from thin air";
+};
 
 Macro.add("pw-choice", {
   tags: ["pw-another", "pw-fail"],
@@ -15297,6 +15361,7 @@ Macro.add("n1-patience", {
       // set return links
       V.n1t_afterLook = "[" + "[Do something else.|" + here + "][$n1t_patienceLooks -= 1]]";
       V.n1t_afterAction = "[" + "[Continue|" + here + "][$n1t_patienceActions -= 1; $n1t_didSomeAction = true]]";
+      V.n1t_afterPartialAction = "[" + "[Do something else.]" + here + "][$n1t_patienceActions -=1; $n1t_didSomeAction = true]]";
     }
     // Patience text
     switch (V.n1t_patienceAggro) {
@@ -16441,7 +16506,7 @@ $(document).on(":passageend", () => {
 All of Nero's clothes disappear.
 <</nobr>>
 
-The wolf shivers. He knew this was going to happen, sooner or later. Ivex's tail is twitching in excitement as he approches, and his right paw is brazenly grabbing his own crotch. Nero can't stop staring at it, anticipating the moment when Ivex looses his pants and presents his feline cock.
+The wolf shivers. He knew this was going to happen, sooner or later. Ivex's tail is twitching in excitement as he approches, and his right paw is brazenly grabbing his own crotch. Nero can't stop staring at it, anticipating the moment when Ivex loosens his pants and presents his feline cock.
 
 Nero's memory flashes back to his most recent encounter with a feline cock, just last month...
 
@@ -18251,5 +18316,86 @@ continue past orgasm, can't stop.
 ?P
 [[Continue|n9a/D Caged Harsh]]
 <</nobr>>
+
+
+:: n1m/D Password Info {"position":"4275,825","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny ignore>>
+<<big-mood n1_candleLit ignore>>
+<<big-mood n1_ivexReceptive ignore>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_naked always true>>
+<<big-mood n1_subby ignore>>
+
+<<big-mood n2_extraHorny ignore>>
+<<big-mood n2_free ignore>>
+<<big-mood n2_ivexGone ignore>>
+<<big-mood n2_tooClever always false>>
+
+explanation of passwords and their use in magic.
+
+?P
+[[Continue|n1m/P Guess Password]]
+<</nobr>>
+
+
+:: n0/F Nero Jump {"position":"3200,1375","size":"100,100"}
+Jump to:
+<<link "> Nero 1F start" "n1a/F Start">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+<</link>>
+<<link "> Nero 1F first action node" "n1cn/F Ivex Repeat (6,3)">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+<</link>>
+<<link "> Nero 1F sprite ready" "n1cn/F Ivex Disdainful (1,1)">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n1_deskViewed = true>>
+    <<set $n1_magicPhase = MP_wantDevice>>
+    <<set $n1_magicSight = true>>
+    <<set $n1_naked = true>>
+    <<set $n1_studyViewed = true>>
+<</link>>
+<<link "> Nero 1F sprite wants password" "n1cr/D Ivex Demanding (4,3)">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n1_bookshelfViewed = true>>
+    <<set $n1_bottleAsked = true>>
+    <<set $n1_bottleNameKnown = true>>
+    <<set $n1_bottleViewed = true>>
+    <<set $n1_cabinetViewed = true>>
+    <<set $n1_deskViewed = true>>
+    <<set $n1_ivexReceptive = true>>
+    <<set $n1_mageSight = true>>
+    <<set $n1_magicPhase = MP_wantPassword>>
+    <<set $n1_mirrorViewed = true>>
+    <<set $n1_naked = true>>
+    <<set $n1_rememberPlease = true>>
+    <<set $n1_studyViewed = true>>
+<</link>>
+<<link "> Nero 1F before glitch" "n1cr/D Subby">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n0_barbsSlowViewed = true>>
+    <<set $n0_barbsFastViewed = true>>
+<</link>>
+<<link "> Nero 1F start candle" "n1cx/F Start Candle">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+<</link>>
+<<link "> Nero 1F candle horny" "n1d/D Candle Horny">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n1_candleLit = true>>
+    <<set $n1_naked = true>>
+<</link>>
+<<link "> Nero 1F Ivex gone" "n2z/F Start">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n1_naked = true>>
+<</link>>
+<<link "> Nero 1F easy escape" "n2b/D Free Action">>
+    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<set $n1_naked = true>>
+    <<set $n1_magicPhase = MP_mageSight>>
+    <<set $n2_free = true>>
+    <<set $n2_ivexGone = true>>
+    <<set $n2_mirrorBroken = true>>
+<</link>>
 
 
