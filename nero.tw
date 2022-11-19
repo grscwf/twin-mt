@@ -7835,9 +7835,7 @@ pompous, dirty, and dominated by the
 <<big-mood n2_tooClever ignore>>
 
 <<expand-ignore n1_globeViewed n2_deskSearched n2_ivexGone>>
-<<em-assert !$n1_mageSight || !$n2_mirrorBroken>>
 <<em-assert !$n2_free || $n1_bottleViewed>>
-<<em-assert !$n2_free || !$n1_candleLit>>
 <<em-assert !$n2_free || $n2_mirrorBroken || $n2_mirrorTaken>>
 <<em-assert !$n2_knifeTaken || $n2_free>>
 <<em-assert !$n2_mirrorBroken || $n2_free>>
@@ -7874,10 +7872,8 @@ is continuous and uninterrupted across all of its visible surfaces.
 <<else>>
     At one corner of the desk, there is
 <</if>>
-<<if $n2_mirrorBroken>>
-    a <<n1-no-loop [[small mirror|n1x/D Mirror]]>>,
-    unfortunately shattered and useless now, and
-<<elseif !$n2_mirrorTaken>>
+
+<<if !$n2_mirrorBroken && !$n2_mirrorTaken>>
     a <<n1-no-loop [[small mirror|n1x/D Mirror]]>>
     <<if $n1_mageSight>>
         that glows with <em>normal</em> magical energy,
@@ -7890,8 +7886,13 @@ is continuous and uninterrupted across all of its visible surfaces.
     an <<n1-no-loop [[arcane globe|n1x/D Globe]]>>.
 <</if>>
 
-The rest of the clutter on the desk appears to be ordinary papers and
-writing tools: pens and ink, wax seal, blotter, and so forth.
+<<if $n2_free>>
+    The fire started by the knocked-over candle has subsided,
+    leaving charred remnants of papers and scorched writing tools.
+<<else>>
+    The rest of the clutter on the desk appears to be ordinary papers and
+    writing tools: pens and ink, wax seal, blotter, and so forth.
+<</if>>
 <<if $n2_knifeTaken>>
     None of it looks particularly interesting.
 <<else>>
@@ -7911,6 +7912,15 @@ writing tools: pens and ink, wax seal, blotter, and so forth.
             [[Nacker's Device!|n1x/D Bottle]]
         <</if>>
     <</if>>
+<</if>>
+
+<<if $n2_mirrorBroken>>
+    ?P
+    On the floor beside the desk is the shattered remains of
+    a [[magic mirror|n1x/D Mirror]].
+    Nero wonders if there was some way he could have avoided
+    the loss of such a valuable tool.
+    But he's confident he can escape regardless.
 <</if>>
 
 <<if $n2_free>>
@@ -8049,7 +8059,7 @@ Most of the space is taken up by boxes
 <</nobr>>
 
 
-:: n1x/D Globe [key maybe-password] {"position":"6600,5275","size":"100,100"}
+:: n1x/D Globe [maybe-password] {"position":"6600,5275","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -8378,7 +8388,7 @@ The others are bare.
 <</nobr>>
 
 
-:: n1x/P Coins [key] {"position":"7325,4425","size":"100,100"}
+:: n1x/P Coins [has-hole] {"position":"7325,4425","size":"100,100"}
 stack of coins
 
 if want touch and ivex here, [[n1x/P Coins Ask]]
@@ -8473,7 +8483,7 @@ The entire arrangement is disturbingly symmetric.
 <</nobr>>
 
 
-:: n1x/D Bottle [key has-hole] {"position":"7100,4150","size":"100,100"}
+:: n1x/D Bottle [has-hole] {"position":"7100,4150","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_candleHorny always false>>
@@ -8487,8 +8497,6 @@ The entire arrangement is disturbingly symmetric.
 <<big-mood n2_free ignore>>
 <<big-mood n2_ivexGone vary>>
 <<big-mood n2_tooClever ignore>>
-
-<<set $n1_magicPhase || ($n1_magicPhase = 0)>>
 
 Atop one of the wooden cabinets in the room is a clear glass bottle that's
 unusually large. Even more unusual is its contents,
@@ -8516,15 +8524,17 @@ Its prominent placement in the room raises questions that the wolf
 
 ?P
 Such as:
-<<if $n1_magicPhase === MP_wantName>>
+<<if MP_wantName === $n1_magicPhase>>
     Is there <em>another</em> large, bottled cock in a cabinet somewhere?
     <<if $n1_bottleNameKnown>>
         <<actions-add [["Please, Lance Rockhard."`|n1m/D Say Lance]]>>
     <</if>>
-<<elseif !$n1_bottleTouched && $n1_magicPhase === MP_wantTouch>>
-    Is the bottle's opening the hole that the Sprite wants touched?
-    <<if $n2_free>>
-        <<actions-add [[Touch the bottle's hole.|n1x/D Bottle Touch]]>>
+<<elseif !$n1_bottleTouched && MP_wantTouch === $n1_magicPhase>>
+    Is the bottle's opening the hole that the Sprite
+    <<if $n1_free>>
+        wanted him to touch?
+    <<else>>
+        wants touched?
     <</if>>
 <<elseif $n1_bottleNameKnown>>
     Why did Ivex name a <em>metal</em> cock Lance <em>Rock</em>hard?
@@ -8690,10 +8700,13 @@ map has several markings.
         a wild thought.
     <</if>>
     Could it be that the portrait's mouth
-    is the hole that needs to be touched?
+    is the hole that the Sprite
     <<if $n2_free>>
-        <<actions-add [[Touch the portrait's mouth.|n1x/D Portrait Touch]]>>
-    <<elseif !$n2_ivexGone>>
+        wanted him to touch?
+    <<else>>
+        wants touched?
+    <</if>>
+    <<if !$n2_ivexGone>>
         And could Ivex be persuaded to
         <<if $n1_portraitMomKnown>>
             touch it again?
@@ -8800,15 +8813,14 @@ ISO standard magic wand, but an odd ring-shaped attachment on the end.
     ?P
     <<if $n1_wandTouched>>
         it's not the hole
+    <<elseif $n2_free>>
+        maybe that was the hole?
+    <<elseif !$n2_ivexGone>>
+        maybe that's the hole?
+        <<actions-add [[Ask Ivex about the wand.|n1x/D Ask Wand]]>>
     <<else>>
         maybe that's the hole?
-        <<if $n2_free>>
-            <<actions-add [[Touch the wand.|n1x/D Touch Wand]]>>
-        <<elseif !$n2_ivexGone>>
-            <<actions-add [[Ask Ivex about the wand.|n1x/D Ask Wand]]>>
-        <<else>>
-            too bad can't reach
-        <</if>>
+        too bad can't reach
     <</if>>
 <</if>>
 
@@ -9341,7 +9353,7 @@ inverts cross and presents cock for sucking
 <</nobr>>
 
 
-:: n2a/D Grav Disrupted {"position":"5225,5725","size":"100,100"}
+:: n2a/D Grav Disrupted {"position":"5225,5700","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always true>>
@@ -9349,23 +9361,30 @@ inverts cross and presents cock for sucking
 <<big-mood n1_subby ignore>>
 
 grav gems disrupted, imploded into dust.
+<</nobr>>
 
-nero is still strapped to cross, and extremely horny.
+cross falls forward, nero tries to catch himself, but strapped to cross.
+bashes his erection, super painful, but also turns him on.
 
 <<if $n1_magicPhase === MP_onHold>>
-    sprite says, password incorrect, try again.
+    sprite says, password incorrect, you have N tries remaining.
+    please say password.
     <<set $n1_magicPhase = MP_wantPassword>>
 <<elseif $n1_magicPhase === MP_lockedOut>>
-    grav implosion has disrupted sprite, timer corrupt.
+    sprite says something about losing count, restarting.
+    please say password.
     <<set $n1_magicPhase = MP_wantPassword>>
 <</if>>
+
+struggle toward desk, awkwardly push against it to raise up. maybe use biting?
+
+getting so close to the candle makes it worse
 
 ?P
 <ul class="actions">
     <li>[[Snuff the candle.|n2a/D Snuff Candle]]</li>
     <li>[[Grab the letter opener.|n2a/D Grab Knife]]</li>
 </ul>
-<</nobr>>
 
 
 :: n9a/D Tamed Mild [end] {"position":"3475,5625","size":"100,100"}
@@ -9440,34 +9459,43 @@ sketch ongoing life as a dumb abused dog craving correction, tease bits of thing
 <</nobr>>
 
 
-:: n2a/D Snuff Candle {"position":"5300,5850","size":"100,100"}
+:: n2a/D Snuff Candle {"position":"5300,5825","size":"100,100"}
+<<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always true>>
 <<big-mood n1_mageSight always true>>
 <<big-mood n1_subby ignore>>
 
-struggle to put out candle, almost knock it over, but squelch it in time.
+blow out candle. it relights immediately.
+<</nobr>>
 
-pause to rest
+yank candle out of candleholder with jaws, tips over and sets papers on fire, uncomfortably close to fur
 
-[[Continue|n2a/D Use Knife]]
+<ul class=actions>
+    <li>[[Try to put out the fire.|n2a/D Stop Fire]]</li>
+    <li>[[Grab the knife|n2a/D Use Knife]]</li>
+</ul>
 
 
-:: n2a/D Grab Knife {"position":"5175,5850","size":"100,100"}
+:: n2a/D Grab Knife {"position":"5150,5825","size":"100,100"}
+<<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always true>>
 <<big-mood n1_mageSight always true>>
 <<big-mood n1_subby ignore>>
 
 try to grab letter opener before snuffing candle.
-knock over candle, a paper catches fire.
-struggle to put out fire before using knife.
-after it's out, pause.
+<</nobr>>
 
-[[Continue|n2a/D Use Knife]]
+knock over candle, papers catch fire, uncomfortably close to fur.
+
+<ul class=actions>
+    <li>[[Try to put out the fire.|n2a/D Stop Fire]]</li>
+    <li>[[Grab the knife|n2a/D Use Knife]]</li>
+</ul>
 
 
-:: n2b/D Free Action {"position":"5425,6100","size":"200,200"}
+:: n2b/D Free Action {"position":"5450,6175","size":"200,200"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_mageSight ignore>>
@@ -9986,7 +10014,7 @@ The wolf cannot suppress a whine. The sound is embarrassing and pathetic. It fil
 <</nobr>>
 
 
-:: n1cn/D Secret Society {"position":"4200,2075","size":"100,100"}
+:: n1cn/D Secret Society {"position":"4200,2100","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
@@ -10113,9 +10141,11 @@ ivex takes the bait, he's skeptical but interested.
 <<big-mood n1_abused vary>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked vary>>
-<</nobr>>
 
-nero: we're a secret inside the WAG.
+"You <em>have</em> heard of us..."
+
+<<pw-misfire "You-Have-Heard-Of-Us">>
+<</nobr>>
 
 ivex, fascinated, leaps into speculation about how the secret is kept, dreams up a horny mind-control scenario and asks for confirmation.
 
@@ -10362,31 +10392,45 @@ is round and about a meter in diameter. The window has glass panes arranged in a
     Ivex may be much more powerful than he seems.
 <</if>>
 
-<<if _wantTouch && $n1_windowTouched>>
-    ?P
-    Despite the window's hole-ishness, this doesn't seem to be
-    the hole that the sprite wants touched.
-
-<<elseif _wantTouch && !$n1_windowTouched>>
-    ?P
-    The window doesn't appear to open,
-    but it still technically is a hole, so maybe this is the hole
-    that the Sprite wants touched?
-
-    <<if $n2_free>>
-        <<actions-add [[Touch the window.|n1x/F Window Touch]]>>
-    <<elseif $n2_ivexGone || $n1_windowAskBlocked>>
-        Too bad Nero has no way to reach it.
-    <<elseif $n1_windowAskRefused>>
-        Ivex was unreceptive last time, but perhaps he can
-        still be persuaded to touch it.
-        <<actions-add [[Try again to attract Ivex to the window.|n1x/F Window Ask]]>>
-    <<elseif $n1_ivexReceptive>>
-        Ivex seems amenable to suggestion.
-        <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
+<<if _wantTouch>>
+    <<if $n1_windowTouched>>
+        ?P
+        Despite the window's hole-ishness, this doesn't seem to be
+        the hole that the Sprite
+        <<if $n2_free>>
+            wanted him to touch.
+        <<else>>
+            wants touched.
+        <</if>>
     <<else>>
-        Tricking Ivex into touching it should be easy.
-        <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
+        ?P
+        The window doesn't appear to open,
+        but it still technically is a hole, so maybe this is the hole
+        that the Sprite
+        <<if $n2_free>>
+            wanted him to touch?
+        <<else>>
+            wants touched?
+        <</if>>
+        
+        <<if $n2_free>>
+            Well, the Sprite is gone now.
+            Perhaps Nero could have tricked Ivex into touching the window,
+            but there's no point dwelling on might-have-beens.
+        <<elseif $n2_ivexGone || $n1_windowAskBlocked>>
+             Too bad Nero has no way to reach it.
+        <<elseif $n1_windowAskRefused>>
+             Ivex was unreceptive last time, but perhaps he can
+            still be persuaded to touch it.
+            <<actions-add [[Try again to attract Ivex to the window.|n1x/F Window Ask]]>>
+        <<elseif $n1_ivexReceptive>>
+             wants touched?
+             Ivex seems amenable to suggestion.
+            <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
+        <<else>>
+            Tricking Ivex into touching it should be easy.
+            <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
+        <</if>>
     <</if>>
 <</if>>
 
@@ -10587,7 +10631,7 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: n1x/D Ask Wand [maybe-password] {"position":"7425,4700","size":"100,100"}
+:: n1x/D Ask Wand [maybe-password] {"position":"7425,4775","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused vary>>
 <<big-mood n1_candleHorny always false>>
@@ -10745,18 +10789,23 @@ Threat. Yes. That was a threat.
 <<big-mood n1_abused ignore>>
 <<big-mood n1_mageSight ignore>>
 <<big-mood n1_naked ignore>>
-<</nobr>>
 
 <<n1-patience 4 3
-    'Ivex: why have I never heard of you?'
+    'Ivex seems skeptical, but intrigued. He asks, "Why have I never heard of your group?"'
 >>
 
-<<nobr>>
+?P
 <<include [[n1x/F Look and Magic]]>>
 
-XXX maybe vary actions on abused/naked
+<<set _link = "[[n1cr/D Very Secret]]".slice(2, -2)>>
 <ul class="actions">
-    <li>[[we're a secret inside the WAG|n1cr/D Very Secret]]</li>
+    <<if $n1_abused>>
+        <li><<link "\"You <em>have</em> heard of us...\"" _link>><</link>></li>
+    <<elseif $n1_naked>>
+        <li><<link "\"You <em>have</em> heard of us...\"" _link>><</link>></li>
+    <<else>>
+        <li><<link "\"You <em>have</em> heard of us...\"" _link>><</link>></li>
+    <</if>>
     <<actions-optional $n1t_magicAction>>
 </ul>
 <</nobr>>
@@ -11572,45 +11621,6 @@ warn no way back.
 <</nobr>>
 
 
-:: n2a/D Use Knife {"position":"5225,5975","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always true>>
-<<big-mood n1_mageSight always true>>
-<<big-mood n1_subby ignore>>
-
-<<set $n1_candleLit = false>>
-<<set $n1_candleHorny = false>>
-<<set $n1_mageSight = false>>
-
-<<set $n2_extraHorny = true>>
-<<set $n2_hadMageSight = true>>
-<<set $n2_free = true>>
-<<set $n2_mirrorBroken = true>>
-
-struggle to get knife, cut one arm free.
-<</nobr>>
-
-eventually cut all bonds. sigh of relief.
-
-doesn't pay attention where cross falls.
-realizes too late it's falling toward desk, toward the mirror.
-
-dive to try to rescue the mirror, fail. rescue the snow globe instead.
-
-mirror broken, regret, could have been useful.
-
-finally get a good look at snowglobe, reads inscription out loud with incredulity.
-
-<<if $n1_magicPhase === MP_wantPassword || $n1_magicPhase === MP_lockedOut>>
-    sprite responds, "password accepted". gee that would have been useful earlier.
-<</if>>
-
-magic sight fades, was dependent on energy channel through mirror.
-
-[[Continue|n2b/D Free Action]]
-
-
 :: n2x/D Use Wand {"position":"7375,5625","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
@@ -11650,31 +11660,6 @@ magic sight fades, was dependent on energy channel through mirror.
         <li>[[Don't stop.|n2x/D Use Wand Continue]]</li>
     </ul>
 <</if>>
-<</nobr>>
-
-
-:: n1x/D Touch Wand {"position":"7425,4800","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit always false>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight always true>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny ignore>>
-<<big-mood n2_free always true>>
-<<big-mood n2_ivexGone always true>>
-<<big-mood n2_tooClever always false>>
-
-<<em-assert MP_wantTouch === $n1_magicPhase>>
-
-touch the hole. sprite doesn't respond.
-<<set $n1_wandTouched = true>>
-
-?P
-$n1t_afterAction
 <</nobr>>
 
 
@@ -12646,77 +12631,6 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: PassageHeader [inclusion] {"position":"3150,825","size":"100,100"}
-<<nobr>>
-<<var-trace-ignore>>
-<<if /^n/.test(State.passage)>>
-
-    <<set $n1_magicPhase || ($n1_magicPhase = 0)>>
-<!--
-    <<em-assert
-        $n1_magicPhase < MP_mageSight || $n1_mageSight || $n2_mirrorBroken>>
-    <<em-assert $n1_magicPhase < MP_mageSight || $n1_naked>>
--->
-
-    <<big-mood n1_candleLit implies !$n1_ivexReceptive>>
-    <<big-mood n1_candleLit implies !$n2_free>>
-    <<big-mood n1_candleLit implies !$n2_tooClever>>
-
-    <<big-mood n1_ivexReceptive implies !$n1_candleLit>>
-    <<big-mood n1_ivexReceptive implies !$n1_candleHorny>>
-    <<big-mood n1_ivexReceptive implies !$n2_extraHorny>>
-    <<big-mood n1_ivexReceptive implies !$n2_free>>
-    <<big-mood n1_ivexReceptive implies !$n2_ivexGone>>
-    <<big-mood n1_ivexReceptive implies !$n2_tooClever>>
-
-    <<big-mood n1_subby implies $n1_naked>>
-
-<!--    <<big-mood n1_mageSight implies $n1_magicPhase >= MP_mageSight>> -->
-    <<big-mood n1_mageSight implies $n1_naked>>
-    <<big-mood n1_mageSight implies !$n2_mirrorBroken>>
-
-    <!-- no constraints on n1_naked -->
-
-    <!-- no contraints on n1_abused -->
-
-    <<big-mood n1_candleHorny implies $n1_candleLit>>
-    <<big-mood n1_candleHorny implies !$n1_ivexReceptive>>
-    <<big-mood n1_candleHorny implies $n1_naked>>
-    <<big-mood n1_candleHorny implies !$n2_free>>
-    <<big-mood n1_candleHorny implies !$n2_tooClever>>
-
-    <<big-mood n2_extraHorny implies !$n1_candleLit>>
-    <<big-mood n2_extraHorny implies !$n1_ivexReceptive>>
-    <<big-mood n2_extraHorny implies !$n1_mageSight>>
-    <<big-mood n2_extraHorny implies $n1_naked>>
-    <<big-mood n2_extraHorny implies $n2_free>>
-    <<big-mood n2_extraHorny implies $n2_ivexGone>>
-    <<big-mood n2_extraHorny implies $n2_mirrorBroken>>
-    <<big-mood n2_extraHorny implies !$n2_tooClever>>
-
-    <<big-mood n2_free implies !$n1_candleLit>>
-    <<big-mood n2_free implies !$n1_ivexReceptive>>
-    <<big-mood n2_free implies $n1_naked>>
-    <<big-mood n2_free implies !$n1_candleHorny>>
-    <<big-mood n2_free implies $n2_ivexGone>>
-
-    <<big-mood n2_ivexGone implies !$n1_ivexReceptive>>
-    <<big-mood n2_ivexGone implies $n1_naked>>
-
-    <<big-mood n2_tooClever implies !$n1_candleLit>>
-    <<big-mood n2_tooClever implies !$n1_ivexReceptive>>
-<!--    <<big-mood n2_tooClever implies $n1_magicPhase >= MP_wantPassword>> -->
-    <<big-mood n2_tooClever implies $n1_mageSight>>
-    <<big-mood n2_tooClever implies $n1_naked>>
-    <<big-mood n2_tooClever implies !$n1_candleHorny>>
-    <<big-mood n2_tooClever implies !$n2_extraHorny>>
-    <<big-mood n2_tooClever implies $n2_free>>
-    <<big-mood n2_tooClever implies $n2_ivexGone>>
-<</if>>
-<</var-trace-ignore>>
-<</nobr>>\
-
-
 :: n1m/D Before Cast [inclusion] {"position":"5950,3175","size":"100,100"}
 <<nobr>>
 <!-- easy escape requires mageSight, hard escape requires wantPassword -->
@@ -13088,9 +13002,18 @@ $n1t_afterAction
 </style>
 
 <<em-assert $n1_magicPhase === MP_onHold>>
-<<set $n1_passwordBeingTried || ($n1_passwordBeingTried = "placeholder for testing")>>
 
-<<set $n1_passwordTries = 1 + ($n1_passwordTries || 0)>>
+<<script>>
+  const V = State.variables;
+  const T = State.temporary;
+  V.n1_passwordBeingTried || (V.n1_passwordBeingTried = "placeholder for testing");
+  V.n1_passwordTries = 1 + (V.n1_passwordTries || 0);
+  T.pw = V.n1_passwordBeingTried.replace(/^#/, "");
+  V.n1_passwordsTried || (V.n1_passwordsTried = []);
+  if (!V.n1_passwordsTried.includes(V.n1_passwordBeingTried)) {
+    V.n1_passwordsTried.push(V.n1_passwordBeingTried);
+  }
+<</script>>
 
 <<switch $n1_passwordTries>>
 <<case 1>>
@@ -13151,11 +13074,6 @@ $n1t_afterAction
 <<default>>
     <<run throw new Error(`BUG: impatient passwordTries ${n1_passwordTries}`)>>
 <</switch>>
-
-<<set _pw = $n1_passwordBeingTried
-    .replace(/[^\w\s]+/g, "")
-    .replace(/\s+/g, "-")
->>
 
 ?P
 A moment later, the Sprite says,
@@ -14493,6 +14411,7 @@ v.personalEnding = false;
 :: Init Nero [inclusion] {"position":"2700,425","size":"100,100"}
 <<include [[Init Nero Actions]]>>
 <<include [[Init Nero Barbs]]>>
+<<include [[Init Nero Constraints]]>>
 <<include [[Init Nero Misfire]]>>
 <<include [[Init Nero Password]]>>
 <<include [[Init Nero Patience]]>>
@@ -14596,12 +14515,14 @@ Macro.add("pw-misfire", {
     const V = State.variables;
     if (V.n2_mirrorBroken || V.n1_magicPhase !== MP_wantPassword) return;
     V.n1_passwordBeingTried = `#${pw}`;
+    V.n1_magicPhase = MP_onHold;
     $(this.output).wiki(`<<nobr>>
       ?P
       The Sprite in Nero's ear says,
       "Password received. Please wait while I verify it, ?master."
       <<if !$n1_passwordNoPlease>>
-          Nero did not say "please". Apparently, the Sprite will consider
+          Nero does not remember saying "please".
+          Apparently, the Sprite will consider
           any utterance he makes to be a password. This will make it somewhat
           annoying to converse with Ivex at the same time.
           <<set $n1_passwordNoPlease = true>>
@@ -16655,7 +16576,7 @@ that Winterdew hinted at, but left unspecified in her report.
 <</nobr>>
 
 
-:: n1x/D Bottle Take {"position":"7800,4075","size":"100,100"}
+:: n1x/D Bottle Take {"position":"7700,4075","size":"100,100"}
 <<nobr>>
 <<big-mood n1_abused ignore>>
 <<big-mood n1_candleHorny always false>>
@@ -16708,30 +16629,6 @@ and also it's extremely lewd.
 
 Ivex tells the name, even before you know you need it. (makes the Sprite joke better)
 <<set $n1_bottleNameKnown = true>>
-<</nobr>>
-
-$n1t_afterAction
-
-
-:: n1x/D Bottle Touch {"position":"7700,4075","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit always false>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny ignore>>
-<<big-mood n2_free always true>>
-<<big-mood n2_ivexGone always true>>
-<<big-mood n2_tooClever always false>>
-
-<<em-assert !$n1_bottleTouched>>
-<<set $n1_bottleTouched = true>>
-
-touch bottle, wait, nothing happens.
 <</nobr>>
 
 $n1t_afterAction
@@ -16811,36 +16708,6 @@ the surface of a metallic horse cock, sealed inside a bottle.
 
 ?P
 [[Continue|n1x/D Bottle]]
-<</nobr>>
-
-
-:: n1x/F Window Touch {"position":"7350,3325","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit always false>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny ignore>>
-<<big-mood n2_free always true>>
-<<big-mood n2_ivexGone always true>>
-<<big-mood n2_tooClever always false>>
-
-<<big-mood n1_magicPhase always MP_wantTouch>>
-
-Nero touches the window, and waits.
-
-?P
-<<fade-in 3s>>
-The Sprite doesn't respond.
-This isn't the hole it wants touched.
-
-?P
-$n1t_afterAction
-<</fade-in>>
 <</nobr>>
 
 
@@ -16947,91 +16814,6 @@ $n1t_afterAction
 [[View all notes|Passage Notes Top][Dialog.close()]]
 <br>
 <</nobr>>
-
-
-:: n1x/D Portrait Touch {"position":"7450,3650","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit always false>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny vary>>
-<<big-mood n2_free always true>>
-<<big-mood n2_ivexGone always true>>
-<<big-mood n2_tooClever always false>>
-
-<<em-assert $n1_magicPhase === MP_wantTouch>>
-
-<<if $n2_extraHorny>>
-    <<if $n1_portraitMomKnown>>
-        try touching mouth, can't help fantasizing, ick
-    <<else>>
-        try touching mouth, and fantasize a bit, ick
-    <</if>>
-<<else>>
-    <<if $n1_portraitMomKnown>>
-        try touching mouth, ick
-    <<else>>
-        try touching mouth, speculate
-    <</if>>
-<</if>>
-
-?P
-wait. nothing happens
-
-?P
-[[Continue|n1x/D Portrait Touch 2]]
-<</nobr>>
-
-
-:: n1x/D Portrait Touch 2 {"position":"7550,3650","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit always false>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny vary>>
-<<big-mood n2_free always true>>
-<<big-mood n2_ivexGone always true>>
-<<big-mood n2_tooClever always false>>
-
-<<em-assert $n1_magicPhase === MP_wantTouch>>
-
-<<if $n1_portraitMomKnown>>
-    remember Ivex using tongue
-    <<if $n2_extraHorny>>
-        try using tongue, can't help fantasizing, ick
-    <<else>>
-        try using tongue, ick.
-    <</if>>
-<<else>>
-    consider her other holes
-    <<if $n2_extraHorny>>
-        try that, fantasize more
-    <<else>>
-        try that.
-    <</if>>
-<</if>>
-
-?P
-wait. nothing happens.
-
-<<if $n1_portraitMomKnown>>
-    consider her other holes. ick, no.
-<</if>>
-
-<<set $n1_portraitTouched = true>>
-<</nobr>>
-
-$n1t_afterAction
 
 
 :: Init Arousal Bar [inclusion] {"position":"2000,325","size":"100,100"}
@@ -17896,7 +17678,6 @@ function glitchText(textNode, g) {
   transition: color 2s ease-out, background-color 2s ease-out;
 }
 .glitch-fading-out .glitch-c {
-  background-color: #222;
   transition: color 5s ease-out, background-color 5s ease-out;
 }
 
@@ -17935,8 +17716,7 @@ function glitchText(textNode, g) {
   color: rgb(200, 200, 200, .3);
 }
 
-.glitch-fading-out a .glitch-v:not(#increase#specificity),
-.glitch-fading-out a .glitch-c:not(#increase#specificity) {
+.glitch-fading-out a .glitch-v:not(#increase#specificity) {
   background-color: #321;
 }
 .glitch-fading-out a .glitch-c:not(#increase#specificity) {
@@ -17962,10 +17742,10 @@ function glitchText(textNode, g) {
 }
 @keyframes glitch-blink {
   0% {
-    opacity: .3;
+    opacity: .2;
   }
   100% {
-    opacity: .5;
+    opacity: .4;
   }
 }
 
@@ -18140,7 +17920,7 @@ Template.add("blank",
 <</script>>
 
 
-:: Init Nero Misfire [inclusion] {"position":"3025,600","size":"100,100"}
+:: Init Nero Misfire [inclusion] {"position":"3125,600","size":"100,100"}
 <<script>>
 Macro.add("misfire-please", {
   tags: [],
@@ -18454,7 +18234,7 @@ T.sayPassword = "[[n1m/P Say Password]]".slice(2, -2);
 const basicPasswords = {
   "Ivex the Magnificent": "the egotistical choice",
   "Password": "a common password",
-  "Xyzzy": "the default password for this series of Sprites",
+  "Xyzzy": "the default password for this series of Sprite",
 };
 const otherSources = {
   /* candle */
@@ -18462,20 +18242,26 @@ const otherSources = {
   "Blood": "another name for the candle's color",
 };
 
-let anotherSeen = {};
-const another = phrase => {
-  if (!/^a /.test(phrase)) {
-    return phrase;
-  } else if (anotherSeen[phrase]) {
-    return `another ${phrase.slice(2)}`;
+let onceSeen = {};
+const once = (phrase1, phrase2) => {
+  if (onceSeen[phrase1]) {
+    return phrase2;
   } else {
-    anotherSeen[phrase] = true;
+    onceSeen[phrase1] = true;
+    return phrase1;
+  }
+};
+const another = phrase => {
+  const m = /^(the|a|an) (.*)/.exec(phrase);
+  if (m == null) {
     return phrase;
+  } else {
+    return once(phrase, `another ${m[2]}`);
   }
 };
 
 T.describe = pw => {
-  if (/^please/i.test(pw)) {
+  if (/^Please-/i.test(pw)) {
     return `"${pw}" (${another("a mistake")})`;
   } else if (/^#/.test(pw)) {
     return `"${pw.slice(1)}" (${another("a mistake")})`;
@@ -18544,5 +18330,160 @@ horny info about [[anti-magic|n1m/D Horny Anti-magic]]
 ?P
 $n1t_afterAction
 <</nobr>>
+
+
+:: Init Nero Constraints [inclusion] {"position":"3025,600","size":"100,100"}
+<<script>>
+$(document).on(":passagestart", () => {
+  if (!/^n/.test(State.passage)) return;
+  
+  const EM = window.ErrorMessage;
+  const VT = window.VarTrace;
+  const V = State.variables;
+
+  const imp = expr => {
+    const m = /^(\w+)\s+implies\s+(!?)(\w+)$/.exec(expr);
+    if (m == null) throw new Error(`unparseable imp expression: ${expr}`);
+    const val = !V[m[1]] || (m[2] === "!" ? !V[m[3]] : V[m[3]]);
+    EM.assert(val, `${m[1]} (${V[m[1]]}) should imply ${m[2]}${m[3]} (${m[2]}${V[m[3]]})`);
+  };
+
+  VT.ignore(() => {
+
+    /* TODO: can compile-once the imp expressions */
+    /* TODO: use constraint system when it's ready */
+    
+    /* -- magicPhase constraints -- */
+    const mp = V.n1_magicPhase || (V.n1_magicPhase = 0);
+    if (mp >= MP_mageSight) {
+      EM.assert(V.n1_naked, "n1_magicPhase >= MP_mageSight should imply n1_naked");
+    }
+    if (V.n1_mageSight) {
+      EM.assert(!V.n2_mirrorBroken && mp >= MP_mageSight,
+        "n1_mageSight should imply !n2_mirrorBroken && n1_magicPhase >= MP_mageSight");
+    }
+    if (V.n2_tooClever) {
+      EM.assert(mp === MP_wantPassword,
+        "n2_tooClever should imply n1_magicPhase === MP_wantPassword");
+    }
+    
+    /* -- big-mood constraints -- */
+    
+    /* no constraints on n1_abused */
+    
+    imp("n1_candleHorny implies n1_candleLit");
+    imp("n1_candleHorny implies !n1_ivexReceptive");
+    imp("n1_candleHorny implies n1_naked");
+    imp("n1_candleHorny implies !n2_extraHorny");
+    imp("n1_candleHorny implies !n2_free");
+    imp("n1_candleHorny implies !n2_tooClever");
+
+    imp("n1_candleLit implies !n1_ivexReceptive");
+    imp("n1_candleLit implies !n2_extraHorny");
+    imp("n1_candleLit implies !n2_free");
+    imp("n1_candleLit implies !n2_tooClever");
+
+    imp("n1_ivexReceptive implies !n1_candleLit");
+    imp("n1_ivexReceptive implies !n1_candleHorny");
+    imp("n1_ivexReceptive implies !n2_extraHorny");
+    imp("n1_ivexReceptive implies !n2_free");
+    imp("n1_ivexReceptive implies !n2_ivexGone");
+    imp("n1_ivexReceptive implies !n2_tooClever");
+    
+    imp("n1_mageSight implies n1_naked");
+    
+    /* no constraints on n1_naked */
+    
+    imp("n1_subby implies n1_naked");
+    
+    imp("n2_extraHorny implies !n1_candleHorny");
+    imp("n2_extraHorny implies !n1_candleLit");
+    imp("n2_extraHorny implies !n1_ivexReceptive");
+    imp("n2_extraHorny implies !n1_mageSight");
+    imp("n2_extraHorny implies n1_naked");
+    imp("n2_extraHorny implies n2_free");
+    imp("n2_extraHorny implies n2_ivexGone");
+    
+    imp("n2_free implies !n1_candleHorny");
+    imp("n2_free implies !n1_candleLit");
+    imp("n2_free implies !n1_ivexReceptive");
+    imp("n2_free implies n1_naked");
+    imp("n2_free implies n2_ivexGone");
+
+    imp("n2_ivexGone implies !n1_ivexReceptive");
+    imp("n2_ivexGone implies n1_naked");
+    
+    imp("n2_tooClever implies !n1_candleHorny");
+    imp("n2_tooClever implies !n1_candleLit");
+    imp("n2_tooClever implies !n1_ivexReceptive");
+    imp("n2_tooClever implies n1_mageSight");
+    imp("n2_tooClever implies n1_naked");
+    imp("n2_tooClever implies n2_free");
+    imp("n2_tooClever implies n2_ivexGone");
+    
+    /* -- other constraints -- */
+    
+    imp("n1_mageSight implies !n2_mirrorBroken");
+    imp("n2_mirrorBroken implies !n1_mageSight");
+
+  });
+});
+<</script>>
+
+
+:: n2a/D Stop Fire {"position":"5150,5950","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always true>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_subby ignore>>
+
+try to blow out fire. just makes it spread more.
+hard to do anything while bound.
+<</nobr>>
+
+<ul class=actions>
+    <li>[[Grab the knife.|n2a/D Use Knife]]</li>
+</ul>
+
+
+:: n2a/D Use Knife {"position":"5300,5950","size":"100,100"}
+<<nobr>>
+<<big-mood n1_abused ignore>>
+<<big-mood n1_candleHorny always true>>
+<<big-mood n1_mageSight always true>>
+<<big-mood n1_subby ignore>>
+
+grab knife, push away from desk.
+<</nobr>>
+
+takes a while to cut the first bond, but the rest are quick
+
+watch the fire for a bit, remember the mirror, go to rescue it.
+
+grab mirror
+
+as he grabs mirror, sees snow globe "carpe dick". says, "carpe dick?"
+
+mirror is hot from fire. he fumbles it, tries to catch it
+
+<<if MP_wantPassword === $n1_magicPhase>>
+    sprite says, "password accepted"
+<</if>>
+
+fails to catch mirror, it falls on ground and shatters.
+
+<<nobr>>
+    <<set $n1_candleHorny = false>>
+    <<set $n1_candleLit = false>>
+    <<set $n1_mageSight = false>>
+
+    <<set $n2_extraHorny = true>>
+    <<set $n2_free = true>>
+    <<set $n2_hadMageSight = true>>
+    <<set $n2_mirrorBroken = true>>
+<</nobr>>
+
+[[Continue|n2b/D Free Action]]
 
 
