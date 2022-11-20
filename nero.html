@@ -768,8 +768,6 @@ const bigMoodDeclared = new Set();
 const bigMoodIgnore = new Set();
 const bigMoodVary = new Set();
 let bigMoodAlways = {};
-let bigMoodImplies = {};
-let bigMoodFalseImplies = {};
 let bigMoodReq = {};
 
 $(document).on(":passagestart", () => {
@@ -778,12 +776,10 @@ $(document).on(":passagestart", () => {
   bigMoodIgnore.clear();
   bigMoodVary.clear();
   bigMoodAlways = {};
-  bigMoodImplies = {};
-  bigMoodFalseImplies = {};
   bigMoodReq = {};
 });
 
-const bigMoodRe =/^\s*[$]?(\w+)\s+(?:(ignore|TO[D]O|vary)|(always|assert|implies)\s+(.*))\s*$/
+const bigMoodRe =/^\s*[$]?(\w+)\s+(?:(ignore|TO[D]O|vary)|(always|assert)\s+(.*))\s*$/
 
 Macro.add("big-mood", {
   skipArgs: true,
@@ -825,39 +821,6 @@ Macro.add("big-mood", {
       case 'assert':
         ok = val;
         break;
-      case 'implies': {
-        ok = !!actual === false || val;
-        const m2 = /^\s*([!]?)[$](\w+)\s*$/.exec(m[4]);
-        if (m2 == null) break;
-
-        const bool = m2[1] !== "!";
-        const v2 = m2[2];
-        bigMoodImplies[vn] ??= [];
-        bigMoodImplies[vn].push([bool, v2]);
-
-        if (actual) {
-          if (bigMoodReq[v2] != null && bigMoodReq[v2] !== bool) {
-            EM.fail(`Should satisfy implication for ${v2}`, this);
-          }
-          bigMoodReq[v2] = bool;
-        }
-
-        // contrapositive
-        if (bool) {
-          bigMoodFalseImplies[v2] ??= [];
-          bigMoodFalseImplies[v2].push([false, vn]);
-        } else {
-          bigMoodImplies[v2] ??= [];
-          bigMoodImplies[v2].push([false, vn]);
-        }
-        if (!!VT.untracedGet(v2) === !bool) {
-          if (bigMoodReq[vn] != null && bigMoodReq[vn] !== false) {
-            EM.fail(`Should satisfy contrapositive for ${vn}`, this);
-          }
-          bigMoodReq[vn] = false;
-        }
-        break;
-      }
       default:
         throw new Error("bug");
     }
@@ -1107,14 +1070,7 @@ function varInfoSetup() {
           let val = !v0[vname];
           VI.revisitHere(() => {
             State.variables[vname] = val;
-            const imp = bigMoodImplies[vname];
-            if (val && imp != null) {
-              imp.forEach(([b, v2]) => State.variables[v2] = b);
-            }
-            const fimp = bigMoodFalseImplies[vname];
-            if (!val && fimp != null) {
-              fimp.forEach(([b, v2]) => State.variables[v2] = b);
-            }
+            // TODO use constraints
           });
         });
       }
@@ -6622,11 +6578,11 @@ After a few more rapid blinks, along with some shaking of his aching head, Nero&
 The blurry figure becomes a person...
 
 [[Continue|n1a/F Hello 2]]</tw-passagedata><tw-passagedata pid="243" name="n1cn/F Ivex Intro" tags="" position="4000,1450" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;big-mood n1_abused implies !$n1_naked&gt;&gt;
+&lt;&lt;big-mood n1_abused vary&gt;&gt;
 &lt;&lt;big-mood n1_mageSight always false&gt;&gt;
-&lt;&lt;big-mood n1_naked implies !$n1_abused&gt;&gt;
+&lt;&lt;big-mood n1_naked ignore&gt;&gt;
 
-&lt;&lt;set $n1_magicPhase || ($n1_magicPhase = 0)&gt;&gt;
+&lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
 &lt;&lt;em-assert $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
 
 Ivex (the Magnificent) moves away from the
@@ -8409,7 +8365,7 @@ option: reset patience to 1&lt;br&gt;
 &lt;&lt;big-mood n2_extraHorny vary&gt;&gt;
 &lt;&lt;big-mood n2_knifeTaken vary&gt;&gt;
 &lt;&lt;big-mood n2_mirrorTaken vary&gt;&gt;
-&lt;&lt;big-mood n2_tooClever implies !$n2_extraHorny&gt;&gt;
+&lt;&lt;big-mood n2_tooClever ignore&gt;&gt;
 
 XXX save/load vars that are determined by 1F:
 barbs, extraHorny, knifeTaken, mirrorTaken, tooClever.
@@ -9388,11 +9344,11 @@ Nero is aghast. What is the panther doing? Is he... &lt;em&gt;sniffing&lt;/em&gt
 Nero has learned of many different greeting rituals from the various foreign lecturers who visit Windbone Magic Academy, but no civilization in recorded history has ever greeted strangers, or even friends, with a ritual as strange and intrusive as what the feline mage is doing now.
 
 [[Continue|n1a/F Hello 5]]</tw-passagedata><tw-passagedata pid="321" name="n1cn/F Ivex Intro 2" tags="" position="4100,1450" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;big-mood n1_abused implies !$n1_naked&gt;&gt;
+&lt;&lt;big-mood n1_abused vary&gt;&gt;
 &lt;&lt;big-mood n1_mageSight always false&gt;&gt;
-&lt;&lt;big-mood n1_naked implies !$n1_abused&gt;&gt;
+&lt;&lt;big-mood n1_naked ignore&gt;&gt;
 
-&lt;&lt;set $n1_magicPhase || ($n1_magicPhase = 0)&gt;&gt;
+&lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
 &lt;&lt;em-assert $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
 
 &quot;There must be some mistake,&quot;
@@ -9969,9 +9925,12 @@ Most spoken spells require extremely precise enunciation to have any effect at a
 Needless to say, Nero only made that mistake once.
 
 [[Continue|n1a/F Start]]</tw-passagedata><tw-passagedata pid="347" name="n1cn/F Ivex Desc" tags="" position="3925,1575" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;big-mood n1_abused implies !$n1_naked&gt;&gt;
+&lt;&lt;big-mood n1_abused vary&gt;&gt;
 &lt;&lt;big-mood n1_mageSight always false&gt;&gt;
-&lt;&lt;big-mood n1_naked implies !$n1_abused&gt;&gt;
+&lt;&lt;big-mood n1_naked ignore&gt;&gt;
+
+&lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
+&lt;&lt;em-assert $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
 
 Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
 &lt;&lt;/nobr&gt;&gt;
@@ -10481,11 +10440,11 @@ Nero&#39;s mind is overwhelmed with a cascade of incredibly erotic memories...
 But his rational mind reminds him of his immediate peril, and he manages to shove away those intoxicating memories, for now.
 
 [[Continue|n1p/F Barbs Fast End]]</tw-passagedata><tw-passagedata pid="365" name="n1cn/F Ivex Intro 3" tags="" position="4200,1450" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;big-mood n1_abused implies !$n1_naked&gt;&gt;
+&lt;&lt;big-mood n1_abused vary&gt;&gt;
 &lt;&lt;big-mood n1_mageSight always false&gt;&gt;
-&lt;&lt;big-mood n1_naked implies !$n1_abused&gt;&gt;
+&lt;&lt;big-mood n1_naked ignore&gt;&gt;
 
-&lt;&lt;set $n1_magicPhase || ($n1_magicPhase = 0)&gt;&gt;
+&lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
 &lt;&lt;em-assert $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -13384,7 +13343,6 @@ randomWalkSetup();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="450" name="var-info test" tags="" position="4600,400" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;big-mood dead ignore&gt;&gt;
 &lt;&lt;big-mood isHappy TODO&gt;&gt;
-&lt;&lt;big-mood hasTea implies $isHappy&gt;&gt;
 &lt;&lt;big-mood hasTea vary&gt;&gt;
 
 &lt;&lt;em-assert !!$flag2 !== !!$flag3&gt;&gt;
