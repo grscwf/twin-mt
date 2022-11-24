@@ -2860,7 +2860,7 @@ Nero.sections = {
   n1d_candle: /^n1d/,
   n1e_horny: /^n1e/,
 
-  // n1 special modules
+  // n1 - special modules
   n1p_barbs: /^n1p/,
   n1s_magic: /^n1s/,
   n1x_look: /^n1x/,
@@ -2871,12 +2871,36 @@ Nero.sections = {
   n2b_bound: /^n2b/,
   n2f_free: /^n2f/,
 
-  n3a_start: /^n2b/,
+  // n2 - special modules
+  n2x_lookFree: /^n2x/,
+
+  // n3 - 2nd floor
+  n3a_start: /^n3a/,
+
+  // n8 - all archives
   n8_archive: /^n8/,
+
+  // n9 - all endings
   n9_ending: /^n9/,
 
+  // not Nero
   other: /^[^n]/,
 };
+
+function checkSections() {
+  if (!Config.debug) return;
+  Story.lookup().forEach(({ title }) => {
+    const matches = Object.entries(Nero.sections)
+      .flatMap(([s, re]) => re.test(title) ? [s] : []);
+    if (matches.length === 0) {
+      console.error(`[\[${title}]] does not match any sections`);
+    } else if (matches.length > 1) {
+      console.error(`[\[${title}]] should not match multiple sections: ${matches}`);
+    }
+  });
+}
+
+checkSections();
 
 // - Flags are booleans where null or undefined is equivalent to false.
 // - "implies" are constraints on other vars when the flag is true.
@@ -2906,9 +2930,11 @@ Nero.flags = {
       n2a_start: "",
       n2b_bound: "",
       n2f_free: "",
+      n2x_lookFree: "",
       n3a_start: "",
       n8_archive: "",
       n9_ending: "notable",
+      other: "",
     },
   },
 
@@ -2938,9 +2964,11 @@ Nero.flags = {
       n2a_start: false,
       n2b_bound: "notable",
       n2f_free: false,
+      n2x_lookFree: false,
       n3a_start: false,
       n8_archive: "",
       n9_ending: false,
+      other: "",
     },
   },
 
@@ -2968,9 +2996,11 @@ Nero.flags = {
       n2a_start: false,
       n2b_bound: true,
       n2f_free: false,
+      n2x_lookFree: false,
       n3a_start: false,
       n8_archive: "",
       n9_ending: false,
+      other: "",
     },
   },
 
@@ -3000,9 +3030,11 @@ Nero.flags = {
       n2a_start: false,
       n2b_bound: false,
       n2f_free: false,
+      n2x_lookFree: false,
       n3a_start: false,
       n8_archive: "",
       n9_ending: false,
+      other: "",
     },
   },
 
@@ -3029,9 +3061,11 @@ Nero.flags = {
       n2a_start: "notable",
       n2b_bound: "notable",
       n2f_free: "notable",
+      n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
       n9_ending: "notable",
+      other: "",
     },
   },
 
@@ -3056,9 +3090,11 @@ Nero.flags = {
       n2a_start: true,
       n2b_bound: true,
       n2f_free: true,
+      n2x_lookFree: true,
       n3a_start: true,
       n8_archive: "",
       n9_ending: true,
+      other: "",
     },
   },
 
@@ -3083,9 +3119,11 @@ Nero.flags = {
       n2a_start: "",
       n2b_bound: "",
       n2f_free: "",
+      n2x_lookFree: "",
       n3a_start: "",
       n8_archive: "",
       n9_ending: "notable",
+      other: "",
     },
   },
 
@@ -3116,9 +3154,11 @@ Nero.flags = {
       n2a_start: false,
       n2b_bound: false,
       n2f_free: "notable",
+      n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
       n9_ending: "notable",
+      other: "",
     },
   },
 
@@ -3147,9 +3187,11 @@ Nero.flags = {
       n2a_start: false,
       n2b_bound: false,
       n2f_free: true,
+      n2x_lookFree: true,
       n3a_start: true,
       n8_archive: "",
       n9_ending: true,
+      other: "",
     },
   },
 
@@ -3175,9 +3217,11 @@ Nero.flags = {
       n2a_start: true,
       n2b_bound: true,
       n2f_free: true,
+      n2x_lookFree: true,
       n3a_start: true,
       n8_archive: "",
       n9_ending: "",
+      other: "",
     },
   },
 
@@ -3202,9 +3246,11 @@ Nero.flags = {
       n2a_start: false,
       n2b_bound: false,
       n2f_free: "notable",
+      n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
       n9_ending: "notable",
+      other: "",
     },
   },
 
@@ -3236,26 +3282,43 @@ Nero.flags = {
       n2a_start: false,
       n2b_bound: false,
       n2f_free: "notable",
+      n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
       n9_ending: "notable",
+      other: "",
     },
   },
 };
 
-function checkContrapositive() {
+function checkFlags() {
+  const sections = new Set(Object.keys(Nero.sections));
+
   Object.keys(Nero.flags).forEach(x => {
+    // check sections
+    sections.forEach(s => {
+      if (!(s in Nero.flags[x].sections)) {
+        console.error(`flag ${x} is missing section ${s}`);
+      }
+    });
+    Object.keys(Nero.flags[x].sections).forEach(s => {
+      if (!sections.has(s)) {
+        console.error(`flag ${x} has unknown section ${s}`);
+      }
+    });
+
+    // check contrapositive
     Object.keys(Nero.flags[x].implies).forEach(y => {
       if (Nero.flags[x].implies[y] === false) {
         if (Nero.flags[y].implies[x] !== false) {
-          console.error(`${x} implies !${y} is missing contrapositive`);
+          console.error(`flag ${x} implies !${y} is missing contrapositive`);
         }
       }
     });
   });
 }
 
-checkContrapositive();
+checkFlags();
 
 Nero.enumImplies = {
   n1_magicPhase: {
@@ -3290,13 +3353,13 @@ Nero.enumImplies = {
 }
 
 Nero.checkConstraints = () => {
-  if (!/^n/.test(State.passage)) return;
+  const EM = window.ErrorMessage;
+  const here = State.passage;
+  if (!/^n/.test(here)) return;
+
   VarTrace.ignore(() => {
-    const EM = window.ErrorMessage;
     const V = State.variables;
-
     V.n1_magicPhase || (V.n1_magicPhase = 0);
-
     Object.keys(Nero.flags).forEach(x => {
       if (!V[x]) return;
       Object.keys(Nero.flags[x].implies).forEach(y => {
