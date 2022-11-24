@@ -871,173 +871,6 @@ function varInfoSetup() {
   let varInfoShow = State.metadata.get("varInfoShow");
 
   const bigMoodVars = [
-    [
-      // Nero sections without big-moods, and non-Nero passages
-      /^n0|^n1a|^[^n]/,
-    ],
-    [
-      // Naked/barbs choice.
-      /^n1p/,
-      'n1_abused',
-      ['n1_candleHorny', false],
-      ['n1_candleLit', 'ignore'],
-      ['n1_ivexReceptive', 'ignore'],
-      ['n1_mageSight', false],
-      ['n1_naked', 'ignore'],
-      ['n1_subby', 'ignore'],
-    ],
-    [
-      // 1st floor magic/look.
-      /^n1[mx]/,
-      'n1_abused',
-      'n1_candleHorny',
-      'n1_candleLit',
-      'n1_ivexReceptive',
-      'n1_mageSight',
-      'n1_naked',
-      'n1_subby',
-
-      'n2_extraHorny',
-      'n2_free',
-      'n2_ivexGone',
-      'n2_tooClever',
-    ],
-    [
-      // Ivex before candle, neutral
-      /^n1cn/,
-      'n1_abused',
-      ['n1_candleHorny', false],
-      ['n1_candleLit', false],
-      ['n1_ivexReceptive', false],
-      'n1_mageSight',
-      'n1_naked',
-      ['n1_subby', false],
-    ],
-    [
-      // Ivex before candle, receptive.
-      /^n1cr/,
-      'n1_abused',
-      ['n1_candleHorny', false],
-      ['n1_candleLit', false],
-      ['n1_ivexReceptive', true],
-      'n1_mageSight',
-      'n1_naked',
-      ['n1_subby', false],
-    ],
-    [
-      // Ivex before candle, subby branch
-      /^n1cs/,
-      'n1_abused',
-      ['n1_candleHorny', false],
-      ['n1_candleLit', false],
-      ['n1_ivexReceptive', true],
-      'n1_mageSight',
-      ['n1_naked', true],
-      ['n1_subby', true],
-    ],
-    [
-      // transition to candle
-      /^n1cx/,
-      'n1_abused',
-      ['n1_candleHorny', false],
-      ['n1_candleLit', false],
-      ['n1_ivexReceptive', false],
-      'n1_mageSight',
-      'n1_naked',
-      'n1_subby',
-    ],
-    [
-      // Ivex with candle, not horny.
-      /^n1d/,
-      'n1_abused',
-      ['n1_candleHorny', false],
-      ['n1_candleLit', true],
-      ['n1_ivexReceptive', false],
-      'n1_mageSight',
-      'n1_naked',
-      'n1_subby',
-    ],
-    [
-      // Ivex with candle, naked and horny.
-      /^n1e/,
-      'n1_abused',
-      ['n1_candleHorny', true],
-      ['n1_candleLit', true],
-      ['n1_ivexReceptive', false],
-      'n1_mageSight',
-      ['n1_naked', true],
-      'n1_subby',
-    ],
-    [
-      // 1st floor horny look
-      /^n1y/,
-      'n1_abused',
-      ['n1_candleHorny', true],
-      ['n1_candleLit', true],
-      ['n1_ivexReceptive', false],
-      'n1_mageSight',
-      ['n1_naked', true],
-      'n1_subby',
-
-      ['n2_extraHorny', false],
-      ['n2_free', false],
-      'n2_ivexGone',
-      ['n2_tooClever', false],
-    ],
-    [
-      // Restart at Ivex gone
-      /^n2a/,
-    ],
-    [
-      // Ivex gone, still bound.
-      /^n2b/,
-      'n1_abused',
-      'n1_candleHorny',
-      ['n1_candleLit', true],
-      ['n1_ivexReceptive', false],
-      'n1_mageSight',
-      ['n1_naked', true],
-      'n1_subby',
-
-      ['n2_extraHorny', false],
-      ['n2_free', false],
-      ['n2_ivexGone', true],
-      ['n2_tooClever', false],
-    ],
-    [
-      // Free in 1st floor.
-      /^n2f/,
-
-      'n1_abused',
-      ['n1_candleHorny', false],
-      ['n1_candleLit', false],
-      ['n1_ivexReceptive', false],
-      'n1_mageSight',
-      ['n1_naked', true],
-      'n1_subby',
-
-      'n2_extraHorny',
-      ['n2_free', true],
-      ['n2_ivexGone', true],
-      'n2_tooClever',
-    ],
-    [
-      // 2F start
-      /^n3a/,
-      'n2_extraHorny',
-      'n2_knifeTaken',
-      'n2_mirrorTaken',
-      'n2_tooClever',
-    ],
-    [
-      // Endings
-      /^n9/,
-      'n1_barbs',
-    ],
-    [
-      // Archive
-      /^n8/,
-    ],
   ];
 
   const str = val => val == null ? String(val) : JSON.stringify(val);
@@ -1704,7 +1537,7 @@ CV.render = function() {
         });
       }
     });
-    
+
     if (!ok) return;
 
     const html = output[0].innerHTML;
@@ -3012,9 +2845,13 @@ Macro.add("barbs-announce", {
 :: Init Nero Constraints [inclusion] {"position":"3025,575","size":"100,100"}
 <<script>>
 
+// - Passages are grouped into story sections by a prefix in their title.
+// - Every passage must be in exactly one section.
 Nero.sections = {
+  // n0 - passages that aren't part of the story
   n0_meta: /^n0/,
 
+  // n1 - everything before Ivex leaves
   n1a_intro: /^n1a/,
   n1cn_neutral: /^n1cn/,
   n1cr_receptive: /^n1cr/,
@@ -3023,11 +2860,13 @@ Nero.sections = {
   n1d_candle: /^n1d/,
   n1e_horny: /^n1e/,
 
+  // n1 special modules
   n1p_barbs: /^n1p/,
   n1s_magic: /^n1s/,
   n1x_look: /^n1x/,
   n1y_lookHorny: /^n1y/,
 
+  // n2 - restart at Ivex leaving, until exit 1F
   n2a_start: /^n2a/,
   n2b_bound: /^n2b/,
   n2f_free: /^n2f/,
@@ -3039,9 +2878,18 @@ Nero.sections = {
   other: /^[^n]/,
 };
 
-Nero.vars = {
+// - Flags are booleans where null or undefined is equivalent to false.
+// - "implies" are constraints on other vars when the flag is true.
+//   - The constraints can be any type of value, not just flags.
+// - "sections" are constraints for the flag within a section.
+//   - "" means the flag isn't important in the section.
+//   - "notable" means the flag should have an effect in the section.
+Nero.flags = {
+  // true if Ivex has smashed Nero's balls
   n1_abused: {
-    implies: {},
+    implies: {
+      // no constraints
+    },
     sections: {
       n0_meta: "",
       n1a_intro: "",
@@ -3054,15 +2902,17 @@ Nero.vars = {
       n1p_barbs: "",
       n1s_magic: "notable",
       n1x_look: "notable",
-      n1y_lookHorny: "",
-      n2a_start: false,
-      n2b_bound: "notable",
-      n2f_free: false,
-      n3a_start: false,
+      n1y_lookHorny: "notable",
+      n2a_start: "",
+      n2b_bound: "",
+      n2f_free: "",
+      n3a_start: "",
       n8_archive: "",
-      n9_ending: false,
+      n9_ending: "notable",
     },
   },
+
+  // true if lust candle is now compulsive
   n1_candleHorny: {
     implies: {
       n1_candleLit: true,
@@ -3081,7 +2931,7 @@ Nero.vars = {
       n1cx_transition: false,
       n1d_candle: false,
       n1e_horny: true,
-      n1p_barbs: "",
+      n1p_barbs: false,
       n1s_magic: "notable",
       n1x_look: "notable",
       n1y_lookHorny: true,
@@ -3093,92 +2943,316 @@ Nero.vars = {
       n9_ending: false,
     },
   },
-};
 
-/* only for true; false not needed yet */
-Nero.flagImplies = {
-  n1_abused: {
-    // no constraints
-  },
-  n1_candleHorny: {
-    n1_candleLit: true,
-    n1_ivexReceptive: false,
-    n1_naked: true,
-    n2_extraHorny: false,
-    n2_free: false,
-    n2_tooClever: false,
-  },
+  // true if lust candle is lit
   n1_candleLit: {
-    n1_ivexReceptive: false,
-    n2_extraHorny: false,
-    n2_free: false,
-    n2_tooClever: false,
+    implies: {
+      n1_ivexReceptive: false,
+      n2_extraHorny: false,
+      n2_free: false,
+      n2_tooClever: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: true,
+      n1e_horny: true,
+      n1p_barbs: "",
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: true,
+      n2a_start: false,
+      n2b_bound: true,
+      n2f_free: false,
+      n3a_start: false,
+      n8_archive: "",
+      n9_ending: false,
+    },
   },
+
+  // true if Ivex is intrigued and suggestible
   n1_ivexReceptive: {
-    n1_candleLit: false,
-    n1_candleHorny: false,
-    n2_extraHorny: false,
-    n2_free: false,
-    n2_ivexGone: false,
-    n2_tooClever: false,
+    implies: {
+      n1_candleLit: false,
+      n1_candleHorny: false,
+      n2_extraHorny: false,
+      n2_free: false,
+      n2_ivexGone: false,
+      n2_tooClever: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: true,
+      n1cs_subby: true,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1p_barbs: "",
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: false,
+      n3a_start: false,
+      n8_archive: "",
+      n9_ending: false,
+    },
   },
+
+  // true if Nero can see magic
   n1_mageSight: {
-    n1_naked: true,
-    n2_extraHorny: false,
-    n2_mirrorBroken: false,
+    implies: {
+      n1_naked: true,
+      n2_extraHorny: false,
+      n2_mirrorBroken: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: "notable",
+      n1cr_receptive: "notable",
+      n1cs_subby: "notable",
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: "notable",
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: "notable",
+      n2a_start: "notable",
+      n2b_bound: "notable",
+      n2f_free: "notable",
+      n3a_start: "notable",
+      n8_archive: "",
+      n9_ending: "notable",
+    },
   },
+
+  // true if Nero is naked
   n1_naked: {
-    // no constraints
+    implies: {
+      // no constraints
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: "",
+      n1cn_neutral: "notable",
+      n1cr_receptive: "notable",
+      n1cs_subby: true,
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: true,
+      n1p_barbs: "",
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: true,
+      n2a_start: true,
+      n2b_bound: true,
+      n2f_free: true,
+      n3a_start: true,
+      n8_archive: "",
+      n9_ending: true,
+    },
   },
+
+  // true if Nero is very compliant
   n1_subby: {
-    n1_naked: true,
+    implies: {
+      n1_naked: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: true,
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: "notable",
+      n1p_barbs: "",
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: "notable",
+      n2a_start: "",
+      n2b_bound: "",
+      n2f_free: "",
+      n3a_start: "",
+      n8_archive: "",
+      n9_ending: "notable",
+    },
   },
+
+  // true if Nero is free with a distracting amount of lust (easy escape)
   n2_extraHorny: {
-    n1_candleHorny: false,
-    n1_candleLit: false,
-    n1_ivexReceptive: false,
-    n1_mageSight: false,
-    n1_naked: true,
-    n2_free: true,
-    n2_ivexGone: true,
+    implies: {
+      n1_candleHorny: false,
+      n1_candleLit: false,
+      n1_ivexReceptive: false,
+      n1_mageSight: false,
+      n1_naked: true,
+      n2_free: true,
+      n2_ivexGone: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: "notable",
+      n3a_start: "notable",
+      n8_archive: "",
+      n9_ending: "notable",
+    },
   },
+
+  // true if Nero is free (easy or hard)
   n2_free: {
-    n1_candleHorny: false,
-    n1_candleLit: false,
-    n1_ivexReceptive: false,
-    n1_naked: true,
-    n2_ivexGone: true,
+    implies: {
+      n1_candleHorny: false,
+      n1_candleLit: false,
+      n1_ivexReceptive: false,
+      n1_naked: true,
+      n2_ivexGone: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: true,
+      n3a_start: true,
+      n8_archive: "",
+      n9_ending: true,
+    },
   },
+
+  // true if Ivex has left
   n2_ivexGone: {
-    n1_ivexReceptive: false,
-    n1_naked: true,
+    implies: {
+      n1_ivexReceptive: false,
+      n1_naked: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: false,
+      n2a_start: true,
+      n2b_bound: true,
+      n2f_free: true,
+      n3a_start: true,
+      n8_archive: "",
+      n9_ending: "",
+    },
   },
+
+  // true if the mirror is broken (easy escape)
   n2_mirrorBroken: {
-    n1_mageSight: false,
+    implies: {
+      n1_mageSight: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: "notable",
+      n3a_start: "notable",
+      n8_archive: "",
+      n9_ending: "notable",
+    },
   },
+
+  // true if Nero did the hard escape and got extra-abused
   n2_tooClever: {
-    n1_candleHorny: false,
-    n1_candleLit: false,
-    n1_ivexReceptive: false,
-    n1_mageSight: true,
-    n1_magicPhase: MP_connected,
-    n1_naked: true,
-    n2_free: true,
-    n2_ivexGone: true,
+    implies: {
+      n1_candleHorny: false,
+      n1_candleLit: false,
+      n1_ivexReceptive: false,
+      n1_mageSight: true,
+      n1_magicPhase: MP_connected,
+      n1_naked: true,
+      n2_free: true,
+      n2_ivexGone: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: "notable",
+      n3a_start: "notable",
+      n8_archive: "",
+      n9_ending: "notable",
+    },
   },
 };
 
 function checkContrapositive() {
-  const imp = Nero.flagImplies;
-  Object.keys(imp).forEach(x => {
-    Object.keys(imp[x]).forEach(y => {
-      if (imp[x][y] === false) {
-        if (imp[y][x] !== false) {
+  Object.keys(Nero.flags).forEach(x => {
+    Object.keys(Nero.flags[x].implies).forEach(y => {
+      if (Nero.flags[x].implies[y] === false) {
+        if (Nero.flags[y].implies[x] !== false) {
           console.error(`${x} implies !${y} is missing contrapositive`);
         }
       }
-    })
-  })
+    });
+  });
 }
 
 checkContrapositive();
@@ -3223,14 +3297,14 @@ Nero.checkConstraints = () => {
 
     V.n1_magicPhase || (V.n1_magicPhase = 0);
 
-    const imp = Nero.flagImplies;
-    Object.keys(imp).forEach(x => {
+    Object.keys(Nero.flags).forEach(x => {
       if (!V[x]) return;
-      Object.keys(imp[x]).forEach(y => {
+      Object.keys(Nero.flags[x].implies).forEach(y => {
+        const z = Nero.flags[x].implies[y];
         const val = V[y] == null ? false : V[y];
-        const n = imp[x][y] ? "" : "!";
-        const eq = typeof imp[x][y] === "boolean" ? "" : ` === ${imp[x][y]}`;
-        EM.assert(val === imp[x][y], 
+        const n = z ? "" : "!";
+        const eq = typeof z === "boolean" ? "" : ` === ${z}`;
+        EM.assert(val === z,
           `${x} (${V[x]}) should imply ${n}${y}${eq} (${n}${V[y]})`);
       });
     });
@@ -11104,11 +11178,11 @@ ivex takes the bait, he's skeptical but interested.
 
 <<elseif $n1_naked>>
     "Would you prefer a 60% share?" naked, awkward dignity.
-    
+
     ?P
     Ivex, I think you do not understand the power I have here.
     smashes balls
-    
+
 <<else>>
     "Would you prefer a 60% share?" normal. cajoling.
 
@@ -13168,7 +13242,7 @@ function glitchText(textNode, g) {
     but random guessing is not a good idea when the Sprite
     will only allow a few more tries.
     The wolf decides he should look around for more clues first.
-    
+
     $n1t_afterAction
 <<else>>
     <<if $n1_passwordsFound.length === 0>>
@@ -13730,7 +13804,7 @@ $n1t_afterAction
     <<set $n1_spriteQuiet = true>>
     ?P
     The Sprite whispers in Nero's ear, "Quiet mode activated, ?master!"
-    
+
     ?P
     Nero regrets.
 
@@ -14266,7 +14340,7 @@ Anti-magic fields are broadly divided into two categories. abbreviated horny des
 
 <<if $n1_spriteDotsHeard>>
     A moment later, it says, "Dot... Dot... Dot..."
-    
+
     ?P
     <<if $n1_candleHorny>>
         Each "dot" said by the Sprite is horny.
@@ -14846,7 +14920,7 @@ Most of the space is taken up by boxes
         aha, can see stuff in the reflection.
         <<set $n1_mirrorViewed = true>>
     <</if>>
-    
+
     <<if $n1_naked>>
         see self naked.
     <</if>>
@@ -14858,7 +14932,7 @@ Most of the space is taken up by boxes
         ?P
         mirror is a clear path in the firewall.
     <</if>>
-    
+
     <<if $n1_magicPhase === MP_mageSight>>
         <<actions-add [[Connect to the mirror|n1x/D Connect]]>>
     <</if>>
@@ -15757,7 +15831,7 @@ $n1t_afterAction
         normal, second ask
     <</if>>
     trying again for birthplace.
-    
+
     ?P
     <<big-mood n1_ivexReceptive ignore>>
     ivex always annoyed, mentions another place that can be a password.
@@ -15774,7 +15848,7 @@ $n1t_afterAction
         normal, first ask
     <</if>>
     about birthplace
-    
+
     ?P
     <<if $n1_ivexReceptive>>
         ivex receptive, but misunderstands. mentions a place that nero
@@ -16096,7 +16170,7 @@ $n1t_afterAction
     there's some barrier to normal magic energy.
     suggest looking at individual items.
     <<set $n1_scanned = true>>
-    
+
     ?P
     $n1t_afterAction
 <<else>>
@@ -16555,7 +16629,7 @@ the surface of a metallic horse cock, sealed inside a bottle.
     beyond mere perversion.
     Nackle <em>requires</em> a mage to make physical contact with the
     matrix. So what use is it to put Nackle on a surface that isn't easily touched?
-    
+
     ?P
     This question might not be the most important thing to consider at the moment,
     but an answer might help give insight into defeating
@@ -16569,7 +16643,7 @@ the surface of a metallic horse cock, sealed inside a bottle.
     matrix, which is clearly not possible when the glyphs are in a bottle.
     But the energized liquid in the bottle suggests that the
     horse-cock Nackle is not merely an obscene office ornament.
-    
+
     ?P
     Perhaps Ivex has found some other way to use the glyph matrix?
     If so, the mechanism might be one that Nero could use himself for escape.
@@ -16580,7 +16654,7 @@ the surface of a metallic horse cock, sealed inside a bottle.
     due to the energized liquid medium within the bottle.
     In any case, the construction has
     a certain crazy brilliance to it.
-    
+
     ?P
     It's one of those ideas that seems
     obvious in retrospect, but nobody had put these particular concepts
@@ -18034,7 +18108,7 @@ drop knife
 
 <<if $n2_extraHorny>>
     feels awesome, can't stop
-    
+
     ?P
     [[Continue|n9a/D Caged Harsh]]
 
