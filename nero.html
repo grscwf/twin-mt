@@ -729,139 +729,19 @@ const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VI = window.VarInfo || (window.VarInfo = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
-/*** to-do */
-$(document).on(":passagestart", () => {
-  MT.has_to_do = false;
-  MT.has_warning = false;
-  MT.has_undeclared = false;
-});
-
-function add_to_do(text) {
-  MT.has_to_do = true;
-  let list = $("#messages-to-do > ul");
-  if (list.length !== 1) {
-    $("#messages-to-do").remove();
-    const div = $("<div id=messages-to-do class=messages-item>");
-    div.addClass("messages-to-do-hidden");
-    EM.note("").append(div);
-    $("<a class=messages-close>[close]</a>").on("click", () => {
-      div.remove();
-    }).appendTo(div);
-    $("<div class=messages-to-do-label>")
-      .text("TO"+"DO").appendTo(div);
-    list = $("<ul>").appendTo(div);
-  }
-  $("<li>").text(text).appendTo(list);
-}
-
-Macro.add("TO"+"DO", {
-  skipArgs: true,
-  handler: function() {
-    add_to_do(this.args.raw);
-  }
-});
-
-/*** Big Mood */
-
-const bigMood_to_do = new Set();
-const bigMoodDeclared = new Set();
-const bigMoodIgnore = new Set();
-const bigMoodVary = new Set();
-let bigMoodAlways = {};
-let bigMoodReq = {};
-
-$(document).on(":passagestart", () => {
-  bigMood_to_do.clear();
-  bigMoodDeclared.clear();
-  bigMoodIgnore.clear();
-  bigMoodVary.clear();
-  bigMoodAlways = {};
-  bigMoodReq = {};
-});
-
-const bigMoodRe =/^\s*[$]?(\w+)\s+(?:(ignore|TO[D]O|vary)|(always|assert)\s+(.*))\s*$/
-
+/** big-mood stub */
 Macro.add("big-mood", {
   skipArgs: true,
-  handler: function() {
-    if (!Config.debug) return;
-
-    const m = bigMoodRe.exec(this.args.raw);
-    if (m == null) throw new Error(`big-mood: bad args ${this.args.raw}`);
-    const vn = m[1];
-
-    const inclusion = withinIncludeOrIgnore(this);
-    if (!inclusion) bigMoodDeclared.add(vn);
-
-    switch (m[2]) {
-      case "ignore":
-        if (!inclusion) bigMoodIgnore.add(vn);
-        return;
-      case "TO"+"DO":
-        MT.has_to_do = true;
-        bigMood_to_do.add(vn);
-        return;
-      case "vary":
-        // no constraint on value, but shouldn't be ignored.
-        if (!inclusion) bigMoodVary.add(vn);
-        return;
-    }
-
-    if (m[2] != null || m[3] == null || m[4] == null) throw new Error("bug");
-
-    const actual = VT.untracedGet(vn);
-    const val = VT.ignore(() => Scripting.evalTwineScript(m[4]));
-    let ok = false;
-    switch (m[3]) {
-      case 'always':
-        bigMoodAlways[vn] = val;
-        ok = actual === val || (actual == null && val === false);
-        if (ok) bigMoodIgnore.add(vn);
-        break;
-      case 'assert':
-        ok = val;
-        break;
-      default:
-        throw new Error("bug");
-    }
-    if (!ok) {
-      EM.fail(`Expected big-mood ${vn} ${m[3]} ${m[4]}`, this);
-    }
-  }
-})
-
-function assertBigMood(vn, val, expr) {
-  const actual = VT.untracedGet(vn);
-  const ok = actual === val || (actual == null && val === false);
-  if (ok) {
-    bigMoodIgnore.add(vn);
-    return;
-  }
-  EM.fail(`Expected big-mood ${vn} to be ${expr}`);
-}
-
-function withinIncludeOrIgnore(context) {
-  for (; context != null; context = context.parent) {
-    if (context.displayName === "include") return true;
-    if (context.displayName === "var-trace-ignore") return true;
-  }
-  return false;
-}
+  handler: function() {},
+});
 
 /**
  * var-info - show vars and allow toggling flags.
- *
- * - "bigMoods" are vars that are always shown in a section.
- * - Other vars are only shown if they're read or written
- *   by the passage.
  */
 function varInfoSetup() {
   if (!Config.debug) return;
 
   let varInfoShow = State.metadata.get("varInfoShow");
-
-  const bigMoodVars = [
-  ];
 
   const str = val => val == null ? String(val) : JSON.stringify(val);
 
@@ -875,7 +755,6 @@ function varInfoSetup() {
     if (VT.ctx.wasSet.has(vname)) outer.addClass("var-info-was-written");
     if (VT.ctx.wasDeleted.has(vname)) outer.addClass("var-info-was-deleted");
     if (!VT.ctx.wasRead.has(vname) && !VT.ctx.wasSet.has(vname)) outer.addClass("var-info-was-ignored");
-    if (bigMoodReq[vname] != null && bigMoodReq[vname] === v[vname]) outer.addClass("var-info-req");
 
     const label = $("<span class=var-info-button-label>").appendTo(outer);
 
@@ -941,21 +820,6 @@ function varInfoSetup() {
   };
 
   $(document).on(":passagestart", () => {
-    const here = State.passage;
-    let anyMatched = false;
-    for (const [re, ...vars] of bigMoodVars) {
-      if (!re.test(here)) continue;
-      anyMatched = true;
-      for (const vname of vars) {
-        if (Array.isArray(vname) && vname[1] !== 'ignore') {
-          const x = `\`${vname[1]} in ${re}\``;
-          assertBigMood(vname[0], vname[1], x);
-        }
-      }
-    }
-    if (!anyMatched) {
-      EM.fail(`Passage should match some bigMoodVars rule`);
-    }
     VT.start();
   });
 
@@ -969,29 +833,8 @@ function varInfoSetup() {
     [...VT.ctx.wasDeleted].forEach(v => touched.add(v));
 
     const passageText = Story.get(State.passage).text;
-    if (!/<<include/.test(passageText)) {
-      // ideally the "always" check would be scoped to the passage thet declares it
-      [...VT.ctx.wasRead].filter(vn => vn in bigMoodAlways).forEach(vn => {
-        EM.fail(`Passage should not read ${vn} (always ${bigMoodAlways[vn]})`);
-      });
-    }
 
     const here = State.passage;
-    const bigMood = new Set();
-    for (const [re, ...vars] of bigMoodVars) {
-      if (!re.test(here)) continue;
-      for (const vname of vars) {
-        if (!Array.isArray(vname)) {
-          bigMood.add(vname);
-          touched.delete(vname);
-        }
-      }
-    }
-
-    for (const vn of bigMoodDeclared) {
-      bigMood.add(vn);
-      touched.delete(vn);
-    }
 
     const outer = $("<div class=var-info>").prependTo("#story");
     outer.toggleClass("var-info-hidden", !varInfoShow);
@@ -1005,24 +848,6 @@ function varInfoSetup() {
       .click(() => CV.render())
       .appendTo(outer);
 
-    if (bigMood.size) {
-      const el = $("<span class=var-info-big-mood>").appendTo(outer);
-      [...bigMood].sort().forEach(v => {
-        const but = varButton(v).appendTo(el);
-        if (bigMood_to_do.has(v)) {
-          MT.has_to_do = true;
-          but.addClass("var-info-to-do");
-        } else if (!VT.ctx.wasRead.has(v) && !bigMoodIgnore.has(v) && bigMoodReq[v] == null && bigMoodAlways[v] == null) {
-          MT.has_warning = true;
-          but.addClass("var-info-warning");
-        }
-        if (!bigMoodDeclared.has(v)) {
-          MT.has_undeclared = true;
-          but.addClass("var-info-undeclared");
-        }
-      });
-    }
-    $("<span class=var-info-separator>").appendTo(outer);
     if (touched.size) {
       const el = $("<span class=var-info-touched>").appendTo(outer);
       [...touched].sort().forEach(v => varButton(v).appendTo(el));
@@ -1044,7 +869,7 @@ function varInfoSetup() {
   });
 }
 
-varInfoSetup();</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="inclusion" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1475,325" size="100,100">&lt;&lt;nobr&gt;&gt;
+varInfoSetup();</script><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="has-hole" color="blue"></tw-tag><tw-tag name="inclusion" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1475,325" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -1733,11 +1558,6 @@ $(document).on(&quot;:passageend&quot;, () =&gt; {
   if (m == null) return;
   const tag = m[1];
   EM.assert(/[FDPS]/.test(tag), `Passage tag /${tag} should be /F /D /P or /S`);
-  if (/^[DF]$/.test(tag)) {
-    EM.assert(!MT.has_to_do, &quot;/F and /D passages should not have TO&quot;+&quot;DO&quot;);
-    EM.assert(!MT.has_warning, &quot;/F and /D passages should not have warnings&quot;);
-    EM.assert(!MT.has_undeclared, &quot;/F and /D passages should not have undeclared big-mood&quot;);
-  }
   if (tag !== &quot;F&quot;) {
     $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;draft-sign&quot;).addClass(`draft-${tag}`).appendTo(&quot;body&quot;);
   }
@@ -3307,24 +3127,11 @@ Nero.enumImplies = {
 Nero.checkConstraints = () =&gt; {
   const EM = window.ErrorMessage;
   const here = State.passage;
-
   if (!/^n/.test(here)) return;
-
-  let section = null;
-  Object.entries(Nero.sections).forEach(([s, re]) =&gt; {
-    if (re.test(State.passage)) {
-      EM.assert(section == null,
-        `[\[${here}]] should not match two sections: ${section}, ${s}`);
-      section = s;
-    }
-  });
-  EM.assert(section != null, `[\[${here}]] should match a section`);
 
   VarTrace.ignore(() =&gt; {
     const V = State.variables;
-
     V.n1_magicPhase || (V.n1_magicPhase = 0);
-
     Object.keys(Nero.flags).forEach(x =&gt; {
       if (!V[x]) return;
       Object.keys(Nero.flags[x].implies).forEach(y =&gt; {
