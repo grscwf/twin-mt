@@ -1866,6 +1866,14 @@ Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
   white-space: nowrap;
 }
 
+.var-info-notable {
+  font-weight: bold;
+}
+
+.var-info-ignore {
+  font-style: italic;
+}
+
 .var-info-to-do::after {
   content: &quot;\1f6a7&quot;; /* construction */
 }
@@ -1950,10 +1958,13 @@ span.var-info-warning::after {
 
 &lt;&lt;script&gt;&gt;
 const CV = window.ComputeVariants || (window.ComputeVariants = {});
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
 const ET = window.EnumType || (window.EnumType = {});
+const Nero = window.Nero || (window.Nero = {});
 const VI = window.VarInfo || (window.VarInfo = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
+const ignoreVars = new Set();
 let revisitTop = null;
 
 VI.revisitHere = fn =&gt; {
@@ -1988,92 +1999,105 @@ Macro.add(&quot;big-mood&quot;, {
   handler: function() {},
 });
 
+/** &lt;&lt;vi-ignore varname [reason]&gt;&gt; */
+Macro.add(&quot;vi-ignore&quot;, {
+  handler: function() {
+    ignoreVars.add(this.args[0]);
+  }
+});
+
+const str = val =&gt; val == null ? String(val) : JSON.stringify(val);
+
+function varButton(vname) {
+  const v = VT.untracedVariables();
+  const v0 = State.current.variables;
+
+  const outer = $(&quot;&lt;span class=var-info-button-outer&gt;&quot;);
+
+  if (VT.ctx.wasRead.has(vname)) outer.addClass(&quot;var-info-was-read&quot;);
+  if (VT.ctx.wasSet.has(vname)) outer.addClass(&quot;var-info-was-written&quot;);
+  if (VT.ctx.wasDeleted.has(vname)) outer.addClass(&quot;var-info-was-deleted&quot;);
+
+  const exp = Nero.getFlagExpectation &amp;&amp; Nero.getFlagExpectation(vname);
+  if (exp === &quot;notable&quot;) {
+    outer.addClass(&quot;var-info-notable&quot;);
+    if (ignoreVars.has(vname)) {
+      outer.addClass(&quot;var-info-ignored&quot;);
+    } else if (!VT.ctx.wasRead.has(vname)) {
+      outer.addClass(&quot;var-info-to-do&quot;);
+    }
+  }
+
+  const label = $(&quot;&lt;span class=var-info-button-label&gt;&quot;).appendTo(outer);
+
+  const jval = str(v[vname]);
+  if (VT.ctx.wasSet.has(vname)) {
+    const jval0 = str(v0[vname]);
+    outer.attr(&quot;title&quot;, `${vname}=${jval0} -&gt;\n${vname}=${jval}`);
+  } else {
+    outer.attr(&quot;title&quot;, `${vname}=${jval}`);
+  }
+
+  // assume undeclared is boolean
+  const vtype = ET.vars[vname] || (vname in v ? typeof v[vname] : &quot;boolean&quot;);
+
+  const enumList = ET.enums[vtype];
+  if (enumList != null) {
+    outer.addClass(&quot;var-info-enum&quot;);
+    const sym = enumList[v[vname] || 0];
+    const sameType = Object.values(ET.vars).filter(t =&gt; t === vtype).length;
+    label.text(sym != null &amp;&amp; sameType &lt; 2 ? sym : vname + &quot;=&quot; + jval);
+    const n = enumList.length;
+    if (VT.ctx.wasRead.has(vname)) {
+      const val0 = v0[vname] || 0;
+      if (0 &lt; val0) {
+        $(&quot;&lt;span&gt;&quot;)
+          .addClass(&quot;var-info-enum-left var-info-can-change&quot;)
+          .appendTo(outer)
+          .on(&quot;click&quot;, () =&gt; {
+            VI.revisitHere(() =&gt; State.variables[vname] = val0 - 1);
+          });
+      }
+      if (val0 &lt; n - 1) {
+        $(&quot;&lt;span&gt;&quot;)
+          .addClass(&quot;var-info-enum-right var-info-can-change&quot;)
+          .appendTo(outer)
+          .on(&quot;click&quot;, () =&gt; {
+            VI.revisitHere(() =&gt; State.variables[vname] = val0 + 1);
+          });
+      }
+    }
+    return outer;
+  }
+
+  if (vtype === &quot;boolean&quot;) {
+    outer.addClass(&quot;var-info-boolean-&quot; + (v[vname] ? &quot;true&quot; : &quot;false&quot;));
+    label.text(vname);
+    if (VT.ctx.wasRead.has(vname)) {
+      outer.addClass(&quot;var-info-can-change&quot;);
+      outer.on(&quot;click&quot;, () =&gt; {
+        let val = !v0[vname];
+        VI.revisitHere(() =&gt; {
+          State.variables[vname] = val;
+        });
+      });
+    }
+    return outer;
+  }
+
+  $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
+  label.append(&quot;=&quot;);
+  $(&quot;&lt;span class=var-info-value&gt;&quot;).text(jval).appendTo(label);
+  outer.addClass(&quot;var-info-misc&quot;);
+  return outer;
+}
 
 /** var-info - show vars and allow toggling flags. */
 function varInfoSetup() {
   if (!Config.debug) return;
 
-  let varInfoShow = State.metadata.get(&quot;varInfoShow&quot;);
-
-  const str = val =&gt; val == null ? String(val) : JSON.stringify(val);
-
-  const varButton = vname =&gt; {
-    const v = VT.untracedVariables();
-    const v0 = State.current.variables;
-
-    const outer = $(&quot;&lt;span class=var-info-button-outer&gt;&quot;);
-
-    if (VT.ctx.wasRead.has(vname)) outer.addClass(&quot;var-info-was-read&quot;);
-    if (VT.ctx.wasSet.has(vname)) outer.addClass(&quot;var-info-was-written&quot;);
-    if (VT.ctx.wasDeleted.has(vname)) outer.addClass(&quot;var-info-was-deleted&quot;);
-
-    const label = $(&quot;&lt;span class=var-info-button-label&gt;&quot;).appendTo(outer);
-
-    const jval = str(v[vname]);
-    if (VT.ctx.wasSet.has(vname)) {
-      const jval0 = str(v0[vname]);
-      outer.attr(&quot;title&quot;, `${vname}=${jval0} -&gt;\n${vname}=${jval}`);
-    } else {
-      outer.attr(&quot;title&quot;, `${vname}=${jval}`);
-    }
-
-    // assume undeclared is boolean
-    const vtype = ET.vars[vname] || (vname in v ? typeof v[vname] : &quot;boolean&quot;);
-
-    const enumList = ET.enums[vtype];
-    if (enumList != null) {
-      outer.addClass(&quot;var-info-enum&quot;);
-      const sym = enumList[v[vname] || 0];
-      const sameType = Object.values(ET.vars).filter(t =&gt; t === vtype).length;
-      label.text(sym != null &amp;&amp; sameType &lt; 2 ? sym : vname + &quot;=&quot; + jval);
-      const n = enumList.length;
-      if (VT.ctx.wasRead.has(vname)) {
-        const val0 = v0[vname] || 0;
-        if (0 &lt; val0) {
-          $(&quot;&lt;span&gt;&quot;)
-            .addClass(&quot;var-info-enum-left var-info-can-change&quot;)
-            .appendTo(outer)
-            .on(&quot;click&quot;, () =&gt; {
-              VI.revisitHere(() =&gt; State.variables[vname] = val0 - 1);
-            });
-        }
-        if (val0 &lt; n - 1) {
-          $(&quot;&lt;span&gt;&quot;)
-            .addClass(&quot;var-info-enum-right var-info-can-change&quot;)
-            .appendTo(outer)
-            .on(&quot;click&quot;, () =&gt; {
-              VI.revisitHere(() =&gt; State.variables[vname] = val0 + 1);
-            });
-        }
-      }
-      return outer;
-    }
-
-    if (vtype === &quot;boolean&quot;) {
-      outer.addClass(&quot;var-info-boolean-&quot; + (v[vname] ? &quot;true&quot; : &quot;false&quot;));
-      label.text(vname);
-      if (VT.ctx.wasRead.has(vname)) {
-        outer.addClass(&quot;var-info-can-change&quot;);
-        outer.on(&quot;click&quot;, () =&gt; {
-          let val = !v0[vname];
-          VI.revisitHere(() =&gt; {
-            State.variables[vname] = val;
-            // TODO use constraints
-          });
-        });
-      }
-      return outer;
-    }
-
-
-    $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
-    label.append(&quot;=&quot;);
-    $(&quot;&lt;span class=var-info-value&gt;&quot;).text(jval).appendTo(label);
-    outer.addClass(&quot;var-info-misc&quot;);
-    return outer;
-  };
-
   $(document).on(&quot;:passagestart&quot;, () =&gt; {
+    ignoreVars.clear();
     VT.start();
   });
 
@@ -2081,37 +2105,44 @@ function varInfoSetup() {
     $(&quot;.var-info&quot;).remove();
     VT.stop();
 
+    const outer = $(&quot;&lt;div class=var-info&gt;&quot;).prependTo(&quot;#story&quot;);
+
+    let show = State.metadata.get(&quot;varInfoShow&quot;);
+    outer.toggleClass(&quot;var-info-hidden&quot;, !show);
+
+    $(&quot;&lt;label&gt;var-info&lt;/label&gt;&quot;)
+      .appendTo(outer)
+      .click(() =&gt; {
+        show = !show;
+        State.metadata.set(&quot;varInfoShow&quot;, show);
+        outer.toggleClass(&quot;var-info-hidden&quot;, !show);
+      });
+
+    $(&quot;&lt;span class=var-info-expand&gt;[compute variants]&lt;/span&gt;&quot;)
+      .appendTo(outer)
+      .click(() =&gt; CV.render());
+
     const touched = new Set();
     VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
     VT.ctx.wasSet.forEach(v =&gt; touched.add(v));
     VT.ctx.wasDeleted.forEach(v =&gt; touched.add(v));
 
-    const here = State.passage;
-    const passageText = Story.get(here).text;
-
-    const outer = $(&quot;&lt;div class=var-info&gt;&quot;).prependTo(&quot;#story&quot;);
-    outer.toggleClass(&quot;var-info-hidden&quot;, !varInfoShow);
-
-    const lab = $(&quot;&lt;label&gt;&quot;).text(&quot;var-info&quot;).appendTo(outer);
-    lab.click(() =&gt; {
-      varInfoShow = !varInfoShow;
-      State.metadata.set(&quot;varInfoShow&quot;, varInfoShow);
-      outer.toggleClass(&quot;var-info-hidden&quot;, !varInfoShow);
-    });
-
-    $(&quot;&lt;span class=var-info-expand&gt;[compute variants]&lt;/span&gt;&quot;)
-      .click(() =&gt; CV.render())
-      .appendTo(outer);
+    if (Nero.getNotable) {
+      Nero.getNotable().forEach(f =&gt;touched.add(f));
+    }
 
     if (touched.size) {
       $(&quot;&lt;span class=var-info-separator&gt;&quot;).appendTo(outer);
       const el = $(&quot;&lt;span class=var-info-touched&gt;&quot;).appendTo(outer);
       [...touched].sort().forEach(v =&gt; varButton(v).appendTo(el));
     }
+    
     $(&quot;&lt;span class=var-info-separator&gt;&quot;).appendTo(outer);
-    $(&quot;&lt;span class=var-info-passage&gt;&quot;).text(here).appendTo(outer);
+    $(&quot;&lt;span class=var-info-passage&gt;&quot;).text(State.passage).appendTo(outer);
+
     if (outer.find(&quot;.var-info-to-do, .var-info-warning&quot;).length &gt; 0) {
       outer.addClass(&quot;var-info-to-do&quot;);
+      EM.assert(!/\/[DF]/.test(State.passage), `/D and /F passages should not have TO\DO vars`);
     }
   });
 }
@@ -2550,7 +2581,7 @@ function checkSections() {
     const matches = Object.entries(Nero.sections)
       .flatMap(([s, re]) =&gt; re.test(title) ? [s] : []);
     if (matches.length === 0) {
-      console.error(`[\[${title}]] does not match any sections`);
+      console.error(`[\[${title}]] does not match any section`);
     } else if (matches.length &gt; 1) {
       console.error(`[\[${title}]] should not match multiple sections: ${matches}`);
     }
@@ -2558,6 +2589,15 @@ function checkSections() {
 }
 
 checkSections();
+
+Nero.getSection = (here) =&gt; {
+  here || (here = State.passage);
+  for (const [s, re] of Object.entries(Nero.sections)) {
+    if (re.test(here)) return s;
+  }
+  console.error(`[\[${here}]] does not match any section`);
+  return &quot;unknown&quot;;
+};
 
 // - Flags are booleans where null or undefined is equivalent to false.
 // - &quot;implies&quot; are constraints on other vars when the flag is true.
@@ -2976,6 +3016,18 @@ function checkFlags() {
 }
 
 checkFlags();
+
+Nero.getFlagExpectation = (vname) =&gt; {
+  const f = Nero.flags[vname];
+  if (f == null || f.sections == null) return null;
+  const sect = Nero.getSection();
+  return f.sections[sect];
+};
+
+Nero.getNotable = (here) =&gt; {
+  const s = Nero.getSection(here);
+  return Object.keys(Nero.flags).filter(f =&gt; Nero.flags[f].sections[s] === &quot;notable&quot;);
+};
 
 Nero.enumImplies = {
   n1_magicPhase: {
@@ -15429,10 +15481,7 @@ knock over candle, papers catch fire, uncomfortably close to fur.
     &lt;li&gt;[[Try to put out the fire.|n2b/D Stop Fire]]&lt;/li&gt;
     &lt;li&gt;[[Grab the knife|n2b/D Use Knife]]&lt;/li&gt;
 &lt;/ul&gt;</tw-passagedata><tw-passagedata pid="468" name="n2b/D Start 2" tags="" position="4450,5325" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;big-mood n1_abused ignore&gt;&gt;
-&lt;&lt;big-mood n1_candleHorny always false&gt;&gt;
-&lt;&lt;big-mood n1_mageSight vary&gt;&gt;
-&lt;&lt;big-mood n1_subby ignore&gt;&gt;
+&lt;&lt;vi-ignore n1_candleHorny&gt;&gt;
 
 &lt;&lt;set $n1_candleLit = true&gt;&gt;
 A flicker in the corner of Nero&#39;s eye catches his attention.
