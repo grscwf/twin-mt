@@ -17,10 +17,7 @@ function main(fname) {
   const sections = {
     story0: [],
     story1: [],
-    init0: [],
-    init1: [],
-    initDrekkar: [],
-    initNero: [],
+    init: [],
     start: [],
     other: [],
     nero: [],
@@ -30,14 +27,8 @@ function main(fname) {
       sections.story1.push(p);
     } else if (/^:: Story/.test(p)) {
       sections.story0.push(p);
-    } else if (/^:: Init 0/.test(p)) {
-      sections.init0.push(p);
-    } else if (/^:: Init Drekkar/.test(p)) {
-      sections.initDrekkar.push(p);
-    } else if (/^:: Init Nero/.test(p)) {
-      sections.initNero.push(p);
     } else if (/^:: Init /.test(p)) {
-      sections.init1.push(p);
+      sections.init.push(p);
     } else if (/^:: n[0-9]/.test(p)) {
       sections.nero.push(p);
     } else if (/^:: (Title Screen|Bound |Credits|Choose Character|Content Warning|Passage Notes|Archives)/.test(p)) {
@@ -47,10 +38,7 @@ function main(fname) {
     }
   }
 
-  sections.init0.sort();
-  sections.init1.sort();
-  sections.initDrekkar.sort();
-  sections.initNero.sort();
+  sections.init.sort();
 
   // sort nero
   const keyed = sections.nero.map(p => {
