@@ -1883,6 +1883,7 @@ Template.add("P", "<br><br>");
 
 .var-info-button-outer {
   min-width: 4em;
+  position: relative;
 }
 
 .var-info-passage {
@@ -1897,7 +1898,7 @@ Template.add("P", "<br><br>");
   font-style: italic;
 }
 .var-info-always {
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .var-info-to-do::after {
@@ -1916,11 +1917,9 @@ Template.add("P", "<br><br>");
   padding-left: 1px;
 }
 
-/* warning is only on vars that aren't read */
-span.var-info-warning::after {
-  content: "\26a0";
-  padding-left: 2px;
-  color: #fd8;
+.var-info-was-deleted:not(.var-info-was-written) {
+  opacity: 0.5;
+  text-decoration: line-through;
 }
 
 .var-info-can-change {
@@ -1941,13 +1940,13 @@ span.var-info-warning::after {
 
 .var-info-enum {
   color: #88c;
-  position: relative;
 }
+.var-info-number .var-info-button-label,
 .var-info-enum .var-info-button-label {
   pointer-events: none;
 }
-.var-info-enum-left,
-.var-info-enum-right {
+.var-info-button-left,
+.var-info-button-right {
   border: 1px solid #666;
   border-radius: 4px;
   height: 100%;
@@ -1955,15 +1954,15 @@ span.var-info-warning::after {
   top: 0;
   width: 50%;
 }
-.var-info-enum-left:hover,
-.var-info-enum-right:hover {
+.var-info-button-left:hover,
+.var-info-button-right:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
-.var-info-enum-left {
+.var-info-button-left {
   border-right: 0;
   left: 0;
 }
-.var-info-enum-right {
+.var-info-button-right {
   border-left: 0;
   right: 0;
 }
@@ -2089,7 +2088,7 @@ function varButton(vname) {
       const val0 = v0[vname] || 0;
       if (0 < val0) {
         $("<span>")
-          .addClass("var-info-enum-left var-info-can-change")
+          .addClass("var-info-button-left var-info-can-change")
           .appendTo(outer)
           .on("click", () => {
             VI.revisitHere(() => State.variables[vname] = val0 - 1);
@@ -2097,12 +2096,36 @@ function varButton(vname) {
       }
       if (val0 < n - 1) {
         $("<span>")
-          .addClass("var-info-enum-right var-info-can-change")
+          .addClass("var-info-button-right var-info-can-change")
           .appendTo(outer)
           .on("click", () => {
             VI.revisitHere(() => State.variables[vname] = val0 + 1);
           });
       }
+    }
+    return outer;
+  }
+  
+  // This doesn't work well with patience, need to fix something
+  if (false && vtype === "number") {
+    outer.addClass("var-info-number");
+    $("<span class=var-info-vname>").text(vname).appendTo(label);
+    label.append("=");
+    $("<span class=var-info-value>").text(jval).appendTo(label);
+    if (VT.ctx.wasRead.has(vname)) {
+      const val0 = v0[vname] || 0;
+      $("<span>")
+        .addClass("var-info-button-left var-info-can-change")
+        .appendTo(outer)
+        .on("click", () => {
+          VI.revisitHere(() => State.variables[vname] = val0 - 1);
+        });
+      $("<span>")
+        .addClass("var-info-button-right var-info-can-change")
+        .appendTo(outer)
+        .on("click", () => {
+          VI.revisitHere(() => State.variables[vname] = val0 + 1);
+        });
     }
     return outer;
   }
@@ -2134,6 +2157,7 @@ function varInfoSetup() {
   if (!Config.debug) return;
 
   $(document).on(":passagestart", () => {
+    alwaysVars.clear();
     ignoreVars.clear();
     VT.start();
   });
@@ -2700,7 +2724,7 @@ Nero.flags = {
       n2x_lookFree: "",
       n3a_start: "",
       n8_archive: "",
-      n9_ending: "notable",
+      n9_ending: "",
       other: "",
     },
   },
@@ -2831,7 +2855,7 @@ Nero.flags = {
       n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
-      n9_ending: "notable",
+      n9_ending: "",
       other: "",
     },
   },
@@ -2889,7 +2913,7 @@ Nero.flags = {
       n2x_lookFree: "",
       n3a_start: "",
       n8_archive: "",
-      n9_ending: "notable",
+      n9_ending: "",
       other: "",
     },
   },
@@ -2924,7 +2948,7 @@ Nero.flags = {
       n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
-      n9_ending: "notable",
+      n9_ending: "",
       other: "",
     },
   },
@@ -3016,7 +3040,7 @@ Nero.flags = {
       n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
-      n9_ending: "notable",
+      n9_ending: "",
       other: "",
     },
   },
@@ -3052,7 +3076,7 @@ Nero.flags = {
       n2x_lookFree: "notable",
       n3a_start: "notable",
       n8_archive: "",
-      n9_ending: "notable",
+      n9_ending: "",
       other: "",
     },
   },
@@ -3186,8 +3210,7 @@ Macro.add("n1-patience", {
     const ptitle = State.peek(-1).title;
     const ppassage = Story.get(ptitle);
     const ptags = ppassage != null ? ppassage.tags : [];
-    // moved here is not redisplay or return
-    const movedHere = !T.revisiting && ptitle !== here && !ptags.includes("noreturn");
+    const movedHere = !ptags.includes("noreturn");
     if (movedHere || V.n1t_patiencePassage == null) {
       // If we're at a different action node, reset patience and aggro
       if (V.n1t_patiencePassage !== here) {
@@ -10639,6 +10662,9 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 
 :: n1cn/F Ivex Repeat (6,3) {"position":"4175,2050","size":"200,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_abused n1_naked>>
+
 <<n1-patience 6 3
     'Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"'
     'Ivex (the Magnificent) twitches an ear in annoyance. "Again I ask. Who sent you?"'
@@ -10818,14 +10844,12 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 
 :: n1cn/F Resist {"position":"3950,2200","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked vary>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_abused n1_naked>>
 
 <<set $n1t_didSomeAction = true>>
 
 <<if $n1_abused>>
-    <<big-mood n1_naked ignore>>
     Nero lets out a soft growl. His brutally abused balls argue against
     antagonizing his captor, but cooperation, or the pretense of
     cooperation, seems unlikely to improve his situation.
@@ -11570,11 +11594,6 @@ subby and naked. ivex is near, creeps.
 
 :: n1cx/F Start Candle {"position":"3825,3825","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_naked vary>>
-<<big-mood n1_subby vary>>
-
 <<set $n1_candleLit = true>>
 <<set $n1_ivexReceptive = false>>
 
@@ -11677,10 +11696,8 @@ should be able to figure it out soon enough."
 
 :: n1d/D Comfortable? (2,2) {"position":"4350,4150","size":"200,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked vary>>
-<<big-mood n1_subby vary>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<set $n1_ivexReceptive = false>>
 
@@ -11721,10 +11738,8 @@ should be able to figure it out soon enough."
 
 :: n1d/D Get Creepy {"position":"4475,4425","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby vary>>
+<<vi-always n1_naked true>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<barbs-announce maybe>>
 
@@ -11749,10 +11764,9 @@ Nero is not completely averse to dalliances with shy, gentle men when there are 
 
 :: n1d/D Strip Resist {"position":"4525,4275","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked always false>>
-<<big-mood n1_subby always false>>
+<<vi-always n1_naked false>>
+<<vi-always n1_subby false>>
+<<vi-ignore n1_mageSight>>
 
 Nero sneers, almost a snarl.
 This concern expressed by the panther for the wolf's comfort
@@ -11785,10 +11799,9 @@ The panther mage raises an arm, and snaps his fingers.
 
 :: n1d/F Start Candle 2 {"position":"3850,3950","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_naked ignore>>
-<<big-mood n1_subby ignore>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_naked>>
+<<vi-ignore n1_subby>>
 
 <<if $n1_mageSight>>
     The candle's orange flame emits small sparks of exotic energy that diffuse into
@@ -11807,10 +11820,8 @@ Nero considers holding his breath to avoid whatever is in the candle's fumes, bu
 
 :: n1d/D Naked Resist {"position":"4300,4275","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby vary>>
+<<vi-always n1_naked true>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<if $n1_subby>>
     XXX subby resist. maybe, regret earlier pretense of submission?
@@ -11859,12 +11870,10 @@ fur of the wolf's bare chest.
 [[Continue|n1d/D Get Creepy]]
 
 
-:: n1d/D Candle Horny [big-mood] {"position":"4725,4475","size":"100,100"}
+:: n1d/D Candle Horny [big-mood] {"position":"4725,4450","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby vary>>
+<<vi-always n1_naked true>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<set $n1_candleHorny = true>>
 
@@ -11895,10 +11904,8 @@ Ivex takes hold of Nero's exposed balls. Not squeezing, not yet. Just cupping th
 
 :: n1d/D Get Creepy 2 {"position":"4575,4425","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby vary>>
+<<vi-always n1_naked true>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<if $n1_subby>>
     subby mood
@@ -11923,10 +11930,8 @@ Ivex lifts his paw off the wolf's crotch, but leaves it poised right above it, c
 
 :: n1d/D Naked Submit {"position":"4400,4275","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby vary>>
+<<vi-always n1_naked true>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<if $n1_subby>>
     XXX subby submit
@@ -11980,10 +11985,9 @@ and roughly strokes the fur on the wolf's naked chest.
 
 :: n1d/D Strip Submit {"position":"4625,4275","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked always false>>
-<<big-mood n1_subby always false>>
+<<vi-always n1_naked false>>
+<<vi-always n1_subby false>>
+<<vi-ignore n1_mageSight>>
 
 <<if $n1_abused>>
     Nero nods hesitantly.
@@ -12028,9 +12032,7 @@ The panther mage raises an arm, and snaps his fingers.
 
 :: n1e/D Heavy Squeeze (1,1) {"position":"4900,4975","size":"200,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby ignore>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<n1-patience 1 1
     "Ivex pulls at the wolf's balls and squeezes harder. \"Tell me...\""
@@ -12057,9 +12059,7 @@ The panther mage raises an arm, and snaps his fingers.
 
 :: n1e/D Light Squeeze (1,1) {"position":"4725,4600","size":"200,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby vary>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<n1-patience 1 1
     "Ivex closes the paw holding Nero's balls and gently squeezes. \"Tell me, who sent you.\""
@@ -12087,9 +12087,7 @@ The panther mage raises an arm, and snaps his fingers.
 
 :: n1e/D Alarm {"position":"4900,5100","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby vary>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 Ivex laughs at the pathetic sounds coming from the helpless wolf.
 
@@ -12124,9 +12122,8 @@ draws his arm back slowly, preparing to strike...
 
 :: n1e/D Ball Submit {"position":"4825,4725","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby vary>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<if $n1_subby>>
     subby variant
@@ -12158,9 +12155,8 @@ Ivex laughs. "You <em>can't?</em> Or you <em>won't?</em> Do you even know the di
 
 :: n1e/D Ball Resist {"position":"4725,4725","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby vary>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<if $n1_subby>>
     subby variant
@@ -12192,12 +12188,11 @@ Ivex anticipates the wolf's snapping jaws and smoothly dips his head below where
 
 :: n1e/D Pull {"position":"4750,4850","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby vary>>
-<</nobr>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 The panther forms a ring with his fingers around the wolf's scrotum, above the wolf's balls, and starts pulling them out, stretching the wolf's sack tight against his nuts.
+<</nobr>>
 
 Nero looks down and sees his stiff wolf cock, above his furry balls, grasped in the panther's paw, like fruit being pulled off a branch.
 
@@ -12230,9 +12225,8 @@ Ivex curls his other paw into a fist, and pulls back his arm...
 
 :: n1e/D Punch {"position":"4850,4850","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby vary>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 The punch landing on Nero's balls is another fire radiating through his body, intertwining with the candle's smoke that's filling him up. The intense pain does not dampen his erection. If anything, his cock becomes harder and straighter and oozes copious amounts of pre-cum that gleams like honey in the light.
 
@@ -12262,9 +12256,7 @@ Ivex lowers his head toward the wolf's crotch. The panther moves his muzzle, so 
 
 :: n1e/D Alarm 2 [section-end] {"position":"4375,5125","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby vary>>
+<<vi-ignore-if n1_subby n1_abused>>
 
 <<state-save n0_n2start n1_>>
 
@@ -13073,49 +13065,44 @@ $n1t_afterAction
 
 :: n1s/D Cast Escape {"position":"5900,3250","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive false>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_beforeCast`>>
+<<vi-always n1_naked true>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone true>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always true>>
-<<big-mood n2_tooClever always false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_subby>>
 
-<<em-assert ($n1_magicPhase || 0) === 0>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
-escape fizzles.
-
-info about [[anti-magic|n1s/F Anti-magic]]
-<<set $n1t_returnAntiMagic = State.passage>>
-
-$n1t_afterAction
+start cast escape. fizzles.
 <</nobr>>
+
+[[Continue|n1s/D After Escape]]
 
 
 :: n1s/D Cast Sight {"position":"5850,4025","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny vary>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive ignore>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_triedMagic`>>
+<<vi-always n1_naked true>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<!-- easy escape requires mageSight, hard escape requires wantPassword -->
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone vary>>
-<<big-mood n2_tooClever always false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_ivexReceptive>>
+<<vi-ignore n1_subby>>
 
-<<em-assert !$n2_mirrorBroken>>
-<<em-assert $n1_magicPhase === MP_triedMagic>>
 <<set $n1_magicPhase = MP_mageSight>>
 <<set $n1_mageSight = true>>
 
@@ -13125,13 +13112,16 @@ reveals intricate energy network, highly firewalled.
 maybe more on anti-magic.
 
 <<if $n1_candleHorny>>
+    ?P
     horny description
 <</if>>
 
-<<if $n2_ivexGone>>
+<<if !$n2_ivexGone>>
+    ?P
     see ivex with magesight
 <</if>>
 
+?P
 $n1t_afterAction
 <</nobr>>
 
@@ -13177,8 +13167,7 @@ $n1t_afterAction
 :: n1s/D Tried Magic [inclusion] {"position":"5850,3900","size":"100,100"}
 <<nobr>>
 <!-- easy escape requires mageSight, hard escape requires wantPassword -->
-<<big-mood n2_free always false>>
-<<big-mood n2_mirrorBroken always false>>
+<<vi-always n2_free false>>
 
 <<if $n1_candleHorny>>
     Horny, must see magic bonds and escape them.
@@ -13294,6 +13283,7 @@ $n1t_afterAction
 <<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
 <<vi-always n2_tooClever false>>
 
 <<vi-ignore n1_abused>>
@@ -13317,6 +13307,7 @@ Nero wants to impress Ivex, casts [[slippery spell|n1s/D Slippery]] to escape bo
 <<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
 <<vi-always n2_tooClever false>>
 
 <<vi-ignore n1_abused>>
@@ -13980,6 +13971,7 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
 <<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
 <<vi-always n2_tooClever false>>
 
 <<vi-ignore n1_abused>>
@@ -14018,6 +14010,7 @@ spell fizzes. Ivex recognizes it.
 <<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
 <<vi-always n2_tooClever false>>
 
 <<vi-ignore n1_abused>>
@@ -15877,21 +15870,19 @@ $n1t_afterAction
 
 :: n1x/D Scan {"position":"6000,4150","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny vary>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive ignore>>
-<<big-mood n1_mageSight always true>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_mageSight true>>
+<<vi-always n1_magicPhase `MP_mageSight`>>
+<<vi-always n1_naked true>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny ignore>>
-<<big-mood n2_free ignore>>
-<<big-mood n2_ivexGone ignore>>
-<<big-mood n2_tooClever always false>>
-
-<<em-assert !$n2_mirrorBroken>>
-<<em-assert $n1_magicPhase === MP_mageSight>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_ivexReceptive>>
+<<vi-ignore n1_subby>>
+<<vi-ignore n2_extraHorny>>
+<<vi-ignore n2_free>>
+<<vi-ignore n2_ivexGone>>
 
 <<if $n1_candleHorny>>
     (in a horny way)
@@ -15921,7 +15912,7 @@ $n1t_afterAction
 
 :: n1x/F Look Normal [inclusion] {"position":"6050,4825","size":"100,100"}
 <<nobr>>
-<<big-mood n1_candleHorny always false>>
+<<vi-always n1_candleHorny false>>
 
 Nero
 <<= either(
@@ -17072,11 +17063,6 @@ XXX want to reach it to cut free, too bad you can't
 <<set $n1_naked = true>> <!-- in case state-load fails -->
 <<state-load n0_n2start>>
 
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny ignore>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby ignore>>
-
 <<set $n1_candleLit = false>>
 <<set $n1_candleHorny = false>>
 <<set $n2_candleKnown = true>>
@@ -17106,10 +17092,8 @@ Well, that's a question to be deferred to some other time. What's important now 
 
 :: n2b/D Alone (6,3) {"position":"5125,5425","size":"200,200"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby ignore>>
-<<big-mood n1_candleHorny ignore>>
+<<vi-ignore n1_candleHorny>>
+<<vi-ignore n1_mageSight>>
 
 <<n1-patience 6 3 "">>
 
@@ -17237,10 +17221,8 @@ A flicker in the corner of Nero's eye catches his attention.
 
 :: n2b/D Start 3 {"position":"4550,5325","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby ignore>>
+<<vi-ignore n1_candleHorny>>
+<<vi-ignore n1_mageSight>>
 
 Candle's Influence:
 <<arousalbar 26 100 0>>
@@ -17299,11 +17281,6 @@ Candle's Influence:
 
 :: n2b/D Struggle {"position":"5175,5700","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny ignore>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby ignore>>
-
 <<if !$n2_candleMax && !$n1_candleHorny>>
     <<include [[n2b/D Struggle Non-Horny]]>>
 <<elseif !$n2_candleMax>>
@@ -17318,11 +17295,6 @@ Candle's Influence:
 
 :: n2b/D More Magic [inclusion] {"position":"4900,5475","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny vary>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby ignore>>
-
 <<if $n2_candleMax>>
 
     desperation magic spell, super horny
@@ -17399,10 +17371,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 
 :: n2b/D Desperate Magic {"position":"4725,5600","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always true>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny true>>
 
 <<if $n1_mageSight>>
     desperation magic fails, with magesight
@@ -17441,10 +17410,8 @@ $n1t_afterAction
 
 :: n2b/D Struggle Non-Horny [inclusion] {"position":"5025,5850","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny false>>
+<<vi-ignore n1_mageSight>>
 
 <!-- can be here 2 times (patience actions - 1) -->
 
@@ -17460,10 +17427,8 @@ $n1t_afterAction
 
 :: n2b/D Struggle Horny [inclusion] {"position":"5125,5850","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always true>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny true>>
+<<vi-ignore n1_mageSight>>
 
 <!-- can be here 3 times (patience actions) -->
 
@@ -17478,10 +17443,7 @@ $n1t_afterAction
 
 :: n2b/D Struggle Fail [inclusion] {"position":"5000,5725","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always true>>
-<<big-mood n1_mageSight vary>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny true>>
 
 horny desperation strength, but final struggle fails.
 
@@ -17499,10 +17461,8 @@ horny desperation strength, but final struggle fails.
 
 :: n2b/D Struggle Succeed [inclusion] {"position":"5225,5850","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always true>>
-<<big-mood n1_mageSight always true>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny true>>
+<<vi-always n1_mageSight true>>
 
 struggle succeeds. grav gems implode.
 
@@ -18118,11 +18078,7 @@ lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 
 
 :: n9a/D Tamed [end] {"position":"4150,6125","size":"100,100"}
-<<nobr>>
-<<big-mood n1_barbs vary>>
-
 <meta-ending-bad>Bad Ending: Tamed</meta-ending-bad>
-<</nobr>>
 
 candle maxed, desperation action failed. defeated by wrong choices.
 Nero stuck in mindless lust until Ivex returns.
@@ -18148,8 +18104,6 @@ inverts cross and presents cock for sucking
 
 :: n9a/D Tamed Mild [end] {"position":"3450,6100","size":"100,100"}
 <<nobr>>
-<<big-mood n1_barbs vary>>
-
 nero thinks, lemme satisfy him,
 and then there will be another opportunity to escape.
 suppresses distaste.
@@ -18184,8 +18138,6 @@ sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 
 
 :: n9a/D Tamed Harsh [end] {"position":"3450,6200","size":"100,100"}
 <<nobr>>
-<<big-mood n1_barbs vary>>
-
 no way is nero sucking ivex off. he's escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
 
 ?P
@@ -18406,5 +18358,30 @@ glitch - blank
 
 :: n9x/S ascendant [end] {"position":"4625,8100","size":"100,100"}
 this is all endings involving the lion
+
+
+:: n1s/D After Escape {"position":"5850,3125","size":"100,100"}
+<<nobr>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive false>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_triedMagic`>>
+<<vi-always n1_naked true>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone true>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
+
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_subby>>
+
+info about [[anti-magic|n1s/F Anti-magic]]
+<<set $n1t_returnAntiMagic = State.passage>>
+
+?P
+$n1t_afterAction
+<</nobr>>
 
 
