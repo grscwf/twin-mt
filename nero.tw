@@ -486,9 +486,11 @@ const myBrand = Symbol("VarTraceBrand");
 
 function newContext() {
   return {
+    withinInclude: false,
+    wasDeleted: new Set(),
     wasRead: new Set(),
     wasSet: new Set(),
-    wasDeleted: new Set(),
+    wasTopRead: new Set(),
   };
 }
 
@@ -497,6 +499,20 @@ Macro.add("var-trace-ignore", {
   handler: function() {
     const body = this.payload[0].contents;
     VT.ignore(() => $(this.output).wiki(body));
+  }
+});
+
+const origInclude = Macro.get("include");
+Macro.delete("include");
+Macro.add("include", {
+  handler: function() {
+    const save = VT.ctx.withinInclude;
+    VT.ctx.withinInclude = true;
+    try {
+      origInclude.handler.call(this);
+    } finally {
+      VT.ctx.withinInclude = save;
+    }
   }
 });
 
@@ -516,7 +532,10 @@ VT.start = () => {
     },
     get(o, prop) {
       if (prop === "_varTrace") return myBrand;
-      if (typeof prop === "string") VT.ctx.wasRead.add(prop);
+      if (typeof prop === "string") {
+        VT.ctx.wasRead.add(prop);
+        if (!VT.ctx.withinInclude) VT.ctx.wasTopRead.add(prop);
+      }
       return Reflect.get(...arguments);
     },
     set(o, prop) {
@@ -1248,11 +1267,6 @@ EM.note = (str) => {
   note.find(".EM-close").click(() => note.remove());
   return note;
 };
-Macro.add("em-note", {
-  handler: function() {
-    EM.note(this.args.join(" "), this);
-  }
-});
 
 /** Add str as a new error-message assertion failure. */
 EM.fail = (str, context) => {
@@ -2017,16 +2031,25 @@ $(document).on(":passageend", () => {
 /** <<vi-always varname value [reason]>> */
 Macro.add("vi-always", {
   handler: function() {
-    const [vname, expected] = this.args;
-    alwaysVars.set(vname, expected);
+    const [vname, exp] = this.args;
+    const sexp = Nero.getFlagExpectation(vname);
+    if (sexp !== "" && sexp !== "notable") {
+      EM.fail(`vi-always ${vname} is redundant`);
+    }
+    alwaysVars.set(vname, exp);
     const actual = VT.untracedGet(vname) ?? false;
-    EM.assert(expected === actual, `${vname} should be ${expected}`);
+    EM.assert(exp === actual, `${vname} should be ${exp}, not ${actual}`);
   }
 });
 
 /** <<vi-ignore varname [reason]>> */
 Macro.add("vi-ignore", {
   handler: function() {
+    const vname = this.args[0];
+    const sexp = Nero.getFlagExpectation(vname);
+    if (sexp !== "notable") {
+      EM.fail(`vi-ignore ${vname} is unnecessary`);
+    }
     ignoreVars.add(this.args[0]);
   }
 });
@@ -2045,22 +2068,37 @@ function varButton(vname) {
   const v0 = State.current.variables;
 
   const outer = $("<span class=var-info-button-outer>");
+  let tags = "";
 
-  if (VT.ctx.wasRead.has(vname)) outer.addClass("var-info-was-read");
-  if (VT.ctx.wasSet.has(vname)) outer.addClass("var-info-was-written");
-  if (VT.ctx.wasDeleted.has(vname)) outer.addClass("var-info-was-deleted");
+  if (VT.ctx.wasDeleted.has(vname)) {
+    tags += "[was-deleted]\n";
+    outer.addClass("var-info-was-deleted");
+  }
+  if (VT.ctx.wasRead.has(vname)) {
+    tags += "[was-read]\n";
+    outer.addClass("var-info-was-read");
+  }
+  if (VT.ctx.wasSet.has(vname)) {
+    tags += "[was-set]\n";
+    outer.addClass("var-info-was-written");
+  }
 
-  const exp = Nero.getFlagExpectation && Nero.getFlagExpectation(vname);
+  const exp = Nero.getFlagExpectation(vname);
   if (exp === "notable") {
+    tags += "[s-notable]\n";
     outer.addClass("var-info-notable");
     if (ignoreVars.has(vname)) {
+      tags += "[vi-ignore]\n";
       outer.addClass("var-info-ignored");
     } else if (alwaysVars.has(vname)) {
+      tags += "[vi-always]\n";
       outer.addClass("var-info-always");
     } else if (!VT.ctx.wasRead.has(vname)) {
+      tags += "[to-do]\n";
       outer.addClass("var-info-to-do");
     }
-  } else if (exp != null && exp !== "") {
+  } else if (exp !== "") {
+    tags += "[s-constant]\n";
     outer.addClass("var-info-always");
   }
 
@@ -2069,9 +2107,9 @@ function varButton(vname) {
   const jval = str(v[vname]);
   if (VT.ctx.wasSet.has(vname)) {
     const jval0 = str(v0[vname]);
-    outer.attr("title", `${vname}=${jval0} ->\n${vname}=${jval}`);
+    outer.attr("title", `${tags}${vname}=${jval0} ->\n${vname}=${jval}`);
   } else {
-    outer.attr("title", `${vname}=${jval}`);
+    outer.attr("title", `${tags}${vname}=${jval}`);
   }
 
   // assume undeclared is boolean
@@ -2188,9 +2226,15 @@ function varInfoSetup() {
     VT.ctx.wasSet.forEach(v => touched.add(v));
     VT.ctx.wasDeleted.forEach(v => touched.add(v));
 
-    if (Nero.getNotable) {
-      Nero.getNotable().forEach(f =>touched.add(f));
-    }
+    VT.ctx.wasTopRead.forEach(vn => {
+      EM.assert(!alwaysVars.has(vn), `vi-always ${vn} should not be read`);
+      const sexp = Nero.getFlagExpectation(vn);
+      if (sexp !== "" && sexp !== "notable") {
+        EM.fail(`${vn} is constant in this section and should not be read`);
+      }
+    });
+
+    Nero.getNotable().forEach(f =>touched.add(f));
 
     if (touched.size) {
       $("<span class=var-info-separator>").appendTo(outer);
@@ -2682,7 +2726,7 @@ function checkSections() {
   });
 }
 
-checkSections();
+if (Config.debug) checkSections();
 
 Nero.getSection = (here) => {
   here || (here = State.passage);
@@ -3084,7 +3128,6 @@ Nero.flags = {
 
 function checkFlags() {
   const sections = new Set(Object.keys(Nero.sections));
-
   Object.keys(Nero.flags).forEach(x => {
     // check sections
     sections.forEach(s => {
@@ -3097,7 +3140,6 @@ function checkFlags() {
         console.error(`flag ${x} has unknown section ${s}`);
       }
     });
-
     // check contrapositive
     Object.keys(Nero.flags[x].implies).forEach(y => {
       if (Nero.flags[x].implies[y] === false) {
@@ -3109,13 +3151,13 @@ function checkFlags() {
   });
 }
 
-checkFlags();
+if (Config.debug) checkFlags();
 
 Nero.getFlagExpectation = (vname) => {
   const f = Nero.flags[vname];
-  if (f == null || f.sections == null) return null;
+  if (f == null || f.sections == null) return "";
   const sect = Nero.getSection();
-  return f.sections[sect];
+  return f.sections[sect] ?? "";
 };
 
 Nero.getNotable = (here) => {
@@ -3327,6 +3369,7 @@ Template.add("blank",
 -->
 <<script>>
 const Nero = window.Nero;
+const VT = window.VarTrace;
 const sayPassword = "[[n1s/P Say Password]]".slice(2, -2);
 
 Macro.add("pw-choice", {
@@ -3371,7 +3414,8 @@ Macro.add("pw-misfire", {
   handler: function() {
     const pw = this.args[0];
     const V = State.variables;
-    if (V.n2_mirrorBroken || V.n1_magicPhase !== MP_wantPassword) return;
+    const U = VT.untracedVariables();
+    if (U.n2_mirrorBroken || U.n1_magicPhase !== MP_wantPassword) return;
     V.n1_passwordBeingTried = `#${pw}`;
     V.n1_magicPhase = MP_onHold;
     $(this.output).wiki(`<<nobr>>
@@ -10920,11 +10964,13 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 
 :: n1cn/D Secret Society {"position":"4175,2575","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 <<set $n1_ivexReceptive = true>>
-<</nobr>>
 
 Nero: it's awesome, we have bacon
 
+?P
 <<if $n1_abused>>
     abused, cautious trawling
 <<elseif $n1_naked>>
@@ -10932,6 +10978,7 @@ Nero: it's awesome, we have bacon
 <<else>>
     normal, chummy
 <</if>>
+<</nobr>>
 
 ivex takes the bait, he's skeptical but interested.
 
@@ -11299,6 +11346,8 @@ ivex, offended.
 
 :: n1cr/D Very Secret {"position":"4175,2825","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 "You <em>have</em> heard of us..."
 
 <<pw-misfire "You-Have-Heard-Of-Us">>
@@ -11389,6 +11438,8 @@ XXX maybe vary actions on abused/naked
 
 :: n1cr/D Reject Fantasy {"position":"4025,2950","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 <<if $n1t_resisting>>
     nero: um, mind control, ew.
 <<else>>
@@ -13299,6 +13350,8 @@ $n1t_afterAction
 With the mirror broken, Nero has unfortunately lost access
 to the tower's magical energy, and the Sprite receptacle in his ear has crumbled.
 He'll have to rely on wits alone now.
+
+?P
 <</nobr>>\
 
 
@@ -16727,6 +16780,8 @@ Candle's Influence:
 
 :: n2b/D Struggle {"position":"5175,5700","size":"100,100"}
 <<nobr>>
+<<vi-ignore-if n2_candleMax n1_candleHorny>>
+
 <<if !$n2_candleMax && !$n1_candleHorny>>
     <<include [[n2b/D Struggle Non-Horny]]>>
 <<elseif !$n2_candleMax>>
@@ -16854,7 +16909,7 @@ $n1t_afterAction
 
 :: n2b/D Struggle Non-Horny [inclusion] {"position":"5025,5850","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleHorny false>>
+<<em-assert !$n1_candleHorny>>
 <<vi-ignore n1_mageSight>>
 
 <!-- can be here 2 times (patience actions - 1) -->
@@ -16871,7 +16926,7 @@ $n1t_afterAction
 
 :: n2b/D Struggle Horny [inclusion] {"position":"5125,5850","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleHorny true>>
+<<em-assert $n1_candleHorny>>
 <<vi-ignore n1_mageSight>>
 
 <!-- can be here 3 times (patience actions) -->
@@ -16887,7 +16942,7 @@ $n1t_afterAction
 
 :: n2b/D Struggle Fail [inclusion] {"position":"5000,5725","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleHorny true>>
+<<em-assert $n1_candleHorny>>
 
 horny desperation strength, but final struggle fails.
 
@@ -16905,8 +16960,8 @@ horny desperation strength, but final struggle fails.
 
 :: n2b/D Struggle Succeed [inclusion] {"position":"5225,5850","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleHorny true>>
-<<vi-always n1_mageSight true>>
+<<em-assert $n1_candleHorny>>
+<<em-assert $n1_mageSight>>
 
 struggle succeeds. grav gems implode.
 

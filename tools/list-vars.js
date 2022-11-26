@@ -49,27 +49,26 @@ function listVars(twFile, varListTxt, regexFilter) {
     for (const m of line.matchAll(/[$](\w+)/g)) {
       addMatch(m[1], m.index);
     }
-    // V.varname
-    for (const m of line.matchAll(/\b[vV][.](\w+)/g)) {
+    // V.varname, v.varname, U.varname
+    for (const m of line.matchAll(/\b[vVU][.](\w+)/g)) {
       addMatch(m[1], m.index);
     }
     // setup.name
     for (const m of line.matchAll(/\b(setup[.]\w+)/g)) {
       addMatch(m[1], m.index);
     }
-    // big-mood
-    for (const m of line.matchAll(/[<]big-mood\s+[$]?(\w+)/g)) {
+    // vi-always
+    for (const m of line.matchAll(/[<]vi-always\s+(\w+)/g)) {
       addMatch(m[1], m.index);
     }
-    // assert-big-mood
-    for (const m of line.matchAll(/assert-big-mood (\w+)/g)) {
+    // vi-ignore
+    for (const m of line.matchAll(/[<]vi-ignore\s+(\w+)/g)) {
       addMatch(m[1], m.index);
     }
-    // TO[D]O-big-mood
-    for (const m of line.matchAll(/TO[D]O-big-mood ([\w\s]+)/g)) {
-      for (const m2 of m[1].matchAll(/\w+/g)) {
-        addMatch(m2[0], m.index + m2.index);
-      }
+    // vi-ignore-if
+    for (const m of line.matchAll(/[<]vi-ignore-if\s+(\w+)\s+(\w+)/g)) {
+      addMatch(m[1], m.index);
+      addMatch(m[2], m.index);
     }
   });
 
@@ -98,7 +97,9 @@ function listVars(twFile, varListTxt, regexFilter) {
     }
   }
 
-  list(varnames);
+  list(varnames.filter(vn => vars[vn].size > 2));
+  list(varnames.filter(vn => vars[vn].size === 2));
+  list(varnames.filter(vn => vars[vn].size < 2));
 
   if (unused.size > 0) {
     console.log("unused vars:")
