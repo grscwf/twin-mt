@@ -1893,9 +1893,11 @@ Template.add("P", "<br><br>");
 .var-info-notable {
   font-weight: bold;
 }
-
-.var-info-ignore {
+.var-info-ignored {
   font-style: italic;
+}
+.var-info-always {
+  opacity: 0.6;
 }
 
 .var-info-to-do::after {
@@ -1919,11 +1921,6 @@ span.var-info-warning::after {
   content: "\26a0";
   padding-left: 2px;
   color: #fd8;
-}
-
-.var-info-undeclared {
-  background-color: #300;
-  font-weight: bold;
 }
 
 .var-info-can-change {
@@ -1988,6 +1985,7 @@ const Nero = window.Nero || (window.Nero = {});
 const VI = window.VarInfo || (window.VarInfo = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
+const alwaysVars = new Map();
 const ignoreVars = new Set();
 let revisitTop = null;
 
@@ -2017,16 +2015,27 @@ $(document).on(":passageend", () => {
   }
 });
 
-/** big-mood stub */
-Macro.add("big-mood", {
-  skipArgs: true,
-  handler: function() {},
+/** <<vi-always varname value [reason]>> */
+Macro.add("vi-always", {
+  handler: function() {
+    const [vname, expected] = this.args;
+    alwaysVars.set(vname, expected);
+    const actual = VT.untracedGet(vname) ?? false;
+    EM.assert(expected === actual, `${vname} should be ${expected}`);
+  }
 });
 
 /** <<vi-ignore varname [reason]>> */
 Macro.add("vi-ignore", {
   handler: function() {
     ignoreVars.add(this.args[0]);
+  }
+});
+
+/** <<vi-ignore-if varname1 varname2 [reason]>> */
+Macro.add("vi-ignore-if", {
+  handler: function() {
+    if (VT.untracedGet(this.args[0])) ignoreVars.add(this.args[1]);
   }
 });
 
@@ -2047,9 +2056,13 @@ function varButton(vname) {
     outer.addClass("var-info-notable");
     if (ignoreVars.has(vname)) {
       outer.addClass("var-info-ignored");
+    } else if (alwaysVars.has(vname)) {
+      outer.addClass("var-info-always");
     } else if (!VT.ctx.wasRead.has(vname)) {
       outer.addClass("var-info-to-do");
     }
+  } else if (exp != null && exp !== "") {
+    outer.addClass("var-info-always");
   }
 
   const label = $("<span class=var-info-button-label>").appendTo(outer);
@@ -2553,10 +2566,15 @@ Macro.add("actions-optional", {
 
 :: Init 5b Nero Barbs [inclusion] {"position":"2750,1175","size":"100,100"}
 <<script>>
+const VT = window.VarTrace || (window.VarTrace = {});
+
 function announceBarbs(output) {
   const V = State.variables;
   V.n1t_announceBarbsSoon = false;
-  const barbs = V.n1_barbsGlitch ? "Barbs?" : V.n1_barbs ? "Barbs" : "Smooth";
+  const barbs = VT.untracedGet("n1_barbsGlitch")
+    ? "Barbs?"
+    : VT.untracedGet("n1_barbs")
+    ? "Barbs" : "Smooth";
   $(output).wiki(`<meta-text>Story Variant (${barbs})</meta-text>?P`);
 }
 
@@ -10621,10 +10639,6 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 
 :: n1cn/F Ivex Repeat (6,3) {"position":"4175,2050","size":"200,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight ignore>>
-<<big-mood n1_naked ignore>>
-
 <<n1-patience 6 3
     'Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"'
     'Ivex (the Magnificent) twitches an ear in annoyance. "Again I ask. Who sent you?"'
@@ -10652,10 +10666,8 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 
 :: n1cn/F Ivex Intro {"position":"3975,1925","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-
+<<vi-always n1_mageSight false>>
+<<vi-ignore-if n1_abused n1_naked>>
 <<em-assert !$n1_abused || !$n1_naked>>
 <<em-assert $n1_magicPhase <= MP_triedMagic>>
 
@@ -11005,10 +11017,8 @@ ivex takes the bait, he's skeptical but interested.
 
 :: n1cn/F Ivex Intro 2 {"position":"4075,1925","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-
+<<vi-always n1_mageSight false>>
+<<vi-ignore-if n1_abused n1_naked>>
 <<em-assert !$n1_abused || !$n1_naked>>
 <<em-assert $n1_magicPhase <= MP_triedMagic>>
 
@@ -11171,10 +11181,8 @@ starts into creepy-lewd
 
 :: n1cn/F Ivex Desc {"position":"3900,2050","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-
+<<vi-always n1_mageSight false>>
+<<vi-ignore-if n1_abused n1_naked>>
 <<em-assert !$n1_abused || !$n1_naked>>
 <<em-assert $n1_magicPhase <= MP_triedMagic>>
 
@@ -11210,10 +11218,8 @@ Not that Nero would ever tell that to his
 
 :: n1cn/F Ivex Intro 3 {"position":"4175,1925","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-
+<<vi-always n1_mageSight false>>
+<<vi-ignore-if n1_abused n1_naked>>
 <<em-assert !$n1_abused || !$n1_naked>>
 <<em-assert $n1_magicPhase <= MP_triedMagic>>
 
@@ -12295,8 +12301,6 @@ He glances at the agitated wolf, who's still struggling against the bonds with a
 
 :: n1p/F Barbs Slow [big-mood] {"position":"5300,2875","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n1_naked = true>>
 
 All of Nero's clothes disappear.
@@ -12318,11 +12322,8 @@ The wolf shivers slightly from mild embarrassment and the sudden chill.
 
 :: n1p/F Barbs Slow No {"position":"5950,2925","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n1_barbs = false>>
 <<em-assert !$n1_barbsGlitch>>
-<<barbs-announce now>>
 
 He said, "Penile barbs are a myth."
 <</nobr>>
@@ -12340,8 +12341,6 @@ The tiger continued with confidence. "It's true that feral feline species, many 
 
 :: n1p/F Barbs Slow Yes {"position":"5950,2800","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n1_barbs = true>>
 <<em-assert !$n1_barbsGlitch>>
 <<barbs-announce now>>
@@ -12361,11 +12360,7 @@ The tiger seemed unaware of the awkwardness of the situation. "Most feline speci
 
 
 :: n1p/F Barbs Slow 4 {"position":"5725,2875","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Nero usually enjoyed field games at the Windbone Magic Academy, but on that fateful day, he took an awkward step while trying to intercept a passing ball. His ankle twisted, and he fell to the ground in distress. The athletics coach took only a brief look at the injury before declaring it was reason enough to dismiss Nero early.
-<</nobr>>
 
 The young wolf limped his way to the gymnasium showers. The changing area was full of older students who were drying off and gathering into small packs that wandered toward the cafeteria and dorms. Nero waited until all their banter and laughter disappeared down the halls, then he disrobed and entered the showers himself.
 
@@ -12375,11 +12370,7 @@ It wasn't until after he finished washing, when he started toweling himself dry,
 
 
 :: n1p/F Barbs Slow 3 {"position":"5500,2875","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 A moment later, a different thought lands in Nero's brain.
-<</nobr>>
 
 Ivex has <em>specifically prepared</em> a complicated spell that will quickly remove all the clothes from a bound prisoner.
 
@@ -12391,11 +12382,7 @@ Nero suddenly realizes what his eyes have already been staring at. The panther m
 
 
 :: n1p/F Barbs Slow 5 {"position":"5825,2875","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 The bin for used towels was stationed at a pillar near the entrance to the changing area. And on the other side of the pillar, on a bench not visible from the entrance, a tiger lounged in light and shadow.
-<</nobr>>
 
 The tiger was larger than Nero in a slim way, athletic without being bulky or noticeably muscular. He was relaxed and leaning comfortably against the wall. Blobs of light from a frosted window were splayed across his body, accentuating the black striped pattern on his orange fur.
 
@@ -12419,8 +12406,6 @@ The tiger spoke with a voice that was low and friendly. He said...
 
 :: n1p/F Barbs Slow End {"position":"6175,2875","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n0_barbsSlowViewed = true>>
 <<set $n1_barbsSlow = true>>
 
@@ -12430,9 +12415,8 @@ It's an embarrassing memory from his naive, younger self.
 <<else>>
     And he'll never forget [[Mica's surprising appearance...|n1p/F Barbs Slow Extra]]
 <</if>>
-<</nobr>>
 
-<<nobr>>
+?P
 Nero shakes off the memories of
 <<if $n1_barbs>>
     barbed
@@ -12449,11 +12433,7 @@ $n1t_afterNaked
 
 
 :: n1p/F Barbs Slow Extra {"position":"6300,2775","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 The day after the encounter in the showers, Nero saw the tiger again in his third-hour class.
-<</nobr>>
 
 Cryptomancy 1 was a perennial favorite of novice students, who always enjoyed the dynamic teaching methodology of the effervescent Magister Starpaw. But a few weeks into the second semester, the magister suffered grave injury in an unpleasant encounter with her ex, and she was given leave for the rest of the semester to recover.
 
@@ -12463,11 +12443,7 @@ Fortunately for her students, who would otherwise fall behind in their studies, 
 
 
 :: n1p/F Barbs Slow Yes 2 {"position":"6050,2800","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Nero struggled to put on his clothes while his fur was still damp.
-<</nobr>>
 
 The tiger continued his lecture. "Penile spines are not as hard as horns or as soft as fur. They're an intermediate firmness, a bit like the stiffness of straw. Perhaps a familiar analogy would be a bristle brush."
 
@@ -12479,11 +12455,7 @@ The young wolf, in a panic, threw the towel at the tiger and fled as quickly as 
 
 
 :: n1p/F Barbs Slow No 2 {"position":"6050,2925","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Nero hurriedly continued to dry himself and scramble into his clothes, nodding at what seemed like appropriate times, trying to maintain a friendly distance while also trying to avoid giving the impression that he had any interest in the topic.
-<</nobr>>
 
 When he finished dressing, the tiger had left historical lecture behind and was in middle of recounting some personal feedback he'd received from a lover who had experienced both feline and canine cock.
 
@@ -12495,11 +12467,7 @@ As the young wolf limped away with what remaining dignity he could muster, he he
 
 
 :: n1p/F Barbs Fast 3 {"position":"5525,2625","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Lord Pevhin, the slender cheetah securely fastened to Nero's workshop table, asked again, "Are you sure this will work?"
-<</nobr>>
 
 "Please stay still," replied Nero. "I'm applying a dangerous amount of energy to a delicate region, and it would be tragic if I slipped."
 
@@ -12512,8 +12480,6 @@ The metal chastity device was not the cheap variety that's common in sexual play
 
 :: n1p/F Barbs Fast 5 {"position":"5725,2625","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<barbs-announce now>>
 
 Lord Pevhin's
@@ -12544,8 +12510,6 @@ Lord Pevhin was livid, but still helplessly strapped to the workshop table. Lady
 
 :: n1p/F Barbs Fast End {"position":"5825,2625","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n0_barbsFastViewed = true>>
 <<set $n1_barbsFast = true>>
 
@@ -12572,8 +12536,6 @@ $n1t_afterNaked
 
 :: n1p/F Barbs Fast Extra {"position":"5975,2625","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n1t_barbsFastExtraViewed = true>>
 
 Lady Temesca, with her cheetah flexibility and strength, and Lord Pevhin's increasingly desperate lust-denied antics, became deeply interwoven into Nero's life during that long, hot summer when the three of them chased each other into myriad and extraordinary perverse acts...
@@ -12587,11 +12549,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 
 
 :: n1p/F Barbs Slow 2 [inclusion] {"position":"5400,2875","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Nero can't help but be a little bit impressed. It's not immediately obvious if his clothing was destroyed or teleported away, but in either case the spell was remarkably precise, since it targeted <em>only</em> his clothes, and not the wooden cross or leather straps holding him in place. Nero didn't even feel it disturb any of the hairs of his fur.
-<</nobr>>
 
 And the spell's trigger was such a small, ambiguous gesture. The wolf mage starts sketching in his mind the outline of a matrix for a similar spell. It's quite large and complicated, and it would need a substantial core to store it. He wonders what the scaffold could be.
 
@@ -12610,11 +12568,7 @@ And the spell's trigger was such a small, ambiguous gesture. The wolf mage start
 
 
 :: n1p/F Barbs Skip {"position":"5350,2750","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Nero's been in this type of situation before: awkwardly amorous mage "accidentally" spills a drink, or "miscasts" a spell that sets clothing on fire. And when the initiator of the mishap is a pretty female, the wolf is often quite willing to indulge the obvious ploy.
-<</nobr>>
 
 This is not one of those times.
 
@@ -12638,8 +12592,6 @@ The panther's right paw is, of course, firmly grasping the feline's bulging crot
 
 :: n1p/F Barbs Fast [big-mood] {"position":"5300,2625","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n1_naked = true>>
 
 All of Nero's clothes disappear.
@@ -12661,12 +12613,8 @@ Events have progressed beyond simple interrogation.
 
 
 :: n1p/F Barbs Fast 2 [inclusion] {"position":"5400,2625","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Nero's attention is drawn to Ivex's crotch, which has a noticeable bulge,
 helped along by a feilne paw firmly pressed into the cloth below the panther's balls.
-<</nobr>>
 
 It seems clear that Nero will soon be an unfortunate audience for Ivex the Magnificent's cock.
 
@@ -12678,11 +12626,7 @@ Just last year, late in the spring season...
 
 
 :: n1p/F Barbs Slow Extra 2 {"position":"6300,2875","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 The day of the professor's inaugural appearance, Nero arrived late. The lecture hall was already overflowing with many more students than were officially enrolled in the class. Nero shoved his way through throngs of eager students, trying to reach his canine friends. But the audience was too packed and chaotic. There was little chance of him reaching such a specific goal, so he settled for trying to find a place to stand that would give him a view of the lectern, currently occupied by the Academy Chancellor in the middle of a flavorless introduction.
-<</nobr>>
 
 Nero's motion through the crowd stopped when he became stuck in a cluster of older feline students, who were not at all pleased to accommodate him there. The nearest one grimaced at him, and a skinny lion behind him proceeded to insult the young wolf's ancestry.
 
@@ -12691,8 +12635,6 @@ Nero's motion through the crowd stopped when he became stuck in a cluster of old
 
 :: n1p/F Barbs Slow Extra 3 {"position":"6300,2975","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n1t_barbsSlowExtraViewed = true>>
 
 But the obnoxious lion, and the entire room of students, went completely silent when Mica Tebron entered the room. The new professor walked in with his artificial arm raised and surrounded by a swirl of glowing lines. And as he brought his hand down and across his chest in a confident sixth-weave pattern, an orb of intertwined water and fire appeared in his palm.
@@ -12706,11 +12648,7 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 
 
 :: n1p/F Barbs Fast 4 {"position":"5625,2625","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
-
 Nero said, "You really should have approached me before trying the Carmela Charm. Finessing mage locks is one of my specialties, and it's much less dangerous than what I'm doing now."
-<</nobr>>
 
 The cheetah grimaced and flattened his ears, but otherwise stayed silent and still.
 
@@ -12728,8 +12666,6 @@ Nero briefly admired the size of the liberated cock, before approaching it with 
 
 :: n1p/F Barbs Glitch [big-mood] {"position":"5075,2375","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n1_naked = true>>
 
 All of Nero's clothes disappear.
@@ -12744,8 +12680,6 @@ Nero's memory flashes back to his most recent encounter with a feline cock, just
 
 :: n1p/F Barbs Glitch 3 {"position":"5275,2375","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<set $n0_barbsGlitchViewed = true>>
 <<set $n1_barbs = either(false, true)>>
 <<set $n1_barbsGlitch = true>>
@@ -12765,8 +12699,6 @@ $n1t_afterNaked
 
 :: n1p/F Barbs Glitch 2 {"position":"5175,2375","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-
 <<include [[n1p/F Glitch Script]]>>
 
 It was one of those days when nothing went right.
@@ -12811,10 +12743,7 @@ and felt the jaguar's...
 
 
 :: n1p/F Barbs Slow 3a {"position":"5600,2875","size":"100,100"}
-<<nobr>>
-<<big-mood n1_abused ignore>>
 It seems a safe bet that Nero, restrained and exposed as he is, will soon be unfortunate enough to see Ivex the Magnificent's cock. Nero shivers some more. From the chill.
-<</nobr>>
 
 Ah well. It wouldn't be his first encounter with an unsolicited feline cock.
 
@@ -13080,19 +13009,18 @@ function glitchText(textNode, g) {
 
 :: n1s/F Anti-magic {"position":"5250,3225","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny ignore>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive ignore>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone ignore>>
-<<big-mood n2_tooClever always false>>
-
+<<vi-always n1_mageSight false>>
+<<vi-always n1_naked true>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleHorny>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_ivexReceptive>>
+<<vi-ignore n1_subby>>
+<<vi-ignore n2_ivexGone>>
 <<em-assert $n1_magicPhase === MP_triedMagic>>
 
 Anti-magic fields are broadly divided into two categories.
@@ -13211,8 +13139,7 @@ $n1t_afterAction
 :: n1s/D Before Cast [inclusion] {"position":"5925,3650","size":"100,100"}
 <<nobr>>
 <!-- easy escape requires mageSight, hard escape requires wantPassword -->
-<<big-mood n2_free always false>>
-<<big-mood n2_mirrorBroken always false>>
+<<vi-always n2_free false>>
 
 <<if $n1_candleHorny>>
     The wolf mage desperately wants to stroke his throbbing cock.
@@ -13297,20 +13224,20 @@ $n1t_afterAction
 
 :: n1s/D Cast Itch {"position":"5800,3600","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-<<big-mood n1_subby always false>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive false>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_beforeCast`>>
+<<vi-always n1_subby false>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
-
-<<em-assert ($n1_magicPhase || 0) === 0>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_naked>>
 
 XXX too preliminary, this is "fast and decisive", aim for surprise.
 Nero begins the mage fight by wriggling his fingers and moaning the syllables of his special version of [[Superb Itch|n1s/D Itch]]. Not the flashiest of combat spells, but the wolf often finds it advantageous to use the unconventional and unexpected.
@@ -13321,20 +13248,19 @@ Nero begins the mage fight by wriggling his fingers and moaning the syllables of
 
 :: n1s/D After Itch {"position":"5700,3700","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused vary>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby always false>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive false>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_triedMagic`>>
+<<vi-always n1_naked true>>
+<<vi-always n1_subby false>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
-
-<<big-mood n1_magicPhase always MP_triedMagic>>
+<<vi-ignore n1_candleLit>>
 
 <<barbs-announce maybe>>
 
@@ -13361,20 +13287,19 @@ $n1t_afterAction
 
 :: n1s/D Cast Slippery {"position":"5850,3475","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always true>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive true>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_beforeCast`>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
-
-<<em-assert ($n1_magicPhase || 0) === 0>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_naked>>
+<<vi-ignore n1_subby>>
 
 Nero wants to impress Ivex, casts [[slippery spell|n1s/D Slippery]] to escape bonds.
 
@@ -13384,18 +13309,19 @@ Nero wants to impress Ivex, casts [[slippery spell|n1s/D Slippery]] to escape bo
 
 :: n1s/D After Slippery {"position":"5750,3375","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused TODO>>
-<<big-mood n1_candleHorny TODO>>
-<<big-mood n1_candleLit TODO>>
-<<big-mood n1_ivexReceptive always true>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby TODO>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive true>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_triedMagic`>>
+<<vi-always n1_naked true>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_subby>>
 
 <<barbs-announce maybe>>
 
@@ -13921,18 +13847,20 @@ $n1t_afterAction
 
 :: n1s/D Itch {"position":"5800,3700","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-<<big-mood n1_subby always false>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive false>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_beforeCast`>>
+<<vi-always n1_subby false>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_naked>>
 
 Superb Itch is a popular prank spell that nobody uses any more, because it's trivially reversed onto the caster if the target has any type of spell ward, even something as weak as the "Lucky Penny" that's a common carnival prize.
 <</nobr>>
@@ -13944,19 +13872,18 @@ The spell and its related family of minor nerve agonists have never been a serio
 
 :: n1s/F Anti-magic 2 {"position":"5250,3325","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny ignore>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive ignore>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked always true>>
-<<big-mood n1_subby ignore>>
-
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone ignore>>
-<<big-mood n2_tooClever always false>>
-
+<<vi-always n1_mageSight false>>
+<<vi-always n1_naked true>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleHorny>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_ivexReceptive>>
+<<vi-ignore n1_subby>>
+<<vi-ignore n2_ivexGone>>
 <<em-assert $n1_magicPhase === MP_triedMagic>>
 
 In the pragmatic, actual world, selective anti-magic is a matter of being relentlessly more clever than any opponents. The selectiveness does not need to be a perfect filter. It just needs to be extremely difficult for an adversary to find and use a flaw in the construction.
@@ -14003,23 +13930,22 @@ escape fizzles, still horny.
 
 :: n1s/D Cast Itch 2 {"position":"5700,3600","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked vary>>
-<<big-mood n1_subby always false>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive false>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_beforeCast`>>
+<<vi-always n1_subby false>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_mirrorBroken false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
 
-<<em-assert ($n1_magicPhase || 0) === 0>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
-?P
 spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bit.
 
 <<if $n1_naked>>
@@ -14047,20 +13973,19 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
 
 :: n1s/D Cast Slippery 2 {"position":"5850,3375","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always true>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked always false>>
-<<big-mood n1_subby ignore>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive true>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_beforeCast`>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_subby>>
 
-<<em-assert ($n1_magicPhase || 0) === 0>>
 <<set $n1_magicPhase = MP_triedMagic>>
 
 spell fizzes. Ivex recognizes it.
@@ -14086,18 +14011,19 @@ spell fizzes. Ivex recognizes it.
 
 :: n1s/D Slippery {"position":"5750,3475","size":"100,100"}
 <<nobr>>
-<<big-mood n1_abused ignore>>
-<<big-mood n1_candleHorny always false>>
-<<big-mood n1_candleLit ignore>>
-<<big-mood n1_ivexReceptive always false>>
-<<big-mood n1_mageSight always false>>
-<<big-mood n1_naked ignore>>
-<<big-mood n1_subby always false>>
+<<vi-always n1_candleHorny false>>
+<<vi-always n1_ivexReceptive true>>
+<<vi-always n1_mageSight false>>
+<<vi-always n1_magicPhase `MP_beforeCast`>>
+<<vi-always n2_extraHorny false>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<vi-always n2_tooClever false>>
 
-<<big-mood n2_extraHorny always false>>
-<<big-mood n2_free always false>>
-<<big-mood n2_ivexGone always false>>
-<<big-mood n2_tooClever always false>>
+<<vi-ignore n1_abused>>
+<<vi-ignore n1_candleLit>>
+<<vi-ignore n1_naked>>
+<<vi-ignore n1_subby>>
 
 info about slippery spell
 <</nobr>>
