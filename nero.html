@@ -1885,10 +1885,13 @@ Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
   font-weight: bold;
 }
 .var-info-ignored {
+  border: 1px dashed #882;
   font-style: italic;
+  font-weight: normal;
 }
 .var-info-always {
-  opacity: 0.8;
+  font-weight: normal;
+  opacity: 0.6;
 }
 
 .var-info-to-do::after {
@@ -1917,8 +1920,14 @@ Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
   cursor: pointer;
 }
 .var-info-can-change:hover {
-  background-color: #333;
   border-color: #ccc;
+}
+
+.var-info-can-change.var-info-notable {
+  border-color: #996;
+}
+.var-info-can-change.var-info-notable:hover {
+  border-color: #ddc;
 }
 
 .var-info-boolean-false {
@@ -2004,17 +2013,22 @@ $(document).on(&quot;:passageend&quot;, () =&gt; {
   }
 });
 
+function withinInclude(ctx) {
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === &quot;include&quot;) return true;
+  }
+  return false;
+}
+
 /** &lt;&lt;vi-always varname value [reason]&gt;&gt; */
 Macro.add(&quot;vi-always&quot;, {
   handler: function() {
     const [vname, exp] = this.args;
     const sexp = Nero.getFlagExpectation(vname);
-    if (sexp !== &quot;&quot; &amp;&amp; sexp !== &quot;notable&quot;) {
-      EM.fail(`vi-always ${vname} is redundant`);
+    if (sexp !== &quot;notable&quot; &amp;&amp; !withinInclude(this)) {
+      EM.fail(`vi-always ${vname} is unnecessary`);
     }
     alwaysVars.set(vname, exp);
-    const actual = VT.untracedGet(vname) ?? false;
-    EM.assert(exp === actual, `${vname} should be ${exp}, not ${actual}`);
   }
 });
 
@@ -2206,7 +2220,7 @@ function varInfoSetup() {
       EM.assert(!alwaysVars.has(vn), `vi-always ${vn} should not be read`);
       const sexp = Nero.getFlagExpectation(vn);
       if (sexp !== &quot;&quot; &amp;&amp; sexp !== &quot;notable&quot;) {
-        EM.fail(`${vn} is constant in this section and should not be read`);
+        EM.fail(`${vn} is always ${sexp} in this section and should not be read`);
       }
     });
 
@@ -2538,13 +2552,20 @@ EnumType.define(&quot;MagicPhase&quot;, [
 EnumType.declareVar(&quot;n1_magicPhase&quot;, &quot;MagicPhase&quot;);
 
 // Define temp var with a getter, so read tracking works.
-function def(vname, fn) {
+function defTemp(vname, fn) {
   Object.defineProperty(State.temporary, vname, { enumerable: true, get: fn });
 }
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    const v = State.variables;
-    def(&#39;ivexNear&#39;, () =&gt; v.n1_candleHorny &amp;&amp; !v.n2_ivexGone);
+    defTemp(&#39;ivexNear&#39;, () =&gt; {
+      const V = State.variables;
+      return V.n1_candleHorny &amp;&amp; !V.n2_ivexGone;
+    });
+    
+    VarTrace.ignore(() =&gt; {
+      const V = State.variables;
+      V.n1_magicPhase ?? (V.n1_magicPhase = 0);
+    });
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="26" name="Init 5b Nero Actions" tags="inclusion" position="2650,1175" size="100,100">&lt;&lt;script&gt;&gt;
 const Nero = window.Nero || (window.Nero = {});
@@ -2707,9 +2728,9 @@ Nero.flags = {
       n1d_candle: &quot;notable&quot;,
       n1e_horny: &quot;notable&quot;,
       n1p_barbs: &quot;&quot;,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
-      n1y_lookHorny: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
+      n1y_lookHorny: &quot;&quot;,
       n2a_start: &quot;&quot;,
       n2b_bound: &quot;&quot;,
       n2f_free: &quot;&quot;,
@@ -2741,7 +2762,7 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: true,
       n1p_barbs: false,
-      n1s_magic: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
       n1x_look: false,
       n1y_lookHorny: true,
       n2a_start: false,
@@ -2773,8 +2794,8 @@ Nero.flags = {
       n1d_candle: true,
       n1e_horny: true,
       n1p_barbs: &quot;&quot;,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
       n1y_lookHorny: true,
       n2a_start: false,
       n2b_bound: true,
@@ -2807,8 +2828,8 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: &quot;&quot;,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
@@ -2838,7 +2859,7 @@ Nero.flags = {
       n1d_candle: &quot;notable&quot;,
       n1e_horny: &quot;notable&quot;,
       n1p_barbs: false,
-      n1s_magic: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
       n1x_look: &quot;notable&quot;,
       n1y_lookHorny: &quot;notable&quot;,
       n2a_start: &quot;notable&quot;,
@@ -2867,8 +2888,8 @@ Nero.flags = {
       n1d_candle: &quot;notable&quot;,
       n1e_horny: true,
       n1p_barbs: &quot;&quot;,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
       n1y_lookHorny: true,
       n2a_start: true,
       n2b_bound: true,
@@ -2896,9 +2917,9 @@ Nero.flags = {
       n1d_candle: &quot;notable&quot;,
       n1e_horny: &quot;notable&quot;,
       n1p_barbs: &quot;&quot;,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
-      n1y_lookHorny: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
+      n1y_lookHorny: &quot;&quot;,
       n2a_start: &quot;&quot;,
       n2b_bound: &quot;&quot;,
       n2f_free: &quot;&quot;,
@@ -2931,8 +2952,8 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: false,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
@@ -3023,14 +3044,14 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: false,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
-      n2f_free: &quot;notable&quot;,
-      n2x_lookFree: &quot;notable&quot;,
-      n3a_start: &quot;notable&quot;,
+      n2f_free: &quot;&quot;,
+      n2x_lookFree: &quot;&quot;,
+      n3a_start: &quot;&quot;,
       n8_archive: &quot;&quot;,
       n9_ending: &quot;&quot;,
       other: &quot;&quot;,
@@ -3059,14 +3080,14 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: false,
-      n1s_magic: &quot;notable&quot;,
-      n1x_look: &quot;notable&quot;,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
-      n2f_free: &quot;notable&quot;,
-      n2x_lookFree: &quot;notable&quot;,
-      n3a_start: &quot;notable&quot;,
+      n2f_free: &quot;&quot;,
+      n2x_lookFree: &quot;&quot;,
+      n3a_start: &quot;&quot;,
       n8_archive: &quot;&quot;,
       n9_ending: &quot;&quot;,
       other: &quot;&quot;,
@@ -3151,8 +3172,7 @@ Nero.checkConstraints = () =&gt; {
   if (!/^n/.test(here)) return;
 
   VarTrace.ignore(() =&gt; {
-    const V = State.variables;
-    V.n1_magicPhase || (V.n1_magicPhase = 0);
+    const V = State.current.variables;
     Object.keys(Nero.flags).forEach(x =&gt; {
       if (!V[x]) return;
       Object.keys(Nero.flags[x].implies).forEach(y =&gt; {
@@ -12572,6 +12592,8 @@ $n1t_afterAction
     &lt;&lt;include [[n1x/F Look Normal]]&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="398" name="n1x/D Cross" tags="" position="6175,5375" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-always n2_free false&gt;&gt;
+
 &lt;&lt;if $n1_mirrorViewed&gt;&gt;
     Unyielding leather straps are holding
     &lt;&lt;if $n1_naked&gt;&gt;
@@ -12655,6 +12677,8 @@ $n1t_afterAction
     &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="399" name="n1x/F Study" tags="" position="6050,5075" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 &lt;&lt;if $n1_candleLit&gt;&gt;
     Smoke from the &lt;&lt;n1-no-loop [[lit candle|n1x/D Candle]]&gt;&gt;
     is spreading through the room,
@@ -12749,7 +12773,8 @@ pompous, dirty, and dominated by the
   &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="401" name="n1x/F Desk" tags="" position="6850,5500" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;expand-ignore n1_globeViewed n2_deskSearched n2_ivexGone&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 &lt;&lt;em-assert !$n2_free || $n1_bottleViewed&gt;&gt;
 &lt;&lt;em-assert !$n2_free || $n2_mirrorBroken || $n2_mirrorTaken&gt;&gt;
 &lt;&lt;em-assert !$n2_knifeTaken || $n2_free&gt;&gt;
@@ -12816,7 +12841,7 @@ is continuous and uninterrupted across all of its visible surfaces.
     &lt;&lt;if $n2_free&gt;&gt;
         that was sharp enough to cut Nero&#39;s bonds.
         It might be worth taking.
-        &lt;&lt;actions-add [[Take the letter opener.|n1x/D Knife Take]]&gt;&gt;
+        &lt;&lt;actions-add [[Take the letter opener.|n2x/D Knife Take]]&gt;&gt;
     &lt;&lt;else&gt;&gt;
         that may be sharp enough to cut Nero&#39;s bonds.
         ?P
@@ -12840,9 +12865,9 @@ is continuous and uninterrupted across all of its visible surfaces.
 
 &lt;&lt;if $n2_free&gt;&gt;
     &lt;&lt;if $n2_deskSearched&gt;&gt;
-        &lt;&lt;actions-add [[Search the desk again.|n1x/F Desk Search]]&gt;&gt;
+        &lt;&lt;actions-add [[Search the desk again.|n2x/F Desk Search]]&gt;&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;&lt;actions-add [[Search the desk.|n1x/F Desk Search]]&gt;&gt;
+        &lt;&lt;actions-add [[Search the desk.|n2x/F Desk Search]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -12854,6 +12879,8 @@ is continuous and uninterrupted across all of its visible surfaces.
     &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="402" name="n1x/F Bookshelves" tags="" position="7225,5125" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 The room&#39;s walls are lined with several similar bookshelves
 that are fillled with many [[books|n1x/P Books]]
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -12878,10 +12905,10 @@ Most of the space is taken up by boxes
     plain wood with simple lids.
 
     &lt;&lt;if !$n2_bookshelfSearched&gt;&gt;
-        &lt;&lt;actions-add [[Search the boxes.|n1x/F Bookshelf Search]]&gt;&gt;
+        &lt;&lt;actions-add [[Search the boxes.|n2x/F Bookshelf Search]]&gt;&gt;
     &lt;&lt;else&gt;&gt;
         Nero vividly remembers his futile
-        [[search of the boxes|n1x/F Bookshelf Search]].
+        [[search of the boxes|n2x/F Bookshelf Search]].
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -12893,6 +12920,8 @@ Most of the space is taken up by boxes
     &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="403" name="n1x/D Mirror" tags="" position="6700,5750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 &lt;&lt;if $n2_mirrorBroken&gt;&gt;
     broken, useless. regrets.
 
@@ -12902,7 +12931,7 @@ Most of the space is taken up by boxes
 &lt;&lt;elseif $n2_free&gt;&gt;
     &lt;&lt;em-assert $n2_tooClever&gt;&gt;
     free, mirror intact on desk
-    &lt;&lt;actions-add [[Take the mirror.|n1x/D Mirror Take]]&gt;&gt;
+    &lt;&lt;actions-add [[Take the mirror.|n2x/D Mirror Take]]&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
     propped up against a [[snow globe|n1x/D Globe]]
@@ -13020,7 +13049,7 @@ if free, can also see porn mags and something cringe.
 
 &lt;ul class=&quot;actions&quot;&gt;
   &lt;li&gt;&lt;&lt;link $n1t_afterLook&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="406" name="n1x/D Candle" tags="maybe-password" position="6850,5750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="406" name="n1x/D Candle" tags="maybe-password" position="6850,5700" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set _wantPassword = $n1_magicPhase === MP_wantPassword&gt;&gt;
 
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -13109,7 +13138,7 @@ Nero think of something more sensual than meat.
     especially if the wolf has any hostile encounters before
     he regains full use of his magic abilities.
 
-    &lt;&lt;actions-add [[Take the letter opener.|n1x/D Knife Take]]&gt;&gt;
+    &lt;&lt;actions-add [[Take the letter opener.|n2x/D Knife Take]]&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
     It looks like an ordinary letter opener, probably made of steel.
@@ -13135,6 +13164,8 @@ Nero think of something more sensual than meat.
     &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="408" name="n1x/F Cabinets" tags="" position="7150,4475" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 Against the walls of the room are several wooden cabinets
 that seem identical in shape and size, but painted differently,
 with distinctly colored doors and
@@ -13181,9 +13212,9 @@ The others are bare.
     &lt;&lt;/if&gt;&gt;
 
     &lt;&lt;if $n2_cabinetSearched&gt;&gt;
-        Nero cringes at the memory of [[what was in them|n1x/F Cabinet Search]].
+        Nero cringes at the memory of [[what was in them|n2x/F Cabinet Search]].
     &lt;&lt;else&gt;&gt;
-        &lt;&lt;actions-add [[Search the unpainted cabinet.|n1x/F Cabinet Search]]&gt;&gt;
+        &lt;&lt;actions-add [[Search the unpainted cabinet.|n2x/F Cabinet Search]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -13203,6 +13234,9 @@ if want touch and ivex here, [[n1x/P Coins Ask]]
     &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="410" name="n1x/F Wall" tags="" position="7125,3925" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_free&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 &lt;&lt;set $n1_wallViewed = true&gt;&gt;
 
 The far wall, on the other side of the desk,
@@ -13351,6 +13385,9 @@ XXX if viewed desk, suggest getting knife
 
 &lt;&lt;set $n1_bottleViewed = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="412" name="n1x/D Map" tags="maybe-password" position="7275,4000" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 map has several markings.
 &lt;&lt;if $n2_free&gt;&gt;
     close-up view, can see tiny writing.
@@ -13366,6 +13403,10 @@ map has several markings.
     &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="413" name="n1x/D Portrait" tags="has-hole maybe-password" position="7175,4175" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n2_free&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 &lt;&lt;set _wantPassword = $n1_magicPhase === MP_wantPassword&gt;&gt;
 
 &lt;&lt;if $n2_extraHorny&gt;&gt;
@@ -13442,7 +13483,7 @@ if coin in mouth, it drops to the floor
   &lt;&lt;/if&gt;&gt;
   &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="415" name="n1x/D Wand" tags="has-hole maybe-password" position="7275,5350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="415" name="n1x/D Wand" tags="has-hole maybe-password" position="7250,5325" size="100,100">&lt;&lt;nobr&gt;&gt;
 ISO standard magic wand, but an odd ring-shaped attachment on the end.
 &lt;&lt;if $n1_mageSight&gt;&gt;
     has weird energy
@@ -13500,6 +13541,8 @@ ISO standard magic wand, but an odd ring-shaped attachment on the end.
     &lt;li&gt;$n1t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="416" name="n1x/F Window" tags="has-hole" position="6950,3900" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 The only window in the room
 is round and about a meter in diameter.
 The window has glass panes arranged in a radial pattern that
@@ -13582,12 +13625,8 @@ if wantTouch, sprite says, password please
 
 $n1t_afterAction</tw-passagedata><tw-passagedata pid="418" name="n1x/P Portrait Ask" tags="maybe-password" position="7600,4125" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
 
 &lt;&lt;set _wantTouch = $n1_magicPhase === MP_wantTouch&gt;&gt;
 &lt;&lt;set _wantPassword = $n1_magicPhase === MP_wantPassword&gt;&gt;
@@ -13597,13 +13636,8 @@ $n1t_afterAction</tw-passagedata><tw-passagedata pid="418" name="n1x/P Portrait 
 
 $n1t_afterAction</tw-passagedata><tw-passagedata pid="419" name="n1x/D Map Ask" tags="maybe-password" position="7325,3725" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_magicPhase `MP_wantPassword`&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
 
 &lt;&lt;if $n1_mapAskTried&gt;&gt;
     &lt;&lt;set $n1_mapAskFailed = true&gt;&gt;
@@ -13691,7 +13725,7 @@ ask, is that from X?
     ?P
     [[Continue|n2f/P Clever Escape]]
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="422" name="n1x/D Candle Ask" tags="maybe-password" position="6850,5875" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="422" name="n1x/D Candle Ask" tags="maybe-password" position="6975,5700" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
 &lt;&lt;vi-always n1_naked true&gt;&gt;
 &lt;&lt;vi-always n2_extraHorny false&gt;&gt;
@@ -13721,14 +13755,10 @@ ivex nonsense.
 $n1t_afterAction
 
 &lt;&lt;set $n1_candleAsked = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="423" name="n1x/D Ask Wand" tags="maybe-password" position="7475,5350" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="423" name="n1x/D Ask Wand" tags="maybe-password" position="7400,5350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $n1_subby&gt;&gt;
     ask wand subby
@@ -13799,15 +13829,10 @@ activation word is &quot;please&quot;, has note to change it.
     horny reactions to Sprite
 &lt;&lt;/if&gt;&gt;
 
-$n1t_afterAction</tw-passagedata><tw-passagedata pid="428" name="n1x/F Window Ask" tags="" position="6950,3650" size="100,100">&lt;&lt;nobr&gt;&gt;
+$n1t_afterAction</tw-passagedata><tw-passagedata pid="428" name="n1x/D Window Ask" tags="" position="6950,3650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_magicPhase `MP_wantTouch`&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
 
 &lt;&lt;if $n1_windowAskRefused&gt;&gt;
     Nero gasps softly and stares again at the window.
@@ -13843,6 +13868,7 @@ $n1t_afterAction</tw-passagedata><tw-passagedata pid="428" name="n1x/F Window As
     &quot;No! I saw something fly past the window!&quot;
 &lt;&lt;/if&gt;&gt;
 
+?P
 &lt;&lt;if $n1_ivexReceptive&gt;&gt;
     Ivex has a bemused smile. He speaks in the tone people use to
     humor small children. &quot;I suppose I should take a look, just in case.&quot;
@@ -14077,23 +14103,14 @@ his situation.
     A [[flickering red candle|n1x/D Candle]] at the corner of the desk is
     emitting a tantalizing, spicy aroma.
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="431" name="n1x/D Knife Take" tags="" position="7000,5525" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
-
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="431" name="n2x/D Knife Take" tags="" position="7700,5825" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;em-assert !$n2_knifeTaken&gt;&gt;
 &lt;&lt;set $n2_knifeTaken = true&gt;&gt;
 
 take the knife. awkward cuz naked.
 &lt;&lt;/nobr&gt;&gt;
 
-$n1t_afterAction</tw-passagedata><tw-passagedata pid="432" name="n1x/F Cabinet Search" tags="" position="7275,4450" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
-
+$n1t_afterAction</tw-passagedata><tw-passagedata pid="432" name="n2x/F Cabinet Search" tags="" position="7975,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set _again = (a, b) =&gt; $n2_cabinetSearched ? a : b&gt;&gt;
 
 The first drawer &lt;&lt;= _again(&#39;appeared&#39;, &#39;Nero opens appears&#39;)&gt;&gt;
@@ -14116,11 +14133,7 @@ There are better things to do before Ivex returns.
 ?P
 &lt;&lt;= _again($n1t_afterLook, $n1t_afterAction)&gt;&gt;
 &lt;&lt;set $n2_cabinetSearched = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="433" name="n1x/F Bookshelf Search" tags="" position="7350,5200" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
-
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="433" name="n2x/F Bookshelf Search" tags="" position="8025,5825" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n2_bookshelfSearchMageSight != null || ($n2_bookshelfSearchMageSight = $n1_mageSight)&gt;&gt;
 
 &lt;&lt;set _again = (a, b) =&gt; $n2_bookshelfSearched ? a : b&gt;&gt;
@@ -14160,6 +14173,10 @@ There are better things to do before Ivex returns.
 &lt;&lt;= _again($n1t_afterLook, $n1t_afterAction)&gt;&gt;
 &lt;&lt;set $n2_bookshelfSearched = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="434" name="n1x/F Nackle" tags="" position="7625,4650" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n2_free&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 Nackle&#39;s Poltergeist Device is an enchantment that belongs to a discipline called
 room-scale magic, which is basically any magic that is prepared ahead of time
 to take place in a specific location. The location is not necessarily a room,
@@ -14214,12 +14231,8 @@ maybe indulge the &quot;take the cock&quot; pun when extraHorny or when repeated
 
 $n1t_afterAction</tw-passagedata><tw-passagedata pid="436" name="n1x/P Bottle Ask" tags="" position="7700,4450" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
 
 &lt;&lt;em-assert !$n1_bottleAskedAgain&gt;&gt;
 &lt;&lt;set $n1_bottleAskedAgain = $n1_bottleAsked&gt;&gt;
@@ -14239,6 +14252,10 @@ Ivex tells the name, even before you know you need it. (makes the Sprite joke be
 &lt;&lt;/nobr&gt;&gt;
 
 $n1t_afterAction</tw-passagedata><tw-passagedata pid="437" name="n1x/F Nackle 2" tags="" position="7625,4775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n2_free&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+
 A typical installation of Nackle&#39;s Poltergeist Device places the glyphs
 on the underside
 of a table, or on some other surface that&#39;s easily accessible to a mage
@@ -14296,11 +14313,7 @@ the surface of a metallic horse cock, sealed inside a bottle.
 
 ?P
 [[Continue|n1x/D Bottle]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="438" name="n1x/F Desk Search" tags="" position="6975,5675" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
-
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="438" name="n2x/F Desk Search" tags="" position="7650,5975" size="100,100">&lt;&lt;nobr&gt;&gt;
 The desk should have drawers. It certainly &lt;em&gt;looks&lt;/em&gt;
 like it has room for drawers,
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -14339,13 +14352,9 @@ of wood grain, with no apparent way of opening it.
     It&#39;s not a bump. It&#39;s a change in texture, a slight irregularity,
     almost a stickiness.
     ?P
-    [[Continue|n1x/F Desk Search 2]]
+    [[Continue|n2x/F Desk Search 2]]
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="439" name="n1x/F Desk Search 2" tags="" position="7100,5675" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
-
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="439" name="n2x/F Desk Search 2" tags="" position="7775,5975" size="100,100">&lt;&lt;nobr&gt;&gt;
 Excited by his find, Nero crouches down to take a better look
 at the underside of the desk.
 ?P
@@ -14364,11 +14373,7 @@ The wolf quickly stands up and tries to focus on something else.
 ?P
 $n1t_afterAction
 &lt;&lt;set $n2_deskSearched = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="440" name="n1x/D Mirror Take" tags="" position="6700,5875" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
-
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="440" name="n2x/D Mirror Take" tags="" position="7175,6375" size="100,100">&lt;&lt;nobr&gt;&gt;
 take the mirror, it might be useful. too bad no pockets.
 
 &lt;&lt;set $n2_mirrorTaken = true&gt;&gt;
@@ -14402,13 +14407,13 @@ $n1t_afterAction
         &lt;&lt;elseif $n1_windowAskRefused&gt;&gt;
             Ivex was unreceptive last time, but perhaps he can
             still be persuaded to touch it.
-            &lt;&lt;actions-add [[Try again to attract Ivex to the window.|n1x/F Window Ask]]&gt;&gt;
+            &lt;&lt;actions-add [[Try again to attract Ivex to the window.|n1x/D Window Ask]]&gt;&gt;
         &lt;&lt;elseif $n1_ivexReceptive&gt;&gt;
              Ivex seems amenable to suggestion.
-            &lt;&lt;actions-add [[Draw attention to the window.|n1x/F Window Ask]]&gt;&gt;
+            &lt;&lt;actions-add [[Draw attention to the window.|n1x/D Window Ask]]&gt;&gt;
         &lt;&lt;else&gt;&gt;
             Tricking Ivex into touching it should be easy.
-            &lt;&lt;actions-add [[Draw attention to the window.|n1x/F Window Ask]]&gt;&gt;
+            &lt;&lt;actions-add [[Draw attention to the window.|n1x/D Window Ask]]&gt;&gt;
         &lt;&lt;/if&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
@@ -15354,11 +15359,7 @@ drop knife
 &lt;&lt;/nobr&gt;&gt;
 
 [[Continue|n2f/D Leave]]</tw-passagedata><tw-passagedata pid="489" name="n2x/D Use Wand" tags="" position="7350,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
 &lt;&lt;vi-always n1_wandAsked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever true&gt;&gt;
 
 &lt;&lt;if $n2_extraHorny&gt;&gt;
     feels awesome, can&#39;t stop
@@ -15382,11 +15383,7 @@ drop knife
         &lt;li&gt;[[Don&#39;t stop.|n2x/D Use Wand Continue]]&lt;/li&gt;
     &lt;/ul&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="490" name="n2x/D Try Wand" tags="" position="7475,5475" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
-
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="490" name="n2x/D Try Wand" tags="" position="7500,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;em-assert !$n1_wandAsked&gt;&gt;
 
 pick up wand, try to use it, it starts vibrating furiously. skittish, drop it.
@@ -15395,11 +15392,6 @@ pick up wand, try to use it, it starts vibrating furiously. skittish, drop it.
 ?P
 $n1t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="491" name="n2x/D Use Wand Stop" tags="" position="7475,6250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_wandAsked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever true&gt;&gt;
 
 stop before orgasm. frustrated, and now super horny
 &lt;&lt;set $n2_extraHorny = true&gt;&gt;
@@ -15407,12 +15399,6 @@ stop before orgasm. frustrated, and now super horny
 ?P
 $n1t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="492" name="n2x/D Use Wand Continue" tags="" position="7350,6250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_wandAsked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever true&gt;&gt;
-
 continue past orgasm, can&#39;t stop.
 
 ?P

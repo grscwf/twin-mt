@@ -1909,10 +1909,13 @@ Template.add("P", "<br><br>");
   font-weight: bold;
 }
 .var-info-ignored {
+  border: 1px dashed #882;
   font-style: italic;
+  font-weight: normal;
 }
 .var-info-always {
-  opacity: 0.8;
+  font-weight: normal;
+  opacity: 0.6;
 }
 
 .var-info-to-do::after {
@@ -1941,8 +1944,14 @@ Template.add("P", "<br><br>");
   cursor: pointer;
 }
 .var-info-can-change:hover {
-  background-color: #333;
   border-color: #ccc;
+}
+
+.var-info-can-change.var-info-notable {
+  border-color: #996;
+}
+.var-info-can-change.var-info-notable:hover {
+  border-color: #ddc;
 }
 
 .var-info-boolean-false {
@@ -2028,17 +2037,22 @@ $(document).on(":passageend", () => {
   }
 });
 
+function withinInclude(ctx) {
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === "include") return true;
+  }
+  return false;
+}
+
 /** <<vi-always varname value [reason]>> */
 Macro.add("vi-always", {
   handler: function() {
     const [vname, exp] = this.args;
     const sexp = Nero.getFlagExpectation(vname);
-    if (sexp !== "" && sexp !== "notable") {
-      EM.fail(`vi-always ${vname} is redundant`);
+    if (sexp !== "notable" && !withinInclude(this)) {
+      EM.fail(`vi-always ${vname} is unnecessary`);
     }
     alwaysVars.set(vname, exp);
-    const actual = VT.untracedGet(vname) ?? false;
-    EM.assert(exp === actual, `${vname} should be ${exp}, not ${actual}`);
   }
 });
 
@@ -2230,7 +2244,7 @@ function varInfoSetup() {
       EM.assert(!alwaysVars.has(vn), `vi-always ${vn} should not be read`);
       const sexp = Nero.getFlagExpectation(vn);
       if (sexp !== "" && sexp !== "notable") {
-        EM.fail(`${vn} is constant in this section and should not be read`);
+        EM.fail(`${vn} is always ${sexp} in this section and should not be read`);
       }
     });
 
@@ -2578,13 +2592,20 @@ EnumType.define("MagicPhase", [
 EnumType.declareVar("n1_magicPhase", "MagicPhase");
 
 // Define temp var with a getter, so read tracking works.
-function def(vname, fn) {
+function defTemp(vname, fn) {
   Object.defineProperty(State.temporary, vname, { enumerable: true, get: fn });
 }
 
 $(document).on(":passagestart", () => {
-    const v = State.variables;
-    def('ivexNear', () => v.n1_candleHorny && !v.n2_ivexGone);
+    defTemp('ivexNear', () => {
+      const V = State.variables;
+      return V.n1_candleHorny && !V.n2_ivexGone;
+    });
+    
+    VarTrace.ignore(() => {
+      const V = State.variables;
+      V.n1_magicPhase ?? (V.n1_magicPhase = 0);
+    });
 });
 <</script>>
 
@@ -2759,9 +2780,9 @@ Nero.flags = {
       n1d_candle: "notable",
       n1e_horny: "notable",
       n1p_barbs: "",
-      n1s_magic: "notable",
-      n1x_look: "notable",
-      n1y_lookHorny: "notable",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: "",
       n2a_start: "",
       n2b_bound: "",
       n2f_free: "",
@@ -2793,7 +2814,7 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: true,
       n1p_barbs: false,
-      n1s_magic: "notable",
+      n1s_magic: "",
       n1x_look: false,
       n1y_lookHorny: true,
       n2a_start: false,
@@ -2825,8 +2846,8 @@ Nero.flags = {
       n1d_candle: true,
       n1e_horny: true,
       n1p_barbs: "",
-      n1s_magic: "notable",
-      n1x_look: "notable",
+      n1s_magic: "",
+      n1x_look: "",
       n1y_lookHorny: true,
       n2a_start: false,
       n2b_bound: true,
@@ -2859,8 +2880,8 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: "",
-      n1s_magic: "notable",
-      n1x_look: "notable",
+      n1s_magic: "",
+      n1x_look: "",
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
@@ -2890,7 +2911,7 @@ Nero.flags = {
       n1d_candle: "notable",
       n1e_horny: "notable",
       n1p_barbs: false,
-      n1s_magic: "notable",
+      n1s_magic: "",
       n1x_look: "notable",
       n1y_lookHorny: "notable",
       n2a_start: "notable",
@@ -2919,8 +2940,8 @@ Nero.flags = {
       n1d_candle: "notable",
       n1e_horny: true,
       n1p_barbs: "",
-      n1s_magic: "notable",
-      n1x_look: "notable",
+      n1s_magic: "",
+      n1x_look: "",
       n1y_lookHorny: true,
       n2a_start: true,
       n2b_bound: true,
@@ -2948,9 +2969,9 @@ Nero.flags = {
       n1d_candle: "notable",
       n1e_horny: "notable",
       n1p_barbs: "",
-      n1s_magic: "notable",
-      n1x_look: "notable",
-      n1y_lookHorny: "notable",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: "",
       n2a_start: "",
       n2b_bound: "",
       n2f_free: "",
@@ -2983,8 +3004,8 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: false,
-      n1s_magic: "notable",
-      n1x_look: "notable",
+      n1s_magic: "",
+      n1x_look: "",
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
@@ -3075,14 +3096,14 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: false,
-      n1s_magic: "notable",
-      n1x_look: "notable",
+      n1s_magic: "",
+      n1x_look: "",
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
-      n2f_free: "notable",
-      n2x_lookFree: "notable",
-      n3a_start: "notable",
+      n2f_free: "",
+      n2x_lookFree: "",
+      n3a_start: "",
       n8_archive: "",
       n9_ending: "",
       other: "",
@@ -3111,14 +3132,14 @@ Nero.flags = {
       n1d_candle: false,
       n1e_horny: false,
       n1p_barbs: false,
-      n1s_magic: "notable",
-      n1x_look: "notable",
+      n1s_magic: "",
+      n1x_look: "",
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
-      n2f_free: "notable",
-      n2x_lookFree: "notable",
-      n3a_start: "notable",
+      n2f_free: "",
+      n2x_lookFree: "",
+      n3a_start: "",
       n8_archive: "",
       n9_ending: "",
       other: "",
@@ -3203,8 +3224,7 @@ Nero.checkConstraints = () => {
   if (!/^n/.test(here)) return;
 
   VarTrace.ignore(() => {
-    const V = State.variables;
-    V.n1_magicPhase || (V.n1_magicPhase = 0);
+    const V = State.current.variables;
     Object.keys(Nero.flags).forEach(x => {
       if (!V[x]) return;
       Object.keys(Nero.flags[x].implies).forEach(y => {
@@ -14103,6 +14123,8 @@ $n1t_afterAction
 
 :: n1x/D Cross {"position":"6175,5375","size":"100,100"}
 <<nobr>>
+<<vi-always n2_free false>>
+
 <<if $n1_mirrorViewed>>
     Unyielding leather straps are holding
     <<if $n1_naked>>
@@ -14190,6 +14212,8 @@ $n1t_afterAction
 
 :: n1x/F Study {"position":"6050,5075","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_ivexGone>>
+
 <<if $n1_candleLit>>
     Smoke from the <<n1-no-loop [[lit candle|n1x/D Candle]]>>
     is spreading through the room,
@@ -14292,7 +14316,8 @@ pompous, dirty, and dominated by the
 
 :: n1x/F Desk {"position":"6850,5500","size":"100,100"}
 <<nobr>>
-<<expand-ignore n1_globeViewed n2_deskSearched n2_ivexGone>>
+<<vi-ignore n2_ivexGone>>
+
 <<em-assert !$n2_free || $n1_bottleViewed>>
 <<em-assert !$n2_free || $n2_mirrorBroken || $n2_mirrorTaken>>
 <<em-assert !$n2_knifeTaken || $n2_free>>
@@ -14359,7 +14384,7 @@ is continuous and uninterrupted across all of its visible surfaces.
     <<if $n2_free>>
         that was sharp enough to cut Nero's bonds.
         It might be worth taking.
-        <<actions-add [[Take the letter opener.|n1x/D Knife Take]]>>
+        <<actions-add [[Take the letter opener.|n2x/D Knife Take]]>>
     <<else>>
         that may be sharp enough to cut Nero's bonds.
         ?P
@@ -14383,9 +14408,9 @@ is continuous and uninterrupted across all of its visible surfaces.
 
 <<if $n2_free>>
     <<if $n2_deskSearched>>
-        <<actions-add [[Search the desk again.|n1x/F Desk Search]]>>
+        <<actions-add [[Search the desk again.|n2x/F Desk Search]]>>
     <<else>>
-        <<actions-add [[Search the desk.|n1x/F Desk Search]]>>
+        <<actions-add [[Search the desk.|n2x/F Desk Search]]>>
     <</if>>
 <</if>>
 
@@ -14401,6 +14426,8 @@ is continuous and uninterrupted across all of its visible surfaces.
 
 :: n1x/F Bookshelves {"position":"7225,5125","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_ivexGone>>
+
 The room's walls are lined with several similar bookshelves
 that are fillled with many [[books|n1x/P Books]]
 <<if $n1_mageSight>>
@@ -14425,10 +14452,10 @@ Most of the space is taken up by boxes
     plain wood with simple lids.
 
     <<if !$n2_bookshelfSearched>>
-        <<actions-add [[Search the boxes.|n1x/F Bookshelf Search]]>>
+        <<actions-add [[Search the boxes.|n2x/F Bookshelf Search]]>>
     <<else>>
         Nero vividly remembers his futile
-        [[search of the boxes|n1x/F Bookshelf Search]].
+        [[search of the boxes|n2x/F Bookshelf Search]].
     <</if>>
 <</if>>
 
@@ -14444,6 +14471,8 @@ Most of the space is taken up by boxes
 
 :: n1x/D Mirror {"position":"6700,5750","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_ivexGone>>
+
 <<if $n2_mirrorBroken>>
     broken, useless. regrets.
 
@@ -14453,7 +14482,7 @@ Most of the space is taken up by boxes
 <<elseif $n2_free>>
     <<em-assert $n2_tooClever>>
     free, mirror intact on desk
-    <<actions-add [[Take the mirror.|n1x/D Mirror Take]]>>
+    <<actions-add [[Take the mirror.|n2x/D Mirror Take]]>>
 
 <<else>>
     propped up against a [[snow globe|n1x/D Globe]]
@@ -14582,7 +14611,7 @@ if free, can also see porn mags and something cringe.
 </ul>
 
 
-:: n1x/D Candle [maybe-password] {"position":"6850,5750","size":"100,100"}
+:: n1x/D Candle [maybe-password] {"position":"6850,5700","size":"100,100"}
 <<nobr>>
 <<set _wantPassword = $n1_magicPhase === MP_wantPassword>>
 
@@ -14676,7 +14705,7 @@ Nero think of something more sensual than meat.
     especially if the wolf has any hostile encounters before
     he regains full use of his magic abilities.
 
-    <<actions-add [[Take the letter opener.|n1x/D Knife Take]]>>
+    <<actions-add [[Take the letter opener.|n2x/D Knife Take]]>>
 
 <<else>>
     It looks like an ordinary letter opener, probably made of steel.
@@ -14706,6 +14735,8 @@ Nero think of something more sensual than meat.
 
 :: n1x/F Cabinets {"position":"7150,4475","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_ivexGone>>
+
 Against the walls of the room are several wooden cabinets
 that seem identical in shape and size, but painted differently,
 with distinctly colored doors and
@@ -14752,9 +14783,9 @@ The others are bare.
     <</if>>
 
     <<if $n2_cabinetSearched>>
-        Nero cringes at the memory of [[what was in them|n1x/F Cabinet Search]].
+        Nero cringes at the memory of [[what was in them|n2x/F Cabinet Search]].
     <<else>>
-        <<actions-add [[Search the unpainted cabinet.|n1x/F Cabinet Search]]>>
+        <<actions-add [[Search the unpainted cabinet.|n2x/F Cabinet Search]]>>
     <</if>>
 <</if>>
 
@@ -14782,6 +14813,9 @@ if want touch and ivex here, [[n1x/P Coins Ask]]
 
 :: n1x/F Wall {"position":"7125,3925","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_free>>
+<<vi-ignore n2_ivexGone>>
+
 <<set $n1_wallViewed = true>>
 
 The far wall, on the other side of the desk,
@@ -14938,6 +14972,9 @@ XXX if viewed desk, suggest getting knife
 
 :: n1x/D Map [maybe-password] {"position":"7275,4000","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore n2_ivexGone>>
+
 map has several markings.
 <<if $n2_free>>
     close-up view, can see tiny writing.
@@ -14957,6 +14994,10 @@ map has several markings.
 
 :: n1x/D Portrait [has-hole maybe-password] {"position":"7175,4175","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore n2_free>>
+<<vi-ignore n2_ivexGone>>
+
 <<set _wantPassword = $n1_magicPhase === MP_wantPassword>>
 
 <<if $n2_extraHorny>>
@@ -15040,7 +15081,7 @@ if coin in mouth, it drops to the floor
 <</nobr>>
 
 
-:: n1x/D Wand [has-hole maybe-password] {"position":"7275,5350","size":"100,100"}
+:: n1x/D Wand [has-hole maybe-password] {"position":"7250,5325","size":"100,100"}
 <<nobr>>
 ISO standard magic wand, but an odd ring-shaped attachment on the end.
 <<if $n1_mageSight>>
@@ -15103,6 +15144,8 @@ ISO standard magic wand, but an odd ring-shaped attachment on the end.
 
 :: n1x/F Window [has-hole] {"position":"6950,3900","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_ivexGone>>
+
 The only window in the room
 is round and about a meter in diameter.
 The window has glass panes arranged in a radial pattern that
@@ -15193,12 +15236,8 @@ $n1t_afterAction
 :: n1x/P Portrait Ask [maybe-password] {"position":"7600,4125","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<set _wantTouch = $n1_magicPhase === MP_wantTouch>>
 <<set _wantPassword = $n1_magicPhase === MP_wantPassword>>
@@ -15212,13 +15251,8 @@ $n1t_afterAction
 :: n1x/D Map Ask [maybe-password] {"position":"7325,3725","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
-<<vi-always n1_magicPhase `MP_wantPassword`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<if $n1_mapAskTried>>
     <<set $n1_mapAskFailed = true>>
@@ -15317,7 +15351,7 @@ ask, is that from X?
 <</nobr>>
 
 
-:: n1x/D Candle Ask [maybe-password] {"position":"6850,5875","size":"100,100"}
+:: n1x/D Candle Ask [maybe-password] {"position":"6975,5700","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n1_naked true>>
@@ -15351,15 +15385,11 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: n1x/D Ask Wand [maybe-password] {"position":"7475,5350","size":"100,100"}
+:: n1x/D Ask Wand [maybe-password] {"position":"7400,5350","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
+<<vi-ignore n1_mageSight>>
 
 <<if $n1_subby>>
     ask wand subby
@@ -15449,16 +15479,11 @@ activation word is "please", has note to change it.
 $n1t_afterAction
 
 
-:: n1x/F Window Ask {"position":"6950,3650","size":"100,100"}
+:: n1x/D Window Ask {"position":"6950,3650","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
-<<vi-always n1_magicPhase `MP_wantTouch`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<if $n1_windowAskRefused>>
     Nero gasps softly and stares again at the window.
@@ -15494,6 +15519,7 @@ $n1t_afterAction
     "No! I saw something fly past the window!"
 <</if>>
 
+?P
 <<if $n1_ivexReceptive>>
     Ivex has a bemused smile. He speaks in the tone people use to
     humor small children. "I suppose I should take a look, just in case."
@@ -15739,13 +15765,8 @@ his situation.
 <</nobr>>\
 
 
-:: n1x/D Knife Take {"position":"7000,5525","size":"100,100"}
+:: n2x/D Knife Take {"position":"7700,5825","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleLit false>>
-<<vi-always n1_naked true>>
-<<vi-always n2_free true>>
-<<vi-always n2_ivexGone true>>
-
 <<em-assert !$n2_knifeTaken>>
 <<set $n2_knifeTaken = true>>
 
@@ -15755,12 +15776,8 @@ take the knife. awkward cuz naked.
 $n1t_afterAction
 
 
-:: n1x/F Cabinet Search {"position":"7275,4450","size":"100,100"}
+:: n2x/F Cabinet Search {"position":"7975,6100","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleLit false>>
-<<vi-always n2_free true>>
-<<vi-always n2_ivexGone true>>
-
 <<set _again = (a, b) => $n2_cabinetSearched ? a : b>>
 
 The first drawer <<= _again('appeared', 'Nero opens appears')>>
@@ -15786,12 +15803,8 @@ There are better things to do before Ivex returns.
 <</nobr>>
 
 
-:: n1x/F Bookshelf Search {"position":"7350,5200","size":"100,100"}
+:: n2x/F Bookshelf Search {"position":"8025,5825","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleLit false>>
-<<vi-always n2_free true>>
-<<vi-always n2_ivexGone true>>
-
 <<set $n2_bookshelfSearchMageSight != null || ($n2_bookshelfSearchMageSight = $n1_mageSight)>>
 
 <<set _again = (a, b) => $n2_bookshelfSearched ? a : b>>
@@ -15835,6 +15848,10 @@ There are better things to do before Ivex returns.
 
 :: n1x/F Nackle {"position":"7625,4650","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore n2_free>>
+<<vi-ignore n2_ivexGone>>
+
 Nackle's Poltergeist Device is an enchantment that belongs to a discipline called
 room-scale magic, which is basically any magic that is prepared ahead of time
 to take place in a specific location. The location is not necessarily a room,
@@ -15897,12 +15914,8 @@ $n1t_afterAction
 :: n1x/P Bottle Ask {"position":"7700,4450","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<em-assert !$n1_bottleAskedAgain>>
 <<set $n1_bottleAskedAgain = $n1_bottleAsked>>
@@ -15926,6 +15939,10 @@ $n1t_afterAction
 
 :: n1x/F Nackle 2 {"position":"7625,4775","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore n2_free>>
+<<vi-ignore n2_ivexGone>>
+
 A typical installation of Nackle's Poltergeist Device places the glyphs
 on the underside
 of a table, or on some other surface that's easily accessible to a mage
@@ -15986,12 +16003,8 @@ the surface of a metallic horse cock, sealed inside a bottle.
 <</nobr>>
 
 
-:: n1x/F Desk Search {"position":"6975,5675","size":"100,100"}
+:: n2x/F Desk Search {"position":"7650,5975","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleLit false>>
-<<vi-always n2_free true>>
-<<vi-always n2_ivexGone true>>
-
 The desk should have drawers. It certainly <em>looks</em>
 like it has room for drawers,
 <<if $n1_mageSight>>
@@ -16030,17 +16043,13 @@ of wood grain, with no apparent way of opening it.
     It's not a bump. It's a change in texture, a slight irregularity,
     almost a stickiness.
     ?P
-    [[Continue|n1x/F Desk Search 2]]
+    [[Continue|n2x/F Desk Search 2]]
 <</if>>
 <</nobr>>
 
 
-:: n1x/F Desk Search 2 {"position":"7100,5675","size":"100,100"}
+:: n2x/F Desk Search 2 {"position":"7775,5975","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleLit false>>
-<<vi-always n2_free true>>
-<<vi-always n2_ivexGone true>>
-
 Excited by his find, Nero crouches down to take a better look
 at the underside of the desk.
 ?P
@@ -16062,12 +16071,8 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: n1x/D Mirror Take {"position":"6700,5875","size":"100,100"}
+:: n2x/D Mirror Take {"position":"7175,6375","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleLit false>>
-<<vi-always n2_free true>>
-<<vi-always n2_ivexGone true>>
-
 take the mirror, it might be useful. too bad no pockets.
 
 <<set $n2_mirrorTaken = true>>
@@ -16105,13 +16110,13 @@ $n1t_afterAction
         <<elseif $n1_windowAskRefused>>
             Ivex was unreceptive last time, but perhaps he can
             still be persuaded to touch it.
-            <<actions-add [[Try again to attract Ivex to the window.|n1x/F Window Ask]]>>
+            <<actions-add [[Try again to attract Ivex to the window.|n1x/D Window Ask]]>>
         <<elseif $n1_ivexReceptive>>
              Ivex seems amenable to suggestion.
-            <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
+            <<actions-add [[Draw attention to the window.|n1x/D Window Ask]]>>
         <<else>>
             Tricking Ivex into touching it should be easy.
-            <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
+            <<actions-add [[Draw attention to the window.|n1x/D Window Ask]]>>
         <</if>>
     <</if>>
 <</if>>
@@ -17249,11 +17254,7 @@ drop knife
 
 :: n2x/D Use Wand {"position":"7350,6100","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
 <<vi-always n1_wandAsked true>>
-<<vi-always n2_extraHorny false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever true>>
 
 <<if $n2_extraHorny>>
     feels awesome, can't stop
@@ -17280,12 +17281,8 @@ drop knife
 <</nobr>>
 
 
-:: n2x/D Try Wand {"position":"7475,5475","size":"100,100"}
+:: n2x/D Try Wand {"position":"7500,6100","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleLit false>>
-<<vi-always n2_free true>>
-<<vi-always n2_ivexGone true>>
-
 <<em-assert !$n1_wandAsked>>
 
 pick up wand, try to use it, it starts vibrating furiously. skittish, drop it.
@@ -17298,11 +17295,6 @@ $n1t_afterAction
 
 :: n2x/D Use Wand Stop {"position":"7475,6250","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_wandAsked true>>
-<<vi-always n2_extraHorny false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever true>>
 
 stop before orgasm. frustrated, and now super horny
 <<set $n2_extraHorny = true>>
@@ -17314,12 +17306,6 @@ $n1t_afterAction
 
 :: n2x/D Use Wand Continue {"position":"7350,6250","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_wandAsked true>>
-<<vi-always n2_extraHorny false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever true>>
-
 continue past orgasm, can't stop.
 
 ?P
