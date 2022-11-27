@@ -463,6 +463,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Meta Text]]>>
 <<include [[Init 3 Passage Notes]]>>
 <<include [[Init 2 Pick Unseen]]>>
+<<include [[Init 2 Random Once]]>>
 <<include [[Init 2 Random Walk]]>>
 <<include [[Init 2 Sidebar]]>>
 <<include [[Init 2 State]]>>
@@ -1577,7 +1578,7 @@ Macro.add("meta-ending", {
 <</script>>
 
 
-:: Init 2 Random Walk [inclusion] {"position":"2750,600","size":"100,100"}
+:: Init 2 Random Walk [inclusion] {"position":"2850,600","size":"100,100"}
 <<append head>><style>
   #random-walk {
     top: max(5rem, 50vh - 5rem);
@@ -1690,7 +1691,7 @@ randomWalkSetup();
 <</script>>
 
 
-:: Init 2 Sidebar [inclusion] {"position":"2850,600","size":"100,100"}
+:: Init 2 Sidebar [inclusion] {"position":"2950,600","size":"100,100"}
 <<script>>
 Macro.add("sidebar-auto-stow", {
   handler: function() {
@@ -1726,9 +1727,11 @@ Macro.add("sidebar-auto-stow", {
 <</nobr>>
 
 
-:: Init 2 State [inclusion] {"position":"2950,600","size":"100,100"}
+:: Init 2 State [inclusion] {"position":"2450,700","size":"100,100"}
 <<script>>
 const VT = window.VarTrace;
+
+// TODO: rename this to chapter
 
 /**
  * <<state-delete prefix1 ...>>
@@ -1793,13 +1796,13 @@ Macro.add("state-load", {
 <</script>>
 
 
-:: Init 2 Templates [inclusion] {"position":"2450,700","size":"100,100"}
+:: Init 2 Templates [inclusion] {"position":"2550,700","size":"100,100"}
 <<script>>
 Template.add("P", "<br><br>");
 <</script>>
 
 
-:: Init 2 UI Style [inclusion] {"position":"2550,700","size":"100,100"}
+:: Init 2 UI Style [inclusion] {"position":"2650,700","size":"100,100"}
 <<append head>><style>
 
 #debug-bar-hint {
@@ -1833,7 +1836,7 @@ Template.add("P", "<br><br>");
 </style><</append>>
 
 
-:: Init 2 Var Info [inclusion] {"position":"2650,700","size":"100,100"}
+:: Init 2 Var Info [inclusion] {"position":"2750,700","size":"100,100"}
 <<append head>><style>
 .revisit-here,
 .revisit-here * {
@@ -2099,20 +2102,20 @@ function varButton(vname) {
 
   const exp = Nero.getFlagExpectation(vname);
   if (exp === "notable") {
-    tags += "[s-notable]\n";
+    tags += "[section-notable]\n";
     outer.addClass("var-info-notable");
     if (ignoreVars.has(vname)) {
       tags += "[vi-ignore]\n";
       outer.addClass("var-info-ignored");
     } else if (alwaysVars.has(vname)) {
-      tags += "[vi-always]\n";
+      tags += `[vi-always ${str(alwaysVars.get(vname))}]\n`;
       outer.addClass("var-info-always");
     } else if (!VT.ctx.wasRead.has(vname)) {
       tags += "[to-do]\n";
       outer.addClass("var-info-to-do");
     }
   } else if (exp !== "") {
-    tags += "[s-constant]\n";
+    tags += `[section-always ${str(exp)}]\n`;
     outer.addClass("var-info-always");
   }
 
@@ -2577,6 +2580,8 @@ v.personalEnding = false;
 
 :: Init 5a Nero Vars [inclusion] {"position":"2650,1050","size":"100,100"}
 <<script>>
+// This has a :passagestart that should run before any other Nero :passagestart
+
 EnumType.define("MagicPhase", [
   "MP_beforeCast",
   "MP_triedMagic",
@@ -12034,9 +12039,8 @@ The panther mage raises an arm, and snaps his fingers.
 <<n1-patience 1 1
     "Ivex closes the paw holding Nero's balls and gently squeezes. \"Tell me, who sent you.\""
 >>
-<</nobr>>
 
-<<nobr>>
+?P
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
@@ -15447,7 +15451,7 @@ $n1t_afterAction
     ?P
     <<include [[n1s/F Magic]]>>
 <</if>>
-<</nobr>>
+<</nobr>>\
 
 
 :: n1x/D Connect {"position":"6225,4275","size":"100,100"}
@@ -16217,22 +16221,26 @@ $n1t_afterAction
 <</nobr>>\
 
 
-:: n1y/D Horny Look [inclusion] {"position":"6025,6250","size":"100,100"}
+:: n1y/D Horny Look [inclusion] {"position":"6100,6200","size":"100,100"}
 <<nobr>>
-<<include [[n1y/D Horny Look Code]]>>
+<!-- focus on escape hints, and Ivex if !ivexGone -->
+<<random-once n2t_hornyLook>>
+<<ro-choice !$n2_ivexGone>>
+    [[panther|n1y/P Horny Ivex]],
+    [[candle|n1y/P Horny Candle]],
+    [[cross|n1y/P Horny Cross]]
 
-<<random-once n2t_lookHornyShown>>
-<<ro-choice>>
+<<ro-choice $n2_ivexGone>>
     Nero gasps and shivers in the leather bonds that
     are holding him tight against the [[wooden cross|n1y/P Horny Cross]].
     The [[red candle|n1y/P Horny Candle]] on the desk is
     burning with an intense, spicy heat that
     <<if $n1_mageSight>>
-      shimmers in the exotic energy permeating the room.
+        shimmers in the exotic energy permeating the room.
     <<else>>
-      the wolf can feel from across the room.
+        the wolf can feel from across the room.
     <</if>>
-
+    
 <<ro-choice $n2_ivexGone>>
     Nero pants, long gasping breaths, that fill his lungs with
     spicy heat from the [[intense red candle|n1y/P Horny Candle]].
@@ -16240,38 +16248,21 @@ $n1t_afterAction
     flling his limbs and making them writhe against
     the [[wooden cross|n1y/P Horny Cross]]
     <<if $n1_mageSight>>
-      in synchrony with the pulsing exotic energies in the room.
+        in synchrony with the pulsing exotic energies in the room.
     <<else>>
-      standing in Ivex's study.
+        standing in Ivex's study.
     <</if>>
-    
-<<ro-choice !$n2_ivexGone>>
-    Nero stares at the panther with an intense hunger for
-    something that isn't food. The wolf can almost taste the salt
-    of the panther's blood on his lips, kissed with wisps of smoke
-    from the [[spicy red candle|n1y/P Horny Candle]] shining brightly
-    <<if $n1_mageSight>>
-      through the exotic energies of the room.
-    <<else>>
-      on the other side of the room.
-    <</if>>
-    He strains against the [[bondage cross|n1y/P Horny Cross]]
-    to try to consume more of whatever it is that he wants,
-    that he doesn't yet have.
+
+<<ro-choice $n2_ivexGone>>
+    Nero shakes his head, catches sight of himself in the
+    [[mirror|n1y/P Horny Mirror]]
+    erect cock and [[cross|n1y/P Horny Cross]]
     
 <</random-once>>
-
-<<script>>
-  /* XXX subby and not ivex gone */
-  /* XXX abused and not ivex gone */
-  /* XXX another any-condition choice */
-  /* XXX Nero shakes his head */
-<</script>>
-
-<</nobr>>
+<</nobr>>\
 
 
-:: n1y/P Horny Candle Ask {"position":"6200,6525","size":"100,100"}
+:: n1y/P Horny Candle Ask {"position":"6300,6475","size":"100,100"}
 <<nobr>>
 <<vi-always n2_ivexGone false>>
 
@@ -16285,7 +16276,7 @@ some ivex nonsense.
 $n1t_afterAction
 
 
-:: n1y/P Horny Candle [maybe-password] {"position":"6200,6375","size":"100,100"}
+:: n1y/P Horny Candle [maybe-password] {"position":"6250,6325","size":"100,100"}
 <<nobr>>
 
 <<set _wantPassword = $n1_magicPhase === MP_wantPassword>>
@@ -16332,9 +16323,8 @@ with a bead of congealed wax near the top, like a drop of pre-cum
 <</nobr>>
 
 
-:: n1y/P Horny Mirror {"position":"6450,6400","size":"100,100"}
+:: n1y/P Horny Mirror {"position":"6400,6250","size":"100,100"}
 <<nobr>>
-
 [[n1y/P Horny Globe]]
 [[n1y/P Horny Gems]]
 
@@ -16347,7 +16337,7 @@ turned on by seeing self turned on
 <</nobr>>
 
 
-:: n1y/P Horny Cross {"position":"6200,6175","size":"100,100"}
+:: n1y/P Horny Cross {"position":"6250,6125","size":"100,100"}
 <<nobr>>
 
 The wooden cross is both a torment and a tease.
@@ -16390,31 +16380,7 @@ something other than the breeze of air.
 <</nobr>>
 
 
-:: n1y/P Horny Wall {"position":"6575,6775","size":"100,100"}
-<<nobr>>
-
-In the middle of the far wall,
-the large round window
-is like a pool of blue water beside the
-[[portrait of a female panther|n1y/P Horny Portrait]]
-that's dominating the room with her alluring, sensual pose.
-<<if $n1_portraitMomKnown>>
-    Some part of Nero's mind reminds him that
-    the portrait is <em>Ivex's mother</em>,
-    but it doesn't matter.
-<</if>>
-The wolf wants to pull the pantheress out of the painting and dive with
-her into the cool liquid sky and rub himself against her sleek black fur
-until they're both screaming in ecstasy.
-
-?P
-<ul class="actions">
-    <li>$n1t_afterLook</li>
-</ul>
-<</nobr>>
-
-
-:: n1y/P Horny Portrait {"position":"6775,6775","size":"100,100"}
+:: n1y/P Horny Portrait {"position":"6300,6675","size":"100,100"}
 <<nobr>>
 
 so sexy, wanna fuck, but ivex's mom
@@ -16426,7 +16392,7 @@ so sexy, wanna fuck, but ivex's mom
 <</nobr>>
 
 
-:: n1y/P Horny Knife {"position":"6400,6700","size":"100,100"}
+:: n1y/P Horny Knife {"position":"6675,6650","size":"100,100"}
 <<nobr>>
 
 <<set _wantTouch = $n1_magicPhase === MP_wantTouch>>
@@ -16440,7 +16406,7 @@ XXX want to reach it to cut free, too bad you can't
 <</nobr>>
 
 
-:: n1y/P Horny Globe {"position":"6475,6550","size":"100,100"}
+:: n1y/P Horny Globe {"position":"6500,6400","size":"100,100"}
 <<nobr>>
 
 ?P
@@ -16451,7 +16417,7 @@ XXX want to reach it to cut free, too bad you can't
 <</nobr>>
 
 
-:: n1y/P Horny Gems {"position":"6375,6175","size":"100,100"}
+:: n1y/P Horny Gems {"position":"6625,6225","size":"100,100"}
 <<nobr>>
 
 <<if $n1_mageSight>>
@@ -16466,7 +16432,7 @@ XXX want to reach it to cut free, too bad you can't
 <</nobr>>
 
 
-:: n1y/P Horny Bottle {"position":"6650,6600","size":"100,100"}
+:: n1y/P Horny Bottle {"position":"6500,6700","size":"100,100"}
 <<nobr>>
 ?P
 <ul class="actions">
@@ -16476,18 +16442,7 @@ XXX want to reach it to cut free, too bad you can't
 <</nobr>>
 
 
-:: n1y/P Horny Coins {"position":"6625,6275","size":"100,100"}
-<<nobr>>
-
-?P
-<ul class="actions">
-    <<actions-get>>
-    <li>$n1t_afterLook</li>
-</ul>
-<</nobr>>
-
-
-:: n1y/P Horny Wand {"position":"6675,6425","size":"100,100"}
+:: n1y/P Horny Wand {"position":"6700,6450","size":"100,100"}
 <<nobr>>
 
 ?P
@@ -16498,40 +16453,8 @@ XXX want to reach it to cut free, too bad you can't
 <</nobr>>
 
 
-:: n1y/P Horny Books {"position":"6825,6425","size":"100,100"}
+:: n1y/P Horny Penguin {"position":"6500,6550","size":"100,100"}
 <<nobr>>
-?P
-<ul class="actions">
-    <<actions-get>>
-    <li>$n1t_afterLook</li>
-</ul>
-<</nobr>>
-
-
-:: n1y/P Horny Penguin {"position":"6800,6600","size":"100,100"}
-<<nobr>>
-?P
-<ul class="actions">
-    <<actions-get>>
-    <li>$n1t_afterLook</li>
-</ul>
-<</nobr>>
-
-
-:: n1y/P Horny Map {"position":"6775,6925","size":"100,100"}
-<<nobr>>
-
-?P
-<ul class="actions">
-    <<actions-get>>
-    <li>$n1t_afterLook</li>
-</ul>
-<</nobr>>
-
-
-:: n1y/P Horny Window {"position":"6575,6925","size":"100,100"}
-<<nobr>>
-
 ?P
 <ul class="actions">
     <<actions-get>>
@@ -17775,7 +17698,7 @@ $n1t_afterAction
 <</nobr>>
 
 
-:: n1y/D Horny Look Code [inclusion] {"position":"6025,6375","size":"100,100"}
+:: Init 2 Random Once [inclusion] {"position":"2750,600","size":"100,100"}
 <<script>>
 const EM = ErrorMessage;
 const VI = VarInfo;
@@ -17786,6 +17709,8 @@ const VI = VarInfo;
  *     text
  * <<ro-choice $condition>>
  *     text
+ * <<ro-choice false>>
+ *     placeholder for deleted choice, to avoid breaking saved games
  * <</random-once>>
  */
 Macro.delete("random-once");
@@ -17825,7 +17750,7 @@ Macro.add("random-once", {
     
     $(this.output).wiki(this.payload[choice].contents);
     
-    if (Config.debug) {
+    if (Config.debug && valid.size > 1) {
       const val = V[shown];
       $("<br><a>&#x1f527;(show another)</a>")
         .appendTo(this.output)
@@ -17836,5 +17761,8 @@ Macro.add("random-once", {
   }
 });
 <</script>>\
+
+
+:: n1y/P Horny Ivex {"position":"6125,6575","size":"100,100"}
 
 
