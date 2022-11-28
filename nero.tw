@@ -429,6 +429,7 @@ The Mage's Tower (Nero)
     [[Passage Notes|Passage Notes Top]]
 <</if>>
 <<if setup.enableDebugMenu>>
+    [[`\uD83D\uDD27 Visited`|n0/F Visited]]
     <<link "&#x1f527; Goto Title" "Title Screen">><</link>>
     [[`\uD83D\uDD27 Goto Nero`|n0/F Nero Jump]]
     <<link "&#x1f527; Goto Testing" "testing">><</link>>
@@ -448,6 +449,7 @@ The Mage's Tower (Nero)
   window.PassageNotes || (window.PassageNotes = {});
   window.VarTrace || (window.VarTrace = {});
   window.VarInfo || (window.VarInfo = {});
+  window.VisitedPassages || (window.VisitedPassages = {});
 <</script>>
 
 <!-- should happen before other modules -->
@@ -470,6 +472,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Templates]]>>
 <<include [[Init 2 UI Style]]>>
 <<include [[Init 2 Var Info]]>>
+<<include [[Init 3 Visited Passages]]>>
 
 <<include [[Init 4 Drekkar]]>>
 <<include [[Init 5 Nero]]>>
@@ -2274,7 +2277,7 @@ varInfoSetup();
 <</script>>
 
 
-:: Init 3 Passage Notes [inclusion] {"position":"2450,825","size":"100,100"}
+:: Init 3 Passage Notes [inclusion] {"position":"2000,800","size":"100,100"}
 <<append head>><style>
   #notes-button {
     background-color: rgba(255, 255, 255, 0.3);
@@ -2354,8 +2357,8 @@ varInfoSetup();
 window.PassageNotes || (window.PassageNotes = {});
 const PN = window.PassageNotes;
 
-const KEY = "passage-notes-1";
 const persist = window.localStorage;
+const KEY = "passage-notes-1";
 
 PN.isUsable = checkUsable();
 PN.isEnabled = PN.isUsable && (State.metadata.get("notesEnabled") || false);
@@ -2426,7 +2429,7 @@ function splitAt(passage, text) {
 
 PN.getOne = (passage) => {
   if (!PN.isUsable) return "";
-  const full = window.localStorage.getItem(KEY) || "";
+  const full = persist.getItem(KEY) || "";
   const split = splitAt(passage, full);
   return split.body;
 };
@@ -2505,7 +2508,7 @@ $(document).on(":passagedisplay", renderButton);
 <</script>>
 
 
-:: Init 4 Drekkar [inclusion] {"position":"2450,950","size":"100,100"}
+:: Init 4 Drekkar [inclusion] {"position":"2450,900","size":"100,100"}
 <<script>>
 const v = variables();
 v.name = "Drekkar";
@@ -3784,10 +3787,9 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 </div>
 
 
-:: Passage Notes Top [noreturn] {"position":"2250,1325","size":"100,100"}
+:: Passage Notes Top [noreturn] {"position":"2025,1250","size":"100,100"}
 <<nobr>>
 <<sidebar-auto-stow>>
-
 <style>
   #notes-load-file {
     height: 1px;
@@ -4036,7 +4038,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 <</nobr>>
 
 
-:: Passage Notes Single [noreturn] {"position":"2125,1325","size":"100,100"}
+:: Passage Notes Single [noreturn] {"position":"1900,1250","size":"100,100"}
 <<nobr>>
 <<script>>
   const PN = window.PassageNotes;
@@ -4153,7 +4155,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 <</nobr>>
 
 
-:: Passage Notes Popup [inclusion] {"position":"2250,1175","size":"100,100"}
+:: Passage Notes Popup [inclusion] {"position":"2025,1100","size":"100,100"}
 <<nobr>>
 <<script>>
   const PN = window.PassageNotes;
@@ -10656,7 +10658,7 @@ Threat. Yes. That was a threat.
 :: n1a/F Endgame Info 2 {"position":"4000,1375","size":"100,100"}
 Two weeks later, Nero enlisted the aid of the gracious and luscious Ms. Tara, an assistant professor at Windbone Magic Academy, to shave his ass and inscribe on his skin a complex glyph matrix he designed himself. It's a single-use spell, requiring another session of shaving and inscription to prepare again. Not altogether unpleasant, but still quite time consuming. It's not a spell he can use often, but it's extremely useful when there are no better options.
 
-All he has to do is hold in his mind an image of the glyphs on his shaven ass as he's seen in a mirror, and mentally <em>twist</em> their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
+All he has to do is hold in his mind an image of the glyphs on his shaven ass, exactly as he had seen in a mirror, and mentally <em>twist</em> their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
 
 First comes Raven's Diversion, which can absorb up to 68 joules of energy from both magical and physical sources of harm. 68 joules is not the upper limit of Raven's spell, but it's the best that Nero can do within the constraints imposed by the canvas of his ass.
 
@@ -18012,5 +18014,117 @@ in setting up the candle.)
 <</nobr>>
 
 [[Continue|n1cx/F Start Candle]]
+
+
+:: Init 3 Visited Passages [inclusion] {"position":"2175,800","size":"100,100"}
+<<script>>
+const VP = window.VisitedPassages || (window.VisistedPassages = {});
+const LZ = LZString;
+
+const persist = window.localStorage;
+const KEY = "visited-passages-1";
+// TODO: maybe checkUsable from Passage Notes?
+
+VP.visited = new Set();
+
+VP.clear = () => {
+  VP.visited = new Set();
+  persist.removeItem(KEY);
+}
+
+function load() {
+  VP.visited = new Set();
+  const str = persist.getItem(KEY);
+  if (str != null) {
+    const json = LZ.decompressFromBase64(str);
+    if (json != null && json !== "") {
+      const list = JSON.parse(json);
+      VP.visited = new Set(list);
+    }
+  }
+}
+
+function save() {
+  const list = Array.from(VP.visited).sort();
+  const json = JSON.stringify(list);
+  const str = LZ.compressToBase64(json);
+  persist.setItem(KEY, str);
+}
+
+function mark(title) {
+  if (!/^n/.test(title)) return;
+  VP.visited.add(title);
+  save();
+}
+
+function setup() {
+  load();
+  $(document).on(":passageend", () => mark(State.passage));
+}
+
+if (Config.debug) setup();
+<</script>>
+
+
+:: n0/F Visited [noreturn] {"position":"2200,1100","size":"100,100"}
+<<nobr>>
+<<sidebar-auto-stow>>
+<style>
+
+.vp-item-visited {
+  color: #666;
+}
+.vp-item-visited::before {
+  content: "x";
+  display: inline-block;
+  text-align: center;
+  min-width: 2em;
+}
+.vp-item-unvisited::before {
+  content: ".";
+  display: inline-block;
+  text-align: center;
+  min-width: 2em;
+}
+
+</style>
+<<script>>
+
+const VP = VisitedPassages;
+const T = State.temporary;
+
+T.clear = () => {
+  VP.clear();
+};
+
+function render(out) {
+  $(out).wiki(`<<link "Return to the game" $return>><</link>>`);
+  $(out).append("<hr>");
+  
+  /* XXX toggle for visited, with count */
+  /* XXX toggle for unvisited */
+  /* XXX clear visited */
+  
+  const passages = Story.lookup();
+  const relevant = passages.filter(p =>
+    !p.tags.includes("inclusion") && /^n/.test(p.title)
+  );
+  const titles = relevant.map(p => p.title).sort();
+  titles.forEach(t => {
+    /* XXX explicit indicator */
+    $("<div class=vp-item>")
+      .addClass(VP.visited.has(t) ? "vp-item-visited" : "vp-item-unvisited")
+      .text(t)
+      .appendTo(out);
+  });
+
+  $(out).append("<hr>");
+  $(out).wiki(`<<link "Return to the game" $return>><</link>>`);
+}
+
+render(output);
+<</script>>
+
+<</nobr>>
 
 
