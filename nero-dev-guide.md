@@ -150,9 +150,10 @@
     - Restarting at chapter 2 will delete all `n2_` and later variables,
       and restore a snapshot of `n1_` variables
       (saved before starting chapter 2).
-    - `n0_` vars are for state that persists across replays.
-  - The `t_` variables are for state that's only used locally. They aren't
-    saved or restored at a restart point.
+  - The `t_` variables are for state that's only used in local passage connections. They aren't saved or restored at a restart point.
+- `n0_` vars are for Nero state that persists across replays.
+- `mt_` vars are for overall story state that persists across replays.
+
 
 ## Rationales
 TODO

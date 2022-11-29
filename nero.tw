@@ -433,8 +433,9 @@ The Mage's Tower (Nero)
     <<link "&#x1f527; Goto Title" "Title Screen">><</link>>
     [[`\uD83D\uDD27 Goto Nero`|n0/F Nero Jump]]
     <<link "&#x1f527; Goto Testing" "testing">><</link>>
-    <<link "&#x1f527; Reset Nero Vars" `State.passage`>>
-        <<state-delete n0_ n1_ n1t_ n2_ n2t_>>
+    <<link "&#x1f527; Reset N0_ Vars">>
+        <<state-delete n0_>>
+        <<run VarInfo.revisitHere()>>
     <</link>>
 <</if>>
 
@@ -2448,7 +2449,7 @@ PN.tryReplaceOne = (passage, old, val) => {
 };
 
 function openPopup() {
-  State.variables.t0_notesOrigin = State.passage;
+  State.variables.t_notesOrigin = State.passage;
   const popupTitle = "[[Passage Notes Popup]]".slice(2, -2);
   const popupText = Story.get(popupTitle).text;
   Dialog.setup("");
@@ -2667,7 +2668,7 @@ const VT = window.VarTrace || (window.VarTrace = {});
 
 function announceBarbs(output) {
   const V = State.variables;
-  V.n1t_announceBarbsSoon = false;
+  V.t_announceBarbsSoon = false;
   const barbs = VT.untracedGet("n1_barbsGlitch")
     ? "Barbs?"
     : VT.untracedGet("n1_barbs")
@@ -2684,10 +2685,10 @@ Macro.add("barbs-announce", {
       announceBarbs(this.output);
       break;
     case "soon":
-      V.n1t_announceBarbsSoon = true;
+      V.t_announceBarbsSoon = true;
       return;
     case "maybe":
-      if (V.n1t_announceBarbsSoon) announceBarbs(this.output);
+      if (V.t_announceBarbsSoon) announceBarbs(this.output);
       break;
     default:
       throw new Error(`Unexpected arg ${this.args[0]}`);
@@ -3283,29 +3284,29 @@ Macro.add("n1-patience", {
     const ppassage = Story.get(ptitle);
     const ptags = ppassage != null ? ppassage.tags : [];
     const movedHere = !ptags.includes("noreturn");
-    if (movedHere || V.n1t_patiencePassage == null) {
+    if (movedHere || V.t_patiencePassage == null) {
       // If we're at a different action node, reset patience and aggro
-      if (V.n1t_patiencePassage !== here) {
-        V.n1t_patienceLooks = looks;
-        V.n1t_patienceActions = actions;
-        V.n1t_patiencePassage = here;
-        V.n1t_patienceAggro = 0;
+      if (V.t_patiencePassage !== here) {
+        V.t_patienceLooks = looks;
+        V.t_patienceActions = actions;
+        V.t_patiencePassage = here;
+        V.t_patienceAggro = 0;
       }
       // If we've exhausted patience, start aggro.
-      if (V.n1t_patienceAggro || V.n1t_patienceLooks <= 1 || V.n1t_patienceActions <= 1) {
-        V.n1t_patienceAggro++;
+      if (V.t_patienceAggro || V.t_patienceLooks <= 1 || V.t_patienceActions <= 1) {
+        V.t_patienceAggro++;
       }
       // warning on aggro
-      T.patienceWarning = V.n1t_patienceAggro === 1;
+      T.patienceWarning = V.t_patienceAggro === 1;
       // forced response
-      T.patienceExhausted = V.n1t_patienceAggro > 1;
+      T.patienceExhausted = V.t_patienceAggro > 1;
       // set return links
-      V.n1t_afterLook = "[" + "[Do something else.|" + here + "][$n1t_patienceLooks -= 1]]";
-      V.n1t_afterAction = "[" + "[Continue|" + here + "][$n1t_patienceActions -= 1; $n1t_didSomeAction = true]]";
-      V.n1t_afterPartialAction = "[" + "[Do something else.|" + here + "][$n1t_patienceActions -=1; $n1t_didSomeAction = true]]";
+      V.t_afterLook = "[" + "[Do something else.|" + here + "][$t_patienceLooks -= 1]]";
+      V.t_afterAction = "[" + "[Continue|" + here + "][$t_patienceActions -= 1; $t_didSomeAction = true]]";
+      V.t_afterPartialAction = "[" + "[Do something else.|" + here + "][$t_patienceActions -=1; $t_didSomeAction = true]]";
     }
     // Patience text
-    switch (V.n1t_patienceAggro) {
+    switch (V.t_patienceAggro) {
       case 0: $(this.output).wiki(patientText); break;
       case 1: $(this.output).wiki(impatientText); break;
       default: $(this.output).wiki(angryText); break;
@@ -3331,7 +3332,7 @@ Macro.add("n1-no-loop", {
 });
 
 function recentlyViewed(name) {
-  const limit = State.variables.n1t_patiencePassage;
+  const limit = State.variables.t_patiencePassage;
   const max = 10;
   for (let i = 1; i < max; i++) {
     const past = State.peek(-i);
@@ -3504,9 +3505,9 @@ Grayed out endings and variations are paths that have not yet been found. Most o
 The endings here are all static, with no choices beyond the selection of variations on this page. A few of the actual endings have choices that are more complicated than what can be selected below. If you want to re-experience those dynamic endings, not just the static version offered here, I suggest you save a game at the point the ending begins.
 `>>
 
-<<if !$t0_archiveDetailViewed>>
+<<if !$mt_archiveDetailViewed>>
     <<= _detail>>
-    <<set $t0_archiveDetailViewed = true>>
+    <<set $mt_archiveDetailViewed = true>>
 <<else>>
     <<linkreplace '<span class="ui-title-more">... more information</span>' t8n>>
         <<= _detail>>
@@ -3993,9 +3994,9 @@ In some browsers, you can also use the "Share" button, which will ask for confir
 ?P
 If you have this game opened in multiple browser tabs, editing a note in one tab may cause an edit conflict in another tab. When that happens, the conflicting value will be shown, and you will have the option of choosing which version to keep.
 `>>
-<<if !$t0_notesDetailViewed>>
+<<if !$mt_notesDetailViewed>>
     <<= _detail>>
-    <<set $t0_notesDetailViewed = true>>
+    <<set $mt_notesDetailViewed = true>>
 <<else>>
     <<linkreplace '<span class="ui-title-more">... more information</span>' t8n>>
         <<= _detail>>
@@ -4060,8 +4061,8 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   });
 
   function restoreSession() {
-    T.savedVal = PN.getOne(V.t0_notesOrigin);
-    T.editVal = session.getItem("notes-single:" + V.t0_notesOrigin) ?? T.savedVal;
+    T.savedVal = PN.getOne(V.t_notesOrigin);
+    T.editVal = session.getItem("notes-single:" + V.t_notesOrigin) ?? T.savedVal;
     $("#notes-input").val(T.editVal);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
@@ -4085,10 +4086,10 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   function saveValue(val, overwrite) {
     T.editVal = val;
     if (overwrite || !T.hasConflict) {
-      T.savedVal = PN.tryReplaceOne(V.t0_notesOrigin, T.savedVal, T.editVal);
+      T.savedVal = PN.tryReplaceOne(V.t_notesOrigin, T.savedVal, T.editVal);
     }
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-    const key = "notes-single:" + V.t0_notesOrigin;
+    const key = "notes-single:" + V.t_notesOrigin;
     if (T.hasConflict) {
       session.setItem(key, val);
     } else {
@@ -4137,7 +4138,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 
 <hr>
 <div class="ui-subtitle">
-    Notes for [passage $t0_notesOrigin]
+    Notes for [passage $t_notesOrigin]
 </div>
 <textarea id="notes-input" placeholder="Enter text here"></textarea>
 <div class="notes-buttons">
@@ -4174,8 +4175,8 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   });
 
   function restoreSession() {
-    T.savedVal = PN.getOne(V.t0_notesOrigin);
-    T.editVal = session.getItem("notes-single:" + V.t0_notesOrigin) ?? T.savedVal;
+    T.savedVal = PN.getOne(V.t_notesOrigin);
+    T.editVal = session.getItem("notes-single:" + V.t_notesOrigin) ?? T.savedVal;
     $("#NP-input").val(T.editVal);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
@@ -4191,10 +4192,10 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   function saveValue(val, overwrite) {
     T.editVal = val;
     if (overwrite || !T.hasConflict) {
-      T.savedVal = PN.tryReplaceOne(V.t0_notesOrigin, T.savedVal, T.editVal);
+      T.savedVal = PN.tryReplaceOne(V.t_notesOrigin, T.savedVal, T.editVal);
     }
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-    const key = "notes-single:" + V.t0_notesOrigin;
+    const key = "notes-single:" + V.t_notesOrigin;
     if (T.hasConflict) {
       session.setItem(key, val);
     } else {
@@ -4241,7 +4242,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   }
 </style>
 <div class="NP-subtitle">
-    Notes for [passage $t0_notesOrigin]
+    Notes for [passage $t_notesOrigin]
 </div>
 <textarea id="NP-input" rows="8" placeholder="Enter text here"></textarea>
 <br>
@@ -10354,13 +10355,13 @@ Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com
 Jump to:
 <</nobr>>
 <<link "> Nero 1F start" "n1a/F Start">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
 <</link>>
 <<link "> Nero 1F first action node, neutral mood" "n1cn/F Ivex Repeat (6,3)">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
 <</link>>
 <<link "> Nero 1F earliest sprite ready" "n1cn/F Ivex Repeat (6,3)">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
     <<set $n0_barbsSlowViewed = true>>
     <<set $n1_barbsSlow = true>>
     <<set $n1_deskViewed = true>>
@@ -10370,15 +10371,15 @@ Jump to:
     <<set $n1_mirrorViewed = true>>
     <<set $n1_naked = true>>
     <<set $n1_studyViewed = true>>
-    <<set $n1t_didSomeAction = true>>
-    <<set $n1t_patienceActions = 1>>
-    <<set $n1t_patienceAggro = 0>>
-    <<set $n1t_patienceLooks = 6>>
-    <<set $n1t_patiencePassage = "n1cn/F Ivex Repeat (6,3)">>
+    <<set $t_didSomeAction = true>>
+    <<set $t_patienceActions = 1>>
+    <<set $t_patienceAggro = 0>>
+    <<set $t_patienceLooks = 6>>
+    <<set $t_patiencePassage = "n1cn/F Ivex Repeat (6,3)">>
 <</link>>
 <<link "> Nero 1F earliest sprite wants password, recruit branch"
         "n1cr/D Ivex Skeptical (4,3)">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
     <<set $n0_barbsSlowViewed = true>>
     <<set $n1_barbsSlow = true>>
     <<set $n1_bookshelfViewed = true>>
@@ -10395,15 +10396,15 @@ Jump to:
     <<set $n1_naked = true>>
     <<set $n1_rememberPlease = true>>
     <<set $n1_studyViewed = true>>
-    <<set $n1t_didSomeAction = true>>
-    <<set $n1t_patienceActions = 2>>
-    <<set $n1t_patienceAggro = 0>>
-    <<set $n1t_patienceLooks = 4>>
-    <<set $n1t_patiencePassage = "n1cr/D Ivex Skeptical (4,3)">>
+    <<set $t_didSomeAction = true>>
+    <<set $t_patienceActions = 2>>
+    <<set $t_patienceAggro = 0>>
+    <<set $t_patienceLooks = 4>>
+    <<set $t_patiencePassage = "n1cr/D Ivex Skeptical (4,3)">>
 <</link>>
 <<link "> Nero 1F earliest sprite wants password, collab branch"
         "n1cr/D Ivex Demanding (4,3)">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
     <<set $n0_barbsSlowViewed = true>>
     <<set $n1_barbsSlow = true>>
     <<set $n1_bookshelfViewed = true>>
@@ -10420,38 +10421,38 @@ Jump to:
     <<set $n1_naked = true>>
     <<set $n1_rememberPlease = true>>
     <<set $n1_studyViewed = true>>
-    <<set $n1t_didSomeAction = true>>
-    <<set $n1t_patienceActions = 2>>
-    <<set $n1t_patienceAggro = 0>>
-    <<set $n1t_patienceLooks = 4>>
-    <<set $n1t_patiencePassage = "n1cr/D Ivex Demanding (4,3)">>
+    <<set $t_didSomeAction = true>>
+    <<set $t_patienceActions = 2>>
+    <<set $t_patienceAggro = 0>>
+    <<set $t_patienceLooks = 4>>
+    <<set $t_patiencePassage = "n1cr/D Ivex Demanding (4,3)">>
 <</link>>
 <<link "> Nero 1F before glitch" "n1cr/D Subby">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
     <<set $n0_barbsFastViewed = true>>
     <<set $n0_barbsSlowViewed = true>>
     <<set $n1_ivexReceptive = true>>
-    <<set $n1t_didSomeAction = true>>
+    <<set $t_didSomeAction = true>>
 <</link>>
 <<link "> Nero 1F start candle" "n1cx/F Start Candle">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
-    <<set $n1t_didSomeAction = true>>
+    <<state-delete n1_ n2_ t_>>
+    <<set $t_didSomeAction = true>>
 <</link>>
 <<link "> Nero 1F candle horny" "n1d/D Candle Horny">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
     <<set $n0_barbsFastViewed = true>>
     <<set $n1_barbs = true>>
     <<set $n1_barbsFast = true>>
     <<set $n1_candleLit = true>>
     <<set $n1_naked = true>>
-    <<set $n1t_didSomeAction = true>>
+    <<set $t_didSomeAction = true>>
 <</link>>
 <<link "> Nero 1F Ivex gone<super>*</super>" "n2a/F Start">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
     <<set $n1_naked = true>>
 <</link>>
 <<link "> Nero 1F easy escape<super>*</super>" "n2f/D Free Action">>
-    <<state-delete n1_ n1t_ n2_ n2t_>>
+    <<state-delete n1_ n2_ t_>>
     <<set $n1_naked = true>>
     <<set $n1_magicPhase = MP_mageSight>>
     <<set $n2_free = true>>
@@ -10464,7 +10465,7 @@ Jump to:
 
 :: n1a/F Start [section-start] {"position":"3375,1725","size":"100,100"}
 <<nobr>>
-<<state-delete n1_ n1t_ n2_ n2t_>>
+<<state-delete n1_ n2_ t_>>
 
 Nero's head feels stuffed, like it's crammed full with pebbles that shift a little painfully when he moves his head. He considers preparing [[Pearson's Hangover Cantrip|n1a/F Hangover Info]], but decides it would be wiser to avoid unnecessary actions until he has a better idea what has happened to him and what peril he faces.
 <</nobr>>
@@ -10520,7 +10521,7 @@ He prepares the spell's image in his mind, and then <em>twists</em> it...
 [[Continue|n1a/F Endgame 2]]
 <<nobr>>
 <<set $n1_endgameCast = true>>
-<<set $n1t_returnEndgame = State.passage>>
+<<set $t_returnEndgame = State.passage>>
 <</nobr>>
 
 
@@ -10627,7 +10628,7 @@ Ivex laughs again. "Let me show you what a real mage can do. I am Ivex the Magni
 Ivex "the Magnificent" theatrically raises his left arm, then snaps his fingers...
 
 [[Continue|n1p/F Barbs Slow]]
-<<set $n1t_afterNaked = "[[Continue|n1a/F Endgame 4]]">>
+<<set $t_afterNaked = "[[Continue|n1a/F Endgame 4]]">>
 
 
 :: n1a/F Endgame 4 [big-mood] {"position":"3825,1600","size":"100,100"}
@@ -10668,7 +10669,7 @@ The unusual ass-inscribed construction has another limitation: neither spell wil
 
 It's saved his life more than once.
 
-<<link Return $n1t_returnEndgame>><</link>>
+<<link Return $t_returnEndgame>><</link>>
 
 
 :: n1a/F Hangover Info {"position":"3350,1575","size":"100,100"}
@@ -10746,7 +10747,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
         <li>[[`"Ah, I see the misunderstanding..."`|n1cn/F Charm]]</li>
         <li>[[Growl at Ivex.|n1cn/F Resist]]</li>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -10826,7 +10827,7 @@ Ivex speaks. "So let me make a proposal."
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
 
-<<set $n1t_didSomeAction = true>>
+<<set $t_didSomeAction = true>>
 
 <<if $n1_abused>>
     "Please, let me explain," says Nero.
@@ -10906,7 +10907,7 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
 
-<<set $n1t_didSomeAction = true>>
+<<set $t_didSomeAction = true>>
 
 <<if $n1_abused>>
     Nero lets out a soft growl. His brutally abused balls argue against
@@ -10968,7 +10969,7 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
         <li>[[`"Would you prefer a 60% share?"`|n1cn/D Reject Collab]]</li>
         <li>[[`"Of course not. I'm hoping to be your apprentice!"`|n1cn/D Apprentice]]</li>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -10993,7 +10994,7 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
         <li>[[`"This is not about me. I'm here on behalf of..."`|n1cn/D Secret Society]]</li>
         <li>[[`"Because I knew you would say that..."`|n1cn/D Reject Demotion]]</li>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -11312,7 +11313,7 @@ Not that Nero would ever tell that to his
         to his current endeavor,
     <</if>>
     but [[countering anti-magic|n1s/F Anti-magic]]
-    <<set $n1t_returnAntiMagic = State.passage>>
+    <<set $t_returnAntiMagic = State.passage>>
     is one of Nero's specialties.
     He's confident that he can find a flaw in Ivex's construction
     and exploit it,
@@ -11405,16 +11406,16 @@ the room,
 
 <ul class="actions">
     <<if $n1_abused>>
-        <li>[[within reason|n1cr/D Subby][$n1t_resisting = true]]</li>
-        <li>[[anything at all|n1cr/D Subby][$n1t_resisting = false]]</li>
+        <li>[[within reason|n1cr/D Subby][$t_resisting = true]]</li>
+        <li>[[anything at all|n1cr/D Subby][$t_resisting = false]]</li>
     <<elseif $n1_naked>>
-        <li>[[within reason|n1cr/D Subby][$n1t_resisting = true]]</li>
-        <li>[[anything at all|n1cr/D Subby][$n1t_resisting = false]]</li>
+        <li>[[within reason|n1cr/D Subby][$t_resisting = true]]</li>
+        <li>[[anything at all|n1cr/D Subby][$t_resisting = false]]</li>
     <<else>>
-        <li>[[within reason|n1cr/D Subby][$n1t_resisting = true]]</li>
-        <li>[[anything at all|n1cr/D Subby][$n1t_resisting = false]]</li>
+        <li>[[within reason|n1cr/D Subby][$t_resisting = true]]</li>
+        <li>[[anything at all|n1cr/D Subby][$t_resisting = false]]</li>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -11462,7 +11463,7 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
     <<else>>
         <li><<link "\"You <em>have</em> heard of us...\"" _link>><</link>></li>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -11481,9 +11482,9 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 
 XXX maybe vary actions on abused/naked
 <ul class="actions">
-    <li>[[...yes|n1cr/D Reject Fantasy][$n1t_resisting = false]]</li>
-    <li>[[...um, no|n1cr/D Reject Fantasy][$n1t_resisting = true]]</li>
-    <<actions-optional $n1t_magicAction>>
+    <li>[[...yes|n1cr/D Reject Fantasy][$t_resisting = false]]</li>
+    <li>[[...um, no|n1cr/D Reject Fantasy][$t_resisting = true]]</li>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -11492,7 +11493,7 @@ XXX maybe vary actions on abused/naked
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
-<<if $n1t_resisting>>
+<<if $t_resisting>>
     nero: within reason
 <<else>>
     nero: yes sir
@@ -11506,7 +11507,7 @@ XXX maybe vary actions on abused/naked
     <<em-assert !$n1_mageSight>>
     ivex makes a gesture
     [[Continue|n1p/F Barbs Fast]]
-    <<set $n1t_afterNaked = "[[n1cs/D Subby Naked]]">>
+    <<set $t_afterNaked = "[[n1cs/D Subby Naked]]">>
 <<else>>
     <<em-assert !$n1_mageSight>>
     ivex makes a gesture
@@ -11515,7 +11516,7 @@ XXX maybe vary actions on abused/naked
     <<else>>
         [[Continue|n1p/F Barbs Fast]]
     <</if>>
-    <<set $n1t_afterNaked = "[[Continue|n1cs/D Subby Naked]]">>
+    <<set $t_afterNaked = "[[Continue|n1cs/D Subby Naked]]">>
 <</if>>
 <</nobr>>
 
@@ -11524,7 +11525,7 @@ XXX maybe vary actions on abused/naked
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
-<<if $n1t_resisting>>
+<<if $t_resisting>>
     nero: um, mind control, ew.
 <<else>>
     nero: um, mind control, yes. (ew).
@@ -11555,9 +11556,9 @@ ivex: nice try, but I think you're lying... we'll see.
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[lick eagerly|n1cs/D Licking][$n1t_resisting = false]]</li>
-    <li>[[lick reluctantly|n1cs/D Licking][$n1t_resisting = true]]</li>
-    <<actions-optional $n1t_magicAction>>
+    <li>[[lick eagerly|n1cs/D Licking][$t_resisting = false]]</li>
+    <li>[[lick reluctantly|n1cs/D Licking][$t_resisting = true]]</li>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -11573,16 +11574,16 @@ ivex: nice try, but I think you're lying... we'll see.
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
-    <li>[[yes please|n1cs/D Reject Mercy][$n1t_resisting = false]]</li>
-    <li>[[...wait, no|n1cs/D Reject Mercy][$n1t_resisting = true]]</li>
-    <<actions-optional $n1t_magicAction>>
+    <li>[[yes please|n1cs/D Reject Mercy][$t_resisting = false]]</li>
+    <li>[[...wait, no|n1cs/D Reject Mercy][$t_resisting = true]]</li>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
 
 :: n1cs/D Licking {"position":"4375,3775","size":"100,100"}
 <<nobr>>
-<<if $n1t_resisting>>
+<<if $t_resisting>>
     ivex: smirks at reluctance
 <<else>>
     ivex: yeah that's a nice start
@@ -11597,7 +11598,7 @@ you need to demonstrate loyalty
 
 :: n1cs/D Reject Mercy {"position":"4250,3950","size":"100,100"}
 <<nobr>>
-<<if $n1t_resisting>>
+<<if $t_resisting>>
     ivex: ooh, you're going to be so much fun.
 <<else>>
     ivex: yeah, good. not supsicious at all.
@@ -11767,7 +11768,7 @@ should be able to figure it out soon enough."
             <li>[[Sneer at Ivex.|n1d/D Strip Resist]]</li>
         <</if>>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -11830,7 +11831,7 @@ A moment later, the panther says, "I know <em>exactly</em> what you need!" His d
 The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|n1p/F Barbs Fast]]
-<<set $n1t_afterNaked = "[[Continue|n1d/D Get Creepy]]">>
+<<set $t_afterNaked = "[[Continue|n1d/D Get Creepy]]">>
 
 
 :: n1d/F Start Candle 2 {"position":"3850,3950","size":"100,100"}
@@ -12065,7 +12066,7 @@ and roughly strokes the fur on the wolf's naked chest.
 The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|n1p/F Barbs Fast]]
-<<set $n1t_afterNaked = "[[Continue|n1d/D Get Creepy]]">>
+<<set $t_afterNaked = "[[Continue|n1d/D Get Creepy]]">>
 
 
 :: n1e/D Heavy Squeeze (1,1) {"position":"4900,4975","size":"200,100"}
@@ -12090,7 +12091,7 @@ The panther mage raises an arm, and snaps his fingers.
         <li>[[Whine with frustration.|n1e/D Alarm]]</li>
         <li>[[Growl with anger and lust.|n1e/D Alarm]]</li>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -12117,7 +12118,7 @@ The panther mage raises an arm, and snaps his fingers.
         <li>[[`"I... can't..."`|n1e/D Ball Submit]]</li>
         <li>[[Snap at Ivex's face.|n1e/D Ball Resist]]</li>
     <</if>>
-    <<actions-optional $n1t_magicAction>>
+    <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
 
@@ -12439,7 +12440,7 @@ The tiger spoke with a voice that was low and friendly. He said...
 <<set $n1_barbsSlow = true>>
 
 It's an embarrassing memory from his naive, younger self.
-<<if !$n1t_barbsSlowExtraViewed>>
+<<if !$t_barbsSlowExtraViewed>>
     And that wasn't even the [[worst bit...|n1p/F Barbs Slow Extra]]
 <<else>>
     And he'll never forget [[Mica's surprising appearance...|n1p/F Barbs Slow Extra]]
@@ -12458,7 +12459,7 @@ There are much more urgent matters to consider.
 
 Such as, the noticeably horny panther mage, who has just magicked away the wolf's clothes, and is now uncomfortably near and running his fingers across the exposed fur on Nero's naked chest.
 
-$n1t_afterNaked
+$t_afterNaked
 
 
 :: n1p/F Barbs Slow Extra {"position":"6300,2775","size":"100,100"}
@@ -12543,7 +12544,7 @@ Lord Pevhin was livid, but still helplessly strapped to the workshop table. Lady
 <<set $n1_barbsFast = true>>
 
 It's an intensely sexy memory,
-<<if $n1t_barbsFastExtraViewed>>
+<<if $t_barbsFastExtraViewed>>
     and it was the start of...
     [[never mind that now...|n1p/F Barbs Fast Extra]]
 
@@ -12560,12 +12561,12 @@ It's an intensely sexy memory,
 
 Such as, the noticeably horny panther mage, who has just magicked away the wolf's clothes, and is now uncomfortably near and running his fingers across the exposed fur on Nero's naked chest.
 
-$n1t_afterNaked
+$t_afterNaked
 
 
 :: n1p/F Barbs Fast Extra {"position":"5975,2625","size":"100,100"}
 <<nobr>>
-<<set $n1t_barbsFastExtraViewed = true>>
+<<set $t_barbsFastExtraViewed = true>>
 
 Lady Temesca, with her cheetah flexibility and strength, and Lord Pevhin's increasingly desperate lust-denied antics, became deeply interwoven into Nero's life during that long, hot summer when the three of them chased each other into myriad and extraordinary perverse acts...
 <</nobr>>
@@ -12606,7 +12607,7 @@ Nero mentally cringes as Ivex struts forward and brings his left paw up to strok
 The panther's right paw is, of course, firmly grasping the feline's bulging crotch. It's clear that Nero will soon be unfortunate enough to meet Ivex the Magnificent's...
 
 <<nobr>>
-<<set _bareLink = $n1t_afterNaked.replace(/^\[\[(.*\|)?|\]\]$/g, "")>>
+<<set _bareLink = $t_afterNaked.replace(/^\[\[(.*\|)?|\]\]$/g, "")>>
 <<barbs-announce soon>>
 <ul class="actions">
     <li><<link "...barbed feline cock." _bareLink>>
@@ -12663,7 +12664,7 @@ Nero's motion through the crowd stopped when he became stuck in a cluster of old
 
 :: n1p/F Barbs Slow Extra 3 {"position":"6300,2975","size":"100,100"}
 <<nobr>>
-<<set $n1t_barbsSlowExtraViewed = true>>
+<<set $t_barbsSlowExtraViewed = true>>
 
 But the obnoxious lion, and the entire room of students, went completely silent when Mica Tebron entered the room. The new professor walked in with his artificial arm raised and surrounded by a swirl of glowing lines. And as he brought his hand down and across his chest in a confident sixth-weave pattern, an orb of intertwined water and fire appeared in his palm.
 <</nobr>>
@@ -12722,7 +12723,7 @@ the noticeably horny panther mage, who has just magicked away the wolf's clothes
 and is now uncomfortably near and running his fingers across the exposed fur on Nero's naked chest.
 <</nobr>>
 
-$n1t_afterNaked
+$t_afterNaked
 
 
 :: n1p/F Barbs Glitch 2 {"position":"5175,2375","size":"100,100"}
@@ -12945,10 +12946,10 @@ function glitchText(textNode, g) {
 :: n1s/F Magic [inclusion] {"position":"5925,3775","size":"200,100"}
 <<nobr>>
 <!--
-    - in: n1t_afterAction - continue link when action is done
-    - out: n1t_magicAction - provides link for an available magic action
+    - in: t_afterAction - continue link when action is done
+    - out: t_magicAction - provides link for an available magic action
 -->
-<<set $n1t_magicAction = null>>
+<<set $t_magicAction = null>>
 
 <<switch $n1_magicPhase>>
 <<case `MP_beforeCast`>>
@@ -12995,7 +12996,7 @@ function glitchText(textNode, g) {
     will only allow a few more tries.
     The wolf decides he should look around for more clues first.
 
-    $n1t_afterAction
+    $t_afterAction
 <<else>>
     <<if $n1_passwordsFound.length === 0>>
         Nero does not know much about Ivex
@@ -13068,7 +13069,7 @@ no immediate feedback of the password tried. the please-misfire isn't revealed u
 sprite says, ok, thinking.
 <<set $n1_magicPhase = MP_onHold>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1s/D Cast Escape {"position":"5900,3250","size":"100,100"}
@@ -13130,7 +13131,7 @@ maybe more on anti-magic.
 <</if>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -13142,30 +13143,30 @@ $n1t_afterAction
 <<if $n1_candleHorny>>
     The wolf mage desperately wants to stroke his throbbing cock.
     His mind focuses on a powerful spell that will break his bonds.
-    <<set $n1t_magicAction = "[[Cast an escape spell.|n1s/D Cast Horny]]">>
+    <<set $t_magicAction = "[[Cast an escape spell.|n1s/D Cast Horny]]">>
 
 <<elseif $n2_ivexGone>>
     Now that Ivex is gone, Nero can cast a powerful escape spell
     without interruption.
-    <<set $n1t_magicAction = "[[Cast an escape spell.|n1s/D Cast Escape]]">>
+    <<set $t_magicAction = "[[Cast an escape spell.|n1s/D Cast Escape]]">>
 
 <<elseif $n1_ivexReceptive>>
     Ivex seems receptive.
     Perhaps this is a good time for Nero to impress him
     with a flashy escape spell.
-    <<set $n1t_magicAction = "[[Cast an escape spell.|n1s/D Cast Slippery]]">>
+    <<set $t_magicAction = "[[Cast an escape spell.|n1s/D Cast Slippery]]">>
 
 <<elseif $n1_subby>>
     XXX something subby
-    <<set $n1t_magicAction = "[[Cast an escape spell.|n1s/D Cast Slippery]]">>
+    <<set $t_magicAction = "[[Cast an escape spell.|n1s/D Cast Slippery]]">>
 
 <<else>>
     Ivex is staring like a predator, so if Nero tries a spell,
     it should be fast and decisive.
-    <<if !$n1t_didSomeAction>>
+    <<if !$t_didSomeAction>>
         Or perhaps he should try something else first.
     <</if>>
-    <<set $n1t_magicAction = "[[Cast an attack spell.|n1s/D Cast Itch]]">>
+    <<set $t_magicAction = "[[Cast an attack spell.|n1s/D Cast Itch]]">>
 <</if>>
 
 ?P
@@ -13190,7 +13191,7 @@ $n1t_afterAction
     Ivex is watching, but it'll be too quick for him to stop,
     and Nero needs every advantage he can get.
 <</if>>
-<<set $n1t_magicAction = "[[Cast mage-sight.|n1s/D Cast Sight]]">>
+<<set $t_magicAction = "[[Cast mage-sight.|n1s/D Cast Sight]]">>
 
 ?P
 <</nobr>>\
@@ -13209,9 +13210,9 @@ $n1t_afterAction
         mage-sight is on.
     <</if>>
     <<if $n1_scanned>>
-        <<set $n1t_magicAction = "[[Scan the room again.|n1x/D Scan]]">>
+        <<set $t_magicAction = "[[Scan the room again.|n1x/D Scan]]">>
     <<else>>
-        <<set $n1t_magicAction = "[[Scan the room.|n1x/D Scan]]">>
+        <<set $t_magicAction = "[[Scan the room.|n1x/D Scan]]">>
     <</if>>
 <</if>>
 
@@ -13277,9 +13278,9 @@ Ivex says something lewd about scratching itches, saunters back to desk
 
 <</nobr>>
 info about [[anti-magic|n1s/F Anti-magic]]
-<<set $n1t_returnAntiMagic = State.passage>>
+<<set $t_returnAntiMagic = State.passage>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1s/D Cast Slippery {"position":"5850,3475","size":"100,100"}
@@ -13328,9 +13329,9 @@ Ivex being lewd about slippery. saunters back to desk.
 <</nobr>>
 
 info about [[anti-magic|n1s/F Anti-magic]]
-<<set $n1t_returnAntiMagic = State.passage>>
+<<set $t_returnAntiMagic = State.passage>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1s/F Sprite [inclusion] {"position":"6150,3775","size":"200,100"}
@@ -13353,9 +13354,9 @@ $n1t_afterAction
 <<case `MP_wantDevice`>>
     "Which device in this room do you wish to control, Master?"
     <<if $n1_bottleViewed>>
-        <<set $n1t_magicAction = "[[`Tell the Sprite, \"Nackle's Poltergeist Device.\"`|n1s/D Say Device]]">>
+        <<set $t_magicAction = "[[`Tell the Sprite, \"Nackle's Poltergeist Device.\"`|n1s/D Say Device]]">>
     <<elseif !$n1_helpDeviceViewed>>
-        <<set $n1t_magicAction = "[[Ask the Sprite for help.|n1s/D Help Device]]">>
+        <<set $t_magicAction = "[[Ask the Sprite for help.|n1s/D Help Device]]">>
     <<elseif $n1_candleHorny>>
         The teasing innuendo in the Sprite's tone is impossible to ignore.
         Nero desperately looks around the room for a device that will satisfy their
@@ -13368,9 +13369,9 @@ $n1t_afterAction
 <<case `MP_wantName`>>
     "Which device in this room do you wish to control, Master?"
     <<if $n1_bottleNameKnown>>
-        <<set $n1t_magicAction = "[['Tell the Sprite, \"Please, Lance Rockhard\"'|n1s/D Say Lance]]">>
+        <<set $t_magicAction = "[['Tell the Sprite, \"Please, Lance Rockhard\"'|n1s/D Say Lance]]">>
     <<elseif !$n1_helpDeviceViewed>>
-        <<set $n1t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Device]]">>
+        <<set $t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Device]]">>
     <<elseif $n1_candleHorny>>
         All of them, of course, but Nero knows that the Sprite will deny that
         desire.
@@ -13393,19 +13394,19 @@ $n1t_afterAction
 <<case `MP_wantTouch`>>
     "Please touch my hole, Master."
     <<if !$n1_helpTouchViewed>>
-        <<set $n1t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Touch]]">>
+        <<set $t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Touch]]">>
     <</if>>
 
 <<case `MP_wantPassword`>>
     "Please confirm your password, ?master."
-    <<set $n1t_magicAction = "[[Guess a password.|n1s/F Guess Password]]">>
+    <<set $t_magicAction = "[[Guess a password.|n1s/F Guess Password]]">>
 
 <<case `MP_onHold`>>
     <<include [[n1s/D On Hold]]>>
 
 <<case `MP_connected`>>
     "You can now use Lance Rockhard, ?master."
-    <<set $n1t_magicAction = "[[Use Lance Rockhard.|n1s/D Use Lance]]">>
+    <<set $t_magicAction = "[[Use Lance Rockhard.|n1s/D Use Lance]]">>
 
 <<case `MP_lockedOut`>>
     <<include [[n1s/F Locked Out]]>>
@@ -13473,7 +13474,7 @@ The Sprite in Nero's ear says, "The following devices are available..."
 <<set $n1_helpDeviceViewed = true>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -13592,7 +13593,7 @@ A moment later, the Sprite says,
 <</switch>>
 <</nobr>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1s/D Use Lance {"position":"6625,3975","size":"100,100"}
@@ -13609,7 +13610,7 @@ $n1t_afterAction
 <<set $n2_lanceUsed = true>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -13646,7 +13647,7 @@ Sprite, "There's more than one poltegeist device available in this room. Please 
     Nero thoughts.
 <</if>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1s/D Say Lance {"position":"6500,3975","size":"100,100"}
@@ -13682,7 +13683,7 @@ Sprite, "Got it. You're awesome, Master! Connecting..."
 <</if>>
 <</nobr>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1s/F Locked Out [inclusion] {"position":"6200,3650","size":"100,100"}
@@ -13781,7 +13782,7 @@ help topics."
 <<set $n1_helpTouchViewed = true>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -13796,15 +13797,15 @@ $n1t_afterAction
     <<else>>
         It continues to hum a cheerful children's song.
     <</if>>
-    <<set $n1t_magicAction = "[['\"Please, quiet!\"'|n1s/D Impatient]]">>
+    <<set $t_magicAction = "[['\"Please, quiet!\"'|n1s/D Impatient]]">>
 
 <<case 1>>
     obnoxious rhythmic beat.
-    <<set $n1t_magicAction = "[['\"Please, hurry up!\"'|n1s/D Impatient]]">>
+    <<set $t_magicAction = "[['\"Please, hurry up!\"'|n1s/D Impatient]]">>
 
 <<case 2>>
     sped up music
-    <<set $n1t_magicAction = "[['\"Please, stop the music!\"'|n1s/D Impatient]]">>
+    <<set $t_magicAction = "[['\"Please, stop the music!\"'|n1s/D Impatient]]">>
 
 <<default>>
     <<run throw new Error(`BUG: on hold passwordTries ${n1_passwordTries}`);>>
@@ -13853,7 +13854,7 @@ Nero is one such expert. Which incidentally also makes him an expert in <em>bypa
 
 It's a skill that's been quite useful in his unconventional career.
 
-<<link Return $n1t_returnAntiMagic>><</link>>
+<<link Return $t_returnAntiMagic>><</link>>
 
 
 :: n1s/D Cast Horny {"position":"6150,3400","size":"100,100"}
@@ -13907,7 +13908,7 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
     Nero writhes in his bonds. Ivex is amused for a bit, dismisses spell.
 
     ?P
-    $n1t_afterAction
+    $t_afterAction
 <<else>>
     Nero writhes a bit.
 
@@ -13921,7 +13922,7 @@ spell fizzles. Ivex recognizes it, reverses it at Nero, lets him suffer for a bi
     <<else>>
         [[Continue|n1p/F Barbs Slow]]
     <</if>>
-    <<set $n1t_afterNaked = "[[Continue|n1s/D After Itch]]">>
+    <<set $t_afterNaked = "[[Continue|n1s/D After Itch]]">>
 <</if>>
 <</nobr>>
 
@@ -13950,7 +13951,7 @@ spell fizzes. Ivex recognizes it.
     ivex, plenty of time for lube later
 
     ?P
-    $n1t_afterAction
+    $t_afterAction
 <<else>>
     ivex, trying to slip out? let me help
 
@@ -13960,7 +13961,7 @@ spell fizzes. Ivex recognizes it.
     <<else>>
         [[Continue|n1p/F Barbs Slow]]
     <</if>>
-    <<set $n1t_afterNaked = "[[n1s/D After Slippery]]">>
+    <<set $t_afterNaked = "[[n1s/D After Slippery]]">>
 <</if>>
 <</nobr>>
 
@@ -14153,7 +14154,7 @@ T.toTry.sort();
 horny info about [[anti-magic|n1s/D Horny Anti-magic]]
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -14251,7 +14252,7 @@ $n1t_afterAction
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14326,7 +14327,7 @@ pompous, dirty, and dominated by the
 
 ?P
 <ul class="actions">
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14355,7 +14356,7 @@ pompous, dirty, and dominated by the
     <<if !$n1_gemsAsked>>
         <li>[[Ask Ivex about gems|n1x/P Ask Grav Gems]]</li>
     <</if>>
-  <li>$n1t_afterLook</li>
+  <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14465,7 +14466,7 @@ is continuous and uninterrupted across all of its visible surfaces.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14510,7 +14511,7 @@ Most of the space is taken up by boxes
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14561,7 +14562,7 @@ Most of the space is taken up by boxes
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14635,7 +14636,7 @@ Most of the space is taken up by boxes
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <<set $n1_globeViewed = true>>
 
@@ -14653,7 +14654,7 @@ if want password and ivex here, the school almanac is interesting, [[n1x/P Ask B
 if free, can also see porn mags and something cringe.
 
 <ul class="actions">
-  <li><<link $n1t_afterLook>><</link>></li>
+  <li><<link $t_afterLook>><</link>></li>
 </ul>
 
 
@@ -14730,7 +14731,7 @@ Nero think of something more sensual than meat.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14774,7 +14775,7 @@ Nero think of something more sensual than meat.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14840,7 +14841,7 @@ The others are bare.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14852,7 +14853,7 @@ if want touch and ivex here, [[n1x/P Coins Ask]]
 
 <<nobr>>
 <ul class="actions">
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -14925,7 +14926,7 @@ The entire arrangement is disturbingly symmetric.
 
 ?P
 <ul class="actions">
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -15011,7 +15012,7 @@ XXX if viewed desk, suggest getting knife
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 
 <<set $n1_bottleViewed = true>>
@@ -15035,7 +15036,7 @@ map has several markings.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -15098,7 +15099,7 @@ map has several markings.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -15124,7 +15125,7 @@ if coin in mouth, it drops to the floor
   <<if !$n2_ivexGone>>
       <li>[[Ask Ivex|n1x/P Penguin Ask]]</li>
   <</if>>
-  <li>$n1t_afterLook</li>
+  <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -15185,7 +15186,7 @@ ISO standard magic wand, but an odd ring-shaped attachment on the end.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -15252,7 +15253,7 @@ if there were anything to magnify other than the clear blue sky.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -15278,7 +15279,7 @@ puts coin in penguin's mouth.
 
 if wantTouch, sprite says, password please
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1x/P Portrait Ask [maybe-password] {"position":"7600,4125","size":"100,100"}
@@ -15293,7 +15294,7 @@ $n1t_afterAction
 
 <</nobr>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1x/D Map Ask [maybe-password] {"position":"7325,3725","size":"100,100"}
@@ -15343,7 +15344,7 @@ $n1t_afterAction
 ?P
 <ul class=actions>
     <<actions-get>>
-    <li>$n1t_afterPartialAction</li>
+    <li>$t_afterPartialAction</li>
 </ul>
 <</nobr>>
 
@@ -15370,7 +15371,7 @@ nero. really! how do you compensate for greeble instability, I've never been abl
 
 ivex, haha wouldn't you like to know. he's bluffing, he doesn't know about greeble instability.
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1x/D Globe Ask [maybe-password] {"position":"6575,5875","size":"100,100"}
@@ -15390,7 +15391,7 @@ ask, is that from X?
 <<if !$n1_ivexReceptive>>
     Ivex refuses to answer
     ?P
-    $n1t_afterAction
+    $t_afterAction
 <<else>>
     Ivex starts to answer, starts to show off globe.
     ?P
@@ -15427,7 +15428,7 @@ ask, is that from X?
 ivex nonsense.
 
 ?P
-$n1t_afterAction
+$t_afterAction
 
 <<set $n1_candleAsked = true>>
 <</nobr>>
@@ -15455,7 +15456,7 @@ tells you its name
 <<set $n1_wandAsked = true>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -15463,7 +15464,7 @@ $n1t_afterAction
 trying to get Ivex to say what his school name is
 
 
-<<link $n1t_afterAction>><</link>>
+<<link $t_afterAction>><</link>>
 
 
 :: n1x/P Coins Ask {"position":"7500,5050","size":"100,100"}
@@ -15483,13 +15484,13 @@ if ivex receptive, can get Ivex to show you a coin, which has a hole, and a lewd
      Sprite ignores touch
 <</if>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1x/F Look and Magic [inclusion] {"position":"5225,3900","size":"100,200"}
 <<nobr>>
 <<if _patienceExhausted>>
-    <<set $n1t_magicAction = null>>
+    <<set $t_magicAction = null>>
 <<else>>
     <<include [[n1x/F Look]]>>
     ?P
@@ -15524,7 +15525,7 @@ activation word is "please", has note to change it.
     horny reactions to Sprite
 <</if>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1x/D Window Ask {"position":"6950,3650","size":"100,100"}
@@ -15589,7 +15590,7 @@ $n1t_afterAction
         <<set $n1_windowTouched = true>>\
 
         ?P
-        $n1t_afterAction
+        $t_afterAction
     <</fade-in>>
 
 <<elseif $n1_windowAskRefused>>
@@ -15597,13 +15598,13 @@ $n1t_afterAction
     I'm quite sure there's nothing outside that window."
     <<set $n1_windowAskBlocked = true>>
     ?P
-    $n1t_afterAction
+    $t_afterAction
 <<else>>
     Ivex laughs. "I have no idea what trickery you're trying to accomplish,
     but do please keep trying. It's quite funny."
     <<set $n1_windowAskRefused = true>>
     ?P
-    $n1t_afterAction
+    $t_afterAction
 <</if>>
 <</nobr>>
 
@@ -15634,7 +15635,7 @@ $n1t_afterAction
     <<set $n1_scanned = true>>
 
     ?P
-    $n1t_afterAction
+    $t_afterAction
 <<else>>
     summarize exotic energy.
     <<if $n1_candleHorny>>
@@ -15821,7 +15822,7 @@ his situation.
 take the knife. awkward cuz naked.
 <</nobr>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n2x/F Cabinet Search {"position":"7975,6100","size":"100,100"}
@@ -15846,7 +15847,7 @@ unpainted cabinet is a waste of time.
 There are better things to do before Ivex returns.
 
 ?P
-<<= _again($n1t_afterLook, $n1t_afterAction)>>
+<<= _again($t_afterLook, $t_afterAction)>>
 <<set $n2_cabinetSearched = true>>
 <</nobr>>
 
@@ -15889,7 +15890,7 @@ that searching the <<= _again('', 'remaining')>> boxes is a waste of time.
 There are better things to do before Ivex returns.
 
 ?P
-<<= _again($n1t_afterLook, $n1t_afterAction)>>
+<<= _again($t_afterLook, $t_afterAction)>>
 <<set $n2_bookshelfSearched = true>>
 <</nobr>>
 
@@ -15956,7 +15957,7 @@ it's too big to carry, and nackle isn't useful in other rooms without installati
 
 maybe indulge the "take the cock" pun when extraHorny or when repeatedly coming back here.
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1x/P Bottle Ask {"position":"7625,4375","size":"100,100"}
@@ -15982,7 +15983,7 @@ Ivex tells the name, even before you know you need it. (makes the Sprite joke be
 <<set $n1_bottleNameKnown = true>>
 <</nobr>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1x/F Nackle 2 {"position":"7625,4775","size":"100,100"}
@@ -16077,7 +16078,7 @@ of wood grain, with no apparent way of opening it.
     his current situation, Nero turns his attention to other things
     in the room.
     ?P
-    $n1t_afterAction
+    $t_afterAction
 <<else>>
     If opening the desk requires magic, then Nero is out of luck.
     But perhaps there's a mechanical trigger, like a hidden catch?
@@ -16114,7 +16115,7 @@ His erect cock unfortunately seems excited by the thought, and he
 smells his own pre-cum leaking from the tip.
 The wolf quickly stands up and tries to focus on something else.
 ?P
-$n1t_afterAction
+$t_afterAction
 <<set $n2_deskSearched = true>>
 <</nobr>>
 
@@ -16125,7 +16126,7 @@ take the mirror, it might be useful. too bad no pockets.
 
 <<set $n2_mirrorTaken = true>>
 
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -16327,7 +16328,7 @@ XXX verify Ivex ask flow
 
 some ivex nonsense.
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1y/D Horny Candle {"position":"6225,6375","size":"100,100"}
@@ -16362,7 +16363,7 @@ in time with the pulse of Nero's blood as he watches.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16383,7 +16384,7 @@ turned on by seeing self turned on
 
 ?P
 <ul class="actions">
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16435,7 +16436,7 @@ something other than the breeze of air.
     <<if $n2_ivexGone>>
         <li>[[Struggle on the cross.|n2b/D Struggle]]</li>
     <</if>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16473,7 +16474,7 @@ other arm pointing at desk?
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16492,7 +16493,7 @@ want to reach it to cut free, too bad you can't.
 
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 
 
@@ -16518,7 +16519,7 @@ near the <<n1-no-loop [[knife|n1y/D Horny Knife]]>>,
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16537,7 +16538,7 @@ near the <<n1-no-loop [[knife|n1y/D Horny Knife]]>>,
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16565,7 +16566,7 @@ bottle has [[nackle|n1y/D Horny Nackle]].
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16584,16 +16585,16 @@ points at <<n1-no-loop [[bottle|n1y/D Horny Bottle]]>>
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
 
 :: n2a/F Start [section-start] {"position":"4175,5225","size":"100,100"}
 <<nobr>>
-<<state-delete n1_ n1t_ n2_ n2t_>>
+<<state-delete n1_ n2_ t_>>
 <<set $n1_naked = true>> <!-- in case state-load fails -->
-<<set $n1t_didSomeAction = true>>
+<<set $t_didSomeAction = true>>
 <<state-load n0_n2start>>
 
 <<set $n1_candleLit = false>>
@@ -16657,7 +16658,7 @@ Candle's Influence:
 
     <ul class="actions">
         <li>[[Struggle...|n2b/D Struggle]]</li>
-        <<actions-optional $n1t_magicAction>>
+        <<actions-optional $t_magicAction>>
         <<actions-optional $n2_moreMagicAction>>
     </ul>
 <</fade-in>>
@@ -16875,8 +16876,8 @@ Candle's Influence:
 :: n2b/F Compute Arousal [inclusion] {"position":"5250,5300","size":"100,100"}
 <<script>>
 const v = State.variables;
-const actions = Math.max(v.n1t_patienceActions, 0);
-const looks = Math.max(v.n1t_patienceLooks, 0);
+const actions = Math.max(v.t_patienceActions, 0);
+const looks = Math.max(v.t_patienceLooks, 0);
 
 if (looks > 6) {
   throw new Error(`BUG: compute arousal looks ${looks}`);
@@ -16933,7 +16934,7 @@ v.n2_candleMax = looks === 0 || actions === 0;
 <<set $n2_futileMagic = $n2_futileMagic + 1>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -16950,7 +16951,7 @@ maybe vary by subby or abused?
 add detail if gemsMagicViewed
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -16966,7 +16967,7 @@ horny struggle. writhe in bonds, really turned on.
 add detail if gemsMagicViewed
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -17020,7 +17021,7 @@ struggle succeeds. grav gems implode.
 <<set $n2_hornyMagic = $n2_hornyMagic + 1>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -17101,7 +17102,7 @@ option: reset patience to 1<br>
 ?P
 
 <ul class="actions">
-     <<actions-optional $n1t_magicAction>>
+     <<actions-optional $t_magicAction>>
      <li>[[paw off|n9a/D Caged Mild]]</li>
 </ul>
 <</nobr>>
@@ -17109,7 +17110,7 @@ option: reset patience to 1<br>
 
 :: n2f/P Clever Escape [section-start] {"position":"5400,5925","size":"100,100"}
 <<nobr>>
-<<state-delete n2_ n2t_>>
+<<state-delete n2_ t_>>
 <<vi-always n1_candleLit false>>
 <<vi-always n1_ivexReceptive true>>
 <<vi-always n1_mageSight true>>
@@ -17182,7 +17183,7 @@ take a moment to rest.
 ?P
 <ul class="actions">
     <<actions-get>>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -17208,7 +17209,7 @@ no handle on other side of door, so this looks like a one-way trip.
 ?P
 <ul class="actions">
     <li>[[Ready to leave?|n2f/D Last Chance]]</li>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -17314,7 +17315,7 @@ pick up wand, try to use it, it starts vibrating furiously. skittish, drop it.
 <<set $n2_wandTried = true>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -17325,7 +17326,7 @@ stop before orgasm. frustrated, and now super horny
 <<set $n2_extraHorny = true>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -17818,10 +17819,10 @@ this is all endings involving the lion
 <<vi-ignore n1_subby>>
 
 info about [[anti-magic|n1s/F Anti-magic]]
-<<set $n1t_returnAntiMagic = State.passage>>
+<<set $t_returnAntiMagic = State.passage>>
 
 ?P
-$n1t_afterAction
+$t_afterAction
 <</nobr>>
 
 
@@ -17903,7 +17904,7 @@ Nero is horny at Ivex, turns his attention to
 
 ?P
 <ul class=actions>
-    <li>$n1t_afterLook</li>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -17921,7 +17922,7 @@ ivex mentions name.
     add mom's name as password choice
 <</if>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1y/D Horny Globe Ask {"position":"6650,6225","size":"100,100"}
@@ -17947,7 +17948,7 @@ ask ivex about bottle.
 
 ivex brags, mentions the name.
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1y/D Horny Nackle {"position":"6700,6625","size":"100,100"}
@@ -17974,7 +17975,7 @@ if want-touch, ivex picks up coin, satisfies touch.
 
 <</nobr>>
 
-$n1t_afterAction
+$t_afterAction
 
 
 :: n1cn/D Reject Support [big-mood] {"position":"4025,2600","size":"100,100"}
