@@ -12,7 +12,7 @@ story-to-tw:
 		tweego -d index.html -o story.tw
 
 nero-check:
-	clear; node tools/list-vars.js nero.tw nero-vars.txt '^[nt]\d'
+	clear; node tools/list-vars.js nero.tw nero-vars.txt '^n\d|^t_|^mt_'
 
 nero-stats:
 	node tools/nero-stats.js nero.tw
