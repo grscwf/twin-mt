@@ -2187,7 +2187,6 @@ function varButton(vname) {
   return outer;
 }
 
-/** var-info - show vars and allow toggling flags. */
 function varInfoSetup() {
   if (!Config.debug) return;
 
@@ -2214,9 +2213,10 @@ function varInfoSetup() {
         outer.toggleClass(&quot;var-info-hidden&quot;, !show);
       });
 
-    $(&quot;&lt;span class=var-info-expand&gt;[compute variants]&lt;/span&gt;&quot;)
-      .appendTo(outer)
-      .click(() =&gt; CV.render());
+    // TODO: re-enable when fixed
+    //$(&quot;&lt;span class=var-info-expand&gt;[compute variants]&lt;/span&gt;&quot;)
+    //  .appendTo(outer)
+    //  .click(() =&gt; CV.render());
 
     const touched = new Set();
     VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
@@ -2234,7 +2234,6 @@ function varInfoSetup() {
     Nero.getNotable().forEach(f =&gt;touched.add(f));
 
     if (touched.size) {
-      $(&quot;&lt;span class=var-info-separator&gt;&quot;).appendTo(outer);
       const el = $(&quot;&lt;span class=var-info-touched&gt;&quot;).appendTo(outer);
       [...touched].sort().forEach(v =&gt; varButton(v).appendTo(el));
     }
@@ -16028,102 +16027,144 @@ const LZ = LZString;
 
 const persist = window.localStorage;
 const KEY = &quot;visited-passages-1&quot;;
-// TODO: maybe checkUsable from Passage Notes?
 
-VP.visited = new Set();
+let visited = new Set();
+
+VP.has = title =&gt; visited.has(title);
 
 VP.clear = () =&gt; {
-  VP.visited = new Set();
+  visited = new Set();
   persist.removeItem(KEY);
-}
+};
+
+VP.add = title =&gt; {
+  visited.add(title);
+  save();
+};
+
+VP.remove = title =&gt; {
+  visited.delete(title);
+  save();
+};
 
 function load() {
-  VP.visited = new Set();
+  visited = new Set();
   const str = persist.getItem(KEY);
   if (str != null) {
     const json = LZ.decompressFromBase64(str);
     if (json != null &amp;&amp; json !== &quot;&quot;) {
       const list = JSON.parse(json);
-      VP.visited = new Set(list);
+      visited = new Set(list);
     }
   }
 }
 
 function save() {
-  const list = Array.from(VP.visited).sort();
+  const list = Array.from(visited).sort();
   const json = JSON.stringify(list);
   const str = LZ.compressToBase64(json);
   persist.setItem(KEY, str);
 }
 
-function mark(title) {
-  if (!/^n/.test(title)) return;
-  VP.visited.add(title);
-  save();
-}
-
 function setup() {
+  if (!Config.debug) return;
   load();
-  $(document).on(&quot;:passageend&quot;, () =&gt; mark(State.passage));
+  $(document).on(&quot;:passageend&quot;, () =&gt; {
+    if (/^n/.test(State.passage)) VP.add(State.passage);
+  });
 }
 
-if (Config.debug) setup();
+setup();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="520" name="n0/F Visited" tags="noreturn" position="2200,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;sidebar-auto-stow&gt;&gt;
 &lt;style&gt;
 
-.vp-item-visited {
+.vp-hsep::before {
   color: #666;
+  content: &quot;||&quot;;
+  margin: 0 .5em;
 }
-.vp-item-visited::before {
-  content: &quot;x&quot;;
-  display: inline-block;
-  text-align: center;
-  min-width: 2em;
+.vp-ssep {
+  height: 1em;
 }
-.vp-item-unvisited::before {
-  content: &quot;.&quot;;
-  display: inline-block;
-  text-align: center;
-  min-width: 2em;
+.vp-symbol {
+  font-family: tme-fa-icons;
+  margin-right: .4em;
+}
+.vp-visited {
+  color: #999;
+}
+.vp-visited .vp-title {
+  text-decoration: line-through;
 }
 
 &lt;/style&gt;
-&lt;&lt;script&gt;&gt;
 
+&lt;&lt;script&gt;&gt;
 const VP = VisitedPassages;
 const T = State.temporary;
 
-T.clear = () =&gt; {
+function clear() {
   VP.clear();
-};
+  render();
+}
 
-function render(out) {
+function pct(x, y) {
+  return Math.round(x / y * 100) + &quot;%&quot;;
+}
+
+function render() {
+  $(&quot;#vp-body&quot;).remove();
+  const out = $(&quot;&lt;div id=vp-body&gt;&quot;).appendTo(&quot;.passage&quot;);
   $(out).wiki(`&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;`);
-  $(out).append(&quot;&lt;hr&gt;&quot;);
-  
-  /* XXX toggle for visited, with count */
-  /* XXX toggle for unvisited */
-  /* XXX clear visited */
+  $(&quot;&lt;span class=vp-hsep&gt;&quot;).appendTo(out);
+  $(&quot;&lt;a id=vp-clear&gt;&quot;)
+    .text(&quot;Clear visited&quot;)
+    .click(clear)
+    .appendTo(out);
   
   const passages = Story.lookup();
   const relevant = passages.filter(p =&gt;
     !p.tags.includes(&quot;inclusion&quot;) &amp;&amp; /^n/.test(p.title)
   );
   const titles = relevant.map(p =&gt; p.title).sort();
-  titles.forEach(t =&gt; {
-    /* XXX explicit indicator */
-    $(&quot;&lt;div class=vp-item&gt;&quot;)
-      .addClass(VP.visited.has(t) ? &quot;vp-item-visited&quot; : &quot;vp-item-unvisited&quot;)
-      .text(t)
-      .appendTo(out);
-  });
 
+  const nt = titles.length;
+  const nv = titles.filter(t =&gt; VP.has(t)).length;
+  $(&quot;&lt;div class=vp-stats&gt;&quot;)
+    .append(`${nt} passages`)
+    .append(&quot;&lt;span class=vp-hsep&gt;&quot;)
+    .append(`${nv} (${pct(nv, nt)}) visited`)
+    .append(&quot;&lt;span class=vp-hsep&gt;&quot;)
+    .append(`${nt - nv} (${pct(nt - nv, nt)}) not visited`)
+    .appendTo(out);
+    
+  $(out).append(&quot;&lt;hr&gt;&quot;);
+  
+  let curSection = null;
+  titles.forEach(title =&gt; {
+    const section = title.replace(/[/\s].*/, &quot;&quot;);
+    if (curSection != null &amp;&amp; section !== curSection) {
+      $(&quot;&lt;div class=vp-ssep&gt;&quot;).appendTo(out);
+    }
+    curSection = section;
+    
+    const visited = VP.has(title);
+    const outer = $(&quot;&lt;div class=vp-item&gt;&quot;)
+      .addClass(visited ? &quot;vp-visited&quot; : &quot;vp-unvisited&quot;)
+      .appendTo(out);
+    $(&quot;&lt;span class=vp-symbol&gt;&quot;)
+      .text(visited ? &quot;\ue832&quot; : &quot;\ue833&quot;)
+      .appendTo(outer);
+    $(&quot;&lt;span class=vp-title&gt;&quot;)
+      .text(title)
+      .appendTo(outer);
+  });
   $(out).append(&quot;&lt;hr&gt;&quot;);
   $(out).wiki(`&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;`);
 }
 
-render(output);
+$(document).one(&quot;:passagedisplay&quot;, render);
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata></tw-storydata>
