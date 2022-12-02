@@ -1870,7 +1870,6 @@ Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
 }
 
 .var-info-separator {
-  border-left: 5px double #555;
   margin: 0 16px;
 }
 
@@ -2238,7 +2237,7 @@ function varInfoSetup() {
       [...touched].sort().forEach(v =&gt; varButton(v).appendTo(el));
     }
     
-    $(&quot;&lt;span class=var-info-separator&gt;&quot;).appendTo(outer);
+    $(&quot;&lt;span class=var-info-separator&gt;&quot;).text(&quot;||&quot;).appendTo(outer);
     $(&quot;&lt;span class=var-info-passage&gt;&quot;).text(State.passage).appendTo(outer);
 
     if (outer.find(&quot;.var-info-to-do, .var-info-warning&quot;).length &gt; 0) {
@@ -3208,6 +3207,7 @@ Macro.add(&quot;misfire-please&quot;, {
   }
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="30" name="Init 5b Nero Patience" tags="inclusion" position="3050,1175" size="100,100">&lt;&lt;script&gt;&gt;
+const VI = VarInfo;
 
 Macro.add(&quot;n1-patience&quot;, {
   handler: function() {
@@ -3249,6 +3249,24 @@ Macro.add(&quot;n1-patience&quot;, {
       case 0: $(this.output).wiki(patientText); break;
       case 1: $(this.output).wiki(impatientText); break;
       default: $(this.output).wiki(angryText); break;
+    }
+    if (Config.debug) {
+      $(this.output).append(&quot;&lt;br&gt;&amp;#x1f527;&quot;);
+      $(&quot;&lt;a&gt;&quot;).text(&quot;(reset)&quot;).appendTo(this.output)
+        .click(() =&gt; VI.revisitHere(() =&gt; {
+          State.variables.t_patiencePassage = null;
+        }));
+      $(&quot;&lt;a&gt;&quot;).text(&quot; (warn)&quot;).appendTo(this.output)
+        .click(() =&gt; VI.revisitHere(() =&gt; {
+          State.variables.t_patienceLooks = 1;
+          State.variables.t_patiencePassage = here;
+        }));
+      $(&quot;&lt;a&gt;&quot;).text(&quot; (aggro)&quot;).appendTo(this.output)
+        .click(() =&gt; VI.revisitHere(() =&gt; {
+          State.variables.t_patienceLooks = 0;
+          State.variables.t_patienceAggro = 1;
+          State.variables.t_patiencePassage = here;
+        }));
     }
   }
 });
@@ -13042,9 +13060,9 @@ Most of the space is taken up by boxes
     These are commonly called snow globes, and many of its variants
     can be purchased in shops that cater to tourists at vacation resorts.
 &lt;&lt;else&gt;&gt;
-    On closer examination, what appeared to be a mage&#39;s crystal globe
-    turns out to be what&#39;s commonly called a snow globe.
-    Snow globes are filled with clear liquid and small glittering
+    On careful examination, what appeared to be a mage&#39;s crystal globe
+    turns out to be what&#39;s commonly called a snow globe,
+    filled with clear liquid and small glittering
     flakes that swirl and settle when the globe is shaken.
     Many varieties of this trinket can be found in shops
     that cater to tourists at vacation resorts.
@@ -15994,7 +16012,8 @@ Macro.add(&quot;random-once&quot;, {
     
     if (Config.debug &amp;&amp; valid.size &gt; 1) {
       const val = V[shown];
-      $(&quot;&lt;br&gt;&lt;a&gt;&amp;#x1f527;(show another)&lt;/a&gt;&quot;)
+      $(this.output).append(&quot;&lt;br&gt;&amp;#x1f527;&quot;);
+      $(&quot;&lt;a&gt;&quot;).text(&quot;(show another)&quot;)
         .appendTo(this.output)
         .click(() =&gt; VI.revisitHere(() =&gt; {
           State.variables[shown] = val;

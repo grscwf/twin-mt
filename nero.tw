@@ -1894,7 +1894,6 @@ Template.add("P", "<br><br>");
 }
 
 .var-info-separator {
-  border-left: 5px double #555;
   margin: 0 16px;
 }
 
@@ -2262,7 +2261,7 @@ function varInfoSetup() {
       [...touched].sort().forEach(v => varButton(v).appendTo(el));
     }
     
-    $("<span class=var-info-separator>").appendTo(outer);
+    $("<span class=var-info-separator>").text("||").appendTo(outer);
     $("<span class=var-info-passage>").text(State.passage).appendTo(outer);
 
     if (outer.find(".var-info-to-do, .var-info-warning").length > 0) {
@@ -3268,6 +3267,7 @@ Macro.add("misfire-please", {
 
 :: Init 5b Nero Patience [inclusion] {"position":"3050,1175","size":"100,100"}
 <<script>>
+const VI = VarInfo;
 
 Macro.add("n1-patience", {
   handler: function() {
@@ -3309,6 +3309,24 @@ Macro.add("n1-patience", {
       case 0: $(this.output).wiki(patientText); break;
       case 1: $(this.output).wiki(impatientText); break;
       default: $(this.output).wiki(angryText); break;
+    }
+    if (Config.debug) {
+      $(this.output).append("<br>&#x1f527;");
+      $("<a>").text("(reset)").appendTo(this.output)
+        .click(() => VI.revisitHere(() => {
+          State.variables.t_patiencePassage = null;
+        }));
+      $("<a>").text(" (warn)").appendTo(this.output)
+        .click(() => VI.revisitHere(() => {
+          State.variables.t_patienceLooks = 1;
+          State.variables.t_patiencePassage = here;
+        }));
+      $("<a>").text(" (aggro)").appendTo(this.output)
+        .click(() => VI.revisitHere(() => {
+          State.variables.t_patienceLooks = 0;
+          State.variables.t_patienceAggro = 1;
+          State.variables.t_patiencePassage = here;
+        }));
     }
   }
 });
@@ -14598,9 +14616,9 @@ Most of the space is taken up by boxes
     These are commonly called snow globes, and many of its variants
     can be purchased in shops that cater to tourists at vacation resorts.
 <<else>>
-    On closer examination, what appeared to be a mage's crystal globe
-    turns out to be what's commonly called a snow globe.
-    Snow globes are filled with clear liquid and small glittering
+    On careful examination, what appeared to be a mage's crystal globe
+    turns out to be what's commonly called a snow globe,
+    filled with clear liquid and small glittering
     flakes that swirl and settle when the globe is shaken.
     Many varieties of this trinket can be found in shops
     that cater to tourists at vacation resorts.
@@ -17970,7 +17988,8 @@ Macro.add("random-once", {
     
     if (Config.debug && valid.size > 1) {
       const val = V[shown];
-      $("<br><a>&#x1f527;(show another)</a>")
+      $(this.output).append("<br>&#x1f527;");
+      $("<a>").text("(show another)")
         .appendTo(this.output)
         .click(() => VI.revisitHere(() => {
           State.variables[shown] = val;
