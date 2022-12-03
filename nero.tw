@@ -36,18 +36,21 @@ nero
 :: Story Stylesheet [stylesheet]
 /* Title Screen - Start */
 .title-container {
-  position:relative;
+  position: relative;
+  /* #story has 2.5em top margin */
+  top: -2.5em;
+  /* sugarcube html structure makes it hard to use display:grid */
 }
 .title-character {
-  position:absolute;
-  top:-2vw;
-  z-index:0;
-  max-width:95%;
+  position: absolute;
+  z-index: 0;
+  max-width: 100%;
+  /* try to keep Ivex's feet on screen, but don't make his face too small */
+  max-height: max(100vh, 60vw);
 }
 
 .title-logo {
   position:relative;
-  top:-2vw;
   display:block;
   margin-left:auto;
   z-index:1;
@@ -71,35 +74,21 @@ nero
   color: #c78f28;
 }
 
-.title-character-2 {
-  position:absolute;
-  top:-10px;
-  z-index:0;
-}
-
-.title-logo-2 {
-  position:absolute;
-  top: 10px;
-  right: 310px;
-  z-index:1;
-}
-
-.title-options-2 {
-  z-index: 2;
-  position: relative;
-  top: 300px;
-  left: 425px;
-  background-color: #222;
-  width: 165px;
-  padding: 30px;
-  border: 1px solid #aaa;
-  border-radius: 15px;
-}
-
-.title-options-2 a {
-  font-size: 2em;
-  font-family: fantasy;
-  color: #c78f28;
+/* on narrow screens */
+@media(max-width: 30rem) {
+  /* move logo down */
+  .title-logo {
+    top: 25vw;
+  }
+  
+  /* center menu below Ivex */
+  .title-options {
+    position: relative;
+    right: -50%;
+    text-align: center;
+    top: 40vw;
+    translate: -50%;
+  }
 }
 
 #ui-dialog-body button {
@@ -160,7 +149,6 @@ nero
 
 mark,
 .imp-info {
-  background-color: transparent;
   color: #eaf54c;
 }
 
@@ -1180,6 +1168,11 @@ ET.define = (enumName, valueNames) => {
 ET.declareVar = (varName, enumName) => {
   if (!ET.enums[enumName]) throw new Error(`No enum named ${enumName}`);
   ET.vars[varName] = enumName;
+};
+
+ET.symbolic = (name, value) => {
+  const en = ET.enums[ET.vars[name] || name];
+  return en == null ? value : (en[value] || value);
 };
 <</script>>
 
@@ -2698,6 +2691,7 @@ Macro.add("barbs-announce", {
 
 :: Init 5b Nero Constraints [inclusion] {"position":"2850,1175","size":"100,100"}
 <<script>>
+const ET = EnumType;
 
 // - Passages are grouped into story sections by a prefix in their title.
 // - Every passage must be in exactly one section.
@@ -3235,12 +3229,23 @@ Nero.checkConstraints = () => {
     Object.keys(Nero.flags).forEach(x => {
       if (!V[x]) return;
       Object.keys(Nero.flags[x].implies).forEach(y => {
-        const z = Nero.flags[x].implies[y];
         const val = V[y] == null ? false : V[y];
-        const n = z ? "" : "!";
-        const eq = typeof z === "boolean" ? "" : ` === ${z}`;
-        EM.assert(val === z,
-          `${x} === ${V[x]} should imply ${n}${y}${eq}; currently, ${y} === ${V[y]}`);
+        const exp = Nero.flags[x].implies[y];
+        const expStr = typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
+        EM.assert(val === exp,
+          `${x} === ${V[x]} should imply ${expStr}; currently, ${y} === ${V[y]}`);
+      });
+    });
+    Object.keys(Nero.enumImplies).forEach(x => {
+      const rules = Nero.enumImplies[x][V[x]];
+      if (rules == null) return;
+      Object.keys(rules).forEach(y => {
+        const val = V[y] == null ? false : V[y];
+        const exp = rules[y];
+        const expStr = typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
+        const sval = ET.symbolic(x, V[x]);
+        EM.assert(val === exp,
+          `${x} === ${sval} should imply ${expStr}; currently, ${y} === ${V[y]}`);
       });
     });
   });
@@ -10542,7 +10547,7 @@ Nero's Endgame is an unusual spell construction. He realized he needed it during
 
 It had begun with a simple request. Lord Estrivar of the Triestorm Council had asked him to find Perosolamew, the Lord's missing parrot. This was a trivial divination that Nero would normally decline and post on a student jobs board, but Estrivar was insistent and pleasant and offered an extremely generous retainer.
 
-Five days later, Nero was naked, gagged, and bound to a stone altar in the secret lair of the Triestorm blacksmiths guild, who were preparing to sacrifice him to Elder Steel Blank, the (probably not real) demigod of Unsheathed Swords.
+Five days later, Nero was naked, gagged, and bound on his back to a metal altar in the secret lair of the Triestorm blacksmiths guild, who were preparing to sacrifice him to Perfect Steel Blank, the (probably not real) demigod of Unsheathed Swords.
 
 Back then, Nero's entire magic repertoire required either spoken words, complex gestures, or specially prepared materials. None of which were available to him at that moment. Nobody even knew he was there. Escape was impossible.
 
@@ -10605,11 +10610,11 @@ It's <em>him</em>.
 
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
-Ivex's face is uncertain. Not unfriendly, but not exactly relaxed either. The two mages make eye contact for a moment, and then the panther lowers his gaze.
+Ivex's expression is uncertain. Not unfriendly, but not exactly relaxed either. The two mages make eye contact for a moment, and then the panther lowers his gaze.
 
 But he doesn't stop at merely lowering his gaze. Ivex bends his body, crouches down, and ends up resting on one knee in front of the bound wolf.
 
-What an unusual reaction! Nero might bask a bit in the panther's odd adulation, but he doubts that his little adventures have gained him a reputation beyond the group of patrons who find his services most useful. It's unlikely that the panther has ever heard of him.
+What an unusual reaction! Nero might bask a bit in the panther's odd gesture of respect, but he doubts that his little adventures have gained him a reputation beyond the group of patrons who find his services most useful. It's unlikely that the panther has ever heard of him.
 
 It's an awkward moment.
 
@@ -10771,7 +10776,13 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<em-assert !$n1_abused || !$n1_naked>>
 <<em-assert $n1_magicPhase <= MP_triedMagic>>
 
-Ivex (the Magnificent) moves away from the
+Ivex (the Magnificent)
+<<if $n1_ivexDescViewed>>
+    has moved
+<<else>>
+    moves
+<</if>>
+away from the
 <<if $n1_abused>>
     bound wolf's abused crotch,
 <<elseif $n1_naked>>
@@ -10779,7 +10790,12 @@ Ivex (the Magnificent) moves away from the
 <<else>>
     bound wolf,
 <</if>>
-then settles against the edge of a cluttered desk.
+<<if $n1_ivexDescViewed>>
+    and is now settled at
+<<else>>
+    then settles against
+<</if>>
+the edge of a cluttered desk.
 
 ?P
 He's a [[pretentiously dressed black panther|n1cn/F Ivex Desc]], larger than Nero expected from the dossier. But the images in the dossier come from school portraits that were created several years ago, so it isn't too surprising that the panther has grown a bit since then.
@@ -10805,7 +10821,7 @@ Ivex speaks. "So let me make a proposal."
     The naked wolf shivers in the chill air and avoids the panther's intense stare.
 <<else>>
     As if there were such a thing as a right choice
-    in this strange situation.
+    in this absurd situation.
 <</if>>
 
 ?P
@@ -11255,7 +11271,7 @@ starts into creepy-lewd
 <<em-assert !$n1_abused || !$n1_naked>>
 <<em-assert $n1_magicPhase <= MP_triedMagic>>
 
-Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and are known for grace more than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
+Ivex is a large black panther, unusually beefy for the species. Panthers tend to be smaller felines, and they're known for grace more than strength. They make better acrobats than fighters. And mages are typically bookish children who grow up to become awkward weeds in most social situations.
 <</nobr>>
 
 But this particular panther mage looks like a knight champion, the type of person with a casual strength and charisma that drives soldiers to victory and lovers to his feet.
@@ -11287,6 +11303,7 @@ Not that Nero would ever tell that to his
 <<else>>
     captor, of course.
 <</if>>
+<<set $n1_ivexDescViewed = true>>
 <</nobr>>
 
 [[Return|n1cn/F Ivex Intro]]
@@ -14195,7 +14212,7 @@ $t_afterAction
     arms and legs spread wide against the sturdy wooden cross.
     But in the reflection from the
     <<n1-no-loop [[mirror|n1x/D Mirror]]>>
-    on Ivex's desk
+    on Ivex's desk,
     Nero can see that the cross is not actually attached
     to anything in the study.
     <<if $n1_gemsAsked>>
@@ -14259,13 +14276,17 @@ $t_afterAction
     <</if>>
 
     ?P
-    <<if $n2_ivexGone>>
+    <<if MP_beforeCast === $n1_magicPhase>>
+        <<vi-ignore n2_ivexGone>>
+        In any case, it should be easy to escape from the
+        leather bonds, with a little bit of magic.
+    <<elseif $n2_ivexGone>>
         Still, with Ivex gone, the wolf mage can now struggle against his bondage
         in earnest hope of escape, however unlikely that might be
         with his mediocre strength.
         <<actions-add [[Struggle on the cross.|n2b/D Struggle]]>>
     <<else>>
-        Struggling might be an option, but the wolf is a mage, not a warrior.
+        Struggling free might be an option, but the wolf is a mage, not a warrior.
         It seems unlikely he'd break his bonds. And even if it were possible,
         Ivex would certainly stop the wolf before he successfully rampaged
         his way to escape.
@@ -14509,21 +14530,22 @@ is continuous and uninterrupted across all of its visible surfaces.
 <<nobr>>
 <<vi-ignore n2_ivexGone>>
 
-The room's walls are lined with several similar bookshelves
-that are fillled with many [[books|n1x/P Books]]
+The room's walls are lined with several wooden bookshelves that are
+identical in size and construction.
+Most of them are filled with many [[books|n1x/D Books]]
 <<if $n1_mageSight>>
-    that radiate exotic magic energy. They're neatly shelved,
+    that pulse with exotic magic energy. They're neatly shelved,
 <<else>>
     that are neatly shelved
 <</if>>
 and apparently arranged by color.
 
 ?P
-The bookshelf nearest to the desk
-has one shelf with
+The bookshelf nearest to the desk is an exception.
+It has one shelf with
 a [[stack of coins|n1x/P Coins]]
 and a [[large magic wand|n1x/D Wand]].
-The rest of the shelves have only a few books.
+The rest of its shelves have only a few books.
 Most of the space is taken up by boxes
 
 <<if !$n2_free>>
@@ -14687,19 +14709,71 @@ Most of the space is taken up by boxes
 <</nobr>>
 
 
-:: n1x/P Books [maybe-password] {"position":"7300,4900","size":"100,100"}
-magic texts nero recognizes, boring.
-multiple copies of same books.
+:: n1x/D Books [maybe-password] {"position":"7300,4900","size":"100,100"}
+<<nobr>>
 
-a school almanac, class of X, can't read school name.
+Most of the books seem to be shelved by color.
+Those books
+<<if $n1_mageSight>>
+    shimmer with exotic energy, and
+<</if>>
+appear to be duplicate copies of the same few books.
 
-if want password and ivex here, the school almanac is interesting, [[n1x/P Ask Books]]
+Nero recognizes one: Cadmia's Compendium of Charms.
+It's an introductory-level text that's also useful outside the classroom.
+New editions of it, with improvements and additional spells,
+are published regularly each year by Cadmia's anonymous jailer.
 
-if free, can also see porn mags and something cringe.
+?P
+It's unclear why Ivex would need or want several dozen copies of that book.
+Nero has seen many residences with libraries of books that are clearly
+chosen for their impressive ambience, instead of being treasured
+for their contents and actually read or consulted from time to time.
+If that's what Ivex is doing, his attempt is quite clumsy.
+No one would be impressed by the obvious repetition of the spines.
+
+?P
+<<if $n2_booksSearched>>
+    XXX describe books after searching
+<<else>>
+    On a shelf by the desk,
+    there are a few haphazardly stacked books that seem to be unique.
+    The top one has a plain brown cover with no indication of its contents.
+    The book below that has its spine facing away.
+    Nero cannot see what the title is,
+    but the lower part of the front cover is visible,
+    and the words "Class of 1331" are printed on it.
+<</if>>
+
+?P
+It might be a yearbook from a school that Ivex attended.
+
+<<if MP_wantPassword === $n1_magicPhase>>
+    XXX password logic.
+    <<if !$n2_ivexGone>>
+        <<actions-add [[n1x/P Ask Books]]>>
+    <</if>>
+<<else>>
+    <<vi-ignore n2_ivexGone>>
+    XXX note, not in dossier.
+    Interesting, but not particularly useful at the moment.
+<</if>>
+
+?P
+<<if $n2_free>>
+    <<if $n2_booksSearched>>
+        remember [[searching the books|n2x/D Books Search]].
+    <<else>>
+        maybe search the books?
+        <<actions-add [[n2x/D Books Search]]>>
+    <</if>>
+<</if>>
 
 <ul class="actions">
-  <li><<link $t_afterLook>><</link>></li>
+    <<actions-get>>
+    <li>$t_afterLook</li>
 </ul>
+<</nobr>>
 
 
 :: n1x/D Candle [maybe-password] {"position":"6850,5700","size":"100,100"}
@@ -14983,7 +15057,7 @@ The entire arrangement is disturbingly symmetric.
     Nero notices below the portrait,
     a tile with a distinctive wood grain that has
     an exactly reversed twin on the other side, below the map.
-    Perhaps Ivex constructed the interior of this room with
+    Perhaps Ivex has decorated the interior of this room with
     a lazy reflection spell.
 <</if>>
 
@@ -15586,14 +15660,14 @@ $t_afterAction
 <</nobr>>
 
 
-:: n1x/P Ask Books [maybe-password] {"position":"7425,4900","size":"100,100"}
+:: n1x/P Ask Books [maybe-password] {"position":"7300,4775","size":"100,100"}
 trying to get Ivex to say what his school name is
 
 
 <<link $t_afterAction>><</link>>
 
 
-:: n1x/P Coins Ask {"position":"7500,5050","size":"100,100"}
+:: n1x/P Coins Ask {"position":"7475,5175","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n1_naked true>>
@@ -15927,7 +16001,7 @@ his situation.
 
 <<if $n1_bookshelfViewed>>
     The [[bookshelves|n1x/F Bookshelves]] have
-    numerous [[books|n1x/P Books]],
+    numerous [[books|n1x/D Books]],
     a [[stack of coins|n1x/P Coins]],
     and a [[magic wand|n1x/D Wand]].
 <</if>>
@@ -15980,11 +16054,13 @@ There are better things to do before Ivex returns.
 
 :: n2x/F Bookshelf Search {"position":"8025,5825","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_extraHorny>>
+
 <<set $n2_bookshelfSearchMageSight != null || ($n2_bookshelfSearchMageSight = $n1_mageSight)>>
 
 <<set _again = (a, b) => $n2_bookshelfSearched ? a : b>>
 
-Nero <<= _again('only looked in', 'peers into')>> a few of the storage boxes.
+Nero <<= _again('has already looked in', 'peers into')>> a few of the storage boxes.
 
 <<if !$n2_bookshelfSearchMageSight>>
     The first two <<= _again('were', 'are')>> empty.
@@ -18184,8 +18260,12 @@ setup();
   height: 1em;
 }
 .vp-symbol {
+  color: #666;
+  display: inline-block;
   font-family: tme-fa-icons;
   margin-right: .4em;
+  text-align: center;
+  width: 1em;
 }
 .vp-visited {
   color: #999;
@@ -18250,7 +18330,7 @@ function render() {
       .addClass(visited ? "vp-visited" : "vp-unvisited")
       .appendTo(out);
     $("<span class=vp-symbol>")
-      .text(visited ? "\ue832" : "\ue833")
+      .text(visited ? "\ue803" : ".")
       .appendTo(outer);
     $("<span class=vp-title>")
       .text(title)
@@ -18325,5 +18405,26 @@ from the perverted panther.
 <</nobr>>
 
 $t_afterAction
+
+
+:: n2x/D Books Search {"position":"8025,5525","size":"100,100"}
+<<nobr>>
+<<set _again = (a, b) => $n2_booksSearched ? a : b>>
+
+suspects the repeated books are a facade. surprised to find that they're real books.
+
+?P
+plain brown book is porn
+
+?P
+yearbook, something weird about it
+
+?P
+maybe find an incel tract or something else nutty
+
+?P
+<<= _again($t_afterLook, $t_afterAction)>>
+<<set $n2_booksSearched = true>>
+<</nobr>>
 
 

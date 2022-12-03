@@ -37,6 +37,11 @@
 - Generally, you probably want to do most of your editing in Twine,
   because the visualization of storygraph structure is much better than the
   options available elsewhere, but some edits are easier to do in `.tw`.
+- `make nero-check` will verify that state variables in `nero.tw` are all
+  declared in the file `nero-vars.txt`.
+- When using `vscode`, the `T3LT` extension will check the syntax of
+  sugarcube macros in a `.tw` file. User macros are declared in the file
+  `t3lt.twee-config.yml`.
 
 ## Dev workflows
 
