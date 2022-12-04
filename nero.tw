@@ -3257,6 +3257,12 @@ Macro.add("misfire-please", {
 
 
 :: Init 5b Nero Patience [inclusion] {"position":"3050,1175","size":"100,100"}
+<<append head>><style>
+.patience-debug:not(.patience-debug-show) a {
+  display: none;
+}
+</style><</append>>
+
 <<script>>
 const VI = VarInfo;
 
@@ -3302,17 +3308,19 @@ Macro.add("n1-patience", {
       default: $(this.output).wiki(angryText); break;
     }
     if (Config.debug) {
-      $(this.output).append("<br>&#x1f527;");
-      $("<a>").text("(reset)").appendTo(this.output)
+      const outer = $("<span class=patience-debug>").appendTo(this.output);
+      $("<label>").append(" &#x1f527;").appendTo(outer)
+        .click(() => outer.toggleClass("patience-debug-show"));
+      $("<a>").text("(reset)").appendTo(outer)
         .click(() => VI.revisitHere(() => {
           State.variables.t_patiencePassage = null;
         }));
-      $("<a>").text(" (warn)").appendTo(this.output)
+      $("<a>").text(" (warn)").appendTo(outer)
         .click(() => VI.revisitHere(() => {
           State.variables.t_patienceLooks = 1;
           State.variables.t_patiencePassage = here;
         }));
-      $("<a>").text(" (aggro)").appendTo(this.output)
+      $("<a>").text(" (aggro)").appendTo(outer)
         .click(() => VI.revisitHere(() => {
           State.variables.t_patienceLooks = 0;
           State.variables.t_patienceAggro = 1;
@@ -11262,7 +11270,7 @@ Or he could be, if he dressed better.
 <<else>>
     Unlike Nero's own pocket-filled robe,
 <</if>>
-which is the professional attire of spellcasters in the civilized world, the panther mage has opted for mundane clothes that resemble the facile fashion of a used boat merchant, overshadowed by a large red cape that belongs in a comic operetta. Gaudy rings adorn all the wrong fingers with mismatched gems, and the crowning crime of style is the clasp of the cape, which has an absurdly large gem emitting a magenta glow that does no favors to the panther's black fur.
+which is the professional attire of spellcasters in the civilized world, the panther mage has opted for mundane clothes that resemble the facile fashion of a used cart merchant, overshadowed by a large red cape that belongs in a comic operetta. Gaudy rings adorn all the wrong fingers with mismatched gems, and the crowning crime of style is the clasp of the cape, which has an absurdly large gem emitting a magenta glow that does no favors to the panther's black fur.
 
 ?P
 It all feels like a poor person's idea of what a rich person would wear.
@@ -13081,31 +13089,6 @@ sprite says, ok, thinking.
 $t_afterAction
 
 
-:: n1s/D Cast Escape {"position":"5900,3250","size":"100,100"}
-<<nobr>>
-<<vi-always n1_candleHorny false>>
-<<vi-always n1_ivexReceptive false>>
-<<vi-always n1_mageSight false>>
-<<vi-always n1_magicPhase `MP_beforeCast`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
-<<vi-always n2_free false>>
-<<vi-always n2_ivexGone true>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
-
-<<vi-ignore n1_abused>>
-<<vi-ignore n1_candleLit>>
-<<vi-ignore n1_subby>>
-
-<<set $n1_magicPhase = MP_triedMagic>>
-
-start cast escape. fizzles.
-<</nobr>>
-
-[[Continue|n1s/D After Escape]]
-
-
 :: n1s/D Cast Sight {"position":"5850,4025","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight false>>
@@ -14079,7 +14062,7 @@ T.toTry.sort();
 <</nobr>>\
 
 
-:: n1x/D Cross {"position":"6175,5375","size":"100,100"}
+:: n1x/F Cross {"position":"6175,5375","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<set _gone = (a, b) => $n2_ivexGone ? a : b>>
@@ -14129,7 +14112,8 @@ T.toTry.sort();
     his arms and legs spread wide.
     It's made of sturdy wood, and the leather straps are thick
     and quite secure.
-    But it isn't immediately obvious what's keeping the
+    The legs of the cross do not appear to be attached to
+    anything, so it isn't immediately obvious what's keeping the
     cross fastened in place in the
     <!-- not using no-loop; this is a special case.
         first-time player is likely to visit cross first.
@@ -14150,19 +14134,26 @@ T.toTry.sort();
 <<if MP_beforeCast === $n1_magicPhase>>
     <<em-assert !$n1_mageSight>>
     Well, however the cross is installed,
-    escape from the leather bonds should be easy.
+    escape from the leather bonds will be easy.
     <<if $n2_ivexGone>>
-        Nero knows several spells that can do it.
-        <<actions-add [[Cast an escape spell.|n1s/D Cast Escape]]>>
+        And Nero knows just the spell to do it.
+        <<actions-add [[Cast an escape spell.|n1s/D Cast Slippery]]>>
     <<elseif $n1_ivexReceptive>>
-        Nero knows several spells that can do it XXX and impress Ivex
+        Nero knows several spells that can do it.
+        There's one in particular that requires a bit of finesse,
+        which will demonstrate his competence
+        and hopefully impress Ivex.
         <<actions-add [[Cast an escape spell.|n1s/D Cast Slippery]]>>
     <<elseif $n1_subby>>
-        XXX something subby XXX should be endgame
-        <<actions-add [[Cast an escape spell.|n1s/D Cast Slippery]]>>
+        Nero knows just the spell to use, his best, personal creation,
+        which might be enough to demonstrate to Ivex that the wolf mage
+        can be useful.
+        <<actions-add [[Cast Nero's Endgame.|n1s/P Cast Endgame]]>>
     <<else>>
-        Nero knows several spells, but Ivex is watching XXX.
-        why not endgame?
+        Nero knows several spells that can do it,
+        but any such action right now is likely to be interpreted as
+        an escalation of hostility.
+        So he'd better prepare a little before casting an escape spell.
     <</if>>
 
 <<elseif $n1_gemsAsked>>
@@ -14195,7 +14186,9 @@ T.toTry.sort();
         <<actions-add [[Struggle on the cross.|n2b/D Struggle]]>>
     <<else>>
         <<if $n1_subby>>
-            A respectful question XXX
+            Nero is quite curious about the panther mage's powers.
+            Perhaps Ivex would explain them a bit if he were asked
+            a respectful question.
         <<elseif $n1_ivexReceptive>>
             That seems like useful information to know.
             Perhaps Ivex can be persuaded to discuss the
@@ -14211,18 +14204,23 @@ T.toTry.sort();
 <<else>>
     Well, however the cross is installed,
     <<if $n2_ivexGone>>
-        struggling free might be an option if the wolf were a warrior,
-        not a mage.
-        It seems unlikely Nero could break his bonds.
-        And even if it were possible,
-        Ivex would certainly stop the wolf before he successfully rampaged
-        his way to escape.
-    <<else>>
         Ivex's departure means
         the wolf mage can now struggle against his bondage
         in earnest hope of escape, however unlikely that might be
         with his mediocre strength.
         <<actions-add [[Struggle on the cross.|n2b/D Struggle]]>>
+    <<else>>
+        struggling free seems unlikely to work.
+        The wolf is a mage, not a warrior.
+        It seems unlikely Nero could break his bonds.
+        And even if it were possible,
+        Ivex would certainly
+        <<if $n1_subby>>
+            not appreciate the brutish attempt at escape.
+        <<else>>
+            stop the wolf before he successfully rampaged
+            his way to escape.
+        <</if>>
     <</if>>
 <</if>>
 
@@ -14262,7 +14260,7 @@ T.toTry.sort();
     the furnishings of their mind. If that's true in this case, Ivex's mind is
 <</if>>
 pompous, dirty, and dominated by the
-<<n1-no-loop [[wooden cross|n1x/D Cross]]>>
+<<n1-no-loop [[wooden cross|n1x/F Cross]]>>
 <<if $n2_free>>
     that's fallen over and leaning on the
     <<n1-no-loop [[cluttered desk|n1x/F Desk]]>>
@@ -14270,8 +14268,19 @@ pompous, dirty, and dominated by the
     <<n1-no-loop [[prominent round window|n1x/F Window]]>>.
 
     ?P
-    The wall with the window is bare except for
-    <<n1-no-loop [[some decorations|n1x/F Wall]]>>.
+    <<if $n1_wallViewed>>
+        The <<n1-no-loop [[wall|n1x/F Wall]]>>
+        with the window is bare except for
+        a <<n1-no-loop [[large map|n1x/F Map]]>>
+        <<if $n1_portraitMomKnown>>
+            and a <<n1-no-loop [[portrait of Ivex's mom|n1x/F Portrait]]>>.
+        <<else>>
+            and a <<n1-no-loop [[portrait of a pantheress|n1x/F Portrait]]>>.
+        <</if>>
+    <<else>>
+        The wall with the window is bare except for
+        <<n1-no-loop [[some decorations|n1x/F Wall]]>>.
+    <</if>>
     The opposite wall has a
     <<n1-no-loop [[sturdy door|n2f/D Door]]>>.
     The other walls are lined with many
@@ -14287,10 +14296,22 @@ pompous, dirty, and dominated by the
     that's holding Nero in place.
 
     ?P
-    One wall is bare except for
-    <<n1-no-loop [[some decorations|n1x/F Wall]]>>
-    and a
-    <<n1-no-loop [[prominent round window|n1x/F Window]]>>.
+    <<if $n1_wallViewed>>
+        The <<n1-no-loop [[far wall|n1x/F Wall]]>>
+        is bare except for
+        a <<n1-no-loop [[large map|n1x/F Map]]>>,
+        <<if $n1_portraitMomKnown>>
+            a <<n1-no-loop [[portrait of Ivex's mom|n1x/F Portrait]]>>,
+        <<else>>
+            a <<n1-no-loop [[portrait of a pantheress|n1x/F Portrait]]>>,
+        <</if>>
+        and a <<n1-no-loop [[prominent round window|n1x/F Window]]>>.
+    <<else>>
+        The far wall is bare except for
+        <<n1-no-loop [[some decorations|n1x/F Wall]]>>
+        and a <<n1-no-loop [[prominent round window|n1x/F Window]]>>.
+    <</if>>
+
     The other walls are lined with many
     <<n1-no-loop [[wooden cabinets|n1x/F Cabinets]]>>
     and
@@ -14405,8 +14426,10 @@ is continuous and uninterrupted across all of its visible surfaces.
     and so forth.
 <</if>>
 
-<<if $n2_knifeTaken || MP_beforeCast === $n1_magicPhase>>
-    None of it looks particularly interesting.
+<<if $n2_knifeTaken>>
+    None of them looks particularly interesting.
+<<elseif MP_beforeCast === $n1_magicPhase>>
+    None of them seems particularly relevant to Nero's situation right now.
 <<else>>
     ?P
     The most interesting of the tools is
@@ -14427,7 +14450,7 @@ is continuous and uninterrupted across all of its visible surfaces.
         <<if $n1_bottleViewed>>
             Or for <em>it</em> to reach <em>him</em>,
             which might be possible with the help of
-            [[Nacker's Device!|n1x/D Bottle]]
+            [[Nacker's Device!|n1x/F Bottle]]
         <</if>>
     <</if>>
 <</if>>
@@ -14839,7 +14862,7 @@ Nero think of something more sensual than meat.
     <<if $n1_bottleViewed>>
         But perhaps <em>it</em> could reach <em>him</em>,
         if the wolf mage figures out how to use
-        <<n1-no-loop [[Nackle's Device|n1x/D Bottle]]>>.
+        <<n1-no-loop [[Nackle's Device|n1x/F Bottle]]>>.
     <</if>>
 <</if>>
 
@@ -14857,28 +14880,27 @@ Nero think of something more sensual than meat.
 
 Against the walls of the room are several wooden cabinets
 that seem identical in shape and size, but painted differently.
-Each cabinet has distinctly colored doors and drawers.
+Each cabinet has distinctly colored doors and drawers, all closed.
 
-<<if !$n2_free>>
-    All of them are closed.
-    <<if $n1_mageSight>>
-        Strands of exotic magical energy are threaded throughout,
+<<if $n1_mageSight>>
+    <<if $n2_free>>
+        Strands of exotic magical energy are threaded throughout
+        the cabinets.
+        <!-- unpainted is mentioned below -->
+    <<else>>
+        Strands of exotic magical energy are threaded through all
+        the cabinets,
         except for the one unpainted cabinet that appears to have
         no magical energy at all.
-    <</if>>
-
-<<else>>
-    <<if $n1_mageSight>>
-        Strands of exotic magical energy are threaded throughout.
     <</if>>
 <</if>>
 
 ?P
 On top of one cabinet is
 <<if $n1_bottleViewed>>
-    a [[bottled Nackle's Device|n1x/D Bottle]]
+    a [[bottled Nackle's Device|n1x/F Bottle]]
 <<else>>
-    a [[large glass bottle|n1x/D Bottle]]
+    a [[large glass bottle|n1x/F Bottle]]
 <</if>>
 and a [[stuffed penguin|n1x/P Penguin]].
 The others are bare.
@@ -14990,8 +15012,8 @@ The entire arrangement is disturbingly symmetric.
     Nero notices below the portrait,
     a tile with a distinctive wood grain that has
     an exactly reversed twin on the other side, below the map.
-    Perhaps Ivex has decorated the interior of this room with
-    a lazy reflection spell.
+    Perhaps Ivex has lazily decorated the interior of this room with
+    a simple reflection spell.
 <</if>>
 
 ?P
@@ -15001,8 +15023,10 @@ The entire arrangement is disturbingly symmetric.
 <</nobr>>
 
 
-:: n1x/D Bottle [has-hole] {"position":"7125,4650","size":"100,100"}
+:: n1x/F Bottle [has-hole] {"position":"7125,4650","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_free>>
+
 Atop one of the wooden cabinets in the room is a
 clear glass bottle of unusually large size.
 But what's most unusual about the bottle is its contents,
@@ -15037,6 +15061,7 @@ Such as:
     Lance <em>Rock</em>-hard
     to a giant <em>metal</em> cock?
 <</if>>
+
 Is it appropriate to call something of such enormous size a dildo?
 
 <<if MP_wantName === $n1_magicPhase>>
@@ -15059,12 +15084,12 @@ extremely large item through the bottle's narrow neck?
 <</if>>
 
 <<if !$n1_bottleViewed>>
-    Why would a bottled metallic horse cock have the glyphs for
+    And why would a bottled metallic horse cock have the glyphs for
     [[Nackle's Poltergeist Device|n1x/F Nackle 1]] inscribed on it?
 <<elseif $n1_magicPhase < MP_wantDevice>>
     How does Ivex expect to use [[Nackle's Poltergeist Device|n1x/F Nackle 1]]
     when it's anchored on a metallic horse cock that can't be touched?
-    <<if $n1_deskViewed && !$n2_free>>
+    <<if $n1_deskViewed && !$n2_free && MP_beforeCast !== $n1_magicPhase>>
         And is there some way that Nero can use the device to
         grab the [[letter opener|n1x/F Knife]]?
     <</if>>
@@ -15078,18 +15103,21 @@ extremely large item through the bottle's narrow neck?
 <</if>>
 
 ?P
-<<vi-ignore n2_free>>
 <<if $n2_ivexGone>>
     Well, there's no way to answer any of those questions now.
     <<if $n1_magicPhase === MP_connected>>
-        XXX get to use device.
-        <<actions-add [[Use the device.|n1s/D Use Lance]]>>
+        But Nero's connection through the Sprite at least
+        allows him to use the device.
+        <<actions-add [[Use Nackle's Device.|n1s/D Use Lance]]>>
     <</if>>
 <<elseif !$n1_bottleNameKnown>>
     Nero, against his better judgment, considers asking Ivex about it.
     <<actions-add [[Ask Ivex about the bottle.|n1x/D Bottle Ask]]>>
 <<elseif !$n1_bottleAskedAgain && $n1_magicPhase < MP_wantDevice>>
-    XXX ivex seemed proud, maybe he will reveal more details, but ick.
+    Ivex seems quite proud of his construction.
+    Perhaps he can be persuaded to reveal more information about it.
+    Nero hesitates. Does he really want to invite the perverted panther
+    to make more lewd innuendo?
     <<actions-add [[Ask Ivex again about the bottle.|n1x/D Bottle Ask Again]]>>
 <<else>>
     Nero does <em>not</em> want to ask Ivex about it again.
@@ -15370,11 +15398,11 @@ if there were anything to magnify other than the clear blue sky.
         The sky has more of the exotic magical energy mesh that permeates
         the room. Nero does not understand its origin or its purpose.
         From his position, bound on a
-        <<n1-no-loop [[wooden cross|n1x/D Cross]]>>,
+        <<n1-no-loop [[wooden cross|n1x/F Cross]]>>,
         he cannot see how far the energy extends or where it ends.
     <<else>>
         From his position, bound on a
-        <<n1-no-loop [[wooden cross|n1x/D Cross]]>>,
+        <<n1-no-loop [[wooden cross|n1x/F Cross]]>>,
         Nero cannot see anything else outside.
     <</if>>
 <</if>>
@@ -15829,7 +15857,7 @@ his situation.
         He's bound
     <</if>>
     with leather restraints to a
-    [[wooden cross|n1x/D Cross]]
+    [[wooden cross|n1x/F Cross]]
     <<if $n1_mirrorViewed>>
         that has [[glowing gems|n1x/P Gems]],
     <</if>>
@@ -15925,9 +15953,9 @@ his situation.
 <<if $n1_cabinetViewed>>
     On top of one [[cabinet|n1x/F Cabinets]] is
     <<if $n1_bottleViewed>>
-        a [[bottled poltergeist device|n1x/D Bottle]]
+        a [[bottled poltergeist device|n1x/F Bottle]]
     <<else>>
-        a [[large glass bottle|n1x/D Bottle]]
+        a [[large glass bottle|n1x/F Bottle]]
     <</if>>
     and a [[stuffed penguin|n1x/P Penguin]].
 <</if>>
@@ -16165,7 +16193,7 @@ the surface of a metallic horse cock, sealed inside a bottle.
 <</if>>
 
 ?P
-[[Return|n1x/D Bottle]]
+[[Return|n1x/F Bottle]]
 <</nobr>>
 
 
@@ -17916,31 +17944,6 @@ glitch - blank
 
 :: n9x/S ascendant [end] {"position":"4625,8100","size":"100,100"}
 this is all endings involving the lion
-
-
-:: n1s/D After Escape {"position":"5850,3125","size":"100,100"}
-<<nobr>>
-<<vi-always n1_candleHorny false>>
-<<vi-always n1_ivexReceptive false>>
-<<vi-always n1_mageSight false>>
-<<vi-always n1_magicPhase `MP_triedMagic`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
-<<vi-always n2_free false>>
-<<vi-always n2_ivexGone true>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
-
-<<vi-ignore n1_abused>>
-<<vi-ignore n1_candleLit>>
-<<vi-ignore n1_subby>>
-
-info about [[anti-magic|n1s/F Anti-magic]]
-<<set $t_returnAntiMagic = State.passage>>
-
-?P
-$t_afterAction
-<</nobr>>
 
 
 :: Init 2 Random Once [inclusion] {"position":"2750,600","size":"100,100"}
