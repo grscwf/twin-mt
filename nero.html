@@ -2543,14 +2543,18 @@ function defTemp(vname, fn) {
 }
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    defTemp(&#39;ivexNear&#39;, () =&gt; {
+    defTemp(&quot;ivexNear&quot;, () =&gt; {
       const V = State.variables;
       return V.n1_candleHorny &amp;&amp; !V.n2_ivexGone;
+    });
+    defTemp(&quot;wantPassword&quot;, () =&gt; {
+      const mp = State.variables.n1_magicPhase;
+      return mp === MP_wantPassword || mp === MP_onHold;
     });
     
     VarTrace.ignore(() =&gt; {
       const V = State.variables;
-      V.n1_magicPhase ?? (V.n1_magicPhase = 0);
+      V.n1_magicPhase != null || (V.n1_magicPhase = 0);
     });
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="26" name="Init 5b Nero Actions" tags="inclusion" position="2650,1175" size="100,100">&lt;&lt;script&gt;&gt;
@@ -3375,6 +3379,8 @@ Macro.add(&quot;pw-choice&quot;, {
             const text =`Tell the Sprite, &quot;${pleaseComma}${pw}.&quot;`;
             const code = `$n1_passwordBeingTried = &quot;${please}${pw}&quot;`;
             Nero.actionsAdd(&quot;[&quot; + `[\`${text}\`|${sayPassword}][${code}]]`);
+          } else if (V.n1_magicPhase === MP_onHold) {
+            $(this.output).append(`Nero will have to remember to try it when the Sprite is ready for another guess.`);
           }
           return;
         }
@@ -9630,13 +9636,13 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n1_abused&gt;&gt;
-        &lt;li&gt;[[`Reply to Ivex&#39;s question. &quot;Please, let me explain...&quot;`|n1cn/F Charm]]&lt;/li&gt;
+        &lt;li&gt;[[`Reply to Ivex, &quot;Please, let me explain...&quot;`|n1cn/F Charm]]&lt;/li&gt;
         &lt;li&gt;[[Growl softly at Ivex.|n1cn/F Resist]]&lt;/li&gt;
     &lt;&lt;elseif $n1_naked&gt;&gt;
-        &lt;li&gt;[[`Reply to Ivex&#39;s question. &quot;No, you misunderstand...&quot;`|n1cn/F Charm]]&lt;/li&gt;
+        &lt;li&gt;[[`Reply to Ivex, &quot;No, you misunderstand...&quot;`|n1cn/F Charm]]&lt;/li&gt;
         &lt;li&gt;[[Snarl at Ivex.|n1cn/F Resist]]&lt;/li&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;li&gt;[[`Reply to Ivex&#39;s question. &quot;Ah, I see the misunderstanding...&quot;`|n1cn/F Charm]]&lt;/li&gt;
+        &lt;li&gt;[[`Reply to Ivex, &quot;Ah, I see the misunderstanding...&quot;`|n1cn/F Charm]]&lt;/li&gt;
         &lt;li&gt;[[Provoke Ivex with a growl.|n1cn/F Resist]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
@@ -9966,7 +9972,7 @@ throws nero completely off his game.
 
 Ivex flattens his ears and growls. &quot;Don&#39;t try to play dumb with me!&quot; He grabs a sheet of paper from the desk. &quot;I found this in your satchel.&quot;
 
-He raises the paper and reads from it. &quot;Ivex Darkshadow. Probably not his birth name. No documentation prior to his enrollment at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with... &lt;em&gt;et&amp;nbsp;cetera&lt;/em&gt;...&quot;
+He raises the paper and reads from it. &quot;Ivex Darkshadow. Probably not his birth name. No documentation prior to his enrollment at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with... &lt;em class=nobr&gt;et cetera&lt;/em&gt;...&quot;
 
 Ivex throws the paper into the air and makes a gesture, causing it to burst into flames.
 
@@ -10281,20 +10287,21 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
 &lt;&lt;n1-patience 4 3
-    &#39;Ivex seems skeptical, but intrigued. He asks, &quot;Why have I never heard of your group?&quot;&#39;
+    &#39;Ivex seems skeptical, but intrigued. He asks, &quot;Why have I never heard of your consortium?&quot;&#39;
 &gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
 
+&lt;!-- need to use link for the em --&gt;
 &lt;&lt;set _link = &quot;[[n1cr/D Very Secret]]&quot;.slice(2, -2)&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n1_abused&gt;&gt;
-        &lt;li&gt;&lt;&lt;link &quot;\&quot;You &lt;em&gt;have&lt;/em&gt; heard of us...\&quot;&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;&lt;link &quot;Reply to Ivex, \&quot;You &lt;em&gt;have&lt;/em&gt; heard of us...\&quot;&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
     &lt;&lt;elseif $n1_naked&gt;&gt;
-        &lt;li&gt;&lt;&lt;link &quot;\&quot;You &lt;em&gt;have&lt;/em&gt; heard of us...\&quot;&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;&lt;link &quot;Reply to Ivex, \&quot;You &lt;em&gt;have&lt;/em&gt; heard of us...\&quot;&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;li&gt;&lt;&lt;link &quot;\&quot;You &lt;em&gt;have&lt;/em&gt; heard of us...\&quot;&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;&lt;link &quot;Reply to Ivex, \&quot;You &lt;em&gt;have&lt;/em&gt; heard of us...\&quot;&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
@@ -11587,9 +11594,8 @@ function glitchText(textNode, g) {
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="365" name="n1s/F Guess Password" tags="" position="3900,1000" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_magicPhase `MP_wantPassword`&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
+&lt;&lt;vi-always n2_free false&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
 &lt;&lt;include [[n1s/F Guess Script]]&gt;&gt;
 
@@ -11617,11 +11623,16 @@ function glitchText(textNode, g) {
 &lt;&lt;else&gt;&gt;
     &lt;&lt;if $n1_passwordsFound.length === 0&gt;&gt;
         Nero does not know much about Ivex
-        (and does not really want to know more),
+        &lt;&lt;if !$n1_subby&gt;&gt;
+            (and does not really want to know more),
+        &lt;&lt;/if&gt;&gt;
         but most people are not creative with their passwords.
         There are several obvious choices that he can try.
+        And if none of them are correct, it&#39;s quite possible that Ivex
+        has chosen a password related to something in this room.
     &lt;&lt;else&gt;&gt;
         Nero has learned a few things about Ivex that suggest potential passwords.
+        Looking around might suggest some more.
         &lt;&lt;if _hasBasics&gt;&gt;
             And there are also some obvious choices to try.
         &lt;&lt;/if&gt;&gt;
@@ -11639,6 +11650,7 @@ function glitchText(textNode, g) {
                 &lt;&lt;/capture&gt;&gt;
             &lt;/li&gt;
         &lt;&lt;/for&gt;&gt;
+        &lt;li&gt;$t_afterLook&lt;/li&gt;
     &lt;/ul&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="366" name="n1s/F Anti-magic" tags="" position="5250,3225" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -11658,25 +11670,27 @@ This is an exceptionally complicated proposition. Lammada&#39;s Theorem proves t
 So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
 
 [[Continue|n1s/F Anti-magic 2]]</tw-passagedata><tw-passagedata pid="367" name="n1s/P Say Password" tags="" position="3600,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_magicPhase `MP_wantPassword`&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
+&lt;&lt;vi-always n2_free false&gt;&gt;
 
 from any place that has a suggested password.
-&lt;&lt;/nobr&gt;&gt;
 
+?P
 add/remove &quot;please&quot; as necessary for passwordNoPlease.
 dialog tag varies on subby/etc.
 
+?P
 no immediate feedback of the password tried. the please-misfire isn&#39;t revealed until Impatient.
 
 &lt;&lt;if !$n2_ivexGone&gt;&gt;
+    ?P
     ivex: what was that? speak up.
     add various lewd responses for specific passwords
 &lt;&lt;/if&gt;&gt;
 
+?P
 sprite says, ok, thinking.
 &lt;&lt;set $n1_magicPhase = MP_onHold&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
 
 $t_afterAction</tw-passagedata><tw-passagedata pid="368" name="n1s/D Cast Sight" tags="" position="5850,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
@@ -12011,12 +12025,7 @@ The Sprite in Nero&#39;s ear says, &quot;The following devices are available...&
 ?P
 $t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="379" name="n1s/D Impatient" tags="" position="6500,3725" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
 
 &lt;style&gt;
   .impatient-overrun {
@@ -12629,8 +12638,8 @@ T.toTry.sort();
     &lt;&lt;elseif $n1_ivexReceptive&gt;&gt;
         Nero knows several spells that can do it.
         There&#39;s one in particular that requires a bit of finesse,
-        which will demonstrate his competence
-        and hopefully impress Ivex.
+        which he can cast to demonstrate his competence.
+        And it might even impress Ivex.
         &lt;&lt;actions-add [[Cast an escape spell.|n1s/D Cast Slippery]]&gt;&gt;
     &lt;&lt;elseif $n1_subby&gt;&gt;
         Nero knows just the spell to use, his best, personal creation,
@@ -12641,7 +12650,7 @@ T.toTry.sort();
         Nero knows several spells that can do it,
         but any such action right now is likely to be interpreted as
         an escalation of hostility.
-        So he&#39;d better prepare a little before casting an escape spell.
+        So he&#39;d better prepare a little, before casting an escape spell.
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;elseif $n1_gemsAsked&gt;&gt;
@@ -12800,7 +12809,7 @@ pompous, dirty, and dominated by the
     &lt;&lt;n1-no-loop [[wooden cabinets|n1x/F Cabinets]]&gt;&gt;
     and
     &lt;&lt;n1-no-loop [[bookshelves|n1x/F Bookshelves]]&gt;&gt;.
-    The only other furniture is a
+    The only other furniture is the
     &lt;&lt;n1-no-loop [[cluttered desk|n1x/F Desk]]&gt;&gt;
     near the window.
 &lt;&lt;/if&gt;&gt;
@@ -13170,11 +13179,12 @@ duplicate copies of the same few books.
 Nero &lt;&lt;= _searched(&quot;is quite familiar with&quot;, &quot;recognizes&quot;)&gt;&gt;
 one: Cadmia&#39;s Compendium of Charms.
 It&#39;s an introductory-level text that&#39;s also useful outside the classroom.
-New editions of it, with improvements and additional spells,
-are published regularly each year by Cadmia&#39;s anonymous jailer.
+Updated editions of it, with distinctly colored logos on the spine,
+are regularly published each year by Cadmia&#39;s anonymous jailer.
 
 ?P
-It&#39;s unclear why Ivex would need or want several dozen copies of that book.
+It&#39;s unclear why Ivex would need or want several dozen copies of
+the &lt;em&gt;same edition&lt;/em&gt; of that book.
 Nero has seen many residences with libraries of books that are clearly
 chosen for their impressive ambience, instead of being treasured
 for their contents and actually read or consulted from time to time.
@@ -13200,7 +13210,8 @@ a small haphazard stack of books that
     The book below that has its spine facing away.
     Nero cannot see what the title is,
     but the lower part of the front cover is visible,
-    and the words &quot;Class of 621&quot; are printed on it.
+    and the words &lt;span class=nobr&gt;&quot;Class of 621&quot;&lt;/span&gt;
+    are printed on it.
 
     ?P
     It looks like a yearbook from a school that Ivex attended.
@@ -13235,7 +13246,7 @@ a small haphazard stack of books that
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;
 </tw-passagedata><tw-passagedata pid="402" name="n1x/D Candle" tags="maybe-password" position="6875,5700" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;set _wantPassword = $n1_magicPhase === MP_wantPassword&gt;&gt;
+&lt;&lt;vi-always n2_free false&gt;&gt;
 
 &lt;&lt;if $n1_mageSight&gt;&gt;
     Exotic magic energies enter the base of the candle&#39;s holder
@@ -13340,7 +13351,7 @@ Nero think of something more sensual than meat.
         if he ever has a chance to reach it.
     &lt;&lt;else&gt;&gt;
         Nero keeps a knife of his own in his robes.
-        But it&#39;s likely that Ivex has already removed it,
+        But it&#39;s likely that Ivex has already removed the wolf mage&#39;s weapons,
         so it&#39;s good to know that the letter opener is nearby,
         if he ever has a chance to reach it.
     &lt;&lt;/if&gt;&gt;
@@ -14523,13 +14534,14 @@ Ivex tells the name, even before you know you need it. (makes the Sprite joke be
 
 $t_afterAction</tw-passagedata><tw-passagedata pid="432" name="n1x/F Nackle 3" tags="" position="7700,4900" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+&lt;&lt;vi-ignore n2_free&gt;&gt;
 
 A typical installation of Nackle&#39;s Poltergeist Device places the glyphs
 on the underside of a table,
 or on some other hidden surface that&#39;s conveniently accessible.
 The mage who knows of its existence
-can then use it and entertain guests with dancing dinnerplates,
-or repel enemies with flying cutlery.
+can then use it to entertain guests with dancing dinnerplates,
+or to repel enemies with flying cutlery.
 
 ?P
 Ivex has &lt;em&gt;not&lt;/em&gt; placed the matrix
@@ -14552,8 +14564,8 @@ the surface of a metallic horse cock, sealed inside a bottle.
 
     ?P
     This question might not be the most important thing to consider at the moment,
-    but an answer might help give insight into defeating
-    Ivex&#39;s magic.
+    but an answer might help give Nero insight into defeating
+    the panther&#39;s magic.
 
 &lt;&lt;elseif $n1_magicPhase &lt; MP_wantName&gt;&gt;
     &lt;&lt;vi-always n1_mageSight true&gt;&gt;
