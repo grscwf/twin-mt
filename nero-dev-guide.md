@@ -152,10 +152,13 @@
 - All Nero state vars start with a prefix like `n1_` or `t_`.
   - The `n` is for persistent Nero variables.
   - The digit indicates what chapter sets the variable.
-    - Restarting at chapter 2 will delete all `n2_` and later variables,
-      and restore a snapshot of `n1_` variables
-      (saved before starting chapter 2).
-  - The `t_` variables are for state that's only used in local passage connections. They aren't saved or restored at a restart point.
+    - Restarting at chapter 2 will delete all `t_` variables,
+      all `n2_` and later variables,
+      and then restore a snapshot of `n1_` variables
+      (which is saved before starting chapter 2).
+  - The `t_` variables are for state that doesn't need to be added to a
+    restart snapshot. Generally, local passage connection logic can be
+    `t_` variables.
 - `n0_` vars are for Nero state that persists across replays.
 - `mt_` vars are for overall story state that persists across replays.
 
