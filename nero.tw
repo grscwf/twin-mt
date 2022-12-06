@@ -2129,7 +2129,7 @@ function varButton(vname) {
     outer.addClass("var-info-enum");
     const sym = enumList[v[vname] || 0];
     const sameType = Object.values(ET.vars).filter(t => t === vtype).length;
-    label.text(sym != null && sameType < 2 ? sym : vname + "=" + jval);
+    label.text(sym != null ? sym : vname + "=" + jval);
     const n = enumList.length;
     if (VT.ctx.wasRead.has(vname)) {
       const val0 = v0[vname] || 0;
@@ -2574,8 +2574,10 @@ EnumType.define("MagicPhase", [
   "MP_onHold",
   "MP_connected",
   "MP_lockedOut",
+  "MP_broken",
 ]);
 EnumType.declareVar("n1_magicPhase", "MagicPhase");
+EnumType.declareVar("n2_mirrorBrokenPhase", "MagicPhase");
 
 // Define temp var with a getter, so read tracking works.
 function defTemp(vname, fn) {
@@ -3181,9 +3183,11 @@ Nero.enumImplies = {
   n1_magicPhase: {
     [MP_beforeCast]: {
       n1_mageSight: false,
+      n2_free: false,
     },
     [MP_triedMagic]: {
       n1_mageSight: false,
+      n2_free: false,
     },
     [MP_mageSight]: {
       n1_naked: true,
@@ -3206,6 +3210,10 @@ Nero.enumImplies = {
     [MP_lockedOut]: {
       n1_naked: true,
     },
+    [MP_broken]: {
+      n1_naked: true,
+      n2_free: true,
+    }
   }
 }
 
@@ -3468,7 +3476,7 @@ Macro.add("pw-misfire", {
     const pw = this.args[0];
     const V = State.variables;
     const U = VT.untracedVariables();
-    if (U.n2_mirrorBroken || U.n1_magicPhase !== MP_wantPassword) return;
+    if (U.n1_magicPhase !== MP_wantPassword) return;
     V.n1_passwordBeingTried = `#${pw}`;
     V.n1_magicPhase = MP_onHold;
     $(this.output).wiki(`<<nobr>>
@@ -10464,10 +10472,11 @@ Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com
 <<link "> Nero 1F easy escape<super>*</super>" "n2f/D Free Action">>
     <<state-delete n1_ n2_ t_>>
     <<set $n1_naked = true>>
-    <<set $n1_magicPhase = MP_mageSight>>
+    <<set $n1_magicPhase = MP_broken>>
     <<set $n2_free = true>>
     <<set $n2_ivexGone = true>>
     <<set $n2_mirrorBroken = true>>
+    <<set $n2_mirrorBrokenPhase = MP_mageSight>>
 <</link>>
 <hr>
 <super>*</super> State is incomplete and will not happen in normal play.
@@ -11391,27 +11400,61 @@ Not that Nero would ever tell that to his
 <</if>>
 
 ?P
-Ivex makes a gesture, and a small metallic object flies rapidly across
-the room,
+Ivex makes a gesture, and
+<!-- coinThrown is unlikely to be true here, but just in case -->
+<<if $n1_coinThrown>>
+    another coin
+    flies rapidly across the room,
+    <<set $n1_coinThrownAgain = true>>
+<<else>>
+    a small metallic object
+    flies rapidly across the room,
+    <<set $n1_coinThrown = true>>
+<</if>>
+
+<<if $n1_naked>>
+    hitting Nero near his naked crotch.
+<<else>>
+    hitting Nero's robe at his crotch.
+<</if>>
+
+<<if $n1_coinThrown>>
+    Similar to before, the impact is no more than a tap,
+    <<if $n1_abused>>
+        but Nero is intensely worried that the action is a
+        prelude to another punch to his balls,
+        and perhaps more substantial abuse.
+    <<else>>
+        and this time Nero tries not to flinch.
+        He makes a grimace anyway, for show.
+    <</if>>
+
+<<else>>
+    The object is a coin,
+    too small to inflict more than a tap,
+    <<if $n1_abused>>
+        but Nero twists his torso and cringes anyway
+        from the reminder of Ivex's
+        earlier punch to the wolf's balls.
+    <<else>>
+        but Nero instinctively tries to dodge.
+        The motion puts additional strain on his sore limbs,
+        causing him to grimace.
+    <</if>>
+<</if>>
+    
+?P
 <<if $n1_abused>>
-    hitting Nero in the crotch.
-    The object is a coin, too small to inflict more than a tap,
-    but Nero cringes anyway from the reminder of Ivex's
-    earlier punch to the wolf's balls.
-    ?P
     This conversation is not going well.
     Ivex's expression of contempt is a sign that
     he's becoming skeptical of what Nero has to say.
     The wolf will have to tread carefully to calm the panther's defenses.
 <<else>>
-    hitting Nero on his nose before he has time to turn his head away.
-    The object is a coin, just large enough to sting a bit.
-    Nero winces.
-    ?P
-    He's clearly found a sore spot. Ivex's bluster is clearly
-    over-compensation for some deep feeling of failure.
+    The wolf has clearly found a sore spot. Ivex's bluster is definitely
+    over-compensation for some deep feeling of failure of some sort.
     Nero is confident he knows the right tune to lead this dance.
 <</if>>
+<<set $n1_coinThrown = true>>
 
 <</nobr>>
 
@@ -12982,12 +13025,10 @@ function glitchText(textNode, g) {
     <<include [[n1s/D Tried Magic]]>>
 <<case `MP_mageSight`>>
     <<include [[n1s/D Mage Sight]]>>
+<<case `MP_broken`>>
+    <<include [[n1s/F Mirror Broken]]>>
 <<default>>
-    <<if $n2_mirrorBroken>>
-        <<include [[n1s/F Mirror Broken]]>>
-    <<else>>
-        <<include [[n1s/F Sprite]]>>
-    <</if>>
+    <<include [[n1s/F Sprite]]>>
 <</switch>>
 <</nobr>>\
 
@@ -13355,7 +13396,11 @@ $t_afterAction
 <<case `MP_wantDevice`>>
     "Which device in this room do you wish to control, Master?"
     <<if $n1_bottleViewed>>
-        <<set $t_magicAction = "[[`Tell the Sprite, \"Nackle's Poltergeist Device.\"`|n1s/D Say Device]]">>
+        <<if $n1_rememberPlease>>
+            <<set $t_magicAction = "[[`Tell the Sprite, \"Please, Nackle's Poltergeist Device.\"`|n1s/D Say Device]]">>
+        <<else>>
+            <<set $t_magicAction = "[[`Tell the Sprite, \"Nackle's Poltergeist Device.\"`|n1s/D Say Device]]">>
+        <</if>>
     <<elseif !$n1_helpDeviceViewed>>
         <<set $t_magicAction = "[[Ask the Sprite for help.|n1s/D Help Device]]">>
     <<elseif $n1_candleHorny>>
@@ -13426,7 +13471,12 @@ $t_afterAction
 <<vi-always n2_free true>>
 
 With the mirror broken, Nero has unfortunately lost access
-to the tower's magical energy, and the Sprite receptacle in his ear has crumbled.
+to the tower's magical
+<<if $n2_mirrorBrokenPhase < MP_wantDevice>>
+    energy.
+<<else>>
+    energy, and the Sprite in his ear has crumbled.
+<</if>>
 He'll have to rely on wits alone now.
 
 ?P
@@ -13435,12 +13485,7 @@ He'll have to rely on wits alone now.
 
 :: n1s/D Help Device {"position":"6125,3975","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<if !$n1_rememberPlease>>
     Nero whispers, "Help". no response. realizes he forgot to say please.
@@ -13746,13 +13791,7 @@ before trying again, ?master."
 
 :: n1s/D Help Touch {"position":"6250,3975","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_magicPhase `MP_wantTouch`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<if !$n2_ivexGone>>
     Ivex says, something lewd.
@@ -13937,12 +13976,7 @@ info about slippery spell
 
 :: n1s/D Sprite Dots [inclusion] {"position":"6200,4100","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<if $n1_spriteDotsHeard>>
     A moment later, it says, "Dot... Dot... Dot..."
@@ -13965,7 +13999,7 @@ info about slippery spell
         Each "dot" said by the Sprite is horny.
     <<else>>
         It actually spoke the word "dot" aloud,
-        three times, with space in between them.
+        three times, with a pause in between them.
         Nero is baffled. <em>Why</em> would a Sprite do that?
         <em>How</em> did Ivex mess up the Sprite's instructions
         in such a way that it would do that?
@@ -14521,7 +14555,7 @@ and apparently arranged by color.
 ?P
 The bookshelf nearest to the desk is an exception.
 Only one shelf has books, placed in an untidy stack.
-Another shelf has a [[stack of coins|n1x/P Coins]]
+Another shelf has a [[stack of coins|n1x/D Coins]]
 and a [[large magic wand|n1x/D Wand]].
 The rest of the shelves are taken up by boxes
 <<if !$n2_free>>
@@ -14997,13 +15031,63 @@ The others are bare.
 <</nobr>>
 
 
-:: n1x/P Coins [has-hole] {"position":"7375,5050","size":"100,100"}
-stack of coins
-
-if want touch and ivex here, [[n1x/P Coins Ask]]
-
+:: n1x/D Coins [has-hole] {"position":"7375,5050","size":"100,100"}
 <<nobr>>
+<<set _gone = (a, b) => $n2_ivexGone ? a : b>>
+
+On one shelf is a small stack of
+<<if $n1_coinThrownAgain>>
+    the coins that Ivex <<= _gone("had", "has")>>
+    been flinging at Nero's crotch.
+<<elseif $n1_coinThrown>>
+    coins, which is the source of the one that Ivex
+    <<= _gone("had", "has")>> flung at Nero's crotch.
+<<else>>
+    <<vi-ignore n2_ivexGone>>
+    coins.
+<</if>>
+
+<<if $n1_mageSight>>
+    The room's complex flows of exotic energy make it difficult to
+    see if any of the coins have magic attached to them.
+<</if>>
+
+?P
+<<if $n1_coinShown>>
+    XXX memory of ivex showing them
+
+<<elseif $n2_free>>
+    XXX describe coins up close
+    <<if MP_wantTouch === $n2_mirrorBrokenPhase>>
+        XXX speculate this was the hole
+    <</if>>
+
+<<else>>
+    XXX describe coins from a distance
+    <<if MP_wantTouch === $n1_magicPhase>>
+        <<em-assert !$n2_free>>
+        <<if $n1_coinTouched>>
+            XXX not the right coin, of course, there are several
+        <<elseif $n1_coinAsked>>
+            <<if $n1_ivexReceptive>>
+                XXX wasn't receptive before, maybe he is now.
+                <<actions-add [[ask|n1x/D Coins Ask]]>>
+            <<else>>
+                XXX wait until receptive
+            <</if>>
+        <<else>>
+            XXX maybe it's the coin
+            <<actions-add [[ask|n1x/D Coins Ask]]>>
+        <</if>>
+
+    <<else>>
+        XXX strange, but not useful right now
+    <</if>>
+<</if>>
+
+?P
 <ul class="actions">
+    <<actions-get>>
     <li>$t_afterLook</li>
 </ul>
 <</nobr>>
@@ -15704,22 +15788,32 @@ trying to get Ivex to say what his school name is
 <<link $t_afterAction>><</link>>
 
 
-:: n1x/P Coins Ask {"position":"7475,5175","size":"100,100"}
+:: n1x/D Coins Ask {"position":"7475,5175","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
-<</nobr>>
+<<em-assert MP_wantTouch === $n1_magicPhase>>
 
-if ivex receptive, can get Ivex to show you a coin, which has a hole, and a lewd figure.
+<<if $n1_ivexReceptive>>
+    XXX picks up a coin to show it.
+    has a lewd figure and the hole is lewd
 
-<<if MP_wantTouch === $n1_magicPhase>>
-     Sprite ignores touch
+    ?P
+    Sprite ignores touch
+    <<set $n1_coinShown = true>>
+
+<<elseif $n1_coinThrown>>
+    Ivex throws another coin at Nero's crotch
+    <<set $n1_coinThrownAgain = true>>
+
+<<else>>
+    ivex throws a coin at Nero's crotch
+    <<set $n1_coinThrown = true>>
 <</if>>
+
+<<set $n1_coinAsked = true>>
+<</nobr>>
 
 $t_afterAction
 
@@ -16039,7 +16133,7 @@ his situation.
 <<if $n1_bookshelfViewed>>
     The [[bookshelves|n1x/F Bookshelves]] have
     numerous [[books|n1x/F Books]],
-    a [[stack of coins|n1x/P Coins]],
+    a [[stack of coins|n1x/D Coins]],
     and a [[magic wand|n1x/D Wand]].
 <</if>>
 
@@ -17292,6 +17386,9 @@ fails to catch mirror, it falls on ground and shatters.
     <<set $n2_free = true>>
     <<set $n2_hadMageSight = true>>
     <<set $n2_mirrorBroken = true>>
+
+    <<set $n2_mirrorBrokenPhase = $n1_magicPhase>>
+    <<set $n1_magicPhase = MP_broken>>
 <</nobr>>
 
 [[Continue|n2f/D Free Action]]

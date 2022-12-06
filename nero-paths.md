@@ -128,7 +128,7 @@ the 4th or 5th playthrough.
     doesn't need another playthrough.
 - (7) Ask the Sprite for access to the named device.
 - Sprite now asks Nero to touch the hole.
-- (8) Ask Ivex about the cards.
+- (8) Ask Ivex about the penguin.
   - This is a little tricky. There are several red herrings. It's possible
     that Ivex will leave before the player finds this.
   - If Ivex leaves, the Easy escape gives the player plenty of time to find
