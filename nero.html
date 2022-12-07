@@ -2027,10 +2027,22 @@ Macro.add(&quot;vi-always&quot;, {
   }
 });
 
+/** &lt;&lt;vi-always-if condvar varname value [reason]&gt;&gt; */
+Macro.add(&quot;vi-always-if&quot;, {
+  handler: function() {
+    const [cond, vname, exp] = this.args;
+    const sexp = Nero.getFlagExpectation(vname);
+    if (sexp !== &quot;notable&quot; &amp;&amp; !withinInclude(this)) {
+      EM.fail(`vi-always-if ${cond} ${vname} is unnecessary`);
+    }
+    if (VT.untracedGet(cond)) alwaysVars.set(vname, exp);
+  }
+});
+
 /** &lt;&lt;vi-ignore varname [reason]&gt;&gt; */
 Macro.add(&quot;vi-ignore&quot;, {
   handler: function() {
-    const vname = this.args[0];
+    const [vname] = this.args;
     const sexp = Nero.getFlagExpectation(vname);
     if (sexp !== &quot;notable&quot;) {
       EM.fail(`vi-ignore ${vname} is unnecessary`);
@@ -2039,10 +2051,15 @@ Macro.add(&quot;vi-ignore&quot;, {
   }
 });
 
-/** &lt;&lt;vi-ignore-if varname1 varname2 [reason]&gt;&gt; */
+/** &lt;&lt;vi-ignore-if condvar varname [reason]&gt;&gt; */
 Macro.add(&quot;vi-ignore-if&quot;, {
   handler: function() {
-    if (VT.untracedGet(this.args[0])) ignoreVars.add(this.args[1]);
+    const [cond, vname] = this.args;
+    const sexp = Nero.getFlagExpectation(vname);
+    if (sexp !== &quot;notable&quot;) {
+      EM.fail(`vi-ignore-if ${cond} ${vname} is unnecessary`);
+    }
+    if (VT.untracedGet(cond)) ignoreVars.add(vname);
   }
 });
 
@@ -2212,7 +2229,8 @@ function varInfoSetup() {
     VT.ctx.wasDeleted.forEach(v =&gt; touched.add(v));
 
     VT.ctx.wasTopRead.forEach(vn =&gt; {
-      EM.assert(!alwaysVars.has(vn), `vi-always ${vn} should not be read`);
+      EM.assert(!alwaysVars.has(vn),
+        `${vn} is expected to always be ${alwaysVars.get(vn)} and should not be read`);
       const sexp = Nero.getFlagExpectation(vn);
       if (sexp !== &quot;&quot; &amp;&amp; sexp !== &quot;notable&quot;) {
         EM.fail(`${vn} is always ${sexp} in this section and should not be read`);
@@ -9122,11 +9140,7 @@ Or, at least, he will try to.
 
 [[Return to the Archives|Archives]]</tw-passagedata><tw-passagedata pid="268" name="testing" tags="" position="4600,1050" size="100,100">Remember ?blank and talk to him.
 
-&lt;&lt;set $n1_spriteQuiet = false&gt;&gt;
-&quot;Hello, ?master.&quot;
-
-&lt;&lt;set $n1_spriteQuiet = true&gt;&gt;
-&quot;Hello, ?master.&quot;
+&lt;&lt;link &quot;Hello $class&quot; `&quot;[[testing 2]]&quot;.slice(2,-2)`&gt;&gt;&lt;&lt;/link&gt;&gt;
 
 [[testing 2]]
 [[fade-in test]]
@@ -9410,6 +9424,17 @@ Feedback is always welcome! Contact &lt;a target=&quot;_blank&quot; href=&quot;h
     &lt;&lt;set $n0_barbsFastViewed = true&gt;&gt;
     &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
     &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
+    &lt;&lt;set $t_didSomeAction = true&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+&lt;&lt;link &quot;&gt; Nero 1F subby after glitch&quot; &quot;n1cs/D Ivex Dominant (4,3)&quot;&gt;&gt;
+    &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
+    &lt;&lt;set $n0_barbsFastViewed = true&gt;&gt;
+    &lt;&lt;set $n0_barbsGlitchViewed = true&gt;&gt;
+    &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
+    &lt;&lt;set $n1_barbsGlitch = true&gt;&gt;
+    &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
+    &lt;&lt;set $n1_naked = true&gt;&gt;
+    &lt;&lt;set $n1_subby = true&gt;&gt;
     &lt;&lt;set $t_didSomeAction = true&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;&lt;link &quot;&gt; Nero 1F start candle&quot; &quot;n1cx/F Start Candle&quot;&gt;&gt;
@@ -10420,6 +10445,7 @@ ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
     &#39;Ivex mentions canine tongues, offers a finger to lick&#39;
 &gt;&gt;
 
+?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
 
 &lt;ul class=&quot;actions&quot;&gt;
@@ -11782,11 +11808,12 @@ $t_afterAction
     &lt;&lt;set $t_magicAction = &quot;[[Cast an escape spell.|n1s/D Cast Slippery]]&quot;&gt;&gt;
 
 &lt;&lt;elseif $n1_subby&gt;&gt;
-    XXX something subby XXX should be endgame
-    &lt;&lt;set $t_magicAction = &quot;[[Cast an escape spell.|n1s/P Cast Endgame]]&quot;&gt;&gt;
+    XXX wants to impress Ivex with [[Nero&#39;s Endgame|n1a/F Endgame Info]]
+    &lt;&lt;set $t_returnEndgame = State.passage&gt;&gt;
+    &lt;&lt;set $t_magicAction = &quot;[[Cast Nero&#39;s Endgame.|n1s/P Cast Endgame]]&quot;&gt;&gt;
 
 &lt;&lt;elseif $n1_ivexReceptive&gt;&gt;
-    Ivex seems receptive.
+    Ivex seems receptive. XXX expand on this
     Perhaps this is a good time for Nero to impress him
     with a clever escape spell.
     &lt;&lt;set $t_magicAction = &quot;[[Cast an escape spell.|n1s/D Cast Slippery]]&quot;&gt;&gt;
@@ -12594,11 +12621,50 @@ T.toTry.sort();
 &lt;&lt;else&gt;&gt;
     &lt;&lt;include [[n1x/F Look Normal]]&gt;&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="394" name="n1x/D Cross" tags="" position="6200,5375" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="394" name="n1x/F Cross" tags="" position="6200,5350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-always-if n2_free n2_ivexGone false&gt;&gt;
+
 &lt;&lt;set _gone = (a, b) =&gt; $n2_ivexGone ? a : b&gt;&gt;
 
 &lt;&lt;if $n2_free&gt;&gt;
-    XXX fallen over
+    The cross that had trapped Nero is an imposing piece of furniture.
+    Similar to the 
+    &lt;&lt;if $n2_deskBurned&gt;&gt;
+        &lt;&lt;n1-no-loop [[slightly-burned desk|n1x/F Desk]]&gt;&gt;
+    &lt;&lt;else&gt;&gt;
+        &lt;&lt;n1-no-loop [[cluttered desk|n1x/F Desk]]&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+    that it&#39;s leaning against,
+    the cross lacks joints or seams.
+    &lt;&lt;if $n1_mageSight&gt;&gt;
+        To Nero&#39;s surprise,
+        the cross has no magic.
+        It&#39;s entirely mundane.
+        It seems that it actually &lt;em&gt;is&lt;/em&gt; a single piece of wood,
+        instead of two boards attached together.
+        ?P
+        Nero is baffled at the construction.
+        It must be enormously expensive, not to mention wasteful,
+        to carve such a particular object from a tree old enough
+        to be large enough.
+        Why would anyone do such a thing?
+        And how did it end up in Ivex&#39;s possession?
+        ?P
+        Well, whatever the reason for its existence,
+    &lt;&lt;else&gt;&gt;
+        It appears to be made from a single piece of wood,
+        not two boards attached together.
+        ?P
+        This, of course, is unlikely.
+        Nero wonders why the panther mage has gone to the trouble of
+        putting an illusion of wood on the cross,
+        but not made the tiniest bit of effort to give it
+        a realistic appearance.
+        ?P
+        Well, whatever the reason for its appearance,
+    &lt;&lt;/if&gt;&gt;
+    Nero would throw the cross out the window
+    if he could.
 
 &lt;&lt;elseif $n1_mirrorViewed&gt;&gt;
     Unyielding leather straps are holding
@@ -12636,6 +12702,7 @@ T.toTry.sort();
         &lt;&lt;n1-no-loop [[glowing gems|n1x/D Gems]]&gt;&gt;
         behind the arms of the cross?
     &lt;&lt;/if&gt;&gt;
+    ?P
 
 &lt;&lt;else&gt;&gt;
     Nero can&#39;t see much of the cross that&#39;s holding
@@ -12661,32 +12728,21 @@ T.toTry.sort();
         Mage sight unfortunately does not grant
         the ability to see in directions that his eyes cannot.
     &lt;&lt;/if&gt;&gt;
+    ?P
 &lt;&lt;/if&gt;&gt;
 
-?P
-&lt;&lt;if MP_beforeCast === $n1_magicPhase&gt;&gt;
+&lt;&lt;if $n2_free&gt;&gt;
+    &lt;!-- nothing --&gt;
+
+&lt;&lt;elseif MP_beforeCast === $n1_magicPhase&gt;&gt;
     &lt;&lt;em-assert !$n1_mageSight&gt;&gt;
     Well, however the cross is installed,
     escape from the leather bonds will be easy.
     &lt;&lt;if $n2_ivexGone&gt;&gt;
-        And Nero knows just the spell to do it.
-        &lt;&lt;actions-add [[Cast an escape spell.|n1s/D Cast Slippery]]&gt;&gt;
-    &lt;&lt;elseif $n1_ivexReceptive&gt;&gt;
-        Nero knows several spells that can do it.
-        There&#39;s one in particular that requires a bit of finesse,
-        which he can cast to demonstrate his competence.
-        And it might even impress Ivex.
-        &lt;&lt;actions-add [[Cast an escape spell.|n1s/D Cast Slippery]]&gt;&gt;
-    &lt;&lt;elseif $n1_subby&gt;&gt;
-        Nero knows just the spell to use, his best, personal creation,
-        which might be enough to demonstrate to Ivex that the wolf mage
-        can be useful.
-        &lt;&lt;actions-add [[Cast Nero&#39;s Endgame.|n1s/P Cast Endgame]]&gt;&gt;
+        Especially now that Ivex is gone.
     &lt;&lt;else&gt;&gt;
-        Nero knows several spells that can do it,
-        but any such action right now is likely to be interpreted as
-        an escalation of hostility.
-        So he&#39;d better prepare a little, before casting an escape spell.
+        Nero just has to find the
+        right time to cast the right spell.
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;elseif $n1_gemsAsked&gt;&gt;
@@ -12789,10 +12845,14 @@ T.toTry.sort();
     the furnishings of their mind. If that&#39;s true in this case, Ivex&#39;s mind is
 &lt;&lt;/if&gt;&gt;
 pompous, dirty, and dominated by the
-&lt;&lt;n1-no-loop [[wooden cross|n1x/D Cross]]&gt;&gt;
+&lt;&lt;n1-no-loop [[wooden cross|n1x/F Cross]]&gt;&gt;
 &lt;&lt;if $n2_free&gt;&gt;
     that&#39;s fallen over and leaning on the
-    &lt;&lt;n1-no-loop [[partially-burned desk|n1x/F Desk]]&gt;&gt;
+    &lt;&lt;if $n2_deskBurned&gt;&gt;
+        &lt;&lt;n1-no-loop [[slightly-burned desk|n1x/F Desk]]&gt;&gt;
+    &lt;&lt;else&gt;&gt;
+        &lt;&lt;n1-no-loop [[cluttered desk|n1x/F Desk]]&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
     near the
     &lt;&lt;n1-no-loop [[prominent round window|n1x/F Window]]&gt;&gt;.
 
@@ -12893,24 +12953,30 @@ pompous, dirty, and dominated by the
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="397" name="n1x/F Desk" tags="" position="6875,5500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
-&lt;&lt;em-assert !$n2_free || $n1_bottleViewed&gt;&gt;
 &lt;&lt;em-assert !$n2_free || $n2_mirrorBroken || $n2_mirrorTaken&gt;&gt;
-&lt;&lt;em-assert !$n2_knifeTaken || $n2_free&gt;&gt;
-&lt;&lt;em-assert !$n2_mirrorBroken || $n2_free&gt;&gt;
+&lt;&lt;em-assert $n2_free || !$n2_knifeTaken&gt;&gt;
+&lt;&lt;em-assert $n2_free || !$n2_mirrorBroken&gt;&gt;
+&lt;&lt;em-assert $n2_free || !$n2_mirrorTaken&gt;&gt;
 &lt;&lt;em-assert !$n2_mirrorBroken || !$n2_mirrorTaken&gt;&gt;
-&lt;&lt;em-assert !$n2_mirrorTaken || $n2_free&gt;&gt;
 
-The grandiose desk does not have joints or seams, and the wood grain
+&lt;&lt;if $n2_deskBurned&gt;&gt;
+    The slightly-charred desk
+&lt;&lt;else&gt;&gt;
+    The grandiose desk
+&lt;&lt;/if&gt;&gt;
+does not have joints or seams, and the wood grain
 is continuous and uninterrupted across all of its visible surfaces.
 &lt;&lt;if $n1_mageSight&gt;&gt;
-    It glows strongly with exotic energy, which is probably
-    residue from construction of its unusual appearance. But there are also
+    It glows strongly with exotic energy,
+    which is mainly due to the construction of its unusual appearance.
+    But there are also
     several distinctive spikes of exotic energy thrusting upward from the
     top surface.
 &lt;&lt;else&gt;&gt;
     It appears to have been carved from a single, massive block of wood,
-    which strikes Nero as an unlikely expense for such a squalid little room.
-    It&#39;s more likely to be a magical veneer applied to a cheap bit of lumber.
+    which of course is unlikely.
+    It&#39;s probably just a magical veneer applied to a cheap assemblage
+    of ordinary lumber.
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -12944,9 +13010,10 @@ is continuous and uninterrupted across all of its visible surfaces.
     an &lt;&lt;n1-no-loop [[arcane globe|n1x/F Globe]]&gt;&gt;.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n2_free&gt;&gt;
-    The fire started by the knocked-over candle has subsided,
-    leaving charred remnants of papers and scorched writing tools.
+&lt;&lt;if $n2_deskBurned&gt;&gt;
+    The other clutter on the desk has been damaged by
+    the candle fire. The papers have all been reduced to ash and burnt
+    remnants. Most of the writing tools are scorched.
 &lt;&lt;else&gt;&gt;
     The rest of the clutter on the desk appears to be ordinary papers and
     writing tools: pens and ink, wax seal, blotter,
@@ -12987,7 +13054,7 @@ is continuous and uninterrupted across all of its visible surfaces.
 
 &lt;&lt;if $n2_mirrorBroken&gt;&gt;
     ?P
-    On the floor beside the desk is the shattered remains of
+    On the floor beside the desk lies the shattered remains of
     a [[magic mirror|n1x/D Mirror]].
     Nero wonders if there was some way he could have avoided
     the loss of such a valuable tool.
@@ -13141,12 +13208,12 @@ The rest of the shelves are taken up by boxes
     with one arm raised in the air in triumph.
     HIs other forepaw is firmly grasping his enormous erect dick.
     Emerging from the tip of the dick is a jet of cum, frozen in the
-    act of spurting, and shining with the same metallic sheen as the
+    act of spurting, and sparkling with the same metallic sheen as the
     glitter in the globe.
 
     ?P
-    The inscription
-    at the base of the globe says &quot;Thanks for Visiting the Caverns of
+    The inscription at the base of the globe says
+    &quot;Thanks for Visiting the Caverns of
     Lusty Spires!&quot;, and larger letters above that
     &lt;&lt;if $n1_globePartialViewed&gt;&gt;
         do &lt;em&gt;not&lt;/em&gt; say &quot;CARPE DIEM&quot;, as he had assumed.
@@ -13975,11 +14042,11 @@ if there were anything to magnify other than the clear blue sky.
         The sky has more of the exotic magical energy mesh that permeates
         the room. Nero does not understand its origin or its purpose.
         From his position, bound on a
-        &lt;&lt;n1-no-loop [[wooden cross|n1x/D Cross]]&gt;&gt;,
+        &lt;&lt;n1-no-loop [[wooden cross|n1x/F Cross]]&gt;&gt;,
         he cannot see how far the energy extends or where it ends.
     &lt;&lt;else&gt;&gt;
         From his position, bound on a
-        &lt;&lt;n1-no-loop [[wooden cross|n1x/D Cross]]&gt;&gt;,
+        &lt;&lt;n1-no-loop [[wooden cross|n1x/F Cross]]&gt;&gt;,
         Nero cannot see anything else outside.
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
@@ -14365,7 +14432,7 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="424" name="n1x/D Window Ask"
         &lt;li&gt;[[Connect to the mirror|n1x/D Connect]]&lt;/li&gt;
     &lt;/ul&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="426" name="n1x/F Look Normal" tags="inclusion" position="6050,4825" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="426" name="n1x/F Look Normal" tags="inclusion" position="6025,4825" size="100,100">&lt;&lt;nobr&gt;&gt;
 Nero
 &lt;&lt;= either(
     &quot;appraises&quot;, &quot;assesses&quot;, &quot;considers&quot;, &quot;contemplates&quot;,
@@ -14409,7 +14476,7 @@ his situation.
         He&#39;s bound
     &lt;&lt;/if&gt;&gt;
     with leather restraints to a
-    [[wooden cross|n1x/D Cross]]
+    [[wooden cross|n1x/F Cross]]
     &lt;&lt;if $n1_mirrorViewed&gt;&gt;
         that has [[glowing gems|n1x/D Gems]],
     &lt;&lt;/if&gt;&gt;
@@ -14430,6 +14497,8 @@ his situation.
     The study is furnished with
     &lt;&lt;if $n1_deskViewed&gt;&gt;
         a desk,
+    &lt;&lt;elseif $n2_deskBurned&gt;&gt;
+        a [[slightly-burned desk|n1x/F Desk]],
     &lt;&lt;else&gt;&gt;
         a [[cluttered desk|n1x/F Desk]],
     &lt;&lt;/if&gt;&gt;
@@ -14471,7 +14540,11 @@ his situation.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_deskViewed&gt;&gt;
-    The [[desk|n1x/F Desk]] has
+    &lt;&lt;if $n2_deskBurned&gt;&gt;
+        The [[slightly-burned desk|n1x/F Desk]] has
+    &lt;&lt;else&gt;&gt;
+        The [[desk|n1x/F Desk]] has
+    &lt;&lt;/if&gt;&gt;
     &lt;&lt;script&gt;&gt;
         const v = State.variables;
         const objs = [];
@@ -14725,25 +14798,39 @@ the surface of a metallic horse cock, sealed inside a bottle.
 ?P
 [[Return|n1x/F Bottle]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="433" name="n2x/F Desk Search" tags="" position="7175,5700" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_extraHorny&gt;&gt;
+
 The desk should have drawers. It certainly &lt;em&gt;looks&lt;/em&gt;
-like it has room for drawers,
+like it has room for drawers.
 &lt;&lt;if $n1_mageSight&gt;&gt;
-    and there are blobs of magical energy that suggest the presence
-    of magical items within it,
+    And there are blobs of magical energy that suggest the presence
+    of magical items within it.
 &lt;&lt;/if&gt;&gt;
-but all of the desk&#39;s surfaces are a smooth and continuous pattern
+But all of the desk&#39;s surfaces are a smooth and continuous pattern
 of wood grain, with no apparent way of opening it.
 
 ?P
 &lt;&lt;if $n2_deskSearched&gt;&gt;
-    Nero&#39;s ears go flat and his erect cock shivers as he remembers the...
-    sticky spot he found on the underside
-    of the desk when he tried searching for a hidden catch.
+    &lt;&lt;if $n2_extraHorny&gt;&gt;
+        Nero&#39;s ears shiver and his erect cock perks up even more,
+    &lt;&lt;else&gt;&gt;
+        Nero&#39;s ears go flat and his erect cock shivers
+    &lt;&lt;/if&gt;&gt;
+    as he remembers the...
+    sticky spot he had found on the underside
+    of the desk, when he had tried searching for a hidden catch.
     ?P
     He forces himself to consider something else. The papers on the desk.
-    Most of them appear to be overdue library notices,
-    covered with crude doodles insulting the sexual appetites
-    of a librarian named Elok. There&#39;s nothing useful here.
+    &lt;&lt;if $n2_deskBurned&gt;&gt;
+        There&#39;s one scrap that isn&#39;t entirely burnt.
+        On that scrap is a doodle of a stick figure, labeled Elok.
+        Nothing else is legible.
+    &lt;&lt;else&gt;&gt;
+        Most of them appear to be overdue library notices,
+        covered with crude stick figure doodles insulting the sexual appetites
+        of a librarian named Elok.
+    &lt;&lt;/if&gt;&gt;
+    There&#39;s nothing useful here.
     ?P
     Satisfied that he&#39;s searched the desk as thoroughly as he can in
     his current situation, Nero turns his attention to other things
@@ -14759,28 +14846,45 @@ of wood grain, with no apparent way of opening it.
     above where the seat of the chair would be when someone
     is sitting there.
     ?P
-    He fingers brush against something that isn&#39;t just smooth surface.
+    He fingers brush against something that isn&#39;t just the
+    normal smooth surface.
     It&#39;s not a bump. It&#39;s a change in texture, a slight irregularity,
     almost a stickiness.
     ?P
     [[Continue|n2x/F Desk Search 2]]
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="434" name="n2x/F Desk Search 2" tags="" position="7175,5825" size="100,100">&lt;&lt;nobr&gt;&gt;
-Excited by his find, Nero crouches down to take a better look
-at the underside of the desk.
+&lt;&lt;set _horny = (a, b) =&gt; $n2_extraHorny ? a : b&gt;&gt;
+
+Excited by his find, Nero crouches down to take a better look at
+&lt;&lt;if $n1_mageSight&gt;&gt;
+    whatever magical mechanism is attached to
+&lt;&lt;/if&gt;&gt;
+the underside of the desk.
 ?P
-When he does, he becomes overwhelmed by a stench that had been
-in the background for a while. The whole room smells of Ivex,
+When he does, he becomes overwhelmed by a
+&lt;&lt;= _horny(&quot;musk&quot;, &quot;stench&quot;)&gt;&gt; that had been
+in the background for some time. The whole room smells of Ivex,
 and of his &lt;em&gt;maleness&lt;/em&gt;, which is a scent that was only slightly
 masked by the aphrodisiac candle. But underneath the desk,
-the musk is pervasive and dominant,
+the &lt;&lt;= _horny(&quot;aroma&quot;, &quot;musk&quot;)&gt;&gt; is pervasive and dominant,
 and it&#39;s heavily laden with notes of sweat, sex, and cum.
 ?P
-Nero has a horrible thought of what that sticky spot on the underside
+Nero has a &lt;&lt;= _horny(&quot;sudden suspicion&quot;, &quot;horrible thought&quot;)&gt;&gt;
+of what that sticky spot on the underside
 of the desk might be.
-His erect cock unfortunately seems excited by the thought, and he
-smells his own pre-cum leaking from the tip.
-The wolf quickly stands up and tries to focus on something else.
+His erect cock
+&lt;&lt;= _horny(&quot;is quite&quot;, &quot;unfortunately seems&quot;)&gt;&gt;
+excited by the thought,
+and he can tell from the scent that his own pre-cum is leaking from the tip.
+?P
+&lt;&lt;if $n2_extraHorny&gt;&gt;
+    Nero gives his shaft a few quick strokes,
+    but he forces himself to stop.
+    He reluctantly stands up and tries to focus on something else.
+&lt;&lt;else&gt;&gt;
+    The wolf quickly stands up and tries to focus on something else.
+&lt;&lt;/if&gt;&gt;
 ?P
 $t_afterAction
 &lt;&lt;set $n2_deskSearched = true&gt;&gt;
@@ -16608,7 +16712,11 @@ maybe find an incel tract or something else nutty
 
 &lt;&lt;set $n2_booksSearched = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="518" name="n1s/P Cast Endgame" tags="" position="6150,3400" size="100,100">subby mood, Nero wants to impress Ivex, casts endgame
+</tw-passagedata><tw-passagedata pid="518" name="n1s/P Cast Endgame" tags="" position="5700,4075" size="100,100">&lt;&lt;nobr&gt;&gt;
+
+subby mood, Nero wants to impress Ivex, casts endgame
+
+&lt;&lt;/nobr&gt;&gt;
 </tw-passagedata><tw-passagedata pid="519" name="Init 2 Saves" tags="inclusion" position="2950,600" size="100,100">&lt;&lt;script&gt;&gt;
 // Clean up the savegame title
 Config.passages.descriptions = function() {
