@@ -1597,6 +1597,7 @@ Macro.add("meta-ending", {
     background-color: #333;
     border-color: #eee;
     color: #eee;
+    opacity: 1;
   }
 
   .random-walk-chosen {
@@ -3112,8 +3113,8 @@ Nero.flags = {
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
-      n2f_free: "",
-      n2x_lookFree: "",
+      n2f_free: "notable",
+      n2x_lookFree: "notable",
       n3a_start: "",
       n8_archive: "",
       n9_ending: "",
@@ -3148,8 +3149,8 @@ Nero.flags = {
       n1y_lookHorny: false,
       n2a_start: false,
       n2b_bound: false,
-      n2f_free: "",
-      n2x_lookFree: "",
+      n2f_free: "notable",
+      n2x_lookFree: "notable",
       n3a_start: "",
       n8_archive: "",
       n9_ending: "",
@@ -10804,7 +10805,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<em-assert $n1_magicPhase <= MP_triedMagic>>
 
 Ivex (the Magnificent)
-<<if $n1_ivexDescViewed>>
+<<if $t_ivexDescViewed>>
     has moved
 <<else>>
     moves
@@ -10817,7 +10818,7 @@ away from the
 <<else>>
     bound wolf,
 <</if>>
-<<if $n1_ivexDescViewed>>
+<<if $t_ivexDescViewed>>
     and is now settled at
 <<else>>
     then settles against
@@ -11330,7 +11331,7 @@ Not that Nero would ever tell that to his
 <<else>>
     captor, of course.
 <</if>>
-<<set $n1_ivexDescViewed = true>>
+<<set $t_ivexDescViewed = true>>
 <</nobr>>
 
 [[Return|n1cn/F Ivex Intro]]
@@ -11488,6 +11489,8 @@ Ivex makes a gesture, and
 
 :: n1cr/D Ivex Demanding (4,3) [pw-misfire-start] {"position":"4350,3400","size":"200,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 <<n1-patience 4 3
     'Ivex: will you do everything I ask?'
 >>
@@ -11652,6 +11655,9 @@ ivex: nice try, but I think you're lying... we'll see.
     <li>[[lick eagerly|n1cs/D Licking][$t_resisting = false]]</li>
     <li>[[lick reluctantly|n1cs/D Licking][$t_resisting = true]]</li>
     <<actions-optional $t_magicAction>>
+    <<if !_patienceExhausted>>
+        <<actions-get>>
+    <</if>>
 </ul>
 <</nobr>>
 
@@ -13428,7 +13434,7 @@ $t_afterAction
         <<else>>
             <<set $t_magicAction = "[[`Tell the Sprite, \"Nackle's Poltergeist Device.\"`|n1s/D Say Device]]">>
         <</if>>
-    <<elseif !$n1_helpDeviceViewed>>
+    <<elseif !$t_helpDeviceViewed>>
         <<set $t_magicAction = "[[Ask the Sprite for help.|n1s/D Help Device]]">>
     <<elseif $n1_candleHorny>>
         The teasing innuendo in the Sprite's tone is impossible to ignore.
@@ -13443,7 +13449,7 @@ $t_afterAction
     "Which device in this room do you wish to control, Master?"
     <<if $n1_bottleNameKnown>>
         <<set $t_magicAction = "[['Tell the Sprite, \"Please, Lance Rockhard\"'|n1s/D Say Lance]]">>
-    <<elseif !$n1_helpDeviceViewed>>
+    <<elseif !$t_helpDeviceViewed>>
         <<set $t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Device]]">>
     <<elseif $n1_candleHorny>>
         All of them, of course, but Nero knows that the Sprite will deny that
@@ -13466,8 +13472,11 @@ $t_afterAction
 
 <<case `MP_wantTouch`>>
     "Please touch my hole, Master."
-    <<if !$n1_helpTouchViewed>>
+    <<if !$t_helpTouchViewed>>
         <<set $t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Touch]]">>
+    <</if>>
+    <<if $n1_windowAskRefused && !$n1_windowAskBlocked && !$n2_ivexGone>>
+        <<actions-add [[Try again to attract Ivex to the window.|n1x/F Window Ask]]>>
     <</if>>
 
 <<case `MP_wantPassword`>>
@@ -13487,6 +13496,8 @@ $t_afterAction
 <<default>>
     <<run throw new Error(`BUG: sprite magicPhase ${n1_magicPhase}`)>>
 <</switch>>
+
+XXX need some thought cues on every branch
 
 ?P
 <</nobr>>\
@@ -13544,7 +13555,7 @@ The Sprite in Nero's ear says, "The following devices are available..."
 <<else>>
     Nero thoughts.
 <</if>>
-<<set $n1_helpDeviceViewed = true>>
+<<set $t_helpDeviceViewed = true>>
 
 ?P
 $t_afterAction
@@ -13684,13 +13695,7 @@ $t_afterAction
 
 :: n1s/D Say Device {"position":"6375,3975","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_magicPhase `MP_wantDevice`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<set $n1_magicPhase = MP_wantName>>
 
@@ -13720,13 +13725,7 @@ $t_afterAction
 
 :: n1s/D Say Lance {"position":"6500,3975","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_magicPhase `MP_wantName`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<set $n1_magicPhase = MP_wantTouch>>
 
@@ -13841,7 +13840,7 @@ help topics."
     nero thoughts. suggest things seen that have holes.
 <</if>>
 
-<<set $n1_helpTouchViewed = true>>
+<<set $t_helpTouchViewed = true>>
 
 ?P
 $t_afterAction
@@ -14027,7 +14026,7 @@ info about slippery spell
     <<else>>
         It actually spoke the word "dot" aloud,
         three times, with a pause in between them.
-        Nero is baffled. <em>Why</em> would a Sprite do that?
+        Nero is puzzled. <em>Why</em> would a Sprite do that?
         <em>How</em> did Ivex mess up the Sprite's instructions
         in such a way that it would do that?
     <</if>>
@@ -15950,7 +15949,7 @@ activation word is "please", has note to change it.
 $t_afterAction
 
 
-:: n1x/D Window Ask {"position":"6950,3650","size":"100,100"}
+:: n1x/F Window Ask {"position":"6950,3650","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n2_free false>>
@@ -15997,24 +15996,9 @@ $t_afterAction
     ?P
     He goes to the window, places his hands on the sill, and makes a show
     of looking all around the entire view.
-
     ?P
-    <<fade-in 3s>>
-        The Sprite does not respond. The window isn't the hole it wants touched.
-        ?P
-        Ivex shrugs and returns to position
-        <<if _ivexNear>>
-            beside the wolf.
-        <<else>>
-            beside his desk.
-        <</if>>
-        "Enough of that nonsense."
-        <<set $n1_windowTouched = true>>\
-
-        ?P
-        $t_afterAction
-    <</fade-in>>
-
+    [[Continue|n1x/F Window Ask 2]]
+    
 <<elseif $n1_windowAskRefused>>
     Ivex growls, "Enough of this pathetic attempt at distraction.
     I'm quite sure there's nothing outside that window."
@@ -16615,13 +16599,13 @@ $t_afterAction
         <<elseif $n1_windowAskRefused>>
             Ivex was unreceptive last time, but perhaps he can
             still be persuaded to touch it.
-            <<actions-add [[Try again to attract Ivex to the window.|n1x/D Window Ask]]>>
+            <<actions-add [[Try again to attract Ivex to the window.|n1x/F Window Ask]]>>
         <<elseif $n1_ivexReceptive>>
              Ivex seems amenable to suggestion.
-            <<actions-add [[Draw attention to the window.|n1x/D Window Ask]]>>
+            <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
         <<else>>
             Tricking Ivex into touching it should be easy.
-            <<actions-add [[Draw attention to the window.|n1x/D Window Ask]]>>
+            <<actions-add [[Draw attention to the window.|n1x/F Window Ask]]>>
         <</if>>
     <</if>>
 <</if>>
@@ -17242,12 +17226,12 @@ Candle's Influence:
 <!-- player sees this at most 6 times (max of patience looks and actions) -->
 <<script>>
     const V = State.variables;
-    V.n2_lustText = 1 + (V.n2_lustText || 0);
-    if (V.n2_candleNearMax) V.n2_lustText = 5;
-    if (V.n2_candleMax) V.n2_lustText = 6;
+    V.n2_lustTextPos = 1 + (V.n2_lustTextPos || 0);
+    if (V.n2_candleNearMax) V.n2_lustTextPos = 5;
+    if (V.n2_candleMax) V.n2_lustTextPos = 6;
 <</script>>
 
-<<switch $n2_lustText>>
+<<switch $n2_lustTextPos>>
 <<case 1>>
     horny 1
 <<case 2>>
@@ -17620,11 +17604,9 @@ take a moment to rest.
 [[n2f/D Free Action]]
 
 
-:: n2f/D Door {"position":"5775,6800","size":"100,100"}
+:: n2f/D Door {"position":"5725,6800","size":"100,100"}
 <<nobr>>
 <<vi-ignore n2_extraHorny>>
-<<vi-ignore n2_mirrorBroken>>
-<<vi-ignore n2_tooClever>>
 
 <<if $n1_mageSight>>
     sturdy door, no handle, gem with magic
@@ -17652,8 +17634,6 @@ take a moment to rest.
 :: n2f/D Touch Door {"position":"5900,6800","size":"100,100"}
 <<nobr>>
 <<vi-ignore n2_extraHorny>>
-<<vi-ignore n2_mirrorBroken>>
-<<vi-ignore n2_tooClever>>
 
 <<set $n2_doorOpened = true>>
 
@@ -17678,9 +17658,6 @@ no handle on other side of door, so this looks like a one-way trip.
 :: n2f/D Last Chance {"position":"5675,6950","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore n2_extraHorny>>
-<<vi-ignore n2_mirrorBroken>>
-<<vi-ignore n2_tooClever>>
 
 forward into uncertainty and adventure.
 
@@ -18810,5 +18787,26 @@ function countUnlocks() {
 }
 
 <</script>>
+
+
+:: n1x/F Window Ask 2 {"position":"6950,3525","size":"100,100"}
+<<nobr>>
+<<vi-always n1_mageSight true>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+
+The Sprite does not respond. The window isn't the hole it wants touched.
+?P
+<<if $n1_ivexReceptive>>
+    Ivex shrugs
+<<else>>
+    Ivex growls
+<</if>>
+and returns to the front of his desk.
+"Enough of that nonsense."
+<<set $n1_windowTouched = true>>
+?P
+$t_afterAction
+<</nobr>>
 
 
