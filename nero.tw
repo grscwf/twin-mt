@@ -2596,7 +2596,6 @@ EnumType.define("MagicPhase", [
   "MP_broken",
 ]);
 EnumType.declareVar("n1_magicPhase", "MagicPhase");
-EnumType.declareVar("n2_mirrorBrokenPhase", "MagicPhase");
 
 // Define temp var with a getter, so read tracking works.
 function defTemp(vname, fn) {
@@ -2608,11 +2607,6 @@ $(document).on(":passagestart", () => {
       const V = State.variables;
       return V.n1_candleHorny && !V.n2_ivexGone;
     });
-    defTemp("wantPassword", () => {
-      const mp = State.variables.n1_magicPhase;
-      return mp === MP_wantPassword || mp === MP_onHold;
-    });
-    
     VarTrace.ignore(() => {
       const V = State.variables;
       V.n1_magicPhase != null || (V.n1_magicPhase = 0);
@@ -10508,7 +10502,6 @@ Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com
     <<set $n2_free = true>>
     <<set $n2_ivexGone = true>>
     <<set $n2_mirrorBroken = true>>
-    <<set $n2_mirrorBrokenPhase = MP_mageSight>>
 <</link>>
 <hr>
 <super>*</super> State is incomplete and will not happen in normal play.
@@ -13514,13 +13507,14 @@ XXX need some thought cues on every branch
 <<nobr>>
 <<vi-always n1_candleHorny false>>
 <<vi-always n2_free true>>
+<<em-assert MP_mageSight <= $n2_magicPhaseBroken>>
 
 With the mirror broken, Nero has unfortunately lost access
 to the tower's magical
-<<if $n2_mirrorBrokenPhase < MP_wantDevice>>
-    energy.
-<<else>>
+<<if MP_wantDevice <= $n2_magicPhaseBroken>>
     energy, and the Sprite in his ear has crumbled.
+<<else>>
+    energy.
 <</if>>
 He'll have to rely on wits alone now.
 
@@ -14539,9 +14533,9 @@ is continuous and uninterrupted across all of its visible surfaces.
     resting against
 <</if>>
 <<if $n1_globeViewed>>
-    a <<n1-no-loop [[snow globe|n1x/F Globe]]>>.
+    a <<n1-no-loop [[snow globe|n1x/D Globe]]>>.
 <<else>>
-    an <<n1-no-loop [[arcane globe|n1x/F Globe]]>>.
+    an <<n1-no-loop [[arcane globe|n1x/D Globe]]>>.
 <</if>>
 
 <<if $n2_deskBurned>>
@@ -14675,9 +14669,9 @@ The rest of the shelves are taken up by boxes
 <<else>>
     Propped up against the
     <<if $n1_globeViewed>>
-        <<n1-no-loop [[snow globe|n1x/F Globe]]>>
+        <<n1-no-loop [[snow globe|n1x/D Globe]]>>
     <<else>>
-        <<n1-no-loop [[arcane globe|n1x/F Globe]]>>
+        <<n1-no-loop [[arcane globe|n1x/D Globe]]>>
     <</if>>
     on Ivex's desk,
     there's a small mirror, a little larger than Nero's paw.
@@ -14720,7 +14714,7 @@ The rest of the shelves are taken up by boxes
 <</nobr>>
 
 
-:: n1x/F Globe [maybe-password] {"position":"6575,5750","size":"100,100"}
+:: n1x/D Globe [maybe-password] {"position":"6575,5750","size":"100,100"}
 <<nobr>>
 <<vi-ignore n2_ivexGone>>
 
@@ -14767,7 +14761,7 @@ The rest of the shelves are taken up by boxes
     <</if>>
     spell out "CARPE DICK!"
 
-    <<if MP_connected === $n1_magicPhase>>
+    <<if $n1_passwordKnown>>
         ?P
         Nero already has plenty of reason to dislike Ivex.
         But the fact that the panther has chosen "CARPE DICK"
@@ -14878,7 +14872,7 @@ a small haphazard stack of books that
         The yearbook might offer some clues about Ivex's earlier life.
         <<actions-add [[Search the books.|n2x/D Books Search]]>>
 
-    <<elseif _wantPassword>>
+    <<elseif MP_wantPassword === $n1_magicPhase>>
         XXX add Ransamaran Ivory
         XXX add 621
         XXX maybe the earlier school is the password
@@ -14954,7 +14948,7 @@ Nero think of something more sensual than meat.
     <</if>>
 <</if>>
 
-<<if _wantPassword>>
+<<if MP_wantPassword === $n1_magicPhase>>
     ?P
     There are many things in the room that have a similar
     shade of red: bookshelves and books, cabinets and their doors,
@@ -15140,7 +15134,7 @@ On one shelf is a small stack of
 
 <<elseif $n2_free>>
     XXX describe coins up close
-    <<if MP_wantTouch === $n2_mirrorBrokenPhase>>
+    <<if MP_wantTouch === $n2_magicPhaseBroken>>
         XXX speculate this was the hole
     <</if>>
 
@@ -15238,9 +15232,6 @@ The entire arrangement is disturbingly symmetric.
 <<nobr>>
 <<vi-ignore n2_free>>
 
-<<set _broken = (a, b) => $n2_mirrorBroken ? $a : $b>>
-<<set _phase = $n2_mirrorBroken ? $n2_mirrorBrokenPhase : $n1_magicPhase>>
-
 Atop one of the wooden cabinets in the room is a
 clear glass bottle of unusually large size.
 But what's most unusual about the bottle is its contents,
@@ -15272,91 +15263,86 @@ Such as:
 
 <ul>
 <<if $n1_bottleViewed>>
-    <<if _phase < MP_wantDevice>>
+    <<if $n1_magicPhase < MP_wantDevice
+        || ($n2_mirrorBroken && $n2_magicPhaseBroken < MP_wantDevice)
+    >>
         <li>
-        How does Ivex expect to use [[Nackle's Poltergeist Device|n1x/F Nackle 1]]
-        when it's anchored on a metallic horse cock that can't be touched?
+            How does Ivex expect to use
+            [[Nackle's Poltergeist Device|n1x/F Nackle 1]]
+            when it's anchored on a metallic horse cock that can't be touched?
         </li>
     <<else>>
         <li>
-        Why did Ivex choose a bottled metallic horse cock as the anchor
-        for [[Nackle's Poltergeist Device|n1x/F Nackle 1]]?
+            Why did Ivex choose a bottled metallic horse cock as the anchor
+            for [[Nackle's Poltergeist Device|n1x/F Nackle 1]]?
         </li>
         <<if MP_wantDevice === _phase>>
             <li>
-            Is this a device that the Sprite can connect to?
+                Is this a device that the Sprite can connect to?
             </li>
             <<actions-add [[`Tell the Sprite, "Please, Nackle's Poltergeist Device."`|n1s/D Say Device]]>>
         <</if>>
-        <<if !$n2_free>>
-            <<if MP_beforeCast === $n1_magicPhase>>
-                <!-- nothing -->
-            <<elseif $n1_magicPhase < MP_wantDevice>>
-                <li>
-                Is there some way that Nero can use the device
-                <<if $n1_deskViewed>>
-                    to grab the <<n1-no-loop [[letter opener|n1x/F Knife]]>>?
-                <<else>>
-                    to escape?
-                <</if>>
-                </li>
-            <<else>>
-                <li>
-                Will Nero have a chance to use the device
-                <<if $n1_deskViewed>>
-                    to grab the <<n1-no-loop [[letter opener|n1x/F Knife]]>>?
-                <<else>>
-                    to escape?
-                <</if>>
-                </li>
-            <</if>>
-        <</if>>
     <</if>>
+
+    <li>
+        <<if $n2_free>>
+            Could Nero have used the device
+        <<elseif $n1_magicPhase < MP_wantDevice>>
+            Is there some way that Nero can use the device
+        <<else>>
+            Will Nero have a chance to use the device
+        <</if>>
+        <<if $n1_deskViewed>>
+            to grab the <<n1-no-loop [[letter opener|n1x/F Knife]]>>?
+        <<else>>
+            somehow to escape?
+        <</if>>
+    </li>
 <</if>>
 
 <<if $n1_bottleNameKnown>>
     <li>
-    Why did he give the name Lance <em>Rock</em>-hard
-    to a giant <em>metal</em> cock?
+        Why did he give the name Lance <em>Rock</em>-hard
+        to a giant <em>metal</em> cock?
     </li>
 <</if>>
 
-<<if MP_wantName === _phase>>
+<<if ($n2_mirrorBroken && MP_wantName <= $n2_magicPhaseBroken)
+    || (!$n2_mirrorBroken && MP_wantName <= $n1_magicPhase))
+>>
     <li>
-    Does Ivex have <em>another</em> enormous bottled cock in a cabinet somewhere?
+        Does Ivex have <em>another</em> enormous bottled cock
+        in a cabinet somewhere?
     </li>
-    <<if !$n2_mirrorBroken && $n1_bottleNameKnown>>
-        <<actions-add [[Tell the Sprite, "Please, Lance Rockhard."`|n1s/D Say Lance]]>>
-    <</if>>
+<</if>>
+<<if MP_wantName === $n1_magicPhase && $n1_bottleNameKnown>>
+    <<actions-add [[Tell the Sprite, "Please, Lance Rockhard."`|n1s/D Say Lance]]>>
 <</if>>
 
 <li>
-What magic was used to insert that
-extremely large item through the bottle's narrow neck?
+    What magic was used to insert that
+    extremely large item through the bottle's narrow neck?
 </li>
 
 <<if !$n1_bottleViewed>>
     <li>
-    Is it appropriate to call something of such enormous size a dildo?
+        Is it appropriate to call something of such enormous size a dildo?
     </li>
     <li>
-    And why would a bottled metallic horse dildo have the glyphs for
-    [[Nackle's Poltergeist Device|n1x/F Nackle 1]] inscribed on it?
+        And why would a bottled metallic horse dildo have the glyphs for
+        [[Nackle's Poltergeist Device|n1x/F Nackle 1]] inscribed on it?
     </li>
 
 <<elseif !$n1_bottleTouched && MP_wantTouch === _phase>>
     <li>
-    And is the bottle's opening the hole that the Sprite
-    <<if $n2_mirrorBroken>>
-        had wanted him to touch?
-    <<else>>
-        wants touched?
-    <</if>>
+        And is the bottle's opening the hole that the Sprite
+        <<= $n2_mirrorBroken ? "wanted" : "wants">>
+        him to touch?
     </li>
 
 <<else>>
     <li>
-    And is it appropriate to call something of such enormous size a dildo?
+        And is it appropriate to call something of such enormous size a dildo?
     </li>
 <</if>>
 </ul>
@@ -15532,9 +15518,11 @@ but he does not remember its name.
 <</if>>
 
 ?P
-<<if MP_wantTouch === $n1_magicPhase>>
+<<if MP_wantTouch === $n1_magicPhase
+    || MP_wantTouch === $n2_magicPhaseBroken
+>>
     <<include [[n1x/F Portrait WantTouch]]>>
-<<elseif _wantPassword>>
+<<elseif MP_wantPassword === $n1_magicPhase>>
     <<include [[n1x/P Portrait WantPassword]]>>
 <<elseif $n2_extraHorny>>
     The wolf mage wrests his attention away from her sultry gaze.
@@ -15557,7 +15545,6 @@ but he does not remember its name.
 
 :: n1x/P Penguin [has-hole maybe-password] {"position":"7225,4325","size":"100,100"}
 <<nobr>>
-<<set _wantTouch = MP_wantTouch === $n1_magicPhase>>
 
 <<if $n1_penguinNameKnown>>
     mages often have skeletal or taxidermied animals in their offices.
@@ -15568,7 +15555,13 @@ but he does not remember its name.
     mages often have skeletal or taxidermied animals in their offices.
 <</if>>
 
-if coin in mouth, it drops to the floor
+if coin in mouth, it drops to the floor.
+
+similar logic to portrait.
+
+if wantTouch or broken at wantTouch, speculate mouth. ask ivex if possible. use memory of mom lick.
+
+if wantPassword and not penguin name known, ask ivex if possible
 
 ?P
 <ul class="actions">
@@ -15645,11 +15638,9 @@ ISO standard magic wand, but an odd ring-shaped attachment on the end.
 <<nobr>>
 <<vi-ignore n2_ivexGone>>
 
-<<set _phase = $n2_mirrorBroken ? $n2_mirrorBrokenPhase : $n1_magicPhase>>
-
 The only window in the room
 is round and about a meter in diameter.
-<<if $n2_mirrorBroken && MP_wantTouch === $n2_mirrorBrokenPhase>>
+<<if $n2_mirrorBroken && MP_wantTouch === $n2_magicPhaseBroken>>
     <<include [[n1x/F Window WantTouch]]>>
     ?P
 <</if>>
@@ -15746,8 +15737,17 @@ $t_afterAction
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
 
-<<set _wantTouch = $n1_magicPhase === MP_wantTouch>>
-<<em-assert _wantTouch || _wantPassword>>
+maybe split this into separate askTouch askPassword.
+<<if MP_wantTouch === $n1_magicPhase>>
+    XXX want touch
+    <<set $n1_portraitTouchTried = true>>
+<<elseif MP_wantPassword === $n1_magicPhase>>
+    XXX want password
+<<else>>
+    <<run throw new Error(`Unexpected magicPhase ${n1_magicPhase}`)>>
+<</if>>
+
+<<set $n1_portraitMomKnown = true>>
 
 <</nobr>>
 
@@ -16256,9 +16256,9 @@ his situation.
             objs.push("a [[letter opener|n1x/F Knife]]");
         }
         if (v.n1_globeViewed) {
-            objs.push("a [[snow globe|n1x/F Globe]]");
+            objs.push("a [[snow globe|n1x/D Globe]]");
         } else {
-            objs.push("an [[arcane globe|n1x/F Globe]]");
+            objs.push("an [[arcane globe|n1x/D Globe]]");
         }
         if (!v.n2_mirrorTaken) {
             if (v.n2_mirrorBroken) {
@@ -16698,55 +16698,53 @@ $t_afterAction
 
 :: n1x/F Portrait WantTouch [inclusion] {"position":"7475,4050","size":"100,100"}
 <<nobr>>
-<<vi-always n2_free false>>
+<<set _free = (a, b) => $n2_free ? a  : b>>
 
-<<if $n1_portraitTouched>>
+<<if $n1_portraitTouchTried>>
     <<em-assert $n1_portraitMomKnown>>
-    <<if $n2_free>>
-        Fortunately, she didn't seem to be the hole that the Sprite
-        wanted him to touch.
-    <<else>>
-        Fortunately, she doesn't seem to be the hole that the Sprite
-        wants touched.
-    <</if>>
+    Fortunately, she <<= _free("didn't", "doesn't")>>
+    seem to be the hole that the Sprite
+    <<= _free("wanted", "wants")>>
+    him to touch.
 
 <<else>>
-    <!-- can't ask about portrait before this -->
+    <!-- no opportunity to ask before this -->
     <<em-assert !$n1_portraitMomKnown>>
 
     The wolf has a wild thought.
     Could it be that the portrait's mouth
     is the hole that the Sprite
+    <<= _free("wanted", "wants")>>
+    him to touch?
     <<if $n2_ivexGone>>
-        wants touched?
         Well, there's no way to test that theory now.
     <<else>>
-        wants touched?
         And could Ivex be persuaded to
         touch it?
         <<actions-add [[Ask Ivex about the portrait.|n1x/P Portrait Ask]]>>
     <</if>>
 <</if>>
-
 <</nobr>>\
 
 
 :: n1x/P Portrait WantPassword [inclusion] {"position":"7475,4175","size":"100,100"}
 <<nobr>>
-    XXX if pw tried, not the password
-    XXX if pw known (but not tried), maybe the password
-    XXX if ivex here, ask for password
-    XXX else, regret could have asked
-    <<if $n1_portraitMomKnown>>
-        She's... unsettlingly important to Ivex.
-    <</if>>
-    It seems quite possible that her name is the password that's
-    requested by the Sprite.
-    <<if $n2_ivexGone>>
-        Too bad Nero does not know what it is.
-    <<else>>
-        <<actions-add [[Ask Ivex about the portrait.|n1x/P Portrait Ask]]>>
-    <</if>>
+<<em-assert !$n2_free>>
+
+XXX if pw tried, not the password
+XXX if pw known (but not tried), maybe the password
+XXX if ivex here, ask for password
+XXX else, regret could have asked
+<<if $n1_portraitMomKnown>>
+    She's... unsettlingly important to Ivex.
+<</if>>
+It seems quite possible that her name is the password that's
+requested by the Sprite.
+<<if $n2_ivexGone>>
+    Too bad Nero does not know what it is.
+<<else>>
+    <<actions-add [[Ask Ivex about the portrait.|n1x/P Portrait Ask]]>>
+<</if>>
 <</nobr>>\
 
 
@@ -16815,7 +16813,6 @@ $t_afterAction
 
 :: n1y/D Horny Candle {"position":"6225,6375","size":"100,100"}
 <<nobr>>
-<<set _wantPassword = $n1_magicPhase === MP_wantPassword>>
 
 <<if $n1_mageSight>>
     Exotic magic energies enter the base of the candle's holder
@@ -17158,12 +17155,12 @@ grav gems disrupted, imploded into dust.
 cross falls forward, nero tries to catch himself, but strapped to cross.
 bashes his erection, super painful, but also turns him on.
 
-<<if $n1_magicPhase === MP_onHold>>
+<<if MP_onHold === $n1_magicPhase>>
     ?P
     sprite says, password incorrect, you have N tries remaining.
     please say password.
     <<set $n1_magicPhase = MP_wantPassword>>
-<<elseif $n1_magicPhase === MP_lockedOut>>
+<<elseif MP_lockedOut === $n1_magicPhase>>
     ?P
     sprite says something about losing count, restarting.
     please say password.
@@ -17545,6 +17542,7 @@ mirror is hot from fire. he fumbles it, tries to catch it
 
 <<if MP_wantPassword === $n1_magicPhase>>
     sprite says, "password accepted"
+    <<set $n1_passwordKnown = true>>
 <</if>>
 
 fails to catch mirror, it falls on ground and shatters.
@@ -17557,9 +17555,9 @@ fails to catch mirror, it falls on ground and shatters.
     <<set $n2_extraHorny = true>>
     <<set $n2_free = true>>
     <<set $n2_hadMageSight = true>>
-    <<set $n2_mirrorBroken = true>>
 
-    <<set $n2_mirrorBrokenPhase = $n1_magicPhase>>
+    <<set $n2_mirrorBroken = true>>
+    <<set $n2_magicPhaseBroken = $n1_magicPhase>>
     <<set $n1_magicPhase = MP_broken>>
 <</nobr>>
 
@@ -17641,6 +17639,7 @@ take a moment to rest.
 <<set $n1_ivexReceptive = false>>
 <<set $n1_naked = true>>
 <<set $n1_magicPhase = MP_connected>>
+<<set $n1_passwordKnown = true>>
 <<set $n2_free = true>>
 <<set $n2_ivexGone = true>>
 <<set $n2_mirrorTaken = true>>
