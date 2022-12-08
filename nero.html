@@ -3185,15 +3185,19 @@ Nero.enumImplies = {
 }
 
 Nero.checkConstraints = () =&gt; {
-  const EM = window.ErrorMessage;
+  const EM = ErrorMessage;
+  const VT = VarTrace;
   const here = State.passage;
   if (!/^n/.test(here)) return;
 
-  VarTrace.ignore(() =&gt; {
+  VT.ignore(() =&gt; {
+    /* note: current state, not active state */
     const V = State.current.variables;
     Object.keys(Nero.flags).forEach(x =&gt; {
       if (!V[x]) return;
+      if (!VT.ctx.wasRead.has(x)) return;
       Object.keys(Nero.flags[x].implies).forEach(y =&gt; {
+        if (!VT.ctx.wasRead.has(y)) return;
         const val = V[y] == null ? false : V[y];
         const exp = Nero.flags[x].implies[y];
         const expStr = typeof exp !== &quot;boolean&quot; ? `$[y} === ${exp}` : exp ? y : `!${y}`;
@@ -3204,7 +3208,9 @@ Nero.checkConstraints = () =&gt; {
     Object.keys(Nero.enumImplies).forEach(x =&gt; {
       const rules = Nero.enumImplies[x][V[x]];
       if (rules == null) return;
+      if (!VT.ctx.wasRead.has(x)) return;
       Object.keys(rules).forEach(y =&gt; {
+        if (!VT.ctx.wasRead.has(y)) return;
         const val = V[y] == null ? false : V[y];
         const exp = rules[y];
         const expStr = typeof exp !== &quot;boolean&quot; ? `$[y} === ${exp}` : exp ? y : `!${y}`;
@@ -3216,7 +3222,7 @@ Nero.checkConstraints = () =&gt; {
   });
 };
 
-$(document).on(&quot;:passagestart&quot;, Nero.checkConstraints);
+$(document).on(&quot;:passageend&quot;, Nero.checkConstraints);
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="29" name="Init 5b Nero Misfire" tags="inclusion" position="2950,1175" size="100,100">&lt;&lt;script&gt;&gt;
 const VT = VarTrace;
 
@@ -11662,6 +11668,7 @@ function glitchText(textNode, g) {
 &lt;&lt;case `MP_mageSight`&gt;&gt;
     &lt;&lt;include [[n1s/D Mage Sight]]&gt;&gt;
 &lt;&lt;case `MP_broken`&gt;&gt;
+    &lt;&lt;vi-always n2_mirrorBroken true&gt;&gt;
     &lt;&lt;include [[n1s/F Mirror Broken]]&gt;&gt;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;include [[n1s/F Sprite]]&gt;&gt;
@@ -13327,7 +13334,7 @@ a small haphazard stack of books that
         The yearbook might offer some clues about Ivex&#39;s earlier life.
         &lt;&lt;actions-add [[Search the books.|n2x/D Books Search]]&gt;&gt;
 
-    &lt;&lt;elseif MP_wantPassword === $n1_magicPhase&gt;&gt;
+    &lt;&lt;elseif _wantPassword&gt;&gt;
         XXX add Ransamaran Ivory
         XXX add 621
         XXX maybe the earlier school is the password
@@ -15740,6 +15747,7 @@ fails to catch mirror, it falls on ground and shatters.
 &lt;&lt;/nobr&gt;&gt;
 
 [[Continue|n2f/D Free Action]]</tw-passagedata><tw-passagedata pid="471" name="n2f/D Free Action" tags="" position="5425,6650" size="200,200">&lt;&lt;nobr&gt;&gt;
+
 &lt;&lt;n1-patience 10 6
     &quot;Ivex is gone, for now.&quot;
     &quot;Ivex is gone, but he might return at any moment.&quot;
@@ -16479,7 +16487,7 @@ in setting up the candle.)
   }
 }
 @media(hover: hover) {
-  #passages:has(a.vp-link-visited:hover) a.vp-link-visited {
+  #passages:hover a.vp-link-visited {
     opacity: 0.8;
     text-decoration: line-through;
   }

@@ -3237,15 +3237,19 @@ Nero.enumImplies = {
 }
 
 Nero.checkConstraints = () => {
-  const EM = window.ErrorMessage;
+  const EM = ErrorMessage;
+  const VT = VarTrace;
   const here = State.passage;
   if (!/^n/.test(here)) return;
 
-  VarTrace.ignore(() => {
+  VT.ignore(() => {
+    /* note: current state, not active state */
     const V = State.current.variables;
     Object.keys(Nero.flags).forEach(x => {
       if (!V[x]) return;
+      if (!VT.ctx.wasRead.has(x)) return;
       Object.keys(Nero.flags[x].implies).forEach(y => {
+        if (!VT.ctx.wasRead.has(y)) return;
         const val = V[y] == null ? false : V[y];
         const exp = Nero.flags[x].implies[y];
         const expStr = typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
@@ -3256,7 +3260,9 @@ Nero.checkConstraints = () => {
     Object.keys(Nero.enumImplies).forEach(x => {
       const rules = Nero.enumImplies[x][V[x]];
       if (rules == null) return;
+      if (!VT.ctx.wasRead.has(x)) return;
       Object.keys(rules).forEach(y => {
+        if (!VT.ctx.wasRead.has(y)) return;
         const val = V[y] == null ? false : V[y];
         const exp = rules[y];
         const expStr = typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
@@ -3268,7 +3274,7 @@ Nero.checkConstraints = () => {
   });
 };
 
-$(document).on(":passagestart", Nero.checkConstraints);
+$(document).on(":passageend", Nero.checkConstraints);
 <</script>>
 
 
@@ -13058,6 +13064,7 @@ function glitchText(textNode, g) {
 <<case `MP_mageSight`>>
     <<include [[n1s/D Mage Sight]]>>
 <<case `MP_broken`>>
+    <<vi-always n2_mirrorBroken true>>
     <<include [[n1s/F Mirror Broken]]>>
 <<default>>
     <<include [[n1s/F Sprite]]>>
@@ -14871,7 +14878,7 @@ a small haphazard stack of books that
         The yearbook might offer some clues about Ivex's earlier life.
         <<actions-add [[Search the books.|n2x/D Books Search]]>>
 
-    <<elseif MP_wantPassword === $n1_magicPhase>>
+    <<elseif _wantPassword>>
         XXX add Ransamaran Ivory
         XXX add 621
         XXX maybe the earlier school is the password
@@ -17561,6 +17568,7 @@ fails to catch mirror, it falls on ground and shatters.
 
 :: n2f/D Free Action {"position":"5425,6650","size":"200,200"}
 <<nobr>>
+
 <<n1-patience 10 6
     "Ivex is gone, for now."
     "Ivex is gone, but he might return at any moment."
@@ -18465,7 +18473,7 @@ in setting up the candle.)
   }
 }
 @media(hover: hover) {
-  #passages:has(a.vp-link-visited:hover) a.vp-link-visited {
+  #passages:hover a.vp-link-visited {
     opacity: 0.8;
     text-decoration: line-through;
   }
