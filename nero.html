@@ -3240,15 +3240,38 @@ Macro.add(&quot;misfire-please&quot;, {
 &lt;&lt;script&gt;&gt;
 const VI = VarInfo;
 
+/**
+ * &lt;&lt;n1-patience $looks $actions&gt;&gt;
+ *     $angryText
+ * &lt;&lt;n1-warn&gt;&gt;
+ *     $impatientText
+ * &lt;&lt;n1-calm&gt;&gt;
+ *     $patientText]
+ * &lt;&lt;/n1-patience]&gt;&gt;
+ *
+ * If visiting this node for the first time, set look count and action count.
+ * If either count is 0, Ivex is angry, emits angryText, look/action is suppressed.
+ * Otherwise look/action is available.
+ * When either count is 1, emit impatientText (or angryText).
+ * Otherwise emit patientText (or impatientText, or angryText).
+ */
 Macro.add(&quot;n1-patience&quot;, {
+  tags: [&quot;n1-warn&quot;, &quot;n1-calm&quot;],
   handler: function() {
+    const [looks, actions] = this.args;
+    const angryText = this.payload[0].contents;
+    let impatientText = angryText;
+    let patientText = angryText;
+    for (const p of this.payload) {
+      if (p.name === &quot;n1-warn&quot;) {
+        impatientText = p.contents;
+      } else if (p.name === &quot;n1-calm&quot;) {
+        patientText = p.contents;
+      }
+    }
+
     const V = State.variables;
     const T = State.temporary;
-    const looks = this.args[0];
-    const actions = this.args[1];
-    const patientText = this.args[2];
-    const impatientText = this.args[3] || patientText;
-    const angryText = this.args[4] || impatientText;
     const here = State.passage;
     const ptitle = State.peek(-1).title;
     const ppassage = Story.get(ptitle);
@@ -9665,11 +9688,15 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
-&lt;&lt;n1-patience 6 3
-    &#39;Ivex (the Magnificent) speaks. &quot;Again I ask. Who sent you?&quot;&#39;
-    &#39;Ivex (the Magnificent) twitches an ear in annoyance. &quot;Again I ask. Who sent you?&quot;&#39;
-    &#39;Ivex (the Magnificent) snaps his cape and speaks with anger. &quot;Again I ask! Who sent you!&quot;&#39;
-&gt;&gt;
+&lt;&lt;n1-patience 6 3&gt;&gt;
+    Ivex (the Magnificent) snaps his cape and speaks with anger.
+    &quot;Again I ask! Who sent you!&quot;
+&lt;&lt;n1-warn&gt;&gt;
+    Ivex (the Magnificent) twitches an ear in annoyance.
+    &quot;Again I ask. Who sent you?&quot;
+&lt;&lt;n1-calm&gt;&gt;
+    Ivex (the Magnificent) speaks. &quot;Again I ask. Who sent you?&quot;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -9884,11 +9911,11 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
 
-&lt;&lt;n1-patience 1 1
-    &quot;(bug)&quot;
-    &quot;Ivex sneers. \&quot;Do you think you&#39;re my equal?\&quot;&quot;
+&lt;&lt;n1-patience 1 1&gt;&gt;
     &quot;Ivex growls and asks again. \&quot;Do you think you&#39;re my equal?\&quot;&quot;
-&gt;&gt;
+&lt;&lt;n1-warn&gt;&gt;
+    &quot;Ivex sneers. \&quot;Do you think you&#39;re my equal?\&quot;&quot;
+&lt;&lt;/n1-patience&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
 &lt;&lt;nobr&gt;&gt;
@@ -9908,11 +9935,12 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
 
-&lt;&lt;n1-patience 1 1
-    &#39;Ivex asks, &quot;What makes you think I would ever submit to your control?&quot;&#39;
-    &#39;Ivex asks, &quot;What makes you think I would ever submit to your control?&quot;&#39;
-    &#39;Ivex snarls, &quot;What makes you think I would ever submit to your control?&quot;&#39;
-&gt;&gt;
+&lt;&lt;n1-patience 1 1&gt;&gt;
+    Ivex snarls, &quot;What makes you think I would ever submit to
+    &lt;em&gt;your&lt;/em&gt; control?&quot;
+&lt;&lt;n1-warn&gt;&gt;
+   &#39;Ivex asks, &quot;What makes you think I would ever submit to your control?&quot;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -10322,9 +10350,9 @@ Ivex makes a gesture, and
 [[Continue|n1cn/F Ivex Offended (1,1)]]</tw-passagedata><tw-passagedata pid="309" name="n1cr/D Ivex Demanding (4,3)" tags="pw-misfire-start" position="4350,3400" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
-&lt;&lt;n1-patience 4 3
+&lt;&lt;n1-patience 4 3&gt;&gt;
     &#39;Ivex: will you do everything I ask?&#39;
-&gt;&gt;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -10364,9 +10392,10 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
-&lt;&lt;n1-patience 4 3
-    &#39;Ivex seems skeptical, but intrigued. He asks, &quot;Why have I never heard of your consortium?&quot;&#39;
-&gt;&gt;
+&lt;&lt;n1-patience 4 3&gt;&gt;
+    XXX impatient. Ivex seems skeptical, but intrigued.
+    He asks, &quot;Why have I never heard of your consortium?&quot;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -10399,9 +10428,9 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
-&lt;&lt;n1-patience 4 3
+&lt;&lt;n1-patience 4 3&gt;&gt;
     &#39;Ivex: do guild members have to do everything you ask? grabs crotch&#39;
-&gt;&gt;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -10463,9 +10492,9 @@ ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 [[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="315" name="n1cs/D Ivex Dominant (4,3)" tags="" position="4375,3650" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
 
-&lt;&lt;n1-patience 4 3
+&lt;&lt;n1-patience 4 3&gt;&gt;
     &#39;Ivex mentions canine tongues, offers a finger to lick&#39;
-&gt;&gt;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -10481,9 +10510,9 @@ ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="316" name="n1cs/D Ivex Cruel (4,3)" tags="" position="4375,3900" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_ivexReceptive = true&gt;&gt;
 
-&lt;&lt;n1-patience 4 3
+&lt;&lt;n1-patience 4 3&gt;&gt;
     &#39;Ivex: gonna torture you, cuz loyalty&#39;
-&gt;&gt;
+&lt;&lt;/n1-patience&gt;&gt;
 
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
 
@@ -10636,10 +10665,11 @@ should be able to figure it out soon enough.&quot;
 
 &lt;&lt;set $n1_ivexReceptive = false&gt;&gt;
 
-&lt;&lt;n1-patience 2 2
-    &quot;Ivex with his grinning mask asks, \&quot;Are you comfortable?\&quot;&quot;
+&lt;&lt;n1-patience 2 2&gt;&gt;
     &quot;Ivex in his menacing mask asks, \&quot;Are you comfortable?\&quot;&quot;
-&gt;&gt;
+&lt;&lt;n1-warn&gt;&gt;
+    &quot;Ivex with his grinning mask asks, \&quot;Are you comfortable?\&quot;&quot;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -10936,9 +10966,9 @@ The panther mage raises an arm, and snaps his fingers.
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_subby n1_abused&gt;&gt;
 
-&lt;&lt;n1-patience 1 1
+&lt;&lt;n1-patience 1 1&gt;&gt;
     &quot;Ivex pulls at the wolf&#39;s balls and squeezes harder. \&quot;Tell me...\&quot;&quot;
-&gt;&gt;
+&lt;&lt;/n1-patience&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
 &lt;&lt;nobr&gt;&gt;
@@ -10960,9 +10990,9 @@ The panther mage raises an arm, and snaps his fingers.
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_subby n1_abused&gt;&gt;
 
-&lt;&lt;n1-patience 1 1
+&lt;&lt;n1-patience 1 1&gt;&gt;
     &quot;Ivex closes the paw holding Nero&#39;s balls and gently squeezes. \&quot;Tell me, who sent you.\&quot;&quot;
-&gt;&gt;
+&lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -15532,7 +15562,8 @@ Well, that&#39;s a question to be deferred to some other time. What&#39;s import
 &lt;&lt;vi-ignore n1_candleHorny&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
-&lt;&lt;n1-patience 6 3 &quot;&quot;&gt;&gt;
+&lt;&lt;n1-patience 6 3&gt;&gt;
+&lt;&lt;/n1-patience&gt;&gt;
 
 &lt;&lt;include [[n2b/F Compute Arousal]]&gt;&gt;
 
@@ -15915,10 +15946,11 @@ fails to catch mirror, it falls on ground and shatters.
 
 [[Continue|n2f/D Free Action]]</tw-passagedata><tw-passagedata pid="471" name="n2f/D Free Action" tags="" position="5425,6650" size="200,200">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;n1-patience 10 6
-    &quot;Ivex is gone, for now.&quot;
+&lt;&lt;n1-patience 10 6&gt;&gt;
     &quot;Ivex is gone, but he might return at any moment.&quot;
-&gt;&gt;
+&lt;&lt;n1-calm&gt;&gt;
+    &quot;Ivex is gone, for now.&quot;
+&lt;&lt;/n1-patience&gt;&gt;
 
 need to fix what happens when patience exhausted&lt;br&gt;
 choice also affects last-chance&lt;br&gt;

@@ -3300,15 +3300,38 @@ Macro.add("misfire-please", {
 <<script>>
 const VI = VarInfo;
 
+/**
+ * <<n1-patience $looks $actions>>
+ *     $angryText
+ * <<n1-warn>>
+ *     $impatientText
+ * <<n1-calm>>
+ *     $patientText]
+ * <</n1-patience]>>
+ *
+ * If visiting this node for the first time, set look count and action count.
+ * If either count is 0, Ivex is angry, emits angryText, look/action is suppressed.
+ * Otherwise look/action is available.
+ * When either count is 1, emit impatientText (or angryText).
+ * Otherwise emit patientText (or impatientText, or angryText).
+ */
 Macro.add("n1-patience", {
+  tags: ["n1-warn", "n1-calm"],
   handler: function() {
+    const [looks, actions] = this.args;
+    const angryText = this.payload[0].contents;
+    let impatientText = angryText;
+    let patientText = angryText;
+    for (const p of this.payload) {
+      if (p.name === "n1-warn") {
+        impatientText = p.contents;
+      } else if (p.name === "n1-calm") {
+        patientText = p.contents;
+      }
+    }
+
     const V = State.variables;
     const T = State.temporary;
-    const looks = this.args[0];
-    const actions = this.args[1];
-    const patientText = this.args[2];
-    const impatientText = this.args[3] || patientText;
-    const angryText = this.args[4] || impatientText;
     const here = State.passage;
     const ptitle = State.peek(-1).title;
     const ppassage = Story.get(ptitle);
@@ -10777,11 +10800,15 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
 
-<<n1-patience 6 3
-    'Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"'
-    'Ivex (the Magnificent) twitches an ear in annoyance. "Again I ask. Who sent you?"'
-    'Ivex (the Magnificent) snaps his cape and speaks with anger. "Again I ask! Who sent you!"'
->>
+<<n1-patience 6 3>>
+    Ivex (the Magnificent) snaps his cape and speaks with anger.
+    "Again I ask! Who sent you!"
+<<n1-warn>>
+    Ivex (the Magnificent) twitches an ear in annoyance.
+    "Again I ask. Who sent you?"
+<<n1-calm>>
+    Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -11012,11 +11039,11 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n1_naked>>
 
-<<n1-patience 1 1
-    "(bug)"
-    "Ivex sneers. \"Do you think you're my equal?\""
+<<n1-patience 1 1>>
     "Ivex growls and asks again. \"Do you think you're my equal?\""
->>
+<<n1-warn>>
+    "Ivex sneers. \"Do you think you're my equal?\""
+<</n1-patience>>
 <</nobr>>
 
 <<nobr>>
@@ -11040,11 +11067,12 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n1_naked>>
 
-<<n1-patience 1 1
-    'Ivex asks, "What makes you think I would ever submit to your control?"'
-    'Ivex asks, "What makes you think I would ever submit to your control?"'
-    'Ivex snarls, "What makes you think I would ever submit to your control?"'
->>
+<<n1-patience 1 1>>
+    Ivex snarls, "What makes you think I would ever submit to
+    <em>your</em> control?"
+<<n1-warn>>
+   'Ivex asks, "What makes you think I would ever submit to your control?"
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -11498,9 +11526,9 @@ Ivex makes a gesture, and
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
-<<n1-patience 4 3
+<<n1-patience 4 3>>
     'Ivex: will you do everything I ask?'
->>
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -11548,9 +11576,10 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
 
-<<n1-patience 4 3
-    'Ivex seems skeptical, but intrigued. He asks, "Why have I never heard of your consortium?"'
->>
+<<n1-patience 4 3>>
+    XXX impatient. Ivex seems skeptical, but intrigued.
+    He asks, "Why have I never heard of your consortium?"
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -11587,9 +11616,9 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
 
-<<n1-patience 4 3
+<<n1-patience 4 3>>
     'Ivex: do guild members have to do everything you ask? grabs crotch'
->>
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -11663,9 +11692,9 @@ ivex: nice try, but I think you're lying... we'll see.
 <<nobr>>
 <<set $n1_ivexReceptive = true>>
 
-<<n1-patience 4 3
+<<n1-patience 4 3>>
     'Ivex mentions canine tongues, offers a finger to lick'
->>
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -11685,9 +11714,9 @@ ivex: nice try, but I think you're lying... we'll see.
 <<nobr>>
 <<set $n1_ivexReceptive = true>>
 
-<<n1-patience 4 3
+<<n1-patience 4 3>>
     'Ivex: gonna torture you, cuz loyalty'
->>
+<</n1-patience>>
 
 <<include [[n1x/F Look and Magic]]>>
 
@@ -11860,10 +11889,11 @@ should be able to figure it out soon enough."
 
 <<set $n1_ivexReceptive = false>>
 
-<<n1-patience 2 2
-    "Ivex with his grinning mask asks, \"Are you comfortable?\""
+<<n1-patience 2 2>>
     "Ivex in his menacing mask asks, \"Are you comfortable?\""
->>
+<<n1-warn>>
+    "Ivex with his grinning mask asks, \"Are you comfortable?\""
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -12196,9 +12226,9 @@ The panther mage raises an arm, and snaps his fingers.
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_subby n1_abused>>
 
-<<n1-patience 1 1
+<<n1-patience 1 1>>
     "Ivex pulls at the wolf's balls and squeezes harder. \"Tell me...\""
->>
+<</n1-patience>>
 <</nobr>>
 
 <<nobr>>
@@ -12224,9 +12254,9 @@ The panther mage raises an arm, and snaps his fingers.
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_subby n1_abused>>
 
-<<n1-patience 1 1
+<<n1-patience 1 1>>
     "Ivex closes the paw holding Nero's balls and gently squeezes. \"Tell me, who sent you.\""
->>
+<</n1-patience>>
 
 ?P
 <<include [[n1x/F Look and Magic]]>>
@@ -17277,7 +17307,8 @@ Well, that's a question to be deferred to some other time. What's important now 
 <<vi-ignore n1_candleHorny>>
 <<vi-ignore n1_mageSight>>
 
-<<n1-patience 6 3 "">>
+<<n1-patience 6 3>>
+<</n1-patience>>
 
 <<include [[n2b/F Compute Arousal]]>>
 
@@ -17736,10 +17767,11 @@ fails to catch mirror, it falls on ground and shatters.
 :: n2f/D Free Action {"position":"5425,6650","size":"200,200"}
 <<nobr>>
 
-<<n1-patience 10 6
-    "Ivex is gone, for now."
+<<n1-patience 10 6>>
     "Ivex is gone, but he might return at any moment."
->>
+<<n1-calm>>
+    "Ivex is gone, for now."
+<</n1-patience>>
 
 need to fix what happens when patience exhausted<br>
 choice also affects last-chance<br>
