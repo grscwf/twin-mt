@@ -1,13 +1,23 @@
-# Nero paths
+# Nero paths <!-- omit in toc -->
 
 This is a description of paths to all of Nero's endings.
 I suggest you don't read this until you've played through
 at least three different Nero endings.
 
+
 <details>
   <summary>
     Spoilers
   </summary>
+
+- [1st Floor](#1st-floor)
+  - [1st Floor Moods](#1st-floor-moods)
+  - [1st Floor Easy](#1st-floor-easy)
+  - [1st Floor Hard](#1st-floor-hard)
+  - [Bad Ending: Broken](#bad-ending-broken)
+- [2nd Floor](#2nd-floor)
+  - [2nd Floor Easy](#2nd-floor-easy)
+  - [2nd Floor Hard](#2nd-floor-hard)
 
 Are you sure you want to see this?
 Nero's story has many hints for all the endings,
@@ -152,12 +162,21 @@ the 4th or 5th playthrough.
   - But this turns out to actually work anyway. Nero is free.
 - The mirror is saved. It can be used for 2nd Floor Easy escape.
 - There's a special Bad Ending here that's meant to be hard to find.
-  - Bad Ending: Broken
-    - You must have seen Mica and Pevhin already in other playthroughs.
-    - Pick the neutral starting option (not naked or abused).
-    - Follow the dialog branches to subby. Should get the "Barbs?" glitch.
-    - Finish the hard escape.
-    - Use the wand.
+
+</details>
+
+### Bad Ending: Broken
+This is the challenge ending on the first floor.
+There are clues to it, but it's meant to be
+hard to find.
+<details>
+
+- You must have seen Mica and Pevhin already in other playthroughs.
+- Pick the neutral starting option (not naked or abused).
+- Follow the dialog branches to subby. You should get the "Barbs?" glitch.
+- Finish the hard escape.
+- Use the wand.
+
 </details>
 
 ## 2nd Floor
