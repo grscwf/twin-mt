@@ -2508,7 +2508,7 @@ $(document).on(":passagedisplay", renderButton);
 <</script>>
 
 
-:: Init 4 Drekkar [inclusion] {"position":"2450,900","size":"100,100"}
+:: Init 4 Drekkar [inclusion] {"position":"2450,850","size":"100,100"}
 <<script>>
 const v = variables();
 v.name = "Drekkar";
@@ -2569,19 +2569,21 @@ v.personalEnding = false;
 <</script>>
 
 
-:: Init 5 Nero [inclusion] {"position":"2450,1075","size":"100,100"}
+:: Init 5 Nero [inclusion] {"position":"2425,1025","size":"100,100"}
 <<include [[Init 5a Nero Vars]]>>
 
 <<include [[Init 5b Nero Actions]]>>
 <<include [[Init 5b Nero Barbs]]>>
 <<include [[Init 5b Nero Constraints]]>>
 <<include [[Init 5b Nero Misfire]]>>
-<<include [[Init 5c Nero Password]]>>
+<<include [[Init 5b Nero No Loop]]>>
 <<include [[Init 5b Nero Patience]]>>
 <<include [[Init 5b Nero Templates]]>>
 
+<<include [[Init 5c Nero Password]]>>
 
-:: Init 5a Nero Vars [inclusion] {"position":"2650,1050","size":"100,100"}
+
+:: Init 5a Nero Vars [inclusion] {"position":"2875,1000","size":"100,100"}
 <<script>>
 // This has a :passagestart that should run before any other Nero :passagestart
 
@@ -2614,7 +2616,7 @@ $(document).on(":passagestart", () => {
 <</script>>
 
 
-:: Init 5b Nero Actions [inclusion] {"position":"2650,1175","size":"100,100"}
+:: Init 5b Nero Actions [inclusion] {"position":"2625,1150","size":"100,100"}
 <<script>>
 const Nero = window.Nero || (window.Nero = {});
 const actionList = [];
@@ -2657,7 +2659,7 @@ Macro.add("actions-optional", {
 <</script>>
 
 
-:: Init 5b Nero Barbs [inclusion] {"position":"2750,1175","size":"100,100"}
+:: Init 5b Nero Barbs [inclusion] {"position":"2725,1150","size":"100,100"}
 <<script>>
 const VT = window.VarTrace || (window.VarTrace = {});
 
@@ -2693,7 +2695,7 @@ Macro.add("barbs-announce", {
 <</script>>
 
 
-:: Init 5b Nero Constraints [inclusion] {"position":"2850,1175","size":"100,100"}
+:: Init 5b Nero Constraints [inclusion] {"position":"2825,1150","size":"100,100"}
 <<script>>
 const ET = EnumType;
 
@@ -3271,7 +3273,7 @@ $(document).on(":passageend", Nero.checkConstraints);
 <</script>>
 
 
-:: Init 5b Nero Misfire [inclusion] {"position":"2950,1175","size":"100,100"}
+:: Init 5b Nero Misfire [inclusion] {"position":"2925,1150","size":"100,100"}
 <<script>>
 const VT = VarTrace;
 
@@ -3286,7 +3288,7 @@ Macro.add("misfire-please", {
 <</script>>
 
 
-:: Init 5b Nero Patience [inclusion] {"position":"3050,1175","size":"100,100"}
+:: Init 5b Nero Patience [inclusion] {"position":"2625,1250","size":"100,100"}
 <<append head>><style>
 .patience-debug:not(.patience-debug-show) a {
   display: none;
@@ -3299,134 +3301,149 @@ const VI = VarInfo;
 /**
  * <<n1-patience $looks $actions>>
  *     $firstText
- * <<n1-repeat>>
- *     $repeatText
  * <<n1-remind>>
  *     $remindText
+ * <<n1-repeat>>
+ *     $repeatText
  * <<n1-warn>>
  *     $warnText
  * <<n1-insist>>
- *     $insistentText
+ *     $insistText
  * <</n1-patience>>
  *
  * If visiting this node for the first time
  *   - set look count and action count
  *   - emit $firstText
  * If returning from look or action, and either count is 0
- *   - emit $insistentText
+ *   - emit $insistText
  *   - suppress looks and actions
  * If returning from look or action, and either count is now 1,
  *   - set both counts to 1
  *   - emit $warnText
- * If returning from action
- *   - emit $repeatText
  * If returning from look
  *   - emit $remindText
+ * If returning from action
+ *   - emit $repeatText
  */
 Macro.add("n1-patience", {
-  tags: ["n1-repeat", "n1-remind", "n1-warn", "n1-insist"],
+  tags: ["n1-remind", "n1-repeat", "n1-warn", "n1-insist"],
   handler: function() {
     const [looks, actions] = this.args;
-    const angryText = this.payload[0].contents;
-    let impatientText = angryText;
-    let patientText = angryText;
+
+    let firstText, remindText, repeatText, warnText, insistText;
     for (const p of this.payload) {
-      if (p.name === "n1-warn") {
-        impatientText = p.contents;
-      } else if (p.name === "n1-calm") {
-        patientText = p.contents;
+      switch (p.name) {
+        case "n1-patience": firstText = p.contents; break;
+        case "n1-remind": remindText = p.contents; break;
+        case "n1-repeat": repeatText = p.contents; break;
+        case "n1-warn": warnText = p.contents; break;
+        case "n1-insist": insistText = p.contents; break;
+        default: throw new Error(`bug n1-patience ${p.name}`);
       }
     }
 
     const V = State.variables;
     const T = State.temporary;
     const here = State.passage;
-    const ptitle = State.peek(-1).title;
-    const ppassage = Story.get(ptitle);
-    const ptags = ppassage != null ? ppassage.tags : [];
-    const movedHere = !ptags.includes("noreturn");
-    if (movedHere || V.t_patiencePassage == null) {
-      // If we're at a different action node, reset patience and aggro
-      if (V.t_patiencePassage !== here) {
-        V.t_patienceLooks = looks;
-        V.t_patienceActions = actions;
-        V.t_patiencePassage = here;
-        V.t_patienceAggro = 0;
-      }
-      // If we've exhausted patience, start aggro.
-      if (V.t_patienceAggro || V.t_patienceLooks <= 1 || V.t_patienceActions <= 1) {
-        V.t_patienceAggro++;
-      }
-      // warning on aggro
-      T.patienceWarning = V.t_patienceAggro === 1;
-      // forced response
-      T.patienceExhausted = V.t_patienceAggro > 1;
-      // set return links
-      V.t_afterLook = "[" + "[Do something else.|" + here + "][$t_patienceLooks -= 1]]";
-      V.t_afterAction = "[" + "[Continue|" + here + "][$t_patienceActions -= 1; $t_didSomeAction = true]]";
-      V.t_afterPartialAction = "[" + "[Do something else.|" + here + "][$t_patienceActions -=1; $t_didSomeAction = true]]";
+   
+    if (V.t_patiencePassage !== here) {
+      // This is our first visit here
+      V.t_patienceLooks = looks;
+      V.t_patienceActions = actions;
+      V.t_patiencePassage = here;
+      V.t_patienceReturn = 0;
+    } else if (V.t_patienceReturn === 1) {
+      // Return from look
+      V.t_patienceLooks--;
+    } else if (V.t_patienceReturn === 2) {
+      // Return from action
+      V.t_patienceActions--;
+      V.t_didSomeAction = true;
     }
+
+    T.patience = Math.min(V.t_patienceLooks, V.t_patienceActions);
+
+    // At warn state, only allow 1 more look or action.
+    if (T.patience === 1) {
+      V.t_patienceLooks = 1;
+      V.t_patienceActions = 1;
+    }
+      
+    // set return links
+    V.t_afterLook = `[\[Do something else.|${here}][$t_patienceReturn = 1]]`;
+    V.t_afterLookContinue = `[\[Continue|${here}][$t_patienceReturn = 1]]`;
+    V.t_afterActionAbort = `[\[Do something else.|${here}][$t_patienceReturn = 2]]`;
+    V.t_afterAction = `[\[Continue|${here}][$t_patienceReturn = 2]]`;
+    
     // Patience text
-    switch (V.t_patienceAggro) {
-      case 0: $(this.output).wiki(patientText); break;
-      case 1: $(this.output).wiki(impatientText); break;
-      default: $(this.output).wiki(angryText); break;
+    if (T.patience <= 0) {
+      $(this.output).wiki(insistText);
+    } else if (T.patience === 1) {
+      $(this.output).wiki(warnText);
+    } else {
+      switch (V.t_patienceReturn) {
+        case 0: $(this.output).wiki(firstText); break;
+        case 1: $(this.output).wiki(remindText); break;
+        case 2: $(this.output).wiki(repeatText); break;
+        default: throw new Error(`bug: patienceReturn ${V.t_patienceReturn}`);
+      }
     }
+
     if (Config.debug) {
-      const outer = $("<span class=patience-debug>").appendTo(this.output);
+      let debug = !!State.metadata.get("patienceDebug");
+      const outer = $("<span class=patience-debug>").appendTo(this.output)
+        .toggleClass("patience-debug-show", debug);
       $("<label>").append(" &#x1f527;").appendTo(outer)
-        .click(() => outer.toggleClass("patience-debug-show"));
+        .click(() => {
+          debug = !debug;
+          State.metadata.set("patienceDebug", debug);
+          outer.toggleClass("patience-debug-show", debug);
+        });
       $("<a>").text("(reset)").appendTo(outer)
         .click(() => VI.revisitHere(() => {
-          State.variables.t_patiencePassage = null;
+          const V = State.variables;
+          V.t_patiencePassage = null;
+        }));
+      $("<a>").text(" (remind)").appendTo(outer)
+        .click(() => VI.revisitHere(() => {
+          const V = State.variables;
+          V.t_patiencePassage = here;
+          V.t_patienceActions = actions;
+          V.t_patienceLooks = looks;
+          V.t_patienceReturn = 1;
+        }));
+      $("<a>").text(" (repeat)").appendTo(outer)
+        .click(() => VI.revisitHere(() => {
+          const V = State.variables;
+          V.t_patiencePassage = here;
+          V.t_patienceActions = actions;
+          V.t_patienceLooks = looks;
+          V.t_patienceReturn = 2;
         }));
       $("<a>").text(" (warn)").appendTo(outer)
         .click(() => VI.revisitHere(() => {
-          State.variables.t_patienceLooks = 1;
-          State.variables.t_patiencePassage = here;
+          const V = State.variables;
+          V.t_patiencePassage = here;
+          V.t_patienceActions = 1;
+          V.t_patienceLooks = 1;
+          V.t_patienceReturn = -1;
         }));
-      $("<a>").text(" (aggro)").appendTo(outer)
+      $("<a>").text(" (insist)").appendTo(outer)
         .click(() => VI.revisitHere(() => {
-          State.variables.t_patienceLooks = 0;
-          State.variables.t_patienceAggro = 1;
-          State.variables.t_patiencePassage = here;
+          const V = State.variables;
+          V.t_patiencePassage = here;
+          V.t_patienceActions = 0;
+          V.t_patienceLooks = 0;
+          V.t_patienceReturn = -1;
         }));
     }
   }
 });
 
-/**
- * For a link to a look passage, allow the link if it hasn't been seen recently.
- * Seen recently is: within the last 10 passages, since the latest n1-patience passage.
- */
-Macro.add("n1-no-loop", {
-  handler: function() {
-    const link = this.args[0];
-    if (!link.isLink) throw new Error("Expected arg to be a link");
-    if (recentlyViewed(link.link)) {
-      $(this.output).wiki(link.text);
-    } else {
-      State.temporary.noLoopLink = link;
-      $(this.output).wiki("<<link _noLoopLink.text _noLoopLink.link>><</link>>");
-    }
-  }
-});
-
-function recentlyViewed(name) {
-  const limit = State.variables.t_patiencePassage;
-  const max = 10;
-  for (let i = 1; i < max; i++) {
-    const past = State.peek(-i);
-    if (past == null) return false;
-    if (past.title === limit) return false;
-    if (past.title === name) return true;
-  }
-  return false;
-}
 <</script>>
 
 
-:: Init 5b Nero Templates [inclusion] {"position":"3150,1175","size":"100,100"}
+:: Init 5b Nero Templates [inclusion] {"position":"2725,1250","size":"100,100"}
 <<append head>><style>
 
 .master-quiet {
@@ -3632,7 +3649,7 @@ Macro.add("pw-misfire", {
 <</script>>
 
 
-:: Bound {"position":"2750,1525","size":"100,100"}
+:: Bound {"position":"2750,1550","size":"100,100"}
 <<nobr>>
 <<set $passedContentWarning = true>>
 <</nobr>>\
@@ -3940,7 +3957,7 @@ Thank you so much!
 <</nobr>>
 
 
-:: Content Warning [inclusion] {"position":"2700,1350","size":"100,100"}
+:: Content Warning [inclusion] {"position":"2675,1375","size":"100,100"}
 This interactive story contains content of an adult nature. If you are easily offended or are under the age of 18, please exit now.
 
 Moreover, this story contains elements that depict dubious or lack of consent, as well as other fetish sexual topics such as mind control, CBT, chastity, and others. If these themes make you uncomfortable or are not enjoyable for you, proceed only at your own discretion.
@@ -10822,13 +10839,17 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<vi-ignore-if n1_abused n1_naked>>
 
 <<n1-patience 5 2>>
-    Ivex (the Magnificent) snaps his cape and speaks with anger.
-    "Again I ask! Who sent you!"
+    Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"
+<<n1-remind>>
+    Ivex (the Magnificent) is asking, "Who sent you?"
+<<n1-repeat>>
+    (not used)
 <<n1-warn>>
     Ivex (the Magnificent) twitches an ear in annoyance.
-    "Again I ask. Who sent you?"
-<<n1-calm>>
-    Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"
+    "Again I ask! Who sent you?"
+<<n1-insist>>
+    Ivex (the Magnificent) snaps his cape and speaks with anger.
+    "Again I ask! Who sent you!"
 <</n1-patience>>
 
 ?P
@@ -11063,9 +11084,10 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 <<vi-ignore n1_naked>>
 
 <<n1-patience 1 1>>
-    Ivex growls and asks again. "Do you think you're my equal?"
 <<n1-warn>>
     Ivex sneers. "Do you think you're my equal?"
+<<n1-insist>>
+    Ivex growls and asks again. "Do you think you're my equal?"
 <</n1-patience>>
 <</nobr>>
 
@@ -11091,10 +11113,11 @@ That statement seems ominous. Still, Nero thinks he can provoke the panther into
 <<vi-ignore n1_naked>>
 
 <<n1-patience 1 1>>
+<<n1-warn>>
+    Ivex asks, "What makes you think I would ever submit to your control?
+<<n1-insist>>
     Ivex snarls, "What makes you think I would ever submit to
     <em>your</em> control?"
-<<n1-warn>>
-   'Ivex asks, "What makes you think I would ever submit to your control?"
 <</n1-patience>>
 
 ?P
@@ -11555,6 +11578,10 @@ Ivex makes a gesture, and
 
 <<n1-patience 4 2>>
     'Ivex: will you do everything I ask?'
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 ?P
@@ -11606,6 +11633,10 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 <<n1-patience 2 4>>
     XXX impatient. Ivex seems skeptical, but intrigued.
     He asks, "Why have I never heard of your consortium?"
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 ?P
@@ -11643,6 +11674,10 @@ XXX maybe a secondary conversation option?
 
 <<n1-patience 2 4>>
     Ivex: do guild members have to do everything you ask? grabs crotch
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 ?P
@@ -11720,6 +11755,10 @@ ivex: nice try, but I think you're lying... we'll see.
 
 <<n1-patience 4 2>>
     'Ivex mentions canine tongues, offers a finger to lick'
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 ?P
@@ -11742,6 +11781,10 @@ ivex: nice try, but I think you're lying... we'll see.
 
 <<n1-patience 4 2>>
     'Ivex: gonna torture you, cuz loyalty'
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 <<include [[n1x/F Look and Magic]]>>
@@ -11924,9 +11967,12 @@ should be able to figure it out soon enough."
 <<set $t_ivexReceptive = false>>
 
 <<n1-patience 2 2>>
-    "Ivex in his menacing mask asks, \"Are you comfortable?\""
-<<n1-warn>>
     "Ivex with his grinning mask asks, \"Are you comfortable?\""
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
+    "Ivex in his menacing mask asks, \"Are you comfortable?\""
 <</n1-patience>>
 
 ?P
@@ -12266,6 +12312,10 @@ The panther mage raises an arm, and snaps his fingers.
 
 <<n1-patience 1 1>>
     "Ivex pulls at the wolf's balls and squeezes harder. \"Tell me...\""
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 <</nobr>>
 
@@ -12294,6 +12344,10 @@ The panther mage raises an arm, and snaps his fingers.
 
 <<n1-patience 1 1>>
     "Ivex closes the paw holding Nero's balls and gently squeezes. \"Tell me, who sent you.\""
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 ?P
@@ -16040,7 +16094,7 @@ $t_afterAction
 ?P
 <ul class=actions>
     <<actions-get>>
-    <li>$t_afterPartialAction</li>
+    <li>$t_afterActionAbort</li>
 </ul>
 <</nobr>>
 
@@ -16219,7 +16273,7 @@ $t_afterAction
 
 :: n1x/F Look and Magic [inclusion] {"position":"5225,3900","size":"100,200"}
 <<nobr>>
-<<if _patienceExhausted>>
+<<if _patience <= 0>>
     <<set $t_magicAction = null>>
 <<else>>
     <<include [[n1x/F Look]]>>
@@ -17382,6 +17436,10 @@ Well, that's a question to be deferred to some other time. What's important now 
 <<vi-ignore n1_mageSight>>
 
 <<n1-patience 6 3>>
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 <<include [[n2b/F Compute Arousal]]>>
@@ -17842,9 +17900,13 @@ fails to catch mirror, it falls on ground and shatters.
 <<nobr>>
 
 <<n1-patience 10 6>>
-    "Ivex is gone, but he might return at any moment."
-<<n1-calm>>
     "Ivex is gone, for now."
+<<n1-calm>>
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
+    "Ivex is gone, but he might return at any moment."
 <</n1-patience>>
 
 need to fix what happens when patience exhausted<br>
@@ -19443,6 +19505,10 @@ yes, of course everyone is obedient
 
 <<n1-patience 2 4>>
     Ivex: and do you use mind control?
+<<n1-remind>>
+<<n1-repeat>>
+<<n1-warn>>
+<<n1-insist>>
 <</n1-patience>>
 
 ?P
@@ -19455,5 +19521,38 @@ XXX maybe vary actions on abused/naked
     <<actions-optional $t_magicAction>>
 </ul>
 <</nobr>>
+
+
+:: Init 5b Nero No Loop [inclusion] {"position":"3025,1150","size":"100,100"}
+<<script>>
+/**
+ * For a link to a look passage, allow the link if it hasn't been seen recently.
+ * Seen recently is: within the last 10 passages, since the latest n1-patience passage.
+ */
+Macro.add("n1-no-loop", {
+  handler: function() {
+    const link = this.args[0];
+    if (!link.isLink) throw new Error("Expected arg to be a link");
+    if (recentlyViewed(link.link)) {
+      $(this.output).wiki(link.text);
+    } else {
+      State.temporary.noLoopLink = link;
+      $(this.output).wiki("<<link _noLoopLink.text _noLoopLink.link>><</link>>");
+    }
+  }
+});
+
+function recentlyViewed(name) {
+  const limit = State.variables.t_patiencePassage;
+  const max = 10;
+  for (let i = 1; i < max; i++) {
+    const past = State.peek(-i);
+    if (past == null) return false;
+    if (past.title === limit) return false;
+    if (past.title === name) return true;
+  }
+  return false;
+}
+<</script>>
 
 
