@@ -3388,48 +3388,117 @@ Template.add(&quot;blank&quot;,
       &quot;Blank&quot;.split(&quot;&quot;).join(&quot;&lt;/span&gt;&lt;span class=nero-blank-c&gt;&quot;) +
     &quot;&lt;/span&gt;&quot; +
   &quot;&lt;/span&gt;&quot;);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="32" name="Init 5c Nero Password" tags="inclusion" position="3450,1000" size="100,100">&lt;!--
-    &lt;&lt;pw-choice Red&gt;&gt;
-        Perhaps the password is &quot;Red&quot;?
-    &lt;&lt;pw-another &quot;Blood&quot;&gt;&gt;
-        &quot;Red&quot; didn&#39;t work, but maybe it&#39;s a more specific shade of red?&quot;
-    &lt;&lt;pw-fail&gt;&gt;
-        Neither &quot;Red&quot; nor &quot;Blood&quot; were fruitful. There are of course
-        dozens of other names and shades of red that Nero could try,
-        but this seems like a dead end.
-    &lt;&lt;/pw-choice&gt;&gt;
---&gt;
-&lt;&lt;script&gt;&gt;
-const Nero = window.Nero;
-const VT = window.VarTrace;
-const sayPassword = &quot;[[n1s/P Say Password]]&quot;.slice(2, -2);
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="32" name="Init 5c Nero Password" tags="inclusion" position="3450,1000" size="100,100">&lt;&lt;script&gt;&gt;
+const Nero = window.Nero || (window.Nero = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+const sayPassword = &quot;[[n1s/D Say Password]]&quot;.slice(2, -2);
 
-Macro.add(&quot;pw-choice&quot;, {
+/*
+ * Passwords starting with &quot;#&quot; are from pw-misfire.
+ * Everything else should either be in basicPasswords or otherPasswords.
+ */
+
+Nero.basicPasswords = {
+  &quot;Ivex the Magnificent&quot;: &quot;the egotistical choice&quot;,
+  &quot;Ransamaran Ivory&quot;: &quot;the mage school that Ivex attended&quot;,
+  &quot;Password&quot;: &quot;a common password&quot;,
+  &quot;Xyzzy&quot;: &quot;the default password for this model of Sprite&quot;,
+};
+
+Nero.otherPasswords = {
+  /* books */
+  &quot;621&quot;: &quot;the year that Ivex graduated from high school&quot;,
+  &quot;XXX book&quot;: &quot;the name of Ivex&#39;s high school&quot;,
+
+  /* candle */
+  &quot;Red&quot;: &quot;the color of the candle&quot;,
+  &quot;Blood&quot;: &quot;another name for the candle&#39;s color&quot;,
+
+  /* globe */
+  &quot;Carpe Diem&quot;: &quot;an inscription on the snow globe&#39;,
+  &quot;Caverns of Liskov&quot;: &quot;a plausible source of Ivex&#39;s snow globe&quot;,
+  &quot;Caverns of Luminance&quot;: &quot;the most likely source of Ivex&#39;s snow globe&quot;,
+
+  /* map */
+  &quot;Uramos&quot;: &quot;the circle marked on the map&quot;,
+  &quot;XXX map&quot;: &quot;the X marked on the map&quot;,
+
+  /* penguin */
+  &quot;XXX pet&quot;: &quot;the name of Ivex&#39;s penguin&quot;,
+
+  /* portrait */
+  &quot;XXX mom&quot;: &quot;the name of Ivex&#39;s mother&quot;,
+
+  /* wand */
+  &quot;XXX wand&quot;: &quot;the name of Ivex&#39;s wand&quot;,
+};
+
+/**
+ * &lt;&lt;pw-found $pw&gt;&gt;
+ * Add pw to passwordsFound.
+ * Usually for things that Nero sees before he knows he needs a password.
+ */
+Macro.add(&quot;pw-found&quot;, {
+  handler: function() {
+    const [pw] = this.args;
+    if (Nero.otherPasswords[pw] == null) {
+      throw new Error(`pw-found ${pw} undeclared password`);
+    }
+    const V = State.variables;
+    const found = V.n1_passwordsFound || (V.n1_passwordsFound = []);
+    found.push(pw);
+  }
+});
+
+/**
+ * &lt;&lt;pw-suggest $pw1&gt;&gt;
+ *     $storyText1
+ * &lt;&lt;pw-another $pw2&gt;&gt;
+ *     $storyText2
+ * &lt;&lt;pw-fail&gt;&gt;
+ *     $storyTextFail
+ * &lt;&lt;/pw-suggest&gt;&gt;
+ * Only does something when wantPassword or onHold.
+ * The first pw that isn&#39;t in passwordsTried gets added to passwordsFound,
+ * and the corresponding text gets shown.
+ * The passwords are not added to passwordsFound until their text is shown,
+ * so if a context suggests several passwords at the same time, use &lt;&lt;pw-found&gt;&gt;.
+ * If all the passwords in the block have been tried, show pw-fail text.
+ * Also adds an action to say the password, adding &quot;please&quot; if Nero hasn&#39;t
+ * yet noticed the password listener doesn&#39;t need &quot;please&quot;.
+ */
+Macro.add(&quot;pw-suggest&quot;, {
   tags: [&quot;pw-another&quot;, &quot;pw-fail&quot;],
   handler: function() {
     const V = State.variables;
+    const wantPassword = MP_wantPassword === V.n1_magicPhase;
+    const onHold = MP_onHold === V.n1_magicPhase;
+    if (!wantPassword &amp;&amp; !onHold) return;
+
     const tried = V.n1_passwordsTried || [];
     const found = V.n1_passwordsFound || (V.n1_passwordsFound = []);
+
     for (const payload of this.payload) {
       switch (payload.name) {
-        case &quot;pw-choice&quot;:
+        case &quot;pw-suggest&quot;:
         case &quot;pw-another&quot;: {
-          const args = payload.args;
-          if (args.length !== 1 &amp;&amp; args.length !== 2) {
-            throw new Error(`Expected 1 or 2 args for ${payload.name}`);
+          const [pw] = payload.args;
+          if (Nero.otherPasswords[pw] == null) {
+              throw new Error(`${payload.name} ${pw} undeclared password`);
           }
-          const pw = args[0];
           const please = V.n1_passwordNoPlease ? &quot;&quot; : &quot;Please &quot;;
           const pleaseComma = V.n1_passwordNoPlease ? &quot;&quot; : &quot;Please, &quot;;
           if (tried.includes(pw)) break;
           if (!found.includes(pw)) found.push(pw);
           $(this.output).wiki(payload.contents);
-          if (V.n1_magicPhase === MP_wantPassword) {
+          if (wantPassword) {
             const text =`Tell the Sprite, &quot;${pleaseComma}${pw}.&quot;`;
             const code = `$n1_passwordBeingTried = &quot;${please}${pw}&quot;`;
             Nero.actionsAdd(&quot;[&quot; + `[\`${text}\`|${sayPassword}][${code}]]`);
-          } else if (V.n1_magicPhase === MP_onHold) {
-            $(this.output).append(`Nero will have to remember to try it when the Sprite is ready for another guess.`);
+          } else {
+            $(this.output).append(
+              `Nero will have to remember to try it when the
+              Sprite is ready for another guess.`);
           }
           return;
         }
@@ -3437,13 +3506,16 @@ Macro.add(&quot;pw-choice&quot;, {
           $(this.output).wiki(payload.contents);
           return;
         }
-        default:
-          throw new Error(`Unexpected tag ${payload.name}`);
       }
     }
   }
 });
 
+/**
+ * &lt;&lt;pw-misfire $text&gt;&gt;
+ * Nero has said something that the Sprite misinterprets as a password.
+ * This starts that process, and emits some text about it.
+ */
 Macro.add(&quot;pw-misfire&quot;, {
   handler: function() {
     const pw = this.args[0];
@@ -3452,21 +3524,29 @@ Macro.add(&quot;pw-misfire&quot;, {
     if (U.n1_magicPhase !== MP_wantPassword) return;
     V.n1_passwordBeingTried = `#${pw}`;
     V.n1_magicPhase = MP_onHold;
-    $(this.output).wiki(`&lt;&lt;nobr&gt;&gt;
+    let text = `\
+      &lt;&lt;nobr&gt;&gt;
       ?P
       The Sprite in Nero&#39;s ear says,
       &quot;Password received. Please wait while I verify it, ?master.&quot;
-      &lt;&lt;if !$n1_passwordNoPlease&gt;&gt;
-          Nero does not remember saying &quot;please&quot;.
-          Apparently, the Sprite will consider
-          any utterance he makes to be a password. This will make it somewhat
-          annoying to converse with Ivex at the same time.
-          &lt;&lt;set $n1_passwordNoPlease = true&gt;&gt;
-      &lt;&lt;else&gt;&gt;
+    `;
+    if (V.n1_passwordNoPlease) {
+      text += `
           Again, the Sprite has misinterpreted conversation as a password.
           Nero wonders what phrase it has picked up this time.
-      &lt;&lt;/if&gt;&gt;
-    &lt;&lt;/nobr&gt;&gt;`);
+      `;
+    } else {
+      text += `
+          Nero does not remember saying &quot;please&quot;.
+          Apparently, the Sprite will consider
+          any utterance he makes to be a password.
+          This will make it somewhat
+          annoying to converse with Ivex at the same time.
+          &lt;&lt;set $n1_passwordNoPlease = true&gt;&gt;
+      `;
+    }
+    text += `&lt;&lt;/nobr&gt;&gt;`;
+    $(this.output).wiki(text);
   }
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="33" name="Bound" tags="" position="2750,1525" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -9170,7 +9250,7 @@ Or, at least, he will try to.
 
 [[testing 2]]
 [[fade-in test]]
-[[var-info test]]</tw-passagedata><tw-passagedata pid="269" name="testing 2" tags="" position="3775,625" size="100,100">hello
+[[var-info test]]</tw-passagedata><tw-passagedata pid="269" name="testing 2" tags="" position="3750,625" size="100,100">hello
 
 &lt;&lt;fade-in 3s&gt;&gt;
 one
@@ -9905,7 +9985,7 @@ Ivex grins back. &quot;Now that you&#39;ve found me, what did you have in mind?&
 
 That statement seems ominous. Still, Nero thinks he can provoke the panther into making a careless mistake. One mistake is all the wolf needs, and then he can complete his mission and escape.
 
-[[Continue|n1cx/D Start Candle]]</tw-passagedata><tw-passagedata pid="297" name="n1cn/F Ivex Disdainful (1,1)" tags="" position="4325,3150" size="200,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="297" name="n1cn/F Ivex Disdainful (1,1)" tags="" position="4325,3150" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
 
@@ -9995,7 +10075,7 @@ throws nero completely off his game.
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|n1cx/D Start Candle]]</tw-passagedata><tw-passagedata pid="301" name="n1cn/D Reject Collab" tags="big-mood" position="4025,3250" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="301" name="n1cn/D Reject Collab" tags="big-mood" position="4025,3250" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -10021,7 +10101,7 @@ throws nero completely off his game.
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|n1cx/D Start Candle]]</tw-passagedata><tw-passagedata pid="302" name="n1cn/F Ivex Intro 2" tags="" position="4075,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="302" name="n1cn/F Ivex Intro 2" tags="" position="4075,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 &lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
@@ -10089,7 +10169,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|n1cn/D Recruit 2]]</tw-passagedata><tw-passagedata pid="304" name="n1cn/D Collab" tags="" position="4475,2425" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cn/D Recruit 2]]</tw-passagedata><tw-passagedata pid="304" name="n1cn/D Collab" tags="" position="4450,2450" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -10492,7 +10572,7 @@ XXX maybe vary actions on abused/naked
 ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 &lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 
-[[Continue|n1cx/D Start Candle]]</tw-passagedata><tw-passagedata pid="315" name="n1cs/D Ivex Dominant (4,3)" tags="" position="4375,3650" size="200,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="315" name="n1cs/D Ivex Dominant (4,3)" tags="" position="4375,3650" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
 
 &lt;&lt;n1-patience 4 3&gt;&gt;
@@ -10545,7 +10625,7 @@ you need to demonstrate loyalty
 
 ivex: well, whether you&#39;re real or not, it won&#39;t matter soon.
 
-[[Continue|n1cx/D Start Candle]]</tw-passagedata><tw-passagedata pid="319" name="n1cs/D Subby Naked" tags="big-mood" position="4375,3525" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="319" name="n1cs/D Subby Naked" tags="big-mood" position="4375,3525" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;set $n1_subby = true&gt;&gt;
@@ -10560,7 +10640,7 @@ subby and naked. ivex is near, creeps.
     normal, transition to subbiness
 &lt;&lt;/if&gt;&gt;
 
-[[Continue|n1cs/D Ivex Dominant (4,3)]]</tw-passagedata><tw-passagedata pid="320" name="n1cx/D Start Candle" tags="" position="3825,3825" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cs/D Ivex Dominant (4,3)]]</tw-passagedata><tw-passagedata pid="320" name="n1cx/F Start Candle" tags="" position="3825,3825" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_candleLit = true&gt;&gt;
 &lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 
@@ -10591,7 +10671,8 @@ adventurers who defy me.&quot; He makes a gesture with
     &lt;&lt;if $n1_naked&gt;&gt;
         exposed and
     &lt;&lt;/if&gt;&gt;
-    vulnerable crotch, but thankfully neither comes anywhere close.
+    vulnerable crotch, but thankfully neither comes
+    &lt;&lt;= $t_ivexNear ? &quot;too&quot; : &quot;anywhere&quot;&gt;&gt; close.
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -10611,8 +10692,13 @@ with an image of Ivex&#39;s muzzle itself, frozen in a ferocious grin.
 
 ?P
 The other object is a slim red candle, molded with ridges down its length.
-XXX ivexNear.
-Ivex catches it, and carefully places it in a candleholder on the desk.
+Ivex catches it,
+&lt;&lt;if $t_ivexNear&gt;&gt;
+    then moves to carefully place it
+&lt;&lt;else&gt;&gt;
+    and carefully places it
+&lt;&lt;/if&gt;&gt;
+in a candleholder on the desk.
 A moment later,
 &lt;&lt;if $n1_mageSight&gt;&gt;
     a pulse of exotic energy flows through the candleholder, and
@@ -11770,7 +11856,11 @@ function glitchText(textNode, g) {
         has chosen a password related to something in this room.
     &lt;&lt;else&gt;&gt;
         Nero has learned a few things about Ivex that suggest potential passwords.
-        Looking around might suggest some more.
+        Looking around
+        &lt;&lt;if !$n2_ivexGone&gt;&gt;
+            and asking questions
+        &lt;&lt;/if&gt;&gt;
+        might suggest some more.
         &lt;&lt;if _hasBasics&gt;&gt;
             And there are also some obvious choices to try.
         &lt;&lt;/if&gt;&gt;
@@ -11807,21 +11897,22 @@ This is an exceptionally complicated proposition. Lammada&#39;s Theorem proves t
 
 So in the abstract, theoretical world, selective anti-magic is a pointless endeavor.
 
-[[Continue|n1s/F Anti-magic 2]]</tw-passagedata><tw-passagedata pid="367" name="n1s/P Say Password" tags="" position="3600,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1s/F Anti-magic 2]]</tw-passagedata><tw-passagedata pid="367" name="n1s/D Say Password" tags="" position="3600,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 
-from any place that has a suggested password.
-
 ?P
+switch on &lt;&lt;= $n1_passwordBeingTried&gt;&gt;.
 add/remove &quot;please&quot; as necessary for passwordNoPlease.
 dialog tag varies on subby/etc.
 
 ?P
-no immediate feedback of the password tried. the please-misfire isn&#39;t revealed until Impatient.
+no immediate feedback of the password tried.
+the please-misfire isn&#39;t revealed until Impatient.
 
 &lt;&lt;if !$n2_ivexGone&gt;&gt;
     ?P
     ivex: what was that? speak up.
+    vary on ivexNear.
     add various lewd responses for specific passwords
 &lt;&lt;/if&gt;&gt;
 
@@ -11830,36 +11921,26 @@ sprite says, ok, thinking.
 &lt;&lt;set $n1_magicPhase = MP_onHold&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-$t_afterAction</tw-passagedata><tw-passagedata pid="368" name="n1s/D Cast Sight" tags="" position="5850,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight false&gt;&gt;
-&lt;&lt;vi-always n1_magicPhase `MP_triedMagic`&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
+$t_afterAction</tw-passagedata><tw-passagedata pid="368" name="n1s/D Cast Sight" tags="" position="5500,4050" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
-
-&lt;&lt;vi-ignore n1_abused&gt;&gt;
-&lt;&lt;vi-ignore n1_candleLit&gt;&gt;
-&lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-&lt;&lt;vi-ignore n1_subby&gt;&gt;
 
 &lt;&lt;set $n1_magicPhase = MP_mageSight&gt;&gt;
 &lt;&lt;set $n1_mageSight = true&gt;&gt;
 
-cast magic sight.
+cast mage sight.
+
+&lt;&lt;if !$n2_ivexGone&gt;&gt;
+    ?P
+    ivex reacts.
+    see ivex with magesight.
+&lt;&lt;/if&gt;&gt;
 
 reveals intricate energy network, highly firewalled.
-maybe more on anti-magic.
+more on anti-magic.
 
 &lt;&lt;if $n1_candleHorny&gt;&gt;
     ?P
     horny description
-&lt;&lt;/if&gt;&gt;
-
-&lt;&lt;if !$n2_ivexGone&gt;&gt;
-    ?P
-    see ivex with magesight
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -11899,7 +11980,7 @@ $t_afterAction
 &lt;&lt;/if&gt;&gt;
 
 ?P
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="370" name="n1s/D Tried Magic" tags="inclusion" position="5675,3900" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="370" name="n1s/D Tried Magic" tags="inclusion" position="5475,3925" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;!-- easy escape requires mageSight, hard escape requires wantPassword --&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 
@@ -12622,18 +12703,7 @@ V.n1_passwordTries || (V.n1_passwordTries = 0);
 V.n1_passwordsTried || (V.n1_passwordsTried = []);
 V.n1_passwordsFound || (V.n1_passwordsFound = []);
 
-T.sayPassword = &quot;[[n1s/P Say Password]]&quot;.slice(2, -2);
-
-const basicPasswords = {
-  &quot;Ivex the Magnificent&quot;: &quot;the egotistical choice&quot;,
-  &quot;Password&quot;: &quot;a common password&quot;,
-  &quot;Xyzzy&quot;: &quot;the default password for this series of Sprite&quot;,
-};
-const otherSources = {
-  /* candle */
-  &quot;Red&quot;: &quot;the color of the candle&quot;,
-  &quot;Blood&quot;: &quot;another name for the candle&#39;s color&quot;,
-};
+T.sayPassword = &quot;[[n1s/D Say Password]]&quot;.slice(2, -2);
 
 let onceSeen = {};
 const once = (phrase1, phrase2) =&gt; {
@@ -12658,10 +12728,10 @@ T.describe = pw =&gt; {
     return `&quot;${pw}&quot; (${another(&quot;a mistake&quot;)})`;
   } else if (/^#/.test(pw)) {
     return `&quot;${pw.slice(1)}&quot; (${another(&quot;a mistake&quot;)})`;
-  } else if (basicPasswords[pw] != null) {
-    return `&quot;${pw}&quot; (${another(basicPasswords[pw])})`;
-  } else if (otherSources[pw] != null) {
-    return `&quot;${pw}&quot; (${another(otherSources[pw])})`;
+  } else if (Nero.basicPasswords[pw] != null) {
+    return `&quot;${pw}&quot; (${another(Nero.basicPasswords[pw])})`;
+  } else if (Nero.otherPasswords[pw] != null) {
+    return `&quot;${pw}&quot; (${another(Nero.otherPasswords[pw])})`;
   } else {
     return `&quot;${pw}&quot; (BUG: no source)`;
   }
@@ -12686,7 +12756,7 @@ T.listTried = () =&gt; {
 
 T.toTry = [];
 T.hasBasics = false;
-for (const pw of Object.keys(basicPasswords)) {
+for (const pw of Object.keys(Nero.basicPasswords)) {
   if (!V.n1_passwordsTried.includes(pw)) {
     T.toTry.push(pw);
     T.hasBasics = true;
@@ -13304,7 +13374,7 @@ The rest of the shelves are taken up by boxes
 
 ?P
 &lt;&lt;if $n2_free&gt;&gt;
-    &lt;&lt;em-assert $n1_magicPhase !== MP_wantPassword&gt;&gt;
+    &lt;&lt;em-assert MP_wantPassword !== $n1_magicPhase&gt;&gt;
     This particular one has a figurine of a male snow dragon
     sprawled on the ground in a lewd pose,
     with one arm raised in the air in triumph.
@@ -13351,14 +13421,19 @@ The rest of the shelves are taken up by boxes
     or possibly the less popular but arcanely interesting Caverns of Liskov.
     Above the small inscription, larger letters say
     &lt;span class=nobr&gt;&quot;CARPE DI&amp;mdash;&quot;&lt;/span&gt;
+
     &lt;&lt;set $n1_globePartialViewed = true&gt;&gt;
+    &lt;&lt;pw-found &quot;Carpe Diem&quot;&gt;&gt;
+    &lt;&lt;pw-found &quot;Caverns of Liskov&quot;&gt;&gt;
+    &lt;&lt;pw-found &quot;Caverns of Luminance&quot;&gt;&gt;
 
     ?P
     &lt;&lt;if MP_wantPassword === $n1_magicPhase&gt;&gt;
         Perhaps this is Ivex&#39;s favorite vacation spot?
         XXX pw choices
         &lt;&lt;if !$n2_ivexGone&gt;&gt;
-            XXX
+            XXX can make this gated on failure of a caverns guess, making
+            it much less likely for someone to stumble onto it first try
             &lt;&lt;actions-add [[Ask Ivex about the globe.|n1x/D Globe Ask]]&gt;&gt;
         &lt;&lt;/if&gt;&gt;
     &lt;&lt;else&gt;&gt;
@@ -13518,7 +13593,7 @@ Nero think of something more sensual than meat.
     &lt;&lt;else&gt;&gt;
         is wearing.
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;pw-choice Red&gt;&gt;
+    &lt;&lt;pw-suggest Red&gt;&gt;
         It could be his favorite color. Perhaps it&#39;s also his password?
     &lt;&lt;pw-another Blood&gt;&gt;
         &quot;Red&quot; wasn&#39;t the password, but maybe it&#39;s a more specific shade of red?
@@ -13526,9 +13601,9 @@ Nero think of something more sensual than meat.
         ?P
         Neither &quot;Red&quot; nor &quot;Blood&quot; were the correct password.
         There are of course
-        dozens of other names and shades of red that Nero could try,
+        many other names and shades of red that Nero could try,
         but this seems like a dead end.
-    &lt;&lt;/pw-choice&gt;&gt;
+    &lt;&lt;/pw-suggest&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -14006,6 +14081,8 @@ The X is also on the Parce River, some distance upstream,
 northeast of Uramos. Nero believes there&#39;s a town at that location,
 but he does not remember its name.
 
+&lt;&lt;pw-found Uramos&gt;&gt;
+
 &lt;&lt;if MP_wantPassword === $n1_magicPhase&gt;&gt;
     &lt;&lt;include [[n1x/D Map WantPassword]]&gt;&gt;
 &lt;&lt;else&gt;&gt;
@@ -14097,8 +14174,8 @@ XXX needs magicPhaseBroken.
 
 &lt;&lt;if $n1_penguinNameKnown&gt;&gt;
     mages often have skeletal or taxidermied animals in their offices.
-    ivex has his pet penguin, xxx.
-    &lt;&lt;pw-choice &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-choice&gt;&gt;
+    ivex has his pet penguin, XXX.
+    &lt;&lt;pw-suggest &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-suggest&gt;&gt;
 &lt;&lt;else&gt;&gt;
     ivex has a penguin, for some reason.
     mages often have skeletal or taxidermied animals in their offices.
@@ -14224,11 +14301,11 @@ a wand with precision.
 &lt;&lt;elseif MP_wantPassword === $n1_magicPhase&gt;&gt;
     XXX
     &lt;&lt;if $n1_wandAsked&gt;&gt;
-        &lt;&lt;pw-choice wand-name&gt;&gt;
+        &lt;&lt;pw-suggest wand-name&gt;&gt;
             maybe password?
         &lt;&lt;pw-fail&gt;&gt;
             nope, not password
-        &lt;&lt;/pw-choice&gt;&gt;
+        &lt;&lt;/pw-suggest&gt;&gt;
     &lt;&lt;elseif !$n2_ivexGone&gt;&gt;
         maybe password?
         &lt;&lt;actions-add [[Ask Ivex about the wand.|n1x/D Wand Ask]]&gt;&gt;
@@ -14382,7 +14459,7 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="415" name="n1x/D Map Ask" ta
     ?P
     ivex always annoyed, mentions another place that can be a password.
     shuts this down.
-    &lt;&lt;pw-choice &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-choice&gt;&gt;
+    &lt;&lt;pw-suggest &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-suggest&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
     &lt;&lt;set $n1_mapAskTried = true&gt;&gt;
@@ -14399,10 +14476,10 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="415" name="n1x/D Map Ask" ta
     &lt;&lt;if $t_ivexReceptive&gt;&gt;
         ivex receptive, but misunderstands. mentions a place that nero
         can try for password.
-        &lt;&lt;pw-choice &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-choice&gt;&gt;
+        &lt;&lt;pw-suggest &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-suggest&gt;&gt;
     &lt;&lt;else&gt;&gt;
         ivex not receptive. mentions some other place?
-        &lt;&lt;pw-choice &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-choice&gt;&gt;
+        &lt;&lt;pw-suggest &quot;xxx&quot;&gt;&gt;&lt;&lt;/pw-suggest&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -15230,11 +15307,11 @@ $t_afterAction
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="437" name="n1x/D Map WantPassword" tags="inclusion" position="7300,3850" size="100,100">&lt;&lt;nobr&gt;&gt;
 ?P
 &lt;&lt;if $n2_ivexGone&gt;&gt;
-    &lt;&lt;pw-choice &quot;xxx&quot;&gt;&gt;
+    &lt;&lt;pw-suggest &quot;xxx&quot;&gt;&gt;
         Maybe one of those is important?
     &lt;&lt;pw-fail&gt;&gt;
         nothing important
-    &lt;&lt;/pw-choice&gt;&gt;
+    &lt;&lt;/pw-suggest&gt;&gt;
 &lt;&lt;else&gt;&gt;
     &lt;&lt;if $n1_mapAskFailed&gt;&gt;
         ivex not going to answer any more
@@ -16719,7 +16796,7 @@ in setting up the candle.)
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|n1cx/D Start Candle]]</tw-passagedata><tw-passagedata pid="513" name="Init 3 Visited Passages" tags="inclusion" position="2175,800" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="513" name="Init 3 Visited Passages" tags="inclusion" position="2175,800" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 @media(hover: none) {
   a.vp-link-visited,
@@ -16986,7 +17063,7 @@ maybe find an incel tract or something else nutty
 ?P
 &lt;&lt;= $n2_booksSearched ? $t_afterLook : $t_afterAction&gt;&gt;
 &lt;&lt;set $n2_booksSearched = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="518" name="n1s/P Cast Endgame" tags="" position="5700,4075" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="518" name="n1s/P Cast Endgame" tags="" position="5725,4000" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 subby mood, Nero wants to impress Ivex, casts endgame
 
