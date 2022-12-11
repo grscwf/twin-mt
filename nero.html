@@ -448,7 +448,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="blue"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="done" color="purple"></tw-tag><tw-tag name="has-hole" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -488,7 +488,7 @@ by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;
 &lt;&lt;include [[Init 2 Error Message]]&gt;&gt;
 &lt;&lt;include [[Init 2 Compute Variants]]&gt;&gt;
 &lt;&lt;include [[Init 2 Fade-In]]&gt;&gt;
-&lt;&lt;include [[Init 2 LInks]]&gt;&gt;
+&lt;&lt;include [[Init 2 Links]]&gt;&gt;
 &lt;&lt;include [[Init 2 Meta Text]]&gt;&gt;
 &lt;&lt;include [[Init 3 Passage Notes]]&gt;&gt;
 &lt;&lt;include [[Init 2 Pick Unseen]]&gt;&gt;
@@ -1590,6 +1590,7 @@ Macro.add(&quot;meta-ending&quot;, {
     cursor: pointer;
     opacity: 0.3;
     padding: 2px 4px;
+    text-align: center;
   }
 
   #random-walk a:hover {
@@ -1614,16 +1615,7 @@ function randomWalkSetup() {
 
   const idOf = el =&gt; `${$(el).attr(&quot;data-passage&quot;)} | ${$(el).text()}`;
 
-  const back = () =&gt; {
-    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
-    if (chosen.length &gt; 0) {
-      chosen.removeClass(&quot;random-walk-chosen&quot;);
-    } else {
-      Engine.backward();
-    }
-  };
-
-  const forward = () =&gt; {
+  const walk = () =&gt; {
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length === 1) {
       chosen.click();
@@ -1652,6 +1644,37 @@ function randomWalkSetup() {
     visited.add(lastPick[here]);
   };
 
+  const back = () =&gt; {
+    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+    if (chosen.length &gt; 0) {
+      chosen.removeClass(&quot;random-walk-chosen&quot;);
+    } else {
+      Engine.backward();
+    }
+  };
+  
+  const forward = () =&gt; {
+    if (State.length === State.size) {
+      walk();
+      return;
+    }
+
+    const next = State.history[State.length].title;
+    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+    if (chosen.length === 1 &amp;&amp; chosen.attr(&quot;data-passage&quot;) === next) {
+      Engine.forward();
+      return;
+    }
+    chosen.removeClass(&quot;random-walk-chosen&quot;);
+    const links = $(&quot;#passages a[data-passage]&quot;)
+      .filter((i, el) =&gt; $(el).attr(&quot;data-passage&quot;) === next);
+    if (links.length === 1) {
+      links.addClass(&quot;random-walk-chosen&quot;);
+    } else {
+      Engine.forward();
+    }
+  };
+
   $(document).on(&quot;:passageend&quot;, () =&gt; {
     $(&quot;#random-walk&quot;).remove();
     const outer = $(&quot;&lt;div&gt;&quot;)
@@ -1664,8 +1687,13 @@ function randomWalkSetup() {
       .appendTo(outer);
     $(&quot;&lt;a&gt;&quot;)
       .attr(&quot;title&quot;, &quot;&lt;ctrl-period&gt; forward&quot;)
-      .text(&quot;walk&quot;)
+      .text(&quot;forw&quot;)
       .click(forward)
+      .appendTo(outer);
+    $(&quot;&lt;a&gt;&quot;)
+      .attr(&quot;title&quot;, &quot;&lt;ctrl-slash&gt; random&quot;)
+      .text(&quot;rand&quot;)
+      .click(walk)
       .appendTo(outer);
   });
 
@@ -1677,6 +1705,7 @@ function randomWalkSetup() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === &quot;,&quot;) return back();
     if (ev.key === &quot;.&quot;) return forward();
+    if (ev.key === &quot;/&quot;) return random();
   });
 }
 
@@ -9508,8 +9537,9 @@ Feedback is always welcome! Contact &lt;a target=&quot;_blank&quot; href=&quot;h
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
     &lt;&lt;set $n0_barbsFastViewed = true&gt;&gt;
     &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
-    &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
+    &lt;&lt;set $t_banter = true&gt;&gt;
     &lt;&lt;set $t_didSomeAction = true&gt;&gt;
+    &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;&lt;link &quot;&gt; Nero 1F subby after glitch&quot; &quot;n1cs/D Ivex Dominant (4,2)&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
@@ -9517,14 +9547,16 @@ Feedback is always welcome! Contact &lt;a target=&quot;_blank&quot; href=&quot;h
     &lt;&lt;set $n0_barbsGlitchViewed = true&gt;&gt;
     &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
     &lt;&lt;set $n1_barbsGlitch = true&gt;&gt;
-    &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
     &lt;&lt;set $n1_naked = true&gt;&gt;
     &lt;&lt;set $n1_subby = true&gt;&gt;
+    &lt;&lt;set $t_banter = true&gt;&gt;
     &lt;&lt;set $t_didSomeAction = true&gt;&gt;
+    &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;&lt;link &quot;&gt; Nero 1F start candle&quot; &quot;n1cx/F Start Candle&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
     &lt;&lt;set $t_didSomeAction = true&gt;&gt;
+    &lt;&lt;set $t_stalling = true&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;&lt;link &quot;&gt; Nero 1F candle horny&quot; &quot;n1d/D Candle Horny&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
@@ -9534,6 +9566,7 @@ Feedback is always welcome! Contact &lt;a target=&quot;_blank&quot; href=&quot;h
     &lt;&lt;set $n1_candleLit = true&gt;&gt;
     &lt;&lt;set $n1_naked = true&gt;&gt;
     &lt;&lt;set $t_didSomeAction = true&gt;&gt;
+    &lt;&lt;set $t_stalling = true&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;&lt;link &quot;&gt; Nero 1F Ivex gone&lt;super&gt;*&lt;/super&gt;&quot; &quot;n2a/F Start&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
@@ -10412,7 +10445,7 @@ Ivex makes a gesture, and
 
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|n1cn/F Ivex Offended (1,1)]]</tw-passagedata><tw-passagedata pid="309" name="n1cr/D Ivex Demanding (4,2)" tags="pw-misfire-start" position="4325,3675" size="200,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cn/F Ivex Offended (1,1)]]</tw-passagedata><tw-passagedata pid="309" name="n1cr/D Ivex Demanding (4,2)" tags="" position="4325,3675" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;n1-patience 4 2&gt;&gt;
@@ -10571,7 +10604,7 @@ XXX maybe another option
 ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 &lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 
-[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="315" name="n1cs/D Ivex Dominant (4,2)" tags="" position="4350,3925" size="200,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="315" name="n1cs/D Ivex Dominant (4,2)" tags="pw-misfire-start" position="4350,3925" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
 
 &lt;&lt;n1-patience 4 2&gt;&gt;
@@ -11524,15 +11557,16 @@ Nero mentally cringes as Ivex struts forward and brings his left paw up to strok
 The panther&#39;s right paw is, of course, firmly grasping the feline&#39;s bulging crotch. It&#39;s clear that Nero will soon be unfortunate enough to meet Ivex the Magnificent&#39;s...
 
 &lt;&lt;nobr&gt;&gt;
-&lt;&lt;set _bareLink = $t_afterNaked.replace(/^\[\[(.*\|)?|\]\]$/g, &quot;&quot;)&gt;&gt;
+&lt;&lt;set _bareLink = $t_afterNaked.slice(2, -2)&gt;&gt;
 &lt;&lt;barbs-announce soon&gt;&gt;
+&lt;&lt;set $n1_barbsSkip = true&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;&lt;&lt;link &quot;...barbed feline cock.&quot; _bareLink&gt;&gt;
-        &lt;&lt;set $n1_barbs = true&gt;&gt;
-    &lt;&lt;/link&gt;&gt;&lt;/li&gt;
-    &lt;li&gt;&lt;&lt;link &quot;...smooth feline cock.&quot; _bareLink&gt;&gt;
-        &lt;&lt;set $n1_barbs = false&gt;&gt;
-    &lt;&lt;/link&gt;&gt;&lt;/li&gt;
+    &lt;li&gt;
+        &lt;&lt;mt-link $t_afterNaked &quot;...barbed feline cock.&quot; &quot;$n1_barbs = true&quot;&gt;&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        &lt;&lt;mt-link $t_afterNaked &quot;...smooth feline cock.&quot; &quot;$n1_barbs = false&quot;&gt;&gt;
+    &lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="354" name="n1p/F Barbs Fast" tags="big-mood" position="5300,2625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_naked = true&gt;&gt;
@@ -12041,9 +12075,9 @@ $t_afterAction
         mage-sight is on.
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;if $n1_scanned&gt;&gt;
-        &lt;&lt;set $t_magicAction = &quot;[[Scan the room again.|n1x/D Scan]]&quot;&gt;&gt;
+        &lt;&lt;set $t_magicAction = &quot;[[Scan the room again.|n1s/D Scan]]&quot;&gt;&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;&lt;set $t_magicAction = &quot;[[Scan the room.|n1x/D Scan]]&quot;&gt;&gt;
+        &lt;&lt;set $t_magicAction = &quot;[[Scan the room.|n1s/D Scan]]&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -13368,7 +13402,7 @@ The rest of the shelves are taken up by boxes
         But he might just have enough to link to the
         pyron node, and use it.
 
-        &lt;&lt;actions-add [[Try to link to the mirror.|n1x/D Connect]]&gt;&gt;
+        &lt;&lt;actions-add [[Try to link to the mirror.|n1s/D Connect]]&gt;&gt;
     &lt;&lt;elseif $n1_mageSight&gt;&gt;
     	XXX connected
     &lt;&lt;/if&gt;&gt;
@@ -14434,12 +14468,8 @@ if there were anything to magnify other than the clear blue sky.
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="413" name="n1x/P Penguin Ask" tags="" position="7350,4325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
 
 if not receptive, Ivex mentions the penguin&#39;s name (password), and shuts down
 &lt;&lt;/nobr&gt;&gt;
@@ -14678,14 +14708,8 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="422" name="n1x/F Look and Ma
     ?P
     &lt;&lt;include [[n1s/F Magic]]&gt;&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="423" name="n1x/D Connect" tags="" position="6225,4275" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n1_magicPhase `MP_mageSight`&gt;&gt;
-&lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_extraHorny false&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="423" name="n1s/D Connect" tags="" position="6225,4275" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_tooClever false&gt;&gt;
 
 &lt;&lt;set $n1_magicPhase = MP_wantDevice&gt;&gt;
 
@@ -14765,7 +14789,7 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="424" name="n1x/F Window Ask"
     ?P
     $t_afterAction
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="425" name="n1x/D Scan" tags="" position="6000,4150" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="425" name="n1s/D Scan" tags="" position="6000,4150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
 &lt;&lt;vi-always n1_magicPhase `MP_mageSight`&gt;&gt;
 &lt;&lt;vi-always n1_naked true&gt;&gt;
@@ -14800,7 +14824,7 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="424" name="n1x/F Window Ask"
     &lt;&lt;/if&gt;&gt;
 
     &lt;ul class=&quot;actions&quot;&gt;
-        &lt;li&gt;[[Connect to the mirror|n1x/D Connect]]&lt;/li&gt;
+        &lt;li&gt;[[Connect to the mirror|n1s/D Connect]]&lt;/li&gt;
     &lt;/ul&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="426" name="n1x/F Look Normal" tags="inclusion" position="6025,4825" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -15404,7 +15428,7 @@ requested by the Sprite.
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="440" name="n1y/D Horny Look" tags="inclusion" position="6000,6500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;!-- focus on escape hints, and Ivex if !ivexGone --&gt;
-&lt;&lt;random-once n2t_hornyLook&gt;&gt;
+&lt;&lt;random-once t_hornyLook&gt;&gt;
 &lt;&lt;ro-choice !$n2_ivexGone&gt;&gt;
     &lt;&lt;if $n1_mageSight&gt;&gt;
         vary on magesight
@@ -15936,25 +15960,40 @@ const v = State.variables;
 const actions = Math.max(v.t_patienceActions, 0);
 const looks = Math.max(v.t_patienceLooks, 0);
 
-if (looks &gt; 6) {
-  throw new Error(`BUG: compute arousal looks ${looks}`);
-} else if (actions === 0 || looks === 0) {
-  v.n2_arousal = 100;
-} else if (looks === 1) {
-  v.n2_arousal = 98;
-} else if (actions === 1) {
-  v.n2_arousal = 98 - (looks - 1) * 3;;
-} else if (actions === 2) {
-  v.n2_arousal = 98 - (looks - 1) * 8;
-} else if (actions === 3) {
-  v.n2_arousal = 98 - (looks - 1) * 12
-} else {
-  throw new Error(`BUG: compute arousal looks ${looks} actions ${actions}`);
+const compute = (looks, actions) =&gt; {
+  if (looks &gt; 6) {
+    throw new Error(`BUG: compute arousal looks ${looks}`);
+  } else if (actions === 0 || looks === 0) {
+    return 100;
+  } else if (looks === 1 || actions === 1) {
+    return 98;
+  } else if (looks === 2) {
+    return 92 - (actions - 2) * 6;
+  } else if (actions === 2) {
+    return 92 - (looks - 2) * 6;
+  } else if (actions === 3) {
+    return 84 - (looks - 2) * 12;
+  } else {
+    throw new Error(`BUG: compute arousal looks ${looks} actions ${actions}`);
+  }
 }
 
-v.n1_candleHorny = looks &lt;= 3 || actions &lt;= 1;
+v.n2_arousal = compute(looks, actions);
+v.n1_candleHorny = looks &lt;= 3 || actions &lt;= 2;
 v.n2_candleNearMax = looks === 1 || actions === 1;
 v.n2_candleMax = looks === 0 || actions === 0;
+
+function showTable() {
+  for (let ac = 3; ac &gt; 0; ac--) {
+    let line = &quot;&quot;;
+    for (let lk = 6; lk &gt; 0; lk--) {
+      const c = compute(lk, ac);
+      line += &quot; &quot; + String(c).padStart(3);
+    }
+    console.log(line);
+  }
+}
+// showTable();
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="462" name="n2b/D Desperate Magic" tags="" position="4700,5925" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny true&gt;&gt;
 
@@ -17320,7 +17359,7 @@ if (!hasLint) {
 
 &lt;&lt;/script&gt;&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="524" name="Init 2 LInks" tags="inclusion" position="2450,600" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="524" name="Init 2 Links" tags="inclusion" position="2450,600" size="100,100">&lt;&lt;script&gt;&gt;
 
 /**
  * &lt;&lt;mt-link $link $text [$code]&gt;&gt;
@@ -17333,7 +17372,9 @@ Macro.add(&quot;mt-link&quot;, {
     if (link.isLink) {
       State.temporary.mtLink = link.link;
     } else {
-      State.temporary.mtLink = String(link);
+      const str = String(link);
+      const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
+      State.temporary.mtLink = m == null ? str : m[1];
     }
     State.temporary.mtText = String(text);
     const body = code == null ? &quot;&quot; : `&lt;&lt;run ${code}&gt;&gt;`;

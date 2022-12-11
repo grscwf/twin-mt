@@ -23,7 +23,7 @@ nero
 		"maybe-password": "purple",
 		"must-fix": "orange",
 		"noreturn": "yellow",
-		"pw-misfire-start": "blue",
+		"pw-misfire-start": "yellow",
 		"section-end": "purple",
 		"section-start": "green",
 		"text": "blue",
@@ -448,7 +448,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Error Message]]>>
 <<include [[Init 2 Compute Variants]]>>
 <<include [[Init 2 Fade-In]]>>
-<<include [[Init 2 LInks]]>>
+<<include [[Init 2 Links]]>>
 <<include [[Init 2 Meta Text]]>>
 <<include [[Init 3 Passage Notes]]>>
 <<include [[Init 2 Pick Unseen]]>>
@@ -1594,6 +1594,7 @@ Macro.add("meta-ending", {
     cursor: pointer;
     opacity: 0.3;
     padding: 2px 4px;
+    text-align: center;
   }
 
   #random-walk a:hover {
@@ -1618,16 +1619,7 @@ function randomWalkSetup() {
 
   const idOf = el => `${$(el).attr("data-passage")} | ${$(el).text()}`;
 
-  const back = () => {
-    const chosen = $("#passages .random-walk-chosen");
-    if (chosen.length > 0) {
-      chosen.removeClass("random-walk-chosen");
-    } else {
-      Engine.backward();
-    }
-  };
-
-  const forward = () => {
+  const walk = () => {
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
       chosen.click();
@@ -1656,6 +1648,37 @@ function randomWalkSetup() {
     visited.add(lastPick[here]);
   };
 
+  const back = () => {
+    const chosen = $("#passages .random-walk-chosen");
+    if (chosen.length > 0) {
+      chosen.removeClass("random-walk-chosen");
+    } else {
+      Engine.backward();
+    }
+  };
+  
+  const forward = () => {
+    if (State.length === State.size) {
+      walk();
+      return;
+    }
+
+    const next = State.history[State.length].title;
+    const chosen = $("#passages .random-walk-chosen");
+    if (chosen.length === 1 && chosen.attr("data-passage") === next) {
+      Engine.forward();
+      return;
+    }
+    chosen.removeClass("random-walk-chosen");
+    const links = $("#passages a[data-passage]")
+      .filter((i, el) => $(el).attr("data-passage") === next);
+    if (links.length === 1) {
+      links.addClass("random-walk-chosen");
+    } else {
+      Engine.forward();
+    }
+  };
+
   $(document).on(":passageend", () => {
     $("#random-walk").remove();
     const outer = $("<div>")
@@ -1668,8 +1691,13 @@ function randomWalkSetup() {
       .appendTo(outer);
     $("<a>")
       .attr("title", "<ctrl-period> forward")
-      .text("walk")
+      .text("forw")
       .click(forward)
+      .appendTo(outer);
+    $("<a>")
+      .attr("title", "<ctrl-slash> random")
+      .text("rand")
+      .click(walk)
       .appendTo(outer);
   });
 
@@ -1681,6 +1709,7 @@ function randomWalkSetup() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === ",") return back();
     if (ev.key === ".") return forward();
+    if (ev.key === "/") return random();
   });
 }
 
@@ -10547,8 +10576,9 @@ Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com
     <<state-delete n1_ n2_ t_>>
     <<set $n0_barbsFastViewed = true>>
     <<set $n0_barbsSlowViewed = true>>
-    <<set $t_ivexReceptive = true>>
+    <<set $t_banter = true>>
     <<set $t_didSomeAction = true>>
+    <<set $t_ivexReceptive = true>>
 <</link>>
 <<link "> Nero 1F subby after glitch" "n1cs/D Ivex Dominant (4,2)">>
     <<state-delete n1_ n2_ t_>>
@@ -10556,14 +10586,16 @@ Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com
     <<set $n0_barbsGlitchViewed = true>>
     <<set $n0_barbsSlowViewed = true>>
     <<set $n1_barbsGlitch = true>>
-    <<set $t_ivexReceptive = true>>
     <<set $n1_naked = true>>
     <<set $n1_subby = true>>
+    <<set $t_banter = true>>
     <<set $t_didSomeAction = true>>
+    <<set $t_ivexReceptive = true>>
 <</link>>
 <<link "> Nero 1F start candle" "n1cx/F Start Candle">>
     <<state-delete n1_ n2_ t_>>
     <<set $t_didSomeAction = true>>
+    <<set $t_stalling = true>>
 <</link>>
 <<link "> Nero 1F candle horny" "n1d/D Candle Horny">>
     <<state-delete n1_ n2_ t_>>
@@ -10573,6 +10605,7 @@ Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com
     <<set $n1_candleLit = true>>
     <<set $n1_naked = true>>
     <<set $t_didSomeAction = true>>
+    <<set $t_stalling = true>>
 <</link>>
 <<link "> Nero 1F Ivex gone<super>*</super>" "n2a/F Start">>
     <<state-delete n1_ n2_ t_>>
@@ -11586,7 +11619,7 @@ Ivex makes a gesture, and
 [[Continue|n1cn/F Ivex Offended (1,1)]]
 
 
-:: n1cr/D Ivex Demanding (4,2) [pw-misfire-start] {"position":"4325,3675","size":"200,100"}
+:: n1cr/D Ivex Demanding (4,2) {"position":"4325,3675","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
@@ -11769,7 +11802,7 @@ ivex: nice try, but I think you're lying... we'll see.
 [[Continue|n1cx/F Start Candle]]
 
 
-:: n1cs/D Ivex Dominant (4,2) {"position":"4350,3925","size":"200,100"}
+:: n1cs/D Ivex Dominant (4,2) [pw-misfire-start] {"position":"4350,3925","size":"200,100"}
 <<nobr>>
 <<set $t_ivexReceptive = true>>
 
@@ -12875,15 +12908,16 @@ Nero mentally cringes as Ivex struts forward and brings his left paw up to strok
 The panther's right paw is, of course, firmly grasping the feline's bulging crotch. It's clear that Nero will soon be unfortunate enough to meet Ivex the Magnificent's...
 
 <<nobr>>
-<<set _bareLink = $t_afterNaked.replace(/^\[\[(.*\|)?|\]\]$/g, "")>>
+<<set _bareLink = $t_afterNaked.slice(2, -2)>>
 <<barbs-announce soon>>
+<<set $n1_barbsSkip = true>>
 <ul class="actions">
-    <li><<link "...barbed feline cock." _bareLink>>
-        <<set $n1_barbs = true>>
-    <</link>></li>
-    <li><<link "...smooth feline cock." _bareLink>>
-        <<set $n1_barbs = false>>
-    <</link>></li>
+    <li>
+        <<mt-link $t_afterNaked "...barbed feline cock." "$n1_barbs = true">>
+    </li>
+    <li>
+        <<mt-link $t_afterNaked "...smooth feline cock." "$n1_barbs = false">>
+    </li>
 </ul>
 <</nobr>>
 
@@ -13464,9 +13498,9 @@ $t_afterAction
         mage-sight is on.
     <</if>>
     <<if $n1_scanned>>
-        <<set $t_magicAction = "[[Scan the room again.|n1x/D Scan]]">>
+        <<set $t_magicAction = "[[Scan the room again.|n1s/D Scan]]">>
     <<else>>
-        <<set $t_magicAction = "[[Scan the room.|n1x/D Scan]]">>
+        <<set $t_magicAction = "[[Scan the room.|n1s/D Scan]]">>
     <</if>>
 <</if>>
 
@@ -14901,7 +14935,7 @@ The rest of the shelves are taken up by boxes
         But he might just have enough to link to the
         pyron node, and use it.
 
-        <<actions-add [[Try to link to the mirror.|n1x/D Connect]]>>
+        <<actions-add [[Try to link to the mirror.|n1s/D Connect]]>>
     <<elseif $n1_mageSight>>
     	XXX connected
     <</if>>
@@ -16023,12 +16057,8 @@ if there were anything to magnify other than the clear blue sky.
 :: n1x/P Penguin Ask {"position":"7350,4325","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 if not receptive, Ivex mentions the penguin's name (password), and shuts down
 <</nobr>>
@@ -16306,15 +16336,9 @@ $t_afterAction
 <</nobr>>\
 
 
-:: n1x/D Connect {"position":"6225,4275","size":"100,100"}
+:: n1s/D Connect {"position":"6225,4275","size":"100,100"}
 <<nobr>>
-<<vi-always n1_mageSight true>>
-<<vi-always n1_magicPhase `MP_mageSight`>>
-<<vi-always n1_naked true>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
 
 <<set $n1_magicPhase = MP_wantDevice>>
 
@@ -16401,7 +16425,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n1x/D Scan {"position":"6000,4150","size":"100,100"}
+:: n1s/D Scan {"position":"6000,4150","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n1_magicPhase `MP_mageSight`>>
@@ -16437,7 +16461,7 @@ $t_afterAction
     <</if>>
 
     <ul class="actions">
-        <li>[[Connect to the mirror|n1x/D Connect]]</li>
+        <li>[[Connect to the mirror|n1s/D Connect]]</li>
     </ul>
 <</if>>
 <</nobr>>
@@ -17101,7 +17125,7 @@ requested by the Sprite.
 :: n1y/D Horny Look [inclusion] {"position":"6000,6500","size":"100,100"}
 <<nobr>>
 <!-- focus on escape hints, and Ivex if !ivexGone -->
-<<random-once n2t_hornyLook>>
+<<random-once t_hornyLook>>
 <<ro-choice !$n2_ivexGone>>
     <<if $n1_mageSight>>
         vary on magesight
@@ -17717,25 +17741,40 @@ const v = State.variables;
 const actions = Math.max(v.t_patienceActions, 0);
 const looks = Math.max(v.t_patienceLooks, 0);
 
-if (looks > 6) {
-  throw new Error(`BUG: compute arousal looks ${looks}`);
-} else if (actions === 0 || looks === 0) {
-  v.n2_arousal = 100;
-} else if (looks === 1) {
-  v.n2_arousal = 98;
-} else if (actions === 1) {
-  v.n2_arousal = 98 - (looks - 1) * 3;;
-} else if (actions === 2) {
-  v.n2_arousal = 98 - (looks - 1) * 8;
-} else if (actions === 3) {
-  v.n2_arousal = 98 - (looks - 1) * 12
-} else {
-  throw new Error(`BUG: compute arousal looks ${looks} actions ${actions}`);
+const compute = (looks, actions) => {
+  if (looks > 6) {
+    throw new Error(`BUG: compute arousal looks ${looks}`);
+  } else if (actions === 0 || looks === 0) {
+    return 100;
+  } else if (looks === 1 || actions === 1) {
+    return 98;
+  } else if (looks === 2) {
+    return 92 - (actions - 2) * 6;
+  } else if (actions === 2) {
+    return 92 - (looks - 2) * 6;
+  } else if (actions === 3) {
+    return 84 - (looks - 2) * 12;
+  } else {
+    throw new Error(`BUG: compute arousal looks ${looks} actions ${actions}`);
+  }
 }
 
-v.n1_candleHorny = looks <= 3 || actions <= 1;
+v.n2_arousal = compute(looks, actions);
+v.n1_candleHorny = looks <= 3 || actions <= 2;
 v.n2_candleNearMax = looks === 1 || actions === 1;
 v.n2_candleMax = looks === 0 || actions === 0;
+
+function showTable() {
+  for (let ac = 3; ac > 0; ac--) {
+    let line = "";
+    for (let lk = 6; lk > 0; lk--) {
+      const c = compute(lk, ac);
+      line += " " + String(c).padStart(3);
+    }
+    console.log(line);
+  }
+}
+// showTable();
 <</script>>\
 
 
@@ -19349,7 +19388,7 @@ if (!hasLint) {
 <</nobr>>
 
 
-:: Init 2 LInks [inclusion] {"position":"2450,600","size":"100,100"}
+:: Init 2 Links [inclusion] {"position":"2450,600","size":"100,100"}
 <<script>>
 
 /**
@@ -19363,7 +19402,9 @@ Macro.add("mt-link", {
     if (link.isLink) {
       State.temporary.mtLink = link.link;
     } else {
-      State.temporary.mtLink = String(link);
+      const str = String(link);
+      const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
+      State.temporary.mtLink = m == null ? str : m[1];
     }
     State.temporary.mtText = String(text);
     const body = code == null ? "" : `<<run ${code}>>`;
