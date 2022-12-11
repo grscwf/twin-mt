@@ -3238,6 +3238,7 @@ Macro.add(&quot;misfire-please&quot;, {
 
 &lt;&lt;script&gt;&gt;
 const VI = VarInfo;
+const EM = ErrorMessage;
 
 /**
  * &lt;&lt;n1-patience $looks $actions&gt;&gt;
@@ -3282,6 +3283,15 @@ Macro.add(&quot;n1-patience&quot;, {
         default: throw new Error(`bug n1-patience ${p.name}`);
       }
     }
+    if (looks &gt; 2) EM.assert(remindText != null, &quot;should have n1-remind&quot;);
+    if (looks &lt;= 2) EM.assert(remindText == null, &quot;should NOT have n1-remind&quot;);
+    if (actions &gt; 2) EM.assert(repeatText != null, &quot;should have n1-repeat&quot;);
+    if (actions &lt;= 2) EM.assert(repeatText == null, &quot;should NOT have n1-repeat&quot;);
+    if (actions === 1) EM.assert(looks === 1, &quot;actions === 1 should have looks === 1&quot;);
+    if (looks === 1) EM.assert(actions === 1, &quot;looks === 1 should have actions === 1&quot;);
+    if (actions === 1) EM.assert(firstText.trim() === &quot;&quot;, &quot;should have empty initial text&quot;);
+    EM.assert(warnText != null, &quot;should have n1-warn&quot;);
+    EM.assert(insistText != null, &quot;should have n1-insist&quot;);
 
     const V = State.variables;
     const T = State.temporary;
@@ -3345,30 +3355,36 @@ Macro.add(&quot;n1-patience&quot;, {
           const V = State.variables;
           V.t_patiencePassage = null;
         }));
-      $(&quot;&lt;a&gt;&quot;).text(&quot; (remind)&quot;).appendTo(outer)
-        .click(() =&gt; VI.revisitHere(() =&gt; {
-          const V = State.variables;
-          V.t_patiencePassage = here;
-          V.t_patienceActions = actions;
-          V.t_patienceLooks = looks;
-          V.t_patienceReturn = 1;
-        }));
-      $(&quot;&lt;a&gt;&quot;).text(&quot; (repeat)&quot;).appendTo(outer)
-        .click(() =&gt; VI.revisitHere(() =&gt; {
-          const V = State.variables;
-          V.t_patiencePassage = here;
-          V.t_patienceActions = actions;
-          V.t_patienceLooks = looks;
-          V.t_patienceReturn = 2;
-        }));
-      $(&quot;&lt;a&gt;&quot;).text(&quot; (warn)&quot;).appendTo(outer)
-        .click(() =&gt; VI.revisitHere(() =&gt; {
-          const V = State.variables;
-          V.t_patiencePassage = here;
-          V.t_patienceActions = 1;
-          V.t_patienceLooks = 1;
-          V.t_patienceReturn = -1;
-        }));
+      if (looks &gt; 2) {
+        $(&quot;&lt;a&gt;&quot;).text(&quot; (remind)&quot;).appendTo(outer)
+          .click(() =&gt; VI.revisitHere(() =&gt; {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = actions;
+            V.t_patienceLooks = looks;
+            V.t_patienceReturn = 1;
+          }));
+      }
+      if (actions &gt; 2) {
+        $(&quot;&lt;a&gt;&quot;).text(&quot; (repeat)&quot;).appendTo(outer)
+          .click(() =&gt; VI.revisitHere(() =&gt; {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = actions;
+            V.t_patienceLooks = looks;
+            V.t_patienceReturn = 2;
+          }));
+      }
+      if (looks &gt; 1 &amp;&amp; actions &gt; 1) {
+        $(&quot;&lt;a&gt;&quot;).text(&quot; (warn)&quot;).appendTo(outer)
+          .click(() =&gt; VI.revisitHere(() =&gt; {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = 1;
+            V.t_patienceLooks = 1;
+            V.t_patienceReturn = -1;
+          }));
+      }
       $(&quot;&lt;a&gt;&quot;).text(&quot; (insist)&quot;).appendTo(outer)
         .click(() =&gt; VI.revisitHere(() =&gt; {
           const V = State.variables;
@@ -9731,8 +9747,6 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
     Ivex (the Magnificent) speaks. &quot;Again I ask. Who sent you?&quot;
 &lt;&lt;n1-remind&gt;&gt;
     Ivex (the Magnificent) is asking, &quot;Who sent you?&quot;
-&lt;&lt;n1-repeat&gt;&gt;
-    (not used)
 &lt;&lt;n1-warn&gt;&gt;
     Ivex (the Magnificent) twitches an ear in annoyance.
     &quot;Again I ask! Who sent you?&quot;
@@ -10404,9 +10418,11 @@ Ivex makes a gesture, and
 &lt;&lt;n1-patience 4 2&gt;&gt;
     &#39;Ivex: will you do everything I ask?&#39;
 &lt;&lt;n1-remind&gt;&gt;
-&lt;&lt;n1-repeat&gt;&gt;
+    XXX
 &lt;&lt;n1-warn&gt;&gt;
+    XXX
 &lt;&lt;n1-insist&gt;&gt;
+    XXX
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -10450,10 +10466,12 @@ ivex, fascinated, leaps into speculation about how the secret is kept, dreams up
 &lt;&lt;n1-patience 2 4&gt;&gt;
     XXX impatient. Ivex seems skeptical, but intrigued.
     He asks, &quot;Why have I never heard of your consortium?&quot;
-&lt;&lt;n1-remind&gt;&gt;
 &lt;&lt;n1-repeat&gt;&gt;
+    XXX
 &lt;&lt;n1-warn&gt;&gt;
+    XXX
 &lt;&lt;n1-insist&gt;&gt;
+    XXX
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -10487,10 +10505,12 @@ XXX maybe a secondary conversation option?
 
 &lt;&lt;n1-patience 2 4&gt;&gt;
     Ivex: do guild members have to do everything you ask? grabs crotch
-&lt;&lt;n1-remind&gt;&gt;
 &lt;&lt;n1-repeat&gt;&gt;
+    XXX
 &lt;&lt;n1-warn&gt;&gt;
+    XXX
 &lt;&lt;n1-insist&gt;&gt;
+    XXX
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -10557,9 +10577,11 @@ ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 &lt;&lt;n1-patience 4 2&gt;&gt;
     &#39;Ivex mentions canine tongues, offers a finger to lick&#39;
 &lt;&lt;n1-remind&gt;&gt;
-&lt;&lt;n1-repeat&gt;&gt;
+    XXX
 &lt;&lt;n1-warn&gt;&gt;
+    XXX
 &lt;&lt;n1-insist&gt;&gt;
+    XXX
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -10579,9 +10601,11 @@ ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 &lt;&lt;n1-patience 4 2&gt;&gt;
     &#39;Ivex: gonna torture you, cuz loyalty&#39;
 &lt;&lt;n1-remind&gt;&gt;
-&lt;&lt;n1-repeat&gt;&gt;
+    XXX
 &lt;&lt;n1-warn&gt;&gt;
+    XXX
 &lt;&lt;n1-insist&gt;&gt;
+    XXX
 &lt;&lt;/n1-patience&gt;&gt;
 
 &lt;&lt;include [[n1x/F Look and Magic]]&gt;&gt;
@@ -10631,7 +10655,7 @@ subby and naked. ivex is near, creeps.
 &lt;&lt;set $n1_candleLit = true&gt;&gt;
 &lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 
-Ivex says, &quot;I think it&#39;s time for me to demonstrate what
+Ivex smirks. &quot;I think it&#39;s time for me to demonstrate what
 &lt;&lt;if $n1_abused || $n1_naked&gt;&gt;
     else
 &lt;&lt;/if&gt;&gt;
@@ -10744,12 +10768,11 @@ should be able to figure it out soon enough.&quot;
 &lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 
 &lt;&lt;n1-patience 2 2&gt;&gt;
-    &quot;Ivex with his grinning mask asks, \&quot;Are you comfortable?\&quot;&quot;
-&lt;&lt;n1-remind&gt;&gt;
-&lt;&lt;n1-repeat&gt;&gt;
+    Ivex speaks through his grinning mask. &quot;Are you comfortable?&quot;
 &lt;&lt;n1-warn&gt;&gt;
+    Ivex growls through his menacing mask. &quot;Are you comfortable?&quot;
 &lt;&lt;n1-insist&gt;&gt;
-    &quot;Ivex in his menacing mask asks, \&quot;Are you comfortable?\&quot;&quot;
+    Ivex growls through his menacing mask. &quot;Answer me! Are you comfortable?&quot;
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -10817,7 +10840,7 @@ is clearly false.
     and his ridiculous red candle.
 &lt;&lt;else&gt;&gt;
     Otherwise Nero wouldn&#39;t be strapped to a cross at all,
-    breathing the fumes of whatever that candle might be.
+    and breathing the fumes of whatever that candle might be.
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
@@ -11052,11 +11075,10 @@ The panther mage raises an arm, and snaps his fingers.
 &lt;&lt;vi-ignore-if n1_subby n1_abused&gt;&gt;
 
 &lt;&lt;n1-patience 1 1&gt;&gt;
-    &quot;Ivex pulls at the wolf&#39;s balls and squeezes harder. \&quot;Tell me...\&quot;&quot;
-&lt;&lt;n1-remind&gt;&gt;
-&lt;&lt;n1-repeat&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
+    XXX Ivex pulls at the wolf&#39;s balls and squeezes harder. &quot;Tell me...&quot;
 &lt;&lt;n1-insist&gt;&gt;
+    XXX Ivex pulls at the wolf&#39;s balls and squeezes harder. &quot;Tell me...&quot;
 &lt;&lt;/n1-patience&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
@@ -11080,11 +11102,12 @@ The panther mage raises an arm, and snaps his fingers.
 &lt;&lt;vi-ignore-if n1_subby n1_abused&gt;&gt;
 
 &lt;&lt;n1-patience 1 1&gt;&gt;
-    &quot;Ivex closes the paw holding Nero&#39;s balls and gently squeezes. \&quot;Tell me, who sent you.\&quot;&quot;
-&lt;&lt;n1-remind&gt;&gt;
-&lt;&lt;n1-repeat&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
+    Ivex closes the paw holding Nero&#39;s balls. &quot;Tell me.&quot;
+    He gently squeezes. &quot;Who sent you?&quot;
 &lt;&lt;n1-insist&gt;&gt;
+    Ivex gently squeezes Nero&#39;s balls again. &quot;You had better tell me.&quot;
+    And again. &quot;Who sent you?&quot;
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -16080,7 +16103,6 @@ fails to catch mirror, it falls on ground and shatters.
 
 &lt;&lt;n1-patience 10 6&gt;&gt;
     &quot;Ivex is gone, for now.&quot;
-&lt;&lt;n1-calm&gt;&gt;
 &lt;&lt;n1-remind&gt;&gt;
 &lt;&lt;n1-repeat&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
@@ -17452,10 +17474,12 @@ yes, of course everyone is obedient
 
 &lt;&lt;n1-patience 2 4&gt;&gt;
     Ivex: and do you use mind control?
-&lt;&lt;n1-remind&gt;&gt;
 &lt;&lt;n1-repeat&gt;&gt;
+    XXX
 &lt;&lt;n1-warn&gt;&gt;
+    XXX
 &lt;&lt;n1-insist&gt;&gt;
+    XXX
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
