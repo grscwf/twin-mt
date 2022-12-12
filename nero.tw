@@ -417,7 +417,7 @@ The Mage's Tower (Nero)
     [[`\uD83D\uDD27 Notes`|Passage Notes Top]]
     [[`\uD83D\uDD27 Visited`|n0/F Visited]]
     [[`\uD83D\uDD27 Proofing`|Proofing]]
-    [[`\uD83D\uDD27 Linting`|Linting]]
+    [[`\uD83D\uDD27 Status`|Status]]
     <<link "&#x1f527; Reset n0_">>
         <<state-delete n0_>>
         <<run VarInfo.revisitHere()>>
@@ -12121,7 +12121,7 @@ and growing thicker and longer with each breath he takes.
 
 ?P
 <<if $n1_subby>>
-    TODO subby - getting into it?
+    TODO subby -- getting into it?
 <<elseif $n1_abused>>
     Nero can't stop imagining and anticipating the myriad ways
     that the feline cock might touch him, outside and within.
@@ -15380,7 +15380,7 @@ On top of one cabinet is
 <<else>>
     a [[large glass bottle|n1x/F Bottle]]
 <</if>>
-and a [[stuffed penguin|n1x/P Penguin]].
+and a [[stuffed penguin|n1x/D Penguin]].
 The others are bare.
 
 ?P
@@ -15876,33 +15876,80 @@ but he does not remember its name.
 <</nobr>>
 
 
-:: n1x/P Penguin [has-hole maybe-password] {"position":"7225,4325","size":"100,100"}
+:: n1x/D Penguin [has-hole maybe-password] {"position":"7225,4325","size":"100,100"}
 <<nobr>>
-XXX needs magicPhaseBroken.
+mages often have skeletal or taxidermied animals in their offices.
 
 <<if $n1_penguinNameKnown>>
-    mages often have skeletal or taxidermied animals in their offices.
-    ivex has his pet penguin, XXX.
-    <<pw-suggest "xxx">><</pw-suggest>>
+    ivex has his pet penguin, XXX name, deceased, for some reason.
+    <<pw-suggest "XXX pet">>
+        maybe it's his password.
+    <<pw-fail>>
+        nope, wasn't his password.
+    <</pw-suggest>>
 <<else>>
     ivex has a penguin, for some reason.
-    mages often have skeletal or taxidermied animals in their offices.
 <</if>>
 
-if coin in mouth, it drops to the floor.
-
-similar logic to portrait.
-
-if wantTouch or broken at wantTouch, speculate mouth. ask ivex if possible. use memory of mom lick.
-
-if wantPassword and not penguin name known, ask ivex if possible
+<<if $n2_extraHorny>>
+    horny color
+<<elseif $n1_subby>>
+    subby color
+<<elseif $n1_abused>>
+    abused color
+<</if>>
 
 ?P
+<<if !$n1_penguinCoinDropped>>
+    there's a coin in its mouth. as nero watches,
+    it drops to the ground and rolls under a cabinet (maybe again)
+    <<set $n1_penguinCoinDropped = true>>
+<</if>>
+
+<<if $n2_free>>
+    search briefly for coin, give up.
+<</if>>
+
+?P describe penguin
+
+<<if MP_wantTouch === $n2_magicPhaseBroken
+    || MP_wantTouch === $n1_magicPhase
+>>
+    maybe the mouth was the hole?
+    <<if $n1_portraitMomKnown>>
+        memory of mom lick
+    <</if>>
+    <<if $n2_ivexGone>>
+        no way to find out now
+    <<elseif $n1_penguinNameKnown && $t_ivexReceptive>>
+        was snippy, but maybe try again.
+        <<actions-add [[n1x/D Penguin Ask]]>>
+    <<elseif $n1_penguinNameKnown>>
+        was snippy. wait until receptive.
+    <<else>>
+        try asking.
+        <<actions-add [[n1x/D Penguin Ask]]>>
+    <</if>>
+
+<<elseif MP_wantPassword === $n1_magicPhase>>
+    <<if $n1_penguinNameKnown>>
+        <<pw-suggest "XXX pet">>
+            try name
+        <<pw-fail>>
+            not password
+        <</pw-suggest>>
+    <<elseif $n2_ivexGone>>
+        maybe was the password? can't ask now
+    <<else>>
+        maybe password?
+        <<actions-add [[n1x/D Penguin Ask]]>>
+    <</if>>
+<</if>>
+      
+?P
 <ul class="actions">
-  <<if !$n2_ivexGone>>
-      <li>[[Ask Ivex|n1x/P Penguin Ask]]</li>
-  <</if>>
-  <li>$t_afterLook</li>
+    <<actions-get>>
+    <li>$t_afterLook</li>
 </ul>
 <</nobr>>
 
@@ -16117,24 +16164,36 @@ if there were anything to magnify other than the clear blue sky.
 <</nobr>>
 
 
-:: n1x/P Penguin Ask {"position":"7350,4325","size":"100,100"}
+:: n1x/D Penguin Ask {"position":"7350,4325","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
 
-if not receptive, Ivex mentions the penguin's name (password), and shuts down
+<<if $t_ivexReceptive>>
+    ivex mentions name, tells story of wanting an owl,
+    but uncle gave him a penguin, saying it was close enough.
+    
+    ?P
+    notices the beak is empty, searches the floor for a bit, picks up coin.
+    puts it back in beak.
+    <<set $t_ivexNear = false>>
+
+    <<if MP_wantTouch === MP_magicPhase>>
+        sprite responds. pause. password please.
+        <<set $n1_magicPhase = MP_wantPassword>>
+    <</if>>
+
+<<else>>
+    ivex unresponsive, but mentions penguin name.
+<</if>>
+
+<<pw-found "XXX pet">>
+<<pw-suggest "XXX pet">>
+    maybe that's the password?
+    <!-- don't need pw-fail here -->
+<</pw-suggest>>
 <</nobr>>
-
-if receptive, mentions name, says he wanted an owl but uncle gave him a penguin, saying it was close enough.
-
-notices the beak is empty, roots around the floor a bit, picks up coin.
-if wantTouch, sprite says touch accepted.
-puts coin in penguin's mouth.
-
-XXX ivexNear.
-
-if wantTouch, sprite says, password please
 
 $t_afterAction
 
@@ -16699,7 +16758,7 @@ his situation.
     <<else>>
         a [[large glass bottle|n1x/F Bottle]]
     <</if>>
-    and a [[stuffed penguin|n1x/P Penguin]].
+    and a [[stuffed penguin|n1x/D Penguin]].
 <</if>>
 
 <<if $n1_bookshelfViewed>>
@@ -19413,7 +19472,7 @@ $(document).one(":passagedisplay", () => {
 <</nobr>>
 
 
-:: Linting [noreturn] {"position":"2200,1925","size":"100,100"}
+:: Status [noreturn] {"position":"2200,1925","size":"100,100"}
 <<nobr>>
 <<sidebar-auto-stow>>
 <<link "Return to the game" $return>><</link>>
@@ -19421,8 +19480,9 @@ $(document).one(":passagedisplay", () => {
 
 <style>
 
-.todo-title {
-  margin-left: 2em;
+.todo-item {
+  margin-left: 3em;
+  text-indent: -1em;
 }
 
 </style>
@@ -19432,22 +19492,37 @@ $(document).one(":passagedisplay", () => {
 const todoMap = {};
 const lint = [];
 
+const todoAdd = (key, title, text) => {
+  todoMap[key] ??= [];
+  todoMap[key].push([title, text.trim()]);
+};
+
 let passages = Story.lookup();
 passages = passages.filter(p => /^n\d/.test(p.title));
 passages.sort((a, b) => a.title < b.title ? -1 : a.title > b.title ? +1 : 0);
 
 passages.forEach(p => {
   if (!/^n\d/.test(p.title)) return;
-  if (/^[/]F/.test(p.title) && /X[X]X/.test(p.text)) {
+  if (/[/]F/.test(p.title) && /X[X]X/.test(p.text)) {
     lint.push(`${p.title} - /F should not have X\XX`);
   }
-  const m = /\bTO[D]O:?\s*(.*?)(?:--|:|[*][/]|\n|$)/.exec(p.text);
-  if (m != null) {
+  let matches = false;
+  const re1 = /\bTO[D]O\b:?\s*(.*?)(?:--|:|[*][/])(.*?)$/gm;
+  for (const m of p.text.matchAll(re1)) {
     const key = `TODO ${m[1].trim()}`;
-    (todoMap[key] ??= []).push(p.title);
+    todoAdd(key, p.title, m[2]);
+    matches = true;
   }
-  if (/\bXXX\b/.exec(p.text)) {
-    (todoMap["XXX"] ??= []).push(p.title);
+  const re2 =/\bXXX\b(.*?)$/gm;
+  for (const m of p.text.matchAll(re2)) {
+    todoAdd("XXX", p.title, m[1]);
+    matches = true;
+  }
+  if (!matches && /[/]D/.test(p.title)) {
+    todoAdd("status /D", p.title, "");
+  }
+  if (!matches && /[/]P/.test(p.title)) {
+    todoAdd("- status /P", p.title, "");
   }
 });
 
@@ -19470,8 +19545,12 @@ if (todoKeys.length === 0) {
   todoKeys.forEach(key => {
     const block = $("<div class=todo-block>").appendTo(output);
     $("<div class=todo-key>").text(key).appendTo(block);
-    todoMap[key].forEach(title => {
-      $("<div class=todo-title>").wiki(`[\[${title}]]`).appendTo(block);
+    todoMap[key].forEach(([title, text]) => {
+      $("<div class=todo-item>").appendTo(block).append(
+        $("<span class=todo-title>").wiki(`[\[${title}]]`),
+        $("<span class=todo-text>").text(
+          text == null || text === "" ? "" : ` - ${text}`
+        ));
     });
   });
 }
