@@ -10329,6 +10329,8 @@ Or, at least, he will try to.
 :: testing {"position":"3600,625","size":"100,100"}
 Remember ?blank and talk to him.
 
+/* comment test */
+
 <<link "Hello $class" `"[[testing 2]]".slice(2,-2)`>><</link>>
 
 <<mt-link [[testing 2]] "<b>hello</b> world"  "console.log(1)">>
@@ -11384,7 +11386,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 
 ?P
 Ivex tilts his head and stares at the bound wolf.
-XXX ivexNear.
+TODO ivexNear
 The panther shifts his attention to another paper from the desk,
 which he picks up and reads, silently this time.
 
@@ -12026,7 +12028,7 @@ should be able to figure it out soon enough."
 [[Continue|n1d/F Start Candle 2]]
 
 
-:: n1d/D Comfort Check (2,2) {"position":"4350,4400","size":"200,100"}
+:: n1d/F Comfort Check (2,2) {"position":"4350,4400","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_subby n1_abused>>
@@ -12051,7 +12053,7 @@ should be able to figure it out soon enough."
                 <<mt-link [[n1d/D Naked Submit]]
                     "Respond to Ivex with alacrity, \"Yes, I'm quite comfortable.\"">>
             </li>
-            <li>[[XXX subby resist? Whimper and shiver.|n1d/D Naked Resist]]</li>
+            <li>[[TODO subby -- resist? Whimper and shiver.|n1d/D Naked Resist]]</li>
         <<elseif $n1_abused>>
             <li>[[Nod hesitantly in response.|n1d/D Naked Submit]]</li>
             <li>[[Sneer at Ivex.|n1d/D Naked Resist]]</li>
@@ -12074,7 +12076,7 @@ should be able to figure it out soon enough."
 <</nobr>>
 
 
-:: n1d/D Cock Rise {"position":"4475,4675","size":"100,100"}
+:: n1d/F Cock Rise {"position":"4475,4675","size":"100,100"}
 <<nobr>>
 <<vi-always n1_naked true>>
 <<vi-ignore n1_mageSight>>
@@ -12084,7 +12086,7 @@ should be able to figure it out soon enough."
 
 The odor of the nearby panther
 <<if $n1_subby>>
-    XXX subby mood, fascinated by ivex's scent and the candle
+    TODO subby -- fascinated by ivex's scent and the candle
 <<elseif $n1_abused>>
     is overwhelming now.
     Nero's senses are all hyperattuned to monitoring
@@ -12119,7 +12121,7 @@ and growing thicker and longer with each breath he takes.
 
 ?P
 <<if $n1_subby>>
-    XXX subby, getting into it
+    TODO subby - getting into it?
 <<elseif $n1_abused>>
     Nero can't stop imagining and anticipating the myriad ways
     that the feline cock might touch him, outside and within.
@@ -12175,7 +12177,7 @@ A moment later, the panther says, "I know <em>exactly</em> what you need!" His d
 The panther mage raises an arm, and snaps his fingers.
 
 [[Continue|n1p/F Barbs Fast]]
-<<set $t_afterNaked = "[[Continue|n1d/D Cock Rise]]">>
+<<set $t_afterNaked = "[[Continue|n1d/F Cock Rise]]">>
 
 
 :: n1d/F Start Candle 2 {"position":"3900,4425","size":"100,100"}
@@ -12196,7 +12198,7 @@ There's little circulation in the room, but Nero can already smell it, a scent l
 
 Nero considers holding his breath to avoid whatever is in the candle's fumes, but of course he'll have to breathe eventually. No point delaying the inevitable. Perhaps with measured, cautious breaths, he can slowly acclimate himself and limit whatever effects the candle might have.
 
-[[Continue|n1d/D Comfort Check (2,2)]]
+[[Continue|n1d/F Comfort Check (2,2)]]
 
 
 :: n1d/D Naked Resist {"position":"4300,4525","size":"100,100"}
@@ -12252,7 +12254,7 @@ fur of the wolf's bare chest.
 
 <</nobr>>
 
-[[Continue|n1d/D Cock Rise]]
+[[Continue|n1d/F Cock Rise]]
 
 
 :: n1d/D Candle Horny [big-mood] {"position":"4650,4825","size":"100,100"}
@@ -12367,7 +12369,7 @@ and roughly strokes the fur on the wolf's naked chest.
 <<set $t_ivexNear = true>>
 <</nobr>>
 
-[[Continue|n1d/D Cock Rise]]
+[[Continue|n1d/F Cock Rise]]
 
 
 :: n1d/F Strip Agree {"position":"4625,4525","size":"100,100"}
@@ -12419,7 +12421,7 @@ and roughly strokes the fur on the wolf's naked chest.
 The panther mage raises an arm, then snaps his fingers.
 
 [[Continue|n1p/F Barbs Fast]]
-<<set $t_afterNaked = "[[Continue|n1d/D Cock Rise]]">>
+<<set $t_afterNaked = "[[Continue|n1d/F Cock Rise]]">>
 
 
 :: n1e/D Heavy Squeeze (1,1) {"position":"4825,5350","size":"200,100"}
@@ -19419,29 +19421,59 @@ $(document).one(":passagedisplay", () => {
 
 <style>
 
+.todo-title {
+  margin-left: 2em;
+}
+
 </style>
 
 <<script>>
 
-let hasLint = false;
-const showLint = text => {
-  hasLint = true;
-  $("<div class=lint-item>").appendTo(output).text(text);
-};
+const todoMap = {};
+const lint = [];
 
 let passages = Story.lookup();
 passages = passages.filter(p => /^n\d/.test(p.title));
 passages.sort((a, b) => a.title < b.title ? -1 : a.title > b.title ? +1 : 0);
 
 passages.forEach(p => {
-  if (/^n\d\w+\/F/.test(p.title) && /XXX/.test(p.text)) {
-    showLint(`${p.title} - /F should not have XXX`);
+  if (!/^n\d/.test(p.title)) return;
+  if (/^[/]F/.test(p.title) && /X[X]X/.test(p.text)) {
+    lint.push(`${p.title} - /F should not have X\XX`);
+  }
+  const m = /\bTO[D]O:?\s*(.*?)(?:--|:|[*][/]|\n|$)/.exec(p.text);
+  if (m != null) {
+    const key = `TODO ${m[1].trim()}`;
+    (todoMap[key] ??= []).push(p.title);
+  }
+  if (/\bXXX\b/.exec(p.text)) {
+    (todoMap["XXX"] ??= []).push(p.title);
   }
 });
 
-if (!hasLint) {
-  $("<div class=lint-item>").appendTo(output)
-    .text("Everything looks good.");
+if (lint.length === 0) {
+  $("<div class=lint-note>").appendTo(output)
+    .text("No lint found, everything looks good.");
+} else {
+  lint.forEach(lint => {
+    $("<div class=lint-item>").text(lint).appendTo(output)
+  });
+}
+
+$(output).append("<hr>");
+
+const todoKeys = Object.keys(todoMap).sort();
+if (todoKeys.length === 0) {
+  $("<div class=lint-note>").appendTo(output)
+    .text("No TO\DOs found.");
+} else {
+  todoKeys.forEach(key => {
+    const block = $("<div class=todo-block>").appendTo(output);
+    $("<div class=todo-key>").text(key).appendTo(block);
+    todoMap[key].forEach(title => {
+      $("<div class=todo-title>").wiki(`[\[${title}]]`).appendTo(block);
+    });
+  });
 }
 
 <</script>>
