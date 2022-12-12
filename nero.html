@@ -12081,9 +12081,9 @@ $t_afterAction
 
 &lt;&lt;elseif $n1_subby&gt;&gt;
     &lt;&lt;em-assert $n1_naked&gt;&gt;
-    XXX wants to impress Ivex with [[Nero&#39;s Endgame|n1a/F Endgame Info]]
-    &lt;&lt;set $t_returnEndgame = State.passage&gt;&gt;
-    &lt;&lt;set $t_magicAction = &quot;[[Cast Nero&#39;s Endgame.|n1s/P Cast Endgame]]&quot;&gt;&gt;
+    TODO subby -- deep sub wants to impress Ivex with Endgame.
+    maybe shallow sub does slippery instead?
+    &lt;&lt;set $t_magicAction = &quot;[[Cast Nero&#39;s Endgame.|n1s/D Cast Endgame]]&quot;&gt;&gt;
 
 &lt;&lt;elseif $t_ivexReceptive&gt;&gt;
     &lt;!-- receptive when not subby is always clothed --&gt;
@@ -17266,10 +17266,30 @@ maybe find an incel tract or something else nutty
 ?P
 &lt;&lt;= $n2_booksSearched ? $t_afterLook : $t_afterAction&gt;&gt;
 &lt;&lt;set $n2_booksSearched = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="518" name="n1s/P Cast Endgame" tags="" position="5725,4000" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="518" name="n1s/D Cast Endgame" tags="" position="6800,2900" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-always n2_free false&gt;&gt;
+&lt;&lt;vi-always n2_ivexGone false&gt;&gt;
+&lt;&lt;em-assert $n1_subby&gt;&gt;
 
-subby mood, Nero wants to impress Ivex, casts endgame
+Nero wants to impress Ivex with [[Nero&#39;s Endgame|n1a/F Endgame Info]].
+maybe vary on endgame viewed.
+probably need a subby variation of Endgame Info.
+&lt;&lt;set $t_returnEndgame = State.passage&gt;&gt;
 
+?P
+some nero rationalization. maybe &quot;watch me, senpai&quot;. maybe vary on subby phase.
+
+?P
+cast... (continue)
+&lt;&lt;set $n1_endgameCast = true&gt;&gt;
+
+?P
+nothing happens, etc.
+
+?P
+Ivex not impressed, mocks. Nero is already naked, maybe move ivex.
+
+$t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="519" name="Init 2 Saves" tags="inclusion" position="2950,600" size="100,100">&lt;&lt;script&gt;&gt;
 // Clean up the savegame title
 Config.passages.descriptions = function() {
@@ -17450,26 +17470,54 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 &lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="523" name="Status" tags="noreturn" position="2200,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;sidebar-auto-stow&gt;&gt;
-&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
-&lt;hr&gt;
-
 &lt;style&gt;
-
 .todo-item {
   margin-left: 3em;
   text-indent: -1em;
 }
-
+#return-sticky {
+  background-color: #111;
+  margin-top: -1em;
+  padding-top: 1em;
+  position: sticky;
+  top: 0;
+}
+.todo-stats {
+  margin-left: 1em;
+  text-indent: -1em;
+}
+.todo-stats span {
+  white-space: nowrap;
+}
 &lt;/style&gt;
+
+&lt;div id=&quot;return-sticky&quot;&gt;
+    &lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
+    &lt;hr&gt;
+&lt;/div&gt;
 
 &lt;&lt;script&gt;&gt;
 
 const todoMap = {};
 const lint = [];
+const counts = {};
+let fTodos = 0;
 
 const todoAdd = (key, title, text) =&gt; {
-  todoMap[key] ??= [];
-  todoMap[key].push([title, text.trim()]);
+  const list = todoMap[key] ??= [];
+  text ??= &quot;&quot;;
+  text = text.trim();
+  const p = list.findIndex(e =&gt; e[0] === title);
+  if (text === &quot;&quot;) {
+    if (p &lt; 0) list.push([title, text]);
+  } else {
+    if (0 &lt;= p &amp;&amp; list[p][1] === &quot;&quot;) {
+      /* first entry has no text (should be only one at this point). override the text */
+      list[p][1] = text;
+    } else {
+      list.push([title, text]);
+    }
+  }
 };
 
 let passages = Story.lookup();
@@ -17477,40 +17525,62 @@ passages = passages.filter(p =&gt; /^n\d/.test(p.title));
 passages.sort((a, b) =&gt; a.title &lt; b.title ? -1 : a.title &gt; b.title ? +1 : 0);
 
 passages.forEach(p =&gt; {
-  if (!/^n\d/.test(p.title)) return;
-  if (/[/]F/.test(p.title) &amp;&amp; /X[X]X/.test(p.text)) {
-    lint.push(`${p.title} - /F should not have X\XX`);
-  }
-  let matches = false;
+  const mark = /[/]([DFPS])/.exec(p.title) ?.[1] ?? &quot;&quot;;
+  counts[mark] = 1 + (counts[mark] ?? 0);
+  
+  let todos = false;
   const re1 = /\bTO[D]O\b:?\s*(.*?)(?:--|:|[*][/])(.*?)$/gm;
   for (const m of p.text.matchAll(re1)) {
     const key = `TODO ${m[1].trim()}`;
     todoAdd(key, p.title, m[2]);
-    matches = true;
+    todos = true;
   }
-  const re2 =/\bXXX\b(.*?)$/gm;
+
+  let exes = false;
+  const re2 =/\bX[X]X\b(.*?)$/gm;
   for (const m of p.text.matchAll(re2)) {
-    todoAdd(&quot;XXX&quot;, p.title, m[1]);
-    matches = true;
+    todoAdd(&quot;X\XX&quot;, p.title, m[1]);
+    exes = true;
   }
-  if (!matches &amp;&amp; /[/]D/.test(p.title)) {
-    todoAdd(&quot;status /D&quot;, p.title, &quot;&quot;);
+
+  if (mark === &quot;P&quot;) {
+    todoAdd(&quot;/P&quot;, p.title, &quot;&quot;);
   }
-  if (!matches &amp;&amp; /[/]P/.test(p.title)) {
-    todoAdd(&quot;- status /P&quot;, p.title, &quot;&quot;);
+  if (mark === &quot;D&quot; &amp;&amp; !exes &amp;&amp; !todos) {
+    todoAdd(&quot;X\XX&quot;, p.title, &quot;&quot;);
+  }
+  if (mark === &quot;F&quot; &amp;&amp; exes) {
+    lint.push(`${p.title} - /F should not have X\XX`);
+  }
+  if (mark === &quot;F&quot; &amp;&amp; todos) {
+    fTodos += 1;
   }
 });
 
-if (lint.length === 0) {
-  $(&quot;&lt;div class=lint-note&gt;&quot;).appendTo(output)
-    .text(&quot;No lint found, everything looks good.&quot;);
-} else {
+const np = passages.length - counts.S;
+const pct = n =&gt; (n / np * 100).toFixed(0) + &quot;%&quot;;
+$(&quot;&lt;div class=todo-stats&gt;&quot;).appendTo(output).append(
+  $(&quot;&lt;span&gt;&quot;).text(`${np} Nero passages`),
+  &quot; | &quot;,
+  $(&quot;&lt;span&gt;&quot;).text(`${pct(counts.F)} F ${counts.F}`),
+  &quot; | &quot;,
+  $(&quot;&lt;span&gt;&quot;).text(`${pct(fTodos)} todo.F ${fTodos}`),
+  &quot; | &quot;,
+  $(&quot;&lt;span&gt;&quot;).text(`${pct(counts.D)} D ${counts.D}`),
+  &quot; | &quot;,
+  $(&quot;&lt;span&gt;&quot;).text(`${pct(counts.P)} P ${counts.P}`),
+  &quot; | &quot;,
+  $(&quot;&lt;span&gt;&quot;).text(`excluded: S ${counts.S}`),
+);
+
+$(output).append(&quot;&lt;br&gt;&quot;);
+
+if (lint.length !== 0) {
   lint.forEach(lint =&gt; {
     $(&quot;&lt;div class=lint-item&gt;&quot;).text(lint).appendTo(output)
   });
+  $(output).append(&quot;&lt;br&gt;&quot;);
 }
-
-$(output).append(&quot;&lt;hr&gt;&quot;);
 
 const todoKeys = Object.keys(todoMap).sort();
 if (todoKeys.length === 0) {
@@ -17519,13 +17589,13 @@ if (todoKeys.length === 0) {
 } else {
   todoKeys.forEach(key =&gt; {
     const block = $(&quot;&lt;div class=todo-block&gt;&quot;).appendTo(output);
+    $(output).append(&quot;&lt;br&gt;&quot;);
     $(&quot;&lt;div class=todo-key&gt;&quot;).text(key).appendTo(block);
     todoMap[key].forEach(([title, text]) =&gt; {
       $(&quot;&lt;div class=todo-item&gt;&quot;).appendTo(block).append(
         $(&quot;&lt;span class=todo-title&gt;&quot;).wiki(`[\[${title}]]`),
-        $(&quot;&lt;span class=todo-text&gt;&quot;).text(
-          text == null || text === &quot;&quot; ? &quot;&quot; : ` - ${text}`
-        ));
+        $(&quot;&lt;span class=todo-text&gt;&quot;).text(text === &quot;&quot; ? &quot;&quot; : ` - ${text}`),
+      );
     });
   });
 }

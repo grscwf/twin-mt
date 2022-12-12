@@ -13496,9 +13496,9 @@ $t_afterAction
 
 <<elseif $n1_subby>>
     <<em-assert $n1_naked>>
-    XXX wants to impress Ivex with [[Nero's Endgame|n1a/F Endgame Info]]
-    <<set $t_returnEndgame = State.passage>>
-    <<set $t_magicAction = "[[Cast Nero's Endgame.|n1s/P Cast Endgame]]">>
+    TODO subby -- deep sub wants to impress Ivex with Endgame.
+    maybe shallow sub does slippery instead?
+    <<set $t_magicAction = "[[Cast Nero's Endgame.|n1s/D Cast Endgame]]">>
 
 <<elseif $t_ivexReceptive>>
     <!-- receptive when not subby is always clothed -->
@@ -19270,11 +19270,31 @@ maybe find an incel tract or something else nutty
 <</nobr>>
 
 
-:: n1s/P Cast Endgame {"position":"5725,4000","size":"100,100"}
+:: n1s/D Cast Endgame {"position":"6800,2900","size":"100,100"}
 <<nobr>>
+<<vi-always n2_free false>>
+<<vi-always n2_ivexGone false>>
+<<em-assert $n1_subby>>
 
-subby mood, Nero wants to impress Ivex, casts endgame
+Nero wants to impress Ivex with [[Nero's Endgame|n1a/F Endgame Info]].
+maybe vary on endgame viewed.
+probably need a subby variation of Endgame Info.
+<<set $t_returnEndgame = State.passage>>
 
+?P
+some nero rationalization. maybe "watch me, senpai". maybe vary on subby phase.
+
+?P
+cast... (continue)
+<<set $n1_endgameCast = true>>
+
+?P
+nothing happens, etc.
+
+?P
+Ivex not impressed, mocks. Nero is already naked, maybe move ivex.
+
+$t_afterAction
 <</nobr>>
 
 
@@ -19475,26 +19495,54 @@ $(document).one(":passagedisplay", () => {
 :: Status [noreturn] {"position":"2200,1925","size":"100,100"}
 <<nobr>>
 <<sidebar-auto-stow>>
-<<link "Return to the game" $return>><</link>>
-<hr>
-
 <style>
-
 .todo-item {
   margin-left: 3em;
   text-indent: -1em;
 }
-
+#return-sticky {
+  background-color: #111;
+  margin-top: -1em;
+  padding-top: 1em;
+  position: sticky;
+  top: 0;
+}
+.todo-stats {
+  margin-left: 1em;
+  text-indent: -1em;
+}
+.todo-stats span {
+  white-space: nowrap;
+}
 </style>
+
+<div id="return-sticky">
+    <<link "Return to the game" $return>><</link>>
+    <hr>
+</div>
 
 <<script>>
 
 const todoMap = {};
 const lint = [];
+const counts = {};
+let fTodos = 0;
 
 const todoAdd = (key, title, text) => {
-  todoMap[key] ??= [];
-  todoMap[key].push([title, text.trim()]);
+  const list = todoMap[key] ??= [];
+  text ??= "";
+  text = text.trim();
+  const p = list.findIndex(e => e[0] === title);
+  if (text === "") {
+    if (p < 0) list.push([title, text]);
+  } else {
+    if (0 <= p && list[p][1] === "") {
+      /* first entry has no text (should be only one at this point). override the text */
+      list[p][1] = text;
+    } else {
+      list.push([title, text]);
+    }
+  }
 };
 
 let passages = Story.lookup();
@@ -19502,40 +19550,62 @@ passages = passages.filter(p => /^n\d/.test(p.title));
 passages.sort((a, b) => a.title < b.title ? -1 : a.title > b.title ? +1 : 0);
 
 passages.forEach(p => {
-  if (!/^n\d/.test(p.title)) return;
-  if (/[/]F/.test(p.title) && /X[X]X/.test(p.text)) {
-    lint.push(`${p.title} - /F should not have X\XX`);
-  }
-  let matches = false;
+  const mark = /[/]([DFPS])/.exec(p.title) ?.[1] ?? "";
+  counts[mark] = 1 + (counts[mark] ?? 0);
+  
+  let todos = false;
   const re1 = /\bTO[D]O\b:?\s*(.*?)(?:--|:|[*][/])(.*?)$/gm;
   for (const m of p.text.matchAll(re1)) {
     const key = `TODO ${m[1].trim()}`;
     todoAdd(key, p.title, m[2]);
-    matches = true;
+    todos = true;
   }
-  const re2 =/\bXXX\b(.*?)$/gm;
+
+  let exes = false;
+  const re2 =/\bX[X]X\b(.*?)$/gm;
   for (const m of p.text.matchAll(re2)) {
-    todoAdd("XXX", p.title, m[1]);
-    matches = true;
+    todoAdd("X\XX", p.title, m[1]);
+    exes = true;
   }
-  if (!matches && /[/]D/.test(p.title)) {
-    todoAdd("status /D", p.title, "");
+
+  if (mark === "P") {
+    todoAdd("/P", p.title, "");
   }
-  if (!matches && /[/]P/.test(p.title)) {
-    todoAdd("- status /P", p.title, "");
+  if (mark === "D" && !exes && !todos) {
+    todoAdd("X\XX", p.title, "");
+  }
+  if (mark === "F" && exes) {
+    lint.push(`${p.title} - /F should not have X\XX`);
+  }
+  if (mark === "F" && todos) {
+    fTodos += 1;
   }
 });
 
-if (lint.length === 0) {
-  $("<div class=lint-note>").appendTo(output)
-    .text("No lint found, everything looks good.");
-} else {
+const np = passages.length - counts.S;
+const pct = n => (n / np * 100).toFixed(0) + "%";
+$("<div class=todo-stats>").appendTo(output).append(
+  $("<span>").text(`${np} Nero passages`),
+  " | ",
+  $("<span>").text(`${pct(counts.F)} F ${counts.F}`),
+  " | ",
+  $("<span>").text(`${pct(fTodos)} todo.F ${fTodos}`),
+  " | ",
+  $("<span>").text(`${pct(counts.D)} D ${counts.D}`),
+  " | ",
+  $("<span>").text(`${pct(counts.P)} P ${counts.P}`),
+  " | ",
+  $("<span>").text(`excluded: S ${counts.S}`),
+);
+
+$(output).append("<br>");
+
+if (lint.length !== 0) {
   lint.forEach(lint => {
     $("<div class=lint-item>").text(lint).appendTo(output)
   });
+  $(output).append("<br>");
 }
-
-$(output).append("<hr>");
 
 const todoKeys = Object.keys(todoMap).sort();
 if (todoKeys.length === 0) {
@@ -19544,13 +19614,13 @@ if (todoKeys.length === 0) {
 } else {
   todoKeys.forEach(key => {
     const block = $("<div class=todo-block>").appendTo(output);
+    $(output).append("<br>");
     $("<div class=todo-key>").text(key).appendTo(block);
     todoMap[key].forEach(([title, text]) => {
       $("<div class=todo-item>").appendTo(block).append(
         $("<span class=todo-title>").wiki(`[\[${title}]]`),
-        $("<span class=todo-text>").text(
-          text == null || text === "" ? "" : ` - ${text}`
-        ));
+        $("<span class=todo-text>").text(text === "" ? "" : ` - ${text}`),
+      );
     });
   });
 }
