@@ -14,6 +14,9 @@ story-to-tw:
 nero-check:
 	clear; node tools/list-vars.js nero.tw nero-vars.txt '^n\d|^t_|^mt_'
 
+nero-stats:
+	node tools/nero-stats.js nero.tw
+
 nero-to-html:
 	WSLENV=$$WSLENV:TWEEGO_PATH/l \
 	TWEEGO_PATH=./assets \
