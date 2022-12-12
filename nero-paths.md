@@ -2,7 +2,7 @@
 
 This is a description of paths to all of Nero's endings.
 I suggest you don't read this until you've played through
-at least three different Nero endings.
+at least three different Nero ending variations.
 
 
 <details>

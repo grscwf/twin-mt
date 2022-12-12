@@ -16,6 +16,7 @@ function main(args) {
 
   const passages = {};
   const words = {};
+  let todos = 0;
 
   const addTo = (counter, wc) => {
     passages[counter] = 1 + (passages[counter] || 0);
@@ -26,18 +27,15 @@ function main(args) {
   split.forEach((part, i) => {
     const m = /^:: ((n[A\d]\w*)\/(\w)?) /.exec(part);
     if (m == null) return;
-    const wc = wordCount(split[i + 1]);
-    // addTo(`section ${m[2]}`, wc);
+    const text = split[i + 1];
+    const wc = wordCount(text);
     addTo(`section ${m[2]} /${m[3]}`, wc);
-    // if (m[3] != null && m[3] !== "") {
-    //   addTo(`section ${m[2]}${m[3]}`, wc);
-    //   addTo(`section ${m[2]}${m[3]}/${m[4]}`, wc);
-    // }
     addTo("total", wc);
     addTo(`total /${m[3]}`, wc);
     if (/^[FDP]$/.test(m[3])) {
       addTo(`total /FDP`, wc);
     }
+    if (m[3] === "F" && /\bTO[D]O/.test(text)) todos++;
   });
 
   for (const counter of Object.keys(passages).sort()) {
@@ -55,6 +53,7 @@ function main(args) {
   sum += ` ${words["total /FDP"] || 0}-${passages["total /FDP"] || 0}/FDP`;
   sum += ` : ${words["total /F"] || 0}-${passages["total /F"] || 0}/F`;
   sum += ` ${pctF}%`;
+  sum += ` : ${todos}/F todo`;
   sum += ` : ${words["total /D"] || 0}-${passages["total /D"] || 0}/D`;
   sum += ` ${pctD}%`;
   sum += ` : ${words["total /P"] || 0}-${passages["total /P"] || 0}/P`;
