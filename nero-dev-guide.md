@@ -75,14 +75,17 @@
 
 - Debug mode adds several useful passages to the left menu, marked with a
   wrench icon
-- The "walk" and "back" buttons on the right will do a random walk.
-  - Pressing "walk" will highlight a random link in the current passage.
-  - Pressing "walk" again will visit that link.
+- The "back", "forw", and "rand" buttons on the right will navigate history
+  and do a random walk.
+  - Pressing "rand" will highlight a random link in the current passage.
+  - Pressing "rand" again will visit that link.
   - "back" deselects a highlighted link, or goes back to the previous passage.
-  - "walk" tries to do shuffle, not uniform random, so repeated walk/back can
+  - "forw" goes forward in history, or does "rand" at the end of history.
+  - "rand" tries to do shuffle, not uniform random, so repeated rand/back can
     potentially do an entire depth-first traversal of the story.
-  - <kbd>ctrl-period</kbd> is a shortcut for "walk".
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
+  - <kbd>ctrl-period</kbd> is a shortcut for "forw".
+  - <kdb>ctrl-slash</kdb> is a shortcut for "rand".
 - "var-info" at the top is a compact display of state variables.
   - Pressing "var-info" will show or hide the variables info.
   - var-info only shows variables that are read or set by the current passage.
