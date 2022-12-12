@@ -464,7 +464,7 @@ by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;
     [[`\uD83D\uDD27 Status`|Status]]
     &lt;&lt;link &quot;&amp;#x1f527; Reset n0_&quot;&gt;&gt;
         &lt;&lt;state-delete n0_&gt;&gt;
-        &lt;&lt;run VarInfo.revisitHere()&gt;&gt;
+        &lt;&lt;goto `State.passage`&gt;&gt;
     &lt;&lt;/link&gt;&gt;
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="5" name="StoryInit" tags="inclusion" position="2150,575" size="100,100">&lt;&lt;script&gt;&gt;
   // global modules
@@ -3707,43 +3707,45 @@ The endings here are all static, with no choices beyond the selection of variati
 &lt;hr&gt;
 &lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="35" name="Title Screen" tags="section-start" position="2575,1500" size="100,100">&lt;&lt;script&gt;&gt;
-    const v = variables();
-    if (v.personalEnding) {
-        v.characterDisplay = &#39;images/wolf.png&#39;;
+    const V = State.variables;
+    const T = State.temporary;
+    if (V.personalEnding) {
+        T.characterDisplay = &#39;images/wolf.png&#39;;
     } else {
-        v.characterDisplay = &#39;images/panther.png&#39;;
+        T.characterDisplay = &#39;images/panther.png&#39;;
     }
-    if (v.titleDelay1) {
+    if (V.titleSeen) {
         // already seen title, speed it up.
-        v.titleDelay1 = &#39;0.1s&#39;;
-        v.titleDelay2 = &#39;1s&#39;;
-        v.titleDelay3 = &#39;0.2s&#39;;
+        T.titleDelay1 = &#39;0.1s&#39;;
+        T.titleDelay2 = &#39;1s&#39;;
+        T.titleDelay3 = &#39;0.2s&#39;;
     } else {
-        v.titleDelay1 = &#39;1s&#39;;
-        v.titleDelay2 = &#39;2s&#39;;
-        v.titleDelay3 = &#39;3s&#39;;
+        T.titleDelay1 = &#39;1s&#39;;
+        T.titleDelay2 = &#39;2s&#39;;
+        T.titleDelay3 = &#39;3s&#39;;
+        V.titleSeen = true;
     }
-    if (v.passedContentWarning) {
+    if (V.passedContentWarning) {
         // we&#39;re here without clearing data
-        v.startGameText = &#39;Try Again&#39;;
+        T.startGameText = &#39;Try Again&#39;;
     } else {
-        v.startGameText = &#39;New Game&#39;;
+        T.startGameText = &#39;New Game&#39;;
     }
 &lt;&lt;/script&gt;&gt;\
 \
 &lt;div class=&quot;title-screen&quot;&gt;\
 &lt;div class=&quot;title-container&quot;&gt;\
 \
-&lt;&lt;timed $titleDelay1 t8n&gt;&gt;\
-&lt;img class=&quot;title-character&quot; @src=&quot;$characterDisplay&quot;&gt;\
+&lt;&lt;timed _titleDelay1 t8n&gt;&gt;\
+&lt;img class=&quot;title-character&quot; @src=&quot;_characterDisplay&quot;&gt;\
 \
-&lt;&lt;next $titleDelay2&gt;&gt;\
+&lt;&lt;next _titleDelay2&gt;&gt;\
 &lt;img class=&quot;title-logo&quot; src=&quot;images/logo_tr.png&quot;&gt;\
 \
-&lt;&lt;next $titleDelay3&gt;&gt;
+&lt;&lt;next _titleDelay3&gt;&gt;
 &lt;div class=&quot;title-options&quot;&gt;\
 \
-&lt;&lt;link $startGameText&gt;&gt;
+&lt;&lt;link _startGameText&gt;&gt;
     &lt;&lt;if $passedContentWarning&gt;&gt;
         &lt;&lt;goto [[Bound]]&gt;&gt;
     &lt;&lt;else&gt;&gt;
@@ -3773,9 +3775,12 @@ The endings here are all static, with no choices beyond the selection of variati
 The writing and development of this interactive story was made by me, [[Sleth|http://www.slethstories.com/]].
 
 ?P
-Nero&#39;s story and additional coding was contributed by Grayscale, who&#39;s always happy to receive feedback at his
-&lt;a target=&quot;_blank&quot; href=&quot;https://mastodon.social/@gray17&quot;&gt;Mastodon&lt;/a&gt; or
-&lt;a target=&quot;_blank&quot; href=&quot;https://twitter.com/gsw7ad&quot;&gt;Twitter&lt;/a&gt;.
+Nero&#39;s story and additional coding was contributed by Grayscale,
+who&#39;s always happy to receive feedback at
+&lt;a target=&quot;_blank&quot;
+  href=&quot;https://www.furaffinity.net/user/grayscalewolf&quot;
+&gt;FurAffinity&lt;/a&gt; or
+&lt;a target=&quot;_blank&quot; href=&quot;https://mastodon.social/@gray17&quot;&gt;Mastodon&lt;/a&gt;.
 &lt;&lt;/nobr&gt;&gt;
 
 The amazing artwork you see in the game, including the character art and the Mage&#39;s Tower logo, was done by commission by [[BlainWolf|https://twitter.com/Blain_Wolf]]. You can check out more of his stuff in his [[Twitter|https://twitter.com/Blain_Wolf]] or [[FurAffinity|https://www.furaffinity.net/user/blainwolf]] pages!
@@ -9546,8 +9551,51 @@ Feedback is always welcome! Contact &lt;a target=&quot;_blank&quot; href=&quot;h
 &lt;&lt;link &quot;&gt; Nero 1F start&quot; &quot;n1a/F Start&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
 &lt;&lt;/link&gt;&gt;
-&lt;&lt;link &quot;&gt; Nero 1F first action, neutral mood&quot; &quot;n1cn/F Ivex Repeat (5,2)&quot;&gt;&gt;
+&lt;&lt;link &quot;&gt; Nero 1F first action, neutral&quot; &quot;n1cn/F Ivex Repeat (5,2)&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+&lt;&lt;link &quot;&gt; Nero 1F first action, naked&quot; &quot;n1cn/F Ivex Repeat (5,2)&quot;&gt;&gt;
+    &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
+    &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
+    &lt;&lt;set $n1_barbsSlow = true&gt;&gt;
+    &lt;&lt;set $n1_endgameCast = true&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = 1&gt;&gt;
+    &lt;&lt;set $n1_naked = true&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+&lt;&lt;link &quot;&gt; Nero 1F first action, abused&quot; &quot;n1cn/F Ivex Repeat (5,2)&quot;&gt;&gt;
+    &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
+    &lt;&lt;set $n1_abused = true&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+&lt;&lt;link &quot;&gt; Nero 1F sprite ready, neutral, recruiting&quot; &quot;n1cr/D Ivex Skeptical (2,4)&quot;&gt;&gt;
+    &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
+    &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
+    &lt;&lt;set $n1_barbsSlow = true&gt;&gt;
+    &lt;&lt;set $n1_coinThrown = true&gt;&gt;
+    &lt;&lt;set $n1_deskViewed = true&gt;&gt;
+    &lt;&lt;set $n1_mageSight = true&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = MP_wantDevice&gt;&gt;
+    &lt;&lt;set $n1_mirrorViewed = true&gt;&gt;
+    &lt;&lt;set $n1_naked = true&gt;&gt;
+    &lt;&lt;set $n1_studyViewed = true&gt;&gt;
+    &lt;&lt;set $t_banter = true&gt;&gt;
+    &lt;&lt;set $t_didSomeAction = true&gt;&gt;
+    &lt;&lt;set $t_ivexNear = true&gt;&gt;
+    &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+&lt;&lt;link &quot;&gt; Nero 1F sprite ready, neutral, submitting&quot; &quot;n1cr/D Ivex Demanding (4,2)&quot;&gt;&gt;
+    &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
+    &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
+    &lt;&lt;set $n1_barbsSlow = true&gt;&gt;
+    &lt;&lt;set $n1_deskViewed = true&gt;&gt;
+    &lt;&lt;set $n1_mageSight = true&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = MP_wantDevice&gt;&gt;
+    &lt;&lt;set $n1_mirrorViewed = true&gt;&gt;
+    &lt;&lt;set $n1_naked = true&gt;&gt;
+    &lt;&lt;set $n1_studyViewed = true&gt;&gt;
+    &lt;&lt;set $t_banter = true&gt;&gt;
+    &lt;&lt;set $t_didSomeAction = true&gt;&gt;
+    &lt;&lt;set $t_ivexNear = true&gt;&gt;
+    &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 &lt;&lt;link &quot;&gt; Nero 1F before glitch&quot; &quot;n1cr/D Subby&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
@@ -9825,6 +9873,7 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 &lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
 &lt;&lt;em-assert $n1_magicPhase &lt;= MP_triedMagic&gt;&gt;
+&lt;&lt;set $t_ivexNear = false&gt;&gt;
 
 Ivex (the Magnificent)
 &lt;&lt;if $t_ivexDescViewed&gt;&gt;
@@ -12195,8 +12244,12 @@ across the wolf&#39;s bare chest, drawing circles in the fur on each breast.
 The wolf&#39;s nipples perk a bit in apprehension.
 
 ?P
-TODO candleLit-mask.
-Ivex says, &quot;Doesn&#39;t that feel better now? I&#39;m so glad that you&#39;ve
+&lt;&lt;if $n1_candleLit&gt;&gt;
+    Ivex speaks through his grinning mask.
+&lt;&lt;else&gt;&gt;
+    Ivex leers.
+&lt;&lt;/if&gt;&gt;
+&quot;Doesn&#39;t that feel better now? I&#39;m so glad that you&#39;ve
 allowed me to scratch your itches.&quot;
 
 ?P
@@ -13889,7 +13942,6 @@ On one shelf is a small stack of
         And the room&#39;s complex flows of exotic energy make it difficult to
         see if any of the coins have magic attached to them.
     &lt;&lt;/if&gt;&gt;
-    ?P
     &lt;&lt;if $n1_coinThrown&gt;&gt;
         &lt;&lt;if $n1_coinThrownAgain&gt;&gt;
             But one of the thrown coins
@@ -13913,7 +13965,7 @@ On one shelf is a small stack of
         No merchants or banks on this continent accept scalars or vectors.
         So it&#39;s not clear why Ivex would have a stack of them.
         ?P
-        Well, whatever the reason, it doesn&#39;t seem important right now.
+        Well, whatever the reason, it doesn&#39;t seem useful or important right now.
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -14314,7 +14366,7 @@ in their lair, more for the gloomy ambience than any practical purpose.
 &lt;&lt;/if&gt;&gt;
 with its beak gaping open and its wings spread wide,
 in a pose that seems more appropriate
-for a raptor than a flightless waterfowl.
+for a raptor, such as a falcon, not a flightless waterfowl.
 
 &lt;&lt;if $n1_mageSight&gt;&gt;
     ?P
@@ -14346,7 +14398,7 @@ Nero stares at the penguin in perplexity.
     &lt;&lt;if $n1_coinThrown&gt;&gt;
         perhaps similar to the
         &lt;&lt;= $n1_coinThrownAgain ? &quot;ones&quot; : &quot;one&quot;&gt;&gt;
-        that Ivex had flung.
+        that Ivex had flung earlier at the wolf&#39;s crotch.
     &lt;&lt;elseif $n1_bookshelfViewed&gt;&gt;
         perhaps similar to the ones on the bookshelf.
     &lt;&lt;else&gt;&gt;
@@ -14376,34 +14428,23 @@ Nero stares at the penguin in perplexity.
         Ivex was uncooperative when Nero asked before.
         The wolf will have to wait for the right time to ask again.
     &lt;&lt;else&gt;&gt;
-        Perhaps Ivex could be persuaded to touch it?
+        And could Ivex be persuaded to touch it?
         &lt;&lt;actions-add [[Ask Ivex about the penguin.|n1x/D Penguin Ask]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;elseif MP_wantPassword === $n1_magicPhase&gt;&gt;
-    &lt;&lt;if $n1_penguinNameKnown&gt;&gt;
-        &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
-        &lt;&lt;pw-suggest &quot;Hunter Two&quot;&gt;&gt;
-            The names of pets are commonly used as passwords.
-            Perhaps &quot;Hunter Two&quot; is Ivex&#39;s password?
-        &lt;&lt;pw-fail&gt;&gt;
-            &quot;Hunter Two&quot; was not the password.
-            It&#39;s possible that Ivex is using some variant of the name,
-            but there are too many possible variations that could be tried.
-            Nero hopes that the password is something else.
-        &lt;&lt;/pw-suggest&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-        The oddity and the placement of the taxidermy is a sign that
-        it&#39;s important to Ivex. He might even have given it a name.
-        If so, the name could be the password Nero needs.
-        &lt;&lt;if $n2_ivexGone&gt;&gt;
-            If only he had asked Ivex about the penguin when he had
-            the chance. Ah well, there are plenty of other options to try.
-        &lt;&lt;else&gt;&gt;
-            And Ivex might reveal what that is, with the right question.
-            &lt;&lt;actions-add [[Ask Ivex about the penguin.|n1x/D Penguin Ask]]&gt;&gt;
-        &lt;&lt;/if&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
+    &lt;!-- can&#39;t get here without asking penguin, for touch --&gt;
+    &lt;&lt;em-assert $n1_penguinNameKnown&gt;&gt;
+    &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
+    &lt;&lt;pw-suggest &quot;Hunter Two&quot;&gt;&gt;
+        The names of pets are commonly used as passwords.
+        Perhaps &quot;Hunter Two&quot; is Ivex&#39;s password?
+    &lt;&lt;pw-fail&gt;&gt;
+        &quot;Hunter Two&quot; was not the password.
+        It&#39;s possible that Ivex is using some variant of the name,
+        but there are too many possible variations that could be tried.
+        Nero hopes that the password is something else.
+    &lt;&lt;/pw-suggest&gt;&gt;
 
 &lt;&lt;elseif $n2_free&gt;&gt;
     The wolf considers searching for it,
@@ -14651,39 +14692,57 @@ if there were anything to magnify other than the clear blue sky.
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
-TODO ivexNear.
+&lt;&lt;em-assert MP_wantTouch === $n1_magicPhase&gt;&gt;
+
 TODO candleLit-mask.
 
-&lt;&lt;if $n1_portraitMomKnown&gt;&gt;
-    memory of mom lick
+&lt;&lt;if $n1_penguinNameKnown&gt;&gt;
+    &lt;&lt;em-assert $t_ivexReceptive&gt;&gt;
+    XXX asked before, learned name but no touch. ivex is receptive now.
+&lt;&lt;else&gt;&gt;
+    XXX intro to asking about penguin
 &lt;&lt;/if&gt;&gt;
-    
+
+&lt;&lt;if $n1_portraitMomKnown&gt;&gt;
+    XXX memory of mom lick, ick
+&lt;&lt;/if&gt;&gt;
+
 &lt;&lt;if $t_ivexReceptive&gt;&gt;
-    ivex mentions name, tells story of wanting an owl,
+    &lt;&lt;if $n1_penguinNameKnown&gt;&gt;
+        ah yes, I did mention his name before
+    &lt;&lt;else&gt;&gt;
+        intro to hunter two
+    &lt;&lt;/if&gt;&gt;
+    tells story of wanting an owl,
     but uncle gave him a penguin, saying it was close enough.
     
     ?P
-    notices the beak is empty, searches the floor for a bit, picks up coin.
+    notices the beak is empty, searches the floor for a bit,
+    
+    ?P
+    sprite responds.
+
+    ?P
+    ivex stands up, shows coin.
     puts it back in beak.
     &lt;&lt;set $t_ivexNear = false&gt;&gt;
 
-    &lt;&lt;if MP_wantTouch === MP_magicPhase&gt;&gt;
-        sprite responds. pause. password please.
-        &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
+    ?P
+    sprite,. password please.
+    &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
+    &lt;&lt;em-assert !$n1_penguinNameKnown&gt;&gt;
+
     ivex unresponsive, but mentions penguin name.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;pw-found &quot;XXX pet&quot;&gt;&gt;
-&lt;&lt;pw-suggest &quot;XXX pet&quot;&gt;&gt;
-    maybe that&#39;s the password?
-    &lt;!-- don&#39;t need pw-fail here --&gt;
-&lt;&lt;/pw-suggest&gt;&gt;
+&lt;&lt;pw-found &quot;Hunter Two&quot;&gt;&gt;
+&lt;&lt;set $n1_penguinNameKnown = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-$t_afterAction</tw-passagedata><tw-passagedata pid="414" name="n1x/D Portrait Ask" tags="" position="7600,4125" size="100,100">&lt;&lt;nobr&gt;&gt;
+$t_afterAction
+</tw-passagedata><tw-passagedata pid="414" name="n1x/D Portrait Ask" tags="" position="7600,4125" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
@@ -17847,8 +17906,12 @@ the wooden cross, the leather straps, and his robe.
 ?P
 Ivex watches the squirming wolf with amusement.
 After a minute or so of that, he dismisses the Superb Itch with a gesture.
-TODO candleLit-mask.
-Still smirking, the panther says, &quot;Your clothing
+&lt;&lt;if $n1_candleLit&gt;&gt;
+    Through his grinning mask,
+&lt;&lt;else&gt;&gt;
+    Still smirking,
+&lt;&lt;/if&gt;&gt;
+the panther says, &quot;Your clothing
 seems to be causing you some discomfort.
 Let me help you with that.&quot;
 ?P
