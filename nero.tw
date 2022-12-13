@@ -19670,10 +19670,6 @@ $(document).one(":passagedisplay", () => {
   position: sticky;
   top: 0;
 }
-.dash-todo-item {
-  margin-left: 3em;
-  text-indent: -1em;
-}
 .dash-stats {
   margin-left: 1em;
   text-indent: -1em;
@@ -19684,6 +19680,20 @@ $(document).one(":passagedisplay", () => {
 .dash-vsep {
   opacity: 0.5;
   margin: 0 .5em;
+}
+.dash-title {
+  font-weight: bold;
+}
+.dash-head a {
+  margin-left: 1em;
+}
+.dash-body,
+.dash-body {
+  margin-left: 1em;
+}
+.dash-todo-item {
+  margin-left: 3em;
+  text-indent: -1em;
 }
 </style>
 
@@ -19696,6 +19706,9 @@ $(document).one(":passagedisplay", () => {
 <<script>>
 const countable = new Set([
   "markF", "markD", "markP", "unmarked",
+]);
+const incomplete = new Set([
+  "markD", "markP",
 ]);
 
 function analyze(passages) {
@@ -19730,18 +19743,26 @@ function analyze(passages) {
     return "unmarked";
   };
 
+  const sample = new Set(passages.randomMany(5));
+
   passages.forEach(p => {
     const kind = getKind(p.title, p.tags);
     kindOf[p.title] = kind;
 
     const todos = [];
+    const add = (tag, snippet) => {
+      if (!todos.find(t => t.tag === tag && t.snippet === snippet)) {
+        todos.push({ tag, snippet });
+      }
+    };
+
     const todoRE = /\bTO[D]O\b\S*[ \t]*(\S*)(.*)/g;
     for (const m of p.text.matchAll(todoRE)) {
-      todos.push({ todo: `TO\DO ${m[1]}`, snippet: m[2] });
+      add(`TO\DO ${m[1]}`, m[2]);
     }
     const exesRE =/\bX[X]X\b\S*(.*)/g;
     for (const m of p.text.matchAll(exesRE)) {
-      todos.push({ todo: "X\XX", snippet: m[1] });
+      add("X\XX", m[1]);
     }
 
     if (["markF", "unmarked"].includes(kind)) {
@@ -19750,16 +19771,30 @@ function analyze(passages) {
       }
     }
     if (todos.length) {
+      if (todos.length > 1) {
+        /* remove any no-snippet exes if there are other todos */
+        const p = todos.findIndex(t => t.tag === "X\XX" && t.snippet === "");
+        if (p >= 0) todos.splice(p, 1);
+      }
+      todos.sort((a, b) => {
+        if (a.key < b.key) return -1;
+        if (a.key > b.key) return +1;
+        if (a.snippet < b.snippet) return -1;
+        if (a.snippet > b.snippet) return +1;
+        return 0;
+      });
       todosIn[p.title] = todos;
     }
-    wordCount[p.title] = countWords(p.text, Math.random() < 0.01);
+    const verbose = sample.has(p);
+    wordCount[p.title] = countWords(p.text, verbose);
+    if (verbose) console.log({ wordCount: wordCount[p.title], title: p.title });
   });
 
   return { kindOf, todosIn, warnings, wordCount };
 }
 
 function countWords(text, verbose) {
-  const tokens = text.split(/(<<.*?>>|<.*>)/);
+  const tokens = text.split(/(<[<].*?>>|<.*>)/);
   let n = 0;
   const skipTo = (p, re) => {
     while (p < tokens.length && !re.test(p)) ++p;
@@ -19783,7 +19818,6 @@ function countWords(text, verbose) {
       if (verbose) console.log({ t, words });
     }
   }
-  if (verbose) console.log({ n });
   return n;
 }
 
@@ -19857,11 +19891,57 @@ function summarizeTo(dest, info, label) {
       .text(`${pct(count.markP)} P ${count.markP}`);
   }
 
-  uncounted.sort().forEach((k, i) => {
+  uncounted.sort().forEach((kind, i) => {
     outer.append(i === 0 ? `${sep}uncounted: ` : ", ");
     $("<span>").appendTo(outer)
-      .text(`${k} ${count[k]}`);
+      .text(`${kind} ${count[kind]}`);
   });
+}
+
+function showRandom(dest, info) {
+  const block = $("<div class=dash-random>").appendTo(dest);
+  const head = $("<div class=dash-head>").appendTo(block);
+  const body = $("<div class=dash-body>").appendTo(block);
+
+  const toShow = Object.keys(info.kindOf)
+    .filter(t => info.todosIn[t] || incomplete.has(info.kindOf[t]))
+    .sort();
+
+  const reroll = () => {
+    body.empty();
+    toShow.randomMany(5)
+      .forEach(t => todoBlock(info, t).appendTo(body));
+  };
+  $("<span class=dash-title>").text("Random unfinished").appendTo(head);
+  $("<a>").appendTo(head).text("(reroll)")
+    .on("click", () => reroll());
+    
+  reroll();
+}
+
+function todoBlock(info, title) {
+  const block = $("<div class=dash-todo-block>");
+  $("<div class=dash-todo-title>").wiki(`[\[${title}]]`).appendTo(block);
+  const todos = info.todosIn[title] || [];
+  todos.forEach(todo => {
+    $("<div class=dash-todo-item>").appendTo(block).append(
+      $("<span class=dash-todo-tag>").text(todo.tag),
+      $("<span class=dash-todo-snippet>").text(todo.snippet),
+    );
+  });
+  return block;
+}
+
+function showTodos(dest, info) {
+  const block = $("<div class=dash-unfinished>").appendTo(dest);
+  const head = $("<div class=dash-head>").appendTo(block);
+  const body = $("<div class=dash-body>").appendTo(block);
+
+  $("<span class=dash-title>").text("All unfinished").appendTo(head);
+  const toShow = Object.keys(info.kindOf)
+    .filter(t => info.todosIn[t] || incomplete.has(info.kindOf[t]))
+    .sort();
+  toShow.forEach(t => todoBlock(info, t).appendTo(body));
 }
 
 const passages = Story.lookup()
@@ -19871,19 +19951,25 @@ const neroPassages = passages
   .filter(p => /^n\d/.test(p.title));
 const neroInfo = analyze(neroPassages);
 
-if (neroInfo.warnings.length) {
-  neroInfo.warnings.forEach(w => {
-    $("<div class=dash-warning").text(w).appendTo(output)
-  });
-  $(output).append("<br>");
-}
-
 const otherPassages = passages
   .filter(p => !/^n\d/.test(p.title));
 const otherInfo = analyze(otherPassages);
 
 summarizeTo(output, neroInfo, "Nero passages");
 summarizeTo(output, otherInfo, "Drekkar passages");
+
+if (neroInfo.warnings.length) {
+  $(output).append("<hr>");
+  neroInfo.warnings.forEach(w => {
+    $("<div class=dash-warning").text(w).appendTo(output)
+  });
+}
+
+$(output).append("<hr>");
+showRandom(output, neroInfo);
+
+$(output).append("<hr>");
+showTodos(output, neroInfo);
 
 /*
 const todoKeys = Object.keys(todoMap).sort();
