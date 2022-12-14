@@ -83,9 +83,11 @@
   - "forw" goes forward in history, or does "rand" at the end of history.
   - "rand" tries to do shuffle, not uniform random, so repeated rand/back can
     potentially do an entire depth-first traversal of the story.
+  - "seek" will repeat "rand" until it reaches an unfinished passage.
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
   - <kbd>ctrl-period</kbd> is a shortcut for "forw".
-  - <kdb>ctrl-slash</kdb> is a shortcut for "rand".
+  - <kbd>ctrl-slash</kbd> is a shortcut for "rand".
+  - <kbd>ctrl-backslash</kbd> is a shortcut for "seek".
 - "var-info" at the top is a compact display of state variables.
   - Pressing "var-info" will show or hide the variables info.
   - var-info only shows variables that are read or set by the current passage.

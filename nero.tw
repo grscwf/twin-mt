@@ -1679,6 +1679,20 @@ function randomWalkSetup() {
       Engine.forward();
     }
   };
+  
+  const seek = () => {
+    const here = State.passage;
+    if (!/[/]F/.test(here)) return;
+    if (/^n9/.test(here)) return;
+    const chosen = $("#passages .random-walk-chosen");
+    if (chosen.length === 1) {
+      chosen[0].click();
+      setTimeout(seek, 500);
+    } else {
+      walk();
+      setTimeout(seek, 100);
+    }
+  };
 
   $(document).on(":passageend", () => {
     $("#random-walk").remove();
@@ -1700,6 +1714,11 @@ function randomWalkSetup() {
       .text("rand")
       .click(walk)
       .appendTo(outer);
+    $("<a>")
+      .attr("title", "<ctrl-backslash> seek")
+      .text("seek")
+      .click(seek)
+      .appendTo(outer);
   });
 
   // ctrl-comma doesn't generate keypress events
@@ -1711,6 +1730,7 @@ function randomWalkSetup() {
     if (ev.key === ",") return back();
     if (ev.key === ".") return forward();
     if (ev.key === "/") return random();
+    if (ev.key === "\\") return seek();
   });
 }
 
@@ -11212,10 +11232,11 @@ and then he can complete his mission and escape.
 
 <<n1-patience 1 1>>
 <<n1-warn>>
-    Ivex asks, "What makes you think I would ever submit to your control?
+    Ivex asks in a casual tone of voice,
+    "What makes you think I would accept you as my leader?"
 <<n1-insist>>
-    Ivex snarls, "What makes you think I would ever submit to
-    <em>your</em> control?"
+    Ivex snarls and asks,
+    "Why would I ever submit to <em>your</em> control?"
 <</n1-patience>>
 
 ?P
@@ -11223,11 +11244,27 @@ and then he can complete his mission and escape.
 
 <ul class="actions">
     <<if $n1_abused>>
-        <li>[[`Tell Ivex, "Of course you wouldn't, not to me. I'm here on behalf of..."`|n1cn/D Secret Society]]</li>
-        <li>[[`Tell Ivex, "No, that's not what I meant! I'm in a support group..."`|n1cn/D Reject Support]]</li>
+        <li>
+            <<mta [[|n1cn/D Secret Society]]>>
+                Agree with Ivex. "Of course you wouldn't!"
+            <</mta>>
+        </li>
+        <li>
+            <<mta [[n1cn/D Reject Support]]>>
+                Explain to Ivex, "No, that's what I meant!"
+            <</mta>>
+        </li>
     <<else>>
-        <li>[[`Tell Ivex, "This isn't about me. I'm here on behalf of..."`|n1cn/D Secret Society]]</li>
-        <li>[[`Tell Ivex, "Because I knew you would say that..."`|n1cn/D Reject Demotion]]</li>
+        <li>
+            <<mta [[n1cn/D Secret Society]]>>
+                Explain to Ivex, "This isn't about me..."
+            <</mta>>
+        </li>
+        <li>
+            <<mta [[n1cn/D Reject Demotion]]>>
+                Confidently tell Ivex, "Because I knew you would say that..."
+            <</mta>>
+        </li>
     <</if>>
     <<actions-optional $t_magicAction>>
 </ul>
@@ -11387,7 +11424,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 <</if>>
 <</nobr>>
 
-[[Continue|n1cn/D Recruit 2]]
+[[Continue|n1cn/F Recruit 2]]
 
 
 :: n1cn/F Collab {"position":"4600,2650","size":"100,100"}
@@ -11657,7 +11694,7 @@ Not that Nero would ever tell that to his
 <</nobr>>
 
 
-:: n1cn/D Recruit 2 {"position":"4175,2300","size":"100,100"}
+:: n1cn/F Recruit 2 {"position":"4175,2300","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
@@ -11684,8 +11721,12 @@ Not that Nero would ever tell that to his
 <</if>>
 
 ?P
-XXX ivexNear.
-Ivex makes a gesture, and
+The panther mage
+<<if $t_ivexNear>>
+    takes a few steps back. He then
+    <<set $t_ivexNear = false>>
+<</if>>
+makes a gesture, and
 <!-- coinThrown true might be impossible here, but just in case -->
 <<if $n1_coinThrown>>
     another coin

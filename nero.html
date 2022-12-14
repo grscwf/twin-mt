@@ -1675,6 +1675,20 @@ function randomWalkSetup() {
       Engine.forward();
     }
   };
+  
+  const seek = () =&gt; {
+    const here = State.passage;
+    if (!/[/]F/.test(here)) return;
+    if (/^n9/.test(here)) return;
+    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+    if (chosen.length === 1) {
+      chosen[0].click();
+      setTimeout(seek, 500);
+    } else {
+      walk();
+      setTimeout(seek, 100);
+    }
+  };
 
   $(document).on(&quot;:passageend&quot;, () =&gt; {
     $(&quot;#random-walk&quot;).remove();
@@ -1696,6 +1710,11 @@ function randomWalkSetup() {
       .text(&quot;rand&quot;)
       .click(walk)
       .appendTo(outer);
+    $(&quot;&lt;a&gt;&quot;)
+      .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; seek&quot;)
+      .text(&quot;seek&quot;)
+      .click(seek)
+      .appendTo(outer);
   });
 
   // ctrl-comma doesn&#39;t generate keypress events
@@ -1707,6 +1726,7 @@ function randomWalkSetup() {
     if (ev.key === &quot;,&quot;) return back();
     if (ev.key === &quot;.&quot;) return forward();
     if (ev.key === &quot;/&quot;) return random();
+    if (ev.key === &quot;\\&quot;) return seek();
   });
 }
 
@@ -10080,10 +10100,11 @@ and then he can complete his mission and escape.
 
 &lt;&lt;n1-patience 1 1&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
-    Ivex asks, &quot;What makes you think I would ever submit to your control?
+    Ivex asks in a casual tone of voice,
+    &quot;What makes you think I would accept you as my leader?&quot;
 &lt;&lt;n1-insist&gt;&gt;
-    Ivex snarls, &quot;What makes you think I would ever submit to
-    &lt;em&gt;your&lt;/em&gt; control?&quot;
+    Ivex snarls and asks,
+    &quot;Why would I ever submit to &lt;em&gt;your&lt;/em&gt; control?&quot;
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -10091,11 +10112,27 @@ and then he can complete his mission and escape.
 
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n1_abused&gt;&gt;
-        &lt;li&gt;[[`Tell Ivex, &quot;Of course you wouldn&#39;t, not to me. I&#39;m here on behalf of...&quot;`|n1cn/D Secret Society]]&lt;/li&gt;
-        &lt;li&gt;[[`Tell Ivex, &quot;No, that&#39;s not what I meant! I&#39;m in a support group...&quot;`|n1cn/D Reject Support]]&lt;/li&gt;
+        &lt;li&gt;
+            &lt;&lt;mta [[|n1cn/D Secret Society]]&gt;&gt;
+                Agree with Ivex. &quot;Of course you wouldn&#39;t!&quot;
+            &lt;&lt;/mta&gt;&gt;
+        &lt;/li&gt;
+        &lt;li&gt;
+            &lt;&lt;mta [[n1cn/D Reject Support]]&gt;&gt;
+                Explain to Ivex, &quot;No, that&#39;s what I meant!&quot;
+            &lt;&lt;/mta&gt;&gt;
+        &lt;/li&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;li&gt;[[`Tell Ivex, &quot;This isn&#39;t about me. I&#39;m here on behalf of...&quot;`|n1cn/D Secret Society]]&lt;/li&gt;
-        &lt;li&gt;[[`Tell Ivex, &quot;Because I knew you would say that...&quot;`|n1cn/D Reject Demotion]]&lt;/li&gt;
+        &lt;li&gt;
+            &lt;&lt;mta [[n1cn/D Secret Society]]&gt;&gt;
+                Explain to Ivex, &quot;This isn&#39;t about me...&quot;
+            &lt;&lt;/mta&gt;&gt;
+        &lt;/li&gt;
+        &lt;li&gt;
+            &lt;&lt;mta [[n1cn/D Reject Demotion]]&gt;&gt;
+                Confidently tell Ivex, &quot;Because I knew you would say that...&quot;
+            &lt;&lt;/mta&gt;&gt;
+        &lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
@@ -10235,7 +10272,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|n1cn/D Recruit 2]]</tw-passagedata><tw-passagedata pid="304" name="n1cn/F Collab" tags="" position="4600,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cn/F Recruit 2]]</tw-passagedata><tw-passagedata pid="304" name="n1cn/F Collab" tags="" position="4600,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -10487,7 +10524,7 @@ Not that Nero would ever tell that to his
 
 ?P
 [[Continue|n1cn/F Ivex Repeat (5,2)]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="308" name="n1cn/D Recruit 2" tags="" position="4175,2300" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="308" name="n1cn/F Recruit 2" tags="" position="4175,2300" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if MP_beforeCast === $n1_magicPhase&gt;&gt;
@@ -10513,8 +10550,12 @@ Not that Nero would ever tell that to his
 &lt;&lt;/if&gt;&gt;
 
 ?P
-XXX ivexNear.
-Ivex makes a gesture, and
+The panther mage
+&lt;&lt;if $t_ivexNear&gt;&gt;
+    takes a few steps back. He then
+    &lt;&lt;set $t_ivexNear = false&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+makes a gesture, and
 &lt;!-- coinThrown true might be impossible here, but just in case --&gt;
 &lt;&lt;if $n1_coinThrown&gt;&gt;
     another coin
