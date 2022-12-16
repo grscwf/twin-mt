@@ -454,6 +454,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Pick Unseen]]>>
 <<include [[Init 2 Random Once]]>>
 <<include [[Init 2 Random Walk]]>>
+<<include [[Init 2 Return Head]]>>
 <<include [[Init 2 Saves]]>>
 <<include [[Init 2 Sidebar]]>>
 <<include [[Init 2 State]]>>
@@ -1684,6 +1685,7 @@ function randomWalkSetup() {
     const here = State.passage;
     if (!/[/]F/.test(here)) return;
     if (/^n9/.test(here)) return;
+    if (ErrorMessage.hasFails) return;
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
       chosen[0].click();
@@ -1740,13 +1742,17 @@ randomWalkSetup();
 
 :: Init 2 Sidebar [inclusion] {"position":"2450,700","size":"100,100"}
 <<script>>
-Macro.add("sidebar-auto-stow", {
-  handler: function() {
-    if (document.body.offsetWidth <= 768) {
-      UIBar.stow();
-    }
+
+MagesTower.autoStow = () => {
+  if (document.body.offsetWidth <= 768) {
+    UIBar.stow();
   }
+};
+
+Macro.add("auto-stow", {
+  handler: MagesTower.autoStow,
 });
+
 <</script>>
 
 <<nobr>>
@@ -3716,11 +3722,8 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 
 :: Archives [noreturn] {"position":"2500,2000","size":"100,100"}
 <<nobr>>
-<<sidebar-auto-stow>>
+<<return-head>>
 
-<<link "Return to the game" $return>><</link>>
-
-<hr>
 <span class="ui-title">
     Welcome to the Mage's Tower Archives
 </span>
@@ -3769,8 +3772,6 @@ The endings here are all static, with no choices beyond the selection of variati
     <<include [[n0/F Nero Endings]]>>
 </div>
 
-<hr>
-<<link "Return to the game" $return>><</link>>
 <</nobr>>
 
 
@@ -3840,9 +3841,7 @@ The endings here are all static, with no choices beyond the selection of variati
 
 :: Credits [noreturn] {"position":"2650,1925","size":"100,100"}
 <<nobr>>
-<<sidebar-auto-stow>>
-
-<<link "Return to the game" $return>><</link>>
+<<return-head>>
 
 <h1>Credits</h1>
 The writing and development of this interactive story was made by me, [[Sleth|http://www.slethstories.com/]].
@@ -3984,8 +3983,6 @@ And, of course, also an honorable mention to everyone that has supported me and 
 \
 Thank you so much!
 
-<<link "Return to the game" $return>><</link>>
-
 
 :: Choose Character {"position":"2575,1750","size":"100,100"}
 <meta-text>Choose your adventurer</meta-text>
@@ -4026,7 +4023,8 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
 
 :: Passage Notes Top [noreturn] {"position":"2025,1250","size":"100,100"}
 <<nobr>>
-<<sidebar-auto-stow>>
+<<return-head>>
+
 <style>
   #notes-load-file {
     height: 1px;
@@ -4038,6 +4036,7 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
     visibility: hidden;
   }
 </style>
+
 <<script>>
   const PN = PassageNotes;
   const T = State.temporary;
@@ -4207,9 +4206,6 @@ Moreover, this story contains elements that depict dubious or lack of consent, a
   }
 <</script>>
 
-<<link "Return to the game" $return>><</link>>
-<hr>
-
 <span class="ui-title">Passage Notes</span>
 is a system for attaching notes to individual passages.
 <<set _detail = `
@@ -4253,13 +4249,13 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
     <textarea disabled></textarea>
 </div>
 
-<hr>
-<<link "Return to the game" $return>><</link>>
 <</nobr>>
 
 
 :: Passage Notes Single [noreturn] {"position":"1900,1250","size":"100,100"}
 <<nobr>>
+<<return-head>>
+
 <<script>>
   const PN = window.PassageNotes;
   const T = State.temporary;
@@ -4351,7 +4347,6 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   }
 <</script>>
 
-<<link "Return to the game" $return>><</link>>
 <span class="ui-links-sep"></span>
 [[View all notes|Passage Notes Top]]
 
@@ -10568,9 +10563,9 @@ We're expecting the rest of Nero's story to be released to <a target="_blank" hr
 Feedback is always welcome! Contact <a target="_blank" href="https://twitter.com/gsw7ad">Grayscale</a> at Twitter if you see a bug or have suggestions.
 
 
-:: n0/F Jump To {"position":"3150,1450","size":"100,100"}
+:: n0/F Jump To [noreturn] {"position":"3150,1450","size":"100,100"}
 <<nobr>>
-<<sidebar-auto-stow>>
+<<return-head>>
 <span class="ui-title">Jump To</span>
 <</nobr>>
 <hr>
@@ -19481,12 +19476,31 @@ setup();
 
 :: Visited [noreturn] {"position":"2200,1200","size":"100,100"}
 <<nobr>>
-<<sidebar-auto-stow>>
-<style>
 
-.vp-hsep::before {
+<<return-block>>
+    <span class=vp-colsep>||</span>
+    <a id=vp-clear>
+        Clear visited
+    </a>
+    <span class=vp-colsep>||</span>
+    <label>
+        <input id=vp-mark type=checkbox>
+        Mark visited links
+        <span id=vp-on-hover>
+            on hover
+        </span>
+    </label>
+    
+    <div id=visited-head-2></div>
+<</return-block>>
+
+<style>
+#vp-on-hover.vp-no-hover {
+  display: none;
+}
+
+.vp-colsep {
   color: #666;
-  content: "||";
   margin: 0 .5em;
 }
 .vp-ssep {
@@ -19523,25 +19537,21 @@ function pct(x, y) {
 
 function render() {
   const V = State.variables;
+  
+  const colsep = "<span class=vp-colsep>||</span>";
+
   $("#vp-body").remove();
   const out = $("<div id=vp-body>").appendTo(".passage");
-  $(out).wiki(`<<link "Return to the game" $return>><</link>>`);
-  $("<span class=vp-hsep>").appendTo(out);
-  $("<a id=vp-clear>")
-    .text("Clear visited")
-    .click(clear)
-    .appendTo(out);
-  $("<span class=vp-hsep>").appendTo(out);
+  const head2 = $("#visited-head-2");
+
+  $("#vp-clear").on("click", clear);
+
+  $("#vp-mark")
+      .prop("checked", VP.getMarksEnabled())
+      .on("change", ev => VP.setMarksEnabled(ev.target.checked));
 
   const canHover = window.matchMedia && matchMedia("(hover: hover)").matches;
-
-  $("<label>").appendTo(out).append([
-    $("<input type=checkbox>")
-      .prop("checked", VP.getMarksEnabled())
-      .on("change", ev => VP.setMarksEnabled(ev.target.checked)),
-    " Mark visited links",
-    canHover ? " on hover" : "",
-  ]);
+  $("#vp-on-hover").toggleClass("vp-no-hover", !canHover);
 
   const passages = Story.lookup();
   const relevant = passages.filter(p =>
@@ -19551,15 +19561,13 @@ function render() {
 
   const nt = titles.length;
   const nv = titles.filter(t => VP.has(t)).length;
-  $("<div class=vp-stats>").appendTo(out).append([
+  $("<div class=vp-stats>").appendTo(head2).append([
     `${nt} passages`,
-    "<span class=vp-hsep>",
+    colsep,
     `${nv} (${pct(nv, nt)}) visited`,
-    "<span class=vp-hsep>",
+    colsep,
     `${nt - nv} (${pct(nt - nv, nt)}) not visited`
   ]);
-
-  $(out).append("<hr>");
 
   let curSection = null;
   titles.forEach(title => {
@@ -19703,7 +19711,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: Init 2 Saves [inclusion] {"position":"2950,600","size":"100,100"}
+:: Init 2 Saves [inclusion] {"position":"3050,600","size":"100,100"}
 <<script>>
 // Clean up the savegame title
 Config.passages.descriptions = function() {
@@ -19841,9 +19849,7 @@ $t_afterAction
 
 :: Proofing [noreturn] {"position":"2200,1800","size":"100,100"}
 <<nobr>>
-<<sidebar-auto-stow>>
-<<link "Return to the game" $return>><</link>>
-<hr>
+<<return-head>>
 
 <style>
 
@@ -19893,22 +19899,14 @@ $(document).one(":passagedisplay", () => {
 
 <</script>>
 
-<hr>
-<<link "Return to the game" $return>><</link>>
 <</nobr>>
 
 
 :: Dashboard [noreturn] {"position":"2200,1925","size":"100,100"}
 <<nobr>>
-<<sidebar-auto-stow>>
+<<return-head>>
+
 <style>
-#dash-top {
-  background-color: #111;
-  margin-top: -1em;
-  padding-top: 1em;
-  position: sticky;
-  top: 0;
-}
 .dash-stats {
   margin-left: 1em;
   text-indent: -1em;
@@ -19936,10 +19934,6 @@ $(document).one(":passagedisplay", () => {
 }
 </style>
 
-<div id="dash-top">
-    <<link "Return to the game" $return>><</link>>
-    <hr>
-</div>
 <</nobr>>\
 <div id=dash-outer></div>\
 <<script>>
@@ -20518,5 +20512,51 @@ with artifacts like that globe.
 <</if>>
 
 <</nobr>>\
+
+
+:: Init 2 Return Head [inclusion] {"position":"2950,600","size":"100,100"}
+<<append head>><style>
+
+#return-head {
+  background-color: #111;
+  line-height: 1.75;
+  margin-top: -1em;
+  padding-top: 1em;
+  position: sticky;
+  top: 0;
+}
+
+</style><</append>>
+
+<<script>>
+function addHead(contents) {
+  ErrorMessage.assert(
+    tags().includes("noreturn"),
+    "tags should have noreturn");
+
+  $(document).one(":passagedisplay", () => {
+    MagesTower.autoStow();
+    $("#return-head").remove();
+    $("<div id=return-head>")
+      .prependTo("#passages")
+      .wiki(`<<link "Return to the game" $return>><</link>>`)
+      .wiki(contents)
+      .append("<hr>");
+  });
+}
+
+Macro.add("return-head", {
+  handler: function() {
+    addHead("");
+  }
+});
+
+Macro.add("return-block", {
+  tags: [],
+  handler: function() {
+    addHead(this.payload[0].contents);
+  }
+});
+<</script>>
 
 
