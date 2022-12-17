@@ -449,6 +449,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Compute Variants]]>>
 <<include [[Init 2 Fade-In]]>>
 <<include [[Init 2 Links]]>>
+<<include [[Init 2 Log]]>>
 <<include [[Init 2 Meta Text]]>>
 <<include [[Init 3 Passage Notes]]>>
 <<include [[Init 2 Pick Unseen]]>>
@@ -1098,7 +1099,7 @@ function mark(node) {
     position: fixed;
     right: 10px;
     top: 10px;
-    z-index: 1;
+    z-index: 10;
   }
   .draft-D::before {
     color: rgba(70, 200, 255, 0.2);
@@ -1501,7 +1502,7 @@ Macro.add("fade-in", {
 <</script>>
 
 
-:: Init 2 Meta Text [inclusion] {"position":"2550,600","size":"100,100"}
+:: Init 2 Meta Text [inclusion] {"position":"2650,600","size":"100,100"}
 <<append head>><style>
   meta-text {
     background-color: transparent;
@@ -1549,7 +1550,7 @@ Macro.add("meta-ending", {
 <</script>>
 
 
-:: Init 2 Pick Unseen [inclusion] {"position":"2650,600","size":"100,100"}
+:: Init 2 Pick Unseen [inclusion] {"position":"2750,600","size":"100,100"}
 <<script>>
 /**
  * Show an option that hasn't been shown yet, if possible.
@@ -1575,7 +1576,7 @@ Macro.add("meta-ending", {
 <</script>>
 
 
-:: Init 2 Random Walk [inclusion] {"position":"2850,600","size":"100,100"}
+:: Init 2 Random Walk [inclusion] {"position":"2950,600","size":"100,100"}
 <<append head>><style>
   #random-walk {
     top: max(5rem, 50vh - 5rem);
@@ -1686,6 +1687,9 @@ function randomWalkSetup() {
     if (!/[/]F/.test(here)) return;
     if (/^n9/.test(here)) return;
     if (ErrorMessage.hasFails) return;
+    const text = $(".passage").text();
+    if (/\bX[X]X\b|\bTO[D]O\b/.test(text)) return;
+    
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
       chosen[0].click();
@@ -1740,7 +1744,7 @@ randomWalkSetup();
 <</script>>
 
 
-:: Init 2 Sidebar [inclusion] {"position":"2450,700","size":"100,100"}
+:: Init 2 Sidebar [inclusion] {"position":"2550,700","size":"100,100"}
 <<script>>
 
 MagesTower.autoStow = () => {
@@ -1780,7 +1784,7 @@ Macro.add("auto-stow", {
 <</nobr>>
 
 
-:: Init 2 State [inclusion] {"position":"2550,700","size":"100,100"}
+:: Init 2 State [inclusion] {"position":"2650,700","size":"100,100"}
 <<script>>
 const VT = window.VarTrace;
 
@@ -1849,13 +1853,13 @@ Macro.add("state-load", {
 <</script>>
 
 
-:: Init 2 Templates [inclusion] {"position":"2650,700","size":"100,100"}
+:: Init 2 Templates [inclusion] {"position":"2750,700","size":"100,100"}
 <<script>>
 Template.add("P", "<br><br>");
 <</script>>
 
 
-:: Init 2 UI Style [inclusion] {"position":"2750,700","size":"100,100"}
+:: Init 2 UI Style [inclusion] {"position":"2850,700","size":"100,100"}
 <<append head>><style>
 
 #debug-bar-hint {
@@ -1889,7 +1893,7 @@ Template.add("P", "<br><br>");
 </style><</append>>
 
 
-:: Init 2 Var Info [inclusion] {"position":"2850,700","size":"100,100"}
+:: Init 2 Var Info [inclusion] {"position":"2950,700","size":"100,100"}
 <<append head>><style>
 .revisit-here,
 .revisit-here * {
@@ -2825,7 +2829,7 @@ Nero.flags = {
       n1a_intro: "",
       n1cn_neutral: "notable",
       n1cr_receptive: "notable",
-      n1cs_subby: "notable",
+      n1cs_subby: "",
       n1cx_transition: "notable",
       n1d_candle: "notable",
       n1e_horny: "notable",
@@ -11801,6 +11805,7 @@ makes a gesture, and
 :: n1cr/F Ivex Demanding (4,2) {"position":"4325,3675","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_abused n1_naked>>
 
 <<n1-patience 4 2>>
     Ivex hesitates a moment, then says,
@@ -11934,6 +11939,7 @@ XXX maybe another option
 :: n1cr/D Subby {"position":"4475,3800","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_naked n1_abused>>
 
 <<if $t_resisting>>
     nero: within reason
@@ -11990,6 +11996,8 @@ ivex: nice try, but I think you're lying... we'll see.
 
 :: n1cs/D Ivex Dominant (4,2) [pw-misfire-start] {"position":"4350,3925","size":"200,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 <<set $t_ivexReceptive = true>>
 
 <<n1-patience 4 2>>
@@ -12009,15 +12017,14 @@ ivex: nice try, but I think you're lying... we'll see.
     <li>[[lick eagerly|n1cs/D Licking][$t_resisting = false]]</li>
     <li>[[lick reluctantly|n1cs/D Licking][$t_resisting = true]]</li>
     <<actions-optional $t_magicAction>>
-    <<if !_patienceExhausted>>
-        <<actions-get>>
-    <</if>>
 </ul>
 <</nobr>>
 
 
 :: n1cs/D Ivex Cruel (4,2) {"position":"4350,4175","size":"200,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 <<set $t_ivexReceptive = true>>
 
 <<n1-patience 4 2>>
@@ -12042,6 +12049,8 @@ ivex: nice try, but I think you're lying... we'll see.
 
 :: n1cs/D Licking {"position":"4350,4050","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 <<if $t_resisting>>
     ivex: smirks at reluctance
 <<else>>
@@ -12057,6 +12066,8 @@ you need to demonstrate loyalty
 
 :: n1cs/D Reject Mercy {"position":"4225,4200","size":"100,100"}
 <<nobr>>
+<<vi-ignore n1_mageSight>>
+
 <<if $t_resisting>>
     ivex: ooh, you're going to be so much fun.
 <<else>>
@@ -12073,9 +12084,6 @@ ivex: well, whether you're real or not, it won't matter soon.
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
-<<set $n1_subby = true>>
-<</nobr>>
-
 <<barbs-announce maybe>>
 
 subby and naked. ivex is near, creeps.
@@ -12085,7 +12093,11 @@ subby and naked. ivex is near, creeps.
     normal, transition to subbiness
 <</if>>
 
+?P
 [[Continue|n1cs/D Ivex Dominant (4,2)]]
+
+<<set $n1_subby = true>>
+<</nobr>>
 
 
 :: n1cx/F Start Candle {"position":"3875,4300","size":"100,100"}
@@ -13697,8 +13709,8 @@ $t_afterAction
 <<elseif $t_ivexReceptive>>
     <!-- receptive when not subby is always clothed -->
     <<em-assert !$n1_naked>>
-    Ivex seems receptive. XXX expand on this
-    Perhaps this is a good time for Nero to impress him
+    Ivex seems interested in Nero's tale.
+    Perhaps this is a good time for the wolf to impress the panther
     with a clever escape spell.
     <<set $t_magicAction = "[[Cast an escape spell.|n1s/D Cast Slippery]]">>
 
@@ -14464,20 +14476,8 @@ spell fizzes. Ivex recognizes it.
 
 :: n1s/D Slippery {"position":"5850,3400","size":"100,100"}
 <<nobr>>
-<<vi-always n1_candleHorny false>>
-<<vi-always t_ivexReceptive true>>
-<<vi-always n1_mageSight false>>
-<<vi-always n1_magicPhase `MP_beforeCast`>>
-<<vi-always n2_extraHorny false>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-<<vi-always n2_mirrorBroken false>>
-<<vi-always n2_tooClever false>>
-
-<<vi-ignore n1_abused>>
-<<vi-ignore n1_candleLit>>
-<<vi-ignore n1_naked>>
-<<vi-ignore n1_subby>>
 
 info about slippery spell
 <</nobr>>
@@ -16829,6 +16829,7 @@ $t_afterAction
 
 :: n1s/D Connect {"position":"6225,4275","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_ivexGone>>
 <<vi-always n2_free false>>
 
 <<set $n1_magicPhase = MP_wantDevice>>
@@ -19216,7 +19217,7 @@ glitch - blank
 this is all endings involving the lion
 
 
-:: Init 2 Random Once [inclusion] {"position":"2750,600","size":"100,100"}
+:: Init 2 Random Once [inclusion] {"position":"2850,600","size":"100,100"}
 <<script>>
 const EM = ErrorMessage;
 const VI = VarInfo;
@@ -19727,7 +19728,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: Init 2 Saves [inclusion] {"position":"3050,600","size":"100,100"}
+:: Init 2 Saves [inclusion] {"position":"2450,700","size":"100,100"}
 <<script>>
 // Clean up the savegame title
 Config.passages.descriptions = function() {
@@ -20530,7 +20531,7 @@ with artifacts like that globe.
 <</nobr>>\
 
 
-:: Init 2 Return Head [inclusion] {"position":"2950,600","size":"100,100"}
+:: Init 2 Return Head [inclusion] {"position":"3050,600","size":"100,100"}
 <<append head>><style>
 
 #return-head {
@@ -20574,6 +20575,134 @@ Macro.add("return-block", {
     addHead(this.payload[0].contents);
   }
 });
+<</script>>
+
+
+:: Init 2 Log [inclusion] {"position":"2550,600","size":"100,100"}
+<<append head>><style>
+
+#log-button {
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    cursor: pointer;
+    font-size: 18px;
+    min-width: 2em;
+    opacity: 0.8;
+    padding: 2px 4px;
+    position: fixed;
+    right: 4px;
+    text-align: center;
+    top: 90px;
+    z-index: 20;
+}
+#log-button:hover {
+  background-color: #333;
+  border-color: #eee;
+  color: #eee;
+  opacity: 1;
+}
+
+#log-outer a {
+  color: #ddb;
+  cursor: text;
+}
+#log-outer a.log-next {
+  color: #ffa000;
+}
+
+#log-outer ul.actions li:not(:has(.log-next)) {
+  background-image: none;
+}
+
+#log-outer hr {
+  border-color: #333;
+}
+
+</style><</append>>
+
+<<script>>
+
+const KEY = "mt-log-1";
+let log = [];
+let from = {
+  turn: -1,
+  title: "",
+};
+
+function saveLog() {
+  // console.log("save", log.map(e => [e.turn, e.html.slice(0, 30)]));
+  State.metadata.set(KEY, log);
+}
+
+function setup() {
+  log = State.metadata.get(KEY) || [
+    { turn: 0, html: "<p>hello world</p>" },
+  ];
+
+  $("<div id=log-button>")
+    .appendTo("#story")
+    .text("log")
+    .on("click", () => openLog());
+    
+  $(document).on(":passageinit", ev => {
+    updateLog(ev.passage.title);
+  });
+  $(document).on(":passagestart", () => {
+    from = { turn: State.turns, title: State.passage };
+  });
+}
+
+function updateLog(toTitle) {
+    if (from.turn < 0) return;
+    
+    const toTurn = State.turns < from.turn ? State.turns : State.turns + 1;
+    const to = { turn: toTurn, title: toTitle };
+    const dom = $(".passage");
+
+    console.log(from, to, { text: dom.text().slice(0, 50) });
+
+    if (from.title === "n0/F Jump To" && from.turn < to.turn) {
+      log = [];
+      saveLog();
+    }
+
+    if (tags().includes("noreturn")) return;
+    if (Story.get(to.title).tags.includes("noreturn")) return;
+
+    record(from, to, dom);
+}
+
+function record(from, to, dom) {
+  // backward or refresh
+  if (to.turn <= from.turn) {
+    log = log.filter(e => e.turn < to.turn);
+    saveLog();
+    return;
+  }
+
+  // No passage?
+  if (dom.length !== 1) return;
+
+  dom = dom.clone();
+  dom.find(`[data-passage="${to.title}"]`).addClass("log-next");
+  const html = dom[0].outerHTML;
+  log.push({ turn: from.turn, html });
+  saveLog();
+}
+
+function openLog() {
+  Dialog.setup("Log");
+  const outer = $("<div id=log-outer>").appendTo(Dialog.body());
+  log.forEach((e, i) => {
+    if (i !== 0) outer.append("<hr>");
+    outer.append($.parseHTML(e.html));
+  });
+  Dialog.open();
+}
+
+if (Config.debug) setup();
 <</script>>
 
 
