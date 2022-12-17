@@ -9685,7 +9685,7 @@ Other than the sounds made by his unknown companion, it&#39;s eerily quiet. It f
 
 Nero ventures to open one eyelid slightly to peer through the slit...
 
-[[Continue|n1a/F Feign Sleep 2]]</tw-passagedata><tw-passagedata pid="278" name="n1a/F Hello" tags="" position="3425,1900" size="100,100">Nero has resolved many difficult situations by simply talking and engaging the aggrieved persons with dialogue, courtesy, and respect. It&#39;s certainly worth trying now.
+[[Continue|n1a/F Feign Sleep 2]]</tw-passagedata><tw-passagedata pid="278" name="n1a/F Hello" tags="" position="3425,1900" size="100,100">The adventuresome wolf has resolved many difficult situations by simply talking and engaging the aggrieved persons with dialogue, courtesy, and respect. It&#39;s certainly worth trying now.
 
 He opens his eyes and struggles to focus.
 
@@ -18551,7 +18551,7 @@ Macro.add(&quot;return-block&quot;, {
   cursor: text;
 }
 #log-outer a.log-next {
-  color: #ffa000;
+  color: #ff3;
 }
 
 #log-outer ul.actions li:not(:has(.log-next))::before {
@@ -18564,6 +18564,31 @@ Macro.add(&quot;return-block&quot;, {
 
 #log-outer .random-walk-chosen {
   outline: none;
+}
+
+#log-outer .log-title {
+  border-bottom: 1px solid #666;
+  margin-bottom: 4px;
+  margin-top: -4px;
+  text-align: right;
+}
+
+#log-outer .log-title span {
+  background-color: #333;
+  border: 1px solid #666;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  color: #999;
+  display: inline-block;
+  font-size: 12px;
+  opacity: 0.8;
+  padding: 2px 6px;
+}
+#log-outer .log-title span:hover {
+  border-color: #fff;
+  background-color: #111;
+  color: #fff;
+  opacity: 1;
 }
 
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
@@ -18583,9 +18608,7 @@ function saveLog() {
 }
 
 function setup() {
-  log = State.metadata.get(KEY) || [
-    { turn: 0, html: &quot;&lt;p&gt;hello world&lt;/p&gt;&quot; },
-  ];
+  log = State.metadata.get(KEY) || [];
 
   $(&quot;&lt;div id=log-button&gt;&quot;)
     .appendTo(&quot;#story&quot;)
@@ -18607,7 +18630,7 @@ function updateLog(toTitle) {
     const to = { turn: toTurn, title: toTitle };
     const dom = $(&quot;.passage&quot;);
 
-    console.log(from, to, { text: dom.text().slice(0, 50) });
+    // console.log(from, to, { text: dom.text().slice(0, 50) });
 
     if (from.title === &quot;n0/F Jump To&quot; &amp;&amp; from.turn &lt; to.turn) {
       log = [];
@@ -18634,9 +18657,23 @@ function record(from, to, dom) {
   dom = dom.clone();
   dom.find(`[data-passage=&quot;${to.title}&quot;]`).addClass(&quot;log-next&quot;);
   dom.find(&quot;.random-walk-chosen&quot;).removeClass(&quot;random-walk-chosen&quot;);
+  
+  // Remove &quot;Continue&quot; link when followed
+  const links = dom.find(&quot;a[data-passage]&quot;);
+  if (links.length) {
+    let last = links[links.length - 1];
+    if (last.textContent === &quot;Continue&quot; &amp;&amp; last.classList.contains(&quot;log-next&quot;)) {
+      if (last.parentElement.tagName === &quot;SPAN&quot;) {
+        last = last.parentElement;
+      }
+      last.remove();
+      const br = dom.find(&quot;br&quot;);
+      if (br.length) br[br.length - 1].remove();
+    }
+  }
 
   const html = dom[0].outerHTML;
-  log.push({ turn: from.turn, html });
+  log.push({ turn: from.turn, title: from.title, html });
   saveLog();
 }
 
@@ -18644,7 +18681,9 @@ function openLog() {
   Dialog.setup(&quot;Log&quot;);
   const outer = $(&quot;&lt;div id=log-outer&gt;&quot;).appendTo(Dialog.body());
   log.forEach((e, i) =&gt; {
-    if (i !== 0) outer.append(&quot;&lt;hr&gt;&quot;);
+    $(&quot;&lt;div class=log-title&gt;&quot;)
+      .append($(&quot;&lt;span&gt;&quot;).text(e.title))
+      .appendTo(outer);
     outer.append($.parseHTML(e.html));
   });
   Dialog.open();

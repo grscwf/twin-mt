@@ -10735,7 +10735,7 @@ Nero ventures to open one eyelid slightly to peer through the slit...
 
 
 :: n1a/F Hello {"position":"3425,1900","size":"100,100"}
-Nero has resolved many difficult situations by simply talking and engaging the aggrieved persons with dialogue, courtesy, and respect. It's certainly worth trying now.
+The adventuresome wolf has resolved many difficult situations by simply talking and engaging the aggrieved persons with dialogue, courtesy, and respect. It's certainly worth trying now.
 
 He opens his eyes and struggles to focus.
 
@@ -20619,7 +20619,7 @@ Macro.add("return-block", {
   cursor: text;
 }
 #log-outer a.log-next {
-  color: #ffa000;
+  color: #ff3;
 }
 
 #log-outer ul.actions li:not(:has(.log-next))::before {
@@ -20632,6 +20632,31 @@ Macro.add("return-block", {
 
 #log-outer .random-walk-chosen {
   outline: none;
+}
+
+#log-outer .log-title {
+  border-bottom: 1px solid #666;
+  margin-bottom: 4px;
+  margin-top: -4px;
+  text-align: right;
+}
+
+#log-outer .log-title span {
+  background-color: #333;
+  border: 1px solid #666;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  color: #999;
+  display: inline-block;
+  font-size: 12px;
+  opacity: 0.8;
+  padding: 2px 6px;
+}
+#log-outer .log-title span:hover {
+  border-color: #fff;
+  background-color: #111;
+  color: #fff;
+  opacity: 1;
 }
 
 </style><</append>>
@@ -20651,9 +20676,7 @@ function saveLog() {
 }
 
 function setup() {
-  log = State.metadata.get(KEY) || [
-    { turn: 0, html: "<p>hello world</p>" },
-  ];
+  log = State.metadata.get(KEY) || [];
 
   $("<div id=log-button>")
     .appendTo("#story")
@@ -20675,7 +20698,7 @@ function updateLog(toTitle) {
     const to = { turn: toTurn, title: toTitle };
     const dom = $(".passage");
 
-    console.log(from, to, { text: dom.text().slice(0, 50) });
+    // console.log(from, to, { text: dom.text().slice(0, 50) });
 
     if (from.title === "n0/F Jump To" && from.turn < to.turn) {
       log = [];
@@ -20702,9 +20725,23 @@ function record(from, to, dom) {
   dom = dom.clone();
   dom.find(`[data-passage="${to.title}"]`).addClass("log-next");
   dom.find(".random-walk-chosen").removeClass("random-walk-chosen");
+  
+  // Remove "Continue" link when followed
+  const links = dom.find("a[data-passage]");
+  if (links.length) {
+    let last = links[links.length - 1];
+    if (last.textContent === "Continue" && last.classList.contains("log-next")) {
+      if (last.parentElement.tagName === "SPAN") {
+        last = last.parentElement;
+      }
+      last.remove();
+      const br = dom.find("br");
+      if (br.length) br[br.length - 1].remove();
+    }
+  }
 
   const html = dom[0].outerHTML;
-  log.push({ turn: from.turn, html });
+  log.push({ turn: from.turn, title: from.title, html });
   saveLog();
 }
 
@@ -20712,7 +20749,9 @@ function openLog() {
   Dialog.setup("Log");
   const outer = $("<div id=log-outer>").appendTo(Dialog.body());
   log.forEach((e, i) => {
-    if (i !== 0) outer.append("<hr>");
+    $("<div class=log-title>")
+      .append($("<span>").text(e.title))
+      .appendTo(outer);
     outer.append($.parseHTML(e.html));
   });
   Dialog.open();
