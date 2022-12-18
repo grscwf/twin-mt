@@ -73,9 +73,16 @@
 
 ## Debug controls
 
-- Debug mode adds several useful passages to the left menu, marked with a
-  wrench icon
-- The "back", "forw", and "rand" buttons on the right will navigate history
+- Debug mode turns on several features:
+  - The top has a "var-info" display. 
+  - The right side has several buttons.
+  - The left menu has some utilties, marked with a wrench icon.
+  - A few macros show a wrench icon within a passage,
+    for local control of the macro.
+  - The bottom right is SugarCube's debug panel, which is somewhat redundant,
+    but there are a few things it can do which isn't easy to do with the
+    other debug controls.
+- On the right, "back", "forw", "rand", "seek" will navigate history
   and do a random walk.
   - Pressing "rand" will highlight a random link in the current passage.
   - Pressing "rand" again will visit that link.
@@ -88,7 +95,12 @@
   - <kbd>ctrl-period</kbd> is a shortcut for "forw".
   - <kbd>ctrl-slash</kbd> is a shortcut for "rand".
   - <kbd>ctrl-backslash</kbd> is a shortcut for "seek".
-- "var-info" at the top is a compact display of state variables.
+- On the right, "log" opens a transcript of the current story session.
+  This is helpful when using "seek".
+- On the right, "notes" opens a textbox for writing or editing notes about
+  the current passage. "Notes" in the left sidebar has more explanation
+  of this feature.
+- At the top, "var-info" is a compact display of state variables.
   - Pressing "var-info" will show or hide the variables info.
   - var-info only shows variables that are read or set by the current passage.
   - Hover over a variable will show verbose detail.
