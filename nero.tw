@@ -3591,7 +3591,6 @@ Nero.basicPasswords = {
 Nero.otherPasswords = {
   /* books */
   "621": "the year that Ivex graduated from high school",
-  "XXX book": "the name of Ivex's high school",
 
   /* candle */
   "Red": "the color of the candle",
@@ -20792,13 +20791,25 @@ function updateLog(toTitle) {
 
     // console.log(from, to, { text: dom.text().slice(0, 50) });
 
-    if (from.title === "n0/F Jump To" && from.turn < to.turn) {
+    // Clear log when using a jump point, and don't record it.
+    if (from.turn < to.turn && from.title === "n0/F Jump To") {
+      log = [];
+      saveLog();
+      return;
+    }
+    
+    // Don't record motion from or to a "noreturn"
+    if (Story.get(from.title).tags.includes("noreturn")) return;
+    if (Story.get(to.title).tags.includes("noreturn")) return;
+    
+    // Don't record title screen
+    if (from.title === "Title Screen") return;
+
+    // Clear log at Bound (and record it).
+    if (from.turn < to.turn && (from.title === "Bound" || to.title === "Bound")) {
       log = [];
       saveLog();
     }
-
-    if (tags().includes("noreturn")) return;
-    if (Story.get(to.title).tags.includes("noreturn")) return;
 
     record(from, to, dom);
 }
