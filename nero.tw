@@ -454,6 +454,7 @@ The Mage's Tower (Nero)
 
 <<include [[Init 2 Archive]]>>
 <<include [[Init 2 Arousal Bar]]>>
+<<include [[Init 2 Count Words]]>>
 <<include [[Init 2 Draft Sign]]>>
 <<include [[Init 2 Enum Type]]>>
 <<include [[Init 2 Error Message]]>>
@@ -1102,7 +1103,7 @@ function mark(node) {
 <</script>>
 
 
-:: Init 2 Draft Sign [inclusion] {"position":"2750,500","size":"100,100"}
+:: Init 2 Draft Sign [inclusion] {"position":"2850,500","size":"100,100"}
 <<append head>><style>
   #draft-sign {
     font-size: 120px;
@@ -1161,7 +1162,7 @@ $(document).on(":passageend", () => {
 <</script>>
 
 
-:: Init 2 Enum Type [inclusion] {"position":"2850,500","size":"100,100"}
+:: Init 2 Enum Type [inclusion] {"position":"2950,500","size":"100,100"}
 <<script>>
 const ET = window.EnumType || (window.EnumType = {});
 
@@ -1189,7 +1190,7 @@ ET.symbolic = (name, value) => {
 <</script>>
 
 
-:: Init 2 Error Message [inclusion] {"position":"2950,500","size":"100,100"}
+:: Init 2 Error Message [inclusion] {"position":"3050,500","size":"100,100"}
 <<append head>><style>
   #EM-outer {
     position: fixed;
@@ -1362,7 +1363,7 @@ function getFails() {
 <</script>>
 
 
-:: Init 2 Fade-In [inclusion] {"position":"3050,500","size":"100,100"}
+:: Init 2 Fade-In [inclusion] {"position":"3150,500","size":"100,100"}
 <!--
 /*
  * This description assumes you're using the default style.
@@ -1630,7 +1631,8 @@ function randomWalkSetup() {
   const visited = new Set();
   const lastPick = {};
 
-  const idOf = el => `${$(el).attr("data-passage")} | ${$(el).text()}`;
+  // TODO - add setter to id
+  const idOf = el => $(el).attr("data-passage");
 
   const walk = () => {
     const chosen = $("#passages .random-walk-chosen");
@@ -1693,11 +1695,19 @@ function randomWalkSetup() {
     }
   };
   
+  const stop = [
+    "Enthrallment End",
+    "Extraction End 2",
+    "Interrogation End",
+    "The End",
+  ];
+  
   const seek = () => {
     const here = State.passage;
-    if (!/[/]F/.test(here)) return;
-    if (/^n9/.test(here)) return;
     if (ErrorMessage.hasFails) return;
+    if (/[/][DPS]/.test(here)) return;
+    if (/^n9/.test(here)) return;
+    if (stop.includes(here)) return;
     const text = $(".passage").text();
     if (/\bX[X]X\b|\bTO[D]O\b/.test(text)) return;
     
@@ -10908,11 +10918,29 @@ First comes Raven's Diversion, which can absorb up to 68 joules of energy from b
 
 And then comes Mudge's Invisibility, which is not so much an invisibility spell as a "shrink a person to the size of an acorn" spell. Since the person's clothes and other accessories are not also shrunk, the spell is more a ribald parlor trick than a regular tool of working mages. But it has the virtue of being the shortest glyph-stream that's likely to free Nero from any type of physical restraint.
 
-The unusual ass-inscribed construction has another limitation: neither spell will last very long. About 3 seconds. Maybe another second if his bladder is full. Still, it's enough to rescue Nero from immediate peril, and it lets him prepare more substantial spells, ones that do require gestures or words.
+<<nobr>>
+The unusual ass-inscribed construction has another limitation:
+neither spell will last very long.
+About 3 seconds.
+Maybe another second if his bladder is full.
 
-It's saved his life more than once.
+<<if $n1_subby>>
+    TODO subby pride in his construct, and desire to impress Ivex
 
+<<else>>
+    Still, it's enough to rescue Nero from immediate peril,
+    and it lets him prepare more substantial spells,
+    ones that do require gestures or words.
+
+    ?P
+    It's saved his life more than once.
+<</if>>
+
+?P
 <<link Return $t_returnEndgame>><</link>>
+
+<<set $t_endgameViewed = true>>
+<</nobr>>
 
 
 :: n1a/F Hangover Info {"position":"3350,1575","size":"100,100"}
@@ -11190,7 +11218,8 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
     betrayed his client's confidence.
     ?P
     Ivex's ears twitch at the sudden aggression, but
-    a moment later his ears perk up. He smiles and gives his crotch a few rubs.
+    a moment later his ears perk up. He smiles and gives his crotch
+    a few quick rubs.
 
 <<else>>
     Nero looses a full-throated growl at the panther mage.
@@ -11211,7 +11240,7 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 <<else>>
     That statement seems ominous.
 <</if>>
-In any case, Nero <<= $n1_abused ? "hopes" : "thinks">>
+Still, Nero <<= $n1_abused ? "hopes" : "thinks">>
 he can provoke the panther
 into making a careless mistake.
 One mistake is all the wolf needs,
@@ -12216,8 +12245,9 @@ the candle lights up.
     Nero glares at the masked panther.
     The mask is a small thing, but somehow its addition to the
     panther's attire makes the wolf feel even more naked than he is.
-    Still, it seems likely that the reason for the mask is the candle.
-    He asks, "Have you ever considered... courting potential lovers
+    But that's unlikely to be the mask's intent.
+    It's more likely that the reason for the mask is the candle.
+    Nero asks, "Have you ever considered... courting potential lovers
     <em>without</em> tying them down and poisoning them?"
     <<set _pw = "Have You Ever Considered">>
 <<else>>
@@ -12731,7 +12761,7 @@ The panther mage raises an arm, then snaps his fingers.
     He gently squeezes. "Who sent you?"
 <<n1-insist>>
     Ivex gently squeezes Nero's balls again. "You had better tell me."
-    And again. "Who sent you?"
+    Another squeeze. "Who sent you?"
 <</n1-patience>>
 
 ?P
@@ -13724,29 +13754,40 @@ $t_afterAction
 :: n1s/D Cast Sight {"position":"5500,4050","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
+<<em-assert !$n1_candleHorny>>
 
-<<set $n1_magicPhase = MP_mageSight>>
-<<set $n1_mageSight = true>>
-
-cast mage sight.
+XXX Nero feels his magic energy low, he seems to be in an energy desert.
+he hesitates to cast mage-sight, not sure when he'll have more energy,
+but he reasons that mage-sight is his best chance of getting
+the information he needs to figure out what to do next.
 
 <<if !$n2_ivexGone>>
     ?P
-    TODO candleLit-mask.
-    ivex reacts.
-    see ivex with magesight.
+    <<if $t_ivexNear>>
+       XXX  ivex notices the invocation and says something insulting
+        <<if $n1_candleLit>>
+            through his mask
+        <</if>>
+    <<else>>
+        ivex doesn't notice
+    <</if>>
 <</if>>
 
-reveals intricate energy network, highly firewalled.
-more on anti-magic.
+?P
+XXX mage-sight reveals that he's not in an energy desert, the room is thick with exotic energy that's inaccessible to him,
+he recognizes some of the structural applications of it, but the energy itself is something that he can't use,
+alien and encrypted/firewalled.
+relate some more to anti-magic.
 
-<<if $n1_candleHorny>>
-    ?P
-    horny description
+<<if !$n2_ivexGone>>
+    XXX see ivex with mage-sight
 <</if>>
 
 ?P
 $t_afterAction
+
+<<set $n1_magicPhase = MP_mageSight>>
+<<set $n1_mageSight = true>>
 <</nobr>>
 
 
@@ -13803,9 +13844,12 @@ $t_afterAction
 
 <<if $n1_candleHorny>>
     XXX Horny, must see magic bonds and escape them.
+    <<set $t_magicAction = "[[Cast mage-sight.|n1s/D Cast Sight Horny]]">>
 <<else>>
     Perhaps it's time to cast mage-sight and look for a flaw in Ivex's
     [[anti-magic field|n1s/F Anti-magic][$t_patienceLooks--]].
+    <<set $t_returnAntiMagic = State.passage>>
+    
     <<if $t_ivexReceptive>>
         Ivex is watching, but mage-sight is a conventional move in tactical magic,
         and it might reassure the panther about the wolf mage's competence.
@@ -13813,9 +13857,8 @@ $t_afterAction
         Ivex is watching, but it'll be too quick for him to stop,
         and Nero needs every advantage he can get.
     <</if>>
+    <<set $t_magicAction = "[[Cast mage-sight.|n1s/D Cast Sight]]">>
 <</if>>
-<<set $t_returnAntiMagic = State.passage>>
-<<set $t_magicAction = "[[Cast mage-sight.|n1s/D Cast Sight]]">>
 
 ?P
 <</nobr>>\
@@ -13826,12 +13869,12 @@ $t_afterAction
 
 <<if $n2_mirrorBroken>>
     <<em-assert !$n1_mageSight>>
-    Mirror broken, magic energy low.
+    XXX Mirror broken, magic energy low.
 <<else>>
     <<if $n1_candleHorny>>
-        Horny mage-sight on.
+        XXX Horny mage-sight on.
     <<else>>
-        mage-sight is on.
+        XXX mage-sight is on.
     <</if>>
     <<if $n1_scanned>>
         <<set $t_magicAction = "[[Scan the room again.|n1s/D Scan]]">>
@@ -13894,7 +13937,7 @@ in the fur of his left breast, and his nipple perks a bit in apprehension.
 allowed me to scratch your itches."
 
 ?P
-Nero looks away and tries to suppress his body's autonomic responses.
+Nero looks away and tries to suppress his body's automatic responses.
 His ears he can keep straight. His breathing will stay steady. But he doesn't
 seem to be able to suppress the bristling of the fur on his neck.
 
@@ -13907,9 +13950,10 @@ The panther's right paw is now at the wolf's crotch.
 The claws lightly brush up and down the wolf's furry sheath
 in long, slow strokes.
 Nero quivers in his bonds and shakes his head.
-<</nobr>>
 
+?P
 [[Continue|n1s/F After Itch 2]]
+<</nobr>>
 
 
 :: n1s/D Cast Slippery {"position":"5950,3400","size":"100,100"}
@@ -14085,9 +14129,9 @@ The Sprite in Nero's ear says, "The following devices are available..."
 
 ?P
 <<if $n1_candleHorny>>
-    horny Nero thoughts.
+    XXX horny Nero thoughts.
 <<else>>
-    Nero thoughts.
+    XXX Nero thoughts.
 <</if>>
 <<set $t_helpDeviceViewed = true>>
 
@@ -14237,7 +14281,6 @@ $t_afterAction
 <<nobr>>
 <<vi-always n2_free false>>
 
-<<set $n1_magicPhase = MP_wantName>>
 
 <<if !$n1_rememberPlease>>
     Nero whispers, "Nackle's Poltergeist Device".
@@ -14245,24 +14288,31 @@ $t_afterAction
     <<set $n1_rememberPlease = true>>
 <</if>>
 
+?P
 Nero says, "Please, Nackle's Poltergeist Device".
-<</nobr>>
 
 <<if !$n2_ivexGone>>
+    ?P
     TODO ivexNear.
     TODO candleLit-mask.
     Ivex, "Yeah, you'd like to feel that wouldn't you".
 <</if>>
 
+?P
 Sprite, "There's more than one poltegeist device available in this room. Please specify which one you want, Master."
 
+?P
 <<if $n1_candleHorny>>
     horny Nero thoughts
 <<else>>
     Nero thoughts.
 <</if>>
 
+?P
 $t_afterAction
+
+<<set $n1_magicPhase = MP_wantName>>
+<</nobr>>
 
 
 :: n1s/D Say Lance {"position":"6500,3975","size":"100,100"}
@@ -14381,9 +14431,9 @@ help topics."
 
 ?P
 <<if $n1_candleHorny>>
-    horny nero thoughts
+    XXX horny nero thoughts
 <<else>>
-    nero thoughts. suggest things seen that have holes.
+    XXX nero thoughts. suggest things seen that have holes.
 <</if>>
 
 <<set $t_helpTouchViewed = true>>
@@ -14464,7 +14514,7 @@ It's a skill that's been quite useful in his unconventional career.
 <<set $n1_magicPhase = MP_triedMagic>>
 
 Nero feels the familiar dissonance that accompanies the casting
-of most evocation spells. And then...
+of any evocation spell. And then...
 
 ?P
 <<fade-in 6s>>
@@ -15008,16 +15058,16 @@ pompous, dirty, and dominated by the
     <</if>>
 <</if>>
 
-<<set $n1_gravViewed = true>>
-<<if $n1_mageSight>>
-    <<set $n1_gravMagicViewed = true>>
-<</if>>
-
 ?P
 <ul class="actions">
     <<actions-get>>
     <li>$t_afterLook</li>
 </ul>
+
+<<set $n1_gravViewed = true>>
+<<if $n1_mageSight>>
+    <<set $n1_gravMagicViewed = true>>
+<</if>>
 <</nobr>>
 
 
@@ -16241,7 +16291,7 @@ but he does not remember its name.
     red, green, or blue, rather than a patchwork of all three colors
     in a perplexing irregular pattern.
     ?P
-    The pantheress is reclining on a couch in a languid, sensual pose.
+    She's reclining on a couch in a languid, sensual pose.
     Her mouth is partly open, and the tip of her tongue is peeking
     out the left side in a suggestive manner.
     ?P
@@ -19906,8 +19956,6 @@ maybe find an incel tract or something else nutty
 <<em-assert $n1_subby>>
 
 Nero wants to impress Ivex with [[Nero's Endgame|n1a/F Endgame Info]].
-maybe vary on endgame viewed.
-probably need a subby variation of Endgame Info.
 <<set $t_returnEndgame = State.passage>>
 
 ?P
@@ -20236,39 +20284,11 @@ function analyze(passages) {
       todosIn[p.title] = todos;
     }
     const verbose = sample.has(p);
-    wordCount[p.title] = countWords(p.text, verbose);
+    wordCount[p.title] = MagesTower.countWords(p.text, verbose);
     if (verbose) console.log({ wordCount: wordCount[p.title], title: p.title });
   });
 
   return { kindOf, todosIn, warnings, wordCount };
-}
-
-function countWords(text, verbose) {
-  const tokens = text.split(/(<[<].*?>>|<.*>)/);
-  let n = 0;
-  const skipTo = (p, re) => {
-    while (p < tokens.length && !re.test(p)) ++p;
-    return p;
-  };
-  for (let p = 0; p < tokens.length; p++) {
-    const t = tokens[p].trim();
-    if (t === "") {
-      /* nothing */
-    } else if (/^<?<script/.test(t)) {
-      n += 1;
-      p = skipTo(p, /^<?<[/]script/);
-    } else if (t.startsWith("<style")) {
-      n += 1;
-      p = skipTo(p, /^<style/);
-    } else if (t.startsWith("<")) {
-      n += 1;
-    } else {
-      const words = t.split(/[\s]+/).filter(w => /\w/.test(w));
-      n += words.length;
-      if (verbose) console.log({ t, words });
-    }
-  }
-  return n;
 }
 
 function summarizeTo(dest, info, label) {
@@ -20511,15 +20531,16 @@ The best thing about the spell is that it appears to other mages that Nero has h
 Nero feels the spell's base axiom expand
 and become satisfied,
 on every millimeter of his skin.
-The unfortunate wolf writhes in his bonds.
+The unfortunate wolf writhes in his bonds
+from the intense itching.
 
 ?P
 At least the Superb Itch doesn't seem to be amplified by reflections.
 Still, the ordinary power of it is unpleasant enough.
 
 It's probably a blessing that he <em>is</em> bound.
-Victims of the spell are prone to damage themselves with the scratching
-of their own claws.
+Victims of the spell are prone to damage themselves
+with the scratching of their own claws.
 But to Nero, the restraints don't <em>feel</em> like a blessing.
 The wolf whines and lashes his tail in frustration.
 The best he can do to alleviate the irritation is to
@@ -20527,14 +20548,14 @@ awkwardly rub against
 the wooden cross, the leather straps, and his robe.
 ?P
 Ivex watches the squirming wolf with amusement.
-After a minute or so of that, he dismisses the Superb Itch with a gesture.
+After a minute that feels much longer than that,
+he dismisses the Superb Itch with a gesture.
 <<if $n1_candleLit>>
-    Through his grinning mask,
+    The panther says through his grinning mask,
 <<else>>
-    Still smirking,
+    Still smirking, the panther says,
 <</if>>
-the panther says, "Your clothing
-seems to be causing you some discomfort.
+"Your clothing seems to be causing you some discomfort.
 Let me help you with that."
 ?P
 He makes another gesture...
@@ -20567,8 +20588,8 @@ He makes another gesture...
     or would such a strategy backfire.
 <<else>>
     Nero is a little unsettled by the failure of his spell.
-    It's not an entirely unexpected outcome.
-    [[Anti-magic fields|n1s/F Anti-magic]] are to be expected in
+    It's not an entirely unexpected outcome, since
+    [[anti-magic fields|n1s/F Anti-magic]] are to be expected in
     a mage's own home.
     ?P
     But this is not like any he's seen before. Perhaps Ivex's reputation is deserved.
@@ -20592,7 +20613,7 @@ in the world of <em>Ivex the Magnificent</em>!"
 
 ?P
 The last word is practically a scream in Nero's face.
-The panther with agitation clenches his fists,
+The agitated panther clenches his fists,
 turns away, and paces an angry line, back and forth,
 in front of the
 <<= $n1_abused ? "flustered" : "dismayed">> wolf.
@@ -20603,11 +20624,11 @@ for Ivex to stop pacing.
 He takes a deep breath and shakes his body to relax,
 but his limbs are still stiff with tension
 as he turns to face the wolf.
-His eyes are gleaming pools above
+He stares with eyes that are gleaming pools above
 <<if $n1_candleLit>>
     the grinning mask.
 <<else>>
-    an obnoxious smirk.
+    his obnoxious smirk.
 <</if>>
 
 ?P
@@ -20985,12 +21006,27 @@ function record(from, to, dom) {
 function openLog() {
   Dialog.setup("Log");
   const outer = $("<div id=log-outer>").appendTo(Dialog.body());
+  let words = 0;
   log.forEach((e, i) => {
     $("<div class=log-title>")
       .append($("<span>").text(e.title))
       .appendTo(outer);
-    outer.append($.parseHTML(e.html));
+    const section = $.parseHTML(e.html);
+    outer.append(section);
+    words += MagesTower.countWords($(section).text());
   });
+  
+  $("#ui-dialog-title").append(` - ${words} words`);
+  
+  $("<a>&#x2191; </a>").prependTo("#ui-dialog-title")
+    .on("click", () => {
+      $("#log-outer div:first")[0].scrollIntoView();
+    });
+  $("<a> &#x2193;</a>").appendTo("#ui-dialog-title")
+    .on("click", () => {
+      $("#log-outer div:last")[0].scrollIntoView();
+    });
+    
   Dialog.open();
 }
 
@@ -20999,5 +21035,58 @@ if (Config.debug) setup();
 
 
 :: n1s/D Sprite Info {"position":"6350,4125","size":"100,100"}
+
+
+:: n1s/D Cast Sight Horny {"position":"5625,4000","size":"100,100"}
+<<nobr>>
+<<vi-always n2_free false>>
+<<em-assert $n1_candleHorny>>
+
+XXX horny description of low energy, cast mage sight, see ocean of exotic energy.
+
+<<if !$n2_ivexGone>>
+    ?P
+    XXX horny desc of ivex energy
+<</if>>
+
+?P
+$t_afterAction
+
+<<set $n1_magicPhase = MP_mageSight>>
+<<set $n1_mageSight = true>>
+<</nobr>>
+
+
+:: Init 2 Count Words [inclusion] {"position":"2750,500","size":"100,100"}
+<<script>>
+
+MagesTower.countWords = function(text, verbose) {
+  const tokens = text.split(/(<[<].*?>>|<.*>)/);
+  let n = 0;
+  const skipTo = (p, re) => {
+    while (p < tokens.length && !re.test(p)) ++p;
+    return p;
+  };
+  for (let p = 0; p < tokens.length; p++) {
+    const t = tokens[p].trim();
+    if (t === "") {
+      /* nothing */
+    } else if (/^<?<script/.test(t)) {
+      n += 1;
+      p = skipTo(p, /^<?<[/]script/);
+    } else if (t.startsWith("<style")) {
+      n += 1;
+      p = skipTo(p, /^<style/);
+    } else if (t.startsWith("<")) {
+      n += 1;
+    } else {
+      const words = t.split(/[\s]+/).filter(w => /\w/.test(w));
+      n += words.length;
+      if (verbose) console.log({ t, words });
+    }
+  }
+  return n;
+}
+<</script>>
 
 
