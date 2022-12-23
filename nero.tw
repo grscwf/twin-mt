@@ -1625,6 +1625,16 @@ Macro.add("meta-ending", {
   .random-walk-chosen {
     outline: 1px solid #9cc;
   }
+  
+  #rw-seek.rw-seeking {
+    background-color: #161;
+    color: #7f7;
+    opacity: 1;
+  }
+  #rw-seek.rw-seeking:hover {
+    background-color: #191;
+    color: #111;
+  }
 </style><</append>>
 
 <<script>>
@@ -1706,26 +1716,42 @@ function randomWalkSetup() {
     "The End",
   ];
   
-  const seek = () => {
+  let seeking = false;
+  
+  const seekToggle = () => {
+    seeking = !seeking;
+    $("#rw-seek").toggleClass("rw-seeking", seeking);
+    if (seeking) seekNext();
+  };
+  
+  const seekStop = () => {
+    seeking = false;
+    $("#rw-seek").removeClass("rw-seeking");
+  };
+  
+  const seekNext = () => {
     const here = State.passage;
-    if (ErrorMessage.hasFails) return;
-    if (/[/][DPS]/.test(here)) return;
-    if (/^n9/.test(here)) return;
-    if (stop.includes(here)) return;
+
+    if (!seeking) return seekStop();
+    if (ErrorMessage.hasFails) return seekStop();
+    if (/[/][DPS]/.test(here)) return seekStop();
+    if (/^n9/.test(here)) return seekStop();
+    if (stop.includes(here)) return seekStop();
+
     const text = $(".passage").text();
-    if (/\bX[X]X\b|\bTO[D]O\b/.test(text)) return;
+    if (/\bX[X]X\b|\bTO[D]O\b/.test(text)) return seekStop();
     
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
       chosen[0].click();
-      setTimeout(seek, 500);
+      setTimeout(seekNext, 500);
     } else {
       walk();
-      setTimeout(seek, 100);
+      setTimeout(seekNext, 100);
     }
   };
 
-  $(document).on(":passageend", () => {
+  $(() => {
     $("#random-walk").remove();
     const outer = $("<div>")
       .attr("id", "random-walk")
@@ -1745,10 +1771,11 @@ function randomWalkSetup() {
       .text("rand")
       .click(walk)
       .appendTo(outer);
-    $("<a>")
+    $("<a id=rw-seek>")
       .attr("title", "<ctrl-backslash> seek")
+      .toggleClass("rw-seeking", seeking)
       .text("seek")
-      .click(seek)
+      .click(seekToggle)
       .appendTo(outer);
   });
 
@@ -11158,9 +11185,10 @@ Ivex speaks. "So let me make a proposal."
     A plausible story should lower the panther's guard,
     and then Nero can escape and fulfill his commission with a minimum of fuss.
 <<elseif $n1_magicPhase < MP_wantDevice>>
-    Ivex seems intrigued. Spinning an enticing tale
+    Ivex seems intrigued. This strategy is working.
+    Spinning an enticing tale
     should distract the panther long enough
-    for Nero to exploit some flaw in his anti-magic field.
+    for Nero to exploit some flaw in the anti-magic field.
 <<elseif $n1_magicPhase !== MP_wantTouch>>
     Ivex seems intrigued and willing to listen to Nero spin a fanciful tale.
     This should make it easier to speak some unnoticed instructions
@@ -11171,9 +11199,9 @@ Ivex speaks. "So let me make a proposal."
 <</if>>
 <</nobr>>
 
-Nero continues. "The ship's captain was kind enough to let me search the bounty hunter's luggage, and among his papers I found your dossier. It's astonishing. When I read about your exploits, I knew I had to meet you."
+The wolf continues. "The ship's captain was kind enough to let me search the bounty hunter's luggage, and among his papers I found your dossier. It's astonishing. When I read about your exploits, I knew I had to meet you."
 
-"Finally!" says Ivex. "... I mean, it's funny that all those idiot bounty hunters continue to fall into my traps. But I've been trying to meet other types of people. You're not what I expected. But we all have to start somewhere, right?"
+"Finally!" says Ivex. "... I mean, it's funny that all those idiot bounty hunters continue to fall into my traps. But I've been trying to meet other types of people. You're not what I expected. Still, we all have to start somewhere, right?"
 
 <<nobr>>
 <<if $n1_abused>>
@@ -11250,7 +11278,7 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 
 ?P
 <<if $n1_abused>>
-    That's an ominous statement.
+    The wolf's resolve falters at that statement.
 <<else>>
     That statement seems ominous.
 <</if>>
@@ -11275,7 +11303,8 @@ and then he can complete his mission and escape.
 <<n1-insist>>
     Ivex's tail is lashing back and forth.
     He growls and asks again,
-    "Do you think you're my equal?"
+    "Why would I join <em>you</em> in a business venture?
+    Do you think you're my equal?"
 <</n1-patience>>
 <</nobr>>
 
@@ -11285,13 +11314,13 @@ and then he can complete his mission and escape.
 <ul class="actions">
     <<if $n1_abused>>
         <li>
-            <<mta [[n1cn/D Reject Collab]]>>
-                Negotiate with Ivex. "You can have 80%!"
+            <<mta [[n1cn/D Reject Appeasement]]>>
+                Try to appease Ivex. "You can have 80%!"
             <</mta>>
         </li>
         <li>
             <<mta [[n1cn/F Apprentice]]>>
-                Respond to Ivex, "No, of course not!"
+                Explain to Ivex, "No, of course not!"
             <</mta>>
         </li>
     <<else>>
@@ -11387,10 +11416,15 @@ ivex takes the bait, he's skeptical but interested.
 
 "Because I knew you would say that," Nero responds with confidence.
 His aim is to cultivate the panther's insecurities,
-while also suggesting that the wolf can eradicate them.
+while also suggesting that the wolf is someone who can eradicate them.
 
 ?P
-Nero gestures with his muzzle. "You have a tell."
+Nero gestures with his muzzle. "Your belt."
+
+?P
+Ivex looks confused. "My belt? What do you mean?"
+
+?P
 <<if $n1_mageSight>>
     nero, magesight. this place is impressive, but I have a few notes.
     try to challenge ivex's arrogance in a friendly way
@@ -11411,32 +11445,35 @@ throws nero completely off his game.
 [[Continue|n1cx/F Start Candle]]
 
 
-:: n1cn/D Reject Collab [big-mood] {"position":"4075,3550","size":"100,100"}
+:: n1cn/D Reject Collab [big-mood] {"position":"4100,3625","size":"100,100"}
 <<nobr>>
-<<vi-ignore-if n1_abused n1_naked>>
+<<vi-always n1_abused false>>
+<<vi-ignore n1_mageSight>>
 
-<<if $n1_abused>>
-    "You can have 80%!" clearly not working, apprehension
-    ?P
-    ivex, I think you need a reminder, smashes balls.
+<<if $n1_naked>>
+    "Would you prefer a 60% share?" naked, awkward dignity. XXX
 
-<<elseif $n1_naked>>
-    "Would you prefer a 60% share?" naked, awkward dignity.
-
-    ?P
-    Ivex, I think you do not understand the power I have here.
-    smashes balls
 
 <<else>>
     "Would you prefer a 60% share?" asks the wolf.
     Not that he actually has a business venture in mind, yet.
     Right now, Nero's goal is to take measure of Ivex's character,
     in order to find some flaw he can exploit.
-
-    ?P
-    Ivex responds with an intrigued tone. "60%? XXX
-    Ivex steps close, smiles, smashes balls
 <</if>>
+
+?P
+Ivex responds
+with an intrigued tone. "60%? XXX
+<<if $t_ivexNear>>
+    looks up and down wolf.
+<<else>>
+    approaches wolf.
+<</if>>
+I think you do not understand the power I have here.
+smiles, smashes balls
+
+?P
+XXX nero completely thrown off his game
 
 ?P
 [[Continue|n1cx/F Start Candle]]
@@ -11466,7 +11503,7 @@ throws nero completely off his game.
 "I don't have any idea what you're talking about."
 <</nobr>>
 
-Ivex flattens his ears and growls. "Don't try to play dumb with me!" He grabs a sheet of paper from the desk. "I found this in your satchel."
+The panther flattens his ears and growls. "Don't try to play dumb with me!" He grabs a sheet of paper from the desk. "I found this in your satchel."
 
 He raises the paper and reads from it. "Ivex Darkshadow. Probably not his birth name. No documentation prior to his enrollment at Ransamaran Ivory on a merit scholarship. Expelled in his second year for anathema. Details sealed and unavailable. Believed to have unusual magic abilities. Possibly necromantic. Wanted by several jurisdictions in connection with... <em class=nobr>et cetera</em>..."
 
@@ -12280,7 +12317,7 @@ the candle lights up.
 ?P
 "Oh the candle is hardly poisonous at all," Ivex replies. "More like the opposite."
 Ivex's voice is muffled and hollowed by the grinning mask.
-"I would explain it to you, but why spoil the surprise.
+"I could explain it to you, but why spoil the surprise.
 <<if MP_beforeCast == $n1_magicPhase>>
     A clever mage like you
 <<else>>
@@ -12302,11 +12339,11 @@ should be able to figure it out soon enough."
 <<set $t_ivexReceptive = false>>
 
 <<n1-patience 2 2>>
-    Ivex speaks through his grinning mask. "Are you comfortable?"
+    Ivex speaks through the grinning mask. "Are you comfortable?"
 <<n1-warn>>
-    Ivex growls through his menacing mask. "Are you comfortable?"
+    Ivex growls through the menacing mask. "Are you comfortable?"
 <<n1-insist>>
-    Ivex growls through his menacing mask. "Answer me! Are you comfortable!"
+    Ivex growls through the menacing mask. "Answer me! Are you comfortable!"
 <</n1-patience>>
 
 ?P
@@ -12363,6 +12400,7 @@ should be able to figure it out soon enough."
 <<vi-always n1_naked true>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_subby n1_abused>>
+<<em-assert $t_ivexNear>>
 
 <<barbs-announce maybe>>
 
@@ -12374,11 +12412,11 @@ The odor of the nearby panther
     Nero's senses are all hyperattuned to
     the task of monitoring
     every aspect of his abusive captor,
-    and the panther's scent has become much too familiar.
-    But there's something new lurking in the aroma,
-    elusive and hidden.
-    The wolf glances at the flickering red candle.
-    The spicy smoke is distinct and easy to separate,
+    so the panther's scent has become much too familiar.
+    But there's something new lurking in the aroma now,
+    something elusive and hidden.
+    Nero glances at the flickering red candle.
+    The scent of the spicy smoke is distinct and easy to isolate,
     but the way it mixes with the panther's musk...
     The combination of the two is intense and unsettling.
 <<else>>
@@ -12400,7 +12438,8 @@ The clothing disappears from the image in Nero's head,
 and he sees, he imagines, the panther's erect cock with its
 <<= $n1_barbs ? "barbed" : "smooth">> feline shaft,
 glistening from the fluid leaking from its tip,
-and growing thicker and longer with each breath he takes.
+and growing thicker and longer with
+every spicy breath of air the wolf inhales.
 
 ?P
 <<if $n1_subby>>
@@ -12412,7 +12451,7 @@ and growing thicker and longer with each breath he takes.
     when there were no receptive women,
     but he doesn't touch their penis himself.
     He ignores it and pretends it isn't there.
-    Ivex's genitals, and all their cascading images,
+    Ivex's genitals, and the cascade of mental images,
     do not interest Nero in the slightest.
     So the wolf is quite unnerved when he realizes
     that his own cock has started to rise.
@@ -12536,8 +12575,8 @@ also increase the chance he'll make a mistake.
 ?P
 The panther purrs in response to the wolf's sneer.
 The sound is quite menacing as it reverberates through the mask.
-Ivex approaches the bound wolf,
-comes to stand unpleasantly close,
+Ivex approaches the bound wolf.
+He comes to stand unpleasantly close,
 and then runs his fingers through the
 fur of the wolf's bare chest.
 
@@ -12621,7 +12660,7 @@ bringing him another step further into an unknown
 territory of desire and lust.
 <</nobr>>
 
-Ivex speaks in a low throaty register that reverberates through the mask. "Do you know what I love the most about wolves?"
+Ivex speaks in a low throaty pitch that reverberates through the mask. "Do you know what I love the most about wolves?"
 
 Nero quivers in his bonds. The panther lifts his paw off the wolf's crotch, but leaves it poised right above, millimeters away. He chuckles through the mask, as the wolf's member bulges more and struggles outward, seeking attention...
 
@@ -13129,7 +13168,7 @@ It's an embarrassing memory from his naive, younger self.
 <<if !$t_barbsSlowExtraViewed>>
     And that wasn't even the [[worst bit...|n1p/F Barbs Slow Extra]]
 <<else>>
-    He'll never forget [[Mica's astonishing appearance...|n1p/F Barbs Slow Extra]]
+    He'll never forget [[Mica's surprising reappearance...|n1p/F Barbs Slow Extra]]
 <</if>>
 
 ?P
@@ -13161,7 +13200,7 @@ The tiger continued his lecture. "Penile spines are not as hard as horns or as s
 
 Nero approached the bin to deposit his used towel. He tried to make it clear that his destination was the bin, not the large tiger that was near it. When he was close enough to smell the tiger's musk among the confusion of other moist scents, the tiger said, "Would you like to feel it?"
 
-The young wolf, in a panic, threw the towel at the tiger and fled as quickly as he could on his injured ankle. The tiger's laughter reverberated in his head, even after he was far beyond earshot of the showers.
+The young wolf, in a panic, threw the towel at the tiger and fled as quickly as he could on his injured ankle. The tiger's laughter reverberated in Nero's head, even after he was far beyond earshot of the showers.
 
 [[Continue|n1p/F Barbs Slow End]]
 
@@ -13721,7 +13760,7 @@ function glitchText(textNode, g) {
 <</nobr>>
 
 
-:: n1s/F Anti-magic {"position":"5250,3225","size":"100,100"}
+:: n1s/F Anti-magic {"position":"5150,3100","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-ignore n2_ivexGone>>
@@ -13876,8 +13915,8 @@ He begins a quiet intonation of the most basic mage-sight spell...
     Mage-sight will help him find it.
     <<set $t_magicAction = "[[Cast mage-sight.|n1s/D Cast Sight Horny]]">>
 <<else>>
-    Perhaps it's time to cast mage-sight and look for a flaw in Ivex's
-    anti-magic field.
+    Perhaps it's time to cast mage-sight and look for a flaw
+    in the anti-magic field.
     <<if $t_ivexReceptive>>
         Ivex is watching, but mage-sight is a conventional move in tactical magic,
         and it might reassure the panther about the wolf mage's competence.
@@ -13940,7 +13979,7 @@ He begins a quiet intonation of the most basic mage-sight spell...
 <</nobr>>\
 
 
-:: n1s/F Cast Itch {"position":"5725,3425","size":"100,100"}
+:: n1s/F Cast Itch {"position":"5700,3500","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -13955,7 +13994,7 @@ He begins a quiet intonation of the most basic mage-sight spell...
     Enough preliminaries.
 <</if>>
 Nero quickly taps his fingers in a familiar pattern
-and simultaneously growls the arcane syllables
+and growls the arcane syllables
 that invoke his special version of [[Superb Itch|n1s/F Itch]].
 <</nobr>>
 
@@ -13968,7 +14007,7 @@ The lupine mage pronounces the final syllable of the spell...
 [[Continue|n1s/F Cast Itch 2]]
 
 
-:: n1s/F After Itch {"position":"5625,3625","size":"100,100"}
+:: n1s/F After Itch {"position":"5400,3500","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -13990,7 +14029,7 @@ in the fur of his left breast, and his nipple perks a bit in apprehension.
 allowed me to scratch your itches."
 
 ?P
-Nero looks away and tries to suppress his body's automatic responses.
+Nero looks away and tries to suppress his body's autonomic responses.
 His ears he can keep straight. His breathing will stay steady. But he doesn't
 seem to be able to suppress the bristling of the fur on his neck.
 
@@ -14002,14 +14041,13 @@ me to... scratch some other itches."
 The panther's right paw is now at the wolf's crotch.
 The claws lightly brush up and down the wolf's furry sheath
 in long, slow strokes.
-Nero quivers in his bonds and shakes his head.
 
 ?P
-[[Continue|n1s/F After Itch 2]]
+[[Continue|n1s/F After Cast]]
 <</nobr>>
 
 
-:: n1s/D Cast Slippery {"position":"5950,3400","size":"100,100"}
+:: n1s/D Cast Slippery {"position":"5900,3350","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -14020,21 +14058,24 @@ Nero wants to impress Ivex, casts [[slippery spell|n1s/D Slippery]] to escape bo
 <</nobr>>
 
 
-:: n1s/D After Slippery {"position":"5850,3300","size":"100,100"}
+:: n1s/D After Slippery {"position":"5700,3350","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
 
 <<barbs-announce maybe>>
 
-TODO candleLit-mask.
-Ivex being lewd about slippery. saunters back to desk.
+Ivex acts lewd, and makes a lewd suggestion
+<<if $n1_candleLit>>
+    (through his mask)
+<</if>>
+
+?P
+Nero acts creeped out. transtion to after-cast.
+
+?P
+[[Continue|n1s/F After Cast]]
 <</nobr>>
-
-info about [[anti-magic|n1s/F Anti-magic]]
-<<set $t_returnAntiMagic = State.passage>>
-
-$t_afterAction
 
 
 :: n1s/D Sprite [inclusion] {"position":"6150,3775","size":"200,100"}
@@ -14524,7 +14565,7 @@ $t_afterAction
 <</nobr>>\
 
 
-:: n1s/F Itch {"position":"5725,3525","size":"100,100"}
+:: n1s/F Itch {"position":"5700,3625","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -14541,7 +14582,7 @@ Amid numerous giggles, the two wolves took turns trying to make the counter-rebo
 [[Continue|n1s/F Itch 2]]
 
 
-:: n1s/F Anti-magic 2 {"position":"5250,3325","size":"100,100"}
+:: n1s/F Anti-magic 2 {"position":"5150,3200","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-ignore n2_ivexGone>>
@@ -14559,7 +14600,7 @@ It's a skill that's been quite useful in his unconventional career.
 <<link Return $t_returnAntiMagic>><</link>>
 
 
-:: n1s/F Cast Itch 2 {"position":"5625,3425","size":"100,100"}
+:: n1s/F Cast Itch 2 {"position":"5600,3500","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -14567,8 +14608,8 @@ It's a skill that's been quite useful in his unconventional career.
 <<set $n1_magicPhase = MP_triedMagic>>
 <<set $n1_castItch = true>>
 
-Nero feels the familiar dissonance that accompanies the casting
-of any evocation spell. And then...
+Nero feels the familiar mental dissonance that accompanies the casting
+of evocation spells. And then...
 
 ?P
 <<fade-in 6s>>
@@ -14576,7 +14617,8 @@ Nothing happens.
 
 ?P
 <<fade-next 2s>>
-Nero is a little confused. It certainly <em>felt</em> like the spell was
+The lupine mage is somewhat confused.
+It certainly <em>felt</em> like the spell was
 successfully cast. And the base axiom of Superb Itch <em>requires</em>
 it to expend its energy on <em>some</em> living target.
 But neither the wolf nor the panther seems to have been affected by it.
@@ -14609,14 +14651,14 @@ Ivex laughs. "Is that really the best that you can do?
 What a pitiful bit of energy you've thrown at me.
 Still, it seems a shame to waste it."
 ?P
-He makes a gesture...
+The panther makes a gesture...
 ?P
 [[Continue|n1s/F Cast Itch 3]]
 <</fade-in>>
 <</nobr>>
 
 
-:: n1s/D Cast Slippery 2 {"position":"5950,3300","size":"100,100"}
+:: n1s/D Cast Slippery 2 {"position":"5800,3350","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -14646,7 +14688,7 @@ spell fizzes. Ivex recognizes it.
 <</nobr>>
 
 
-:: n1s/D Slippery {"position":"5850,3400","size":"100,100"}
+:: n1s/D Slippery {"position":"5850,3200","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -14865,7 +14907,7 @@ T.toTry.sort();
     ?P
 
 <<else>>
-    The wolf can't see much of the cross that's holding
+    The wolf cannot see much of the cross that's holding
     <<if $n1_naked>>
         him naked with
     <</if>>
@@ -14961,7 +15003,7 @@ T.toTry.sort();
     <<else>>
         struggling free seems unlikely to work.
         Nero is a mage, not a warrior.
-        It seems unlikely he could break his bonds.
+        It's doubtful he could break his bonds.
         And even if it were possible,
         Ivex would certainly
         <<if $n1_subby>>
@@ -14990,7 +15032,7 @@ T.toTry.sort();
     is spreading through the room,
     which is not much larger than an ordinary room at an inn.
 <<else>>
-    The room is on the small side, not much larger than an ordinary room at an inn.
+    The room is an average size, not much larger than an ordinary room at an inn.
 <</if>>
 <<if $n1_mageSight>>
     The space is filled with a mesh of exotic magical energy that emanates from
@@ -15999,7 +16041,7 @@ On one shelf is a small stack of
 The far wall, on the other side of the desk,
 is the only wall in the room
 that does not have bookshelves or cabinets against it.
-Without furniture covering the wall's surface,
+With no furniture covering the wall's surface,
 Nero can see that it's
 <<if $n1_mageSight>>
     made of crystal or glass, with an illusion of wooden tiles slathered on top.
@@ -16124,14 +16166,14 @@ Such as:
         <<if $n2_free>>
             Could Nero have used the device
         <<elseif $n1_magicPhase < MP_wantDevice>>
-            Is there some way that Nero can use the device
+            Is there a way that Nero can use the device
         <<else>>
             Will Nero have a chance to use the device
         <</if>>
         <<if $n1_deskViewed>>
             to grab the <<n1-no-loop [[letter opener|n1x/F Knife]]>>?
         <<else>>
-            somehow to escape?
+            to somehow escape?
         <</if>>
     </li>
 <</if>>
@@ -16197,7 +16239,8 @@ Such as:
         Nero reluctantly considers the various conversational
         gambits he can try that might trick Ivex into revealing the name.
     <<else>>
-        Nero, against his better judgment, considers asking Ivex about the bottle.
+        Nero, against his better judgment,
+        considers speaking a question out loud.
     <</if>>
     <<actions-add [[Ask Ivex about the bottle.|n1x/D Bottle Ask]]>>
 
@@ -16238,7 +16281,7 @@ Such as:
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_ivexGone>>
 
-The map is quite large, perhaps 2 meters wide.
+The map is quite large, perhaps two meters wide.
 <<if $n1_mageSight>>
     The ornately carved frame appears to be ordinary wood,
     with very little magic energy in it.
@@ -16339,7 +16382,7 @@ but he does not remember its name.
 
 <<else>>
     The large portrait beside the window
-    depicts a somewhat rotund, middle-aged pantheress
+    depicts a somewhat plump, middle-aged pantheress
     with deep black fur.
     Her dress is an evening gown that might be fashionable
     if the tailor had decided whether the dress should be
@@ -17576,10 +17619,10 @@ $t_afterAction
 
 A typical installation of Nackle's Poltergeist Device places the glyphs
 on the underside of a table,
-or on some other hidden surface that's conveniently accessible.
-The mage who knows of its existence
+or on some other hidden surface that's convenient to touch.
+The mage who knows of its presence
 can then use it to entertain guests with dancing dinnerplates,
-or to repel enemies with flying cutlery.
+or repel enemies with flying cutlery.
 
 ?P
 Ivex has <em>not</em> placed the matrix
@@ -17890,11 +17933,12 @@ $t_afterAction
 <<ro-choice !$n2_ivexGone>>
     Nero trembles on the
     [[wooden cross|n1y/D Horny Cross]]
-    as he stares at the
+    holding him tight,
+    as he stares at the gleaming teeth of the
     [[panther's grinning mask|n1y/D Horny Ivex]].
     Spicy smoke from the
     [[candle|n1y/D Horny Candle]]
-    tickles the interior of the wolf's nose and throat,
+    tickles the innards of the wolf's nose and throat,
     giving him a sensation that resembles the moment before a sneeze,
     but spread throughout his entire body
     and rippling through his skin.
@@ -17907,8 +17951,8 @@ $t_afterAction
     [[wooden cross|n1y/D Horny Cross]],
     and the motion rubs the sweat from his limbs into the
     straps that hold him bound.
-    The sweaty leather scent slithers in and out of his head, but it's the
-    [[masculine panther's musk|n1y/D Horny Ivex]]
+    The scent of sweaty leather slithers through his head, but it's the
+    [[masculine panther musk|n1y/D Horny Ivex]]
     that dominates his attention.
 
 <<ro-choice !$n2_ivexGone>>
@@ -17920,8 +17964,8 @@ $t_afterAction
     Each squirm causes the leather straps and
     [[wooden cross|n1y/D Horny Cross]]
     to squeak and creak in counterpoint to the beating
-    of his heart, a pulse that seems to be synchronized to
-    the flickers of the flame of the [[spicy red candle|n1y/D Horny Candle]].
+    of his heart, a pulse that seems to flutter with each flicker
+    of the flame of the [[spicy red candle|n1y/D Horny Candle]].
 
 <<ro-choice $n2_ivexGone>>
     Nero gasps and shivers in the leather bonds that
@@ -20535,17 +20579,17 @@ Macro.add("mta", {
 <</script>>
 
 
-:: n1s/F Itch 2 {"position":"5725,3625","size":"100,100"}
+:: n1s/F Itch 2 {"position":"5600,3625","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
 
 Nero stumbled onto the solution on his sixth attempt.
 By then, the two wolves were quite drunk (and much less clothed).
-Nero did not feel like removing his ward again, so rather than dropping the ward and attempting to rapidly reset it, he instead tried to calibrate a Superb Itch that would slip past the ward. This of course would ordinarily mean that the spell would slip through again when it rebounded.
+Nero did not feel like removing his ward again, so rather than dropping the ward and attempting to rapidly reset it, he instead tried to calibrate a Superb Itch that would slip through his ward. This of course would ordinarily mean that the spell would slip through again when it rebounded.
 <</nobr>>
 
-But Nero was sloppy in his incantation, and he produced a Superb Itch that <em>changed</em> its anharmonic frequency as it traveled.
+But Nero was sloppy in his incantation, and he produced a Superb Itch that <em>changed</em> its anharmonic frequencies as it traveled.
 
 The result was magically spectacular, in an invisible way.
 
@@ -20554,7 +20598,7 @@ The visible effect was that <span class=nobr>Ms. Tara</span> suddenly screamed. 
 [[Continue|n1s/F Itch 3]]
 
 
-:: n1s/F Itch 3 {"position":"5725,3725","size":"100,100"}
+:: n1s/F Itch 3 {"position":"5500,3625","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -20575,7 +20619,7 @@ The best thing about the spell is that it appears to other mages that Nero has h
 [[Return|n1s/F Cast Itch]]
 
 
-:: n1s/F Cast Itch 3 {"position":"5625,3525","size":"100,100"}
+:: n1s/F Cast Itch 3 {"position":"5500,3500","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -20584,10 +20628,10 @@ The best thing about the spell is that it appears to other mages that Nero has h
 <<em-assert !$n1_naked>>
 
 Nero feels the spell's base axiom expand
-and become satisfied,
+and become fulfilled,
 on every millimeter of his skin.
 The unfortunate wolf writhes in his bonds
-from the intense itching.
+from the intense itching sensation.
 
 ?P
 At least the Superb Itch doesn't seem to be amplified by reflections.
@@ -20603,12 +20647,12 @@ awkwardly rub against
 the wooden cross, the leather straps, and his robe.
 ?P
 Ivex watches the squirming wolf with amusement.
-After a minute that feels much longer than that,
-he dismisses the Superb Itch with a gesture.
+After a minute that feels much longer,
+the panther dismisses the Superb Itch with a gesture.
 <<if $n1_candleLit>>
-    The panther says through his grinning mask,
+    Ivex says through his grinning mask,
 <<else>>
-    Still smirking, the panther says,
+    Still smirking, Ivex says,
 <</if>>
 "Your clothing seems to be causing you some discomfort.
 Let me help you with that."
@@ -20625,7 +20669,7 @@ He makes another gesture...
 <</nobr>>
 
 
-:: n1s/F After Itch 2 {"position":"5625,3725","size":"100,100"}
+:: n1s/F After Cast {"position":"5425,3250","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -20633,30 +20677,46 @@ He makes another gesture...
 <<set $t_returnAntiMagic = State.passage>>
 
 <<if $n1_abused>>
-    Nero's mind is scurrying like a rat trapped in a house of wolves.
-    The panther is a sadistic and fickle predator.
-    The wolf will need to use all his wits to minimize further abuse,
-    while simultaneously finding a way to counter the
+    Nero quivers in his bonds and shakes his head.
+    His mind is darting like a guppy trapped in a pool of sharks.
+    His instinct is to resist his captor's lecherous attention,
+    but he wonders if he should instead oblige the depraved panther's lust.
+    Ivex seems to be a fickle and sadistic predator.
+    Would such a strategy backfire?
+    ?P
+    The wolf will need all his wits to avoid further abuse,
+    defeat the
     [[anti-magic field|n1s/F Anti-magic]],
-    in order to escape the malevolent mage's lair. 
-    He wonders if he should try to assist the depraved panther's lust,
-    or if such a strategy would backfire.
+    and escape.
+    ?P
+    <<if $n1_candleLit>>
+        Ivex's ears twitch. He appears to be
+    <<else>>
+        Ivex grimaces, apparently
+    <</if>>
+    unsatisfied by his victim's response.
+    He speaks
 <<else>>
-    Nero is a little unsettled by the failure of his spell.
+    The panther's lewd attention is repellent,
+    but Nero is more unsettled by the failure of his spell.
     It's not an entirely unexpected outcome, since
     [[anti-magic fields|n1s/F Anti-magic]] are to be expected in
     a mage's own home.
     ?P
-    But this is not like any he's seen before. Perhaps Ivex's reputation is deserved.
+    But this one is not like any he's seen before.
+    Perhaps Ivex's reputation is deserved.
     He does seem to have an unusual form of magic.
-    The wolf may need to use all his wits to bypass the anti-magic field and
-    escape the panther's lair,
-    while doing his best to distract the perverted mage from
-    his lascivious thoughts and actions.
+    The wolf may need to use all his wits to escape the panther's lair,
+    as well as distract the perverted mage from lascivious acts.
+    ?P
+    Nero stares at the panther and speaks with his lecturing voice,
+    "What are you doing?"
+    ?P
+    Ivex does stop his motions.
+    ?P
+    But then he responds
 <</if>>
 
-?P
-Ivex speaks
 <<= $n1_candleLit ? "through his grinning mask" : "">>
 in a quiet tone that slowly increases in intensity.
 "You might think you know magic.
@@ -20677,9 +20737,9 @@ in front of the
 It takes a few minutes for the panther's tail to stop twitching,
 for Ivex to stop pacing.
 He takes a deep breath and shakes his body to relax,
-but his limbs are still stiff with tension
+but his limbs remain stiff with tension
 as he turns to face the wolf.
-He stares with eyes that are gleaming pools above
+He stares with eyes that are gleaming marbles above
 <<if $n1_candleLit>>
     the grinning mask.
 <<else>>
@@ -21218,6 +21278,39 @@ examining the exotic energy, without using it.
 ?P
 $t_afterAction
 
+<</nobr>>
+
+
+:: n1cn/D Reject Appeasement {"position":"4100,3500","size":"100,100"}
+<<nobr>>
+<<vi-always n1_abused true>>
+<<vi-ignore n1_mageSight>>
+
+"You can have 80%!" says the wolf, a little too desperately.
+He realizes it's the wrong thing to say as soon as he says it.
+Fear of the abusive panther is clouding his judgment.
+?P
+Ivex chuckles and seems to relax.
+<<if $t_ivexNear>>
+    The panther looks up and down
+<<else>>
+    The panther casually approaches
+<</if>>
+his anxious victim.
+
+?P
+XXX ivex says something,
+grasps <<= $n1_naked ? "naked" : "clothed">> balls
+      
+?P
+XXX nero, please, no. please-misfire
+?P
+XXX strongly threaten more abuse, but turn away, transition to candle.
+
+?P
+[[Continue|n1cx/F Start Candle]]
+
+<<set $t_ivexNear = true>>
 <</nobr>>
 
 
