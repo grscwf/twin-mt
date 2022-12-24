@@ -14,7 +14,7 @@ at least three different Nero ending variations.
   - [1st Floor Moods](#1st-floor-moods)
   - [1st Floor Easy](#1st-floor-easy)
   - [1st Floor Hard](#1st-floor-hard)
-  - [Bad Ending: Broken](#bad-ending-broken)
+  - [Challenge Ending: Broken](#challenge-ending-broken)
 - [2nd Floor](#2nd-floor)
   - [2nd Floor Easy](#2nd-floor-easy)
   - [2nd Floor Hard](#2nd-floor-hard)
@@ -35,11 +35,12 @@ much more fun to discover yourself.
 - Easy is available after Ivex leaves, if the player misses the Hard solution.
 
 ### 1st Floor Moods
-Nero has 5 different moods when interacting with Ivex. They're mostly flavor.
+Nero has 5 different moods when interacting with Ivex, and one more mood
+after escaping the cross. The moods are mostly flavor.
 There's only one path that requires a specific mood.
 <details>
 
-- Nero's initial choice is 3 options that converge on Ivex intro, but each
+- Nero's initial choice is 3 options that converge on Ivex Intro, but each
   option gets there in a different mood/state.
   - (1) Ivex punches Nero's balls, which puts Nero in "abused" mood.
     - "abused" affects many descriptions, but doesn't change paths
@@ -54,10 +55,14 @@ There's only one path that requires a specific mood.
       Mica, Pevhin, glitch, and a skip-story option if the player's already
       seen that story in a previous playthrough.
   - (3) "normal" mood. Neither "abused" or "naked".
-- Another mood "subby" can be triggered by taking the right choices when
+- (4) The mood "subby" can be triggered by taking the right choices when
   talking to Ivex. This is needed for reaching one ending.
-- Another mood "super-horny" is triggered when the candle has been lit for
+- (5) The mood "candleHorny" is triggered when the candle has been lit for
   a while. This changes most descriptions, and some actions.
+- (6) The mood "extraHorny" is triggered when Nero escapes the cross on
+  the easy path. It's normally off on the hard path, but there's an
+  optional action that can trigger it anyway.
+  This changes some descriptions, and a few actions.
 </details>
 
 ### 1st Floor Easy
@@ -81,17 +86,17 @@ A player will probably find this on their 1st or 2nd playthrough.
   - (1) Try casting any spell.
   - In any order:
     - (2) Cast mage-sight.
-    - (3) Look at the mirror to see the grav-gems.
-  - (4) Look at the grav gems with mage-sight.
-  - Optional: Ask Ivex about the grav gems before he leaves, for a hint.
-- (5) When the candle is at max, and Nero has seen the grav gems with
-  mage-sight, Struggle will disrupt the grav gems.
+    - (3) Look at the mirror to see the grav crystals.
+  - (4) Look at the grav crystals with mage-sight.
+  - Optional: Ask Ivex about the grav crystals before he leaves, for a hint.
+- (5) When the candle is at max, and Nero has seen the grav crystals with
+  mage-sight, Struggle will disrupt the grav crystals.
   - Anything other than struggling will fail.
   - This is basically be a 50/50 choice if the player misses the hints.
   - On failure, Nero is overwhelmed by lust, and Ivex returns.
     - Bad Ending: Tamed Mild - cooperate
     - Bad Ending: Tamed Harsh - resist
-- After disrupting the grav gems, there's a choice between getting the knife
+- After disrupting the grav crystals, there's a choice between getting the knife
   first or snuffing the candle first. Unlike Drekkar's story, both options
   succeed. There's no trap here.
 - Easy solution will break the mirror, making it unavailable on the 2nd Floor,
@@ -126,9 +131,9 @@ the 4th or 5th playthrough.
 - These steps can be done before (1):
   - (2) Try casting any spell.
   - (3) Cast mage-sight.
-  - (4) Connect to the Sprite.
+  - (4) Tap the mirror to get the Sprite.
 - Player will probably be here on 1st - 2rd playthrough.
-- (5) Ask the Sprite for access to the poltergeist device.
+- (5) Ask the Sprite to contact the poltergeist device.
 - Sprite now asks for device name.
 - (6) Ask Ivex about the poltergeist device to get the name.
   - This can be done earlier, anytime after (1).
@@ -136,13 +141,13 @@ the 4th or 5th playthrough.
     But if the player is here on the 2rd playthrough, they've probably looked
     at the bottle early enough to have time to ask Ivex. So this probably
     doesn't need another playthrough.
-- (7) Ask the Sprite for access to the named device.
-- Sprite now asks Nero to touch the hole.
+- (7) Ask the Sprite to contact the named device.
+- Sprite now asks Nero to touch its hole.
 - (8) Ask Ivex about the penguin.
   - This is a little tricky. There are several red herrings. It's possible
     that Ivex will leave before the player finds this.
   - If Ivex leaves, the Easy escape gives the player plenty of time to find
-    the hole.
+    hints to the hole.
 - Player will probably be here on 1st - 3rd playthrough.
 - Sprite now asks Nero for password.
 - (9) Ask Ivex about the snow globe.
@@ -156,16 +161,16 @@ the 4th or 5th playthrough.
   - There's a moment when it seems like it succeeds, and then it becomes
     another failure.
   - Ivex catches on to what the player is doing, denies access to the password,
-    and applies extreme torture with another grav ball.
+    and applies extreme torture with another grav crystal.
   - Player goes through another section that feels like "crap, another
     obstacle, what else do I have to do to get past this."
   - But this turns out to actually work anyway. Nero is free.
 - The mirror is saved. It can be used for 2nd Floor Easy escape.
-- There's a special Bad Ending here that's meant to be hard to find.
+- There's a Challenge Ending here that's meant to be hard to find.
 
 </details>
 
-### Bad Ending: Broken
+### Challenge Ending: Broken
 This is the challenge ending on the first floor.
 There are clues to it, but it's meant to be
 hard to find.
@@ -243,7 +248,7 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
       - After any action, Nero is forced into an adjacent room after dropping
         everything (but not the ring, if he's wearing it).
       - The lion will chase Nero into the blob.
-    - TODO: need a timing subtlety that allows Nero to get enthralled and
+    - TODO: need a timing subtlety that allows Nero to get both enthralled and
       hunted while wearing ring
   - Nero has to start the lion hunting before wearing the ring. The other
     order never works:
@@ -300,7 +305,8 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
   - Wear the ring too long:
     - Bad Ending: Overwhelmed Mild - lion is not following or hunting.
     - Bad Ending: Overwhelmed Harsh - lion is following.
-    - Bad Ending: Wrecked - lion is hunting (and probably Thrall is involved).
+    - Challenge Ending: Wrecked - lion is hunting 
+      (and probably Thrall is involved).
   - Lose ring while hunted:
     - Bad Ending: Hunted Mild - cooperate.
     - Bad Ending: Hunted Harsh - resist.
