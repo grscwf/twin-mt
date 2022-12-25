@@ -2172,6 +2172,10 @@ Macro.add("vi-always", {
     if (sexp !== "notable" && !withinInclude(this)) {
       EM.fail(`vi-always ${vname} is unnecessary`);
     }
+    const actual = VT.untracedGet(vname);
+    if (exp !== actual && !(exp === false && actual == null)) {
+      EM.fail(`vi-always ${vname} ${exp}, but actual value is ${actual}`);
+    }
     alwaysVars.set(vname, exp);
   }
 });
@@ -2184,7 +2188,13 @@ Macro.add("vi-always-if", {
     if (sexp !== "notable" && !withinInclude(this)) {
       EM.fail(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
-    if (VT.untracedGet(cond)) alwaysVars.set(vname, exp);
+    if (VT.untracedGet(cond)) {
+      const actual = VT.untracedGet(vname);
+      if (exp !== actual && !(exp === false && actual == null)) {
+        EM.fail(`vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
+      }
+      alwaysVars.set(vname, exp);
+    }
   }
 });
 
@@ -2391,7 +2401,7 @@ function varInfoSetup() {
         EM.fail(`${vn} is always ${sexp} in this section and should not be read`);
       }
     });
-
+    
     Nero.getNotable().forEach(f =>touched.add(f));
 
     if (touched.size) {
@@ -10879,7 +10889,7 @@ Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 :: n1a/F Feign Sleep 3 {"position":"3700,1750","size":"100,100"}
 A fist smashes into Nero's crotch! The knuckles thump hard against his other ball, making that ball ache stronger than the one firmly held. The wolf automatically jerks from the impact, and the motion stretches his captive ballsack painfully tight.
 
-Nero cannot suppress a whine. The sound is embarrassing and pathetic, and it fills the air of the room.
+Nero gasps, and the fist bashes his ball again! The wolf cannot suppress a whine. The sound is embarrassing and pathetic, and it fills the air of the room.
 
 A moment later, the hand on his ball releases its grasp.
 
@@ -11242,7 +11252,7 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 <</nobr>>
 
 
-:: n1cn/F Resist {"position":"3875,2300","size":"100,100"}
+:: n1cn/F Resist {"position":"3850,2300","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
@@ -11373,7 +11383,7 @@ and then he can complete his mission and escape.
             <</mta>>
         </li>
         <li>
-            <<mta [[n1cn/F Reject Support]]>>
+            <<mta [[n1cn/F Support Group]]>>
                 Explain to Ivex, "No, that isn't what I meant!"
             <</mta>>
         </li>
@@ -11417,7 +11427,7 @@ ivex takes the bait, he's skeptical but interested.
 [[Continue|n1cr/D Ivex Skeptical (2,4)]]
 
 
-:: n1cn/F Con Game 1 {"position":"3850,2550","size":"100,100"}
+:: n1cn/F Con Game 1 {"position":"3900,2625","size":"100,100"}
 <<nobr>>
 <<vi-always n1_abused false>>
 <<vi-ignore n1_naked>>
@@ -11898,7 +11908,7 @@ makes a gesture, and
     <<if $n1_abused>>
         but Nero twists his torso and cringes anyway
         from the reminder of Ivex's
-        earlier punch to the wolf's balls.
+        earlier punches to the wolf's balls.
     <<else>>
         but the wolf instinctively tries to dodge.
         The motion puts additional strain on his sore limbs,
@@ -12327,7 +12337,7 @@ the candle lights up.
 Ivex's voice is muffled and hollowed by the grinning mask.
 "I could explain it to you, but why spoil the surprise.
 <<if $n1_thief>>
-    A clever thief like you
+    Even a witless thief like you
 <<elseif MP_beforeCast == $n1_magicPhase>>
     A clever mage like you
 <<else>>
@@ -12647,7 +12657,9 @@ The panther takes hold of Nero's exposed balls. Not squeezing, not yet. Just cup
 <</if>>
 
 has also noticed the wolf's traitorous penis,
-and the lecherous panther brings the fingers of one paw
+and the
+<<= $n1_abused ? "brutal" : "lecherous">>
+panther brings the fingers of one paw
 to stroke the fur of the wolf's sheath.
 <<if $n1_subby>>
     Nero pants and shivers at the touch.
@@ -12754,7 +12766,7 @@ and roughly strokes the fur on the wolf's naked chest.
     He's hardly comfortable.
     His limbs are feeling the strain of his bound position,
     the candle is a lurking menace,
-    and Ivex's punch to the wolf's crotch is still quite vivid in his memory.
+    and Ivex's punches to the wolf's balls are still quite vivid in his memory.
     ?P
     But he's wary of inviting another such punch.
     Perhaps if he acts cowed, without actually cooperating,
@@ -14087,9 +14099,24 @@ in long, slow strokes.
 :: n1s/D Cast Slippery {"position":"5900,3350","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
-<<vi-always n2_ivexGone false>>
 
-Nero wants to impress Ivex, casts [[slippery spell|n1s/D Slippery]] to escape bonds.
+<<if $n1_candleHorny>>
+    horny, wants to slip free. fails.
+    <<if !$n2_ivexGone>>
+        aware of ivex, but don't really care.
+        ivex mocks. (already naked).
+    <</if>>
+<<elseif $n2_ivexGone>>
+    ivex gone.
+    not horny. best spell for the occasion. fails.
+
+<<else>>
+    ivex not gone.
+    not horny, wants to impress ivex. fails.
+    ivex mocks. naked if not.
+<</if>>
+
+casts [[slippery spell|n1s/D Slippery]] to escape bonds.
 
 [[Continue|n1s/D Cast Slippery 2]]
 <</nobr>>
@@ -14098,7 +14125,6 @@ Nero wants to impress Ivex, casts [[slippery spell|n1s/D Slippery]] to escape bo
 :: n1s/D After Slippery {"position":"5700,3350","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
-<<vi-always n2_ivexGone false>>
 
 <<barbs-announce maybe>>
 
@@ -14698,7 +14724,6 @@ The panther makes a gesture...
 :: n1s/D Cast Slippery 2 {"position":"5800,3350","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
-<<vi-always n2_ivexGone false>>
 
 <<set $n1_castSlippery = true>>
 <<set $n1_magicPhase = MP_triedMagic>>
@@ -14728,7 +14753,6 @@ spell fizzes. Ivex recognizes it.
 :: n1s/D Slippery {"position":"5850,3200","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
-<<vi-always n2_ivexGone false>>
 
 info about slippery spell
 <</nobr>>
@@ -19820,16 +19844,20 @@ if want-touch, ivex picks up coin, satisfies touch.
 $t_afterAction
 
 
-:: n1cn/F Reject Support [big-mood] {"position":"4050,2575","size":"100,100"}
+:: n1cn/F Support Group [big-mood] {"position":"3900,2450","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-always n1_abused true>>
 
-"No, that isn't what I meant!" Nero protests. He pauses and makes his voice tentative.
-"I'm in a support group... for people like us, and I think you'd like to meet the others."
+"No, that isn't what I meant!" Nero protests.
+He pauses and makes his voice tentative.
+"I'm in a support group... for people like us,
+and I think you'd like to meet the others."
 
 ?P
-Ivex does not seem appeased. The panther snarls. "What tedious nonsense. Stop trying to change the subject. Tell me who sent you."
+Ivex does not seem appeased. The panther snarls.
+"What tedious nonsense. Stop trying to change the subject.
+Tell me who sent you."
 The panther
 <<= $t_ivexNear ? "" : "approaches and">>
 aims a fist again at the wolf's crotch.
@@ -21456,7 +21484,7 @@ XXX strongly threaten more abuse, but turn away, transition to candle.
 <</nobr>>
 
 
-:: n1cn/F Con Game 2 {"position":"3850,2650","size":"100,100"}
+:: n1cn/F Con Game 2 {"position":"3900,2725","size":"100,100"}
 <<nobr>>
 <<vi-always n1_abused false>>
 <<vi-ignore n1_mageSight>>
@@ -21507,7 +21535,7 @@ The panther chuckles and says,
 <</nobr>>
 
 
-:: n1cn/F Con Game 3 [big-mood] {"position":"3850,2750","size":"100,100"}
+:: n1cn/F Con Game 3 {"position":"3900,2825","size":"100,100"}
 <<nobr>>
 <<vi-always n1_abused false>>
 <<vi-ignore n1_mageSight>>
@@ -21545,7 +21573,7 @@ Nero becomes worried.
 <</nobr>>
 
 
-:: n1cn/F Con Game 4 {"position":"3850,2850","size":"100,100"}
+:: n1cn/F Con Game 4 [big-mood] {"position":"3900,2925","size":"100,100"}
 <<nobr>>
 <<vi-always n1_abused false>>
 <<vi-ignore n1_mageSight>>
