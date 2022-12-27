@@ -5,8 +5,10 @@
  * Lists all vars and their usages in $twFile. Useful for spotting typos
  * and unused vars.
  *
- * If $varListTxt is non-empty, it's a file of expected var names,
- * one per line. Vars that are not in that file are flagged.
+ * If $varListTxt is non-empty, it's a file of expected var names.
+ * In the file, a var name is a word at the beginning of a line.
+ * Text on the line after the var name is ignored.
+ * Lines beginning with whitespace or # are also ignored.
  *
  * If $regexFilter is non-empty, only vars that match that regex are shown.
  */
@@ -87,7 +89,7 @@ function listVars(twFile, varListTxt, regexFilter) {
   if (varListTxt != null && varListTxt !== "") {
     const varList = fs.readFileSync(varListTxt, "utf-8");
     const known = new Set();
-    for (const m of varList.matchAll(/^\s*(\w+)/gm)) {
+    for (const m of varList.matchAll(/^(\w+)/gm)) {
       known.add(m[1]);
       unused.add(m[1]);
     }
