@@ -1718,11 +1718,17 @@ function randomWalkSetup() {
   ];
   
   let seeking = false;
+  let seekMoved = false;
+  let seekForce = false;
   
   const seekToggle = () => {
     seeking = !seeking;
     $("#rw-seek").toggleClass("rw-seeking", seeking);
-    if (seeking) seekNext();
+    if (seeking) {
+      seekMoved = false;
+      seekForce = false;
+      seekNext();
+    }
   };
   
   const seekStop = () => {
@@ -1734,16 +1740,23 @@ function randomWalkSetup() {
     const here = State.passage;
 
     if (!seeking) return seekStop();
-    if (ErrorMessage.hasFails) return seekStop();
-    if (/[/][DPS]/.test(here)) return seekStop();
     if (/^n9/.test(here)) return seekStop();
     if (stop.includes(here)) return seekStop();
 
-    const text = $(".passage").text();
-    if (/\bX[X]X\b|\bTO[D]O\b/.test(text)) return seekStop();
+    let hasProblem = false;
+    hasProblem = hasProblem || ErrorMessage.hasFails;
+    hasProblem = hasProblem || /[/][DPS]/.test(here);
+    hasProblem = hasProblem ||
+        /\bX[X]X\b|\bTO[D]O\b/.test($(".passage").text());
+
+    if (hasProblem && !seekForce) {
+      if (seekMoved) return seekStop();
+      seekForce = true;
+    }
     
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
+      seekMoved = true;
       chosen[0].click();
       setTimeout(seekNext, 500);
     } else {
@@ -11025,7 +11038,7 @@ It's <em>him</em>.
 
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
-The panther says brightly, "Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay careful attention when I'm speaking to you."
+The panther says brightly, "Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay close attention when I'm speaking to you."
 
 Well. Nero had thought that locating the malevolent mage would be the difficult part of the task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, <em>notice</em> the trap before stepping into it. His aching balls agreed with that.
 
@@ -11179,7 +11192,7 @@ Ivex speaks. "So let me make a proposal."
 
 <<if $n1_abused>>
     "Please, let me explain," says Nero with some anxiety.
-    He quickly constructs a story that might appease the panther.
+    He quickly tries to construct a story that might appease the panther.
     <<misfire-please>>
         ?P
         The Sprite in his ear says, "I don't understand what
@@ -11200,7 +11213,7 @@ Ivex speaks. "So let me make a proposal."
 ?P
 <<if $n1_magicPhase < MP_triedMagic>>
     Ivex seems intrigued. Good.
-    A plausible story should lower the panther's guard,
+    A plausible story should relax the panther's guard,
     and then Nero can escape and fulfill his commission with a minimum of fuss.
 <<elseif $n1_magicPhase < MP_wantDevice>>
     Ivex seems intrigued. This strategy is working.
@@ -11261,6 +11274,7 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 <<set $t_stalling = true>>
 
 <<if $n1_abused>>
+    <<set $n1_tough = true>>
     Nero lets out a soft growl. His brutally abused balls argue against
     antagonizing his captor any further, but cooperation,
     or even the pretense of
@@ -11366,11 +11380,12 @@ and then he can complete his mission and escape.
 <<n1-patience 1 1>>
 <<n1-warn>>
     Ivex asks in a flat tone of voice,
-    "What makes you think I would accept you as my leader?"
+    "What makes you think I would accept you as my superior?"
 <<n1-insist>>
-    XXX stronger callback to recruit question
-    Ivex snarls and asks,
-    "Why would I ever submit to <em>your</em> control?"
+    Ivex snarls and says,
+    "I am not some stray kitten looking for a home.
+    What makes you think that <em>you</em> could ever
+    be <em>my</em> superior?"
 <</n1-patience>>
 
 ?P
@@ -11380,7 +11395,7 @@ and then he can complete his mission and escape.
     <<if $n1_abused>>
         <li>
             <<mta [[|n1cn/D Secret Society]]>>
-                Agree with Ivex. "Of course you wouldn't!"
+                Agree with Ivex. "Of course not! This isn't about me!"
             <</mta>>
         </li>
         <li>
@@ -12501,6 +12516,7 @@ This concern expressed by the panther for the wolf's comfort
 is clearly false.
 
 <<if $n1_abused>>
+    <<set $n1_tough = true>>
     Ivex is likely seeking another excuse to abuse the wolf's balls.
     Well, he can have it.
     Nero is not going to be cowed by this bully
@@ -12563,6 +12579,7 @@ Nero considers holding his breath to avoid whatever is in the candle's fumes, bu
     TODO subby resist. maybe, regret earlier pretense of submission?
 
 <<elseif $n1_abused>>
+    <<set $n1_tough = true>>
     Nero sneers at his ridiculous tormentor.
     Any answer that he might give to that question
     will just become another reason for abuse of his balls.
@@ -15814,13 +15831,13 @@ Nero think of something more sensual than meat.
 
 ?P
 <<if $n1_barbsSlow>>
-    It's like the blood on Professor Mica's face when...
+    It's like the blood on Professor Mica's face when he...
 <<elseif $n1_barbsFast>>
-    It's like the taste of Lady Temesca's lips after...
+    It's like the taste of Lady Temesca's lips after she...
 <<elseif $n1_barbsGlitch>>
     It's like the tip of TODO glitch fade...
 <<else>>
-    It's like the panties that Ms. Tara wore when...
+    It's like the panties that Ms. Tara wore when she...
 <</if>>
 
 ?P
@@ -15841,7 +15858,9 @@ Nero think of something more sensual than meat.
 <<else>>
     The delicious vapors emitted by the candle's flame seem to be
     affecting his mind and making it difficult to concentrate on
-    outsmarting the obnoxious panther mage.
+    outsmarting the
+    <<= $n1_subby ? "domineering" : $n1_abused ? "sadistic" : "obnoxious">>
+    panther mage.
     <<if $n1_candleAsked>>
         ?P
         Ivex had suggested the candle involves herbalism, which is useful
@@ -16997,7 +17016,7 @@ The panther laughs beneath his grinning mask.
 
 ?P
 Nero tries to think of a
-<<= $n1_subby ? "gracious" : $n1_abused ? "placatory" : "clever">>
+<<= $n1_subby ? "diplomatic" : $n1_abused ? "placating" : "clever">>
 response, but his head is feeling light, and something about the
 disdain in Ivex's voice is making his stomach flutter.
 
@@ -19963,6 +19982,7 @@ $t_afterAction
 <<vi-always n1_abused true>>
 
 "No, that isn't what I meant!" Nero protests.
+"I'm not asking you to join <em>me!</em>"
 He pauses and makes his voice tentative.
 "I'm in a support group... for people like us,
 and I think you'd enjoy meeting some of the others."
@@ -19990,7 +20010,8 @@ Did he die from disappointment?"
 The wolf cringes and flattens his ears. The embarrassment is of course a sham. Mostly.
 
 ?P
-Nero keeps careful watch of the panther's arm, still drawn back and ready to strike. He replies quickly, "No, that was Ferikin's father. Ferikin is also in the support group. Not everyone in our group has killed their father, but yes, we are all disappointments. And I Am No Longer Ashamed to Admit It! It happened when I was only 11 years old. My father never wanted me to become a mage, but I practiced very hard on a firework spell, and I thought that if I could show&mdash;"
+Nero keeps careful watch of the panther's arm, still drawn back and ready to strike. He replies quickly, "No, that was Ferikin's father. Ferikin is also in the support group. Not everyone in our group has killed their father, but yes, we are all disappointments. And I Am No Longer Ashamed to Admit It! It happened when I was only 11 years old. My father never wanted me to become a mage, but I practiced very hard on a firework spell, and I thought that if I could
+<span class=nobr>show&mdash;"</span>
 
 ?P
 Ivex smashes a knee into the wolf's <<= $n1_naked ? "naked" : "">> crotch.
@@ -20006,7 +20027,7 @@ But the look on Ivex's face, a smug sneer, makes the wolf stay quiet.
 
 ?P
 As he speaks, the panther uses his knuckles to make quick, light taps on the wolf's <<= $n1_naked ? "exposed balls." : "crotch.">>
-Nero can't help wincing with each tap.
+Nero can't help wincing with every tap.
 <</nobr>>
 
 [[Continue|n1cx/F Start Candle]]
@@ -20956,7 +20977,7 @@ Let me help you with that."
 ?P
 He makes another gesture...
 ?P
-<<if $n1_candleLit>>
+<<if $n1_candleLit || $n1_abused>>
     [[Continue|n1p/F Barbs Fast]]
 <<else>>
     [[Continue|n1p/F Barbs Slow]]
@@ -20966,7 +20987,7 @@ He makes another gesture...
 <</nobr>>
 
 
-:: n1s/F After Cast {"position":"5425,3250","size":"100,100"}
+:: n1s/F After Cast {"position":"5375,3275","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -21017,9 +21038,14 @@ He makes another gesture...
 
 <<= $n1_candleLit ? "through his grinning mask" : "">>
 in a quiet tone that slowly increases in intensity.
-"You might think you know magic.
-You might be the greatest mage to ever emerge
-from the foul little den of your inbred wolf clan.
+<<if $n1_thief>>
+    "You might think you're clever.
+    You might be the greatest thief
+<<else>>
+    "You might think you know magic.
+    You might be the greatest mage
+<</if>>
+to ever emerge from the foul little den of your inbred wolf clan.
 But I have developed powers far beyond your imagining.
 And you are <em>nothing</em>, here in <em>my</em> domain,
 in the world of <em>Ivex the Magnificent</em>!"
@@ -21402,7 +21428,7 @@ function record(from, to, dom) {
   dom.find(".debug").removeAttr("aria-label title");
   
   // Remove "Continue" link when it's followed
-  const links = dom.find("a[data-passage]");
+  const links = []; // dom.find("a[data-passage]");
   if (links.length) {
     let last = links[links.length - 1];
     if (last.textContent === "Continue" && last.classList.contains("log-next")) {
@@ -21436,7 +21462,6 @@ function openLog() {
   const minutes = Math.round(words / 250);
   $("#ui-dialog-title").append(`${words} words (~${minutes} minutes)`);
   
-
   $("<a>&#x2191; </a>").prependTo("#ui-dialog-title")
     .on("click", () => {
       $("#log-outer div:first")[0].scrollIntoView();
@@ -21647,7 +21672,7 @@ You think that I'm a mage, correct?"
 ?P
 "I know a few cantrips and have some magic devices,
 but I'm not a mage at all!" Nero laughs again.
-"My skills are mainly psychological. I'm able to convince others,
+"My primary skills are psychological. I'm able to convince others,
 even mages as powerful as you,
 into believing that I'm also a mage. But I'm not!"
 ?P

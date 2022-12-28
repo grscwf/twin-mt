@@ -1714,11 +1714,17 @@ function randomWalkSetup() {
   ];
   
   let seeking = false;
+  let seekMoved = false;
+  let seekForce = false;
   
   const seekToggle = () =&gt; {
     seeking = !seeking;
     $(&quot;#rw-seek&quot;).toggleClass(&quot;rw-seeking&quot;, seeking);
-    if (seeking) seekNext();
+    if (seeking) {
+      seekMoved = false;
+      seekForce = false;
+      seekNext();
+    }
   };
   
   const seekStop = () =&gt; {
@@ -1730,16 +1736,23 @@ function randomWalkSetup() {
     const here = State.passage;
 
     if (!seeking) return seekStop();
-    if (ErrorMessage.hasFails) return seekStop();
-    if (/[/][DPS]/.test(here)) return seekStop();
     if (/^n9/.test(here)) return seekStop();
     if (stop.includes(here)) return seekStop();
 
-    const text = $(&quot;.passage&quot;).text();
-    if (/\bX[X]X\b|\bTO[D]O\b/.test(text)) return seekStop();
+    let hasProblem = false;
+    hasProblem = hasProblem || ErrorMessage.hasFails;
+    hasProblem = hasProblem || /[/][DPS]/.test(here);
+    hasProblem = hasProblem ||
+        /\bX[X]X\b|\bTO[D]O\b/.test($(&quot;.passage&quot;).text());
+
+    if (hasProblem &amp;&amp; !seekForce) {
+      if (seekMoved) return seekStop();
+      seekForce = true;
+    }
     
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length === 1) {
+      seekMoved = true;
       chosen[0].click();
       setTimeout(seekNext, 500);
     } else {
@@ -9929,7 +9942,7 @@ It&#39;s &lt;em&gt;him&lt;/em&gt;.
 
 It&#39;s Ivex, the panther mage who&#39;s the reason for Nero&#39;s current &quot;errand&quot;.
 
-The panther says brightly, &quot;Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay careful attention when I&#39;m speaking to you.&quot;
+The panther says brightly, &quot;Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay close attention when I&#39;m speaking to you.&quot;
 
 Well. Nero had thought that locating the malevolent mage would be the difficult part of the task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, &lt;em&gt;notice&lt;/em&gt; the trap before stepping into it. His aching balls agreed with that.
 
@@ -10063,7 +10076,7 @@ Ivex speaks. &quot;So let me make a proposal.&quot;
 
 &lt;&lt;if $n1_abused&gt;&gt;
     &quot;Please, let me explain,&quot; says Nero with some anxiety.
-    He quickly constructs a story that might appease the panther.
+    He quickly tries to construct a story that might appease the panther.
     &lt;&lt;misfire-please&gt;&gt;
         ?P
         The Sprite in his ear says, &quot;I don&#39;t understand what
@@ -10084,7 +10097,7 @@ Ivex speaks. &quot;So let me make a proposal.&quot;
 ?P
 &lt;&lt;if $n1_magicPhase &lt; MP_triedMagic&gt;&gt;
     Ivex seems intrigued. Good.
-    A plausible story should lower the panther&#39;s guard,
+    A plausible story should relax the panther&#39;s guard,
     and then Nero can escape and fulfill his commission with a minimum of fuss.
 &lt;&lt;elseif $n1_magicPhase &lt; MP_wantDevice&gt;&gt;
     Ivex seems intrigued. This strategy is working.
@@ -10141,6 +10154,7 @@ Ivex grins back. &quot;Now that you&#39;ve found me, what did you have in mind?&
 &lt;&lt;set $t_stalling = true&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
+    &lt;&lt;set $n1_tough = true&gt;&gt;
     Nero lets out a soft growl. His brutally abused balls argue against
     antagonizing his captor any further, but cooperation,
     or even the pretense of
@@ -10238,11 +10252,12 @@ and then he can complete his mission and escape.
 &lt;&lt;n1-patience 1 1&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
     Ivex asks in a flat tone of voice,
-    &quot;What makes you think I would accept you as my leader?&quot;
+    &quot;What makes you think I would accept you as my superior?&quot;
 &lt;&lt;n1-insist&gt;&gt;
-    XXX stronger callback to recruit question
-    Ivex snarls and asks,
-    &quot;Why would I ever submit to &lt;em&gt;your&lt;/em&gt; control?&quot;
+    Ivex snarls and says,
+    &quot;I am not some stray kitten looking for a home.
+    What makes you think that &lt;em&gt;you&lt;/em&gt; could ever
+    be &lt;em&gt;my&lt;/em&gt; superior?&quot;
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -10252,7 +10267,7 @@ and then he can complete his mission and escape.
     &lt;&lt;if $n1_abused&gt;&gt;
         &lt;li&gt;
             &lt;&lt;mta [[|n1cn/D Secret Society]]&gt;&gt;
-                Agree with Ivex. &quot;Of course you wouldn&#39;t!&quot;
+                Agree with Ivex. &quot;Of course not! This isn&#39;t about me!&quot;
             &lt;&lt;/mta&gt;&gt;
         &lt;/li&gt;
         &lt;li&gt;
@@ -11277,6 +11292,7 @@ This concern expressed by the panther for the wolf&#39;s comfort
 is clearly false.
 
 &lt;&lt;if $n1_abused&gt;&gt;
+    &lt;&lt;set $n1_tough = true&gt;&gt;
     Ivex is likely seeking another excuse to abuse the wolf&#39;s balls.
     Well, he can have it.
     Nero is not going to be cowed by this bully
@@ -11331,6 +11347,7 @@ Nero considers holding his breath to avoid whatever is in the candle&#39;s fumes
     TODO subby resist. maybe, regret earlier pretense of submission?
 
 &lt;&lt;elseif $n1_abused&gt;&gt;
+    &lt;&lt;set $n1_tough = true&gt;&gt;
     Nero sneers at his ridiculous tormentor.
     Any answer that he might give to that question
     will just become another reason for abuse of his balls.
@@ -14278,13 +14295,13 @@ Nero think of something more sensual than meat.
 
 ?P
 &lt;&lt;if $n1_barbsSlow&gt;&gt;
-    It&#39;s like the blood on Professor Mica&#39;s face when...
+    It&#39;s like the blood on Professor Mica&#39;s face when he...
 &lt;&lt;elseif $n1_barbsFast&gt;&gt;
-    It&#39;s like the taste of Lady Temesca&#39;s lips after...
+    It&#39;s like the taste of Lady Temesca&#39;s lips after she...
 &lt;&lt;elseif $n1_barbsGlitch&gt;&gt;
     It&#39;s like the tip of TODO glitch fade...
 &lt;&lt;else&gt;&gt;
-    It&#39;s like the panties that Ms. Tara wore when...
+    It&#39;s like the panties that Ms. Tara wore when she...
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -14305,7 +14322,9 @@ Nero think of something more sensual than meat.
 &lt;&lt;else&gt;&gt;
     The delicious vapors emitted by the candle&#39;s flame seem to be
     affecting his mind and making it difficult to concentrate on
-    outsmarting the obnoxious panther mage.
+    outsmarting the
+    &lt;&lt;= $n1_subby ? &quot;domineering&quot; : $n1_abused ? &quot;sadistic&quot; : &quot;obnoxious&quot;&gt;&gt;
+    panther mage.
     &lt;&lt;if $n1_candleAsked&gt;&gt;
         ?P
         Ivex had suggested the candle involves herbalism, which is useful
@@ -15398,7 +15417,7 @@ The panther laughs beneath his grinning mask.
 
 ?P
 Nero tries to think of a
-&lt;&lt;= $n1_subby ? &quot;gracious&quot; : $n1_abused ? &quot;placatory&quot; : &quot;clever&quot;&gt;&gt;
+&lt;&lt;= $n1_subby ? &quot;diplomatic&quot; : $n1_abused ? &quot;placating&quot; : &quot;clever&quot;&gt;&gt;
 response, but his head is feeling light, and something about the
 disdain in Ivex&#39;s voice is making his stomach flutter.
 
@@ -17996,6 +18015,7 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="512" name="n1cn/F Support Gr
 &lt;&lt;vi-always n1_abused true&gt;&gt;
 
 &quot;No, that isn&#39;t what I meant!&quot; Nero protests.
+&quot;I&#39;m not asking you to join &lt;em&gt;me!&lt;/em&gt;&quot;
 He pauses and makes his voice tentative.
 &quot;I&#39;m in a support group... for people like us,
 and I think you&#39;d enjoy meeting some of the others.&quot;
@@ -18023,7 +18043,8 @@ Did he die from disappointment?&quot;
 The wolf cringes and flattens his ears. The embarrassment is of course a sham. Mostly.
 
 ?P
-Nero keeps careful watch of the panther&#39;s arm, still drawn back and ready to strike. He replies quickly, &quot;No, that was Ferikin&#39;s father. Ferikin is also in the support group. Not everyone in our group has killed their father, but yes, we are all disappointments. And I Am No Longer Ashamed to Admit It! It happened when I was only 11 years old. My father never wanted me to become a mage, but I practiced very hard on a firework spell, and I thought that if I could show&amp;mdash;&quot;
+Nero keeps careful watch of the panther&#39;s arm, still drawn back and ready to strike. He replies quickly, &quot;No, that was Ferikin&#39;s father. Ferikin is also in the support group. Not everyone in our group has killed their father, but yes, we are all disappointments. And I Am No Longer Ashamed to Admit It! It happened when I was only 11 years old. My father never wanted me to become a mage, but I practiced very hard on a firework spell, and I thought that if I could
+&lt;span class=nobr&gt;show&amp;mdash;&quot;&lt;/span&gt;
 
 ?P
 Ivex smashes a knee into the wolf&#39;s &lt;&lt;= $n1_naked ? &quot;naked&quot; : &quot;&quot;&gt;&gt; crotch.
@@ -18039,7 +18060,7 @@ But the look on Ivex&#39;s face, a smug sneer, makes the wolf stay quiet.
 
 ?P
 As he speaks, the panther uses his knuckles to make quick, light taps on the wolf&#39;s &lt;&lt;= $n1_naked ? &quot;exposed balls.&quot; : &quot;crotch.&quot;&gt;&gt;
-Nero can&#39;t help wincing with each tap.
+Nero can&#39;t help wincing with every tap.
 &lt;&lt;/nobr&gt;&gt;
 
 [[Continue|n1cx/F Start Candle]]</tw-passagedata><tw-passagedata pid="513" name="Init 3 Visited Passages" tags="inclusion" position="2175,800" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
@@ -18930,14 +18951,14 @@ Let me help you with that.&quot;
 ?P
 He makes another gesture...
 ?P
-&lt;&lt;if $n1_candleLit&gt;&gt;
+&lt;&lt;if $n1_candleLit || $n1_abused&gt;&gt;
     [[Continue|n1p/F Barbs Fast]]
 &lt;&lt;else&gt;&gt;
     [[Continue|n1p/F Barbs Slow]]
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;set $t_afterNaked = &quot;[[Continue|n1s/F After Itch]]&quot;&gt;&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="528" name="n1s/F After Cast" tags="" position="5425,3250" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="528" name="n1s/F After Cast" tags="" position="5375,3275" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
@@ -18987,9 +19008,14 @@ He makes another gesture...
 
 &lt;&lt;= $n1_candleLit ? &quot;through his grinning mask&quot; : &quot;&quot;&gt;&gt;
 in a quiet tone that slowly increases in intensity.
-&quot;You might think you know magic.
-You might be the greatest mage to ever emerge
-from the foul little den of your inbred wolf clan.
+&lt;&lt;if $n1_thief&gt;&gt;
+    &quot;You might think you&#39;re clever.
+    You might be the greatest thief
+&lt;&lt;else&gt;&gt;
+    &quot;You might think you know magic.
+    You might be the greatest mage
+&lt;&lt;/if&gt;&gt;
+to ever emerge from the foul little den of your inbred wolf clan.
 But I have developed powers far beyond your imagining.
 And you are &lt;em&gt;nothing&lt;/em&gt;, here in &lt;em&gt;my&lt;/em&gt; domain,
 in the world of &lt;em&gt;Ivex the Magnificent&lt;/em&gt;!&quot;
@@ -19350,7 +19376,7 @@ function record(from, to, dom) {
   dom.find(&quot;.debug&quot;).removeAttr(&quot;aria-label title&quot;);
   
   // Remove &quot;Continue&quot; link when it&#39;s followed
-  const links = dom.find(&quot;a[data-passage]&quot;);
+  const links = []; // dom.find(&quot;a[data-passage]&quot;);
   if (links.length) {
     let last = links[links.length - 1];
     if (last.textContent === &quot;Continue&quot; &amp;&amp; last.classList.contains(&quot;log-next&quot;)) {
@@ -19384,7 +19410,6 @@ function openLog() {
   const minutes = Math.round(words / 250);
   $(&quot;#ui-dialog-title&quot;).append(`${words} words (~${minutes} minutes)`);
   
-
   $(&quot;&lt;a&gt;&amp;#x2191; &lt;/a&gt;&quot;).prependTo(&quot;#ui-dialog-title&quot;)
     .on(&quot;click&quot;, () =&gt; {
       $(&quot;#log-outer div:first&quot;)[0].scrollIntoView();
@@ -19575,7 +19600,7 @@ You think that I&#39;m a mage, correct?&quot;
 ?P
 &quot;I know a few cantrips and have some magic devices,
 but I&#39;m not a mage at all!&quot; Nero laughs again.
-&quot;My skills are mainly psychological. I&#39;m able to convince others,
+&quot;My primary skills are psychological. I&#39;m able to convince others,
 even mages as powerful as you,
 into believing that I&#39;m also a mage. But I&#39;m not!&quot;
 ?P
