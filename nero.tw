@@ -1638,12 +1638,20 @@ Macro.add("meta-ending", {
 </style><</append>>
 
 <<script>>
+const MT = window.MagesTower || (window.MagesTower = {});
+
+const visited = new Set();
+let lastPick = {};
+
+MT.forgetWalkHistory = () => {
+  visited.clear();
+  lastPick = {};
+};
+
 /** Random walk */
 function randomWalkSetup() {
   if (!Config.debug) return;
 
-  const visited = new Set();
-  const lastPick = {};
 
   // TODO - add setter to id
   const idOf = el => $(el).attr("data-passage");
@@ -3631,10 +3639,11 @@ Macro.add("n1-patience", {
 <<script>>
 Template.add("master", () => {
   const V = State.variables;
+  const name = V.n1_opportunist ? "An Opportunist" : "Master";
   if (V.n1_spriteQuiet) {
-    return "<span class=master-quiet>Master</span>";
+    return `<span class=master-quiet>${name}</span>`;
   } else {
-    return "Master";
+    return name;
   }
 });
 
@@ -10726,6 +10735,12 @@ Feedback is always welcome! Contact XXX if you have suggestions or find a bug.
 <<nobr>>
 <<auto-stow>>
 <span class="ui-title">Jump To</span>
+
+<<script>>
+    /* should do this only on jump, but this is fine. */
+    MagesTower.forgetWalkHistory();
+<</script>>
+
 <</nobr>>
 <hr>
 [[> Title Screen|Title Screen]]
@@ -15165,10 +15180,14 @@ T.toTry.sort();
 <</if>>
 
 ?P
-<ul class="actions">
-    <<actions-get>>
-    <li>$t_afterLook</li>
-</ul>
+<<if Nero.actionsSize()>>
+    <ul class="actions">
+        <<actions-get>>
+        <li>$t_afterLook</li>
+    </ul>
+<<else>>
+    $t_afterLookContinue
+<</if>>
 <</nobr>>
 
 
@@ -15268,9 +15287,7 @@ pompous, dirty, and dominated by the
 <<set $n1_studyViewed = true>>
 
 ?P
-<ul class="actions">
-    <li>$t_afterLook</li>
-</ul>
+$t_afterLookContinue
 <</nobr>>
 
 
@@ -21791,19 +21808,38 @@ wolf for a long moment.
 one hand on the buckle of an ankle strap.
 ?P
 The panther continues. "I was quite sure you were a mage.
-You're very convincing. But what you're telling me now...
+<<if MP_beforeCast === $n1_magicPhase>>
+    Your costume and its accessories
+    <<= $n1_naked ? "were" : "are">>
+    very convincing.
+<<else>>
+    Your costume and your pathetic attempt at a spell were very convincing.
+<</if>>
+But what you're telling me now...
 poses a problem."
 ?P
 He toys with the buckle, as if considering whether
 to release it or not. "I'm not so convinced that you're a thief."
 ?P
 Nero interjects. "Please, call me an opportunist."
-TODO please-misfire change master to an opportunist.
+
+<<misfire-please>>
+    ?P
+    The Sprite in Nero's ear says,
+    "Okay! I will remember to call you
+    <<set $n1_opportunist = true>>
+    ?master
+    <<set $n1_opportunist = false>>
+    instead of ?master,
+    <<set $n1_opportunist = true>>
+    ?master."
+    Nero shakes his head at that nonsense.
+<</misfire-please>>
+
 ?P
 Ivex looks up at the wolf.
-The panther has a feral grin that doesn't seem at
+The panther has a feral grin that does not seem at
 all like the face of a friendly new recruit.
-?P
 Nero becomes worried.
 <em>Did I make a mistake? What went wrong? Can I fix it?</em>
 ?P
@@ -21828,15 +21864,20 @@ and reaches for
 gives it a sudden squeeze. TODO pain
 ?P
 The wolf stifles a yelp. "Please, I can prove it!"
-TODO misfire-please
+
+<<misfire-please>>
+    ?P
+    The Sprite in Nero's ear says, "You don't have to prove anything to me.
+    I will always believe you, ?master!"
+<</misfire-please>>
 ?P
 Ivex chuckles. "I'm sure you can." He stands up with the help of his grasp
 on the wolf's ball, pulling the wolf's nutsack down painfully tight.
 TODO pain.
 Nero grits his teeth and whines.
 ?P
-The panther leans close and stares into the wolf's eyes. Ivex says,
-"The fascinating thing about liars is one can never be quitesure
+The panther leans close and stares into the wolf's eyes.
+"The fascinating thing about liars is one can never be quite sure
 when the liar stops lying and starts telling the truth."
 ?P
 He suddenly smashes a fist into the wolf's other ball, twice.
