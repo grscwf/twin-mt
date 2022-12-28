@@ -3437,7 +3437,7 @@ Macro.add("misfire-please", {
 
 :: Init 5b Nero Patience [inclusion] {"position":"2625,1250","size":"100,100"}
 <<append head>><style>
-.patience-debug:not(.patience-debug-show) a {
+.patience-debug:not(.patience-debug-show) > :not(label) {
   display: none;
 }
 </style><</append>>
@@ -3648,6 +3648,15 @@ Template.add("blank",
 
 
 :: Init 5c Nero Password [inclusion] {"position":"3450,1000","size":"100,100"}
+<<append head>><style>
+#passages:not(.pw-debug-show) .pw-debug > :not(label) {
+  display: none;
+}
+span.debug:has(> .pw-debug) + wbr + span.debug > .pw-debug > label {
+  display: none;
+}
+
+</style><</append>>
 <<script>>
 const Nero = window.Nero || (window.Nero = {});
 const VT = window.VarTrace || (window.VarTrace = {});
@@ -3692,6 +3701,11 @@ Nero.otherPasswords = {
   "XXX wand": "the name of Ivex's wand",
 };
 
+let pwDebugAlready = false;
+$(document).on(":passagestart", () => {
+  pwDebugAlready = false;
+});
+
 /**
  * <<pw-found $pw>>
  * Add pw to passwordsFound.
@@ -3734,37 +3748,75 @@ Macro.add("pw-suggest", {
     const onHold = MP_onHold === V.n1_magicPhase;
     if (!wantPassword && !onHold) return;
 
-    const tried = V.n1_passwordsTried || [];
+    // check that all clauses have declared passwords
+    for (const p of this.payload) {
+      if (p.name === "pw-fail") continue;
+      const [pw] = p.args;
+      if (Nero.otherPasswords[pw] == null) {
+        throw new Error(`${payload.name} ${pw} undeclared password`);
+      }
+    }
+
+    const tried = V.n1_passwordsTried || (V.n1_passwordsTried = []);
     const found = V.n1_passwordsFound || (V.n1_passwordsFound = []);
 
-    for (const payload of this.payload) {
-      switch (payload.name) {
-        case "pw-suggest":
-        case "pw-another": {
-          const [pw] = payload.args;
-          if (Nero.otherPasswords[pw] == null) {
-              throw new Error(`${payload.name} ${pw} undeclared password`);
-          }
-          const please = V.n1_passwordNoPlease ? "" : "Please ";
-          const pleaseComma = V.n1_passwordNoPlease ? "" : "Please, ";
-          if (tried.includes(pw)) break;
-          if (!found.includes(pw)) found.push(pw);
-          $(this.output).wiki(payload.contents);
-          if (wantPassword) {
-            const text =`Tell the Sprite, "${pleaseComma}${pw}."`;
-            const code = `$n1_passwordBeingTried = "${please}${pw}"`;
-            Nero.actionsAdd("[" + `[\`${text}\`|${sayPassword}][${code}]]`);
-          } else {
-            $(this.output).append(
-              `Nero will have to remember to try it when the
-              Sprite is ready for another guess.`);
-          }
-          return;
-        }
-        case "pw-fail": {
-          $(this.output).wiki(payload.contents);
-          return;
-        }
+    let failed = true;
+    for (const p of this.payload) {
+      if (p.name === "pw-fail") continue;
+      const [pw] = p.args;
+      if (tried.includes(pw)) continue;
+      
+      failed = false;
+      if (!found.includes(pw)) found.push(pw);
+      $(this.output).wiki(p.contents);
+      if (wantPassword) {
+        const please = V.n1_passwordNoPlease ? "" : "Please ";
+        const pleaseComma = V.n1_passwordNoPlease ? "" : "Please, ";
+        const text =`Tell the Sprite, "${pleaseComma}${pw}."`;
+        const code = `$n1_passwordBeingTried = "${please}${pw}"`;
+        Nero.actionsAdd("[" + `[\`${text}\`|${sayPassword}][${code}]]`);
+      } else {
+        $(this.output).append(
+          `Nero will have to remember to try it when the
+          Sprite is ready for another guess.`);
+      }
+      break;
+    }
+
+    if (failed) {
+      const p = this.payload.find(p => p.name === "pw-fail");
+      if (p !== null) $(this.output).wiki(p.contents);
+    }
+    
+    if (Config.debug) {
+      let debug = !!State.metadata.get("pwDebug");
+      $("#passages").toggleClass("pw-debug-show", debug);
+      const outer = $("<span class=pw-debug>").appendTo(this.output);
+      $("<label>").append(" &#x1f527;").appendTo(outer)
+        .click(() => {
+          debug = !debug;
+          State.metadata.set("pwDebug", debug);
+          $("#passages").toggleClass("pw-debug-show", debug);
+        });
+      if (!pwDebugAlready) {
+        pwDebugAlready = true;
+        $("<a>").text(" (reset)").appendTo(outer)
+          .on("click", () => VarInfo.revisitHere(() => {
+            const V = State.variables;
+            const tried = V.n1_passwordsTried || (V.n1_passwordsTried = []);
+            tried.length = 0;
+          }));
+      }
+      for (const p of this.payload) {
+        if (p.name === "pw-fail") continue;
+        const [pw] = p.args;
+        if (tried.includes(pw)) continue;
+        $("<a>").text(` (try ${pw})`).appendTo(outer)
+          .on("click", () => VarInfo.revisitHere(() => {
+            const V = State.variables;
+            const tried = V.n1_passwordsTried || (V.n1_passwordsTried = []);
+            tried.push(pw);
+          }));
       }
     }
   }
@@ -15460,12 +15512,18 @@ The rest of the shelves are taken up by boxes
     On the floor beside the desk is a broken mirror,
     a little larger than the wolf's handpaw.
 
-    <<if MP_wantDevice <= $n2_magicPhaseBroken>>
+    <<if $n1_mirrorViewedMageSight>>
         The shattered bits look like ordinary glass,
         and the frame looks to be plain dark wood now.
         Nero remembers seeing mage-silver beneath
         the illusion of wood.
-        ?P
+    <<else>>
+        The frame is plain dark wood,
+        and the shattered bits look like ordinary glass.
+    <</if>>
+    ?P
+
+    <<if MP_wantDevice <= $n2_magicPhaseBroken>>
         It's unfortunate that the mirror is broken.
         The magic made available by the mirror was small,
         much less than lupine mage's usual powers,
@@ -15473,38 +15531,35 @@ The rest of the shelves are taken up by boxes
         ?P
         Well, no point dwelling on might-have-beens.
         There are certainly ways to escape without the mirror.
-
     <<elseif $n1_mirrorViewedMageSight>>
-        The shattered bits look like ordinary glass,
-        and the frame looks to be plain dark wood now.
-        Nero remembers seeing mage-silver beneath
-        the illusion of wood.
-        ?P
         He wonders why Ivex bothered to disguise the mirror
         and make it seem like ordinary wood.
-        But this is probably as futile as understanding the purpose
-        of <em>anything</em> in the deranged mage's room.
+        But understanding this is probably as futile a pursuit
+        as fathoming the purpose of <em>anything</em>
+        in the deranged mage's room.
         ?P
         The wolf is grateful that the mirror was available to help him
-        destroy the gravity crystals. But it's broken and useless now.
-        Besides, it's unlikely that an intact mirror would do much
-        other than show the wolf his own nakedness better.
-
-    <<else>>
-        The frame is plain dark wood,
-        and the shattered bits look like ordinary glass.
+        destroy the gravity crystals.
+        Perhaps if the mirror were still intact, it would have some
+        use beyond just showing the wolf his own nakedness.
         ?P
+        But unfortunately it's broken now.
+        No point dwelling on might-have-beens.
+        There are certainly ways to escape without the mirror.
+    <<else>>
         Nero wonders why the panther mage would have such
         an object at his desk. If it were simple vanity,
-        wouldn't he use a larger mirror and mount it on a wall?
+        wouldn't he have a larger mirror mounted on a wall?
         But understanding the mirror is probably as futile
         a pursuit as fathoming the purpose of <em>anything</em>
         in the deranged mage's room.
         ?P
         The wolf is grateful that the mirror was available to help him
-        destroy the gravity crystals. But it's broken and useless now.
-        Besides, it's unlikely that an intact mirror would do much
-        other than show the wolf his own nakedness better.
+        destroy the gravity crystals. It's unfortunate that it's broken now,
+        but the intact mirror was unlikely to have much use beyond
+        showing the wolf his own nakedness better.
+        It's fulfilled its purpose. Nero offers a mental salute
+        in tribute to the service of the plain, simple mirror.
     <</if>>
 
 <<elseif $n2_free>>
@@ -15564,39 +15619,34 @@ The rest of the shelves are taken up by boxes
     <</if>>
     behind the cross that he's bound to.
 
-    <<if $n1_magicPhase === MP_mageSight>>
+    <<if MP_mageSight <= $n1_magicPhase>>
         ?P
         The mirror also seems to be the only object in the room
-        with an energy that Nero understands.
+        with an energy that Nero recognizes.
         Nestled in the strands of exotic energy
         is a pyron node,
-        which is a magic device that the lupine mage is quite familiar with.
-        ?P
-        Nero does not have much power left after the
-        embarrassing spell-casting failure,
-        but he might have just enough left
-        to tap the pyron node, and use it.
-
-        <<actions-add [[Try to tap the mirror's pyron node.|n1s/D Tap]]>>
-        
-    <<elseif MP_mageSight < $n1_magicPhase>>
-        ?P
-        The mirror also seems to be the only object in the room
-        with a form of energy that Nero recognizes.
-        Nestled among the strands of exotic energy,
-        there's a pyron node, and Nero has managed to tap it.
-        ?P
-        The energy of the pyron node provides the lupine mage with a trickle
-        of power that isn't enough to replenish his own exhausted
-        store of energy, but it's enough to keep his mage-sight active.
-        ?P
-        More importantly, the pyron node has granted him access to
-        one of the panther's
-        [[Sprites|n1s/D Sprite Info]]!
-        It's the tiniest of flaws in Ivex's magic defenses,
-        but it's quite likely to be enough for Nero to
-        infiltrate the exotic energy system and use its
-        devices for his escape.
+        <<if $n1_magicPhase === MP_mageSight>>
+            which is a magic device that the lupine mage is quite familiar with.
+            ?P
+            Nero does not have much power left after the
+            embarrassing spell-casting failure,
+            but he might have just enough left
+            to tap the pyron node, and use it.
+            <<actions-add [[Try to tap the mirror's pyron node.|n1s/D Tap]]>>
+        <<else>>
+            and Nero has managed to tap it.
+            ?P
+            The energy of the pyron node provides the lupine mage with
+            a trickle of power that isn't enough to replenish his own exhausted
+            store of energy, but it's enough to keep his mage-sight active.
+            ?P
+            More importantly, the pyron node has granted him access to
+            one of the panther's [[Sprites|n1x/D Sprite Info]]!
+            It's the tiniest of flaws in Ivex's magic defenses,
+            but it's quite likely to be enough for Nero to
+            infiltrate the exotic energy system and use its
+            devices for his escape.
+        <</if>>
     <</if>>
 <</if>>
 
@@ -15643,7 +15693,7 @@ The rest of the shelves are taken up by boxes
 ?P
 <<if $n2_free>>
     <<em-assert MP_wantPassword !== $n1_magicPhase>>
-    This particular one has a figurine of a male snow dragon,
+    This particular one has a figurine of a male dragon,
     sprawled on the ground in a lewd pose,
     with one arm raised in the air in triumph.
     HIs other forepaw is firmly grasping his enormous erect dick.
@@ -15676,7 +15726,7 @@ The rest of the shelves are taken up by boxes
         in vulgar humor.
     <</if>>
 <<else>>
-    This particular one contains a figurine of a snow dragon
+    This particular one contains a figurine of a dragon
     with a bright red cape, sprawled on the ground in a lazy pose.
     Its back is toward Nero, and one arm is raised in greeting.
 
@@ -15691,9 +15741,7 @@ The rest of the shelves are taken up by boxes
     <span class=nobr>"CARPE DI&mdash;"</span>
 
     <<set $n1_globePartialViewed = true>>
-    <<pw-found "Carpe Diem">>
-    <<pw-found "Caverns of Liskov">>
-    <<pw-found "Caverns of Luminance">>
+    <!-- not adding to pw-found until wantPassword -->
 
     ?P
     <<if MP_wantPassword === $n1_magicPhase>>
@@ -16364,22 +16412,38 @@ Such as:
     <<if $n1_bottleTouchTried>>
         The Sprite did not respond when Ivex touched the bottle,
         so this is probably not the hole that it wants touched.
-        Well, it's possible that Ivex did not touch it correctly,
-        but Nero does <em>not</em> want to ask Ivex
-        about it again.
+        ?P
+        Well, it's possible that Ivex did not touch it correctly, but
+        <<if $n1_subby>>
+            but Nero does not want to bother Ivex about it again.
+        <<else>>
+            but Nero does <em>not</em> want to ask Ivex about it again.
+        <</if>>
     <<else>>
         When Nero had asked before,
         Ivex had grasped the neck of the bottle with pride.
         Perhaps he can be persuaded to touch it again.
-        Nero hesitates. Does he really want to provide
-        the perverted panther with more opportunity to
-        speak uncomfortably strange innuendo?
+        <<if $n1_subby>>
+            TODO subby - maybe a subby hesitation
+        <<else>>
+            Nero hesitates.
+            Does he really want to provide
+            the perverted panther with more opportunity to
+            speak uncomfortably strange innuendo?
+        <</if>>
         <<actions-add [[Ask Ivex again about the bottle.|n1x/D Bottle Ask Again]]>>
     <</if>>
 
 <<else>>
-    Ivex was unspeakably lewd when asked about the bottle before.
-    Nero does <em>not</em> want to ask again.
+    <<if $n1_subby>>
+        But when Nero asked earlier about the bottle,
+        Ivex's response was more lewd than informative,
+        and it seems unlikely he'll respond differently just yet.
+        Nero will have to wait.
+    <<else>>
+        Ivex was unspeakably lewd when Nero asked about the bottle earlier.
+        The wolf does <em>not</em> want to ask again.
+    <</if>>
 <</if>>
 
 ?P
@@ -16958,7 +17022,7 @@ ivex, haha wouldn't you like to know.
 $t_afterAction
 
 
-:: n1x/D Globe Ask {"position":"6650,5875","size":"100,100"}
+:: n1x/D Globe Ask {"position":"6575,6000","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n2_free false>>
@@ -17886,7 +17950,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n2x/D Mirror Take {"position":"6825,5875","size":"100,100"}
+:: n2x/D Mirror Take {"position":"6850,5850","size":"100,100"}
 <<nobr>>
 take the mirror, it might be useful. too bad no pockets.
 
@@ -19243,7 +19307,7 @@ drop knife
 [[Continue|n2f/D Leave]]
 
 
-:: n2x/D Wand Use {"position":"7350,6100","size":"100,100"}
+:: n2x/D Wand Use {"position":"7350,6175","size":"100,100"}
 <<nobr>>
 <<vi-always n1_wandAsked true>>
 
@@ -19305,7 +19369,7 @@ Nero is puzzled. Well, there's nothing left but to try it.
 <</nobr>>
 
 
-:: n2x/D Wand Use Stop {"position":"7475,6200","size":"100,100"}
+:: n2x/D Wand Use Stop {"position":"7475,6275","size":"100,100"}
 <<nobr>>
 
 stop before orgasm. frustrated, and now super horny
@@ -19316,7 +19380,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n2x/D Wand Use Finish {"position":"7325,6225","size":"100,100"}
+:: n2x/D Wand Use Finish {"position":"7325,6300","size":"100,100"}
 <<nobr>>
 continue past orgasm, can't stop.
 
@@ -21146,24 +21210,8 @@ function recentlyViewed(name) {
 <</script>>
 
 
-:: n1x/D Globe WantPassword [inclusion] {"position":"6525,5875","size":"100,100"}
+:: n1x/D Globe WantPassword [inclusion] {"position":"6575,5875","size":"100,100"}
 <<nobr>>
-
-XXX test pw-suggest options
-<<pw-suggest "Carpe Diem">>
-<<pw-fail>>
-    <<set _triedCarpe = true>>
-<</pw-suggest>>
-
-<<pw-suggest "Caverns of Liskov">>
-<<pw-fail>>
-    <<set _triedLiskov = true>>
-<</pw-suggest>>
-
-<<pw-suggest "Caverns of Luminance">>
-<<pw-fail>>
-    <<set _triedLuminance = true>>
-<</pw-suggest>>
 
 The origin of the globe might be Ivex's favorite vacation spot,
 which is a common choice of password: easy to remember,
@@ -21171,8 +21219,23 @@ and ostensibly difficult for a rival to guess.
 But such facts about a person are less obscure than they might seem.
 It's often a simple matter to deduce such details from the tiniest of clues,
 especially when a person decorates their residence
-with artifacts like that globe.
+with souvenirs from that location.
 ?P
+
+<<pw-suggest "Carpe Diem">>
+<<pw-fail>>
+    <<set _triedCarpe = true>>
+<</pw-suggest>>
+<<pw-suggest "Caverns of Liskov">>
+<<pw-fail>>
+    <<set _triedLiskov = true>>
+<</pw-suggest>>
+<<pw-suggest "Caverns of Luminance">>
+<<pw-fail>>
+    <<set _triedLuminance = true>>
+<</pw-suggest>>
+<<if Config.debug>><br><</if>>
+
 <<if _triedLiskov && _triedLuminance>>
     Unfortunately, neither "Caverns of Luminance"
     nor "Caverns of Liskov" is the correct password.
@@ -21181,40 +21244,43 @@ with artifacts like that globe.
 <<elseif _triedLuminance>>
     Unfortunately, "Caverns of Luminance" is not the correct password.
 <<else>>
-    So the caverns could be the password that the Sprite wants.
+    So the name of the caverns could be the password that the Sprite wants.
 <</if>>
 
 <<if _triedCarpe>>
-    It <<= _triedLiskov && _triedLuminance ? "also" : "">>
-    isn't "Carpe Diem".
+    <<if _triedLiskov || _triedLuminance>>
+        It also isn't "Carpe Diem".
+    <<else>>
+        "Carpe Diem" was also a good idea, but that isn't it.
+    <</if>>
 <</if>>
 
 <<if _triedLuminance && !_triedLiskov>>
-    Perhaps it's "Caverns of Liskov".
+    Perhaps it's "Caverns of Liskov"?
 <<elseif _triedLiskov && !_triedLuminance>>
-    Perhaps it's "Caverns of Luminance".
+    Perhaps it's "Caverns of Luminance"?
 <</if>>
 
 <<if !_triedCarpe>>
     <<if _triedLIskov && _triedLuminance>>
         Perhaps it's "Carpe Diem"?
     <<else>>
-        Or maybe it's "Carpe Diem"?
+        "Carpe Diem" also seems like a good guess.
     <</if>>
 <</if>>
 
-<<if _triedLiskov || _triedLuminance || _triedCarpe>>
+<<if _triedLiskov || _triedLuminance>>
     ?P
     Of course, it's possible that the globe comes from
-    a different cavern that starts with "L".
+    some other cavern that starts with "L", unknown to the wolf.
     <<if $n2_ivexGone>>
         Unfortunately, Nero can't ask Ivex about it now.
     <<else>>
         Nero could try asking Ivex about it.
         <<actions-add [[Ask Ivex about the globe.|n1x/D Globe Ask]]>>
     <</if>>
-<<else>>
-    Could be worth a try.
+<<elseif !_triedCarpe>>
+    Any of those possibilities could be worth a try.
 <</if>>
 
 <</nobr>>\
@@ -21476,9 +21542,6 @@ function openLog() {
 
 if (Config.debug) setup();
 <</script>>
-
-
-:: n1s/D Sprite Info {"position":"6350,4125","size":"100,100"}
 
 
 :: n1s/D Cast Sight Horny {"position":"5600,3950","size":"100,100"}
@@ -22023,5 +22086,8 @@ a wand with precision.
 
 <<set $n1_wandViewed = true>>
 <</nobr>>
+
+
+:: n1x/D Sprite Info {"position":"6725,5900","size":"100,100"}
 
 
