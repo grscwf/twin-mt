@@ -35,34 +35,34 @@ much more fun to discover yourself.
 - Easy is available after Ivex leaves, if the player misses the Hard solution.
 
 ### 1st Floor Moods
-Nero has 5 different moods when interacting with Ivex, and one more mood
-after escaping the cross. The moods are mostly flavor.
-There's only one path that requires a specific mood.
+Nero has 6 different moods when interacting with Ivex, and one more mood
+after escaping the cross.
+The moods are mostly flavor, affecting many descriptions.
+There are only a few paths that require specific moods.
 <details>
 
 - Nero's initial choice is 3 options that converge on Ivex Intro, but each
-  option gets there in a different mood/state.
-  - (1) Ivex punches Nero's balls, which puts Nero in "abused" mood.
-    - "abused" affects many descriptions, but doesn't change paths
-      except in one place.
-    - Several later choices can also make Ivex angry and trigger "abused".
-  - (2) Ivex removes Nero's clothes, which puts Nero in "naked" mood.
-    - "naked" just affects descriptions.
-    - At several later points, Ivex will remove Nero's clothes if he's
-      not already naked.
-    - Nero is always naked before Ivex leaves.
-    - Becoming naked also asks barbs/smooth. There are 4 variants of this:
-      Mica, Pevhin, glitch, and a skip-story option if the player's already
-      seen that story in a previous playthrough.
-  - (3) "normal" mood. Neither "abused" or "naked".
-- (4) The mood "subby" can be triggered by taking the right choices when
-  talking to Ivex. This is needed for reaching one ending.
-- (5) The mood "candleHorny" is triggered when the candle has been lit for
-  a while. This changes most descriptions, and some actions.
-- (6) The mood "extraHorny" is triggered when Nero escapes the cross on
-  the easy path. It's normally off on the hard path, but there's an
-  optional action that can trigger it anyway.
-  This changes some descriptions, and a few actions.
+  option gets there in a different mood/state: `normal`, `naked`, `abused`.
+- (1) `normal` is the baseline mood.
+- (2) `naked` is triggered when Ivex removes Nero's clothes.
+  - `naked` is one of the initial options, and it can also happen at
+    several other points.
+  - Nero is always `naked` before Ivex leaves.
+  - Becoming `naked` also asks barbs/smooth. There are 4 variants:
+    Mica, Pevhin, glitch, and a skip option if the player's already
+    already seen Mica or Pevhin's story in a previous playthrough.
+- (3) `abused` is triggered when Ivex punches Nero's balls.
+  - `abused` is one of the initial options, and it can also happen at
+    several other points.
+  - `abused` can be false when Ivex leaves.
+- (4) `tough` is triggered by some choices after `abused`.
+- (5) `subby` is triggered by particular dialog choices.
+  - `subby` is needed for reaching one ending.
+- (6) `candleHorny` is triggered when the candle has been lit long enough.
+- (7) `extraHorny` is triggered when Nero escapes the cross on
+    the easy path.
+  - `extraHorny` is normally false on the hard path, but there's an
+    optional action that can trigger it anyway.
 </details>
 
 ### 1st Floor Easy

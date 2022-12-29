@@ -476,6 +476,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Sidebar]]>>
 <<include [[Init 2 State]]>>
 <<include [[Init 2 Templates]]>>
+<<include [[Init 2 Text Style]]>>
 <<include [[Init 2 UI Style]]>>
 <<include [[Init 2 Var Info]]>>
 <<include [[Init 3 Visited Passages]]>>
@@ -1652,7 +1653,6 @@ MT.forgetWalkHistory = () => {
 function randomWalkSetup() {
   if (!Config.debug) return;
 
-
   // TODO - add setter to id
   const idOf = el => $(el).attr("data-passage");
 
@@ -1703,7 +1703,7 @@ function randomWalkSetup() {
 
     const next = State.history[State.length].title;
     const chosen = $("#passages .random-walk-chosen");
-    if (chosen.length === 1 && chosen.attr("data-passage") === next) {
+    if (chosen.length === 1) {
       Engine.forward();
       return;
     }
@@ -1783,21 +1783,21 @@ function randomWalkSetup() {
       .text("back")
       .click(back)
       .appendTo(outer);
-    $("<a>")
-      .attr("title", "<ctrl-period> forward")
-      .text("forw")
-      .click(forward)
+    $("<a id=rw-seek>")
+      .attr("title", "<ctrl-backslash> seek")
+      .toggleClass("rw-seeking", seeking)
+      .text("seek")
+      .click(seekToggle)
       .appendTo(outer);
     $("<a>")
       .attr("title", "<ctrl-slash> random")
       .text("rand")
       .click(walk)
       .appendTo(outer);
-    $("<a id=rw-seek>")
-      .attr("title", "<ctrl-backslash> seek")
-      .toggleClass("rw-seeking", seeking)
-      .text("seek")
-      .click(seekToggle)
+    $("<a>")
+      .attr("title", "<ctrl-period> forward")
+      .text("forw")
+      .click(forward)
       .appendTo(outer);
   });
 
@@ -1933,7 +1933,7 @@ Template.add("P", "<br><br>");
 <</script>>
 
 
-:: Init 2 UI Style [inclusion] {"position":"2850,700","size":"100,100"}
+:: Init 2 UI Style [inclusion] {"position":"2950,700","size":"100,100"}
 <<append head>><style>
 
 #debug-bar-hint {
@@ -1967,7 +1967,7 @@ Template.add("P", "<br><br>");
 </style><</append>>
 
 
-:: Init 2 Var Info [inclusion] {"position":"2950,700","size":"100,100"}
+:: Init 2 Var Info [inclusion] {"position":"3050,700","size":"100,100"}
 <<append head>><style>
 .revisit-here,
 .revisit-here * {
@@ -3703,7 +3703,7 @@ Nero.otherPasswords = {
   /* penguin */
   "Hunter Two": "the name of Ivex's penguin",
 
-  /* portrait */
+  /* painting */
   "XXX mom": "the name of Ivex's mother",
 
   /* wand */
@@ -10843,6 +10843,8 @@ Feedback is always welcome! Contact XXX if you have suggestions or find a bug.
     <<state-delete n1_ n2_ t_>>
     <<set $n1_naked = true>>
     <<set $n1_magicPhase = MP_broken>>
+    <<set $n2_magicPhaseBroken = MP_mageSight>>
+    <<set $n2_extraHorny = true>>
     <<set $n2_free = true>>
     <<set $n2_ivexGone = true>>
     <<set $n2_mirrorBroken = true>>
@@ -11160,15 +11162,28 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
+    <<em-assert !$n1_subby && !$n1_tough>>
     <<if $n1_abused>>
-        <li>[[`"Please, let me explain..."`|n1cn/F Charm]]</li>
-        <li>[[Growl softly at Ivex.|n1cn/F Resist]]</li>
+        <<mtl [[n1cn/F Charm]]>>
+            Speak quickly, "Please, let me explain!"
+        <</mtl>>
+        <<mtl [[n1cn/F Resist]]>>
+            Growl softly at Ivex.
+        <</mtl>>
     <<elseif $n1_naked>>
-        <li>[[`"No, you misunderstand..."`|n1cn/F Charm]]</li>
-        <li>[[Snarl at Ivex.|n1cn/F Resist]]</li>
+        <<mtl [[n1cn/F Charm]]>>
+            Speak firmly, "No, you misunderstand..."
+        <</mtl>>
+        <<mtl [[n1cn/F Resist]]>>
+            Snarl contemptuously at Ivex.
+        <</mtl>>
     <<else>>
-        <li>[[`"Ah, I see the misunderstanding..."`|n1cn/F Charm]]</li>
-        <li>[[Resist Ivex with a growl.|n1cn/F Resist]]</li>
+        <<mtl [[n1cn/F Charm]]>>
+            Speak lightly, "Ah, I see the misunderstanding..."
+        <</mtl>>
+        <<mtl [[n1cn/F Resist]]>>
+            Resist Ivex with a growl.
+        <</mtl>>
     <</if>>
     <<actions-optional $t_magicAction>>
 </ul>
@@ -11275,7 +11290,7 @@ Ivex speaks. "So let me make a proposal."
         but then shakes his head and continues.
     <</misfire-please>>
 <<elseif $n1_naked>>
-    "No, you misunderstand," says Nero.
+    "No, you misunderstand," says Nero. XXX
 <<else>>
     "Ah, I see the misunderstanding now," says Nero with a smile.
 <</if>>
@@ -11348,19 +11363,20 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 <<set $t_didSomeAction = true>>
 <<set $t_stalling = true>>
 
+<<em-assert !$n1_subby && !$n1_tough>>
 <<if $n1_abused>>
     <<set $n1_tough = true>>
     Nero lets out a soft growl. His brutally abused balls argue against
     antagonizing his captor any further, but cooperation,
     or even the pretense of
-    cooperation, seems unlikely to improve his situation.
+    cooperation, is not likely to improve his situation.
     So the wolf sees no point in playing that game.
     ?P
     Ivex's ears momentarily flatten at the sudden growl,
     but they quickly perk back up as he smiles.
 
 <<elseif $n1_naked>>
-    The wolf looses a savage snarl at the panther mage.
+    The wolf looses a savage, contemptuous snarl at the panther mage.
     Ivex's outrageous stripping of the wolf's clothes (and dignity),
     makes Nero unwiling to cooperate, or even pretend to cooperate.
     And in any case, he would not have much of a career if he
@@ -11459,8 +11475,9 @@ and then he can complete his mission and escape.
 <<include [[n1x/F Look and Magic]]>>
 
 <ul class="actions">
+    <<em-assert !$n1_subby && !$n1_tough>>
     <<if $n1_abused>>
-        <<mtl [[|n1cn/D Secret Society]]>>
+        <<mtl [[n1cn/D Secret Society]]>>
             "Of course not! This isn't about me!"
         <</mtl>>
         <<mtl [[n1cn/F Support Group]]>>
@@ -12019,7 +12036,7 @@ makes a gesture, and
     Ivex hesitates a moment, then says,
     "If I accept you as an apprentice... Will you do everything I ask?"
 <<n1-remind>>
-    Ivex has asked if Nero as an apprentice will do everything
+    Ivex has asked if Nero, as an apprentice, will do everything
     that the panther asks.
 <<n1-warn>>
     Ivex glares at the wolf and raises his voice.
@@ -12034,13 +12051,14 @@ makes a gesture, and
 ?P
 <<include [[n1x/F Look and Magic]]>>
 
+<<em-assert !$n1_tough>>
 <ul class="actions">
     <<if $n1_abused>>
         <<mtl [[n1cr/D Subby]] "$t_resisting = true">>
-            Say hesitantly, "Within reason."
+            Say hesitantly, "Within reason..."
         <</mtl>>
         <<mtl [[n1cr/D Subby]] "$t_resisting = false">>
-            Respond anxiously, "Anything at all."
+            Respond anxiously, "Anything at all!"
         <</mtl>>
 
     <<elseif $n1_naked>>
@@ -12156,10 +12174,49 @@ XXX maybe another option
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_naked n1_abused>>
 
-<<if $t_resisting>>
-    nero: within reason
+<<em-assert !$n1_tough>>
+<<if $n1_abused>>
+    <<if $t_resisting>>
+        "Within reason..."
+        Nero was initially hesitant about showing even a tiny sign of
+        resistance to the panther's sadistic control.
+        But the wolf has decided:
+        When he finally does escape this lair,
+        he wants to be able to look back and remember
+        that he remained true to himself,
+        that he did not shamefully debase himself
+        for this vulgar villain.
+        <<set $n1_tough = true>>
+    <<else>>
+        "Anything at all!"
+        the wolf says with some alacrity.
+        Nero knows that this is a promise he cannot keep,
+        but he hopes that a signal of eager compliance
+        will pacify the sadistic panther
+        and allow the wolf to avoid further torture,
+        until he has a chance to escape.
+    <</if>>
+
+<<elseif $n1_naked>>
+    <<if $t_resisting>>
+        "Within reason," 
+        XXX friendly, collegial
+    <<else>>
+        "Anything at all."
+        XXX lying, plotting
+    <</if>>
+
 <<else>>
-    nero: yes sir
+    <<if $t_resisting>>
+        "Within reason,"
+        XXX cautious
+    <<else>>
+        "Anything at all,"
+        the wolf says confidently.
+        Of course, Nero doesn't mean <em>literally</em> anything,
+        XXX confident
+    <</if>>
+
 <</if>>
 
 ?P
@@ -12579,13 +12636,13 @@ is clearly false.
     Nero is not going to be cowed by this bully
     and his ridiculous red candle.
 <<else>>
-    Otherwise Nero wouldn't be strapped to a cross at all,
-    and breathing the fumes of whatever that candle might be.
+    Otherwise Nero would not be strapped to a cross at all,
+    breathing the fumes of whatever that candle might be.
 <</if>>
 
 ?P
 <<if _ivexAngry>>
-    Ivex snarls and punches the side of the
+    Ivex snarls and kicks the side of the
     <<= $t_ivexNear ? "cross" : "desk">>.
     But he quickly calms himself and shakes his head.
     He says,
@@ -12596,7 +12653,7 @@ is clearly false.
 A handsome wolf like you should have a nice vacation."
 <</nobr>>
 
-The panther pauses as if waiting for a response. Nero quite deliberately looks away. There wasn't a question in that statement! And even if there were, there isn't any sensible way for the wolf to respond. This is not a friendly conversation, and Nero is certain that casual chit-chat would just become theater for the panther's depraved desires.
+The panther pauses as if waiting for a response. Nero quite deliberately looks away. That statement did not have a question in it! And even if there were, there isn't any sensible way for the wolf to respond. This is not a friendly conversation, and Nero is certain that casual chit-chat would just be more theater for the panther's depraved desires.
 
 When the silence extends long enough to make it clear that no response is forthcoming, Ivex shakes his head again, and says, "I know <em>exactly</em> what you need!" His delighted tone sounds quite sinister when filtered through the grinning mask. "Let me help you get more comfortable..."
 
@@ -12758,7 +12815,7 @@ to stroke the fur of the wolf's sheath.
 <</if>>
 
 The panther teases the sheath, fondling it gently and deliberately,
-pulling lightly on the edge and inserting a finger within,
+pulling lightly on the lip and inserting a finger within,
 encouraging the wolf's red shaft to rouse itself and peek out into the
 spicy, candle-scented air.
 ?P
@@ -13104,6 +13161,7 @@ away from where the wolf can reach.
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_tough n1_abused>>
 
 The panther forms a ring with his fingers around the wolf's scrotum,
 above the wolf's balls, and starts pulling them gently but firmly,
@@ -13130,12 +13188,14 @@ Ivex curls his other paw into a fist and pulls his arm back.
 The panther watches and waits for the wolf to notice the fist.
 <<if $n1_subby>>
     Nero whimpers
+<<elseif $n1_tough>>
+    Nero clenches his jaw
 <<elseif $n1_abused>>
     Nero screams
 <<else>>
-    Nero closes his muzzle and clenches his jaw
+    Nero pants
 <</if>>
-in anticipation of the panther's strike.
+in anticipation of the panther's strike...
 
 ?P
 [[Continue|n1e/F Punch]]
@@ -13146,6 +13206,7 @@ in anticipation of the panther's strike.
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_tough n1_abused>>
 
 <!-- abuse with candle is different from abuse without.
   it doesn't have the same fear effect, so don't set abused to true here. -->
@@ -13158,10 +13219,12 @@ The intense pain does not dampen the wolf's erection. If anything, his cock beco
 
 <<if $n1_subby>>
     A tiny voice
-<<elseif $n1_abused>>
+<<elseif $n1_tough>>
     An angry voice
-<<else>>
+<<elseif $n1_abused>>
     An anxious voice
+<<else>>
+    A distant voice
 <</if>>
 in his head wonders, <em>Why am I so horny?</em>
 But the voice is drowned out by the waves of painful pleasure
@@ -15249,10 +15312,10 @@ pompous, dirty, and dominated by the
         The <<n1-no-loop [[wall|n1x/F Wall]]>>
         with the window is bare except for
         a <<n1-no-loop [[large map|n1x/F Map]]>>
-        <<if $n1_portraitMomKnown>>
-            and a <<n1-no-loop [[portrait of Ivex's mom|n1x/F Portrait]]>>.
+        <<if $n1_paintingMomKnown>>
+            and a <<n1-no-loop [[painting of Ivex's mother|n1x/F Painting]]>>.
         <<else>>
-            and a <<n1-no-loop [[portrait of a pantheress|n1x/F Portrait]]>>.
+            and a <<n1-no-loop [[painting of a pantheress|n1x/F Painting]]>>.
         <</if>>
     <<else>>
         The wall with the window is bare except for
@@ -15277,10 +15340,10 @@ pompous, dirty, and dominated by the
         The <<n1-no-loop [[far wall|n1x/F Wall]]>>
         is bare except for
         a <<n1-no-loop [[large map|n1x/F Map]]>>,
-        <<if $n1_portraitMomKnown>>
-            a <<n1-no-loop [[portrait of Ivex's mom|n1x/F Portrait]]>>,
+        <<if $n1_paintingMomKnown>>
+            a <<n1-no-loop [[painting of Ivex's mother|n1x/F Painting]]>>,
         <<else>>
-            a <<n1-no-loop [[portrait of a pantheress|n1x/F Portrait]]>>,
+            a <<n1-no-loop [[painting of a pantheress|n1x/F Painting]]>>,
         <</if>>
         and a <<n1-no-loop [[prominent round window|n1x/F Window]]>>.
     <<else>>
@@ -16268,10 +16331,10 @@ To the left of the window is a
 <<n1-no-loop [[large map|n1x/F Map]]>>
 of the continent with political regions marked in bright primary colors.
 On the opposite side of the window is a
-<<if $n1_portraitMomKnown>>
-    <<n1-no-loop [[portrait of Ivex's mother|n1x/F Portrait]]>>
+<<if $n1_paintingMomKnown>>
+    <<n1-no-loop [[painting of Ivex's mother|n1x/F Painting]]>>
 <<else>>
-    <<n1-no-loop [[portrait of a female panther|n1x/F Portrait]]>>
+    <<n1-no-loop [[painting of a female panther|n1x/F Painting]]>>
 <</if>>
 that's the same size as the map.
 The pantheress's clothes are also bright primary colors,
@@ -16287,7 +16350,7 @@ The entire arrangement is disturbingly symmetric.
     simple reflection spell.
 <<else>>
     Even the pattern of wooden tiles in the wall...
-    Nero notices below the portrait,
+    Nero notices below the painting,
     a tile with a distinctive wood grain that has
     an exactly reversed twin on the other side, below the map.
     Perhaps Ivex has lazily decorated the interior of this room with
@@ -16562,7 +16625,7 @@ but he does not remember its name.
 <</nobr>>
 
 
-:: n1x/F Portrait [has-hole maybe-password] {"position":"7175,4175","size":"100,100"}
+:: n1x/F Painting [has-hole maybe-password] {"position":"7175,4175","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -16570,22 +16633,22 @@ but he does not remember its name.
 
 <<if $n2_extraHorny>>
     <<vi-always n2_ivexGone true>>
-    The large portrait beside the window
+    The large painting beside the window
     depicts a plump black pantheress in a fascinating multicolored dress,
     holding a book in one hand and
     reclining on a couch in a strongly suggestive pose.
     Nero's attention is drawn to the tip of her tongue peeking out
     the left side of her sensually open mouth,
     and his erect cock quivers at the thought of myriad potential
-    <<if $n1_portraitMomKnown>>
+    <<if $n1_paintingMomKnown>>
         delights, despite his mind reminding himself
-        that this is <em><b>Ivex's mother.</b></em>
+        that this is <em><em>Ivex's mother</em>.</em>
     <<else>>
         delights.
     <</if>>
 
-<<elseif $n1_portraitMomKnown>>
-    The large portrait beside the window depicts Ivex's mother,
+<<elseif $n1_paintingMomKnown>>
+    The large painting beside the window depicts Ivex's mother,
     a plump black pantheress
     in an absurdly multicolored dress,
     holding a book in one hand and
@@ -16596,7 +16659,7 @@ but he does not remember its name.
     Nero tries to banish the vivid memory of Ivex's tongue, licking hers.
 
 <<else>>
-    The large portrait beside the window
+    The large painting beside the window
     depicts a somewhat plump, middle-aged pantheress
     with deep black fur.
     Her dress is an evening gown that might be fashionable
@@ -16609,7 +16672,7 @@ but he does not remember its name.
     Her mouth is partly open, and the tip of her tongue is peeking
     out the left side in a suggestive manner.
     ?P
-    The prominent placement of the portrait is probably an indication
+    The prominent placement of the painting is probably an indication
     that the subject is someone meaningful to Ivex.
     Perhaps she's a lover?
 <</if>>
@@ -16618,13 +16681,13 @@ but he does not remember its name.
 <<if MP_wantTouch === $n1_magicPhase
     || MP_wantTouch === $n2_magicPhaseBroken
 >>
-    <<include [[n1x/F Portrait WantTouch]]>>
+    <<include [[n1x/F Painting WantTouch]]>>
 <<elseif MP_wantPassword === $n1_magicPhase>>
-    <<include [[n1x/D Portrait WantPassword]]>>
+    <<include [[n1x/D Painting WantPassword]]>>
 <<elseif $n2_extraHorny>>
     The wolf mage wrests his attention away from her sultry gaze.
     She's an unnecessary distraction right now.
-<<elseif $n1_portraitMomKnown>>
+<<elseif $n1_paintingMomKnown>>
     The wolf mage briefly wonders if the pantheress
     knows what her son has been doing.
     And then he's briefly horrified at the thought that she might.
@@ -16883,7 +16946,7 @@ TODO candleLit-mask.
     XXX intro to asking about penguin
 <</if>>
 
-<<if $n1_portraitMomKnown>>
+<<if $n1_paintingMomKnown>>
     XXX memory of mom lick, ick
 <</if>>
 
@@ -16924,21 +16987,21 @@ TODO candleLit-mask.
 $t_afterAction
 
 
-:: n1x/D Portrait Ask {"position":"7600,4125","size":"100,100"}
+:: n1x/D Painting Ask {"position":"7600,4125","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
 
-<<em-assert !$n1_portraitMomKnown>>
-<<set $n1_portraitMomKnown = true>>
+<<em-assert !$n1_paintingMomKnown>>
+<<set $n1_paintingMomKnown = true>>
 
 TODO ivexNear.
 TODO candleLit-mask. briefly pull down mask to lick
 
 <<if $t_ivexReceptive>>
     mention mom, goes to lick her
-    <<set $n1_portraitTouchTried = true>>
+    <<set $n1_paintingTouchTried = true>>
     <<set $t_ivexNear = false>>
 <<else>>
     mention mom, uncooperative.
@@ -17500,10 +17563,10 @@ his situation.
     The [[far wall|n1x/F Wall]] has
     a [[prominent round window|n1x/F Window]],
     a [[large map|n1x/F Map]],
-    <<if $n1_portraitMomKnown>>
-        and a [[portrait of Ivex's mother|n1x/F Portrait]].
+    <<if $n1_paintingMomKnown>>
+        and a [[painting of Ivex's mother|n1x/F Painting]].
     <<else>>
-        and a [[portrait of a pantheress|n1x/F Portrait]].
+        and a [[painting of a pantheress|n1x/F Painting]].
     <</if>>
 
 <<else>>
@@ -18068,11 +18131,11 @@ $t_afterAction
 <</nobr>>\
 
 
-:: n1x/F Portrait WantTouch [inclusion] {"position":"7475,4050","size":"100,100"}
+:: n1x/F Painting WantTouch [inclusion] {"position":"7475,4050","size":"100,100"}
 <<nobr>>
 
-<<if $n1_portraitTouchTried>>
-    <<em-assert $n1_portraitMomKnown>>
+<<if $n1_paintingTouchTried>>
+    <<em-assert $n1_paintingMomKnown>>
     Fortunately, she
     <<= $n2_free ? "didn't" : "doesn't">>
     seem to be the hole that the Sprite
@@ -18081,7 +18144,7 @@ $t_afterAction
 
 <<else>>
     <!-- no opportunity to ask before this -->
-    <<em-assert !$n1_portraitMomKnown>>
+    <<em-assert !$n1_paintingMomKnown>>
 
     The wolf has a wild thought.
     Could it be that the portrait's mouth
@@ -18093,17 +18156,17 @@ $t_afterAction
     <<else>>
         And could Ivex be persuaded to
         touch it?
-        <<actions-add [[Ask Ivex about the portrait.|n1x/D Portrait Ask]]>>
+        <<actions-add [[Ask Ivex about the painting.|n1x/D Painting Ask]]>>
     <</if>>
 <</if>>
 <</nobr>>\
 
 
-:: n1x/D Portrait WantPassword [inclusion] {"position":"7475,4175","size":"100,100"}
+:: n1x/D Painting WantPassword [inclusion] {"position":"7475,4175","size":"100,100"}
 <<nobr>>
 <<em-assert !$n2_free>>
 
-<<if $n1_portraitMomKnown>>
+<<if $n1_paintingMomKnown>>
     She's... unsettlingly important to Ivex.
     <<pw-suggest "XXX mom">>
         maybe she's the password
@@ -18116,7 +18179,7 @@ $t_afterAction
     <<if $n2_ivexGone>>
         Too bad Nero does not know what it is, and ivex is gone
     <<else>>
-        <<actions-add [[Ask Ivex about the portrait.|n1x/D Portrait Ask]]>>
+        <<actions-add [[Ask Ivex about the painting.|n1x/D Painting Ask]]>>
     <</if>>
 <</if>>
 <</nobr>>\
@@ -18369,26 +18432,20 @@ anything other than the breeze of air.
 <</nobr>>
 
 
-:: n1y/F Horny Portrait {"position":"6250,6875","size":"100,100"}
+:: n1y/F Horny Painting {"position":"6250,6875","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_ivexGone>>
 
-<style>
-  em em {
-    text-decoration: underline;
-  }
-</style>
-
-The large portrait on the wall is the most feminine thing in the room,
+The large painting on the wall is the most feminine thing in the room,
 due to its depiction of
-<<if $n1_portraitMomKnown>>
+<<if $n1_paintingMomKnown>>
     Ivex's mother,
 <<else>>
     a female panther
 <</if>>
 who's perhaps the <em>most</em> of anything that Nero has ever seen.
-She's an amply-bosomed pantheress whose
+She's an amply-breasted pantheress whose
 curvy, wide-hipped body is too large for the couch she's on.
 Her dress is an exhilirating riot of primary colors
 that reveals more than it conceals,
@@ -18396,27 +18453,27 @@ and her expression staring off to the side
 is a firm come-hither to worship her,
 and maybe to taste the tip of her tongue that's peeking
 flirtatiously out the side of her mouth.
-<<if $n1_portraitMomKnown>>
+<<if $n1_paintingMomKnown>>
     The memory of <em>Ivex licking that tip</em>
     makes Nero cringe, but it somehow seems to inflame instead of
     dampen his desire.
 <<elseif MP_wantTouch === $n1_magicPhase>>
-    <<if $n1_portraitTouchTried>>
+    <<if $n1_paintingTouchTried>>
         TODO wasn't the hole
     <<else>>
         Her mouth must be the hole that the Sprite wants him to touch!
         He strains at his bonds to try to reach it.
 
         <<if !$n2_ivexGone>>
-            <<actions-add [[TODO ask about mom|n1y/D Horny Portrait Ask]]>>
+            <<actions-add [[TODO ask about mom|n1y/D Horny Painting Ask]]>>
         <</if>>
     <</if>>
 <<elseif MP_wantPassword === $n1_magicPhase>>
-    <<em-assert !$n1_portraitMomKnown>>
+    <<em-assert !$n1_paintingMomKnown>>
     TODO wanna know her name
 
     <<if !$n2_ivexGone>>
-        <<actions-add [[TODO ask about mom|n1y/D Horny Portrait Ask]]>>
+        <<actions-add [[TODO ask about mom|n1y/D Horny Painting Ask]]>>
     <</if>>
 <</if>>
 
@@ -18434,14 +18491,14 @@ Nero feels a primal urge to fight the
 <<= $n1_bottleViewed ? "dildo" : "penguin">>
 for her affection, an urge that continues to grow the more he
 considers how easy it would be win that battle.
-His feral excitement culminates in an angry bark that uses all his breath.
+His feral agitation culminates in an angry bark that uses all his breath.
 ?P
 The wolf's own bark surprises him, interrupting his predatory focus and
 giving him a moment of mental clarity about the absurdity of it all.
 <em>
     She's much too fat,
     she's dressed like a whore,
-    <<if $n1_portraitMomKnown>>
+    <<if $n1_paintingMomKnown>>
         and she's <em>Ivex's mother!</em>
     <<else>>
         and she's <em>holding that book upside down!</em>
@@ -18453,12 +18510,12 @@ But his quivering cock disagrees.
 <<if !Nero.actionsSize()>>
     ?P
     Nero wrests his attention away from the pantheress
-    and searches the room for something completely un-sexual
+    and searches the room for something completely non-sexual
     that he can focus on:
     <<set _globe = $n1_globeViewed ? "arcane globe" : "snow globe">>
     the [[_globe|n1y/D Horny Globe]] on the desk,
     the [[letter opener|n1y/D Horny Knife]] near it,
-    anything other than that disturbing arousing portrait.
+    anything other than that disturbingly arousing portrait.
 <</if>>
 
 ?P
@@ -19993,7 +20050,7 @@ Nero struggles to reconcile his
 heterosexual history with his
 inexplicable arousal now.
 His eyes latch on to the
-<<n1-no-loop [[massive portrait|n1y/F Horny Portrait]]>>
+<<n1-no-loop [[massive portrait|n1y/F Horny Painting]]>>
 of femininity hanging on the far wall,
 but his mind keeps returning to obsessive imagination
 of Ivex's erect,
@@ -20006,7 +20063,7 @@ of Ivex's erect,
 <</nobr>>
 
 
-:: n1y/D Horny Portrait Ask {"position":"6250,7000","size":"100,100"}
+:: n1y/D Horny Painting Ask {"position":"6250,7000","size":"100,100"}
 <<nobr>>
 <<vi-always n2_ivexGone false>>
 <<vi-ignore n1_mageSight>>
@@ -22136,5 +22193,16 @@ a wand with precision.
 
 
 :: n1x/D Sprite Info {"position":"6725,5900","size":"100,100"}
+
+
+:: Init 2 Text Style [inclusion] {"position":"2850,700","size":"100,100"}
+<<append head>><style>
+
+em em {
+  font-weight: bold;
+  text-decorationx: underline;
+}
+
+</style><</append>>
 
 
