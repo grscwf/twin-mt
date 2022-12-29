@@ -59,18 +59,22 @@ function listVars(twFile, varListTxt, regexFilter) {
     for (const m of line.matchAll(/\b(setup[.]\w+)/g)) {
       addMatch(m[1], m.index);
     }
-    // vi-always
-    for (const m of line.matchAll(/[<]vi-always\s+(\w+)/g)) {
-      addMatch(m[1], m.index);
-    }
-    // vi-ignore
-    for (const m of line.matchAll(/[<]vi-ignore\s+(\w+)/g)) {
-      addMatch(m[1], m.index);
-    }
-    // vi-ignore-if
-    for (const m of line.matchAll(/[<]vi-ignore-if\s+(\w+)\s+(\w+)/g)) {
-      addMatch(m[1], m.index);
-      addMatch(m[2], m.index);
+    const macros = [
+      /[<]archive-barbs\s+(\w+)/g,
+      /[<]archive-variant\s+(\w+)/g,
+      /[<]random-once\s+(\w+)/g,
+      /[<]state-load\s+(\w+)/g,
+      /[<]state-save\s+(\w+)/g,
+      /[<]vi-always\s+(\w+)/g,
+      /[<]vi-always\s+(\w+)\s+(\w+)/g,
+      /[<]vi-ignore\s+(\w+)/g,
+      /[<]vi-ignore-if\s+(\w+)\s+(\w+)/g,
+    ];
+    for (const re of macros) {
+      for (const m of line.matchAll(re)) {
+        addMatch(m[1], m.index);
+        if (m[2] != null) addMatch(m[2], m.index);
+      }
     }
   });
 
