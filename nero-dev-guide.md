@@ -90,7 +90,11 @@
   - "forw" goes forward in history, or does "rand" at the end of history.
   - "rand" tries to do shuffle, not uniform random, so repeated rand/back can
     potentially do an entire depth-first traversal of the story.
-  - "seek" will repeat "rand" until it reaches an unfinished passage.
+  - "seek" will repeat "rand" until it reaches a passage that's either
+    unfinished, contains a todo mark, or throws an error.
+    - If you start seek from such a passage, seek will not stop until it
+      reaches an ending.
+    - Seek can be interrupted by pressing the button again.
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
   - <kbd>ctrl-period</kbd> is a shortcut for "forw".
   - <kbd>ctrl-slash</kbd> is a shortcut for "rand".
