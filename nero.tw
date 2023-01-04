@@ -889,6 +889,7 @@ const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
 CV.ignore = new Set();
+CV.vars = {};
 
 Macro.add("cv-ignore", {
   handler: function() {
@@ -899,8 +900,16 @@ Macro.add("cv-ignore", {
   }
 });
 
+Macro.add("cv-try", {
+  handler: function() {
+    const [vn] = this.args;
+    CV.vars[vn] = this.args.slice(1);
+  }
+})
+
 $(document).on(":passagestart", () => {
   CV.ignore = new Set();
+  CV.vars = {};
 });
 
 CV.render = function() {
@@ -935,6 +944,21 @@ CV.render = function() {
   };
   addRecursive(beginState, 0);
 
+  Object.keys(CV.vars).forEach(vn => {
+    const [first, ...rest] = CV.vars[vn];
+    CV.ignore.delete(vn);
+    todo.forEach(t => {
+      t[vn] = first;
+    });
+    for (const val of rest) {
+      [...todo].forEach(t0 => {
+        const t1 = clone(t0);
+        t1[vn] = val;
+        todo.push(t1);
+      });
+    }
+  });
+
   // At this point, todo has the current state, and all states where
   // any boolean-ish read var is flipped.
 
@@ -943,14 +967,22 @@ CV.render = function() {
   const messages = [];
 
   // TODO deterministic RNG, need to avoid either() and Array extensions
+  
+  let checked = 0;
+  let tried = 0;
+  debugger;
 
   const tryOne = () => {
+    if (todo.length === 0) return;
     const state = todo.pop();
     done.push(state);
-    console.log("Checking", objSelect(state, varsUsed));
+    checked++;
     State.active.variables = clone(state);
+    State.current.variables = clone(state);
     State.clearTemporary();
     if (!EM.runsWithoutFail(Nero.checkConstraints)) return;
+    tried++;
+    //console.log("Trying", objSelect(state, varsUsed));
     const output = $("<div class=passage>");
     VT.start();
     const ok = EM.runsWithoutFail(() => output.wiki(text));
@@ -960,8 +992,8 @@ CV.render = function() {
     consider.forEach(vn => {
       if (varsUsed.includes(vn)) return;
       if (CV.ignore.has(vn)) return;
-      if (varsUsed.length >= 10) {
-        messages.push(`ignoring var ${vn} (max 10)`);
+      if (varsUsed.length >= 13) {
+        messages.push(`ignoring var ${vn} (max 13)`);
         CV.ignore.add(vn);
         return;
       }
@@ -978,23 +1010,25 @@ CV.render = function() {
 
     if (!ok) return;
 
+    const usedThisTime = consider.filter(vn => !CV.ignore.has(vn)).sort();
     const html = output[0].innerHTML;
     renders[html] ??= {
       dom: output[0],
       states: [],
     };
-    renders[html].states.push(objSelect(state, varsUsed));
+    renders[html].states.push(objSelect(state, usedThisTime));
   };
 
   const finish = () => {
     varsUsed.sort();
     const variants = Object.values(renders);
     variants.forEach(r => {
-      r.states = r.states.map(st => {
-        const obj = objSelect(st, varsUsed);
+      const map = {};
+      r.states.forEach(obj => {
         const json = JSON._real_stringify(obj);
-        return { json, obj };
+        map[json] = obj;
       });
+      r.states = Object.entries(map).map(([json, obj]) => ({ json, obj }));
       r.states.sort((a, b) => a.json < b.json ? -1 : a.json > b.json ? +1 : 0);
     });
     variants.sort((a, b) => {
@@ -1005,19 +1039,18 @@ CV.render = function() {
     const pos = $("#passages");
     pos.empty();
     const sum = $("<div id=ev-summary>").appendTo(pos);
-    $("<div>").text(`${variants.length} variants`).appendTo(sum);
+    $("<div>").appendTo(sum)
+      .text(`${variants.length} variants, ${checked} checked, ${tried} tried`);
     messages.forEach(m => $("<div>").text(m).appendTo(sum));
     for (const variant of variants) {
       pos.append("<hr>");
       const outer = $("<div class=ev-states>").appendTo(pos);
       variant.states.forEach(st => {
         const inner = $("<div class=ev-state>").appendTo(outer);
-        for (const vn of varsUsed) {
+        for (const vn of Object.keys(st.obj)) {
           const val = st.obj[vn];
-          if (ET.vars[vn] != null) {
-            const str = ET.enums[ET.vars[vn]][val] || `${vn}=${val}`;
-            $(`<span class="ev-var ev-enum">`).text(str).appendTo(inner);
-          } else if (val == null || val === false) {
+          if (val == null) continue;
+          if (val === false) {
             $(`<span class="ev-var ev-false">`).text(vn).appendTo(inner);
           } else if (val === true) {
             $(`<span class="ev-var ev-true">`).text(vn).appendTo(inner);
@@ -1037,16 +1070,18 @@ CV.render = function() {
     // highlightDiffs();
   };
 
-  let tries = 0;
   const tryNext = () => {
-    tries++;
-    if (tries >= 2000) {
-      messages.push(`Stopping at ${tries} tries`);
+    if (checked >= 8200) {
+      messages.push(`Stopping at ${checked} checked`);
       todo.length = 0;
     }
     if (todo.length === 0) {
       finish();
     } else {
+      if (checked % 100 === 0) console.log({ todo: todo.length });
+      tryOne();
+      tryOne();
+      tryOne();
       tryOne();
       setTimeout(tryNext);
     }
@@ -1279,7 +1314,7 @@ EM.note = (str) => {
 EM.fail = (str, context) => {
   EM.hasFails = true;
   if (EM.noMessage) {
-    console.warn(str);
+    // console.warn(str);
     return;
   }
   if (EM.debugStop) {
@@ -15150,6 +15185,7 @@ T.toTry.sort();
 :: n1x/F Cross {"position":"6200,5350","size":"100,100"}
 <<nobr>>
 <<vi-always-if n2_free n2_ivexGone false>>
+<<cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic`>>
 
 TODO gravAsked - need to fix prose for Dream Crystals
 
@@ -15258,6 +15294,7 @@ TODO gravAsked - need to fix prose for Dream Crystals
         first-time player is likely to visit cross first.
         don't want them stuck here. but any other time,
         the link outward to room is weird -->
+    <<cv-ignore n1_studyViewed>> /* trivial */
     <<if $n1_studyViewed>>
         room.
     <<else>>

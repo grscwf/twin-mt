@@ -459,7 +459,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="has-hole" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="end" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="end" color="red"></tw-tag><tw-tag name="has-hole" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -913,6 +913,7 @@ const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
 CV.ignore = new Set();
+CV.vars = {};
 
 Macro.add(&quot;cv-ignore&quot;, {
   handler: function() {
@@ -923,8 +924,16 @@ Macro.add(&quot;cv-ignore&quot;, {
   }
 });
 
+Macro.add(&quot;cv-try&quot;, {
+  handler: function() {
+    const [vn] = this.args;
+    CV.vars[vn] = this.args.slice(1);
+  }
+})
+
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
   CV.ignore = new Set();
+  CV.vars = {};
 });
 
 CV.render = function() {
@@ -959,6 +968,21 @@ CV.render = function() {
   };
   addRecursive(beginState, 0);
 
+  Object.keys(CV.vars).forEach(vn =&gt; {
+    const [first, ...rest] = CV.vars[vn];
+    CV.ignore.delete(vn);
+    todo.forEach(t =&gt; {
+      t[vn] = first;
+    });
+    for (const val of rest) {
+      [...todo].forEach(t0 =&gt; {
+        const t1 = clone(t0);
+        t1[vn] = val;
+        todo.push(t1);
+      });
+    }
+  });
+
   // At this point, todo has the current state, and all states where
   // any boolean-ish read var is flipped.
 
@@ -966,16 +990,23 @@ CV.render = function() {
   const renders = [];
   const messages = [];
 
-  // should use deterministic RNG, but functions like choice()
-  // capture Math.random and can&#39;t be intercepted easily.
+  // TODO deterministic RNG, need to avoid either() and Array extensions
+  
+  let checked = 0;
+  let tried = 0;
+  debugger;
 
   const tryOne = () =&gt; {
+    if (todo.length === 0) return;
     const state = todo.pop();
     done.push(state);
-    console.log(&quot;Checking&quot;, objSelect(state, varsUsed));
+    checked++;
     State.active.variables = clone(state);
+    State.current.variables = clone(state);
     State.clearTemporary();
     if (!EM.runsWithoutFail(Nero.checkConstraints)) return;
+    tried++;
+    //console.log(&quot;Trying&quot;, objSelect(state, varsUsed));
     const output = $(&quot;&lt;div class=passage&gt;&quot;);
     VT.start();
     const ok = EM.runsWithoutFail(() =&gt; output.wiki(text));
@@ -985,8 +1016,8 @@ CV.render = function() {
     consider.forEach(vn =&gt; {
       if (varsUsed.includes(vn)) return;
       if (CV.ignore.has(vn)) return;
-      if (varsUsed.length &gt;= 10) {
-        messages.push(`ignoring var ${vn} (max 10)`);
+      if (varsUsed.length &gt;= 13) {
+        messages.push(`ignoring var ${vn} (max 13)`);
         CV.ignore.add(vn);
         return;
       }
@@ -1003,23 +1034,25 @@ CV.render = function() {
 
     if (!ok) return;
 
+    const usedThisTime = consider.filter(vn =&gt; !CV.ignore.has(vn)).sort();
     const html = output[0].innerHTML;
     renders[html] ??= {
       dom: output[0],
       states: [],
     };
-    renders[html].states.push(objSelect(state, varsUsed));
+    renders[html].states.push(objSelect(state, usedThisTime));
   };
 
   const finish = () =&gt; {
     varsUsed.sort();
     const variants = Object.values(renders);
     variants.forEach(r =&gt; {
-      r.states = r.states.map(st =&gt; {
-        const obj = objSelect(st, varsUsed);
+      const map = {};
+      r.states.forEach(obj =&gt; {
         const json = JSON._real_stringify(obj);
-        return { json, obj };
+        map[json] = obj;
       });
+      r.states = Object.entries(map).map(([json, obj]) =&gt; ({ json, obj }));
       r.states.sort((a, b) =&gt; a.json &lt; b.json ? -1 : a.json &gt; b.json ? +1 : 0);
     });
     variants.sort((a, b) =&gt; {
@@ -1030,19 +1063,18 @@ CV.render = function() {
     const pos = $(&quot;#passages&quot;);
     pos.empty();
     const sum = $(&quot;&lt;div id=ev-summary&gt;&quot;).appendTo(pos);
-    $(&quot;&lt;div&gt;&quot;).text(`${variants.length} variants`).appendTo(sum);
+    $(&quot;&lt;div&gt;&quot;).appendTo(sum)
+      .text(`${variants.length} variants, ${checked} checked, ${tried} tried`);
     messages.forEach(m =&gt; $(&quot;&lt;div&gt;&quot;).text(m).appendTo(sum));
     for (const variant of variants) {
       pos.append(&quot;&lt;hr&gt;&quot;);
       const outer = $(&quot;&lt;div class=ev-states&gt;&quot;).appendTo(pos);
       variant.states.forEach(st =&gt; {
         const inner = $(&quot;&lt;div class=ev-state&gt;&quot;).appendTo(outer);
-        for (const vn of varsUsed) {
+        for (const vn of Object.keys(st.obj)) {
           const val = st.obj[vn];
-          if (ET.vars[vn] != null) {
-            const str = ET.enums[ET.vars[vn]][val] || `${vn}=${val}`;
-            $(`&lt;span class=&quot;ev-var ev-enum&quot;&gt;`).text(str).appendTo(inner);
-          } else if (val == null || val === false) {
+          if (val == null) continue;
+          if (val === false) {
             $(`&lt;span class=&quot;ev-var ev-false&quot;&gt;`).text(vn).appendTo(inner);
           } else if (val === true) {
             $(`&lt;span class=&quot;ev-var ev-true&quot;&gt;`).text(vn).appendTo(inner);
@@ -1062,16 +1094,18 @@ CV.render = function() {
     // highlightDiffs();
   };
 
-  let tries = 0;
   const tryNext = () =&gt; {
-    tries++;
-    if (tries &gt;= 2000) {
-      messages.push(`Stopping at ${tries} tries`);
+    if (checked &gt;= 8200) {
+      messages.push(`Stopping at ${checked} checked`);
       todo.length = 0;
     }
     if (todo.length === 0) {
       finish();
     } else {
+      if (checked % 100 === 0) console.log({ todo: todo.length });
+      tryOne();
+      tryOne();
+      tryOne();
       tryOne();
       setTimeout(tryNext);
     }
@@ -1292,7 +1326,7 @@ EM.note = (str) =&gt; {
 EM.fail = (str, context) =&gt; {
   EM.hasFails = true;
   if (EM.noMessage) {
-    console.warn(str);
+    // console.warn(str);
     return;
   }
   if (EM.debugStop) {
@@ -13635,6 +13669,7 @@ T.toTry.sort();
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="394" name="n1x/F Cross" tags="" position="6200,5350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always-if n2_free n2_ivexGone false&gt;&gt;
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic`&gt;&gt;
 
 TODO gravAsked - need to fix prose for Dream Crystals
 
@@ -13743,6 +13778,7 @@ TODO gravAsked - need to fix prose for Dream Crystals
         first-time player is likely to visit cross first.
         don&#39;t want them stuck here. but any other time,
         the link outward to room is weird --&gt;
+    &lt;&lt;cv-ignore n1_studyViewed&gt;&gt; /* trivial */
     &lt;&lt;if $n1_studyViewed&gt;&gt;
         room.
     &lt;&lt;else&gt;&gt;
