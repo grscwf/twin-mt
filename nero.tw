@@ -3470,9 +3470,11 @@ Nero.enumImplies = {
   
   n2_magicPhaseBroken: {
     [MP_beforeCast]: {
+      // can't escape without mage-sight
       impossible: true,
     },
     [MP_triedMagic]: {
+      // can't escape without mage-sight
       impossible: true,
     },
     [MP_mageSight]: {
@@ -3512,27 +3514,14 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantPassword]: {
-      n1_magicPhase: MP_broken,
-      n1_naked: true,
-      n2_extraHorny: true,
-      n2_free: true,
-      n2_ivexGone: true,
-      n2_mirrorBroken: true,
-      n2_tooClever: false,
-    },
-    [MP_onHold]: {
-      n1_magicPhase: MP_broken,
-      n1_naked: true,
-      n2_extraHorny: true,
-      n2_free: true,
-      n2_ivexGone: true,
-      n2_mirrorBroken: true,
-      n2_tooClever: false,
-    },
-    [MP_contact]: {
+      // broken at wantPassword always becomes contact, briefly
       impossible: true,
     },
-    [MP_lockedOut]: {
+    [MP_onHold]: {
+      // broken at onHold always becomes contact, briefly
+      impossible: true,
+    },
+    [MP_contact]: {
       n1_magicPhase: MP_broken,
       n1_naked: true,
       n2_extraHorny: true,
@@ -3540,6 +3529,10 @@ Nero.enumImplies = {
       n2_ivexGone: true,
       n2_mirrorBroken: true,
       n2_tooClever: false,
+    },
+    [MP_lockedOut]: {
+      // broken at lockedOut always becomes contact, briefly
+      impossible: true,
     },
     [MP_broken]: {
       impossible: true,
@@ -3569,6 +3562,12 @@ Nero.checkState = (state, used, interactive) => {
   for (const x of Object.keys(Nero.enumImplies)) {
     const rules = Nero.enumImplies[x][state[x]];
     if (rules == null) continue;
+    if (rules.impossible) {
+      if (!interactive) return false;
+      const sval = ET.symbolic(x, state[x]);
+      EM.fail(`${x} === ${sval} should be impossible`);
+      continue;
+    }
     if (interactive && !used.has(x)) continue;
     for (const y of Object.keys(rules)) {
       if (used && !used.has(y)) continue;
@@ -3864,6 +3863,7 @@ Nero.basicPasswords = {
 Nero.otherPasswords = {
   /* books */
   "621": "the year that Ivex graduated from high school",
+  // never succeed at getting high school name
 
   /* candle */
   "Red": "the color of the candle",
@@ -3876,7 +3876,6 @@ Nero.otherPasswords = {
 
   /* map */
   "Uramos": "the circle marked on the map",
-  "XXX map": "the X marked on the map",
 
   /* penguin */
   "Hunter Two": "the name of Ivex's penguin",
@@ -3885,7 +3884,7 @@ Nero.otherPasswords = {
   "Ivy": "the name of Ivex's mother",
 
   /* wand */
-  "XXX wand": "the name of Ivex's wand",
+  "Fuck Toy 9000": "the name of Ivex's wand",
 };
 
 let pwDebugAlready = false;
@@ -16948,11 +16947,15 @@ but he does not remember its name.
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
 <<vi-ignore n2_ivexGone>>
+
 <<cv-try n1_magicPhase 
   `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
   `MP_contact` `MP_broken`>>
+
 <<cv-try n2_magicPhaseBroken
   `null` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`>>
+  
+<<cv-try n1_passwordsTried `[]` `["Ivy"]`>> /* TODO probably need please-ivy */
 
 <<if $n2_extraHorny>>
     <<vi-always n2_ivexGone true>>
@@ -16966,13 +16969,17 @@ but he does not remember its name.
     <<if $n1_paintingMomKnown>>
         delights, despite his mind reminding himself
         that this is <em><em>Ivex's mother</em>.</em>
+        ?P
+        Nero is appalled at his indiscriminate horniness,
+        but comforts himself with the thought that it must be
+        a lingering after-effect of that distressing candle.
     <<else>>
         delights.
     <</if>>
 
 <<elseif $n1_paintingMomKnown>>
-    The large painting beside the window depicts Ivex's mother Ivy,
-    a plump black pantheress in an absurdly multicolored dress,
+    The large painting beside the window depicts Ivex's mother, Ivy.
+    She's a plump black pantheress in an absurdly multicolored dress,
     holding a book in one hand and
     reclining on a couch in a disturbingly suggestive pose.
     Her jaw is partly open in an expression of predatory lust.
@@ -17000,19 +17007,25 @@ but he does not remember its name.
 <</if>>
 
 ?P
-<<if MP_wantTouch === $n1_magicPhase
-    || MP_wantTouch === $n2_magicPhaseBroken
->>
+<<if MP_wantTouch === $n1_magicPhase>>
+    <<em-assert !$n2_free>>
     <<include [[n1x/F Painting WantTouch]]>>
+
+<<elseif MP_wantTouch === $n2_magicPhaseBroken>>
+    <<include [[n1x/F Painting WantTouch]]>>
+
 <<elseif MP_wantPassword === $n1_magicPhase>>
-    <<include [[n1x/D Painting WantPassword]]>>
+    <<include [[n1x/F Painting WantPassword]]>>
+
 <<elseif $n2_extraHorny>>
     The wolf mage wrests his attention away from her sultry gaze.
     She's an unnecessary distraction right now.
+
 <<elseif $n1_paintingMomKnown>>
-    The wolf mage briefly wonders if the pantheress
+    The wolf mage briefly wonders if Ivy
     knows what her son has been doing.
     And then he's briefly horrified at the thought that she might.
+
 <<else>>
     Whoever she is, it doesn't seem important right now.
 <</if>>
@@ -17518,12 +17531,13 @@ $t_afterAction
 <</nobr>>
 
 
-:: n1x/D Wand Ask {"position":"7550,5300","size":"100,100"}
+:: n1x/D Wand Ask {"position":"7475,5450","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
 <<vi-ignore n1_mageSight>>
 
+XXX
 <<if $n1_subby>>
     ask wand subby
 <<elseif $n1_abused>>
@@ -17539,6 +17553,7 @@ TODO candleLit-mask.
 
 ivex brags about sex toy he made
 tells you its name
+<<pw-found "Fuck Toy 9000">>
 
 <<set $n1_wandAsked = true>>
 
@@ -18482,6 +18497,7 @@ XXX
     <<= $n2_free ? "wanted" : "wants">>
     him to touch?
     <<if $n2_ivexGone>>
+        ?P
         Well, there's no way to test that theory now.
     <<else>>
         And could Ivex be persuaded to
@@ -18492,24 +18508,23 @@ XXX
 <</nobr>>\
 
 
-:: n1x/D Painting WantPassword [inclusion] {"position":"7475,4175","size":"100,100"}
+:: n1x/F Painting WantPassword [inclusion] {"position":"7475,4175","size":"100,100"}
 <<nobr>>
 <<em-assert !$n2_free>>
 
-XXX
 <<if $n1_paintingMomKnown>>
-    She's... unsettlingly important to Ivex.
+    She seems... unsettlingly important to Ivex.
     <<pw-suggest "Ivy">>
-        maybe she's the password
+        Perhaps her name is his password?
     <<pw-fail>>
-        but she isn't the password
+        But her name isn't his password.
     <</pw-suggest>>
 <<else>>
-    she might be important to ifex,
-    maybe she's the password
+    If so, then it's quite possible that her name is Ivex's password.
     <<if $n2_ivexGone>>
-        Too bad Nero does not know what it is, and ivex is gone
+        Unfortunately, Nero can't ask Ivex about it now.
     <<else>>
+        Perhaps he can be tricked into revealing it.
         <<actions-add [[Ask Ivex about the painting.|n1x/D Painting Ask]]>>
     <</if>>
 <</if>>
@@ -22415,7 +22430,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n2x/F Wand Tried [inclusion] {"position":"7500,5450","size":"100,100"}
+:: n2x/F Wand Tried [inclusion] {"position":"7725,5450","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free true>>
 <<vi-always n2_ivexGone false>>
@@ -22438,7 +22453,7 @@ It's probably completely useless to his adventure anyway.
 <</nobr>>
 
 
-:: n1x/D Wand Normal [inclusion] {"position":"7325,5475","size":"100,100"}
+:: n1x/D Wand Normal [inclusion] {"position":"7325,5500","size":"100,100"}
 <<nobr>>
 <<vi-ignore n2_ivexGone>>
 <<em-assert !$n2_wandTried>>
@@ -22543,7 +22558,7 @@ a wand with precision.
 <<elseif MP_wantPassword === $n1_magicPhase>>
     XXX
     <<if $n1_wandAsked>>
-        <<pw-suggest wand-name>>
+        <<pw-suggest "Fuck Toy 9000">>
             maybe password?
         <<pw-fail>>
             nope, not password

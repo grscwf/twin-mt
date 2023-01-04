@@ -150,6 +150,10 @@
   not clean up after itself (yet).
   When it's done, the current state is indeterminate.
   Reload the page before doing anything else.
+- The computation is not perfect. It can sometimes generate texts that
+  are impossible in normal play, and it will often miss generating texts
+  that are possible. But it's helpful for doing a quick check of
+  most of a passage's variants.
 - The discovery process starts from the current game state.
 - This will automatically discover any boolean-ish variables that are
   read by the passage, and it tries all states where those booleans are flipped.
@@ -173,6 +177,11 @@
       not wait for any timers, so it might
       not have exactly the same behavior as normal gameplay.
       But most of the time this is fine.
+- The states tested and rejected are somewhat sensitive to the order that
+  flags are used in the passage (which affects what flags are discovered
+  to be read, and considered relevant by the constraint tests).
+    - It's sometimes useful to write conditions specifically for
+      helping compute-variants, and maybe check flags redundantly.
 - For testing `n1_magicPhase` variants:
   - Include `MP_beforeCast` if it's possible.
   - Include any values tested in the passage.
