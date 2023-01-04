@@ -924,7 +924,6 @@ Macro.add(&quot;expand-ignore&quot;, {
 });
 
 CV.render = function() {
-  VT.stop();
   CV.ignore = new Set();
   const beginState = clone(State.current.variables);
   const nowState = clone(State.active.variables);
@@ -934,8 +933,6 @@ CV.render = function() {
   for (const k of Object.keys(zeroState)) {
     if (typeof zeroState[k] === &quot;boolean&quot;) {
       zeroState[k] = false;
-    } else if (ET.vars[k] != null) {
-      zeroState[k] = 0;
     } else {
       CV.ignore.add(k);
     }
@@ -946,6 +943,7 @@ CV.render = function() {
     }
   }
 
+  let varsUsed = [];
   // vTried is vars that have both zero and nonzero values in tried states
   const vTried = new Set();
   const done = [];
@@ -962,9 +960,9 @@ CV.render = function() {
   const tryOne = () =&gt; {
     const state = todo.pop();
     done.push(state);
+    console.log(&quot;Trying&quot;, objSelect(state, varsUsed));
     State.active.variables = clone(state);
     State.clearTemporary();
-    // TODO: should be general constraints system
     if (!EM.runsWithoutFail(Nero.constraints)) return;
     console.log(&quot;Trying&quot;, state);
     const output = $(&quot;&lt;div class=passage&gt;&quot;);
@@ -2014,7 +2012,10 @@ Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
   margin: 0 16px;
 }
 
-.var-info-expand:hover {
+.var-info-compute {
+  margin-right: 1em;
+}
+.var-info-compute:hover {
   background-color: #333;
 }
 
@@ -2387,9 +2388,9 @@ function varInfoSetup() {
       });
 
     // TODO: re-enable when fixed
-    //$(&quot;&lt;span class=var-info-expand&gt;[compute variants]&lt;/span&gt;&quot;)
-    //  .appendTo(outer)
-    //  .click(() =&gt; CV.render());
+    $(&quot;&lt;span class=var-info-compute&gt;[compute variants]&lt;/span&gt;&quot;)
+      .appendTo(outer)
+      .click(() =&gt; CV.render());
 
     const touched = new Set();
     VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
@@ -3579,6 +3580,19 @@ Macro.add(&quot;n1-patience&quot;, {
 &lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
+Template.add(&quot;barbed&quot;, () =&gt; {
+  const V = State.variables;
+  return V.n1_barbsGlitch ? Nero.barbGlitch[0] :
+    V.n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;;
+});
+
+Template.add(&quot;blank&quot;,
+  &quot;&lt;span class=nero-blank&gt;&quot; +
+    &quot;&lt;span class=nero-blank-c&gt;&quot; +
+      &quot;Blank&quot;.split(&quot;&quot;).join(&quot;&lt;/span&gt;&lt;span class=nero-blank-c&gt;&quot;) +
+    &quot;&lt;/span&gt;&quot; +
+  &quot;&lt;/span&gt;&quot;);
+
 Template.add(&quot;master&quot;, () =&gt; {
   const V = State.variables;
   const name = V.n1_opportunist ? &quot;An Opportunist&quot; : &quot;Master&quot;;
@@ -3588,13 +3602,7 @@ Template.add(&quot;master&quot;, () =&gt; {
     return name;
   }
 });
-
-Template.add(&quot;blank&quot;,
-  &quot;&lt;span class=nero-blank&gt;&quot; +
-    &quot;&lt;span class=nero-blank-c&gt;&quot; +
-      &quot;Blank&quot;.split(&quot;&quot;).join(&quot;&lt;/span&gt;&lt;span class=nero-blank-c&gt;&quot;) +
-    &quot;&lt;/span&gt;&quot; +
-  &quot;&lt;/span&gt;&quot;);
+  
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="32" name="Init 5c Nero Password" tags="inclusion" position="3450,1000" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 #passages:not(.pw-debug-show) .pw-debug &gt; :not(label) {
   display: none;
@@ -9493,7 +9501,7 @@ Or, at least, he will try to.
 
 &lt;span class=&quot;good-ending&quot;&gt;Ending: &lt;i&gt;Punishment&lt;/i&gt;&lt;/span&gt;
 
-[[Return to the Archives|Archives]]</tw-passagedata><tw-passagedata pid="268" name="testing" tags="" position="3600,625" size="100,100">Remember ?blank and talk to him.
+[[Return to the Archives|Archives]]</tw-passagedata><tw-passagedata pid="268" name="testing" tags="" position="3600,625" size="100,100">Remember ?blank and talk to him. ?barbed penis
 
 /* comment test */
 &lt;&lt;link &quot;Hello $class&quot; `&quot;[[testing 2]]&quot;.slice(2,-2)`&gt;&gt;&lt;&lt;/link&gt;&gt;
@@ -9874,7 +9882,7 @@ Five days later, Nero was naked and gagged, with chains stretching his limbs bet
 
 Back then, Nero&#39;s entire magic repertoire required either spoken words, complex gestures, or specially prepared materials. None of which were available to him at that moment. Nobody even knew he was there. Escape was impossible.
 
-So when the Greater Hammerer finished sharpening his knife and brought it toward Nero&#39;s exposed crotch, Nero made a solemn vow to never be this helpless again. Provided of course he survived the situation...
+So when the Greater Hammerer finished sharpening his knife and brought it toward the wolf&#39;s exposed crotch, Nero made a solemn vow to never be this helpless again. Provided of course he survived the situation...
 
 [[Continue|n1s/F Endgame Info 2]]</tw-passagedata><tw-passagedata pid="281" name="n1a/F Endgame 2" tags="" position="3625,1600" size="100,100">The lupine mage feels a familiar tingle from the unleashing of the spell inscribed on his ass. And then...
 
@@ -9886,7 +9894,7 @@ He&#39;s still bound to the wooden contraption, and now his head is feeling even
 
 Nero opens his eyes and struggles to focus. This is definitely not simply a hangover. It feels a bit like teleportation sickness and a blunt sleep spell, probably mixed with some neutralizers for good measure. It takes considerable blinking and some shaking of his aching head before he is able to see clearly.
 
-When he can, the first thing he notices is his captor, a black panther, staring intently at an empty spot on the ceiling.
+When he does, the first thing he notices is his captor, a black panther, staring intently at an empty spot on the ceiling.
 
 It&#39;s &lt;em&gt;him&lt;/em&gt;.
 
@@ -9933,7 +9941,7 @@ Nero is aghast. What is the panther doing? Is he... &lt;em&gt;sniffing&lt;/em&gt
 
 Nero has learned of many different greeting rituals from the various foreign lecturers who visit Windbone Magic Academy, but no civilization in recorded history has ever greeted strangers, or even friends, with a ritual as bestial and intrusive as what the feline mage is doing now.
 
-[[Continue|n1a/F Hello 5]]</tw-passagedata><tw-passagedata pid="286" name="n1a/F Endgame 3" tags="" position="3725,1600" size="100,100">The panther notices that Nero is watching, and he emits a giggle. &quot;That tickled! What was it that you tried to cast?&quot;
+[[Continue|n1a/F Hello 5]]</tw-passagedata><tw-passagedata pid="286" name="n1a/F Endgame 3" tags="" position="3725,1600" size="100,100">The panther notices that Nero is watching, and emits a giggle. &quot;That tickled! What was it that you tried to cast?&quot;
 
 Ivex continues staring at the ceiling and tilts his head from side to side. &quot;Is that... Chimeras on Ice? No, wait. I recognize it now. It must be Raven&#39;s Diversion!&quot;
 
@@ -11390,7 +11398,7 @@ The wolf closes his eyes and shakes his head to clear his mind,
 but a mental impression of the panther&#39;s crotch persists in his imagination.
 The clothing disappears from the image in Nero&#39;s head,
 and he sees, he imagines, the panther&#39;s erect cock with its
-&lt;&lt;= $n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;&gt;&gt; feline shaft,
+?barbed feline shaft,
 glistening from the fluid leaking from its tip,
 and growing thicker and longer with
 every spicy breath of air that the wolf inhales.
@@ -12161,12 +12169,11 @@ It&#39;s an embarrassing memory from his naive, younger self.
 
 ?P
 Nero shakes off the memories of
-&lt;&lt;= $n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;&gt;&gt;
-feline penises from that... complicated year.
+?barbed feline penises from that... complicated year.
 There are much more urgent matters to consider.
 &lt;&lt;/nobr&gt;&gt;
 
-Such as, the noticeably horny panther mage, who has just magicked away the wolf&#39;s clothes. Ivex has moved uncomfortably close, and he&#39;s now running his fingers across the newly exposed fur on Nero&#39;s naked chest.
+Such as, the noticeably horny panther mage, who has just magicked away the wolf&#39;s clothes. Ivex has also moved uncomfortably close, and he&#39;s now running his fingers across the newly exposed fur on Nero&#39;s naked chest.
 
 $t_afterNaked</tw-passagedata><tw-passagedata pid="345" name="n1p/F Barbs Slow Extra" tags="" position="6300,2775" size="100,100">The day after the encounter in the showers, Nero saw the tiger again in his third-hour class.
 
@@ -12201,12 +12208,7 @@ The metal chastity device was not the typical device that&#39;s common in sexual
 [[Continue|n1p/F Barbs Fast 4]]</tw-passagedata><tw-passagedata pid="349" name="n1p/F Barbs Fast 5" tags="" position="5725,2625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;barbs-announce now&gt;&gt;
 
-Lord Pevhin&#39;s
-&lt;&lt;if $n1_barbs&gt;&gt;
-    barbed penis
-&lt;&lt;else&gt;&gt;
-    smooth penis
-&lt;&lt;/if&gt;&gt;
+Lord Pevhin&#39;s ?barbed penis
 quivered at Nero&#39;s attention,
 but the wolf was not intending to give pleasure.
 After Nero finished his measurements,
@@ -12245,7 +12247,7 @@ It&#39;s an intensely sexy memory,
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-Such as, the noticeably horny panther mage, who has just magicked away the wolf&#39;s clothes. Ivex has moved uncomfortably close, and he&#39;s now running his fingers across the newly exposed fur on Nero&#39;s naked chest.
+Such as, the noticeably horny panther mage, who has just magicked away the wolf&#39;s clothes. Ivex has also moved uncomfortably close, and he&#39;s now running his fingers across the newly exposed fur on Nero&#39;s naked chest.
 
 $t_afterNaked</tw-passagedata><tw-passagedata pid="351" name="n1p/F Barbs Fast Extra" tags="" position="5975,2625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $t_barbsFastExtraVisited = true&gt;&gt;
@@ -12259,12 +12261,12 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 
 [[Return|n1p/F Barbs Fast End]]</tw-passagedata><tw-passagedata pid="352" name="n1p/F Barbs Slow 2" tags="inclusion" position="5400,2875" size="100,100">Nero can&#39;t help but be a little bit impressed. It&#39;s not immediately obvious if his clothing was destroyed or teleported away, but in either case the spell was remarkably precise, since it targeted &lt;em&gt;only&lt;/em&gt; his clothes, and not the wooden cross or leather straps holding him in place. Nero didn&#39;t even feel it disturb any of the hairs of his fur.
 
-And the spell&#39;s trigger was such a small, ambiguous gesture. The lupine mage starts sketching in his mind the outline of a matrix for a similar spell. It&#39;s quite large and complicated, and it would need a substantial core to store it. He wonders what the scaffold could be.
+And the spell&#39;s trigger was such a small, ambiguous gesture. The lupine mage starts sketching in his mind the outline of a matrix for a similar spell. It&#39;s quite large and complicated, and it would need a substantial core to store it. He wonders what the substrate could be.
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n1_candleLit&gt;&gt;
     Is &lt;em&gt;that&lt;/em&gt; what the strange candle is for?
-    Surely it&#39;s too volatile to support the necessary power scaffold.
+    Surely it&#39;s too volatile to support the necessary power coils.
     Perhaps it&#39;s something else in this room...
 &lt;&lt;else&gt;&gt;
     Is it something Ivex is wearing?
@@ -12373,7 +12375,7 @@ Nero shakes his head in confusion. What was he trying to remember just now?
 ?P
 Well, whatever it was, it probably isn&#39;t as important as paying attention to
 the noticeably horny panther mage, who has just magicked away the wolf&#39;s clothes.
-Ivex has moved uncomfortably close, and he&#39;s now running his fingers across the newly exposed fur on Nero&#39;s naked chest.
+Ivex has also moved uncomfortably close, and he&#39;s now running his fingers across the newly exposed fur on Nero&#39;s naked chest.
 &lt;&lt;/nobr&gt;&gt;
 
 $t_afterNaked</tw-passagedata><tw-passagedata pid="361" name="n1p/F Barbs Glitch 2" tags="" position="5175,2375" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -12527,6 +12529,18 @@ Many years ago, when Nero was still a novice student...
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
+
+Nero.barbGlitch = [
+  `&lt;span class=&quot;glitch-switch&quot;&gt;\
+    &lt;div class=glitch-switch-1&gt;barbed&lt;/div&gt;\
+    &lt;div class=glitch-switch-2&gt;smooth&lt;/div&gt;\
+  &lt;/span&gt;`,
+  `&lt;span class=&quot;glitch-switch&quot;&gt;\
+    &lt;div class=glitch-switch-1&gt;smooth&lt;/div&gt;\
+    &lt;div class=glitch-switch-2&gt;barbed&lt;/div&gt;\
+  &lt;/span&gt;`,
+];
+
 Macro.delete(&quot;glitch-text&quot;);
 Macro.add(&quot;glitch-text&quot;, {
   tags: [],
@@ -12556,15 +12570,9 @@ function glitchText(textNode, g) {
     if (/\s/.test(word)) {
      outer.append(word);
     } else if (word === &quot;##barbed-1##&quot;) {
-      $(`&lt;span class=&quot;glitch-switch&quot;&gt;
-        &lt;div class=glitch-switch-1&gt;barbed&lt;/div&gt;
-        &lt;div class=glitch-switch-2&gt;smooth&lt;/div&gt;
-      &lt;/span&gt;`).appendTo(outer);
+      $(Nero.barbGlitch[0]).appendTo(outer);
     } else if (word === &quot;##barbed-2##&quot;) {
-      $(`&lt;span class=&quot;glitch-switch&quot;&gt;
-        &lt;div class=glitch-switch-1&gt;smooth&lt;/div&gt;
-        &lt;div class=glitch-switch-2&gt;barbed&lt;/div&gt;
-      &lt;/span&gt;`).appendTo(outer);
+      $(Nero.barbGlitch[1]).appendTo(outer);
     } else {
       const gf = Math.min(Math.floor(g/15), 4);
       g++;
@@ -12590,7 +12598,7 @@ function glitchText(textNode, g) {
 
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
-    &lt;&lt;include [[n1s/D Before Cast]]&gt;&gt;
+    &lt;&lt;include [[n1s/F Before Cast]]&gt;&gt;
 &lt;&lt;case `MP_triedMagic`&gt;&gt;
     &lt;&lt;include [[n1s/F Tried Magic]]&gt;&gt;
 &lt;&lt;case `MP_mageSight`&gt;&gt;
@@ -12752,7 +12760,7 @@ He begins a quiet intonation of the most basic mage-sight spell...
 
 ?P
 [[Continue|n1s/F Cast Sight 2]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="369" name="n1s/D Before Cast" tags="inclusion" position="5925,3650" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="369" name="n1s/F Before Cast" tags="inclusion" position="5925,3650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;!-- easy requires mageSight, hard requires wantPassword --&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 
@@ -13089,7 +13097,7 @@ He&#39;ll have to rely on wits alone now.
 The Sprite in Nero&#39;s ear says, &quot;The following devices are available...&quot;
 
 ?P
-&lt;&lt;include [[n1s/D Sprite Dots]]&gt;&gt;
+&lt;&lt;include [[n1s/F Sprite Dots]]&gt;&gt;
 
 ?P
 &quot;Remember to implement this some day, Master.&quot;
@@ -13367,7 +13375,7 @@ The Sprite in Nero&#39;s ear says, &quot;Please choose from one of the following
 help topics.&quot;
 
 ?P
-&lt;&lt;include [[n1s/D Sprite Dots]]&gt;&gt;
+&lt;&lt;include [[n1s/F Sprite Dots]]&gt;&gt;
 
 ?P
 &quot;No topics found, Master.&quot;
@@ -13386,6 +13394,7 @@ $t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="385" name="n1s/D On Hold" tags="inclusion" position="6450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &quot;Checking password... Please hold, ?master.&quot;
 
+XXX
 &lt;&lt;switch $n1_passwordTries || 0&gt;&gt;
 &lt;&lt;case 0&gt;&gt;
     &lt;&lt;if $n1_candleHorny&gt;&gt;
@@ -13519,7 +13528,7 @@ spell fizzes. Ivex recognizes it.
 info about slippery spell
 &lt;&lt;/nobr&gt;&gt;
 
-[[Return|n1s/D Cast Slippery]]</tw-passagedata><tw-passagedata pid="391" name="n1s/D Sprite Dots" tags="inclusion" position="6200,4100" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Return|n1s/D Cast Slippery]]</tw-passagedata><tw-passagedata pid="391" name="n1s/F Sprite Dots" tags="inclusion" position="6200,4100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 
 &lt;&lt;if $n1_spriteDotsHeard&gt;&gt;
@@ -13527,7 +13536,7 @@ info about slippery spell
 
     ?P
     &lt;&lt;if $n1_candleHorny&gt;&gt;
-        Each &quot;dot&quot; said by the Sprite is horny.
+        XXX Each &quot;dot&quot; said by the Sprite is horny.
     &lt;&lt;else&gt;&gt;
         It&#39;s the dots again. Nero cannot stop thinking about them.
         He&#39;s quite sure now that such an utterance could not have
@@ -13540,7 +13549,7 @@ info about slippery spell
 
     ?P
     &lt;&lt;if $n1_candleHorny&gt;&gt;
-        Each &quot;dot&quot; said by the Sprite is horny.
+        XXX Each &quot;dot&quot; said by the Sprite is horny.
     &lt;&lt;else&gt;&gt;
         It actually spoke the word &quot;dot&quot; aloud,
         three times, with a pause in between them.
@@ -13551,7 +13560,6 @@ info about slippery spell
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;set $n1_spriteDotsHeard = true&gt;&gt;
-
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="392" name="n1s/F Guess Script" tags="inclusion" position="3750,1000" size="100,100">&lt;&lt;script&gt;&gt;
 const V = State.variables;
 const T = State.temporary;
@@ -16578,6 +16586,7 @@ $t_afterAction
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="437" name="n1x/D Map WantPassword" tags="inclusion" position="7300,3850" size="100,100">&lt;&lt;nobr&gt;&gt;
 ?P
+XXX
 &lt;&lt;if $n2_ivexGone&gt;&gt;
     &lt;&lt;pw-suggest &quot;xxx&quot;&gt;&gt;
         Maybe one of those is important?
@@ -16626,6 +16635,7 @@ $t_afterAction
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="439" name="n1x/D Painting WantPassword" tags="inclusion" position="7475,4175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;em-assert !$n2_free&gt;&gt;
 
+XXX
 &lt;&lt;if $n1_paintingMomKnown&gt;&gt;
     She&#39;s... unsettlingly important to Ivex.
     &lt;&lt;pw-suggest &quot;XXX mom&quot;&gt;&gt;
@@ -17347,41 +17357,41 @@ Candle&#39;s Influence:
 &lt;&lt;case 1&gt;&gt;
     &lt;&lt;em-assert !$n1_candleHorny&gt;&gt;
     /* 0,0 */
-    lust 1 - early throbbing
+    XXX lust 1 - early throbbing
 
 &lt;&lt;case 2&gt;&gt;
     &lt;&lt;if $n1_candleHorny&gt;&gt;
         /* 0,1 */
-        lust 2 high
+        XXX lust 2 high
     &lt;&lt;else&gt;&gt;
         /* 1,0 */
-        lust 2 mild
+        XXX lust 2 mild
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;case 3&gt;&gt;
     &lt;&lt;em-assert $n1_candleHorny&gt;&gt;
     /* 2,0 or 1,1 */
-    lust 3
+    XXX lust 3
 
 &lt;&lt;case 4&gt;&gt;
     &lt;&lt;em-assert $n1_candleHorny&gt;&gt;
     /* 3,0 or 2,1 */
-    lust 4
+    XXX lust 4
 
 &lt;&lt;case 5&gt;&gt;
     &lt;&lt;em-assert $n1_candleHorny&gt;&gt;
     /* 3,1 */
-    lust 5
+    XXX lust 5
     
 &lt;&lt;case 6&gt;&gt;
     &lt;&lt;em-assert $n1_candleHorny&gt;&gt;
     /* 4,? or ?,2 -&gt; 4,2 */
-    lust 6 - candle near max
+    XXX lust 6 - candle near max
 
 &lt;&lt;case 7&gt;&gt;
     &lt;&lt;em-assert $n1_candleHorny&gt;&gt;
     /* 5,? or ?,3 */
-    lust 7 - candle at max, final action
+    XXX lust 7 - candle at max, final action
 
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(`BUG lust text ${n2_lustTextPos}`)&gt;&gt;
@@ -18295,8 +18305,7 @@ His eyes latch on to the
 &lt;&lt;n1-no-loop [[massive portrait|n1y/F Horny Painting]]&gt;&gt;
 of femininity hanging on the far wall,
 but his mind keeps returning to obsessive imagination
-of Ivex&#39;s erect,
-&lt;&lt;= $n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;&gt;&gt; cock.
+of Ivex&#39;s erect, ?barbed cock.
 
 ?P
 &lt;ul class=actions&gt;
@@ -19439,7 +19448,7 @@ function recentlyViewed(name) {
 }
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="528" name="n1x/D Globe WantPassword" tags="inclusion" position="6575,5875" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-The origin of the globe might be Ivex&#39;s favorite vacation spot,
+XXX The origin of the globe might be Ivex&#39;s favorite vacation spot,
 which is a common choice of password: easy to remember,
 and ostensibly difficult for a rival to guess.
 But such facts about a person are less obscure than they might seem.
