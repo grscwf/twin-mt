@@ -11,10 +11,10 @@ nero
 	"tag-colors": {
 		"action-point": "blue",
 		"big-mood": "purple",
-		"done": "purple",
-		"end": "red",
-		"has-hole": "blue",
-		"inclusion": "orange",
+		"done": "red",
+		"ending": "orange",
+		"has-hole": "orange",
+		"inclusion": "blue",
 		"incomplete": "red",
 		"init": "blue",
 		"ivex-advances": "orange",
@@ -856,30 +856,37 @@ Macro.add("arousalbar", {
 
 :: Init 2 Compute Variants [inclusion] {"position":"2650,500","size":"100,100"}
 <<append head>><style>
-  .cv-state {
-    color: #39f;
-    font-family: monospace;
-    font-size: 11px;
-  }
-  .cv-states {
-    margin-bottom: .5em;
-  }
-  .cv-var {
-    margin-right: 0.5em;
-  }
-  .cv-true {
-    color: #6a6;
-  }
-  .cv-false {
-    color: #c88;
-  }
-  .cv-enum {
-    color: #88c;
-  }
-  .cv-diff {
-    background-color: #510;
-    border-radius: 4px;
-  }
+
+.cv-state {
+  color: #39f;
+  font-family: monospace;
+  font-size: 11px;
+}
+.cv-states {
+  margin-bottom: .5em;
+}
+.cv-var {
+  margin-right: 0.5em;
+}
+.cv-true {
+  color: #6a6;
+}
+.cv-false {
+  color: #c88;
+}
+.cv-enum {
+  color: #88c;
+}
+.cv-diff {
+  background-color: #510;
+  border-radius: 4px;
+}
+.cv-busy {
+  background-color: #330;
+  color: #993;
+  font-weight: bold;
+}
+  
 </style><</append>>
 
 <<script>>
@@ -890,6 +897,11 @@ const VT = window.VarTrace || (window.VarTrace = {});
 
 CV.ignore = new Set();
 CV.vars = {};
+
+CV.nonbooleans = new Set([
+  "n1_passwordsFound",
+  "n1_passwordsTried",
+]);
 
 Macro.add("cv-ignore", {
   handler: function() {
@@ -913,6 +925,9 @@ $(document).on(":passagestart", () => {
 });
 
 CV.render = function() {
+  const statEl = $(".var-info-compute");
+  statEl.addClass("cv-busy");
+
   const beginState = clone(State.current.variables);
   const nowState = clone(State.active.variables);
   const nowTemps = clone(State.temporary);
@@ -927,6 +942,8 @@ CV.render = function() {
       CV.ignore.add(k);
     }
   }
+  CV.nonbooleans.forEach(vn => CV.ignore.add(vn));
+  Object.keys(ET.vars).forEach(vn => CV.ignore.add(vn));
 
   const done = [];
 
@@ -1031,6 +1048,8 @@ CV.render = function() {
   };
 
   const finish = () => {
+    statEl.text("[compute variants]").removeClass("cv-busy");
+  
     const varsUsed = [...usedSet].sort();
     const variants = Object.values(renders);
     variants.forEach(r => {
@@ -1051,7 +1070,7 @@ CV.render = function() {
     pos.empty();
     const sum = $("<div id=cv-summary>").appendTo(pos);
     $("<div>").appendTo(sum)
-      .text(`${variants.length} variants, ${checked} checked, ${tried} tried`);
+      .text(`${variants.length} variants, ${checked} states checked, ${tried} states tried`);
     messages.forEach(m => $("<div>").text(m).appendTo(sum));
     for (const variant of variants) {
       pos.append("<hr>");
@@ -1085,17 +1104,18 @@ CV.render = function() {
 
   const tryNext = () => {
     if (checked >= 130000) {
-      messages.push(`Stopping at ${checked} checked`);
+      messages.push(`Stopping at ${checked} states checked`);
       todo.length = 0;
     }
     if (todo.length === 0) {
       finish();
     } else {
-      if (checked % 100 === 0) console.log(`todo ${todo.length}`);
-      tryOne();
-      tryOne();
-      tryOne();
-      tryOne();
+      if (checked % 100 === 0) {
+        statEl.text(`[${todo.length} states pending]`);
+      }
+      for (let i = 0; i < 4; i++) {
+        tryOne();
+      }
       setTimeout(tryNext);
     }
   };
@@ -1749,7 +1769,11 @@ function randomWalkSetup() {
     const next = State.history[State.length].title;
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
-      Engine.forward();
+      if (chosen.attr("data-passage") === next) {
+        Engine.forward();
+      } else {
+        walk();
+      }
       return;
     }
     chosen.removeClass("random-walk-chosen");
@@ -1762,13 +1786,6 @@ function randomWalkSetup() {
       Engine.forward();
     }
   };
-
-  const stop = [
-    "Enthrallment End",
-    "Extraction End 2",
-    "Interrogation End",
-    "The End",
-  ];
 
   let seeking = false;
   let seekMoved = false;
@@ -1793,8 +1810,8 @@ function randomWalkSetup() {
     const here = State.passage;
 
     if (!seeking) return seekStop();
-    if (/^n9/.test(here)) return seekStop();
-    if (stop.includes(here)) return seekStop();
+    if (seekMoved && here === Config.passages.start) return seekStop();
+    if (tags().includes("done")) return seekStop();
 
     let hasProblem = false;
     hasProblem = hasProblem || ErrorMessage.hasFails;
@@ -2783,6 +2800,7 @@ EnumType.define("MagicPhase", [
   "MP_broken",
 ]);
 EnumType.declareVar("n1_magicPhase", "MagicPhase");
+EnumType.declareVar("n2_magicPhaseBroken", "MagicPhase");
 
 // Define temp var with a getter, so read tracking works.
 function defTemp(vname, fn) {
@@ -3397,35 +3415,48 @@ Nero.enumImplies = {
     [MP_beforeCast]: {
       n1_mageSight: false,
       n2_free: false,
+      n2_magicPhaseBroken: false,
     },
     [MP_triedMagic]: {
       n1_mageSight: false,
       n2_free: false,
+      n2_magicPhaseBroken: false,
     },
     [MP_mageSight]: {
       n1_naked: true,
+      n2_magicPhaseBroken: false,
     },
     [MP_wantDevice]: {
       n1_naked: true,
+      n2_magicPhaseBroken: false,
     },
     [MP_wantName]: {
       n1_naked: true,
+      n2_magicPhaseBroken: false,
     },
     [MP_wantTouch]: {
       n1_naked: true,
+      n2_magicPhaseBroken: false,
+    },
+    [MP_wantPassword]: {
+      n1_naked: true,
+      n2_magicPhaseBroken: false,
     },
     [MP_onHold]: {
       n1_naked: true,
+      n2_magicPhaseBroken: false,
     },
     [MP_contact]: {
       n1_naked: true,
       n2_free: true,
       n2_ivexGone: true,
+      n2_magicPhaseBroken: false,
       n2_mirrorBroken: false,
       n2_tooClever: true,
     },
     [MP_lockedOut]: {
       n1_naked: true,
+      n2_magicPhaseBroken: false,
     },
     [MP_broken]: {
       n1_naked: true,
@@ -3434,6 +3465,84 @@ Nero.enumImplies = {
       n2_ivexGone: true,
       n2_mirrorBroken: true,
       n2_tooClever: false,
+    }
+  },
+  
+  n2_magicPhaseBroken: {
+    [MP_beforeCast]: {
+      impossible: true,
+    },
+    [MP_triedMagic]: {
+      impossible: true,
+    },
+    [MP_mageSight]: {
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantDevice]: {
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantName]: {
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantTouch]: {
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantPassword]: {
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_onHold]: {
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_contact]: {
+      impossible: true,
+    },
+    [MP_lockedOut]: {
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_broken]: {
+      impossible: true,
     }
   }
 }
@@ -3773,7 +3882,7 @@ Nero.otherPasswords = {
   "Hunter Two": "the name of Ivex's penguin",
 
   /* painting */
-  "XXX mom": "the name of Ivex's mother",
+  "Ivy": "the name of Ivex's mother",
 
   /* wand */
   "XXX wand": "the name of Ivex's wand",
@@ -5343,7 +5452,7 @@ It feels impossible, but for the wolf, he swears he can feel it. It's not quite 
 It's maddening! With bated breath, $name shakes his head and grits his teeth together trying his hardest to keep his focus away from his cock.
 
 
-:: Arousal Overwhelmed [end] {"position":"1000,3275","size":"100,100"}
+:: Arousal Overwhelmed [ending] {"position":"1000,3275","size":"100,100"}
 <<set $CurArousal = 110>>\
 Candle's Influence: <<arousalbar $CurArousal $MaxArousal>>
 <<done>>
@@ -5631,7 +5740,7 @@ Working hard to ignore his arousal, the wolf focuses on what really matters.
 <</if>>\
 
 
-:: Jerk off [end] {"position":"875,3450","size":"100,100"}
+:: Jerk off [ending] {"position":"875,3450","size":"100,100"}
 Fuck it! $name needs it. He needs the pleasure! After that is taken care of, then the wolf can deal with the candle and think about escaping. Only one thing matters now!
 
 With his paw blissfully wrapped around his cock, $name lets himself fall forward to his knees. An involuntary smile comes to his muzzle and he feels himself tearing up from the sheer happiness of being able to sate the lust burning within him. Every breath is fire, and now his paw can fan the fire.
@@ -5892,7 +6001,7 @@ There is little choice but to proceed, though.
 [[Continue|Second Floor]]
 
 
-:: Interrogation End [end] {"position":"2375,3050","size":"100,100"}
+:: Interrogation End [done] {"position":"2375,3050","size":"100,100"}
 $name fell into Ivex's hands.
 
 <<if $interrogationEndingUnlock>>\
@@ -6463,7 +6572,7 @@ Apparently tired of waiting, the lion starts stepping forward, raising the penda
 </div>\
 
 
-:: Mind Capture [end] {"position":"1400,4475","size":"100,100"}
+:: Mind Capture [ending] {"position":"1400,4475","size":"100,100"}
 <<include "Mind Capture (Text)">>
 
 <span class="bad-ending">Bad Ending: <i>Enthrallment</i></span>
@@ -6655,7 +6764,7 @@ But, no! He's wasted enough time as it is! Ivex could return at any time. Lookin
 [[Continue|Enthrallment End]]
 
 
-:: Enthrallment End [end] {"position":"1875,4125","size":"100,100"}
+:: Enthrallment End [done] {"position":"2600,4225","size":"100,100"}
 $name became Ivex's thrall.
 
 <<if $enthrallmentEndingUnlock>>\
@@ -6757,7 +6866,7 @@ Still, it looks absolutely harmless.
 [[Continue|Pulled Further]]
 
 
-:: Pulled Further [end] {"position":"1125,5250","size":"100,100"}
+:: Pulled Further [ending] {"position":"1125,5250","size":"100,100"}
 <<include "Pulled Further (Text)">>
 
 <span class="bad-ending">Bad Ending: <i>Extraction</i></span>
@@ -6856,7 +6965,7 @@ Still, it looks absolutely harmless.
 [[Continue|Extraction End 2]]
 
 
-:: Extraction End 2 [end] {"position":"2600,4825","size":"100,100"}
+:: Extraction End 2 [done] {"position":"2600,4825","size":"100,100"}
 $name remained trapped serving as fuel for Ivex's magic.
 
 <<if $extractionEndingUnlock>>\
@@ -8642,7 +8751,7 @@ Thinking back to his experience in the tower and Ivex's journal, his report on w
 </div>
 
 
-:: Personal Vengeance [end] {"position":"1450,7225","size":"100,100"}
+:: Personal Vengeance [ending] {"position":"1450,7225","size":"100,100"}
 <<silently>>
 <<set $gagged = false>>
 <<set $randomGag to random(1, 2)>>
@@ -8705,7 +8814,7 @@ What to do to him first?
 </div>
 
 
-:: Enthrallment Vengeance [end] {"position":"1675,6825","size":"100,100"}
+:: Enthrallment Vengeance [ending] {"position":"1675,6825","size":"100,100"}
 <<include "Enthrallment Vengeance (Text)">>
 
 <span class="good-ending">Ending: <i>Ivex's Enthrallment</i></span>
@@ -8713,7 +8822,7 @@ What to do to him first?
 [[Continue|Ivex Enthrallment 1]]
 
 
-:: Extraction Vengeance [end] {"position":"1725,7000","size":"100,100"}
+:: Extraction Vengeance [ending] {"position":"1725,7000","size":"100,100"}
 <<include "Extraction Vengeance (Text)">>
 
 <span class="good-ending">Ending: <i>Ivex's Extraction</i></span>
@@ -9701,7 +9810,7 @@ Or, at least, he will try to.
 [[The End|The End]]
 
 
-:: The End [end] {"position":"2850,6300","size":"100,100"}
+:: The End [done] {"position":"2850,6300","size":"100,100"}
 The End.
 <<if $personalEndingUnlock>>\
 <<set $personalEnding = true>>\
@@ -10648,7 +10757,7 @@ var-info test<br>
 <</nobr>>
 
 
-:: n0/F Under Construction [end] {"position":"3500,2650","size":"100,100"}
+:: n0/F Under Construction [done] {"position":"3500,2650","size":"100,100"}
 <h1>Under Construction&#x1f6a7;</h1>\
 Congratulations! You've reached an "Under Construction" point in Nero's story. Thanks for playing so far!
 
@@ -10797,7 +10906,7 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 <</nobr>>\
 
 
-:: n0/F Project Status [end inclusion] {"position":"3375,2650","size":"100,100"}
+:: n0/F Project Status [inclusion] {"position":"3375,2650","size":"100,100"}
 Nero has a few Bad Endings that are already finished. Check out the [[Archives]] (always available in the sidebar menu) to see which endings are available. For the endings you haven't seen yet, there are some hints on how to reach them.
 
 We're expecting the rest of Nero's story to be released to <a target="_blank" href="https://www.patreon.com/sleth">Sleth's Patreon</a> in March 2023. Public release will be a month later.
@@ -11024,7 +11133,7 @@ It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
 
 :: n1a/F Feign Sleep 2 {"position":"3600,1750","size":"100,100"}
-Suddenly, a hand grabs Nero's robe at his crotch and firmly grasps the underwear beneath. The fingers dig in and curl around one of the wolf's testicles. And then the fingers squeeze. Hard.
+Suddenly, a hand grabs Nero's robe at his crotch and firmly grasps his private parts through the cloth of the robe and the underwear beneath. The fingers dig in and curl around one of the wolf's testicles. And then the fingers squeeze. Hard.
 
 Nero's eyes fly wide open and he stifles a yelp.
 
@@ -11042,7 +11151,7 @@ Their eyes make contact. The captor's grin becomes a toothy, feral smile.
 
 
 :: n1a/F Feign Sleep 3 {"position":"3700,1750","size":"100,100"}
-A fist smashes into Nero's crotch! The knuckles thump hard against his other ball, making that ball ache stronger than the one firmly held. The wolf automatically jerks from the impact, and the motion stretches his captive ballsack painfully tight.
+A fist smashes into Nero's crotch! The knuckles thump hard against his other testicle, making that ball ache stronger than the one firmly held. The wolf automatically jerks from the impact, and the motion stretches his captive ballsack painfully tight.
 
 Nero gasps, and the fist bashes his ball again! The wolf cannot suppress a whine. The sound is embarrassing and pathetic, and it fills the air of the room.
 
@@ -11216,7 +11325,7 @@ Well. <em>That</em> sort of posturing is familiar. Nero has encountered many bra
 <<n1-patience 5 2>>
     Ivex (the Magnificent) speaks. "Again I ask. Who sent you?"
 <<n1-remind>>
-    Ivex (the Magnificent) is asking, "Who sent you?"
+    Ivex (the Magnificent) has asked, "Who sent you?"
 <<n1-warn>>
     Ivex (the Magnificent) twitches an ear.
     "Again I ask! Who sent you?"
@@ -15918,7 +16027,7 @@ The rest of the shelves are taken up by unlabeled boxes
         <<if $n1_magicPhase === MP_mageSight>>
             which is a magic device that the lupine mage is quite familiar with.
             ?P
-            Nero does not have much power left after the
+            Nero does not have much energy left after the
             embarrassing spell-casting failure,
             but he might have just enough left
             to tap the pyron node, and use it.
@@ -16839,6 +16948,11 @@ but he does not remember its name.
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
 <<vi-ignore n2_ivexGone>>
+<<cv-try n1_magicPhase 
+  `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
+  `MP_contact` `MP_broken`>>
+<<cv-try n2_magicPhaseBroken
+  `null` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`>>
 
 <<if $n2_extraHorny>>
     <<vi-always n2_ivexGone true>>
@@ -16857,9 +16971,8 @@ but he does not remember its name.
     <</if>>
 
 <<elseif $n1_paintingMomKnown>>
-    The large painting beside the window depicts Ivex's mother,
-    a plump black pantheress
-    in an absurdly multicolored dress,
+    The large painting beside the window depicts Ivex's mother Ivy,
+    a plump black pantheress in an absurdly multicolored dress,
     holding a book in one hand and
     reclining on a couch in a disturbingly suggestive pose.
     Her jaw is partly open in an expression of predatory lust.
@@ -16876,7 +16989,7 @@ but he does not remember its name.
     red, green, or blue, rather than a patchwork of all three colors
     in a perplexing irregular pattern.
     ?P
-    She's holding a book in one hand and
+    The pantheress is holding a book in one hand and
     reclining on a couch in a languid, sensual pose.
     Her mouth is partly open, and the tip of her tongue is peeking
     out the left side in a suggestive manner.
@@ -17207,8 +17320,9 @@ $t_afterAction
 <<set $n1_paintingMomKnown = true>>
 
 TODO ivexNear.
-TODO candleLit-mask. briefly pull down mask to lick
+TODO candleLit-mask. briefly pull down mask to lick.
 
+XXX
 <<if $t_ivexReceptive>>
     mention mom, goes to lick her
     <<set $n1_paintingTouchTried = true>>
@@ -17224,7 +17338,7 @@ TODO candleLit-mask. briefly pull down mask to lick
 
 <<elseif MP_wantPassword === $n1_magicPhase>>
     ?P
-    <<pw-suggest "XXX mom">>
+    <<pw-suggest "Ivy">>
         maybe it's the password
     <</pw-suggest>>
     ?P
@@ -17635,7 +17749,7 @@ TODO candleLit-mask.
     to have that immense power,
     even the slightest bit of it, focused on his body,
     his mind, his soul.
-    Nero's muscles clench, and his achingly stiff cock quivers in the air.
+    Nero's muscles spasm, and his achingly stiff cock quivers in the air.
     ?P
     $t_afterAction
 
@@ -18352,7 +18466,7 @@ XXX
 
 <<if $n1_paintingTouchTried>>
     <<em-assert $n1_paintingMomKnown>>
-    Fortunately, she
+    Fortunately, her mouth
     <<= $n2_free ? "didn't" : "doesn't">>
     seem to be the hole that the Sprite
     <<= $n2_free ? "wanted" : "wants">>
@@ -18385,7 +18499,7 @@ XXX
 XXX
 <<if $n1_paintingMomKnown>>
     She's... unsettlingly important to Ivex.
-    <<pw-suggest "XXX mom">>
+    <<pw-suggest "Ivy">>
         maybe she's the password
     <<pw-fail>>
         but she isn't the password
@@ -19910,7 +20024,7 @@ lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 :: n8/D Broken [noreturn] {"position":"3625,2225","size":"100,100"}
 
 
-:: n9a/D Tamed [end] {"position":"4125,6450","size":"100,100"}
+:: n9a/D Tamed [ending] {"position":"4125,6450","size":"100,100"}
 <meta-ending-bad>Bad Ending: Tamed</meta-ending-bad>
 
 candle maxed, desperation action failed. defeated by wrong choices.
@@ -19935,7 +20049,7 @@ inverts cross and presents cock for sucking
 <</nobr>>
 
 
-:: n9a/D Tamed Mild [end] {"position":"3425,6425","size":"100,100"}
+:: n9a/D Tamed Mild [done] {"position":"3425,6425","size":"100,100"}
 <<nobr>>
 nero thinks, lemme satisfy him,
 and then there will be another opportunity to escape.
@@ -19969,7 +20083,7 @@ sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 
 <</nobr>>
 
 
-:: n9a/D Tamed Harsh [end] {"position":"3425,6525","size":"100,100"}
+:: n9a/D Tamed Harsh [done] {"position":"3425,6525","size":"100,100"}
 <<nobr>>
 no way is nero sucking ivex off. he's escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
 
@@ -20003,7 +20117,7 @@ sketch ongoing life as a dumb abused dog craving correction, tease bits of thing
 <</nobr>>
 
 
-:: n9a/D Broken [end] {"position":"3875,6975","size":"100,100"}
+:: n9a/D Broken [done] {"position":"3875,6975","size":"100,100"}
 <meta-ending-bad>Challenge Ending: Broken</meta-ending-bad>
 
 nero clever escape, balls aching, only mildly horny, tries wand, an obvious bad idea.
@@ -20038,7 +20152,7 @@ gives up, mental suicide with dumb gem.
 </ul>
 
 
-:: n9a/D Caged Mild [end] {"position":"3575,6725","size":"100,100"}
+:: n9a/D Caged Mild [done] {"position":"3575,6725","size":"100,100"}
 <meta-ending-bad>Bad Ending: Caged (Mild)</meta-ending-bad>
 
 Nero, extra horny, and no self-control. paws off. defeated by horny lack of discipline.
@@ -20065,7 +20179,7 @@ important: portal-box is small, strong feeling of confined
 </ul>
 
 
-:: n9a/D Caged Harsh [end] {"position":"3725,6875","size":"100,100"}
+:: n9a/D Caged Harsh [done] {"position":"3725,6875","size":"100,100"}
 <meta-ending-bad>Bad Ending: Caged (Harsh)</meta-ending-bad>
 
 nero escaped, very horny, resisted pawing off, but didn't resist using wand. defeated by horny curiosity.
@@ -20090,7 +20204,7 @@ applies portal-box chastity in overstim mode. keeps nero in a cage until he surr
 </ul>
 
 
-:: n9e/S hunted [end] {"position":"3700,7625","size":"100,100"}
+:: n9e/S hunted [ending] {"position":"3700,7625","size":"100,100"}
 got here because lion is rapey, and you've lost the slippery ring
 
 you can try to satisfy the lion, or try to continue to escape
@@ -20101,7 +20215,7 @@ maybe, leave harsh for the ring+lion ending
 [[n9e/S hunted harsh]]
 
 
-:: n9e/S hunted mild [end] {"position":"3525,7550","size":"100,100"}
+:: n9e/S hunted mild [ending] {"position":"3525,7550","size":"100,100"}
 lion is rapey, nero tries to satisfy him
 uses his paw. lion cums, lion forces nero to lick it up, and then immediately gets rapey again.
 the cum is aphrodisiac, nero ends up pawing himself too
@@ -20110,7 +20224,7 @@ he's stuck in a loop pawing with lion and licking it up until Ivex returns.
 Ivex is amused and decides to chain nero to the lion as part of an assembly line, the lion can continually grind while nero continually paws. nero isn't compelled by anything but horniness and fear of the lion.
 
 
-:: n9e/S hunted harsh [end] {"position":"3525,7725","size":"100,100"}
+:: n9e/S hunted harsh [ending] {"position":"3525,7725","size":"100,100"}
 lion is rapey, nero tries to evade.
 gets caught, pinned down and raped.
 it's over quick, lion takes a rest,
@@ -20120,7 +20234,7 @@ it's an endless loop until Ivex arrives.
 Ivex is amused and makes nero permanent prey. safe hole in keep, lust spell, inhibitor spell. can get relief by grabbing a one-time remedy from lion, but locked out from safe hole for n minutes, have to keep evading lion.
 
 
-:: n9e/S overwhelmed mild [end] {"position":"3600,7925","size":"100,100"}
+:: n9e/S overwhelmed mild [ending] {"position":"3600,7925","size":"100,100"}
 slippery ring is locked on. lion isn't following or hunting
 
 nero is stiffened and oversensitized. movement is hard, and any touch is overstim. the ring was only meant to apply to a small area, applying to a large area magnifies its effects. more contact is more overstim
@@ -20130,7 +20244,7 @@ nero struggles to reduce the contact area, ends up perched on the toes of one fo
 ivex returns and is amused, turns nero into an office ornament. likes to push nero and watch him collapse to the ground and then struggle to get back up.
 
 
-:: n9e/S wrecked [end] {"position":"3750,8325","size":"100,100"}
+:: n9e/S wrecked [ending] {"position":"3750,8325","size":"100,100"}
 slippery ring locks on, and lion is hunting.
 
 should probably also make this require thrall (to match ivex ending), which means adding a little complexity to the lion transitions. (or else change the ivex ending)
@@ -20140,7 +20254,7 @@ lion rapes, extreme overstimulation.
 Ivex is amused and turns nero into lion's toy? doesn't fit with lion's role. also could be stronger.
 
 
-:: n9e/S overwhelmed harsh [end] {"position":"3625,8125","size":"100,100"}
+:: n9e/S overwhelmed harsh [ending] {"position":"3625,8125","size":"100,100"}
 slippery ring locked on, lion is following
 
 lion puts thrall gem on you and goes back to what he was doing
@@ -20150,7 +20264,7 @@ thrall and tickle fight each other. thrall is a mindl program but can't override
 ivex returns and is amused by the glitch, lets the glitch continue forever, plays with it sometimes.
 
 
-:: n9x/S dominant [end] {"position":"4450,8425","size":"100,100"}
+:: n9x/S dominant [ending] {"position":"4450,8425","size":"100,100"}
 if no bad endings, straightforward fuck, simpler than drekkar's.
 
 if had caged, can use portal-box chastity.
@@ -20173,7 +20287,7 @@ if all of the above, lion asks you to rescue companion. you do, and companion as
 otherwise, fulfill contract.
 
 
-:: n9x/S satisfied [end] {"position":"4300,8425","size":"100,100"}
+:: n9x/S satisfied [ending] {"position":"4300,8425","size":"100,100"}
 satisfy contract.
 turn ivex into authorities.
 
@@ -20183,7 +20297,7 @@ barbs - pevhin
 glitch - blank
 
 
-:: n9x/S ascendant [end] {"position":"4600,8425","size":"100,100"}
+:: n9x/S ascendant [ending] {"position":"4600,8425","size":"100,100"}
 this is all endings involving the lion
 
 
@@ -20537,7 +20651,7 @@ setup();
 <</script>>
 
 
-:: Visited [noreturn] {"position":"2200,1200","size":"100,100"}
+:: Visited [noreturn] {"position":"2175,1525","size":"100,100"}
 <<nobr>>
 
 <<return-block>>

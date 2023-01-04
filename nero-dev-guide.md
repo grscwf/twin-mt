@@ -4,6 +4,9 @@
 - [Working with Twee](#working-with-twee)
 - [Dev workflows](#dev-workflows)
 - [Debug controls](#debug-controls)
+  - [Right side buttons](#right-side-buttons)
+  - [Var info](#var-info)
+  - [Compute variants](#compute-variants)
 - [Story structure - Passages](#story-structure---passages)
 - [Story structure - State](#story-structure---state)
 - [Rationales](#rationales)
@@ -80,9 +83,16 @@
   - A few macros show a wrench icon within a passage,
     for local control of the macro.
   - The bottom right is SugarCube's debug panel, which is somewhat redundant,
-    but there are a few things it can do which isn't easy to do with the
+    but there are a few things it can do that aren't easy to do with the
     other debug controls.
-- On the right, "back", "forw", "rand", "seek" will navigate history
+
+### Right side buttons
+- "notes" opens a textbox for writing or editing notes about
+  the current passage. "Notes" in the left sidebar has more explanation
+  of this feature.
+- "log" opens a transcript of the current story session.
+  This is helpful when using "seek".
+- "back", "forw", "rand", "seek" will navigate history
   and do a random walk.
   - Pressing "rand" will highlight a random link in the current passage.
   - Pressing "rand" again will visit that link.
@@ -93,33 +103,29 @@
   - "seek" will repeat "rand" until it reaches a passage that's either
     unfinished, contains a todo mark, or throws an error.
     - If you start seek from such a passage, seek will not stop until it
-      reaches an ending.
+      reaches a passage tagged "done".
     - Seek can be interrupted by pressing the button again.
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
   - <kbd>ctrl-period</kbd> is a shortcut for "forw".
   - <kbd>ctrl-slash</kbd> is a shortcut for "rand".
   - <kbd>ctrl-backslash</kbd> is a shortcut for "seek".
-- On the right, "log" opens a transcript of the current story session.
-  This is helpful when using "seek".
-- On the right, "notes" opens a textbox for writing or editing notes about
-  the current passage. "Notes" in the left sidebar has more explanation
-  of this feature.
+
+### Var info
 - At the top, "var-info" is a compact display of state variables.
-  - Pressing "var-info" will show or hide the variables info.
+  - Pressing "var-info" will show or hide the variables.
   - var-info only shows variables that are read or set by the current passage.
   - Hover over a variable will show verbose detail.
-  - Up-arrow on the left of a varname indicates the var was set.
-  - Down-arrow on the right of a varname indicates the var was read.
+  - An up-arrow on the left of a varname means the var was set in this passage.
+  - A down-arrow on the right of a varname means the var was read in this passage.
   - Boolean flags are either red (false) or green (true).
-  - Enums flags are blue, showing the current value.
+  - Enums are blue, showing the current value.
   - Other types are gray.
 - var-info lets you change some flags.
-  - If a boolean or enum flag is read by the passage, var-info will show it as
+  - If a boolean or enum is read by the passage, var-info will show it as
     a button.
-  - Pressing the button will change the value and redisplay the current passage.
+  - Pressing the button will change the value that the var had before rendering the current passage, then redisplay the passage.
   - Enum flags are two buttons: left decreases, right increases.
-  - Changing a flag adds another state to the history.
-    "back" will revert the change.
+  - Changing a flag adds another state to the history, and going back will revert the change.
 - var-info highlights "notable" flags.
   - Notable flags are flags like `n1_naked` that are expected to have visible
     effects in the current passage.
@@ -127,9 +133,55 @@
     if it's always true in a section.
   - If a passage does not read a notable flag, it's marked with a
     construction-sign warning.
-  - The warning can be removed by using the flag,
-    or by declaring it constant with <nobr>`<<vi-always flag value>>`</nobr>,
-    or by ignoring it with <nobr>`<<vi-ignore flag>>`</nobr>.
+  - The warning can be removed by:
+    - using the flag,
+    - or declaring it constant with `<<vi-always flag value>>`,
+    - or ignoring it with `<<vi-ignore flag>>`.
+
+### Compute variants
+- var-info has a button "Compute variants", which will try to generate
+  all the variants of the current passage
+  that might be possible during play.
+- This can take several seconds. During computation, the button will show
+  how many states it has left to consider.
+- The variants shown will have live links,
+  but clicking on those links will probably not
+  have a sensible result. Compute-variants does
+  not clean up after itself (yet).
+  When it's done, the current state is indeterminate.
+  Reload the page before doing anything else.
+- The discovery process starts from the current game state.
+- This will automatically discover any boolean-ish variables that are
+  read by the passage, and it tries all states where those booleans are flipped.
+- Uninteresting booleans can be excluded with `<<cv-ignore varname>>`.
+- Non-booleans can be tried by declaring the values that should be tried:
+  - `<<cv-try varname val1 val2 ...>>`
+- Trying a state has two phases:
+  - First, a fast consistency check rejects any states that
+    should be impossible (eg, free and !naked).
+    - This is the function `Nero.checkState` in the
+      `Nero Constraints` init passage.
+    - This check is approximate.
+      It doesn't reject all illegal states,
+      and sometimes it accepts some illegal states.
+      But it's good enough to significantly reduce the number of
+      states that reach the slow second phase.
+  - Second, the state is used to render the passage into a scratch dom node.
+    - If the rendering fails an assertion or throws an error,
+      the state is rejected.
+    - This does not trigger any of the passage events, and does
+      not wait for any timers, so it might
+      not have exactly the same behavior as normal gameplay.
+      But most of the time this is fine.
+- For testing `n1_magicPhase` variants:
+  - Include `MP_beforeCast` if it's possible.
+  - Include any values tested in the passage.
+  - If the passage checks `n1_mageSight`,
+    include at least one value >= `MP_mageSight`.
+  - If the passage checks `n2_free`,
+    include both `MP_contact` and `MP_broken`.
+- For testing `n2_magicPhaseBroken` variants:
+  - Include `null`, and any values tested in the passage.
 
 ## Story structure - Passages
 - All of Nero's passages start with a codeword like `n1a/F`.
