@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="35" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<tw-storydata name="nero" startnode="35" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position: relative;
   /* #story has 2.5em top margin */
@@ -880,27 +880,27 @@ Macro.add(&quot;arousalbar&quot;, {
   }
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="9" name="Init 2 Compute Variants" tags="inclusion" position="2650,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-  .ev-state {
+  .cv-state {
     color: #39f;
     font-family: monospace;
-    font-size: 14px;
+    font-size: 11px;
   }
-  .ev-states {
+  .cv-states {
     margin-bottom: .5em;
   }
-  .ev-var {
+  .cv-var {
     margin-right: 0.5em;
   }
-  .ev-true {
+  .cv-true {
     color: #6a6;
   }
-  .ev-false {
+  .cv-false {
     color: #c88;
   }
-  .ev-enum {
+  .cv-enum {
     color: #88c;
   }
-  .ev-diff {
+  .cv-diff {
     background-color: #510;
     border-radius: 4px;
   }
@@ -954,12 +954,15 @@ CV.render = function() {
 
   const done = [];
 
-  let varsUsed = [...VT.ctx.wasRead].filter(vn =&gt; !CV.ignore.has(vn));
+  const usedSet = new Set(VT.ctx.wasRead);
+  CV.ignore.forEach(vn =&gt; usedSet.delete(vn));
 
   const todo = [beginState];
+
+  const usedList = [...usedSet];
   const addRecursive = (state, vp) =&gt; {
-    if (varsUsed.length &lt;= vp) return;
-    const vn = varsUsed[vp];
+    if (usedList.length &lt;= vp) return;
+    const vn = usedList[vp];
     const flipped = clone(state);
     flipped[vn] = !flipped[vn];
     todo.push(flipped);
@@ -970,6 +973,7 @@ CV.render = function() {
 
   Object.keys(CV.vars).forEach(vn =&gt; {
     const [first, ...rest] = CV.vars[vn];
+    if (!usedSet.has(vn)) usedSet.add(vn);
     CV.ignore.delete(vn);
     todo.forEach(t =&gt; {
       t[vn] = first;
@@ -994,35 +998,42 @@ CV.render = function() {
   
   let checked = 0;
   let tried = 0;
-  debugger;
+
+  const getValid = () =&gt; {
+    for (let i = 0; i &lt; 100; i++) {
+      if (todo.length === 0) return null;
+      const state = todo.pop();
+      done.push(state);
+      checked++;
+      if (Nero.checkState(state, usedSet, false)) return state;
+    }
+    return null;
+  };
 
   const tryOne = () =&gt; {
-    if (todo.length === 0) return;
-    const state = todo.pop();
-    done.push(state);
-    checked++;
+    const state = getValid();
+    if (state == null) return;
+
     State.active.variables = clone(state);
     State.current.variables = clone(state);
     State.clearTemporary();
-    if (!EM.runsWithoutFail(Nero.checkConstraints)) return;
     tried++;
-    //console.log(&quot;Trying&quot;, objSelect(state, varsUsed));
+
     const output = $(&quot;&lt;div class=passage&gt;&quot;);
     VT.start();
     const ok = EM.runsWithoutFail(() =&gt; output.wiki(text));
     VT.stop();
 
-    const consider = [...VT.ctx.wasRead];
-    consider.forEach(vn =&gt; {
-      if (varsUsed.includes(vn)) return;
+    VT.ctx.wasRead.forEach(vn =&gt; {
+      if (usedSet.has(vn)) return;
       if (CV.ignore.has(vn)) return;
-      if (varsUsed.length &gt;= 13) {
-        messages.push(`ignoring var ${vn} (max 13)`);
+      if (usedSet.size &gt;= 14) {
+        messages.push(`ignoring var ${vn} (max 14)`);
         CV.ignore.add(vn);
         return;
       }
       if (state[vn] == null || typeof state[vn] === &quot;boolean&quot;) {
-        varsUsed.push(vn);
+        usedSet.add(vn);
         // add the inverse value to the todo list
         [...done, ...todo].forEach(st1 =&gt; {
           const st2 = clone(st1);
@@ -1034,7 +1045,7 @@ CV.render = function() {
 
     if (!ok) return;
 
-    const usedThisTime = consider.filter(vn =&gt; !CV.ignore.has(vn)).sort();
+    const usedThisTime = [...VT.ctx.wasRead].filter(vn =&gt; !CV.ignore.has(vn)).sort();
     const html = output[0].innerHTML;
     renders[html] ??= {
       dom: output[0],
@@ -1044,7 +1055,7 @@ CV.render = function() {
   };
 
   const finish = () =&gt; {
-    varsUsed.sort();
+    const varsUsed = [...usedSet].sort();
     const variants = Object.values(renders);
     variants.forEach(r =&gt; {
       const map = {};
@@ -1062,25 +1073,27 @@ CV.render = function() {
     });
     const pos = $(&quot;#passages&quot;);
     pos.empty();
-    const sum = $(&quot;&lt;div id=ev-summary&gt;&quot;).appendTo(pos);
+    const sum = $(&quot;&lt;div id=cv-summary&gt;&quot;).appendTo(pos);
     $(&quot;&lt;div&gt;&quot;).appendTo(sum)
       .text(`${variants.length} variants, ${checked} checked, ${tried} tried`);
     messages.forEach(m =&gt; $(&quot;&lt;div&gt;&quot;).text(m).appendTo(sum));
     for (const variant of variants) {
       pos.append(&quot;&lt;hr&gt;&quot;);
-      const outer = $(&quot;&lt;div class=ev-states&gt;&quot;).appendTo(pos);
+      const outer = $(&quot;&lt;div class=cv-states&gt;&quot;).appendTo(pos);
       variant.states.forEach(st =&gt; {
-        const inner = $(&quot;&lt;div class=ev-state&gt;&quot;).appendTo(outer);
+        const inner = $(&quot;&lt;div class=cv-state&gt;&quot;).appendTo(outer);
         for (const vn of Object.keys(st.obj)) {
           const val = st.obj[vn];
-          if (val == null) continue;
           if (val === false) {
-            $(`&lt;span class=&quot;ev-var ev-false&quot;&gt;`).text(vn).appendTo(inner);
+            $(`&lt;span class=&quot;cv-var cv-false&quot;&gt;`).text(vn).appendTo(inner);
           } else if (val === true) {
-            $(`&lt;span class=&quot;ev-var ev-true&quot;&gt;`).text(vn).appendTo(inner);
+            $(`&lt;span class=&quot;cv-var cv-true&quot;&gt;`).text(vn).appendTo(inner);
+          } else if (ET.vars[vn] != null) {
+            const sym = ET.enums[ET.vars[vn]][val] ?? `${vn}=${val}`;
+            $(`&lt;span class=&quot;cv-var cv-enum&quot;&gt;`).text(sym).appendTo(inner);
           } else {
             const str = JSON._real_stringify(val);
-            $(`&lt;span class=&quot;ev-var ev-other&quot;&gt;`).text(`${vn}=${str}`).appendTo(inner);
+            $(`&lt;span class=&quot;cv-var cv-other&quot;&gt;`).text(`${vn}=${str}`).appendTo(inner);
           }
         }
       });
@@ -1095,14 +1108,14 @@ CV.render = function() {
   };
 
   const tryNext = () =&gt; {
-    if (checked &gt;= 8200) {
+    if (checked &gt;= 130000) {
       messages.push(`Stopping at ${checked} checked`);
       todo.length = 0;
     }
     if (todo.length === 0) {
       finish();
     } else {
-      if (checked % 100 === 0) console.log({ todo: todo.length });
+      if (checked % 100 === 0) console.log(`todo ${todo.length}`);
       tryOne();
       tryOne();
       tryOne();
@@ -3373,41 +3386,51 @@ Nero.enumImplies = {
   }
 }
 
-Nero.checkConstraints = () =&gt; {
-  const EM = ErrorMessage;
-  const VT = VarTrace;
-  const here = State.passage;
-  if (!/^n/.test(here)) return;
+const EM = ErrorMessage;
+const VT = VarTrace;
 
-  VT.ignore(() =&gt; {
+Nero.checkState = (state, used, interactive) =&gt; {
+  for (const x of Object.keys(Nero.flags)) {
+    if (!state[x]) continue;
+    if (interactive &amp;&amp; !used.has(x)) continue;
+    for (const y of Object.keys(Nero.flags[x].implies)) {
+      if (used &amp;&amp; !used.has(y)) continue;
+      const val = state[y] == null ? false : state[y];
+      const exp = Nero.flags[x].implies[y];
+      if (val !== exp) {
+        if (!interactive) return false;
+        const expStr = typeof exp !== &quot;boolean&quot; ? `$[y} === ${exp}` : exp ? y : `!${y}`;
+        EM.fail(
+          `${x} === ${state[x]} should imply ${expStr}; currently, ${y} === ${state[y]}`);
+      }
+    }
+  }
+  for (const x of Object.keys(Nero.enumImplies)) {
+    const rules = Nero.enumImplies[x][state[x]];
+    if (rules == null) continue;
+    if (interactive &amp;&amp; !used.has(x)) continue;
+    for (const y of Object.keys(rules)) {
+      if (used &amp;&amp; !used.has(y)) continue;
+      const val = state[y] == null ? false : state[y];
+      const exp = rules[y];
+      if (val !== exp) {
+        if (!interactive) return false;
+        const expStr = typeof exp !== &quot;boolean&quot; ? `$[y} === ${exp}` : exp ? y : `!${y}`;
+        const sval = ET.symbolic(x, state[x]);
+        EM.fail(
+          `${x} === ${sval} should imply ${expStr}; currently, ${y} === ${state[y]}`);
+      }
+    }
+  }
+  return true;
+};
+
+Nero.checkConstraints = () =&gt; {
+  const here = State.passage;
+  if (!/^n/.test(here)) return true;
+  return VT.ignore(() =&gt; {
     /* note: current state, not active state */
-    const V = State.current.variables;
-    Object.keys(Nero.flags).forEach(x =&gt; {
-      if (!V[x]) return;
-      if (!VT.ctx.wasRead.has(x)) return;
-      Object.keys(Nero.flags[x].implies).forEach(y =&gt; {
-        if (!VT.ctx.wasRead.has(y)) return;
-        const val = V[y] == null ? false : V[y];
-        const exp = Nero.flags[x].implies[y];
-        const expStr = typeof exp !== &quot;boolean&quot; ? `$[y} === ${exp}` : exp ? y : `!${y}`;
-        EM.assert(val === exp,
-          `${x} === ${V[x]} should imply ${expStr}; currently, ${y} === ${V[y]}`);
-      });
-    });
-    Object.keys(Nero.enumImplies).forEach(x =&gt; {
-      const rules = Nero.enumImplies[x][V[x]];
-      if (rules == null) return;
-      if (!VT.ctx.wasRead.has(x)) return;
-      Object.keys(rules).forEach(y =&gt; {
-        if (!VT.ctx.wasRead.has(y)) return;
-        const val = V[y] == null ? false : V[y];
-        const exp = rules[y];
-        const expStr = typeof exp !== &quot;boolean&quot; ? `$[y} === ${exp}` : exp ? y : `!${y}`;
-        const sval = ET.symbolic(x, V[x]);
-        EM.assert(val === exp,
-          `${x} === ${sval} should imply ${expStr}; currently, ${y} === ${V[y]}`);
-      });
-    });
+    return Nero.checkState(State.current.variables, VT.ctx.wasRead, true);
   });
 };
 
@@ -13668,14 +13691,13 @@ T.toTry.sort();
     &lt;&lt;include [[n1x/F Look Normal]]&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="394" name="n1x/F Cross" tags="" position="6200,5350" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always-if n2_free n2_ivexGone false&gt;&gt;
-&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic`&gt;&gt;
-
-TODO gravAsked - need to fix prose for Dream Crystals
+&lt;&lt;cv-ignore n1_studyViewed&gt;&gt; /* doesn&#39;t change text */
+&lt;&lt;cv-try n1_magicPhase
+    `MP_beforeCast` `MP_triedMagic` `MP_contact` `MP_broken`&gt;&gt;
 
 &lt;&lt;if $n2_free&gt;&gt;
     The cross that had trapped the wolf is an imposing piece of furniture.
-    Similar to the
+    Much like the
     &lt;&lt;if $n2_deskBurned&gt;&gt;
         &lt;&lt;n1-no-loop [[slightly-burned desk|n1x/F Desk]]&gt;&gt;
     &lt;&lt;else&gt;&gt;
@@ -13724,7 +13746,7 @@ TODO gravAsked - need to fix prose for Dream Crystals
     The apparatus seems quite sturdy,
     but the &lt;&lt;n1-no-loop [[small mirror|n1x/F Mirror]]&gt;&gt;
     on Ivex&#39;s desk provides a view
-    that reveals the cross is not actually attached
+    which reveals a curious fact: the cross is not actually attached
     to anything in the study.
 
     &lt;&lt;if $n1_gravAsked&gt;&gt;
@@ -13751,15 +13773,12 @@ TODO gravAsked - need to fix prose for Dream Crystals
             The
         &lt;&lt;/if&gt;&gt;
         power requirements of the crystals grows exponentially,
-        and their spells should collapse any moment now.
+        and their spells are likely to collapse any moment now.
     &lt;&lt;else&gt;&gt;
-        Nero wonders what&#39;s holding the cross in place.
-        Could it be the arrangement of
+        There is however an interesting arrangement of
         &lt;&lt;n1-no-loop [[glowing crystals|n1x/F Grav]]&gt;&gt;
-        &lt;&lt;if $n1_mageSight&gt;&gt;
-            and their mesh of exotic energy
-        &lt;&lt;/if&gt;&gt;
-        behind the cross?
+        behind the cross. Perhaps the crystals are what&#39;s
+        holding the cross in place?
     &lt;&lt;/if&gt;&gt;
     ?P
 
@@ -13778,7 +13797,6 @@ TODO gravAsked - need to fix prose for Dream Crystals
         first-time player is likely to visit cross first.
         don&#39;t want them stuck here. but any other time,
         the link outward to room is weird --&gt;
-    &lt;&lt;cv-ignore n1_studyViewed&gt;&gt; /* trivial */
     &lt;&lt;if $n1_studyViewed&gt;&gt;
         room.
     &lt;&lt;else&gt;&gt;
@@ -13877,7 +13895,10 @@ TODO gravAsked - need to fix prose for Dream Crystals
 ?P
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if _struggle&gt;&gt;
-        &lt;&lt;include [[n2b/F Struggle Action]]&gt;&gt;
+        &lt;!-- other struggle options require candleHorny, which is Horny Cross --&gt;
+        &lt;&lt;mtl  [[n2b/D Struggle Normal]]&gt;&gt;
+            Struggle on the cross.
+        &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;actions-get&gt;&gt;
     &lt;li&gt;$t_afterLook&lt;/li&gt;
@@ -14612,7 +14633,7 @@ Nero think of something more sensual than meat.
 &lt;&lt;/if&gt;&gt;
 
 ?P
-... Nero&#39;s getting distracted again. He shakes his head to focus.
+Nero&#39;s getting distracted again. He shakes his head to focus.
 
 &lt;&lt;if $n2_ivexGone&gt;&gt;
     &lt;!-- nero has already recognized the candle --&gt;
@@ -17485,7 +17506,7 @@ casts endgame.
 
 ?P
 [[Continue|n9a/D Tamed]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="461" name="n2b/D Struggle Normal" tags="" position="4950,6125" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="461" name="n2b/D Struggle Normal" tags="" position="5325,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;em-assert !$n1_candleHorny&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -19238,14 +19259,14 @@ Macro.add(&quot;mtl&quot;, {
   tags: [],
   handler: function() {
     const [link, code] = this.args;
-    State.temporary.mtLink = linkName(link);
+    const title = linkTitle(link);
     State.temporary.mtText = String(this.payload[0].contents);
     const body = code == null ? &quot;&quot; : `&lt;&lt;run ${code}&gt;&gt;`;
-    $(this.output).wiki(`&lt;li&gt;&lt;&lt;link _mtText _mtLink&gt;&gt;${body}&lt;&lt;/link&gt;&gt;&lt;/li&gt;`);
+    $(this.output).wiki(`&lt;li&gt;&lt;&lt;link _mtText &quot;${title}&quot;&gt;&gt;${body}&lt;&lt;/link&gt;&gt;&lt;/li&gt;`);
   }
 });
 
-function linkName(link) {
+function linkTitle(link) {
   if (link.isLink) return link.link;
   const str = String(link);
   const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
@@ -19464,7 +19485,7 @@ Macro.add(&quot;n1-no-loop&quot;, {
 });
 
 function recentlyViewed(name) {
-  const limit = State.variables.t_patiencePassage;
+  const limit = VarTrace.untracedGet(&quot;t_patiencePassage&quot;);
   const max = 10;
   for (let i = 1; i &lt; max; i++) {
     const past = State.peek(-i);
