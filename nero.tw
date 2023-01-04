@@ -890,7 +890,7 @@ const VT = window.VarTrace || (window.VarTrace = {});
 
 CV.ignore = new Set();
 
-Macro.add("expand-ignore", {
+Macro.add("cv-ignore", {
   handler: function() {
     for (let vn of this.args) {
       vn = vn.replace(/^\$/, '');
@@ -899,53 +899,62 @@ Macro.add("expand-ignore", {
   }
 });
 
-CV.render = function() {
+$(document).on(":passagestart", () => {
   CV.ignore = new Set();
+});
+
+CV.render = function() {
   const beginState = clone(State.current.variables);
   const nowState = clone(State.active.variables);
   const nowTemps = clone(State.temporary);
 
-  const zeroState = clone(beginState);
-  for (const k of Object.keys(zeroState)) {
-    if (typeof zeroState[k] === "boolean") {
-      zeroState[k] = false;
-    } else {
+  for (const k of Object.keys(beginState)) {
+    if (beginState[k] != null && typeof beginState[k] !== "boolean") {
       CV.ignore.add(k);
     }
   }
   for (const k of Object.keys(nowState)) {
-    if (typeof nowState[k] !== "boolean" && ET.vars[k] == null) {
+    if (nowState[k] != null && typeof nowState[k] !== "boolean") {
       CV.ignore.add(k);
     }
   }
 
-  let varsUsed = [];
-  // vTried is vars that have both zero and nonzero values in tried states
-  const vTried = new Set();
   const done = [];
-  const todo = [zeroState];
 
-  const header = Story.get("PassageHeader").text;
+  let varsUsed = [...VT.ctx.wasRead].filter(vn => !CV.ignore.has(vn));
+
+  const todo = [beginState];
+  const addRecursive = (state, vp) => {
+    if (varsUsed.length <= vp) return;
+    const vn = varsUsed[vp];
+    const flipped = clone(state);
+    flipped[vn] = !flipped[vn];
+    todo.push(flipped);
+    addRecursive(state, vp + 1);
+    addRecursive(flipped, vp + 1);
+  };
+  addRecursive(beginState, 0);
+
+  // At this point, todo has the current state, and all states where
+  // any boolean-ish read var is flipped.
+
   const text = Story.get(State.passage).text;
   const renders = [];
   const messages = [];
 
-  // should use deterministic RNG, but functions like choice()
-  // capture Math.random and can't be intercepted easily.
+  // TODO deterministic RNG, need to avoid either() and Array extensions
 
   const tryOne = () => {
     const state = todo.pop();
     done.push(state);
-    console.log("Trying", objSelect(state, varsUsed));
+    console.log("Checking", objSelect(state, varsUsed));
     State.active.variables = clone(state);
     State.clearTemporary();
-    if (!EM.runsWithoutFail(Nero.constraints)) return;
-    console.log("Trying", state);
+    if (!EM.runsWithoutFail(Nero.checkConstraints)) return;
     const output = $("<div class=passage>");
     VT.start();
     const ok = EM.runsWithoutFail(() => output.wiki(text));
     VT.stop();
-    varsUsed = varsUsed.filter(vn => !CV.ignore.has(vn));
 
     const consider = [...VT.ctx.wasRead];
     consider.forEach(vn => {
@@ -956,24 +965,12 @@ CV.render = function() {
         CV.ignore.add(vn);
         return;
       }
-      if (ET.vars[vn] != null) {
+      if (state[vn] == null || typeof state[vn] === "boolean") {
         varsUsed.push(vn);
-        // we've just rendered null or 0, add the rest of the enum values.
-        const start = state[vn] == null ? 0 : 1;
-        const end = ET.enums[ET.vars[vn]].length;
+        // add the inverse value to the todo list
         [...done, ...todo].forEach(st1 => {
-          for (let i = start; i < end; i++) {
-            const st2 = clone(st1);
-            st2[vn] = i;
-            todo.push(st2);
-          }
-        });
-      } else if (state[vn] == null || state[vn] === false) {
-        varsUsed.push(vn);
-        [...done, ...todo].forEach(st1 => {
-          // we've just rendered false/null, add true
           const st2 = clone(st1);
-          st2[vn] = true;
+          st2[vn] = !st2[vn];
           todo.push(st2);
         });
       }
@@ -1037,7 +1034,7 @@ CV.render = function() {
     for (const k of Object.keys(nowTemps)) {
       State.temporary[k] = nowTemps[k];
     }
-    highlightDiffs();
+    // highlightDiffs();
   };
 
   let tries = 0;
@@ -1059,7 +1056,7 @@ CV.render = function() {
 
 function objSelect(obj, keys) {
   const result = {};
-  keys.forEach(k => result[k] = obj[k] ?? null);
+  keys.forEach(k => result[k] = obj[k] ?? false);
   return result;
 }
 
