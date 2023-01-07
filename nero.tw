@@ -3082,6 +3082,17 @@ Nero.flags = {
       other: "",
     },
   },
+  
+  n1_gravAsked: {
+    implies: {
+      n1_gravViewed: true,
+    }
+  },
+  n1_gravViewed: {
+    implies: {
+      n1_gravNoticed: true,
+    }
+  },
 
   // true if Ivex is intrigued and suggestible
   t_ivexReceptive: {
@@ -3122,6 +3133,7 @@ Nero.flags = {
   n1_mageSight: {
     implies: {
       n1_naked: true,
+      n2_deskBurned: false,
       n2_extraHorny: false,
       n2_mirrorBroken: false,
     },
@@ -3207,6 +3219,13 @@ Nero.flags = {
       n8_archive: "",
       n9_ending: "",
       other: "",
+    },
+  },
+
+  // true after easy escape
+  n2_deskBurned: {
+    implies: {
+      n1_mageSight: false,
     },
   },
 
@@ -3383,16 +3402,18 @@ function checkFlags() {
   const sections = new Set(Object.keys(Nero.sections));
   Object.keys(Nero.flags).forEach(x => {
     // check sections
-    sections.forEach(s => {
-      if (!(s in Nero.flags[x].sections)) {
-        console.error(`flag ${x} is missing section ${s}`);
-      }
-    });
-    Object.keys(Nero.flags[x].sections).forEach(s => {
-      if (!sections.has(s)) {
-        console.error(`flag ${x} has unknown section ${s}`);
-      }
-    });
+    if (Nero.flags[x].sections != null) {
+      sections.forEach(s => {
+        if (!(s in Nero.flags[x].sections)) {
+          console.error(`flag ${x} is missing section ${s}`);
+        }
+      });
+      Object.keys(Nero.flags[x].sections).forEach(s => {
+        if (!sections.has(s)) {
+          console.error(`flag ${x} has unknown section ${s}`);
+        }
+      });
+    }
     // check contrapositive
     Object.keys(Nero.flags[x].implies).forEach(y => {
       if (Nero.flags[x].implies[y] === false) {
@@ -3415,7 +3436,10 @@ Nero.getFlagExpectation = (vname) => {
 
 Nero.getNotable = (here) => {
   const s = Nero.getSection(here);
-  return Object.keys(Nero.flags).filter(f => Nero.flags[f].sections[s] === "notable");
+  return Object.keys(Nero.flags).filter(f => {
+    const sect = Nero.flags[f].sections;
+    return sect != null && sect === "notable";
+  });
 };
 
 Nero.enumImplies = {
@@ -15349,17 +15373,14 @@ T.toTry.sort();
 <</nobr>>\
 
 
-:: n1x/D Cross {"position":"6125,5225","size":"100,100"}
+:: n1x/F Cross {"position":"6125,5225","size":"100,100"}
 <<nobr>>
 <<cv-ignore n1_studyViewed>> /* doesn't change text */
 <<cv-try n1_magicPhase
     `MP_beforeCast` `MP_triedMagic` `MP_contact` `MP_broken`>>
-    
-XXX link dream crystals and gravity crystals.
-XXX decide on description of crystals before they're examined
-XXX adjust text for dream crystals.
 
 <<if $n2_free>>
+    <<em-assert !!$n1_mageSight !== !!$n2_deskBurned>>
     The cross that had trapped the wolf is an imposing piece of furniture.
     Much like the
     <<if $n2_deskBurned>>
@@ -15436,15 +15457,19 @@ XXX adjust text for dream crystals.
         <<else>>
             The
         <</if>>
-        power requirements of the crystals grows exponentially,
+        power requirement of the crystals grows exponentially over time,
         and their spells are likely to collapse any moment now.
     <<else>>
-        There is however an interesting arrangement of
+        There is however an interesting
+        <<if $n1_mageSight>>
+            exotic energy mesh with
+        <<else>>
+            arrangement of
+        <</if>>
         <<n1-no-loop [[glowing crystals|n1x/F Grav]]>>
-        behind the cross. Perhaps the crystals are what's
-        holding the cross in place?
+        floating behind the cross, and that's probably what holds
+        it in place.
     <</if>>
-    ?P
 
 <<else>>
     The wolf cannot see much of the cross that's holding
@@ -15470,7 +15495,6 @@ XXX adjust text for dream crystals.
         Mage-sight unfortunately does not grant
         the ability to see in directions that his eyes cannot.
     <</if>>
-    ?P
 <</if>>
 
 <<if $n2_free>>
@@ -15478,8 +15502,24 @@ XXX adjust text for dream crystals.
 
 <<elseif MP_beforeCast === $n1_magicPhase>>
     <<em-assert !$n1_mageSight>>
-    Well, however the cross is installed,
-    escape from the leather bonds will be easy.
+    ?P
+    <<if $n1_gravAsked>>
+        Doubtful. The wolf would like to be far away if the crystals implode.
+        Fortunately, escape from the leather bonds will be easy.
+    <<elseif $n1_gravViewed>>
+        Still, "any moment now" is an unpredictable
+        time in the future. The wolf prefers a little more control
+        over his situation. Fortunately, escaping the leather bonds
+        will be easy.
+    <<elseif $n1_gravNoticed>>
+        Nero catches himself becoming distracted by the shiny crystals.
+        This is not the time to indulge his intellectual curiosity.
+        The wolf needs to focus
+        on escaping from the leather bonds, which will be easy.
+    <<else>>
+        Well, however the cross is installed,
+        escape from the leather bonds will be easy.
+    <</if>>
     <<if $n2_ivexGone>>
         Especially now that Nero can cast spells without Ivex's interference.
     <<else>>
@@ -15488,6 +15528,7 @@ XXX adjust text for dream crystals.
     <</if>>
 
 <<elseif $n1_gravAsked>>
+    ?P
     <<if $n2_ivexGone>>
         Now that Ivex is gone,
         it might be possible for Nero to apply enough force to
@@ -15506,34 +15547,26 @@ XXX adjust text for dream crystals.
         to apply sufficient force
         without interference from the panther mage.
     <</if>>
-
-<<elseif $n1_gravNoticed>>
-    XXX dream-crystals adjust text here, maybe add gravViewed section
+    
+<<elseif $n1_gravViewed>>
+    ?P
     <<if $n2_ivexGone>>
-        Too bad Nero can't ask Ivex about it.
-        The wolf will have to experiment as best he can,
-        from his bound position on the cross.
-        A little bit of struggling might reveal useful information about
-        the anchoring of the cross.
+        And Nero can accelerate that process by applying his
+        physical strength, no matter how slight,
+        to the task of increasing the strain on the crystals!
         <<set _struggle = true>>
     <<else>>
-        <<if $n1_subby>>
-            Nero is quite curious about the panther mage's powers.
-            Perhaps Ivex would explain them a bit if he were asked
-            a respectful question.
-        <<elseif $t_ivexReceptive>>
-            That seems like useful information to know.
-            Perhaps Ivex can be persuaded to discuss the
-            relationship between the glowing crystals and the cross.
-        <<else>>
-            That seems like a useful question to answer.
-            Nero thinks he can trick Ivex into revealing some
-            information about the glowing crystals behind the cross.
-        <</if>>
-        <<actions-add [[Ask Ivex about the crystals.|n1x/F Grav Ask 1]]>>
+        And perhaps there's some way that Nero can accelerate that process.
+        Difficult to do while Ivex is watching...
     <</if>>
 
+<<elseif $n1_gravNoticed>>
+    ?P
+    Since magic seems unavailable to the wolf, perhaps it's worthwhile
+    to study the details of the contraption keeping him bound.
+
 <<else>>
+    ?P
     Well, however the cross is installed,
     <<if $n2_ivexGone>>
         Ivex's departure means
@@ -15559,6 +15592,7 @@ XXX adjust text for dream crystals.
 ?P
 <ul class="actions">
     <<if _struggle>>
+        <<em-assert $n2_ivexGone>>
         <!-- other struggle options require candleHorny, which is Horny Cross -->
         <<mtl  [[n2b/D Struggle Normal]]>>
             Struggle on the cross.
@@ -15598,7 +15632,7 @@ XXX adjust text for dream crystals.
     the furnishings of their mind. If that's true in this case, Ivex's mind is
 <</if>>
 pompous, dirty, and dominated by the
-<<n1-no-loop [[wooden cross|n1x/D Cross]]>>
+<<n1-no-loop [[wooden cross|n1x/F Cross]]>>
 <<if $n2_free>>
     that's fallen over and leaning on the
     <<if $n2_deskBurned>>
@@ -15676,6 +15710,7 @@ pompous, dirty, and dominated by the
 <<nobr>>
 <<vi-always n2_free false>>
 <<em-assert $n1_gravNoticed>>
+<<em-assert !$n1_gravAsked || $n1_gravViewed>>
 
 <<cv-try n1_magicPhase
     `MP_beforeCast` `MP_mageSight` `MP_contact` `MP_broken`>>
@@ -15684,7 +15719,7 @@ pompous, dirty, and dominated by the
     In the reflection of the
     <<n1-no-loop [[small mirror|n1x/F Mirror]]>> on the desk,
     Nero sees that the
-    <<n1-no-loop [[wooden cross|n1x/D Cross]]>>
+    <<n1-no-loop [[wooden cross|n1x/F Cross]]>>
     is not physically attached to anything in this room.
     Instead, there's an arrangement of glowing crystals
     floating behind the
@@ -15746,11 +15781,11 @@ pompous, dirty, and dominated by the
 
 <<else>>
     The crystals holding the
-    <<n1-no-loop [[wooden cross|n1x/D Cross]]>>
+    <<n1-no-loop [[wooden cross|n1x/F Cross]]>>
     in place are not
     [[Dream Crystals|n1x/F Dream Crystals 1]],
     as Nero had originally thought.
-    Rather, they're [[Gravity Crystals|n1x/F Gravity Crystals]]
+    Rather, they're [[Gravity Crystals|n1x/F Gravity Crystals 1]]
 
     <<if !$n1_mageSight>>
         in a configuration that is probably less stable than
@@ -15797,6 +15832,7 @@ pompous, dirty, and dominated by the
 
 <<set $n1_gravViewed = true>>
 <<set $n1_mageSight && ($n1_gravViewedMageSight = true)>>
+<<set $t_returnDream = State.passage>>
 <<set $t_returnGrav = State.passage>>
 <</nobr>>
 
@@ -17322,11 +17358,11 @@ if there were anything to magnify other than the clear blue sky.
         that permeates the room.
         Nero does not understand its origin or its purpose.
         From his position, bound on a
-        <<n1-no-loop [[wooden cross|n1x/D Cross]]>>,
+        <<n1-no-loop [[wooden cross|n1x/F Cross]]>>,
         he cannot tell how far the energy extends, or where it ends.
     <<else>>
         From his position, bound on a
-        <<n1-no-loop [[wooden cross|n1x/D Cross]]>>,
+        <<n1-no-loop [[wooden cross|n1x/F Cross]]>>,
         Nero cannot see anything else outside.
     <</if>>
     <<if MP_wantTouch === $n1_magicPhase>>
@@ -17965,7 +18001,7 @@ his situation.
         He's bound
     <</if>>
     with leather restraints to a
-    [[wooden cross|n1x/D Cross]]
+    [[wooden cross|n1x/F Cross]]
     <<if $n1_gravNoticed>>
         that has [[glowing crystals|n1x/F Grav]] behind it,
     <</if>>
@@ -18027,14 +18063,14 @@ his situation.
 <</if>>
 
 <<if $n2_free && !$n1_deskViewed>>
-    The [[wooden cross|n1x/D Cross]]
+    The [[wooden cross|n1x/F Cross]]
     has fallen over and is resting against
     the desk.
 <</if>>
 
 <<if $n1_deskViewed>>
     <<if $n2_free>>
-        The [[wooden cross|n1x/D Cross]]
+        The [[wooden cross|n1x/F Cross]]
         has fallen over and is resting against
         the <<= _desk>>, which has
     <<else>>
@@ -22815,7 +22851,7 @@ wherever they're needed to assist in assembly.
 <</nobr>>
 
 
-:: n1x/F Gravity Crystals {"position":"6125,5575","size":"100,100"}
+:: n1x/F Gravity Crystals 1 {"position":"6125,5575","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -23166,7 +23202,7 @@ formed into any shape that can be imagined.
 <</if>>
 
 ?P
-[[Return|n1x/F Grav]]
+<<link Return $t_returnDream>><</link>>
 <</nobr>>
 
 
@@ -23300,7 +23336,7 @@ that caused the crystals to disappear, taking his genitals with them.
 
 <<em-assert !$n1_gravAsked>>
 
-[[Gravity Crystals|n1x/F Gravity Crystals]] are definitely an
+[[Gravity Crystals|n1x/F Gravity Crystals 1]] are definitely an
 inappropriate tool for holding up a bondage cross.
 Nero is professionally appalled.
 He blurts out, "I've never been able to control more than four!
@@ -23321,7 +23357,7 @@ How are you avoiding Rankine Calamity?"
     "You clearly have no understanding of the powers that I can
     wield in my realm. Six crystals are trivially easy for me,
     and I can control many more.
-    You may well come to regret my demonstration of that.
+    You may well come to regret my demonstration of that ability.
     Stop trying to change the subject!"
 <</if>>
 

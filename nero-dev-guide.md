@@ -167,6 +167,9 @@
 - Uninteresting booleans can be excluded with `<<cv-ignore varname>>`.
 - Non-booleans can be tried by declaring the values that should be tried:
   - `<<cv-try varname val1 val2 ...>>`
+- You can also temporarily add a `<<cv-try>>` statement to check just a
+  subset of the states, which is helpful when working on complicated passages.
+  This works for restricting booleans too.
 - Trying a state has two phases:
   - First, a fast consistency check rejects any states that
     should be impossible (eg, free and !naked).
