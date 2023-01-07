@@ -877,9 +877,14 @@ Macro.add("arousalbar", {
 .cv-enum {
   color: #88c;
 }
-.cv-diff {
-  background-color: #510;
-  border-radius: 4px;
+.cv-diff-a {
+  outline: 1px dotted #900;
+}
+.cv-diff-b {
+  outline: 1px dotted #090;
+}
+.cv-diff-a.cv-diff-b {
+  outline: 1px dotted #990;
 }
 .cv-busy {
   background-color: #330;
@@ -983,7 +988,7 @@ CV.render = function() {
   // At this point, todo has the current state, and all states where
   // any boolean-ish read var is flipped.
 
-  const text = Story.get(State.passage).text;
+  const passageText = Story.get(State.passage).text;
   const renders = [];
   const messages = [];
 
@@ -998,7 +1003,8 @@ CV.render = function() {
       const state = todo.pop();
       done.push(state);
       checked++;
-      if (Nero.checkState(state, usedSet, false)) return state;
+      const ok = Nero.checkState(state, usedSet, false);
+      if (ok) return state;
     }
     return null;
   };
@@ -1014,7 +1020,7 @@ CV.render = function() {
 
     const output = $("<div class=passage>");
     VT.start();
-    const ok = EM.runsWithoutFail(() => output.wiki(text));
+    const ok = EM.runsWithoutFail(() => output.wiki(passageText));
     VT.stop();
 
     VT.ctx.wasRead.forEach(vn => {
@@ -1039,11 +1045,10 @@ CV.render = function() {
     if (!ok) return;
 
     const usedThisTime = [...VT.ctx.wasRead].filter(vn => !CV.ignore.has(vn)).sort();
-    const html = output[0].innerHTML;
-    renders[html] ??= {
-      dom: output[0],
-      states: [],
-    };
+    const dom = output[0];
+    const html = dom.innerHTML;
+    const text = dom.innerText;
+    renders[html] ??= { dom, text, states: [] };
     renders[html].states.push(objSelect(state, usedThisTime));
   };
 
@@ -1062,6 +1067,7 @@ CV.render = function() {
       r.states.sort((a, b) => a.json < b.json ? -1 : a.json > b.json ? +1 : 0);
     });
     variants.sort((a, b) => {
+      // sorting by json puts false before true, which is good
       const aj = a.states[0].json;
       const bj = b.states[0].json;
       return aj < bj ? -1 : aj > bj ? +1 : 0;
@@ -1099,7 +1105,7 @@ CV.render = function() {
     for (const k of Object.keys(nowTemps)) {
       State.temporary[k] = nowTemps[k];
     }
-    // highlightDiffs();
+    highlightDiffs();
   };
 
   const tryNext = () => {
@@ -1137,13 +1143,13 @@ function highlightDiffs() {
 
 function diff(x, y) {
   if (x == null) {
-    mark(y);
+    mark(y, 2);
   } else if (y == null) {
-    mark(x);
+    mark(x, 1);
   } else if (x.nodeType !== y.nodeType) {
-    mark(x), mark(y);
+    mark(x, 1), mark(y, 2);
   } else if (x.nodeType === Node.TEXT_NODE && x.nodeValue !== y.nodeValue) {
-    mark(x), mark(y);
+    mark(x, 1), mark(y, 2);
   } else {
     // dumb comparison that mostly works because of sugarcube debug annotations
     let i = 0;
@@ -1151,17 +1157,17 @@ function diff(x, y) {
       diff(x.childNodes[i], y.childNodes[i]);
     }
     for (; i < y.childNodes.length; i++) {
-      mark(y.childNodes[i]);
+      mark(y.childNodes[i], 2);
     }
   }
 }
 
-function mark(node) {
+function mark(node, c) {
   if (node != null && node.nodeType != Node.ELEMENT_NODE) {
     node = node.parentElement;
   }
   if (node != null) {
-    $(node).addClass("ev-diff");
+    $(node).addClass(c === 1 ? "cv-diff-a" : "cv-diff-b");
   }
 }
 <</script>>
@@ -1670,12 +1676,12 @@ Macro.add("meta-ending", {
   }
 
   #random-walk a {
-    background-color: #eee;
+    background-color: #fff;
     border: 1px solid transparent;
     border-radius: 4px;
     color: #000;
     cursor: pointer;
-    opacity: 0.3;
+    opacity: 0.1;
     padding: 2px 4px;
     text-align: center;
   }
@@ -2517,7 +2523,7 @@ varInfoSetup();
 :: Init 3 Passage Notes [inclusion] {"position":"2000,800","size":"100,100"}
 <<append head>><style>
   #notes-button {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: #fff;
     border: 1px solid transparent;
     border-radius: 4px;
     color: #000;
@@ -2526,7 +2532,7 @@ varInfoSetup();
     flex-direction: column;
     font-size: 14px;
     gap: 4px;
-    opacity: 0.8;
+    opacity: 0.1;
     padding: 2px 4px;
     position: fixed;
     right: 4px;
@@ -2540,8 +2546,7 @@ varInfoSetup();
   #notes-button.notes-non-zero {
     border-color: #fff;
   }
-  .notes-non-zero #notes-count {
-    color: #fff;
+  #notes-button.notes-non-zero #notes-count {
     font-weight: bold;
   }
   #notes-button:hover {
@@ -2554,9 +2559,12 @@ varInfoSetup();
     content: "\e801\0020";
     font-family: tme-fa-icons;
   }
-  .notes-has-note #notes-line-2::before {
-    color: #cc0;
+  #notes-button.notes-has-note #notes-line-2::before {
+    color: #000;
     content: "\e800\0020";
+  }
+  #notes-button.notes-has-note:hover #notes-line-2::before {
+    color: #cc0;
   }
   .notes-buttons button {
     background-color: #000;
@@ -3546,7 +3554,7 @@ const VT = VarTrace;
 Nero.checkState = (state, used, interactive) => {
   for (const x of Object.keys(Nero.flags)) {
     if (!state[x]) continue;
-    if (interactive && !used.has(x)) continue;
+    if (used && !used.has(x)) continue;
     for (const y of Object.keys(Nero.flags[x].implies)) {
       if (used && !used.has(y)) continue;
       const val = state[y] == null ? false : state[y];
@@ -3568,7 +3576,7 @@ Nero.checkState = (state, used, interactive) => {
       EM.fail(`${x} === ${sval} should be impossible`);
       continue;
     }
-    if (interactive && !used.has(x)) continue;
+    if (used && !used.has(x)) continue;
     for (const y of Object.keys(rules)) {
       if (used && !used.has(y)) continue;
       const val = state[y] == null ? false : state[y];
@@ -15341,7 +15349,7 @@ T.toTry.sort();
 <</nobr>>\
 
 
-:: n1x/D Cross {"position":"6200,5350","size":"100,100"}
+:: n1x/D Cross {"position":"6150,5250","size":"100,100"}
 <<nobr>>
 <<cv-ignore n1_studyViewed>> /* doesn't change text */
 <<cv-try n1_magicPhase
@@ -15664,65 +15672,64 @@ pompous, dirty, and dominated by the
 <</nobr>>
 
 
-:: n1x/F Grav {"position":"6300,5500","size":"100,100"}
+:: n1x/F Grav {"position":"6300,5425","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<em-assert $n1_gravNoticed>>
 
-<<if $n1_gravAsked>>
-    <<vi-ignore n2_ivexGone>>
-    
-    The crystals holding the wooden cross in place are not
-    [[Dream Crystals|n1x/F Dream Crystals 1]],
-    as Nero had originally thought.
-    Rather, they're [[Gravity Crystals|n1x/D Gravity Crystals]]
-    in a dangerously unstable configuration.
-    ?P
-    As a professional mage, Nero is quite appalled that
-    Ivex was completely unaware of the hazards
-    inherent in his casual use of the crystals.
-    But as a captive in Ivex's lair,
-    Nero is exhilirated by the panther's obliviousness and stupidity.
-    The instability of the crystals is a flaw that Nero might be able to exploit!
-    
-<<else>>
+<<cv-try n1_magicPhase
+    `MP_beforeCast` `MP_mageSight` `MP_contact` `MP_broken`>>
 
+<<if !$n1_gravAsked>>
     In the reflection of the
     <<n1-no-loop [[small mirror|n1x/F Mirror]]>> on the desk,
     Nero sees that the
     <<n1-no-loop [[wooden cross|n1x/D Cross]]>>
-    does not seem to be physically attached
-    to anything in this room.
-    But there's
-    <<if $n1_mageSight>>
-         a web of exotic energy connecting
+    is not physically attached to anything in this room.
+    Instead, there's an arrangement of glowing crystals
+    floating behind the
+    <<if !$n1_mageSight>>
+        cross.
+    <<else>>
+        cross, and a web of exotic energy connects them all together.
     <</if>>
-    an arrangement of glowing crystals that are floating behind the cross.
-    The crystals might be what's holding the cross in place.
 
     ?P
-    If that <em>is</em> the case, it's an astonishingly extravagant
-    use of magic! [[Dream Crystals|n1x/F Dream Crystals 1]] do often
-    get used to hold materials temporarily in place during complicated
-    construction projects, and they certainly
-    <em>could</em> be used to hold up a bondage cross.
+    <<if !$n1_gravViewed>>
+        This is an astonishingly extravagant use of magic!
+        [[Dream Crystals|n1x/F Dream Crystals 1]] <em>do</em>
+        get used to hold materials temporarily in place during difficult
+        construction projects.
+        And they certainly <em>can</em> be used to hold up a bondage cross.
+    <<else>>
+        Nero is professionally appalled.
+        [[Dream Crystals|n1x/F Dream Crystals 1]] certainly <em>can</em>
+        be used to hold up a bondage cross.
+    <</if>>
     But the power consumed by a Dream Crystal increases exponentially
     the longer it remains active.
     And to use <em>six</em> of them when one would be enough?
 
     ?P
-    <<if $n2_ivexGone>>
-        Nero wonders if he should have probed Ivex about the crystals.
-    <<else>>
+    <<if !$n2_ivexGone>>
         Nero wonders if he should probe Ivex about the crystals.
-        <<actions-add [[Probe Ivex about the Dream Crystals.|n1x/D Grav Ask]]>>
+        <<actions-add [[Ask Ivex about the Dream Crystals.|n1x/D Grav Ask]]>>
+    <<elseif !$n1_gravViewed>>
+        Nero wishes he could probe Ivex about the crystals.
+    <<else>>
+        Nero wonders if he should have probed Ivex about the crystals.
     <</if>>
-    
     Maybe the panther is unaware of the growing power requirements?
-    But the increased energy drain should have been obvious within minutes.
+    But the increased energy drain should have been obvious within minutes...
     Unless the panther's energy source is enormous!
-    
-    <<if $n2_ivexGone>>
+
+    <<if MP_beforeCast === $n1_magicPhase>>
+        <<vi-ignore n2_ivexGone>>
+        ?P
+        Well, this is all intellectually fascinating, but not particularly useful.
+        Nero reminds himself that he needs to focus on escape.
+
+    <<elseif $n2_ivexGone>>
         ?P
         Still, any single power source, no matter how enormous,
         will eventually fail to satisfy the growing hunger of the
@@ -15730,12 +15737,56 @@ pompous, dirty, and dominated by the
         collapse will always happen much more quickly than
         naive intuition would expect.
         ?P
-        All Nero has to do is wait for the inevitable consequence
+        All Nero has to do is wait for the inevitable consequences
         of mathematics, which should not take long at all. 
-        And perhaps he can help speed the
-        process by increasing the strain on the crystals somehow.
+        And perhaps he can speed the
+        process by increasing the strain on the crystals.
+        <<actions-add [[Struggle on the cross.|n2b/D Struggle Normal]]>>
     <</if>>
 
+<<else>>
+    The crystals holding the
+    <<n1-no-loop [[wooden cross|n1x/D Cross]]>>
+    in place are not
+    [[Dream Crystals|n1x/F Dream Crystals 1]],
+    as Nero had originally thought.
+    Rather, they're [[Gravity Crystals|n1x/F Gravity Crystals]]
+
+    <<if !$n1_mageSight>>
+        in a configuration that is probably less stable than
+        the panther mage
+        <<= $n2_ivexGone ? "seemed to think" : "believes">>
+        it is.
+        ?P
+        <<if MP_beforeCast === $n1_magicPhase>>
+            Nero had better escape before he gets injured by that
+            impending disaster!
+        <<else>>
+            Perhaps Ivex's ignorance of the problem has led him to
+            create a structure with a flaw that Nero can exploit.
+            The wolf will need to examine the Gravity Crystal power flows.
+            His magic is still depleted from his failed spell,
+            but he does have enough energy to cast mage-sight.
+            <<actions-add [[Cast mage-sight.|n1s/F Cast Sight]]>>
+        <</if>>
+
+    <<else>>
+        in what's clearly a dangerously unstable configuration.
+        The energy flows between them are immense!
+        ?P
+        As a professional mage, Nero is quite appalled that Ivex
+        <<= $n2_ivexGone ? "seemed" : "is">>
+        completely unaware of the hazards
+        inherent in his thoughtless use of the crystals.
+        But as a captive in Ivex's lair,
+        Nero is exhilirated by the panther's stupidity.
+        The instability of the crystals is a flaw that Nero might be able to exploit!
+        <<if !$n2_ivexGone>>
+            He just needs to find a way to do it without Ivex noticing...
+        <<elseif $n2_ivexGone>>
+            <<actions-add [[Struggle on the cross.|n2b/D Struggle Normal]]>>
+        <</if>>
+    <</if>>
 <</if>>
 
 ?P
@@ -15745,9 +15796,7 @@ pompous, dirty, and dominated by the
 </ul>
 
 <<set $n1_gravViewed = true>>
-<<if $n1_mageSight>>
-    <<set $n1_gravViewedMageSight = true>>
-<</if>>
+<<set $n1_mageSight && ($n1_gravViewedMageSight = true)>>
 <</nobr>>
 
 
@@ -17453,7 +17502,7 @@ TODO candleLit-mask.
 <</nobr>>
 
 
-:: n1x/D Grav Ask {"position":"6125,5500","size":"100,100"}
+:: n1x/D Grav Ask {"position":"6125,5400","size":"100,100"}
 <<nobr>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
@@ -17955,13 +18004,7 @@ his situation.
     with leather restraints to a
     [[wooden cross|n1x/D Cross]]
     <<if $n1_gravNoticed>>
-        that has
-        <<if $n1_gravAsked>>
-            [[Gravity Crystals|n1x/F Grav]]
-        <<else>>
-            [[glowing crystals|n1x/F Grav]]
-        <</if>>
-        behind it,
+        that has [[glowing crystals|n1x/F Grav]] behind it,
     <</if>>
     <<if !$n1_studyViewed>>
         in what looks like a [[mage's study|n1x/F Study]].
@@ -21893,14 +21936,14 @@ Macro.add("return-block", {
 <<append head>><style>
 
 #log-button {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: #fff;
     border: 1px solid transparent;
     border-radius: 4px;
     color: #000;
     cursor: pointer;
     font-size: 18px;
     min-width: 2em;
-    opacity: 0.8;
+    opacity: 0.1;
     padding: 2px 4px;
     position: fixed;
     right: 4px;
@@ -22767,7 +22810,7 @@ raises the tip of the crop high behind his head, preparing to strike...
 <</nobr>>
 
 
-:: n1x/F Dream Crystals 1 {"position":"6350,5625","size":"100,100"}
+:: n1x/F Dream Crystals 1 {"position":"6375,5650","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -22809,7 +22852,7 @@ wherever they're needed to assist in assembly.
 <</nobr>>
 
 
-:: n1x/D Gravity Crystals {"position":"6125,5625","size":"100,100"}
+:: n1x/F Gravity Crystals {"position":"6125,5575","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -22818,41 +22861,44 @@ wherever they're needed to assist in assembly.
 Gravity Crystals, unlike Dream Crystals, have little practical use beyond
 carnival tricks.
 Despite the name, their power has nothing to do with gravity.
-They're a simple application of the telekinetic energy field,
+They're a simple application of telekinetic energy fields,
 bound to a convenient crystal substrate.
 
 ?P
-In this modern age, telekinesis is no longer an eerie mystery.
-It's become a commonplace commercial service.
-So when Kelvin the Elder, infamous fox mage,
-debuted the world's first Gravity Crystal,
-he felt that a name such as "Telekinetic Crystal"
-was not sufficiently evocative for the invention.
-He reached for the exotic and newly discovered "gravity",
-a force that is still poorly understood today.
-Using the word "Gravity" on posters attracted more attention
-than the alternatives he tried.
-And thus, Gravity Crystals were born.
-?P
+In this modern age, telekinesis is a commonplace magic service,
+not an eerie mystery.
+So when the infamous fox mage Kelvin the Elder
+introduced the world to the first telekinetic crystal,
+he felt that the name "Telekinetic Crystal"
+was not intriguing enough for the invention.
+He reached for the exotic and found the word "Gravity",
+a mysterious force that is still poorly understood today.
+The word "Gravity" on his posters attracted more attention
+than the alternatives the fox mage tried.
+And thus, "Gravity Crystals" were born.
 
-Traditional telekinesis requires rigorous mental discipline to
-apply to tasks other than rampant destruction.
+?P
+Traditional telekinesis requires intensive training
+to use it for tasks other than random destruction.
 Gravity Crystals are different. Their telekinetic
-ability is limited to a few simple actions in close proximity to
-the crystal. But they require very little training. Even novices
-with a tiny amount of untrained magic power can use
-an inexpensive Gravity Crystal to affix a notice to a wall.
-?P
-
-XXX
-ivex's crystals are large, which is fine.
-crystals in close proximity to each other are unstable,
-tending to attract or repel each other, depending.
-you can prevent that with more energy, so that's also ok, up to a point.
-
+ability is quite limited: a crystal can levitate itself,
+and sometimes pull or push some matter in close proximity.
+But Gravity Crystals require very little training to use.
+Even novices
+with a minuscule amount of raw magic power can use
+a crystal to affix a notice to a wall.
+Not that anyone would do that, of course,
+since inexpensive nails or glue would also suffice.
 
 ?P
-[[Return|n1x/F Grav]]
+Ivex's crystals are much more powerful than is typical,
+since they're able to hold more than paper.
+
+?P
+That isn't the problem.
+
+?P
+[[Continue|n1x/F Gravity Crystals 2]]
 <</nobr>>
 
 
@@ -22885,7 +22931,7 @@ nero completely thrown off his game
 <</nobr>>
 
 
-:: n1x/F Kelvin 2 {"position":"6150,5900","size":"100,100"}
+:: n1x/F Kelvin 2 {"position":"6150,5925","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -22933,7 +22979,7 @@ The molten gold did not behave quite as neatly.
 <</nobr>>
 
 
-:: n1x/F Kelvin 3 {"position":"6150,6000","size":"100,100"}
+:: n1x/F Kelvin 3 {"position":"6150,6025","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -22972,7 +23018,7 @@ floating in the air above them.
 <</nobr>>
 
 
-:: n1x/F Kelvin 4 {"position":"6250,5800","size":"100,100"}
+:: n1x/F Kelvin 4 {"position":"6250,5825","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -23000,7 +23046,7 @@ crushing them both into the ground beneath.
 <</nobr>>
 
 
-:: n1x/F Kelvin 5 {"position":"6250,5900","size":"100,100"}
+:: n1x/F Kelvin 5 {"position":"6250,5925","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -23034,7 +23080,7 @@ But the lion emperor Clothos was not so easily pleased.
 <</nobr>>
 
 
-:: n1x/F Kelvin 6 {"position":"6250,6000","size":"100,100"}
+:: n1x/F Kelvin 6 {"position":"6250,6025","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -23068,7 +23114,7 @@ gigantic golden footpaw was created in the first place.
 <</nobr>>
 
 
-:: n1x/F Kelvin 1 {"position":"6150,5800","size":"100,100"}
+:: n1x/F Kelvin 1 {"position":"6150,5825","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -23105,7 +23151,7 @@ Kelvin unexpectedly died from it.
 <</nobr>>
 
 
-:: n1x/F Dream Crystals 2 {"position":"6250,5625","size":"100,100"}
+:: n1x/F Dream Crystals 2 {"position":"6275,5650","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -23161,7 +23207,7 @@ formed into any shape that can be imagined.
 <</nobr>>
 
 
-:: n1x/F Kelvin 7 {"position":"6350,6000","size":"100,100"}
+:: n1x/F Kelvin 7 {"position":"6350,6025","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_free>>
@@ -23225,6 +23271,62 @@ Ivex says, "We'll have to continue this friendly discussion a little later. I'll
 
 ?P
 [[Continue|n2a/F Start]]
+<</nobr>>
+
+
+:: n1x/F Gravity Crystals 2 {"position":"6125,5675","size":"100,100"}
+<<nobr>>
+<<vi-ignore n1_mageSight>>
+<<vi-ignore n2_free>>
+<<vi-ignore n2_ivexGone>>
+
+The <em>problem</em> with Ivex's use of Gravity Crystals
+is a phenomenon known as Rankine Calamity,
+named after the wolf mage who first experienced it.
+
+?P
+Gravity Crystals in close proximity will naturally
+attract each other with <em>noumenal</em> force.
+This tendency can be counteracted
+by a small adjustment to their tensors so that their telekinetic
+projections help keep them apart.
+For two crystals, the adjustment is simple,
+but the complexity of the task increases geometrically
+with each additional crystal, since each crystal needs
+additional projections to hold it apart from every other one.
+
+?P
+Rankine's Calamity happened during a demonstration
+of four crystals that he was directing in a dance in front of him.
+Four crystals is twelve projections in a delicate
+balance that continually shifts as the crystals and the
+objects near them move about.
+Rankine had practiced this feat many times,
+enough to make it seem easy.
+And perhaps that was his fatal mistake.
+
+?P
+In middle of this demonstration, Kelvin the Elder, on a whim,
+threw a fifth crystal toward the wolf's tail.
+The well-practiced task of balancing twelve projections
+suddenly became a problem of balancing twenty.
+
+?P
+Rankine frantically commuted tensors as quickly as he could.
+And he almost had it.
+He had the five crystals perfectly controlled for a moment.
+But two of the twenty projections were poorly aligned,
+and the slippage altered the balance enough for the
+whole web to collapse.
+
+?P
+All five crystals suddenly flew rapidly toward each other.
+The one near his tail went straight up Rankine's ass.
+The other four collided at his crotch, creating an implosion
+that caused the crystals to disappear, taking his genitals with them.
+
+?P
+[[Return|n1x/F Grav]]
 <</nobr>>
 
 

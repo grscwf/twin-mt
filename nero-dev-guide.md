@@ -144,6 +144,13 @@
   that might be possible during play.
 - This can take several seconds. During computation, the button will show
   how many states it has left to consider.
+- The variants are shown with approximate outlining of diffs.
+  - Red outline is text that is different from the next variant.
+  - Green outline is text that is different from the previous variant.
+  - Yellow outline is text that is different from both next and previous.
+  - The diff is not minimal. It does a cheap comparison of dom structure
+    that happens to work most of the time. because of the way SugarCube adds
+    debug info when rendering in debug mode.
 - The variants shown will have live links,
   but clicking on those links will probably not
   have a sensible result. Compute-variants does
