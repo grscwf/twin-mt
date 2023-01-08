@@ -200,7 +200,9 @@
   - If the passage checks `n2_free`,
     include both `MP_contact` and `MP_broken`.
 - For testing `n2_magicPhaseBroken` variants:
-  - Include `null`, and any values tested in the passage.
+  - Include `null`, `MP_mageSight`, and any values tested in the passage.
+  - Note, these values are impossible: `MP_beforeCast`, `MP_triedMagic`,
+    `MP_wantPassword`
 
 ## Story structure - Passages
 - All of Nero's passages start with a codeword like `n1a/F`.

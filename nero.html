@@ -977,7 +977,15 @@ CV.render = function() {
   const done = [];
 
   const usedSet = new Set(VT.ctx.wasRead);
+
   CV.ignore.forEach(vn =&gt; usedSet.delete(vn));
+
+  usedSet.forEach(vn =&gt; {
+    const exp = Nero.getFlagExpectation(vn);
+    if (exp !== &quot;&quot; &amp;&amp; exp !== &quot;notable&quot; &amp;&amp; !CV.vars[vn]) {
+      CV.vars[vn] = [exp];
+    }
+  });
 
   const todo = [beginState];
 
@@ -1050,8 +1058,8 @@ CV.render = function() {
     VT.ctx.wasRead.forEach(vn =&gt; {
       if (usedSet.has(vn)) return;
       if (CV.ignore.has(vn)) return;
-      if (usedSet.size &gt;= 14) {
-        messages.push(`ignoring var ${vn} (max 14)`);
+      if (usedSet.size &gt;= 15) {
+        messages.push(`ignoring var ${vn} (max 15)`);
         CV.ignore.add(vn);
         return;
       }
@@ -1100,7 +1108,8 @@ CV.render = function() {
     pos.empty();
     const sum = $(&quot;&lt;div id=cv-summary&gt;&quot;).appendTo(pos);
     $(&quot;&lt;div&gt;&quot;).appendTo(sum)
-      .text(`${variants.length} variants, ${checked} states checked, ${tried} states tried`);
+      .text(`${variants.length} variants, ${checked} states checked, ${tried} states tried,
+        ${varsUsed.length} vars`);
     messages.forEach(m =&gt; $(&quot;&lt;div&gt;&quot;).text(m).appendTo(sum));
     for (const variant of variants) {
       pos.append(&quot;&lt;hr&gt;&quot;);
@@ -1133,7 +1142,7 @@ CV.render = function() {
   };
 
   const tryNext = () =&gt; {
-    if (checked &gt;= 130000) {
+    if (checked &gt;= 900000) {
       messages.push(`Stopping at ${checked} states checked`);
       todo.length = 0;
     }
@@ -3169,6 +3178,13 @@ Nero.flags = {
       other: &quot;&quot;,
     },
   },
+  
+  n2_cabinetUnderViewed: {
+    implies: {
+      n1_penguinCoinDropped: true,
+      n2_free: true,
+    }
+  },
 
   // true after easy escape
   n2_deskBurned: {
@@ -3403,31 +3419,48 @@ Nero.enumImplies = {
       n2_magicPhaseBroken: false,
     },
     [MP_mageSight]: {
+      n1_mageSight: true,
       n1_naked: true,
+      n2_free: false,
       n2_magicPhaseBroken: false,
     },
     [MP_wantDevice]: {
+      n1_mageSight: true,
       n1_naked: true,
+      n2_free: false,
       n2_magicPhaseBroken: false,
     },
     [MP_wantName]: {
+      n1_mageSight: true,
       n1_naked: true,
       n2_magicPhaseBroken: false,
     },
     [MP_wantTouch]: {
+      n1_mageSight: true,
       n1_naked: true,
+      n2_free: false,
       n2_magicPhaseBroken: false,
     },
     [MP_wantPassword]: {
+      n1_mageSight: true,
       n1_naked: true,
+      // can&#39;t pass wantTouch without asking about penguin
+      n1_penguinCoinDropped: true,
+      n1_penguinNameKnown: true,
+      n2_free: false,
       n2_magicPhaseBroken: false,
     },
     [MP_onHold]: {
+      n1_mageSight: true,
       n1_naked: true,
+      n2_free: false,
       n2_magicPhaseBroken: false,
     },
     [MP_contact]: {
+      n1_mageSight: true,
       n1_naked: true,
+      n1_penguinCoinDropped: true,
+      n1_penguinNameKnown: true,
       n2_free: true,
       n2_ivexGone: true,
       n2_magicPhaseBroken: false,
@@ -3435,10 +3468,13 @@ Nero.enumImplies = {
       n2_tooClever: true,
     },
     [MP_lockedOut]: {
+      n1_mageSight: true,
       n1_naked: true,
+      n2_free: false,
       n2_magicPhaseBroken: false,
     },
     [MP_broken]: {
+      n1_mageSight: false,
       n1_naked: true,
       n2_extraHorny: true,
       n2_free: true,
@@ -3458,6 +3494,7 @@ Nero.enumImplies = {
       impossible: true,
     },
     [MP_mageSight]: {
+      n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
       n2_extraHorny: true,
@@ -3467,6 +3504,7 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantDevice]: {
+      n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
       n2_extraHorny: true,
@@ -3476,6 +3514,7 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantName]: {
+      n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
       n2_extraHorny: true,
@@ -3485,6 +3524,7 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantTouch]: {
+      n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
       n2_extraHorny: true,
@@ -3502,6 +3542,7 @@ Nero.enumImplies = {
       impossible: true,
     },
     [MP_contact]: {
+      n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
       n2_extraHorny: true,
@@ -10383,7 +10424,9 @@ Ivex speaks. &quot;So let me make a proposal.&quot;
     &quot;Ah, I see the misunderstanding now,&quot; says Nero with a smile.
 &lt;&lt;/if&gt;&gt;
 
-&quot;I wasn&#39;t &lt;em&gt;given&lt;/em&gt; your dossier. I &lt;em&gt;stole&lt;/em&gt; it, from a bounty hunter who was foolish enough to try to capture me on a trading ship. Long story short, I encouraged him into the ocean, a few kilometers from shore.&quot;
+&quot;I wasn&#39;t &lt;em&gt;given&lt;/em&gt; your dossier. I &lt;em&gt;stole&lt;/em&gt; it, from a bounty hunter
+who was foolish enough to try to capture me on a trading ship.
+Long story short, I encouraged him into the ocean, a few kilometers from shore.&quot;
 
 ?P
 &lt;&lt;if $n1_magicPhase &lt; MP_triedMagic&gt;&gt;
@@ -10416,7 +10459,7 @@ The wolf continues. &quot;The ship&#39;s captain was kind enough to let me searc
 &lt;&lt;if $n1_abused&gt;&gt;
     Nero is unsure what Ivex means by that.
     But considering the previous rough treatment of the wolf&#39;s testicles,
-    it seems prudent to agree heartily anyway.
+    it seems prudent to grin heartily anyway.
 &lt;&lt;elseif $n1_naked&gt;&gt;
     Nero gives Ivex a cool smile,
     and tries to project the idea that being bound and naked
@@ -10619,7 +10662,7 @@ Ivex growls, &quot;This is no pretense!&quot;
 Hah, it clearly is. Steering the panther will be easy.
 ?P
 [[Continue|n1cn/F Con Game 2]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="301" name="n1cn/F Reject Collab" tags="big-mood" position="4100,3625" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="301" name="n1cn/F Reject Collab" tags="" position="4100,3625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -10633,7 +10676,7 @@ Hah, it clearly is. Steering the panther will be easy.
 
 &lt;&lt;else&gt;&gt;
     &quot;Would you prefer a 60% share?&quot; asks the wolf.
-    Not that he has invented the collaborative business venture, yet.
+    Not that he has invented the collaborative venture, yet.
     Nero is probing at the panther&#39;s psyche.
     Ivex&#39;s response to the offer, his language of negotiation,
     is information that will help the wolf outwit his captor.
@@ -10644,11 +10687,11 @@ Hah, it clearly is. Steering the panther will be easy.
 The panther&#39;s ears are perked, and he speaks with an intrigued tone.
 &quot;That&#39;s quite a generous concession.&quot;
 &lt;&lt;if $t_ivexNear&gt;&gt;
-    He looks up and down the
+    He looks at the
 &lt;&lt;else&gt;&gt;
     He approaches the
+    &lt;&lt;= $n1_naked ? &quot;naked&quot; : &quot;bound&quot;&gt;&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;= $n1_naked ? &quot;naked&quot; : &quot;bound&quot;&gt;&gt;
 wolf with a greedy glint in his eye.
 
 ?P
@@ -10657,7 +10700,7 @@ wolf&#39;s right arm. &quot;But perhaps you could give me... a little more than 
 
 ?P
 &lt;ul class=actions&gt;
-    &lt;&lt;mtl [[n1cn/D Reject Collab 2]]&gt;&gt;
+    &lt;&lt;mtl [[n1cn/F Reject Collab 2]]&gt;&gt;
         Smile and ask, &quot;What number sounds good to you?&quot;
     &lt;&lt;/mtl&gt;&gt;
 &lt;/ul&gt;
@@ -10694,44 +10737,47 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
-    &quot;I&#39;m wondering if I might recruit you.&quot; XXX needs connective.
+    &quot;I&#39;m wondering if I might recruit you.&quot;
 &lt;&lt;else&gt;&gt;
     &quot;I&#39;m here to recruit you.&quot;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n1_naked&gt;&gt;
-    Nero is acutely aware of how ridiculous that statement sounds
-    when spoken by a bound and naked prisoner.
-    In fact, he&#39;s counting on the absurdity to help sell the story.
-    Nero needs to present himself as relaxed and confident without
-    bravado.
+Nero makes his voice enigmatic and conspiratorial. He&#39;s
+&lt;&lt;= $n1_abused || $n1_naked ? &quot;acutely&quot; : &quot;&quot;&gt;&gt;
+aware of how ridiculous that statement sounds
+when spoken by a bound
+&lt;&lt;= $n1_naked ? &quot;and naked&quot; : &quot;&quot;&gt;&gt;
+prisoner. In fact, he&#39;s counting on the absurdity to help sell the story.
+&lt;&lt;if $n1_abused&gt;&gt;
     ?P
-    If he does it right, a tiny bit of doubt will enter
-    Ivex&#39;s mind. Maybe not even conscious doubt. Ivex should
-    feel a lurking apprehension about whether he really is in
-    control of this situation.
-    ?P
-    And if the panther responds to that anxiety,
-    his actions will reveal &lt;em&gt;what&lt;/em&gt;
-    his anxieties are, which Nero can then exploit.
-&lt;&lt;else&gt;&gt;
-    Nero tries to make the statement enigmatic and conspiratorial.
-    He&#39;s noticed that Ivex has emphasized the idea that
-    this place is &lt;em&gt;his&lt;/em&gt; domain.
-    The insistence suggests a certain
-    anxiety and insecurity in the panther.
-    ?P
-    The question is, what is the source of this insecurity,
-    and how deep does it go?
-    Is Ivex lashing out against a cruel or inadequate father?
-    Does he have a yearning for a leader he can trust?
-    ?P
-    Nero intends to probe the inner workings of the panther&#39;s psyche,
-    and exploit any weakness he can find.
+    It&#39;s a risky gambit.
+    But Nero has been carefully watching and analyzing Ivex&#39;s mannerisms
+    for insight into the panther&#39;s psyche,
+    and it seems likely that a display of weakness from the wolf
+    will just invite further abuse.
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;
+The wolf needs to present himself as relaxed and confident without
+bravado.
 
-[[Continue|n1cn/F Recruit 2]]</tw-passagedata><tw-passagedata pid="304" name="n1cn/F Collab" tags="" position="4600,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
+?P
+If he does it right, a tiny bit of doubt will enter
+the panther&#39;s mind. Maybe not even conscious doubt. Ivex should
+feel a lurking apprehension about whether he really is in
+control of this situation.
+?P
+And if the panther responds to that anxiety,
+his actions will reveal &lt;em&gt;what&lt;/em&gt;
+his anxieties are.
+Perhaps Ivex is lashing out against a cruel or inadequate father.
+Does he have a yearning for a leader he can trust?
+?P
+Nero intends to probe the inner workings of the panther&#39;s psyche,
+and exploit any weakness he can find.
+
+?P
+[[Continue|n1cn/F Recruit 2]]
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="304" name="n1cn/F Collab" tags="" position="4600,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -10984,22 +11030,30 @@ Not that Nero would ever tell that to his
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="308" name="n1cn/F Recruit 2" tags="" position="4175,2300" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic`&gt;&gt;
+
+&lt;&lt;if $t_ivexNear&gt;&gt;
+    Ivex takes a few steps back to look up and down the length of
+    the bound wolf. He
+&lt;&lt;else&gt;&gt;
+    Ivex
+&lt;&lt;/if&gt;&gt;
 &lt;&lt;if MP_beforeCast === $n1_magicPhase&gt;&gt;
-    Ivex snorts. &quot;&lt;em&gt;Recruit&lt;/em&gt; me?
+    snorts. &quot;&lt;em&gt;Recruit&lt;/em&gt; me?
     That&#39;s a bold statement for
     &lt;&lt;if $n1_naked&gt;&gt;
         a naked and helpless wolf.
     &lt;&lt;else&gt;&gt;
-        a helplessly bound wolf.
+        a helplessly trapped wolf.
     &lt;&lt;/if&gt;&gt;
     Do you not understand the situation you&#39;re in?
     &lt;em&gt;I&lt;/em&gt; have all the power here, and you have demonstrated none.&quot;
 &lt;&lt;else&gt;&gt;
-    Ivex laughs. &quot;&lt;em&gt;You?&lt;/em&gt;
+    laughs. &quot;&lt;em&gt;You?&lt;/em&gt;
     &lt;&lt;if $n1_naked&gt;&gt;
         A naked and pathetic failure of a mage,
     &lt;&lt;else&gt;&gt;
-        A pathetic failure of a mage, helplessly bound to my cross,
+        A pathetic failure of a mage, helpless and trapped on my cross,
     &lt;&lt;/if&gt;&gt;
     recruiting &lt;em&gt;me?&lt;/em&gt;
     Do you not understand where you are?
@@ -11008,10 +11062,6 @@ Not that Nero would ever tell that to his
 
 ?P
 The panther mage
-&lt;&lt;if $t_ivexNear&gt;&gt;
-    takes a few steps back. He then
-    &lt;&lt;set $t_ivexNear = false&gt;&gt;
-&lt;&lt;/if&gt;&gt;
 makes a gesture, and
 &lt;!-- coinThrown true might be impossible here, but just in case --&gt;
 &lt;&lt;if $n1_coinThrown&gt;&gt;
@@ -11055,9 +11105,9 @@ makes a gesture, and
 
 ?P
 &lt;&lt;if $n1_abused&gt;&gt;
-    This conversation is not going well.
-    Ivex&#39;s expression of contempt is a sign that
-    he&#39;s becoming skeptical of what Nero has to say.
+    Hostility and skepticism are to be expected,
+    but the &lt;em&gt;intensity&lt;/em&gt; of Ivex&#39;s expression of contempt
+    is a sign that Nero has probed a tender spot.
     The wolf will have to tread carefully to calm the panther&#39;s defenses.
 &lt;&lt;else&gt;&gt;
     Nero has clearly found a tender spot. Ivex&#39;s bluster is definitely
@@ -11065,12 +11115,14 @@ makes a gesture, and
     The wolf is confident he knows the right tune to lead this dance.
 &lt;&lt;/if&gt;&gt;
 
+?P
+[[Continue|n1cn/F Ivex Offended (1,1)]]
+
 &lt;&lt;set $n1_coinThrownAgain = $n1_coinThrown&gt;&gt;
 &lt;&lt;set $n1_coinThrown = true&gt;&gt;
-
+&lt;&lt;set $t_ivexNear = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-
-[[Continue|n1cn/F Ivex Offended (1,1)]]</tw-passagedata><tw-passagedata pid="309" name="n1cr/F Ivex Demanding (4,2)" tags="" position="4325,3675" size="200,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="309" name="n1cr/F Ivex Demanding (4,2)" tags="" position="4325,3675" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
@@ -11359,7 +11411,7 @@ ivex: nice try, but I think you&#39;re lying... we&#39;ll see.
 but you have to understand why I&#39;m suspicious
 you need to demonstrate loyalty
 
-[[Continue|n1cs/D Ivex Cruel (4,2)]]</tw-passagedata><tw-passagedata pid="318" name="n1cs/D Reject Mercy" tags="" position="4225,4200" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Continue|n1cs/D Ivex Cruel (4,2)]]</tw-passagedata><tw-passagedata pid="318" name="n1cs/D Reject Mercy" tags="" position="4200,4200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $t_resisting&gt;&gt;
@@ -11416,7 +11468,7 @@ adventurers who defy me.&quot; He makes a gesture with
 
 &lt;&lt;if $n1_abused&gt;&gt;
     ?P
-    Nero&#39;s ears droop at the thought that the objects might
+    Nero&#39;s ears twitch at the thought that the objects might
     smash into his
     &lt;&lt;= $n1_naked ? &quot;exposed&quot; : &quot;vulnerable&quot;&gt;&gt;
     crotch, but thankfully neither of them comes
@@ -11629,16 +11681,18 @@ every spicy breath of air that the wolf inhales.
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 Nero sneers, almost a snarl.
-This concern expressed by the panther for the wolf&#39;s comfort
-is clearly false.
-
 &lt;&lt;if $n1_abused&gt;&gt;
-    &lt;&lt;set $n1_tough = true&gt;&gt;
-    Ivex is likely seeking another excuse to abuse the wolf&#39;s balls.
-    Well, he can have it.
-    Nero is not going to be cowed by this bully
-    and his ridiculous red candle.
+    The absurdity of the situation has overtaken him.
+    That grinning mask is idiotic.
+    And Ivex&#39;s escalation from ball torture is a &lt;em&gt;candle&lt;/em&gt;?
+    The panther is likely just creating more excuses for further
+    abuse of the wolf&#39;s balls.
+    Well, Nero is not going to play that game.
+    He will &lt;em&gt;not&lt;/em&gt; be cowed by this bully and his
+    ridiculous red candle.
 &lt;&lt;else&gt;&gt;
+    This concern expressed by the panther for the wolf&#39;s comfort
+    is clearly false.
     Otherwise Nero would not be strapped to a cross at all,
     breathing the fumes of whatever that candle might be.
 &lt;&lt;/if&gt;&gt;
@@ -11652,18 +11706,25 @@ is clearly false.
 &lt;&lt;else&gt;&gt;
     Ivex shakes his head and says,
 &lt;&lt;/if&gt;&gt;
-&quot;You seem quite tense. Stress is detrimental to your well-being and health.
+&quot;You seem quite tense. Stress is detrimental to your well-being.
 A handsome wolf like you should have a nice vacation.&quot;
-&lt;&lt;/nobr&gt;&gt;
 
+?P
 The panther pauses as if waiting for a response. Nero quite deliberately looks away. That statement did not have a question in it! And even if there were, there isn&#39;t any sensible way for the wolf to respond. This is not a friendly conversation, and Nero is certain that casual chit-chat would just be more theater for the panther&#39;s depraved desires.
 
-When the silence extends long enough to make it clear that no response is forthcoming, Ivex shakes his head again, and says, &quot;I know &lt;em&gt;exactly&lt;/em&gt; what you need!&quot; His delighted tone sounds quite sinister when filtered through the grinning mask. &quot;Let me help you get more comfortable...&quot;
+?P
+When the silence extends long enough to make it clear that no response is forthcoming, Ivex shakes his head again. He then says, &quot;I know &lt;em&gt;exactly&lt;/em&gt; what you need!&quot; His delighted tone sounds quite sinister when filtered through the grinning mask. &quot;Let me help you get more comfortable...&quot;
 
+?P
 The panther mage raises an arm, and snaps his fingers.
 
+?P
 [[Continue|n1p/F Barbs Fast]]
-&lt;&lt;set $t_afterNaked = &quot;[[Continue|n1d/F Cock Rise]]&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="324" name="n1d/F Start Candle 2" tags="" position="3475,4500" size="100,100">&lt;&lt;nobr&gt;&gt;
+
+&lt;&lt;set $t_afterNaked = &quot;[[Continue|n1d/F Cock Rise]]&quot;&gt;&gt;
+&lt;&lt;set $n1_abused &amp;&amp; ($n1_tough = true)&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="324" name="n1d/F Start Candle 2" tags="" position="3475,4500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
@@ -11891,9 +11952,9 @@ and roughly strokes the fur on the wolf&#39;s naked chest.
     He&#39;s hardly comfortable.
     His limbs are feeling the strain of his bound position,
     the candle is a lurking menace,
-    and Ivex&#39;s punches to the wolf&#39;s balls are still quite vivid in his memory.
+    and Ivex&#39;s punches to the wolf&#39;s balls are still vividly occupying his memory.
     ?P
-    But he&#39;s wary of inviting another such punch.
+    But he does not want to invite another such punch.
     Perhaps if he acts cowed, without actually cooperating,
     he can satisfy the panther&#39;s sadism and forestall further abuse.
     ?P
@@ -11974,7 +12035,7 @@ The panther mage raises an arm, then snaps his fingers.
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;mtl [[n1e/F Talk Back]]&gt;&gt;
         &lt;&lt;= $n1_subby ? &quot;Whine&quot; : $n1_abused ? &quot;Shiver&quot; : &quot;Pant&quot;&gt;&gt;
-        and say, &quot;I can&#39;t understand what you&#39;re saying in that mask!&quot;
+        and respond, &quot;I can&#39;t understand what you&#39;re saying in that mask!&quot;
     &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;mtl [[n1e/F Snap Jaws]]&gt;&gt;
         Snap at Ivex&#39;s face.
@@ -12166,7 +12227,7 @@ stretching the wolf&#39;s skin tight against his nuts.
 
 ?P
 Nero looks down at his furry sack being held in Ivex&#39;s paw.
-The wolf&#39;s balls feel strangely heavy,
+Nero&#39;s balls feel strangely heavy to himself,
 and he moans as Ivex continues to pull them outward,
 pulling them away from the wolf&#39;s stiff cock,
 like ripe fruit being pulled away from a swaying branch.
@@ -12232,11 +12293,11 @@ Ivex is speaking words that the wolf barely understands.
 &quot;I do so enjoy this confusion of your senses,
 when everything I do simply adds fuel to your lust.&quot;
 ?P
-He crouches down and lowers his head toward the wolf&#39;s crotch. The panther moves his muzzle so that the grinning mask slowly approaches, so that one side of it lightly touches the tip of the wolf&#39;s needy cock for just an instant, a too-brief moment. And then the grinning mask moves away, taking with it a smear of pre-cum that shines like drool dripping from the teeth painted on it.
+The panther crouches down and lowers his head toward the wolf&#39;s crotch. Ivex moves his muzzle so that the grinning mask slowly approaches, so that one side of it lightly touches the tip of the wolf&#39;s needy cock for just an instant, a too-brief moment. And then the grinning mask moves away, taking with it a smear of pre-cum that shines like drool dripping from the teeth painted on it.
 
 ?P
 [[Continue|n1e/F Heavy Squeeze (1,1)]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="337" name="n1e/F Alarm" tags="" position="4575,5475" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="337" name="n1e/F Anticipation" tags="" position="4575,5475" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
@@ -12255,14 +12316,14 @@ The wolf howls again.
 ?P
 Ivex is grinning&amp;mdash; No, that&#39;s the mask.
 The mask is making a deeply erotic purring sound
-that whispers through the wolf&#39;s fur, to tickle his bones
+that whispers through the wolf&#39;s fur in order to tickle his bones
 and warm his skin.
 
 ?P
 The purring suddenly stops. The wolf whines with a feeling of loss.
 
 ?P
-[[Continue|n1e/F Alarm 2]]
+[[Continue|n1e/F Alarm]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="338" name="n1p/F Barbs Slow" tags="big-mood" position="5300,2875" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_naked = true&gt;&gt;
 
@@ -12996,7 +13057,8 @@ He begins a quiet intonation of the most basic mage-sight spell...
 
 &lt;&lt;if $n1_candleHorny&gt;&gt;
     The anti-magic field is as frustrating as the restraints on Nero&#39;s limbs.
-    There must be &lt;em&gt;some&lt;/em&gt; magic he can cast that will stroke his cock.
+    There must be &lt;em&gt;some&lt;/em&gt; magic he can cast that will
+    let him stroke his cock.
     But the wolf mage&#39;s energy is still drained by the failure of his spell.
     He struggles to think of a way to replenish it.
     &lt;&lt;set $t_magicAction = 
@@ -15158,7 +15220,7 @@ On one shelf is a small stack of
     &lt;&lt;if MP_wantTouch === $n1_magicPhase&gt;&gt;
         &lt;&lt;include [[n1x/F Coins WantTouch]]&gt;&gt;
     &lt;&lt;else&gt;&gt;
-        The Ursine Empire is on the opposite hemisphere.
+        The Ursine Empire is in the southern hemisphere.
         No merchants or banks on this continent accept scalars or vectors.
         So it&#39;s not clear why Ivex would have a stack of them.
         ?P
@@ -15502,8 +15564,7 @@ but he does not remember its name.
   `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
   `MP_contact` `MP_broken`&gt;&gt;
 
-&lt;&lt;cv-try n2_magicPhaseBroken
-  `null` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseBroken `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
   
 &lt;&lt;cv-try n1_passwordsTried `[]` `[&quot;Ivy&quot;]`&gt;&gt; /* TODO probably need please-ivy */
 
@@ -15589,6 +15650,23 @@ but he does not remember its name.
 &lt;&lt;vi-always-if n2_free n2_ivexGone true&gt;&gt;
 &lt;&lt;vi-ignore-if n1_penguinNameKnown n2_ivexGone&gt;&gt;
 
+&lt;!--
+  coin starts in penguin&#39;s mouth.
+    (penguinCoinDropped = false, penguinNameKnown = false)
+  viewing penguin causes coin to drop.
+  	(penguinCoinDropped = true, penguinNameKnown = false)
+  asking ivex about penguin makes him notice the coin is dropped.
+    (penguinCoinDropped = false, penguinNameKnown = true)
+  looking at penguin again causes coin to drop again.
+    (penguinCoinDropped = true, penguniNameKnown = true)
+--&gt;
+
+&lt;&lt;cv-try n1_magicPhase
+	`MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
+    `MP_contact` `MP_broken`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseBroken `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+&lt;&lt;cv-try n1_passwordsTried `[]` `[&quot;HunterTwo&quot;]`&gt;&gt; /* TODO probably need please-hunter-two */
+
 Traditionalist mages often keep several skeletal or taxidermied animals
 in their lair, more for the gloomy ambiance than any practical purpose.
 
@@ -15601,7 +15679,7 @@ in their lair, more for the gloomy ambiance than any practical purpose.
 &lt;&lt;/if&gt;&gt;
 with its beak gaping open and its wings spread wide,
 in a pose that seems more appropriate
-for a raptor, such as a falcon, not a flightless waterfowl.
+for an eagle or an owl, not a flightless waterfowl.
 
 &lt;&lt;if $n1_mageSight&gt;&gt;
     ?P
@@ -15624,8 +15702,8 @@ Nero stares at the penguin in perplexity.
     &lt;&lt;= $n1_penguinNameKnown ? &quot;a coin&quot; : &quot;a coin-like object&quot;&gt;&gt;,
     which has fallen and rolled off somewhere.
 &lt;&lt;elseif $n1_penguinNameKnown&gt;&gt;
-    While he&#39;s staring, the coin in the penguin&#39;s mouth drops, again,
-    and disappears somewhere on the floor again.
+    While he&#39;s staring, the coin in the penguin&#39;s mouth drops again,
+    and disappears somewhere on the floor, again.
 &lt;&lt;else&gt;&gt;
     While he&#39;s staring, an object suddenly drops from the penguin&#39;s mouth,
     and then disappears somewhere on the floor.
@@ -15639,28 +15717,27 @@ Nero stares at the penguin in perplexity.
     &lt;&lt;else&gt;&gt;
         but Nero is not certain of it.
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;set $n1_penguinCoinDropped = true&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 ?P
 &lt;&lt;if MP_wantTouch === $n2_magicPhaseBroken
     || MP_wantTouch === $n1_magicPhase
 &gt;&gt;
-    The gaping mouth of the penguin makes him wonder,
+    The gaping mouth of the penguin leads him to wonder,
     could &lt;em&gt;that&lt;/em&gt; be the hole that the Sprite
-    &lt;&lt;= $n2_free ? &quot;wanted&quot; : &quot;wants&quot;&gt;&gt;
-    to be touched?
+    &lt;&lt;= $n2_free ? &quot;wanted to be&quot; : &quot;wants&quot;&gt;&gt;
+    touched?
 
     &lt;&lt;if $n2_free&gt;&gt;
         Unfortunately, there&#39;s no way of testing that now.
     &lt;&lt;elseif $n2_ivexGone&gt;&gt;
         Unfortunately, there&#39;s no way of doing that now.
     &lt;&lt;elseif $n1_penguinNameKnown &amp;&amp; $t_ivexReceptive&gt;&gt;
-        Ivex was uncooperative before, but he seems more amenable
+        XXX Ivex was uncooperative before, but he seems more amenable
         to suggestion now.
         &lt;&lt;actions-add [[Ask Ivex again about Hunter Two.|n1x/D Penguin Ask]]&gt;&gt;
     &lt;&lt;elseif $n1_penguinNameKnown&gt;&gt;
-        Ivex was uncooperative when Nero asked before.
+        XXX Ivex was uncooperative when Nero asked before.
         The wolf will have to wait for the right time to ask again.
     &lt;&lt;else&gt;&gt;
         And could Ivex be persuaded to touch it?
@@ -15668,8 +15745,6 @@ Nero stares at the penguin in perplexity.
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;elseif MP_wantPassword === $n1_magicPhase&gt;&gt;
-    &lt;!-- can&#39;t get here without asking penguin, for touch --&gt;
-    &lt;&lt;em-assert $n1_penguinNameKnown&gt;&gt;
     &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
     &lt;&lt;pw-suggest &quot;Hunter Two&quot;&gt;&gt;
         The names of pets are commonly used as passwords.
@@ -15685,13 +15760,12 @@ Nero stares at the penguin in perplexity.
     The wolf considers searching for it,
     &lt;&lt;if $n2_cabinetUnderViewed&gt;&gt;
         but the layers of dirt and shed fur under the cabinets
-        would make that task unpleasaant.
+        would make that task unpleasant.
         And it seems quite unnecessary anyway.
     &lt;&lt;else&gt;&gt;
         but a brief look under one cabinet reveals deep layers
         of dirt and shed fur. He decides that the unpleasant task
         is probably unnecessary anyway.
-        &lt;&lt;set $n2_cabinetUnderViewed&gt;&gt;
     &lt;&lt;/if&gt;&gt;
     ?P
     The penguin itself is a disturbing display of Ivex&#39;s
@@ -15700,7 +15774,6 @@ Nero stares at the penguin in perplexity.
 
 &lt;&lt;else&gt;&gt;
     &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
-
     &lt;&lt;if $n1_penguinNameKnown&gt;&gt;
         Why does Ivex keep a coin in his penguin&#39;s mouth,
         if it keeps falling out?
@@ -15721,6 +15794,9 @@ Nero stares at the penguin in perplexity.
     &lt;&lt;actions-get&gt;&gt;
     &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
+
+&lt;&lt;set $n1_penguinCoinDropped = true&gt;&gt;
+&lt;&lt;set $n2_free &amp;&amp; ($n2_cabinetUnderViewed = true)&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="411" name="n1x/F Wand" tags="has-hole maybe-password" position="7250,5325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if $n2_wandTried&gt;&gt;
     &lt;&lt;include [[n2x/F Wand Tried]]&gt;&gt;
@@ -16708,7 +16784,7 @@ in a convenient location.
 It&#39;s definitely Nackle.
 The glyphs are quite distinctive.
 But this is the first time Nero&#39;s seen these glyphs installed on
-the surface of a metallic horse cock, trapped inside a bottle.
+the surface of a metallic horse cock trapped inside a bottle.
 
 ?P
 &lt;&lt;if $n1_magicPhase &lt; MP_mageSight&gt;&gt;
@@ -16724,7 +16800,7 @@ the surface of a metallic horse cock, trapped inside a bottle.
     ?P
     This question might not be the most important thing to consider at the moment,
     but Nero can&#39;t stop thinking about it,
-    andt an answer might give some insight into defeating
+    and an answer might give some insight into defeating
     the panther&#39;s magic.
 
 &lt;&lt;elseif $n1_magicPhase &lt; MP_wantName&gt;&gt;
@@ -17285,7 +17361,7 @@ But his quivering cock disagrees.
     Nero wrests his attention away from the pantheress
     and searches the room for something completely non-sexual
     that he can focus on:
-    &lt;&lt;set _globe = $n1_globeViewed ? &quot;arcane globe&quot; : &quot;snow globe&quot;&gt;&gt;
+    &lt;&lt;set _globe = $n1_globeViewed ? &quot;snow globe&quot; : &quot;arcane globe&quot;&gt;&gt;
     the [[_globe|n1y/F Horny Globe]] on the desk,
     the [[letter opener|n1y/F Horny Knife]] near it,
     anything other than that disturbingly arousing portrait.
@@ -17341,7 +17417,7 @@ Nero cannot see whether the dragon is male or female,
 but the curvy hips supporting the tail suggests
 that she&#39;s a glorious representative of the female kind.
 The wolf can picture in his mind,
-her breasts which bulge in a curve that matches her hips.
+her breasts which bulge with a curve that matches her hips.
 He can see, he can imagine, her goofy but charming grin,
 and he wishes that her grin were aimed at him,
 instead of at the pantheress in the
@@ -18576,7 +18652,7 @@ Macro.add(&quot;random-once&quot;, {
       const outer = $(&quot;&lt;span class=ro-debug&gt;&quot;).appendTo(this.output);
       const val = V[shown];
       outer.append(&quot;&amp;#x1f527;&quot;);
-      $(&quot;&lt;a&gt;&quot;).text(&quot;(show another)&quot;)
+      $(&quot;&lt;a&gt;&quot;).html(&quot;&amp;#x1f3b2;&quot;)
         .appendTo(outer)
         .click(() =&gt; VI.revisitHere(() =&gt; {
           State.variables[shown] = val;
@@ -20110,9 +20186,9 @@ by the failure of
 &lt;&lt;else&gt;&gt;
     his earlier spell,
 &lt;&lt;/if&gt;&gt;
-and something about this place is keeping
+and something about this room is keeping
 his energy from replenishing itself.
-It &lt;em&gt;can&#39;t&lt;/em&gt; be an energy desert.
+This place &lt;em&gt;can&#39;t&lt;/em&gt; be an energy desert.
 Ivex &lt;&lt;= $n2_ivexGone ? &quot;had&quot; : &quot;has&quot;&gt;&gt;
 done plenty of magic, with no sign of exhaustion.
 ?P
@@ -20246,7 +20322,7 @@ with just examination of the energy he cannot use.
 ?P
 $t_afterAction
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="534" name="n1cn/D Reject Appeasement" tags="" position="4100,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="534" name="n1cn/D Reject Appeasement" tags="" position="4100,3475" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused true&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -20693,7 +20769,7 @@ The cruel panther gives the wolf&#39;s balls a few more light taps with the crop
 ?P
 Nero&#39;s cock flaps around wildly as he futilely struggles to escape.
 The tip of his cock makes brief contact with the shaft of the crop,
-leaving a smear of pre-cum that forms a strand connected
+leaving a drop of pre-cum that forms a strand connected
 to his cock, which stretches, sags, and breaks.
 
 ?P
@@ -20704,7 +20780,7 @@ Ivex lifts the crop up, away from the wolf&#39;s balls,
 raises the tip of the crop high behind his head, preparing to strike...
 
 ?P
-[[Continue|n1e/F Alarm]]
+[[Continue|n1e/F Anticipation]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="546" name="n1x/F Dream Crystals 1" tags="" position="6375,5650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n2_free&gt;&gt;
@@ -20789,7 +20865,7 @@ That isn&#39;t the problem.
 
 ?P
 [[Continue|n1x/F Gravity Crystals 2]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="548" name="n1cn/D Reject Collab 2" tags="" position="4100,3750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="548" name="n1cn/F Reject Collab 2" tags="big-mood" position="4100,3725" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -20800,15 +20876,38 @@ Ivex has smashed a fist into the wolf&#39;s
 crotch!
 
 ?P
-XXX describe pain. mostly left ball.
+The initial pain was a surprising blow to Nero&#39;s left testicle,
+a sharp strike that radiated into his abdomen,
+leaving a feeling of ache and nausea deep in his gut
+that has the wolf feeling like he should vomit.
 Before Nero has a chance to catch his breath,
 the fist smashes into his balls again!
+This time he suppresses the howl by thrashing his head
+and snapping his jaws shut, narrowly avoiding biting his own tongue.
 
 ?P
-Ivex, I think you do not understand the power I have here.
+The panther is speaking.
+Nero forces his agitated mind to pay attention to the words
+being said.
 
 ?P
-nero completely thrown off his game
+&quot;&amp;mdash;not understand the power I have here, a power that I&#39;ve
+developed myself, without any help from any other mages or their
+useless schools of magic.&quot; Ivex punctuates each sentence with
+fast, light strikes to Nero&#39;s crotch. &quot;I already have more power than you
+have ever imagined. I do not need to &lt;em&gt;share&lt;/em&gt; it with
+anyone to attain anything more. If I &lt;em&gt;want&lt;/em&gt; something
+that you can provide, I will simply &lt;em&gt;take&lt;/em&gt; it.&quot;
+
+?P
+Nero struggles to focus his scattering thoughts.
+He tries to plan out the next moves to make,
+but the only thing he can think of,
+the idea that keeps repeating in his head:
+&lt;em&gt;whatever it takes
+to stop Ivex from punching my balls again.&lt;/em&gt;
+A distant observer in the wolf&#39;s mind is disappointed
+and shakes his head before fading away.
 
 ?P
 [[Continue|n1cx/F Start Candle]]
@@ -21082,7 +21181,7 @@ known at the time as the world&#39;s preeminent fox mage,
 was merely an actor hired by Rankine, with no magic ability of his own.
 ?P
 [[Return|n1x/F Dream Crystals 2]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="557" name="n1e/F Alarm 2" tags="section-end" position="4450,5475" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="557" name="n1e/F Alarm" tags="section-end" position="4450,5475" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 
 &lt;&lt;state-save n0_n2start n1_&gt;&gt;
