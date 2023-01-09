@@ -2315,15 +2315,24 @@ Macro.add("vi-ignore", {
   }
 });
 
-/** <<vi-ignore-if condvar varname [reason]>> */
+/**
+  * <<vi-ignore-if var1 var2 ...>>
+  * If var1 is true, ignore remaining vars.
+  * If var2 is true, ignore remaining vars.
+  * etc.
+  */
 Macro.add("vi-ignore-if", {
   handler: function() {
-    const [cond, vname] = this.args;
-    const sexp = Nero.getFlagExpectation(vname);
-    if (sexp !== "notable") {
-      EM.fail(`vi-ignore-if ${cond} ${vname} is unnecessary`);
+    for (let p = 0; p < this.args.length - 1; p++) {
+      const cvar = this.args[p];
+      const sexp = Nero.getFlagExpectation(cvar);
+      if (sexp !== "notable") {
+        EM.fail(`vi-ignore-if ${cvar} is unnecessary`);
+      }
+      if (VT.untracedGet(cvar)) {
+        this.args.slice(p + 1).forEach(vn => ignoreVars.add(vn));
+      }
     }
-    if (VT.untracedGet(cond)) ignoreVars.add(vname);
   }
 });
 
@@ -3910,6 +3919,9 @@ Macro.add("n1-patience", {
   background-color: #333;
   letter-spacing: 1px;
   margin-right: 1px;
+}
+.nero-blank .glitch-c:not(#very#very#very#very) {
+  color: rgba(0, 0, 0, 0);
 }
 
 </style>
@@ -12702,6 +12714,7 @@ subby and naked. ivex is near, creeps.
 <<nobr>>
 <<set $n1_candleLit = true>>
 <<set $t_ivexReceptive = false>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 Ivex smirks at the
 <<set _adj = $n1_abused ? "anxious" : "vulnerable">>
@@ -12727,7 +12740,7 @@ adventurers who defy me." He makes a gesture with
     Two small objects fly out from a cabinet.
 <</if>>
 
-<<if $n1_abused>>
+<<if $n1_tough || $n1_abused>>
     ?P
     Nero's ears twitch at the thought that the objects might
     smash into his
@@ -12774,6 +12787,8 @@ the candle lights up.
     before lighting the candle.
     "You don't have to poison me!" says the wolf.
     <<set _pw = "You Don't Have To Poison Me">>
+<<elseif $n1_tough>>
+    XXX tough
 <<elseif $n1_abused>>
     Nero tries to focus his skittering mind on
     why a candle would be hazardous enough to require a mask.
@@ -12822,7 +12837,7 @@ should be able to figure it out soon enough."
 :: n1d/F Comfort Check (2,2) {"position":"4350,4400","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <<set $t_ivexReceptive = false>>
 
@@ -12843,7 +12858,7 @@ should be able to figure it out soon enough."
             <<if $n1_subby>>
                 Respond to Ivex with alacrity. "Yes, I'm quite comfortable."
             <<elseif $n1_tough>>
-                XXX
+                XXX tough
             <<elseif $n1_abused>>
                 Nod hesitantly in response.
             <<else>>
@@ -12862,7 +12877,9 @@ should be able to figure it out soon enough."
         <!-- subby is always naked -->
         <<vi-ignore n1_subby>>
         <<mtl [[n1d/F Strip Agree]]>>
-            <<if $n1_abused>>
+            <<if $n1_tough>>
+                XXX tough
+            <<elseif $n1_abused>>
                 Nod hesitantly in response.
             <<else>>
                 Respond to Ivex in a casual tone. "I'm quite relaxed."
@@ -12881,33 +12898,50 @@ should be able to figure it out soon enough."
 <<nobr>>
 <<vi-always n1_naked true>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 <<em-assert $t_ivexNear>>
 
 <<barbs-announce maybe>>
 
 The odor of the aggressive panther
 <<if $n1_subby>>
-    TODO subby -- fascinated by ivex's scent and the candle
-<<elseif $n1_abused>>
+    is dominant now.
+    Nero's senses are all focused on
+    understanding every whim and mood of his captor,
+    and the panther's scent has permeated his world.
+
+<<elseif $n1_tough || $n1_abused>>
     is overwhelming now.
     Nero's senses are all hyperattuned to
     the task of monitoring
     every aspect of his abusive captor,
     so the panther's scent has become much too familiar.
-    But there's something new lurking in the aroma now,
-    something elusive and hidden.
-    Nero glances at the flickering red candle.
-    The scent of the spicy smoke is distinct and easy to isolate,
-    but the way it mixes with the panther's musk...
-    The combination of the two is intense and unsettling.
+
 <<else>>
     is quite noticeable now.
     Perhaps Nero's sense of smell has become sharpened by
     his attempts at identifying the mysterious red candle.
     Whatever the cause, he finds the panther's scent dominating his
-    attention, and the mixture of musk with spicy candle
-    smoke is strangely fascinating.
+    attention. He has noticed the scent already,
+    and has it filed away neatly in his mind,
+    next to the place he remembers names.
+<</if>>
+
+But there's something new lurking in the aroma now,
+something elusive and hidden.
+Nero glances at the flickering red candle.
+The scent of the spicy smoke is distinct and easy to isolate,
+but the way it mixes with the panther's musk...
+The combination of the two is intense and
+
+<<if $n1_subby>>
+    compelling.
+<<elseif $n1_tough>>
+    infuriating.
+<<elseif $n1_abused>>
+    unsettling.
+<<else>>
+    fascinating.
 <</if>>
 
 ?P
@@ -12925,7 +12959,9 @@ every spicy breath of air that the wolf inhales.
 
 ?P
 <<if $n1_subby>>
-    TODO subby -- getting into it?
+    XXX subby
+<<elseif $n1_tough>>
+    XXX tough
 <<elseif $n1_abused>>
     Nero can't stop picturing and anticipating the myriad ways
     that the panther's cock might touch him, outside and within.
@@ -12944,9 +12980,11 @@ every spicy breath of air that the wolf inhales.
     So it is with no small dismay that the wolf notices his
     own member has started to stir.
 <</if>>
-<</nobr>>
 
+?P
 [[Continue|n1d/F Get Creepy]]
+
+<</nobr>>
 
 
 :: n1d/F Strip Resist {"position":"4525,4525","size":"100,100"}
@@ -12954,6 +12992,7 @@ every spicy breath of air that the wolf inhales.
 <<vi-always n1_naked false>>
 <<vi-always n1_subby false>>
 <<vi-ignore n1_mageSight>>
+<<vi-ignore-if n1_tough n1_abused>>
 
 Nero sneers, almost a snarl.
 <<if $n1_tough>>
@@ -13008,6 +13047,7 @@ The panther mage raises an arm, and snaps his fingers.
 <<vi-ignore n1_abused>>
 <<vi-ignore n1_naked>>
 <<vi-ignore n1_subby>>
+<<vi-ignore n1_tough>>
 
 <<if $n1_mageSight>>
     The candle's orange flame emits small sparks of exotic energy that diffuse into
@@ -13027,10 +13067,10 @@ Nero considers holding his breath to avoid whatever is in the candle's fumes, bu
 :: n1d/F Naked Resist {"position":"4300,4525","size":"100,100"}
 <<nobr>>
 <<vi-always n1_naked true>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <<if $n1_subby>>
-    TODO subby resist. maybe, regret earlier pretense of submission?
+    XXX subby resist. maybe, regret earlier pretense of submission?
 
 <<elseif $n1_tough>>
     XXX tough
@@ -13088,12 +13128,14 @@ fur of the wolf's bare chest.
 <<nobr>>
 <<vi-always n1_naked true>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <<set $n1_candleHorny = true>>
 
 <<if $n1_subby>>
     Nero is overwhelmed by his body's reaction.
+<<elseif $n1_tough>>
+    XXX tough
 <<elseif $n1_abused>>
     Nero is repulsed by his body's reaction.
 <<else>>
@@ -13135,7 +13177,7 @@ Just cupping them, delicately, as the wolf's cock continues to strain its way to
 :: n1d/F Get Creepy {"position":"4575,4675","size":"100,100"}
 <<nobr>>
 <<vi-always n1_naked true>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <<if $n1_mageSight>>
     The panther's brilliant fountain of exotic energy shimmers as he laughs.
@@ -13151,7 +13193,7 @@ panther brings the fingers of one paw
 to stroke the fur of the wolf's sheath.
 <<if $n1_subby>>
     Nero pants and shivers at the touch.
-<<elseif $n1_abused>>
+<<elseif $n1_tough || $n1_abused>>
     Nero freezes at the touch, and tries to calm his breath.
 <<else>>
     Nero struggles to escape the touch.
@@ -13189,10 +13231,10 @@ Nero quivers in his bonds. The panther lifts his paw off the wolf's crotch, but 
 :: n1d/F Naked Submit {"position":"4400,4525","size":"100,100"}
 <<nobr>>
 <<vi-always n1_naked true>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <<if $n1_subby>>
-    TODO subby submit
+    XXX subby submit
 
 <<elseif $n1_tough>>
     XXX tough
@@ -13250,8 +13292,11 @@ and roughly strokes the fur on the wolf's naked chest.
 <<nobr>>
 <<vi-always n1_naked false>>
 <<vi-always n1_subby false>>
+<<vi-ignore-if n1_tough n1_abused>>
 
-<<if $n1_abused>>
+<<if $n1_tough>>
+    XXX tough
+<<elseif $n1_abused>>
     <<vi-ignore n1_mageSight>>
     Nero nods hesitantly.
     It's a lie, of course, and he tries to make it clear that it is.
@@ -13301,7 +13346,7 @@ The panther mage raises an arm, then snaps his fingers.
 :: n1e/F Heavy Squeeze (1,1) {"position":"4825,5350","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <<n1-patience 1 1>>
 <<n1-warn>>
@@ -13317,7 +13362,7 @@ The panther mage raises an arm, then snaps his fingers.
     <<if $n1_subby>>
         <li>[[Whine with frustration.|n1e/F Crop]]</li>
         <li>[[Pant with eagerness and lust.|n1e/F Crop]]</li>
-    <<elseif $n1_abused>>
+    <<elseif $n1_tough || $n1_abused>>
         <li>[[Whine with frustration.|n1e/F Crop]]</li>
         <li>[[Growl with anger and lust.|n1e/F Crop]]</li>
     <<else>>
@@ -13332,7 +13377,7 @@ The panther mage raises an arm, then snaps his fingers.
 :: n1e/F Light Squeeze (1,1) {"position":"4650,4975","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <<n1-patience 1 1>>
 <<n1-warn>>
@@ -13348,7 +13393,7 @@ The panther mage raises an arm, then snaps his fingers.
 
 <ul class="actions">
     <<mtl [[n1e/F Talk Back]]>>
-        <<= $n1_subby ? "Whine" : $n1_abused ? "Shiver" : "Pant">>
+        <<= $n1_subby ? "Whine" : $n1_tough || $n1_abused ? "Shiver" : "Pant">>
         and respond, "I can't understand what you're saying in that mask!"
     <</mtl>>
     <<mtl [[n1e/F Snap Jaws]]>>
@@ -13363,6 +13408,7 @@ The panther mage raises an arm, then snaps his fingers.
 <<nobr>>
 <<vi-ignore n1_abused>>
 <<vi-ignore n1_subby>>
+<<vi-ignore n1_tough>>
 
 Ivex laughs at the pathetic sounds coming from the helpless wolf.
 The panther waves an arm.
@@ -13447,13 +13493,16 @@ There's no way to escape what he knows will happen next.
 :: n1e/F Talk Back {"position":"4750,5100","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 "I... can't..."
 <<if $n1_subby>>
     The wolf pants and gasps between each word he epeaks.
     An inexpressible emotion emerges from his soul and overwhelms him.
     He forgets the words he was going to say.
+
+<<elseif $n1_tough>>
+    XXX tough
 
 <<elseif $n1_abused>>
     The glare of his captor makes the wolf pant and shiver
@@ -13498,7 +13547,7 @@ makes the wolf's cock twitch...
 
 :: n1e/F Snap Jaws {"position":"4650,5100","size":"100,100"}
 <<nobr>>
-<<vi-ignore-if n1_abused n1_subby>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 Nero snaps his jaws at Ivex's face, at his smirking mask, in an attempt to...
 
@@ -13516,7 +13565,7 @@ Nero snaps his jaws at Ivex's face, at his smirking mask, in an attempt to...
     Deep inside his head a hollow yearning sensation gasps at every
     subtle note in the fragrances filling the air stirred up by
     the burly panther's motions near the wolf's...
-<<elseif $n1_abused>>
+<<elseif $n1_tough || $n1_abused>>
     Deep inside his gut a burning fluttering sensation twists in
     and out his trembling body as his muscles clench whenever
     he sees the panther's gaze shift across the wolf's...
@@ -13548,8 +13597,7 @@ away from where the wolf can reach.
 :: n1e/F Pull {"position":"4675,5225","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
-<<vi-ignore-if n1_tough n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 The panther forms a ring with his fingers around the wolf's scrotum,
 above the wolf's balls, and starts pulling them gently but firmly,
@@ -13594,8 +13642,7 @@ in anticipation of the panther's strike...
 :: n1e/F Punch {"position":"4775,5225","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
-<<vi-ignore-if n1_subby n1_abused>>
-<<vi-ignore-if n1_tough n1_abused>>
+<<vi-ignore-if n1_subby n1_tough n1_abused>>
 
 <!-- abuse with candle is different from abuse without.
   it doesn't have the same fear effect, so don't set abused to true here. -->
@@ -13639,6 +13686,7 @@ The panther crouches down and lowers his head toward the wolf's crotch. Ivex mov
 <<vi-ignore n1_abused>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n1_subby>>
+<<vi-ignore n1_tough>>
 
 Nero howls in anticipation of the blow,
 a warbling noise that speaks both terror and lust.
@@ -16523,7 +16571,17 @@ Nero think of something more sensual than meat.
 <<elseif $n1_barbsFast>>
     It's like the taste of Lady Temesca's lips after she...
 <<elseif $n1_barbsGlitch>>
-    It's like the tip of ?blank TODO glitch-small
+    It's like the tip of
+    <<glitch-text 3>>
+        ?blank's fascinating ##barbed-1## cock as he...
+    <</glitch-text>>
+    <<done>>
+        <<script>>
+            $("#glitch-2").removeClass("glitch-hidden").addClass("glitch-fading-in");
+            setTimeout(() => $("#glitch-2").removeClass("glitch-fading-in"), 100);
+            setTimeout(() => $("#glitch-2").addClass("glitch-fading-out"), 200);
+        <</script>>
+    <</done>>
 <<else>>
     It's like the panties that Ms. Tara wore when she...
 <</if>>
@@ -19427,6 +19485,8 @@ Well, that's a question to be answered some other time. What's important now is 
 <<vi-ignore n1_candleHorny>>
 <<vi-ignore n1_mageSight>>
 
+Candle's Influence:
+
 <<n1-patience 5 3>>
 <<n1-remind>>
 <<n1-repeat>>
@@ -19436,7 +19496,6 @@ Well, that's a question to be answered some other time. What's important now is 
 
 <<include [[n2b/F Compute Arousal]]>>
 
-Candle's Influence:
 <<arousalbar $n2_arousal 100 $t_arousalBefore>>
 <<set $t_arousalBefore = $n2_arousal>>
 
@@ -20071,12 +20130,12 @@ drop knife
 [[Continue|n2f/D Leave]]
 
 
-:: n2x/D Wand Use {"position":"7350,6175","size":"100,100"}
+:: n2x/D Wand Use {"position":"7400,6200","size":"100,100"}
 <<nobr>>
 <<vi-always n1_wandAsked true>>
 
 Nero picks up the
-[[Kopic Classic|n2x/D Kopic]].
+[[Kopic Classic|n2x/F Kopic]].
 
 <<if $n2_extraHorny>>
     feels awesome, can't stop
@@ -20100,6 +20159,8 @@ Nero picks up the
         <li>[[Don't stop.|n2x/D Wand Use Finish]]</li>
     </ul>
 <</if>>
+
+<<set $t_returnKopic = State.passage>>
 <</nobr>>
 
 
@@ -20112,7 +20173,7 @@ Nero picks up the
 <<em-assert !$n1_wandAsked>>
 
 Nero picks up the
-[[Kopic Classic|n2x/D Kopic]].
+[[Kopic Classic|n2x/F Kopic]].
 The strange tube-like attachment on the end
 is a little heavier than he expected. It gives the wand an awkward balance.
 
@@ -20130,10 +20191,12 @@ Nero is puzzled. Well, there's nothing left but to try it.
 
 ?P
 [[Continue|n2x/F Wand Try 2]]
+
+<<set $t_returnKopic = State.passage>>
 <</nobr>>
 
 
-:: n2x/D Wand Use Stop {"position":"7475,6275","size":"100,100"}
+:: n2x/D Wand Use Stop {"position":"7500,6350","size":"100,100"}
 <<nobr>>
 
 stop before orgasm. frustrated, and now super horny
@@ -20144,7 +20207,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n2x/D Wand Use Finish {"position":"7325,6300","size":"100,100"}
+:: n2x/D Wand Use Finish {"position":"7325,6350","size":"100,100"}
 <<nobr>>
 continue past orgasm, can't stop.
 
@@ -22668,7 +22731,8 @@ and reaches for
     the wolf's crotch. Ivex digs into the cloth of the robe
     to grab one of the wolf's balls, then
 <</if>>
-gives it a sudden squeeze. TODO pain
+gives it a sudden squeeze. Pain fills the captive ball and
+radiates into Nero's groin.
 ?P
 The wolf stifles a yelp. "Please, I can prove it!"
 
@@ -22680,8 +22744,8 @@ The wolf stifles a yelp. "Please, I can prove it!"
 ?P
 Ivex chuckles. "I'm sure you can." He stands up with the help of his grasp
 on the wolf's ball, pulling the wolf's nutsack down painfully tight.
-TODO pain.
-Nero grits his teeth and whines.
+The pressure on his ball becomes a rope of pain connecting to
+a knot deep within his gut. Nero grits his teeth and whines.
 ?P
 The panther leans close and stares into the wolf's eyes.
 "The fascinating thing about liars is one can never be quite sure
@@ -22711,30 +22775,46 @@ He shakes his head, nods, but then shakes his head again.
 <</nobr>>
 
 
-:: n2x/D Kopic {"position":"7550,5725","size":"100,100"}
+:: n2x/F Kopic {"position":"7575,5850","size":"100,100"}
 <<nobr>>
-stuff about how kopics work, why nero can activate it.
-
-?P
 <<if $n1_mageSight>>
-    The wand is currently
+    The Kopic Classic is currently
 <<else>>
-    When the wolf had lookad at the wand earlier with mage-sight,
+    When the wolf had looked earlier with mage-sight at the Kopic Classic,
     he had seen it was
 <</if>>
-infused with exotic energy.
-And he still does not know how to align with that energy.
-But activating a wand does not need magic.
+fully charged with exotic energy.
+Nero still does not know how to align with that energy,
+but the secret of wands is that their
+activation does not require any magic from the user.
 It simply takes a mechanical motion specific to the wand.
+Once the motion is performed by a wielder,
+the spell that's loaded into the wand will
+be unleashed in the direction that it points.
 ?P
 Kopic wands all have a page in their instructions
-that speak seriously of the need to keep the activation motion secret.
-This motion is of course known to every mage and mage-adjacent person.
-Kopic's warning is there to give them reason to disclaim liability
-from careless misuse of their wands by untrained users.
+that speaks seriously of the need to keep their activation motion secret,
+requesting the new owner of the wand sign a pledge to that effect.
+The page is handwritten in shimmering kraken ink on metamorphic vellum.
+There's no magic to the pledge. Nothing but honor binds the user to
+the vow of secrecy. But the unmistakable elegance and expense of the page
+underlines the gravity and importance of the vow.
 ?P
-
-
+As Kopics are quite widely used, their activation motion is known
+to every mage and mage-adjacent person.
+The motion has also been incorporated into several popular children's rhymes.
+?P
+So it might seem that the pledge of secrecy serves little purpose,
+and the inordinately expensive page could just be omitted from the instructions.
+But it continues to be included with every wand.
+Kopic has found that the expense is quite worth it,
+as the demonstration of the pledge's seriousness
+allows them to disclaim liability
+whenever any of their wands cause damage or injury
+in the hands of an untrained user.
+Which happens about twice a day. Per wand.
+?P
+<<link Return $t_returnKopic>><</link>>
 <</nobr>>
 
 
@@ -22984,6 +23064,7 @@ em em {
 <<vi-ignore n1_abused>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n1_subby>>
+<<vi-ignore n1_tough>>
 
 The crop suddenly <em>thwacks</em> against the wolf's <em>thigh!</em>
 ?P
@@ -23465,6 +23546,7 @@ was merely an actor hired by Rankine, with no magic ability of his own.
 :: n1e/F Alarm [section-end] {"position":"4450,5475","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_abused>>
+<<vi-ignore n1_tough>>
 
 <<state-save n0_n2start n1_>>
 
