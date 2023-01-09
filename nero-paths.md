@@ -79,17 +79,19 @@ A player will probably find this on their 1st or 2nd playthrough.
 
 - At the Ivex-gone restart point, Nero is bound to the cross, Ivex is gone, the
   candle is lit.
-- Player can do 6 looks and 3 actions before the candle is maxed.
+- 4 looks or 2 actions will take the candle to near-max.
+  At near-max, the next look or action will take candle to max,
+  which forces the final choice.
 - Most actions here are not useful. They're either teases, or they provide
   hints for the next attempt at 1st Floor Hard.
 - These actions can be done earlier, or can be done here:
-  - (1) Try casting any spell.
+  - (1-A) Try casting any spell.
   - In any order:
-    - (2) Cast mage-sight.
-    - (3) Look at the mirror to see the grav crystals.
-  - (4) Look at the grav crystals with mage-sight.
+    - (2-A) Cast mage-sight.
+    - (3-L) Look at the mirror to see the grav crystals.
+  - (4-L) Look at the grav crystals with mage-sight.
   - Optional: Ask Ivex about the grav crystals before he leaves, for a hint.
-- (5) When the candle is at max, and Nero has seen the grav crystals with
+- (5-A) When the candle is at max, and Nero has seen the grav crystals with
   mage-sight, Struggle will disrupt the grav crystals.
   - Anything other than struggling will fail.
   - This is basically be a 50/50 choice if the player misses the hints.
@@ -122,35 +124,35 @@ the 4th or 5th playthrough.
 
 <details>
 
-- (1) Look at the bottle, discover it's a poltergeist device.
+- (1-L) Look at the bottle, discover it's a poltergeist device.
   - This should be easy. There are a lot of distractions, but there's plenty
     of time to stumble onto it.
   - If the player doesn't find it on 1st playthrough, they might fail the easy
     escape. 2nd playthrough should pass the easy escape, which gives a lot more
     time to look around and find the poltergeist device.
 - These steps can be done before (1):
-  - (2) Try casting any spell.
-  - (3) Cast mage-sight.
-  - (4) Tap the mirror to get the Sprite.
+  - (2-A) Try casting any spell.
+  - (3-A) Cast mage-sight.
+  - (4-A) Tap the mirror to get the Sprite.
 - Player will probably be here on 1st - 2rd playthrough.
-- (5) Ask the Sprite to contact the poltergeist device.
+- (5-A) Ask the Sprite to contact the poltergeist device.
 - Sprite now asks for device name.
-- (6) Ask Ivex about the poltergeist device to get the name.
+- (6-A) Ask Ivex about the poltergeist device to get the name.
   - This can be done earlier, anytime after (1).
   - It's possible for this to need another playthrough, if Ivex has left.
     But if the player is here on the 2rd playthrough, they've probably looked
     at the bottle early enough to have time to ask Ivex. So this probably
     doesn't need another playthrough.
-- (7) Ask the Sprite to contact the named device.
+- (7-A) Ask the Sprite to contact the named device.
 - Sprite now asks Nero to touch its hole.
-- (8) Ask Ivex about the penguin.
+- (8-A) Ask Ivex about the penguin.
   - This is a little tricky. There are several red herrings. It's possible
     that Ivex will leave before the player finds this.
   - If Ivex leaves, the Easy escape gives the player plenty of time to find
     hints to the hole.
 - Player will probably be here on 1st - 3rd playthrough.
 - Sprite now asks Nero for password.
-- (9) Ask Ivex about the snow globe.
+- (9-A) Ask Ivex about the snow globe.
   - This is very unlikely to happen on 1st playthrough. There's no hint about
     this before all the other steps are finished, and there are many other
     possible passwords.
