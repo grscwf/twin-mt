@@ -3231,6 +3231,36 @@ Nero.flags = {
     },
   },
   
+  // true if Nero resists after being abused
+  n1_tough: {
+    implies: {
+      n1_abused: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: "",
+      n1cx_transition: false,
+      n1d_candle: "notable",
+      n1e_horny: "notable",
+      n1f_clever: "",
+      n1p_barbs: "",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: "",
+      n2a_start: "",
+      n2b_bound: "",
+      n2f_free: "",
+      n2x_lookFree: "",
+      n3a_start: "",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+  
   n2_cabinetUnderViewed: {
     implies: {
       n1_penguinCoinDropped: true,
@@ -3893,16 +3923,19 @@ Template.add("blank",
     "</span>" +
   "</span>");
 
-Template.add("master", () => {
+function master(p1, p2) {
   const V = State.variables;
   const name = V.n1_opportunist ? "An Opportunist" : "Master";
   if (V.n1_spriteQuiet) {
-    return `<span class=master-quiet>${name}</span>`;
+    return `<span class=master-quiet>${name}${p2}</span>`;
   } else {
-    return name;
+    return `${name}${p1}`;
   }
-});
-  
+}
+
+Template.add("master", () => master(".", "!"));
+Template.add("mastern", () => master("", ""));
+Template.add("masterq", () => master("?", "!?"));
 <</script>>
 
 
@@ -4098,7 +4131,7 @@ Macro.add("pw-misfire", {
       <<nobr>>
       ?P
       The Sprite in Nero's ear says,
-      "Password received. Please wait while I verify it, ?master."
+      "Password received. Please wait while I verify it, ?master"
     `;
     if (V.n1_passwordNoPlease) {
       text += `
@@ -11532,7 +11565,7 @@ Ivex speaks. "So let me make a proposal."
         ?P
         The Sprite in his ear says, "I don't understand what
         <em>let me explain</em> means.
-        Could you explain it to me, Master?"
+        Could you explain it to me, ?masterq"
         ?P
         Nero is momentarily distracted by the Sprite's response,
         but then shakes his head and continues.
@@ -11606,17 +11639,13 @@ Ivex grins back. "Now that you've found me, what did you have in mind?"
 <</nobr>>
 
 
-:: n1cn/F Rebuff {"position":"3850,2300","size":"100,100"}
+:: n1cn/F Rebuff [big-mood] {"position":"3850,2300","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
-
-<<set $t_didSomeAction = true>>
-<<set $t_stalling = true>>
-
 <<em-assert !$n1_subby && !$n1_tough>>
+
 <<if $n1_abused>>
-    <<set $n1_tough = true>>
     Nero lets out a soft growl. His brutally abused balls argue against
     antagonizing his captor any further, but cooperation,
     or even the pretense of
@@ -11661,9 +11690,14 @@ he can provoke the panther
 into making a careless mistake.
 One mistake is all the wolf needs,
 and then he can complete his mission and escape.
-<</nobr>>
 
+?P
 [[Continue|n1cx/F Start Candle]]
+
+<<set $n1_abused && ($n1_tough = true)>>
+<<set $t_didSomeAction = true>>
+<<set $t_stalling = true>>
+<</nobr>>
 
 
 :: n1cn/F Ivex Disdainful (1,1) {"position":"4300,3425","size":"200,100"}
@@ -11687,7 +11721,7 @@ and then he can complete his mission and escape.
 
 <ul class="actions">
     <<if $n1_abused>>
-        <<mtl [[n1cn/D Reject Appeasement]]>>
+        <<mtl [[n1cn/F Reject Appeasement]]>>
             "You can have 80%!"
         <</mtl>>
         <<mtl [[n1cn/F Apprentice]]>>
@@ -11805,7 +11839,7 @@ Hah, it clearly is. Steering the panther will be easy.
 <</nobr>>
 
 
-:: n1cn/F Reject Collab {"position":"4100,3625","size":"100,100"}
+:: n1cn/F Reject Collab {"position":"4150,3675","size":"100,100"}
 <<nobr>>
 <<vi-always n1_abused false>>
 <<vi-ignore n1_mageSight>>
@@ -11997,7 +12031,7 @@ and your first thought is that I might join you in a <em>business venture?</em>"
 <</nobr>>
 
 
-:: n1cn/F Apprentice [big-mood] {"position":"4300,3550","size":"100,100"}
+:: n1cn/F Apprentice [big-mood] {"position":"4375,3550","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_abused n1_naked>>
@@ -12350,7 +12384,7 @@ makes a gesture, and
 <</nobr>>
 
 
-:: n1cr/D Very Secret {"position":"4075,2825","size":"100,100"}
+:: n1cr/D Very Secret {"position":"4175,2825","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
@@ -12454,7 +12488,6 @@ XXX maybe another option
         that he remained true to himself,
         that he did not shamefully debase himself
         for this vulgar villain.
-        <<set $n1_tough = true>>
     <<else>>
         "Anything at all!"
         the wolf says with some alacrity.
@@ -12492,15 +12525,14 @@ XXX maybe another option
         Feeding the panther's ego will increase the chance he
         makes a mistake.
     <</if>>
-
 <</if>>
 
 ?P
 <<if $n1_naked>>
     XXX ivex approaches the naked wolf
-    <<set $t_ivexNear = true>>
     ?P
     [[Continue|n1cs/D Subby Naked]]
+    <<set $t_ivexNear = true>>
 
 <<elseif $n1_abused>>
     <<em-assert !$n1_mageSight>>
@@ -12521,11 +12553,12 @@ XXX maybe another option
     <<set $t_afterNaked = "[[Continue|n1cs/D Subby Naked]]">>
 <</if>>
 
+<<set $n1_abused && $t_resisting && ($n1_tough = true)>>
 <<set $n1_subby = true>>
 <</nobr>>
 
 
-:: n1cr/D Reject Fantasy {"position":"3975,3300","size":"100,100"}
+:: n1cr/D Reject Fantasy {"position":"4025,3225","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
@@ -12799,6 +12832,8 @@ should be able to figure it out soon enough."
         <<mtl [[n1d/F Naked Submit]]>>
             <<if $n1_subby>>
                 Respond to Ivex with alacrity. "Yes, I'm quite comfortable."
+            <<elseif $n1_tough>>
+                XXX
             <<elseif $n1_abused>>
                 Nod hesitantly in response.
             <<else>>
@@ -12911,7 +12946,9 @@ every spicy breath of air that the wolf inhales.
 <<vi-ignore n1_mageSight>>
 
 Nero sneers, almost a snarl.
-<<if $n1_abused>>
+<<if $n1_tough>>
+    XXX tough
+<<elseif $n1_abused>>
     The absurdity of the situation has overtaken him.
     That grinning mask is idiotic.
     And Ivex's escalation from ball torture is a <em>candle</em>?
@@ -12984,6 +13021,9 @@ Nero considers holding his breath to avoid whatever is in the candle's fumes, bu
 
 <<if $n1_subby>>
     TODO subby resist. maybe, regret earlier pretense of submission?
+
+<<elseif $n1_tough>>
+    XXX tough
 
 <<elseif $n1_abused>>
     <<set $n1_tough = true>>
@@ -13143,6 +13183,9 @@ Nero quivers in his bonds. The panther lifts his paw off the wolf's crotch, but 
 
 <<if $n1_subby>>
     TODO subby submit
+
+<<elseif $n1_tough>>
+    XXX tough
 
 <<elseif $n1_abused>>
     Nero nods hesitantly, cautious of saying
@@ -13346,12 +13389,12 @@ Ivex moves the tip of the crop around the base of the wolf's sheath.
 The shaft of the crop comes close to the wolf's knot.
 He strains against his trapped balls,
 to try to rub his cock against the crop,
-but Ivex lifts the crop away
+but Ivex lifts it away
 and holds it steady at a frustrating distance.
 
 ?P
-He then brings the tip of the crop down,
-slowly, to touch the furry balls that are captive
+He then slowly brings the tip of the crop down,
+gently, to touch the furry balls that are captive
 in his paw.
 
 ?P
@@ -13382,7 +13425,7 @@ The wolf
     huffs deep gasping breaths.
 <</if>>
 
-The leather bindings are firm.
+The leather straps are firm.
 The grip on his scrotum is tight.
 There's no way to escape what he knows will happen next.
 
@@ -14185,24 +14228,25 @@ Macro.delete("glitch-text");
 Macro.add("glitch-text", {
   tags: [],
   handler: function() {
+    const speed = parseInt(this.args[0] || "15", 10);
     const outer = $("<span id=glitch-2 class=glitch-hidden>")
       .wiki(this.payload[0].contents)
       .appendTo(this.output);
-    glitchWithin(outer, 0);
+    glitchWithin(outer, 0, speed);
   }
 });
-function glitchWithin(jq, g) {
+function glitchWithin(jq, g, speed) {
   for (const child of jq.contents()) {
     if (child.nodeType === Node.TEXT_NODE) {
-      g = glitchText(child, g);
+      g = glitchText(child, g, speed);
     } else {
-      g = glitchWithin($(child), g);
+      g = glitchWithin($(child), g, speed);
     }
   }
   return g;
 }
 const vowels = "áaeiouyAEIOUY";
-function glitchText(textNode, g) {
+function glitchText(textNode, g, speed) {
   const outer = $("<span class=glitch-text>");
   textNode.parentNode.replaceChild(outer[0], textNode);
   const words = textNode.nodeValue.split(/(\s+)/);
@@ -14214,7 +14258,7 @@ function glitchText(textNode, g) {
     } else if (word === "##barbed-2##") {
       $(Nero.barbGlitch[1]).appendTo(outer);
     } else {
-      const gf = Math.min(Math.floor(g/15), 4);
+      const gf = Math.min(Math.floor(g/speed), 4);
       g++;
       const inner = $(`<span class=glitch-word-${gf}>`)
         .appendTo(outer);
@@ -14685,7 +14729,7 @@ Nero acts creeped out. transtion to after-cast.
 
 <<switch $n1_magicPhase>>
 <<case `MP_wantDevice`>>
-    "Which device in this room do you wish to control, Master?"
+    "Which device in this room do you wish to control, ?masterq"
     <<if $n1_bottleViewed>>
         <<if $n1_rememberPlease>>
             <<set $t_magicAction = "[[`Tell the Sprite, \"Please, Nackle's Poltergeist Device.\"`|n1s/D Say Device]]">>
@@ -14704,7 +14748,7 @@ Nero acts creeped out. transtion to after-cast.
     <</if>>
 
 <<case `MP_wantName`>>
-    "Which device in this room do you wish to control, Master?"
+    "Which device in this room do you wish to control, ?masterq"
     <<if $n1_bottleNameKnown>>
         <<set $t_magicAction = "[['Tell the Sprite, \"Please, Lance Rockhard\"'|n1s/D Say Lance]]">>
     <<elseif !$n1_helpDeviceAsked>>
@@ -14729,7 +14773,7 @@ Nero acts creeped out. transtion to after-cast.
     <</if>>
 
 <<case `MP_wantTouch`>>
-    "Please touch my hole, Master."
+    "Please touch my hole, ?master"
     <<if !$n1_helpTouchAsked>>
         <<set $t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Touch]]">>
     <</if>>
@@ -14738,14 +14782,14 @@ Nero acts creeped out. transtion to after-cast.
     <</if>>
 
 <<case `MP_wantPassword`>>
-    "Please confirm your password, ?master."
+    "Please confirm your password, ?master"
     <<set $t_magicAction = "[[Guess a password.|n1s/F Guess Password]]">>
 
 <<case `MP_onHold`>>
     <<include [[n1s/D On Hold]]>>
 
 <<case `MP_contact`>>
-    "You can now use Lance Rockhard, ?master."
+    "You can now use Lance Rockhard, ?master"
     <<set $t_magicAction = "[[Use Lance Rockhard.|n1s/D Use Lance]]">>
 
 <<case `MP_lockedOut`>>
@@ -14808,7 +14852,7 @@ The Sprite in Nero's ear says, "The following devices are available..."
 <<include [[n1s/F Sprite Dots]]>>
 
 ?P
-"Remember to implement this some day, Master."
+"Remember to implement this some day, ?master"
 
 ?P
 <<if $n1_candleHorny>>
@@ -14866,7 +14910,7 @@ $t_afterAction
 
     <<set $n1_spriteQuiet = true>>
     ?P
-    The Sprite whispers in Nero's ear, "Quiet mode activated, ?master!"
+    The Sprite whispers in Nero's ear, "Quiet mode activated, ?master"
 
     ?P
     Nero regrets.
@@ -14906,7 +14950,7 @@ $t_afterAction
     <</if>>
 
     ?P
-    Sprite, ok, switching music to "Stop the Music, ?master."
+    Sprite, ok, switching music to "Stop the Music, ?master"
 
     ?P
     Nero regrets.
@@ -14921,10 +14965,10 @@ A moment later, the Sprite says,
 <<switch $n1_passwordTries>>
 <<case 1>>
     <!-- deliberate off-by-one -->
-    3 tries remaining, ?master."
+    3 tries remaining, ?master"
     <<set $n1_magicPhase = MP_wantPassword>>
 <<case 2>>
-    2 tries remaining, ?master."
+    2 tries remaining, ?master"
     <<set $n1_magicPhase = MP_wantPassword>>
 <<case 3>>
     1 <span class=impatient-overrun>
@@ -14934,7 +14978,7 @@ A moment later, the Sprite says,
         in case I ever capture a mage that knows how
         to activate the Sprite
     </span>
-    remaining, ?master."
+    remaining, ?master"
     <<set $n1_magicPhase = MP_lockedOut>>
 <</switch>>
 <</nobr>>
@@ -14982,7 +15026,7 @@ Nero says, "Please, Nackle's Poltergeist Device".
 <</if>>
 
 ?P
-Sprite, "There's more than one poltegeist device available in this room. Please specify which one you want, Master."
+Sprite, "There's more than one poltegeist device available in this room. Please specify which one you want, ?master"
 
 ?P
 <<if $n1_candleHorny>>
@@ -15014,10 +15058,10 @@ Nero says, "Lance Rockhard".
 <</if>>
 
 ?P
-Sprite, "Got it. You're awesome, Master! Contacting..."
+Sprite, "Got it. You're awesome, ?mastern! Contacting..."
 
 ?P
-"... Biomorphic signature has deviated more than 3%. Please verify your identity by touching my hole, Master."
+"... Biomorphic signature has deviated more than 3%. Please verify your identity by touching my hole, ?master"
 
 ?P
 <<if $n1_candleHorny>>
@@ -15081,7 +15125,7 @@ setTimeout(setup, 1000);
     @@#lockout-time;$n1_lockoutTime@@
     seconds
 </span>
-before trying again, ?master."
+before trying again, ?master"
 
 @@#at-zero;@@
 
@@ -15110,7 +15154,7 @@ help topics."
 <<include [[n1s/F Sprite Dots]]>>
 
 ?P
-"No topics found, Master."
+"No topics found, ?master"
 
 ?P
 <<if $n1_candleHorny>>
@@ -15128,7 +15172,7 @@ $t_afterAction
 
 :: n1s/D On Hold [inclusion] {"position":"6450,3775","size":"100,100"}
 <<nobr>>
-"Checking password... Please hold, ?master."
+"Checking password... Please hold, ?master"
 
 XXX
 <<switch $n1_passwordTries || 0>>
@@ -17864,7 +17908,7 @@ tapping into mirror...
 
 pyron node has a sprite,
 sort of an AI assistant. it conjures an extension in your ear to talk.
-cheerily says "Welcome Ivex the Magnificent, I am your Awesome Babble Sprite Version 1.7. What device would you like to control, Master?"
+cheerily says "Welcome Ivex the Magnificent, I am your Awesome Babble Sprite Version 1.7. What device would you like to control, ?masterq"
 
 does new-user speech.
 responding requres you to talk out loud.
@@ -20730,7 +20774,7 @@ if want-touch, ivex picks up coin, satisfies touch.
 $t_afterAction
 
 
-:: n1cn/F Support Group [big-mood] {"position":"3900,2450","size":"100,100"}
+:: n1cn/F Support Group {"position":"3900,2450","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-always n1_abused true>>
@@ -20748,7 +20792,6 @@ Tell me who sent you."
 The panther
 <<= $t_ivexNear ? "" : "approaches and">>
 aims a fist again at the wolf's crotch.
-<<set $t_ivexNear = true>>
 
 ?P
 Nero's mind scrambles to interrupt the action. He blurts out, "I killed my father!"
@@ -20782,9 +20825,12 @@ But the look on Ivex's face, a smug sneer, makes the wolf stay quiet.
 ?P
 As he speaks, the panther uses his knuckles to make quick, light taps on the wolf's <<= $n1_naked ? "exposed balls." : "crotch.">>
 Nero can't help wincing with every tap.
-<</nobr>>
 
+?P
 [[Continue|n1cx/F Start Candle]]
+
+<<set $t_ivexNear = true>>
+<</nobr>>
 
 
 :: Init 3 Visited Passages [inclusion] {"position":"2175,800","size":"100,100"}
@@ -21355,8 +21401,13 @@ $(document).one(":passagedisplay", () => {
 .dash-title {
   font-weight: bold;
 }
-.dash-head a {
-  margin-left: 1em;
+.dash-roll {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  margin-left: .5em;
+}
+.dash-roll:hover {
+  border-color: #999;
 }
 .dash-body,
 .dash-body {
@@ -21365,6 +21416,12 @@ $(document).one(":passagedisplay", () => {
 .dash-todo-item {
   margin-left: 3em;
   text-indent: -1em;
+}
+.dash-passages label {
+  margin-right: 1em;
+}
+.dash-passages.dash-which-unfinished .dash-passage-finished {
+  display: none;
 }
 </style>
 
@@ -21411,7 +21468,7 @@ function analyze(passages) {
     return "unmarked";
   };
 
-  const sample = new Set(passages.randomMany(5));
+  const sample = new Set(passages.randomMany(1));
 
   passages.forEach(p => {
     const kind = getKind(p.title, p.tags);
@@ -21547,7 +21604,7 @@ function showRandom(dest, info) {
       .forEach(t => todoBlock(info, t).appendTo(body));
   };
   $("<span class=dash-title>").text("Random unfinished").appendTo(head);
-  $("<a>").appendTo(head).text("(reroll)")
+  $("<a class=dash-roll>").appendTo(head).html("&#x1f3b2;")
     .on("click", () => reroll());
   reroll();
 }
@@ -21565,15 +21622,32 @@ function todoBlock(info, title) {
   return block;
 }
 
-function showTodos(dest, info) {
-  const block = $("<div class=dash-unfinished>").appendTo(dest);
+function setWhich(which) {
+  State.temporary.which = which;
+  State.metadata.set("dashWhich", which);
+  $(".dash-passages")
+    .toggleClass("dash-which-all", which === "all")
+    .toggleClass("dash-which-unfinished", which === "unfinished");
+}
+
+function showPassages(dest, info) {
+  const block = $("<div class=dash-passages>").appendTo(dest);
   const head = $("<div class=dash-head>").appendTo(block);
   const body = $("<div class=dash-body>").appendTo(block);
-  $("<span class=dash-title>").text("All unfinished").appendTo(head);
-  const toShow = Object.keys(info.kindOf)
-    .filter(t => info.todosIn[t] || incomplete.has(info.kindOf[t]))
-    .sort();
-  toShow.forEach(t => todoBlock(info, t).appendTo(body));
+  
+  setWhich(State.metadata.get("dashWhich") || "all");
+  $("<label class=dash-which>").appendTo(head)
+    .wiki("<<radiobutton '_which' all autocheck>> All")
+    .on("change", () => setWhich("all"));
+  $("<label class=dash-which>").appendTo(head)
+    .wiki("<<radiobutton '_which' unfinished autocheck>> Unfinished")
+    .on("change", () => setWhich("unfinished"));
+
+  for (const title of Object.keys(info.kindOf).sort()) {
+    const finished = info.todosIn[title] == null && !incomplete.has(info.kindOf[title]);
+    todoBlock(info, title).appendTo(body)
+      .addClass(finished ? "dash-passage-finished" : "dash-passage-unfinished");
+  }
 }
 
 const passages = Story.lookup()
@@ -21600,7 +21674,7 @@ function render() {
   $(dest).append("<hr>");
   showRandom(dest, neroInfo);
   $(dest).append("<hr>");
-  showTodos(dest, neroInfo);
+  showPassages(dest, neroInfo);
 };
 $(document).one(":passagedisplay", render);
 <</script>>\
@@ -21824,7 +21898,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n1cr/D Masters {"position":"4100,3075","size":"100,100"}
+:: n1cr/D Masters {"position":"4175,3075","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
@@ -21834,7 +21908,7 @@ yes, of course everyone is obedient
 [[Continue|n1cr/D Ivex Hooked (2,4)]]
 
 
-:: n1cr/D Ivex Hooked (2,4) {"position":"4175,3225","size":"200,100"}
+:: n1cr/D Ivex Hooked (2,4) {"position":"4175,3200","size":"200,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 
@@ -22388,7 +22462,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n1cn/D Reject Appeasement {"position":"4100,3475","size":"100,100"}
+:: n1cn/F Reject Appeasement {"position":"4175,3425","size":"100,100"}
 <<nobr>>
 <<vi-always n1_abused true>>
 <<vi-ignore n1_mageSight>>
@@ -22397,25 +22471,31 @@ $t_afterAction
 He realizes it's the wrong thing to say as soon as he says it.
 Fear of the abusive panther is clouding his judgment.
 ?P
-Ivex chuckles and seems to relax.
+Ivex chuckles and seems to relax. He
 <<if $t_ivexNear>>
-    The panther looks up and down
+    looks into the eyes of
 <<else>>
-    The panther casually approaches
+    casually approaches
 <</if>>
 his anxious victim.
 
 ?P
-XXX ivex says something,
-grasps <<= $n1_naked ? "naked" : "clothed">> balls
+"That's quite an interesting offer," says the panther.
+He reaches out and grasps the wolf's
+<<= $n1_naked ? "naked" : "clothed">> balls,
+which still ache from their earlier abuse.
+"But I'm wondering... Why should I settle for anything less than 100%?"
 
 ?P
-XXX nero, please, no. please-misfire
-?P
-XXX strongly threaten more abuse, but turn away, transition to candle.
+Nero's mind frantically bounces between possible responses.
+He tries to read the panther's eyes, searching for some sign
+that there's some way to avoid further torture to his balls.
 
 ?P
-[[Continue|n1cx/F Start Candle]]
+<ul class=actions>
+    <li>[[`"Please, yes, you can have 100%!"`|n1cr/F 100 Percent]]</li>
+    <li>[[Snarl at the sadistic panther.|n1cr/F Zero Percent]]</li>
+</ul>
 
 <<set $t_ivexNear = true>>
 <</nobr>>
@@ -22514,11 +22594,11 @@ Nero interjects. "Please, call me an opportunist."
     The Sprite in Nero's ear says,
     "Okay! I will remember to call you
     <<set $n1_opportunist = true>>
-    ?master
+    ?mastern
     <<set $n1_opportunist = false>>
-    instead of ?master,
+    instead of ?mastern,
     <<set $n1_opportunist = true>>
-    ?master."
+    ?master"
     Nero shakes his head at that nonsense.
 <</misfire-please>>
 
@@ -22554,7 +22634,7 @@ The wolf stifles a yelp. "Please, I can prove it!"
 <<misfire-please>>
     ?P
     The Sprite in Nero's ear says, "You don't have to prove anything to me.
-    I will always believe you, ?master!"
+    I will always believe you, ?master"
 <</misfire-please>>
 ?P
 Ivex chuckles. "I'm sure you can." He stands up with the help of his grasp
@@ -22863,6 +22943,7 @@ em em {
 <<vi-ignore n1_subby>>
 
 The crop suddenly <em>thwacks</em> against the wolf's <em>thigh!</em>
+?P
 It's a sharp, unexpected pain that stings deeply in Nero's muscles
 and makes his leg uncontrollably spasm in its bonds.
 This isn't the pain that he was afraid of,
@@ -22986,7 +23067,7 @@ That isn't the problem.
 <</nobr>>
 
 
-:: n1cn/F Reject Collab 2 [big-mood] {"position":"4100,3725","size":"100,100"}
+:: n1cn/F Reject Collab 2 [big-mood] {"position":"4150,3775","size":"100,100"}
 <<nobr>>
 <<vi-always n1_abused false>>
 <<vi-ignore n1_mageSight>>
@@ -23493,6 +23574,90 @@ $t_afterAction
 <<set $n1_gravAsked = true>>
 <<set $t_banter = true>>
 <<set $t_returnGrav = State.passage>>
+<</nobr>>
+
+
+:: n1cr/F 100 Percent {"position":"4025,3425","size":"100,100"}
+<<nobr>>
+<<vi-always n1_abused true>>
+<<vi-ignore n1_mageSight>>
+<<cv-try n1_magicPhase `MP_beforeCast` `MP_wantDevice`>>
+
+"Please, yes," Nero says with urgency, "You can have 100%!"
+Anything to deflect or delay another punishing blow to his crotch.
+
+?P
+Ivex laughs and gives the wolf's captive balls a light tap with his knuckles.
+"That's a little bit better. But haven't you realized yet?
+I already <em>have</em> 100% of what I want in my grasp!"
+
+?P
+Nero nods his head vigorously.
+
+<<misfire-please>>
+    ?P
+    The Sprite in Nero's ear says,
+    "Got it. Increasing power flow to maximum, ?master"
+<</misfire-please>>
+
+?P
+The panther continues to punctuate his speech with additional taps
+to Nero's balls.
+"So for this deal, this <em>business venture</em> that you propose,
+for it to be interesting to me, you'll have to offer me <em>more</em>
+than 100%."
+He raises his right arm and makes a fist, preparing it to strike.
+
+?P
+Nero blurts out, "110%!" The panther does not seem appeased. "150%?
+You can have 200%!"
+
+?P
+Ivex giggles excitedly. "Do you even hear what you're saying?
+How do you expect to <em>have</em> 200% to give me?
+Did your whore of a mother whelp a twin that you're going
+to lure into another one of my traps?"
+
+?P
+The panther releases his grasp and steps away with a laugh.
+
+?P
+[[Continue|n1cx/F Start Candle]]
+<</nobr>>
+
+
+:: n1cr/F Zero Percent [big-mood] {"position":"4050,3550","size":"100,100"}
+<<nobr>>
+<<vi-always n1_abused true>>
+<<vi-ignore n1_mageSight>>
+
+Nero snarls at the sadistic panther. Ivex's absurd demand for 100%
+has made it clear that no matter what the wolf says,
+the panther will continue to press for more and more,
+until he finds a point of resistance,
+and use that resistance as an excuse for further punishment.
+
+?P
+There is no way for Nero to win this game.
+So he resolves that he will not debase himself here.
+He wants to know that when he finally escapes,
+he will be able to look back on these memories without shame.
+The Nero in the future will remember that he remained true to himself,
+no matter the tortures inflicted on him today.
+
+?P
+Ivex's response to the snarl is an excited giggle.
+He raises his right arm to strike the wolf's balls again,
+holds his fist plainly in sight,
+and watches Nero's ears flatten and jaw clench.
+
+?P
+The panther releases his grasp and steps away with a laugh.
+
+?P
+[[Continue|n1cx/F Start Candle]]
+
+<<set $n1_tough = true>>
 <</nobr>>
 
 
