@@ -1208,8 +1208,8 @@ function mark(node, c) {
     font-size: 120px;
     pointer-events: none;
     position: fixed;
-    right: 10px;
-    top: 10px;
+    right: 50px;
+    bottom: 10px;
     z-index: 10;
   }
   .draft-D::before {
@@ -2279,15 +2279,16 @@ Macro.add(&quot;vi-always-if&quot;, {
   }
 });
 
-/** &lt;&lt;vi-ignore varname [reason]&gt;&gt; */
+/** &lt;&lt;vi-ignore var1 ...&gt;&gt; */
 Macro.add(&quot;vi-ignore&quot;, {
   handler: function() {
-    const [vname] = this.args;
-    const sexp = Nero.getFlagExpectation(vname);
-    if (sexp !== &quot;notable&quot;) {
-      EM.fail(`vi-ignore ${vname} is unnecessary`);
+    for (const vn of this.args) {
+      const sexp = Nero.getFlagExpectation(vn);
+      if (sexp !== &quot;notable&quot;) {
+        EM.fail(`vi-ignore ${vn} is unnecessary`);
+      }
+      ignoreVars.add(vn);
     }
-    ignoreVars.add(this.args[0]);
   }
 });
 
@@ -2395,7 +2396,7 @@ function varButton(vname) {
     return outer;
   }
 
-  // This doesn&#39;t work well with patience, need to fix something
+  // TODO: This doesn&#39;t work well with patience, need to fix something
   if (false &amp;&amp; vtype === &quot;number&quot;) {
     outer.addClass(&quot;var-info-number&quot;);
     $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
@@ -2473,7 +2474,6 @@ function varInfoSetup() {
         outer.toggleClass(&quot;var-info-hidden&quot;, !show);
       });
 
-    // TODO: re-enable when fixed
     $(&quot;&lt;span class=var-info-compute&gt;[compute variants]&lt;/span&gt;&quot;)
       .appendTo(outer)
       .click(() =&gt; CV.render());
@@ -2492,7 +2492,8 @@ function varInfoSetup() {
       }
     });
 
-    Nero.getNotable().forEach(f =&gt;touched.add(f));
+    const notable = Nero.getNotable();
+    notable.forEach(f =&gt; touched.add(f));
 
     if (touched.size) {
       const el = $(&quot;&lt;span class=var-info-touched&gt;&quot;).appendTo(outer);
@@ -3441,7 +3442,7 @@ Nero.getNotable = (here) =&gt; {
   const s = Nero.getSection(here);
   return Object.keys(Nero.flags).filter(f =&gt; {
     const sect = Nero.flags[f].sections;
-    return sect != null &amp;&amp; sect === &quot;notable&quot;;
+    return sect != null &amp;&amp; sect[s] === &quot;notable&quot;;
   });
 };
 
@@ -10030,7 +10031,7 @@ Feedback is always welcome! Contact Grayscale on &lt;a href=&quot;https://mastod
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
     &lt;&lt;set $n1_abused = true&gt;&gt;
 &lt;&lt;/link&gt;&gt;
-&lt;&lt;link &quot;&gt; Nero 1F sprite ready, neutral, recruiting&quot; &quot;n1cr/D Ivex Skeptical (2,4)&quot;&gt;&gt;
+&lt;&lt;link &quot;&gt; Nero 1F sprite ready, neutral, recruiting&quot; &quot;n1cr/F Ivex Skeptical (2,4)&quot;&gt;&gt;
     &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
     &lt;&lt;set $n0_barbsSlowViewed = true&gt;&gt;
     &lt;&lt;set $n1_barbsSlow = true&gt;&gt;
@@ -10527,10 +10528,10 @@ Ivex grins back. &quot;Now that you&#39;ve found me, what did you have in mind?&
 &lt;&lt;nobr&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n1_abused&gt;&gt;
-        &lt;li&gt;[[`&quot;I&#39;m wondering if I might recruit you.&quot;`|n1cn/F Recruit]]&lt;/li&gt;
+        &lt;li&gt;[[`&quot;I&#39;m wondering if I might recruit you...&quot;`|n1cn/F Recruit]]&lt;/li&gt;
         &lt;li&gt;[[&#39;&quot;Perhaps we could collaborate?&quot;&#39;|n1cn/F Collab]]&lt;/li&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;li&gt;[[`&quot;I&#39;m here to recruit you.&quot;`|n1cn/F Recruit]]&lt;/li&gt;
+        &lt;li&gt;[[`&quot;I&#39;m here to recruit you...&quot;`|n1cn/F Recruit]]&lt;/li&gt;
         &lt;li&gt;[[&#39;&quot;Perhaps we could collaborate...&quot;&#39;|n1cn/F Collab]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;/ul&gt;
@@ -10649,14 +10650,14 @@ and then he can complete his mission and escape.
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;em-assert !$n1_subby &amp;&amp; !$n1_tough&gt;&gt;
     &lt;&lt;if $n1_abused&gt;&gt;
-        &lt;&lt;mtl [[n1cn/D Secret Society]]&gt;&gt;
+        &lt;&lt;mtl [[n1cn/F Secret Guild]]&gt;&gt;
             &quot;Of course not! This isn&#39;t about me!&quot;
         &lt;&lt;/mtl&gt;&gt;
         &lt;&lt;mtl [[n1cn/F Support Group]]&gt;&gt;
             &quot;No, that isn&#39;t what I meant!&quot;
         &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;&lt;mtl [[n1cn/D Secret Society]]&gt;&gt;
+        &lt;&lt;mtl [[n1cn/F Secret Guild]]&gt;&gt;
             &quot;This isn&#39;t about me...&quot;
         &lt;&lt;/mtl&gt;&gt;
         &lt;&lt;mtl [[n1cn/F Con Game 1]]&gt;&gt;
@@ -10665,25 +10666,56 @@ and then he can complete his mission and escape.
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="299" name="n1cn/D Secret Society" tags="big-mood" position="4175,2575" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="299" name="n1cn/F Secret Guild" tags="big-mood" position="4150,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
-Nero: it&#39;s awesome, we have bacon
-
-?P
 &lt;&lt;if $n1_abused&gt;&gt;
-    abused, cautious trawling
-&lt;&lt;elseif $n1_naked&gt;&gt;
-    naked, anti-horny
+    &quot;Of course not!&quot; says Nero. &quot;This isn&#39;t about me!&quot;
+    He pauses to consider the best way to phrase this.
 &lt;&lt;else&gt;&gt;
-    normal, chummy
+    &quot;This isn&#39;t about me,&quot; says Nero.
+    He pauses to give his next statement dramatic weight.
 &lt;&lt;/if&gt;&gt;
+&quot;I&#39;m merely a messenger for a secret guild of mages that would be honored
+to have you join their &lt;em&gt;inner&lt;/em&gt; council.&quot;
 
 ?P
-ivex takes the bait, he&#39;s skeptical but interested.
+&quot;A secret guild of mages. Really.&quot; Ivex speaks with contempt.
+&quot;And does this... secret mage guild have a name?&quot;
 
 ?P
-[[Continue|n1cr/D Ivex Skeptical (2,4)]]
+Nero is a little flustered. He had hoped that the idea of hidden powers
+would be attractive enough for Ivex to take the bait without much
+questioning of the premise. The wolf will need to make the lure better
+somehow.
+
+?P
+He stalls for time. &quot;Yes... but... well... If you aren&#39;t interested,
+I shouldn&#39;t tell you the name,
+since it &lt;em&gt;is&lt;/em&gt; a secret guild.&quot;
+
+?P
+Ivex laughs, &quot;Of &lt;em&gt;course&lt;/em&gt; it is. I should have anticipated that
+answer. And now I suppose you will continue to try to distract me
+by teasing me with details of this... secret mage guild?&quot;
+
+?P
+A little too close to the truth. The only response to that is to shrug
+and remain silent. The secret mage guild (if it existed) would not beg for
+attention, and if Ivex&#39;s disdain leads him to miss an amazing opportunity,
+so be it.
+
+?P
+The silence continues for an uncomfortable length of time.
+And then it continues some more.
+
+?P
+The panther breaks the silence first, with another laugh.
+His amusement hasn&#39;t diminished, but perhaps a note of doubt
+has crept into it...
+
+?P
+[[Continue|n1cr/F Ivex Skeptical (2,4)]]
 
 &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
 &lt;&lt;set $n1_ivexWasReceptive = true&gt;&gt;
@@ -11167,7 +11199,7 @@ makes a gesture, and
     is a sign that Nero has probed a tender spot.
     The wolf will have to tread carefully to calm the panther&#39;s defenses.
 &lt;&lt;else&gt;&gt;
-    Nero has clearly found a tender spot. Ivex&#39;s bluster is definitely
+    Nero has clearly found a tender spot. Ivex&#39;s bluster is likely to be
     over-compensation for some deep feeling of failure of some sort.
     The wolf is confident he knows the right tune to lead this dance.
 &lt;&lt;/if&gt;&gt;
@@ -11230,66 +11262,94 @@ makes a gesture, and
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="310" name="n1cr/D Very Secret" tags="" position="4175,2825" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="310" name="n1cr/F Guild Name" tags="" position="4125,2825" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n1_naked&gt;&gt;
 
-&quot;You &lt;em&gt;have&lt;/em&gt; heard of us...&quot;
+&quot;The guild&#39;s name...&quot; Nero has no idea what he should say. Hopefully Ivex will
+interpret this hesitation as a dramatic pause, but the wolf can&#39;t stall
+for much longer.
 
-&lt;&lt;pw-misfire &quot;You-Have-Heard-Of-Us&quot;&gt;&gt;
+?P
+Ivex snarls. &quot;You&#39;re quite the disappointment. I really need to find better
+locations for my traps.&quot;
+
+?P
+Nero suddenly remembers what Ivex said earlier about his traps.
+&lt;em&gt;All those idiot bounty hunters.&lt;/em&gt;
+The wolf has a suspicion about where those idiot bounty hunters come
+from. Nero quickly games out possibilities in his head,
+and he reaches the conclusion:
+Yes! It might work!
+
+?P
+He drops his voice to a reluctant mumble. &quot;The name is:
+The Wayward Adventurers Guild.&quot;
+
+?P
+Ivex&#39;s immediate response is to laugh. &quot;The Wayward Adventurers Guild?
+They&#39;re hardly a secret!&quot;
+
+?P
+Nero calmly shakes his head in response. Will the panther take the bait?
+
+?P
+Ivex says, &quot;You expect me to believe that a &lt;em&gt;secret&lt;/em&gt; mage guild
+would have the name that everyone associates with thick-headed...&quot;
+His voice trails off. &quot;... low-rent ... warriors. Hm.&quot;
+
+?P
+The panther starts pacing and muttering to himself. &quot;Was that...
+No, of course not... But that would explain...&quot;
+
+?P
+Nero is elated. Rarely have his strategems worked as well as this.
+And he didn&#39;t even need to say more than three words to do it!
+
+?P
+[[Continue|n1cr/F Wild Speculation]]
+
+&lt;&lt;set $t_ivexNear = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-
-ivex, fascinated, leaps into speculation about how the secret is kept, dreams up a horny mind-control scenario and asks for confirmation.
-
-&lt;&lt;if $n1_abused&gt;&gt;
-    abused, let ivex do most of the talking
-&lt;&lt;elseif $n1_naked&gt;&gt;
-    naked, try to deflect away from horny
-&lt;&lt;else&gt;&gt;
-    normal, play along
-&lt;&lt;/if&gt;&gt;
-
-[[Continue|n1cr/D Ivex Intrigued (2,4)]]</tw-passagedata><tw-passagedata pid="311" name="n1cr/D Ivex Skeptical (2,4)" tags="pw-misfire-start" position="4175,2700" size="200,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="311" name="n1cr/F Ivex Skeptical (2,4)" tags="pw-misfire-start" position="4175,2675" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
 &lt;&lt;n1-patience 2 4&gt;&gt;
-    XXX impatient. Ivex seems skeptical, but intrigued.
-    He asks, &quot;Why have I never heard of your consortium?&quot;
+    Ivex asks with a smirk, &quot;Have you thought of a suitably
+    mysterious name for your secret mage guild yet?&quot;
 &lt;&lt;n1-repeat&gt;&gt;
-    XXX
+    Ivex is smugly asking for the name of the &quot;secret mage guild&quot;.
 &lt;&lt;n1-warn&gt;&gt;
-    XXX
+    Ivex sneers and asks, &quot;What is the name of this secret mage guild that
+    you seem so eager for me to join?&quot;
 &lt;&lt;n1-insist&gt;&gt;
-    XXX
+    Ivex growls. &quot;Enough of this nonsense about secret mage guilds.
+    If such a guild existed, they certainly wouldn&#39;t send someone like
+    &lt;em&gt;you&lt;/em&gt; to recruit &lt;em&gt;me&lt;/em&gt;.&quot;
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
 &lt;&lt;include [[n1x/F Actions]]&gt;&gt;
 
-XXX maybe a secondary conversation option?
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;&lt;if $n1_abused&gt;&gt;
-        &lt;&lt;mtl [[n1cr/D Very Secret]]&gt;&gt;
-            Reply to Ivex, &quot;You &lt;em&gt;have&lt;/em&gt; heard of us...&quot;
-        &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;elseif $n1_naked&gt;&gt;
-        &lt;&lt;mtl [[n1cr/D Very Secret]]&gt;&gt;
-            Reply to Ivex, &quot;You &lt;em&gt;have&lt;/em&gt; heard of us...&quot;
-        &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-        &lt;&lt;mtl [[n1cr/D Very Secret]]&gt;&gt;
-            Reply to Ivex, &quot;You &lt;em&gt;have&lt;/em&gt; heard of us...&quot;
-        &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
+    &lt;&lt;mtl [[n1cr/F Guild Name]]&gt;&gt;
+        Tell Ivex, &quot;The guild&#39;s name...&quot;
+    &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="312" name="n1cr/D Ivex Intrigued (2,4)" tags="" position="4175,2950" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;n1-patience 2 4&gt;&gt;
-    Ivex: do guild members have to do everything you ask? grabs crotch
+    Ivex addresses the wolf. &quot;If I join this inner council,
+    will the ordinary guild members do &lt;em&gt;everything&lt;/em&gt; I ask?&quot;
+    There&#39;s little doubt what &lt;em&gt;everything&lt;/em&gt; implies.
+    as the panther is firmly grasping his own crotch.
 &lt;&lt;n1-repeat&gt;&gt;
-    XXX
+    Ivex has asked if guild members will be required to obey him,
+    and he&#39;s rubbing his crotch in anticipation of the reply.
 &lt;&lt;n1-warn&gt;&gt;
     XXX
 &lt;&lt;n1-insist&gt;&gt;
@@ -11299,10 +11359,9 @@ XXX maybe a secondary conversation option?
 ?P
 &lt;&lt;include [[n1x/F Actions]]&gt;&gt;
 
-XXX maybe vary actions on abused/naked
-XXX maybe another option
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;[[yes, of course|n1cr/D Masters]]&lt;/li&gt;
+    &lt;li&gt;[[Answer softly, &quot;Within reason.&quot;|n1cr/D Masters][$t_resisting = true]]&lt;/li&gt;
+    &lt;li&gt;[[Smile and say, &quot;Of course!&quot;|n1cr/D Masters][$t_resisting = false]]&lt;/li&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="313" name="n1cr/D Subby" tags="big-mood" position="4475,3800" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -13138,7 +13197,7 @@ He begins a quiet intonation of the most basic mage-sight spell...
 &lt;&lt;elseif $t_ivexReceptive&gt;&gt;
     &lt;!-- receptive when not subby is always clothed --&gt;
     &lt;&lt;em-assert !$n1_naked&gt;&gt;
-    Ivex seems interested in Nero&#39;s tale.
+    Ivex seems interested enough in what Nero is saying.
     Perhaps this is a good time for the wolf to impress the panther
     with a clever escape spell.
     &lt;&lt;set $t_magicAction = &quot;[[Cast an escape spell.|n1s/D Cast Slippery]]&quot;&gt;&gt;
@@ -21611,6 +21670,56 @@ The panther releases his grasp and steps away with a laugh.
 [[Continue|n1cx/F Start Candle]]
 
 &lt;&lt;set $n1_tough = true&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="562" name="n1cr/F Wild Speculation" tags="" position="4250,2825" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_abused n1_mageSight&gt;&gt;
+
+The panther turns to face the
+&lt;&lt;= $n1_naked ? &quot;naked&quot; : &quot;bound&quot;&gt;&gt; wolf and asks,
+&quot;Are you a member of that inner council you mentioned?&quot;
+Before Nero has a chance to respond, Ivex answers himself.
+&quot;No, of course not.
+You&#39;re obviously a minion.
+And you said you&#39;re just a messenger.&quot;
+
+?P
+Nero feels slightly offended, but nods anyway.
+
+?P
+Ivex laughs. &quot;All those adventurers... they were a &lt;em&gt;test!&lt;/em&gt;&quot;
+His tail is lashing with excitement.
+&quot;You can tell your masters that I appreciate them
+sending me so many subjects for my experiments.
+It&#39;s been useful to have a continuous trickle of vital essence.&quot;
+
+?P
+&lt;em&gt;Vital essence?&lt;/em&gt; Nero is starting to feel some doubts
+about his, admittedly meager understanding of Ivex&#39;s magic.
+The lupine mage had immediately dismissed the speculation that Ivex
+is practicing necromancy.
+Necromancy is the typical pejorative applied by mundanes
+who encounter any malignantly-applied magic they do not understand.
+And nothing in this room, nothing Ivex has done so far,
+has any connection to the dangerous art of spirit magic.
+
+?P
+But &quot;vital essence&quot; is not terminology used by any reputable mage.
+Nero does not remember what it refers to, or even if it&#39;s a customary
+term in spirit magic at all. But he is not at all an expert of that domain
+(and has no desire to be, of course!)
+
+?P
+The wolf locates the question &quot;Ivex&#39;s magic?&quot; on his mental slate,
+and adds several underlines and asterisks to it.
+
+?P
+Ivex is speaking excitedly to an unseen audience,
+perhaps that inner council he&#39;s imagined in his head.
+&quot;I&#39;ve been ready to expand my domain greatly for quite some time now.
+If you think this is impressive now, you will be astounded by
+what I can achieve if I have more than just trickles...&quot;
+
+?P
+[[Continue|n1cr/D Ivex Intrigued (2,4)]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">
 	/*! SugarCube JS */

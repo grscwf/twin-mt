@@ -66,14 +66,14 @@ function listVars(twFile, varListTxt, regexFilter) {
       /[<]state-load\s+(\w+)/g,
       /[<]state-save\s+(\w+)/g,
       /[<]vi-always\s+(\w+)/g,
-      /[<]vi-always\s+(\w+)\s+(\w+)/g,
-      /[<]vi-ignore\s+(\w+)/g,
-      /[<]vi-ignore-if\s+(\w+)\s+(\w+)/g,
+      /[<]vi-always\s+(\w+\s+\w+)/g,
+      /[<]vi-ignore\s+(\w+(?:\s+\w+)*)/g,
+      /[<]vi-ignore-if\s+(\w+(?:\s+\w+)+)/g,
     ];
     for (const re of macros) {
       for (const m of line.matchAll(re)) {
-        addMatch(m[1], m.index);
-        if (m[2] != null) addMatch(m[2], m.index);
+        const vars = m[1].split(/\s+/);
+        vars.forEach(vn => addMatch(vn, m.index));
       }
     }
   });
