@@ -9,7 +9,6 @@
   - [Compute variants](#compute-variants)
 - [Story structure - Passages](#story-structure---passages)
 - [Story structure - State](#story-structure---state)
-- [Rationales](#rationales)
 
 ## Working with Twine
 
@@ -192,17 +191,19 @@
   to be read, and considered relevant by the constraint tests).
     - It's sometimes useful to write conditions specifically for
       helping compute-variants, and maybe check flags redundantly.
-- For testing `n1_magicPhase` variants:
+- For testing `n1_magicPhase` variants, add a `<<cv-try>>` statement:
   - Include `MP_beforeCast` if it's possible.
   - Include any values tested in the passage.
   - If the passage checks `n1_mageSight`,
-    include at least one value >= `MP_mageSight`.
+    include at least one value in the range
+    `[MP_mageSight, MP_contact]`.
   - If the passage checks `n2_free`,
     include both `MP_contact` and `MP_broken`.
 - For testing `n2_magicPhaseBroken` variants:
   - Include `null`, `MP_mageSight`, and any values tested in the passage.
   - Note, these values are impossible: `MP_beforeCast`, `MP_triedMagic`,
     `MP_wantPassword`
+- TODO: these rules could be automatic.
 
 ## Story structure - Passages
 - All of Nero's passages start with a codeword like `n1a/F`.
@@ -255,7 +256,18 @@
     `t_` variables.
 - `n0_` vars are for Nero state that persists across replays.
 - `mt_` vars are for overall story state that persists across replays.
-
-
-## Rationales
-TODO
+- Generally, a passage that changes state will change it at the
+  bottom.
+  - This makes it easier to write text for the state transition.
+  - It also makes it easier to see state changes at a glance.
+  - I settled on this convention partway through development, so some
+    passages don't do this yet.
+  - Ideally, state changes that aren't at the bottom will have a comment
+    at the bottom mentioning it.
+  - Conditional state changes are usually written without using `<<if>>`,
+    because of a quirk with compute-variants:
+    - An `<<if>>` that has no text will still count as a variant,
+      because the debug markup is different.
+    - This is confusing and unhelpful, but fixing this in compute-variants
+      is not straightforward.
+    - Rewriting conditionals without `<<if>>` is a simple workaround.
