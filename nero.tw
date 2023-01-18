@@ -364,18 +364,23 @@ ul.actions li::before {
 Config.saves.id = 'sleth-mages-tower-2';
 Config.ui.stowBarInitially = true;
 
-// enable debug if URL has ?debug
+// enable debug mode if URL has ?debug
 if (/[?&]debug\b/.test(location.search)) {
   Config.debug = true;
+  setup.debug = true;
+  setup.tester = true;
 }
 
-if (!Config.debug) {
+// enable tester mode if URL has ?tester
+if (/[?&]tester\b/.test(location.search)) {
+  setup.tester = true;
+}
+
+if (!setup.tester) {
   Config.history.controls = false;
 }
 
-if (Config.debug) {
-  // set flag for StoryMenu (can't use Config.debug; it's always false for StoryMenu)
-  setup.enableDebugMenu = true;
+if (setup.debug) {
   // start with debugview off
   setTimeout(() => DebugView.disable());
   // add debugging class for css
@@ -423,10 +428,12 @@ The Mage's Tower (Nero)
 :: StoryMenu [inclusion] {"position":"2525,1875","size":"100,100"}
 [[Archives]]
 [[Credits]]
-<<if setup.enableDebugMenu>>
+<<if setup.tester>>
+    [[`\uD83D\uDD27 Notes`|Passage Notes Top]]
+<</if>>
+<<if setup.debug>>
     [[`\uD83D\uDD27 Jump To`|n0/F Jump To]]
     [[`\uD83D\uDD27 Dashboard`|Dashboard]]
-    [[`\uD83D\uDD27 Notes`|Passage Notes Top]]
     [[`\uD83D\uDD27 Visited`|Visited]]
     [[`\uD83D\uDD27 Proofing`|Proofing]]
     <<link "&#x1f527; Reset n0_">>
@@ -1757,7 +1764,7 @@ MT.forgetWalkHistory = () => {
 
 /** Random walk */
 function randomWalkSetup() {
-  if (!Config.debug) return;
+  if (!setup.tester) return;
 
   // TODO - add setter to id
   const idOf = el => $(el).attr("data-passage");
@@ -1891,17 +1898,19 @@ function randomWalkSetup() {
       .text("back")
       .click(back)
       .appendTo(outer);
-    $("<a id=rw-seek>")
-      .attr("title", "<ctrl-backslash> seek")
-      .toggleClass("rw-seeking", seeking)
-      .text("seek")
-      .click(seekToggle)
-      .appendTo(outer);
-    $("<a>")
-      .attr("title", "<ctrl-slash> random")
-      .text("rand")
-      .click(walk)
-      .appendTo(outer);
+    if (setup.debug) {
+      $("<a id=rw-seek>")
+        .attr("title", "<ctrl-backslash> seek")
+        .toggleClass("rw-seeking", seeking)
+        .text("seek")
+        .click(seekToggle)
+        .appendTo(outer);
+      $("<a>")
+        .attr("title", "<ctrl-slash> random")
+        .text("rand")
+        .click(walk)
+        .appendTo(outer);
+    }
     $("<a>")
       .attr("title", "<ctrl-period> forward")
       .text("forw")
@@ -2491,7 +2500,7 @@ function varButton(vname) {
 }
 
 function varInfoSetup() {
-  if (!Config.debug) return;
+  if (!setup.debug) return;
 
   $(document).on(":passagestart", () => {
     alwaysVars.clear();
@@ -2997,7 +3006,7 @@ Nero.sections = {
 };
 
 function checkSections() {
-  if (!Config.debug) return;
+  if (!setup.tester) return;
   Story.lookup().forEach(({ title }) => {
     const matches = Object.entries(Nero.sections)
       .flatMap(([s, re]) => re.test(title) ? [s] : []);
@@ -3009,7 +3018,7 @@ function checkSections() {
   });
 }
 
-if (Config.debug) checkSections();
+checkSections();
 
 Nero.getSection = (here) => {
   here || (here = State.passage);
@@ -3266,16 +3275,16 @@ Nero.flags = {
     sections: {
       n0_meta: "",
       n1a_intro: "",
-      n1cn_neutral: /ivex/i,
-      n1cr_receptive: /ivex/,
-      n1cs_subby: /ivex/i,
-      n1cx_transition: /ivex/i,
-      n1d_candle: /ivex/i,
-      n1e_horny: /ivex/i,
-      n1f_clever: /ivex/i,
+      n1cn_neutral: "",
+      n1cr_receptive: "",
+      n1cs_subby: "",
+      n1cx_transition: "",
+      n1d_candle: "",
+      n1e_horny: "",
+      n1f_clever: "",
       n1p_barbs: "",
-      n1s_magic: /ivex/i,
-      n1x_look: /ivex/i,
+      n1s_magic: "",
+      n1x_look: "",
       n1y_lookHorny: "",
       n2a_start: false,
       n2b_bound: false,
@@ -3507,6 +3516,7 @@ Nero.flags = {
 };
 
 function checkFlags() {
+  if (!setup.tester) return;
   const sections = new Set(Object.keys(Nero.sections));
   Object.keys(Nero.flags).forEach(x => {
     // check sections
@@ -3533,7 +3543,7 @@ function checkFlags() {
   });
 }
 
-if (Config.debug) checkFlags();
+checkFlags();
 
 Nero.getVarExpectation = (vname) => {
   const f = Nero.flags[vname];
@@ -3924,7 +3934,7 @@ Macro.add("n1-patience", {
       }
     }
 
-    if (Config.debug) {
+    if (setup.debug) {
       let debug = !!State.metadata.get("patienceDebug");
       const outer = $("<span class=patience-debug>").appendTo(this.output)
         .toggleClass("patience-debug-show", debug);
@@ -4180,7 +4190,7 @@ Macro.add("pw-suggest", {
       if (p !== null) $(this.output).wiki(p.contents);
     }
 
-    if (Config.debug) {
+    if (setup.debug) {
       let debug = !!State.metadata.get("pwDebug");
       $("#passages").toggleClass("pw-debug-show", debug);
       const outer = $("<span class=pw-debug>").appendTo(this.output);
@@ -10954,7 +10964,7 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 
 <<nobr>>
 <ul class="actions">
-    <<if Config.debug && $n0_afterConstruction>>
+    <<if setup.debug && $n0_afterConstruction>>
         <li>$n0_afterConstruction</li>
     <</if>>
     <li>[[Try again from Ivex's disappearance.|n2a/F Restart Ivex Gone]]</li>
@@ -15473,7 +15483,7 @@ function update() {
   setTimeout(update, 1000);
 }
 function setup() {
-  if (Config.debug) {
+  if (setup.debug) {
     $("#lockout-time").css({ cursor: "pointer" }).on("click", () => {
       v.n1_lockoutTime = 2;
       $("#at-zero").text("").removeClass("at-zero-visible");
@@ -21217,7 +21227,7 @@ Macro.add("random-once", {
 
     $(this.output).wiki(this.payload[choice].contents);
 
-    if (Config.debug && valid.size > 1) {
+    if (setup.debug && valid.size > 1) {
       const outer = $("<span class=ro-debug>").appendTo(this.output);
       const val = V[shown];
       outer.append("&#x1f527;");
@@ -21507,7 +21517,7 @@ function save() {
 }
 
 function setup() {
-  if (!Config.debug) return;
+  if (!setup.debug) return;
   load();
   marksEnabled = !!JSON.parse(persist.getItem(FLAG) || "false");
   $(document).on(":passageend", () => {
@@ -22676,7 +22686,7 @@ with souvenirs from that location.
 <<pw-fail>>
     <<set _triedLuminance = true>>
 <</pw-suggest>>
-<<if Config.debug>><br><</if>>
+<<if setup.debug>><br><</if>>
 
 <<if _triedLiskov && _triedLuminance>>
     Unfortunately, neither "Caverns of Luminance"
@@ -22869,6 +22879,7 @@ function saveLog() {
 }
 
 function setup() {
+  if (!setup.tester) return;
   log = State.metadata.get(KEY) || [];
 
   $("<div id=log-button>")
@@ -22982,7 +22993,7 @@ function openLog() {
   Dialog.open();
 }
 
-if (Config.debug) setup();
+setup();
 <</script>>
 
 

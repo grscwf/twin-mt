@@ -424,18 +424,23 @@ ul.actions li::before {
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.saves.id = 'sleth-mages-tower-2';
 Config.ui.stowBarInitially = true;
 
-// enable debug if URL has ?debug
+// enable debug mode if URL has ?debug
 if (/[?&]debug\b/.test(location.search)) {
   Config.debug = true;
+  setup.debug = true;
+  setup.tester = true;
 }
 
-if (!Config.debug) {
+// enable tester mode if URL has ?tester
+if (/[?&]tester\b/.test(location.search)) {
+  setup.tester = true;
+}
+
+if (!setup.tester) {
   Config.history.controls = false;
 }
 
-if (Config.debug) {
-  // set flag for StoryMenu (can't use Config.debug; it's always false for StoryMenu)
-  setup.enableDebugMenu = true;
+if (setup.debug) {
   // start with debugview off
   setTimeout(() => DebugView.disable());
   // add debugging class for css
@@ -459,7 +464,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -467,10 +472,12 @@ by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="3" name="StoryDisplayTitle" tags="" position="1825,575" size="100,100">The Mage&#39;s Tower (Nero)</tw-passagedata><tw-passagedata pid="4" name="StoryMenu" tags="inclusion" position="2525,1875" size="100,100">[[Archives]]
 [[Credits]]
-&lt;&lt;if setup.enableDebugMenu&gt;&gt;
+&lt;&lt;if setup.tester&gt;&gt;
+    [[`\uD83D\uDD27 Notes`|Passage Notes Top]]
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;if setup.debug&gt;&gt;
     [[`\uD83D\uDD27 Jump To`|n0/F Jump To]]
     [[`\uD83D\uDD27 Dashboard`|Dashboard]]
-    [[`\uD83D\uDD27 Notes`|Passage Notes Top]]
     [[`\uD83D\uDD27 Visited`|Visited]]
     [[`\uD83D\uDD27 Proofing`|Proofing]]
     &lt;&lt;link &quot;&amp;#x1f527; Reset n0_&quot;&gt;&gt;
@@ -1753,7 +1760,7 @@ MT.forgetWalkHistory = () =&gt; {
 
 /** Random walk */
 function randomWalkSetup() {
-  if (!Config.debug) return;
+  if (!setup.tester) return;
 
   // TODO - add setter to id
   const idOf = el =&gt; $(el).attr(&quot;data-passage&quot;);
@@ -1887,17 +1894,19 @@ function randomWalkSetup() {
       .text(&quot;back&quot;)
       .click(back)
       .appendTo(outer);
-    $(&quot;&lt;a id=rw-seek&gt;&quot;)
-      .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; seek&quot;)
-      .toggleClass(&quot;rw-seeking&quot;, seeking)
-      .text(&quot;seek&quot;)
-      .click(seekToggle)
-      .appendTo(outer);
-    $(&quot;&lt;a&gt;&quot;)
-      .attr(&quot;title&quot;, &quot;&lt;ctrl-slash&gt; random&quot;)
-      .text(&quot;rand&quot;)
-      .click(walk)
-      .appendTo(outer);
+    if (setup.debug) {
+      $(&quot;&lt;a id=rw-seek&gt;&quot;)
+        .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; seek&quot;)
+        .toggleClass(&quot;rw-seeking&quot;, seeking)
+        .text(&quot;seek&quot;)
+        .click(seekToggle)
+        .appendTo(outer);
+      $(&quot;&lt;a&gt;&quot;)
+        .attr(&quot;title&quot;, &quot;&lt;ctrl-slash&gt; random&quot;)
+        .text(&quot;rand&quot;)
+        .click(walk)
+        .appendTo(outer);
+    }
     $(&quot;&lt;a&gt;&quot;)
       .attr(&quot;title&quot;, &quot;&lt;ctrl-period&gt; forward&quot;)
       .text(&quot;forw&quot;)
@@ -2467,7 +2476,7 @@ function varButton(vname) {
 }
 
 function varInfoSetup() {
-  if (!Config.debug) return;
+  if (!setup.debug) return;
 
   $(document).on(&quot;:passagestart&quot;, () =&gt; {
     alwaysVars.clear();
@@ -2945,7 +2954,7 @@ Nero.sections = {
 };
 
 function checkSections() {
-  if (!Config.debug) return;
+  if (!setup.tester) return;
   Story.lookup().forEach(({ title }) =&gt; {
     const matches = Object.entries(Nero.sections)
       .flatMap(([s, re]) =&gt; re.test(title) ? [s] : []);
@@ -2957,7 +2966,7 @@ function checkSections() {
   });
 }
 
-if (Config.debug) checkSections();
+checkSections();
 
 Nero.getSection = (here) =&gt; {
   here || (here = State.passage);
@@ -3214,16 +3223,16 @@ Nero.flags = {
     sections: {
       n0_meta: &quot;&quot;,
       n1a_intro: &quot;&quot;,
-      n1cn_neutral: /ivex/i,
-      n1cr_receptive: /ivex/,
-      n1cs_subby: /ivex/i,
-      n1cx_transition: /ivex/i,
-      n1d_candle: /ivex/i,
-      n1e_horny: /ivex/i,
-      n1f_clever: /ivex/i,
+      n1cn_neutral: &quot;&quot;,
+      n1cr_receptive: &quot;&quot;,
+      n1cs_subby: &quot;&quot;,
+      n1cx_transition: &quot;&quot;,
+      n1d_candle: &quot;&quot;,
+      n1e_horny: &quot;&quot;,
+      n1f_clever: &quot;&quot;,
       n1p_barbs: &quot;&quot;,
-      n1s_magic: /ivex/i,
-      n1x_look: /ivex/i,
+      n1s_magic: &quot;&quot;,
+      n1x_look: &quot;&quot;,
       n1y_lookHorny: &quot;&quot;,
       n2a_start: false,
       n2b_bound: false,
@@ -3455,6 +3464,7 @@ Nero.flags = {
 };
 
 function checkFlags() {
+  if (!setup.tester) return;
   const sections = new Set(Object.keys(Nero.sections));
   Object.keys(Nero.flags).forEach(x =&gt; {
     // check sections
@@ -3481,7 +3491,7 @@ function checkFlags() {
   });
 }
 
-if (Config.debug) checkFlags();
+checkFlags();
 
 Nero.getVarExpectation = (vname) =&gt; {
   const f = Nero.flags[vname];
@@ -3864,7 +3874,7 @@ Macro.add(&quot;n1-patience&quot;, {
       }
     }
 
-    if (Config.debug) {
+    if (setup.debug) {
       let debug = !!State.metadata.get(&quot;patienceDebug&quot;);
       const outer = $(&quot;&lt;span class=patience-debug&gt;&quot;).appendTo(this.output)
         .toggleClass(&quot;patience-debug-show&quot;, debug);
@@ -4112,7 +4122,7 @@ Macro.add(&quot;pw-suggest&quot;, {
       if (p !== null) $(this.output).wiki(p.contents);
     }
 
-    if (Config.debug) {
+    if (setup.debug) {
       let debug = !!State.metadata.get(&quot;pwDebug&quot;);
       $(&quot;#passages&quot;).toggleClass(&quot;pw-debug-show&quot;, debug);
       const outer = $(&quot;&lt;span class=pw-debug&gt;&quot;).appendTo(this.output);
@@ -9926,7 +9936,7 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 
 &lt;&lt;nobr&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;&lt;if Config.debug &amp;&amp; $n0_afterConstruction&gt;&gt;
+    &lt;&lt;if setup.debug &amp;&amp; $n0_afterConstruction&gt;&gt;
         &lt;li&gt;$n0_afterConstruction&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;li&gt;[[Try again from Ivex&#39;s disappearance.|n2a/F Restart Ivex Gone]]&lt;/li&gt;
@@ -14001,7 +14011,7 @@ function update() {
   setTimeout(update, 1000);
 }
 function setup() {
-  if (Config.debug) {
+  if (setup.debug) {
     $(&quot;#lockout-time&quot;).css({ cursor: &quot;pointer&quot; }).on(&quot;click&quot;, () =&gt; {
       v.n1_lockoutTime = 2;
       $(&quot;#at-zero&quot;).text(&quot;&quot;).removeClass(&quot;at-zero-visible&quot;);
@@ -19276,7 +19286,7 @@ Macro.add(&quot;random-once&quot;, {
 
     $(this.output).wiki(this.payload[choice].contents);
 
-    if (Config.debug &amp;&amp; valid.size &gt; 1) {
+    if (setup.debug &amp;&amp; valid.size &gt; 1) {
       const outer = $(&quot;&lt;span class=ro-debug&gt;&quot;).appendTo(this.output);
       const val = V[shown];
       outer.append(&quot;&amp;#x1f527;&quot;);
@@ -19534,7 +19544,7 @@ function save() {
 }
 
 function setup() {
-  if (!Config.debug) return;
+  if (!setup.debug) return;
   load();
   marksEnabled = !!JSON.parse(persist.getItem(FLAG) || &quot;false&quot;);
   $(document).on(&quot;:passageend&quot;, () =&gt; {
@@ -20627,7 +20637,7 @@ with souvenirs from that location.
 &lt;&lt;pw-fail&gt;&gt;
     &lt;&lt;set _triedLuminance = true&gt;&gt;
 &lt;&lt;/pw-suggest&gt;&gt;
-&lt;&lt;if Config.debug&gt;&gt;&lt;br&gt;&lt;&lt;/if&gt;&gt;
+&lt;&lt;if setup.debug&gt;&gt;&lt;br&gt;&lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if _triedLiskov &amp;&amp; _triedLuminance&gt;&gt;
     Unfortunately, neither &quot;Caverns of Luminance&quot;
@@ -20812,6 +20822,7 @@ function saveLog() {
 }
 
 function setup() {
+  if (!setup.tester) return;
   log = State.metadata.get(KEY) || [];
 
   $(&quot;&lt;div id=log-button&gt;&quot;)
@@ -20925,7 +20936,7 @@ function openLog() {
   Dialog.open();
 }
 
-if (Config.debug) setup();
+setup();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="531" name="n1s/F Cast Sight Horny" tags="" position="5600,3950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;em-assert $n1_candleHorny&gt;&gt;
