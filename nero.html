@@ -459,7 +459,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -1567,7 +1567,7 @@ function getFails() {
  * follows it. So we absorb clicks a small amount of time after
  * automatic fade-in.
  */
-const absorbMsec = 1000;
+const absorbMsec = 500;
 
 Macro.add(&quot;fade-in&quot;, {
   tags: [&quot;fade-next&quot;],
@@ -1576,18 +1576,20 @@ Macro.add(&quot;fade-in&quot;, {
     let timeout = null;
 
     const next = () =&gt; {
+      if (timeout != null) clearTimeout(timeout);
       if (queue.length === 0) return;
       const [delay, span] = queue[0];
       span.addClass(&quot;fade-in-next&quot;);
-      if (timeout != null) clearTimeout(timeout);
       timeout = setTimeout(() =&gt; {
-        queue.shift();
         if (span.hasClass(&quot;fade-in-hidden&quot;)) {
           span.addClass(&quot;fade-in-absorb&quot;);
           setTimeout(() =&gt; span.removeClass(&quot;fade-in-absorb&quot;), absorbMsec);
         }
         span.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
-        if (document.contains(span[0])) next();
+        if (queue[0][1] === span) {
+          queue.shift();
+          next();
+        }
       }, delay);
     };
 
@@ -1595,7 +1597,8 @@ Macro.add(&quot;fade-in&quot;, {
       const pos = queue.findIndex(q =&gt; q[1] === jq);
       if (pos &lt; 0) return;
       for (let i = 0; i &lt;= pos; i++) {
-        queue.shift()[1].removeClass(&quot;fade-in-hidden fade-in-next fade-in-absorb&quot;);
+        const span = queue.shift()[1];
+        span.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
       }
       next();
     };
@@ -1611,8 +1614,10 @@ Macro.add(&quot;fade-in&quot;, {
         .appendTo(this.output);
       const hurry = ev =&gt; {
         span[0].removeEventListener(&quot;click&quot;, hurry, true);
-        if (span.hasClass(&quot;fade-in-hidden&quot;) || span.hasClass(&quot;fade-in-absorb&quot;)) {
-          span.removeClass(&quot;fade-in-hidden fade-in-absorb&quot;);
+        if (span.hasClass(&quot;fade-in-hidden&quot;)) {
+          span.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
+          span.addClass(&quot;fade-in-absorb&quot;);
+          setTimeout(() =&gt; span.removeClass(&quot;fade-in-absorb&quot;), absorbMsec);
           ev.preventDefault();
           ev.stopPropagation();
           skipTo(span);
@@ -12924,7 +12929,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 Sudden nudity is a sophomoric prank, but Nero is still a little bit impressed. This spell was much faster than a sophomore could be expected to cast. It isn&#39;t immediately obvious if his clothing was destroyed or teleported away, but in either case the spell was remarkably precise, since it targeted &lt;em&gt;only&lt;/em&gt; his clothes, and not the wooden cross or leather straps holding him in place. Nero didn&#39;t even feel it disturb any of the hairs of his fur.
 
 ?P
-And the spell&#39;s trigger was such a small, quick gesture. The wolf mage starts sketching in his mind the outline of a matrix for a similar spell. It&#39;s quite large and complicated, and it would need a substantial core to store it. He wonders what the substrate could be.
+And the spell&#39;s trigger was such a small, quick gesture. The wolf mage starts sketching in his mind the outline of a matrix for a similar spell. It&#39;s quite large and complicated, and it would need a substantial core to store it. He wonders where the substrate could be.
 
 ?P
 Is it something Ivex is wearing?
