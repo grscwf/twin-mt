@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="nero" startnode="35" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="35" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position: relative;
   /* #story has 2.5em top margin */
@@ -459,7 +459,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -925,8 +925,9 @@ const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
 CV.ignore = new Set();
-CV.vars = {};
+CV.tryVars = {};
 
+// vars that are definitely not boolean (but might be null)
 CV.nonbooleans = new Set([
   &quot;n1_passwordsFound&quot;,
   &quot;n1_passwordsTried&quot;,
@@ -944,13 +945,13 @@ Macro.add(&quot;cv-ignore&quot;, {
 Macro.add(&quot;cv-try&quot;, {
   handler: function() {
     const [vn] = this.args;
-    CV.vars[vn] = this.args.slice(1);
+    CV.tryVars[vn] = this.args.slice(1);
   }
 })
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
   CV.ignore = new Set();
-  CV.vars = {};
+  CV.tryVars = {};
 });
 
 CV.render = function() {
@@ -961,17 +962,21 @@ CV.render = function() {
   const nowState = clone(State.active.variables);
   const nowTemps = clone(State.temporary);
 
+  // ignore vars that weren&#39;t boolean-ish
   for (const k of Object.keys(beginState)) {
     if (beginState[k] != null &amp;&amp; typeof beginState[k] !== &quot;boolean&quot;) {
       CV.ignore.add(k);
     }
   }
+  // ignore vars that aren&#39;t currently boolean-ish
   for (const k of Object.keys(nowState)) {
     if (nowState[k] != null &amp;&amp; typeof nowState[k] !== &quot;boolean&quot;) {
       CV.ignore.add(k);
     }
   }
+  // ignore vars that can be null but are not boolean
   CV.nonbooleans.forEach(vn =&gt; CV.ignore.add(vn));
+  // ignore vars that can be null but are enums
   Object.keys(ET.vars).forEach(vn =&gt; CV.ignore.add(vn));
 
   const done = [];
@@ -980,16 +985,18 @@ CV.render = function() {
 
   CV.ignore.forEach(vn =&gt; usedSet.delete(vn));
 
+  // if flag has an expectation for this section, limit to that value
   usedSet.forEach(vn =&gt; {
-    const exp = Nero.getFlagExpectation(vn);
-    if (exp !== &quot;&quot; &amp;&amp; exp !== &quot;notable&quot; &amp;&amp; !CV.vars[vn]) {
-      CV.vars[vn] = [exp];
+    if (Nero.varIsConstant(vn)) {
+      CV.tryVars[vn] = [Nero.getVarConstant(vn)];
     }
   });
 
   const todo = [beginState];
-
   const usedList = [...usedSet];
+  // for state and vp pointing into usedList,
+  // add new todo states that flip every value from vp to the end.
+  // at this point, usedList is only booleanish values
   const addRecursive = (state, vp) =&gt; {
     if (usedList.length &lt;= vp) return;
     const vn = usedList[vp];
@@ -1001,8 +1008,9 @@ CV.render = function() {
   };
   addRecursive(beginState, 0);
 
-  Object.keys(CV.vars).forEach(vn =&gt; {
-    const [first, ...rest] = CV.vars[vn];
+  // for every var with explicit values to try, add states for them all
+  Object.keys(CV.tryVars).forEach(vn =&gt; {
+    const [first, ...rest] = CV.tryVars[vn];
     if (!usedSet.has(vn)) usedSet.add(vn);
     CV.ignore.delete(vn);
     todo.forEach(t =&gt; {
@@ -1017,8 +1025,10 @@ CV.render = function() {
     }
   });
 
-  // At this point, todo has the current state, and all states where
-  // any boolean-ish read var is flipped.
+  // At this point, todo has
+  // - the current state
+  // - all states with every alternate tryVar value
+  // - all states with other non-ignored boolean-ish values flipped
 
   const passageText = Story.get(State.passage).text;
   const renders = [];
@@ -1336,11 +1346,13 @@ const VT = window.VarTrace || (window.VarTrace = {});
 
 EM.debugStop = false;
 EM.hasFails = false;
+EM.hasWarnings = false;
 EM.noMessage = false;
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
   $(&quot;#EM-outer&quot;).remove();
   EM.hasFails = false;
+  EM.hasWarnings = false;
 });
 
 EM.runsWithoutFail = (fn) =&gt; {
@@ -1360,6 +1372,7 @@ EM.runsWithoutFail = (fn) =&gt; {
 
 /** Add str as a new error-message note. */
 EM.note = (str) =&gt; {
+  if (EM.noMessage) return;
   const note = $(`
     &lt;div class=EM-note&gt;
       &lt;a class=&quot;EM-close EM-button&quot;&gt;[close]&lt;/a&gt;
@@ -1370,31 +1383,33 @@ EM.note = (str) =&gt; {
   return note;
 };
 
+/** Add str as a warning. */
+EM.warn = (str) =&gt; {
+  EM.hasWarnings = true;
+  EM.note(str);
+};
+
 /** Add str as a new error-message assertion failure. */
 EM.fail = (str, context) =&gt; {
   EM.hasFails = true;
-  if (EM.noMessage) {
-    // console.warn(str);
-    return;
-  }
+  EM.message(&quot;fail&quot;, str, context);
+};
+
+EM.message = (type, str, context) =&gt; {
+  if (EM.noMessage) return;
   if (EM.debugStop) {
     debugger;
     EM.debugStop = false;
   }
-  const fail = $(&quot;&lt;div class=EM-fail&gt;&quot;).text(str)
+  const fails = $(`&lt;div class=EM-${type}&gt;`).text(str)
     .appendTo(getFails());
   const trace = backtrace(context);
   if (trace != null &amp;&amp; trace !== &quot;&quot;) {
     $(&quot;&lt;div class=EM-trace&gt;&quot;).text(trace)
-      .appendTo(fail);
+      .appendTo(fails);
   }
-  return fail;
+  return fails;
 };
-Macro.add(&quot;em-fail&quot;, {
-  handler: function() {
-    EM.fail(this.args.join(&quot; &quot;), this);
-  }
-});
 
 EM.assert = (val, str, context) =&gt; {
   if (val) return;
@@ -1833,6 +1848,7 @@ function randomWalkSetup() {
 
     let hasProblem = false;
     hasProblem = hasProblem || ErrorMessage.hasFails;
+    hasProblem = hasProblem || ErrorMessage.hasWarnings;
     hasProblem = hasProblem || /[/][DPS]/.test(here);
     hasProblem = hasProblem ||
         /\bX[X]X\b|\bTO[D]O\b/.test($(&quot;.passage&quot;).text());
@@ -2256,9 +2272,8 @@ function withinInclude(ctx) {
 Macro.add(&quot;vi-always&quot;, {
   handler: function() {
     const [vname, exp] = this.args;
-    const sexp = Nero.getFlagExpectation(vname);
-    if (sexp !== &quot;notable&quot; &amp;&amp; !withinInclude(this)) {
-      EM.fail(`vi-always ${vname} is unnecessary`);
+    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+      EM.warn(`vi-always ${vname} is unnecessary`);
     }
     const actual = VT.untracedGet(vname);
     if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
@@ -2272,9 +2287,8 @@ Macro.add(&quot;vi-always&quot;, {
 Macro.add(&quot;vi-always-if&quot;, {
   handler: function() {
     const [cond, vname, exp] = this.args;
-    const sexp = Nero.getFlagExpectation(vname);
-    if (sexp !== &quot;notable&quot; &amp;&amp; !withinInclude(this)) {
-      EM.fail(`vi-always-if ${cond} ${vname} is unnecessary`);
+    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+      EM.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
     if (VT.untracedGet(cond)) {
       const actual = VT.untracedGet(vname);
@@ -2290,9 +2304,8 @@ Macro.add(&quot;vi-always-if&quot;, {
 Macro.add(&quot;vi-ignore&quot;, {
   handler: function() {
     for (const vn of this.args) {
-      const sexp = Nero.getFlagExpectation(vn);
-      if (sexp !== &quot;notable&quot;) {
-        EM.fail(`vi-ignore ${vn} is unnecessary`);
+      if (Nero.varIsConstant(vn)) {
+        EM.warn(`vi-ignore ${vn} is unnecessary`);
       }
       ignoreVars.add(vn);
     }
@@ -2309,9 +2322,8 @@ Macro.add(&quot;vi-ignore-if&quot;, {
   handler: function() {
     for (let p = 0; p &lt; this.args.length - 1; p++) {
       const cvar = this.args[p];
-      const sexp = Nero.getFlagExpectation(cvar);
-      if (sexp !== &quot;notable&quot;) {
-        EM.fail(`vi-ignore-if ${cvar} is unnecessary`);
+      if (Nero.varIsConstant(cvar)) {
+        EM.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
       if (VT.untracedGet(cvar)) {
         this.args.slice(p + 1).forEach(vn =&gt; ignoreVars.add(vn));
@@ -2342,8 +2354,7 @@ function varButton(vname) {
     outer.addClass(&quot;var-info-was-written&quot;);
   }
 
-  const exp = Nero.getFlagExpectation(vname);
-  if (exp === &quot;notable&quot;) {
+  if (Nero.varIsNotable(vname)) {
     tags += &quot;[section-notable]\n&quot;;
     outer.addClass(&quot;var-info-notable&quot;);
     if (ignoreVars.has(vname)) {
@@ -2356,7 +2367,8 @@ function varButton(vname) {
       tags += &quot;[to-do]\n&quot;;
       outer.addClass(&quot;var-info-to-do&quot;);
     }
-  } else if (exp !== &quot;&quot;) {
+  } else if (Nero.varIsConstant(vname)) {
+    const exp = Nero.getVarConstant(vname);
     tags += `[section-always ${str(exp)}]\n`;
     outer.addClass(&quot;var-info-always&quot;);
   }
@@ -2493,9 +2505,8 @@ function varInfoSetup() {
     VT.ctx.wasTopRead.forEach(vn =&gt; {
       EM.assert(!alwaysVars.has(vn),
         `${vn} is expected to always be ${alwaysVars.get(vn)} and should not be read`);
-      const sexp = Nero.getFlagExpectation(vn);
-      if (sexp !== &quot;&quot; &amp;&amp; sexp !== &quot;notable&quot;) {
-        EM.fail(`${vn} is always ${sexp} in this section and should not be read`);
+      if (Nero.varIsConstant(vn)) {
+        EM.warn(`${vn} is always ${sexp} in this section and should not be read`);
       }
     });
 
@@ -2512,7 +2523,7 @@ function varInfoSetup() {
 
     if (outer.find(&quot;.var-info-to-do, .var-info-warning&quot;).length &gt; 0) {
       outer.addClass(&quot;var-info-to-do&quot;);
-      EM.assert(!/\/[DF]/.test(State.passage), `/D and /F passages should not have TO\DO vars`);
+      EM.assert(!/\/[F]/.test(State.passage), `/F passages should not have TO\DO vars`);
     }
   });
 }
@@ -3042,9 +3053,9 @@ Nero.flags = {
       n1d_candle: true,
       n1e_horny: true,
       n1f_clever: &quot;notable&quot;,
-      n1p_barbs: &quot;&quot;,
-      n1s_magic: &quot;&quot;,
-      n1x_look: &quot;&quot;,
+      n1p_barbs: /ivex/i,
+      n1s_magic: /ivex/i,
+      n1x_look: /ivex/i,
       n1y_lookHorny: true,
       n2a_start: false,
       n2b_bound: true,
@@ -3066,41 +3077,6 @@ Nero.flags = {
     implies: {
       n1_gravNoticed: true,
     }
-  },
-
-  // true if Ivex is intrigued and suggestible
-  t_ivexReceptive: {
-    implies: {
-      n1_candleLit: false,
-      n1_candleHorny: false,
-      n2_extraHorny: false,
-      n2_free: false,
-      n2_ivexGone: false,
-      n2_tooClever: false,
-    },
-    sections: {
-      n0_meta: &quot;&quot;,
-      n1a_intro: false,
-      n1cn_neutral: false,
-      n1cr_receptive: true,
-      n1cs_subby: true,
-      n1cx_transition: false,
-      n1d_candle: false,
-      n1e_horny: false,
-      n1f_clever: &quot;&quot;,
-      n1p_barbs: &quot;&quot;,
-      n1s_magic: &quot;&quot;,
-      n1x_look: &quot;&quot;,
-      n1y_lookHorny: false,
-      n2a_start: false,
-      n2b_bound: false,
-      n2f_free: false,
-      n2x_lookFree: false,
-      n3a_start: false,
-      n8_archive: &quot;&quot;,
-      n9_ending: false,
-      other: &quot;&quot;,
-    },
   },
 
   // true if Nero can see magic
@@ -3222,6 +3198,70 @@ Nero.flags = {
       n3a_start: &quot;&quot;,
       n8_archive: &quot;&quot;,
       n9_ending: &quot;&quot;,
+      other: &quot;&quot;,
+    },
+  },
+
+  // true if Ivex is near the cross
+  t_ivexNear: {
+    implies: {
+    },
+    sections: {
+      n0_meta: &quot;&quot;,
+      n1a_intro: &quot;&quot;,
+      n1cn_neutral: /ivex/i,
+      n1cr_receptive: /ivex/,
+      n1cs_subby: /ivex/i,
+      n1cx_transition: /ivex/i,
+      n1d_candle: /ivex/i,
+      n1e_horny: /ivex/i,
+      n1f_clever: /ivex/i,
+      n1p_barbs: &quot;&quot;,
+      n1s_magic: /ivex/i,
+      n1x_look: /ivex/i,
+      n1y_lookHorny: &quot;&quot;,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: false,
+      n2x_lookFree: false,
+      n3a_start: false,
+      n8_archive: &quot;&quot;,
+      n9_ending: false,
+      other: &quot;&quot;,
+    },
+  },
+
+  // true if Ivex is intrigued and suggestible
+  t_ivexReceptive: {
+    implies: {
+      n1_candleLit: false,
+      n1_candleHorny: false,
+      n2_extraHorny: false,
+      n2_free: false,
+      n2_ivexGone: false,
+      n2_tooClever: false,
+    },
+    sections: {
+      n0_meta: &quot;&quot;,
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: true,
+      n1cs_subby: true,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1f_clever: &quot;&quot;,
+      n1p_barbs: &quot;&quot;,
+      n1s_magic: /ivex/i,
+      n1x_look: /ivex/i,
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: false,
+      n2x_lookFree: false,
+      n3a_start: false,
+      n8_archive: &quot;&quot;,
+      n9_ending: false,
       other: &quot;&quot;,
     },
   },
@@ -3438,19 +3478,40 @@ function checkFlags() {
 
 if (Config.debug) checkFlags();
 
-Nero.getFlagExpectation = (vname) =&gt; {
+Nero.getVarExpectation = (vname) =&gt; {
   const f = Nero.flags[vname];
-  if (f == null || f.sections == null) return &quot;&quot;;
+  if (f == null || f.sections == null) return [false, false];
   const sect = Nero.getSection();
-  return f.sections[sect] ?? &quot;&quot;;
+  const exp = f.sections[sect];
+  if (exp == null || exp === &quot;&quot;) {
+    return [false, false];
+  } else if (exp === &quot;notable&quot;) {
+    return [true, false];
+  } else if (exp instanceof RegExp) {
+    const passage = Story.get(State.passage);
+    const notable = exp.test(passage.text);
+    return [notable, false];
+  } else {
+    return [false, true, exp];
+  }
+};
+Nero.getVarConstant = vn =&gt; {
+  const [_, isConst, val] = Nero.getVarExpectation(vn);
+  if (!isConst) throw new Error(`${vn} is not constant`);
+  return val;
+};
+Nero.varIsConstant = vn =&gt; {
+  const [_, isConst] = Nero.getVarExpectation(vn);
+  return isConst;
+};
+Nero.varIsNotable = vn =&gt; {
+  const [isNotable] = Nero.getVarExpectation(vn);
+  return isNotable;
 };
 
 Nero.getNotable = (here) =&gt; {
   const s = Nero.getSection(here);
-  return Object.keys(Nero.flags).filter(f =&gt; {
-    const sect = Nero.flags[f].sections;
-    return sect != null &amp;&amp; sect[s] === &quot;notable&quot;;
-  });
+  return Object.keys(Nero.flags).filter(f =&gt; Nero.varIsNotable(f));
 };
 
 Nero.enumImplies = {
@@ -9818,8 +9879,7 @@ Or, at least, he will try to.
 
 [[testing 2]]
 [[fade-in test]]
-[[var-info test]]</tw-passagedata><tw-passagedata pid="269" name="testing 2" tags="" position="3750,625" size="100,100">tmp is _tmp
-</tw-passagedata><tw-passagedata pid="270" name="fade-in test" tags="" position="3750,775" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[var-info test]]</tw-passagedata><tw-passagedata pid="269" name="testing 2" tags="" position="3750,625" size="100,100">tmp is _tmp</tw-passagedata><tw-passagedata pid="270" name="fade-in test" tags="" position="3750,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;fade-in 0s&gt;&gt;
 one
 &lt;&lt;fade-next 2s&gt;&gt;
@@ -16706,8 +16766,7 @@ expending any energy himself!
 The lupine mage cautiously extends a spectral arc toward the node...
 ?P
 [[Continue|n1s/F Tap 2]]
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="424" name="n1x/F Window Ask" tags="" position="6950,3650" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="424" name="n1x/F Window Ask" tags="" position="6950,3650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
@@ -20451,8 +20510,7 @@ of Ivex if the panther fails to deduce this explanation himself.
 [[Continue|n1cr/F Ivex Trap (2,4)]]
 
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="526" name="n1cr/F Ivex Trap (2,4)" tags="" position="4125,3475" size="200,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="526" name="n1cr/F Ivex Trap (2,4)" tags="" position="4125,3475" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused n1_mageSight n1_naked&gt;&gt;
 
 &lt;&lt;n1-patience 2 4&gt;&gt;
@@ -22430,8 +22488,7 @@ The verdict must certainly be correct.
 And they make an embarrassingly apologetic public statement to that effect.
 ?P
 [[Continue|n1cr/F Substitution 2]]
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="567" name="n1cr/F Substitution 2" tags="" position="4050,3200" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="567" name="n1cr/F Substitution 2" tags="" position="4050,3200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight n1_naked&gt;&gt;
 
 Nero thinks it&#39;s &lt;em&gt;unlikely&lt;/em&gt; that Ivex is an expert in substitution.
@@ -22480,8 +22537,7 @@ Now all he needs to do is wait for Ivex to make a simple mistake.
 
 ?P
 [[Continue|n1cr/F Ivex Bait]]
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="568" name="n1cr/F Suppression 1" tags="" position="4175,3100" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="568" name="n1cr/F Suppression 1" tags="" position="4175,3100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused n1_mageSight n1_naked&gt;&gt;
 
 Nero tilts his head the slightest bit.
@@ -22524,8 +22580,7 @@ Practitioners of suppression usually prefer the former without the latter,
 so reversible suppression is not often done.
 ?P
 [[Continue|n1cr/F Suppression 2]]
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="569" name="n1cr/F Inhibition 1" tags="" position="4300,3100" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="569" name="n1cr/F Inhibition 1" tags="" position="4300,3100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused n1_mageSight n1_naked&gt;&gt;
 
 Nero tilts his head the slightest bit.
@@ -22627,8 +22682,7 @@ to make a simple mistake.
 
 ?P
 [[Continue|n1cr/F Ivex Bait]]
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="571" name="n1cr/F Inhibition 2" tags="" position="4300,3200" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="571" name="n1cr/F Inhibition 2" tags="" position="4300,3200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight n1_naked&gt;&gt;
 &lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_wantDevice`&gt;&gt;
 
@@ -22814,8 +22868,7 @@ a cross.
 $t_afterAction
 
 &lt;&lt;set $n1_magicPhase = MP_wantDevice&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="575" name="n1s/D Sprite Info" tags="" position="6975,6000" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="575" name="n1s/D Sprite Info" tags="" position="6975,6000" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 
 most mages find it tedious and unpleasant to work directly with a pyron node&#39;s substrate,
