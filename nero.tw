@@ -2223,7 +2223,7 @@ function initRandomWalk() {
     if (chosen.length === 1) {
       seekMoved = true;
       chosen[0].click();
-      setTimeout(seekNext, 500);
+      setTimeout(seekNext, 200);
     } else {
       if (walk()) {
         setTimeout(seekNext, 100);
@@ -17183,7 +17183,7 @@ Maybe another second if his bladder is full.
     <<vi-always n2_mirrorBroken true>>
     <<include [[n1s/F Mirror Broken]]>>
 <<default>>
-    <<include [[n1s/D Sprite]]>>
+    <<include [[n1s/F Sprite]]>>
 <</switch>>
 <</nobr>>\
 
@@ -17635,7 +17635,7 @@ up and down the shaft in slow, firm strokes.
 <</nobr>>
 
 
-:: n1s/D Sprite [inclusion] {"position":"6150,3775","size":"200,100"}
+:: n1s/F Sprite [inclusion] {"position":"6150,3775","size":"200,100"}
 <<nobr>>
 <<if $n1_candleHorny>>
     <<switch random(0, 2)>>
@@ -17644,11 +17644,13 @@ up and down the shaft in slow, firm strokes.
     <<case 1>>
         The Sprite is a sexy, androgynous voice reverberating in Nero's head.
     <<case 2>>
-        The Sprite in Nero's ear speaks slowly, with erotic urgency lurking
+        The Sprite speaks slowly in Nero's ear, with erotic urgency lurking
         in every syllable.
     <</switch>>
 <<else>>
-    The Sprite in Nero's ear says,
+    The Sprite
+    <<= $n1_spriteSaidPhase === $n1_magicPhase ? "repeats" : "speaks">>
+    in Nero's ear,
 <</if>>
 
 <<switch $n1_magicPhase>>
@@ -17674,9 +17676,11 @@ up and down the shaft in slow, firm strokes.
 <<case `MP_wantName`>>
     "Which device in this room do you wish to control, ?masterq"
     <<if $n1_bottleNameKnown>>
-        <<set $t_magicAction = "[['Tell the Sprite, \"Please, Lance Rockhard\"'|n1s/D Say Lance]]">>
+        <<set $t_magicAction =
+            "[['Tell the Sprite, \"Please, Lance Rockhard\"'|n1s/D Say Lance]]">>
     <<elseif !$n1_helpDeviceAsked>>
-        <<set $t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Device]]">>
+        <<set $t_magicAction =
+            "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Device]]">>
     <<elseif $n1_candleHorny>>
         All of them, of course, but Nero knows that the Sprite will deny that
         desire.
@@ -17699,7 +17703,8 @@ up and down the shaft in slow, firm strokes.
 <<case `MP_wantTouch`>>
     "Please touch my hole, ?master"
     <<if !$n1_helpTouchAsked>>
-        <<set $t_magicAction = "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Touch]]">>
+        <<set $t_magicAction =
+            "[['Ask the Sprite, \"Please, help.\"'|n1s/D Help Touch]]">>
     <</if>>
     <<if $n1_windowAskRefused && !$n1_windowAskBlocked && !$n2_ivexGone>>
         <<actions-add [[Try again to attract Ivex to the window.|n1x/F Window Ask]]>>
@@ -17724,6 +17729,8 @@ up and down the shaft in slow, firm strokes.
 <</switch>>
 
 ?P
+
+<<set $n1_spriteSaidPhase = $n1_magicPhase>>
 <</nobr>>\
 
 
@@ -19635,8 +19642,7 @@ still call it Kelvin's Escape, with a laugh.
 ?P
 <ul class="actions">
     <<if _struggle>>
-        <<vi-always n2_ivexGone true>>
-        <<Include [[n2b/F Struggle Action]]>>
+        <<include [[n2b/F Struggle Action]]>>
     <</if>>
     <<actions-get>>
     <li>$t_afterLook</li>
@@ -19784,8 +19790,7 @@ floating behind the
 ?P
 <ul class="actions">
     <<if _struggle>>
-        <<vi-always n2_ivexGone true>>
-        <<Include [[n2b/F Struggle Action]]>>
+        <<include [[n2b/F Struggle Action]]>>
     <</if>>
     <<actions-get>>
     <li>$t_afterLook</li>
@@ -21435,7 +21440,6 @@ Nero stares at the penguin in perplexity.
 <<nobr>>
 <<vi-ignore t_ivexReceptive>>
 
-XXX fix up bonded wands and secret motion.
 <<if $n2_wandTried>>
     <<include [[n2x/F Wand Tried]]>>
 <<else>>
@@ -21928,9 +21932,7 @@ $t_afterAction
 <<vi-always n1_mageSight true>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
-
-TODO ivexNear.
-TODO candleLit-mask.
+<<cv-ignore n1_opportunist n1_spriteQuiet>> /* trivial variation */
 
 <<if $n1_windowAskRefused>>
     Nero gasps softly and stares again at the window.
@@ -21968,21 +21970,29 @@ TODO candleLit-mask.
 
 ?P
 <<if $t_ivexReceptive>>
-    Ivex has a bemused smile. He speaks in the tone people use to
+    <<if $n1_candleLit>>
+        Ivex tilts his head and speaks through his grinning mask
+    <<else>>
+        Ivex has a bemused smile. He speaks
+    <</if>>
+    in the tone people use to
     humor small children. "I suppose I should take a look, just in case."
     ?P
     He goes to the window, places his hands on the sill, and makes a show
     of looking all around the entire view.
     ?P
-    [[Continue|n1x/D Window Ask 2]]
+    [[Continue|n1x/F Window Ask 2]]
 
 <<elseif $n1_windowAskRefused>>
-    Ivex growls, "Enough of this pathetic attempt at distraction.
+    Ivex <<= $n1_candleLit ? "growls in his grinning mask." : "growls.">>
+    "Enough of this pathetic attempt at distraction.
     I'm quite sure there's nothing outside that window."
     ?P
     $t_afterAction
+
 <<else>>
-    Ivex laughs. "I have no idea what trickery you're trying to accomplish,
+    Ivex <<= $n1_candleLit ? "laughs in his grinning mask." : "laughs.">>
+    "I have no idea what trickery you're trying to accomplish,
     but do please keep trying. It's quite funny."
     ?P
     $t_afterAction
@@ -22191,7 +22201,8 @@ TODO candleLit-mask.
     numerous [[books|n1x/F Books]],
     a [[stack of coins|n1x/F Coins]],
     <<if $n2_wandTried>>
-        and an [[alarming magic wand|n1x/F Wand]].
+        and an [[alarming magic wand|n1x/F Wand]]
+        growling underneath.
     <<else>>
         and a [[magic wand|n1x/F Wand]].
     <</if>>
@@ -22266,8 +22277,8 @@ Before Nero can change his mind again, he quickly blurts out,
 
 ?P
 <<if $t_ivexReceptive>>
-    <<em-assert !$n1_candleLit>>
-    Ivex grins. "Ah, yes!"
+    <<vi-always n1_candleLit false>>
+    Ivex grins. "I'm glad you recognize it!"
 
 <<elseif $n1_candleLit>>
     Ivex's ears perk up, and he laughs through the grinning mask.
@@ -22276,6 +22287,7 @@ Before Nero can change his mind again, he quickly blurts out,
     Ivex sneers at the wolf. "I'm amazed that you recognize it."
 <</if>>
 
+?P
 He moves to the enormous bottled horse cock
 and grasps the neck of the bottle, running
 his thumb slowly along the rim in a disturbing way.
@@ -22590,26 +22602,35 @@ XXX ivexNear.
 $t_afterAction
 
 
-:: n1x/D Window Ask 2 {"position":"6950,3525","size":"100,100"}
+:: n1x/F Window Ask 2 {"position":"6950,3525","size":"100,100"}
 <<nobr>>
 <<vi-always n1_mageSight true>>
 <<vi-always n2_free false>>
 <<vi-always n2_ivexGone false>>
+<<vi-always t_ivexReceptive true>>
 
-The Sprite does not respond. The window isn't the hole it wants touched.
+The Sprite repeats, "Please touch my hole, ?master"
 ?P
-<<if $t_ivexReceptive>>
-    Ivex shrugs
+The window doesn't seem to be the correct hole.
+?P
+Ivex chuckles
+<<= $n1_candleLit ? "through his grinning mask" : "">>
+and returns to the
+<<if $t_ivexNear>>
+    wooden cross.
 <<else>>
-    Ivex snarls
+    front of his desk.
 <</if>>
-TODO ivexNear.
-TODO candleLit-mask.
-and returns to the front of his desk.
-"Enough of that nonsense."
-<<set $n1_windowTouchTried = true>>
+"Was that enough time to do whatever it is that you wanted to do
+behind my back?"
+?P
+Nero is disappointed, but not really surprised. He shrugs and says,
+"I must have been mistaken. What were you asking me?"
 ?P
 $t_afterAction
+
+<<set $n1_windowTouchTried = true>>
+<<set $t_ivexNear = false>>
 <</nobr>>
 
 
@@ -22731,6 +22752,7 @@ with souvenirs from that location.
 <<nobr>>
 <<vi-ignore n2_ivexGone>>
 <<vi-ignore t_ivexReceptive>>
+/* <<vi-always n2_wandTried false>> */
 <<em-assert !$n2_wandTried>>
 
 Nero is somewhat of a connoisseur of wands, so he
@@ -22793,9 +22815,6 @@ a wand with precision.
     <<if $n2_wandUsed>>
         XXX that was great, wish he could cum, but too much. not again.
 
-    <<elseif $n2_wandTried>>
-        XXX vibrating is weird, don't wanna touch it again.
-
     <<elseif $n1_wandAsked>>
         <<if $n2_extraHorny>>
             Nero can't stop thinking about what Ivex said about the
@@ -22805,23 +22824,17 @@ a wand with precision.
             Ivex's description of the wand's pleasures.
         <</if>>
         ?P
-        Wands are often bonded to their owner,
-        but this is not a universal practice.
-        Perhaps Ivex has omitted that step for this one.
-        Nero might be able to use it himself.
+        Wands are sometimes bonded to their owner,
+        but perhaps Ivex has omitted that step for this one.
+        Nero might be able to use the panther's wand himself.
         <<actions-add [[Try Ivex's wand.|n2x/D Wand Use]]>>
 
     <<else>>
-        Wands are often bonded to their owner,
-        This is not a universal practice,
-        because the bonding is mildly inconvenient.
-        A bonded wand cannot be used immediately when
-        it is picked up. It requires a few moments to activate,
-        which can be a fatal delay in dire situations.
-        ?P
-        So perhaps Ivex has omitted the bonding for this one.
-        It might be worth trying to use his wand.
-        <<actions-add [[Try Ivex's wand.|n2x/F Wand Try]]>>
+        Wands are sometimes bonded to their owner,
+        but perhaps Ivex has omitted that step for this one.
+        It might be worth trying to use the panther's wand
+        to see what spells are in it.
+        <<actions-add [[Try Ivex's wand.|n2x/F Wand Try 1]]>>
     <</if>>
 
 <<elseif MP_wantTouch === $n1_magicPhase>>
@@ -22867,6 +22880,7 @@ a wand with precision.
 </ul>
 
 <<set $n1_wandViewed = true>>
+<<set $n1_mageSight && ($n1_wandViewedMageSight = true)>>
 <</nobr>>
 
 
@@ -23690,7 +23704,13 @@ him bound to the
 <<n1-no-loop [[cross|n1y/F Horny Cross]]>>.
 His struggles shift the cross against
 <<= $n1_gravNoticed ? "the" : "some">>
-<<n1-no-loop [[glowing crystals|n1y/F Horny Grav]]>>
+<<if $n1_gravKnown>>
+    <<n1-no-loop [[Gravity Crystals|n1y/F Horny Grav]]>>
+<<elseif $n1_gravViewed>>
+    <<n1-no-loop [[Dream Crystals|n1y/F Horny Grav]]>>
+<<else>>
+    <<n1-no-loop [[glowing crystals|n1y/F Horny Grav]]>>
+<</if>>
 behind it,
 
 <<if $n1_mageSight>>
@@ -23730,8 +23750,15 @@ on the desk.
 
 <<if $n1_gravNoticed>>
     The cross shifts against the
-    <<n1-no-loop [[glowing crystals|n1y/F Horny Grav]]>>
-    <<= $n1_gravViewedMageSight ? "holding it in place." : "behind it.">>
+    <<if $n1_gravKnown>>
+        <<n1-no-loop [[Gravity Crystals|n1y/F Horny Grav]]>> holding it in place.
+    <<elseif $n1_gravViewed>>
+        <<n1-no-loop [[Dream Crystals|n1y/F Horny Grav]]>> holding it in place.
+    <<elseif $n1_gravViewedMageSight>>
+        <<n1-no-loop [[glowing crystals|n1y/F Horny Grav]]>> holding it in place.
+    <<else>>
+        <<n1-no-loop [[glowing crystals|n1y/F Horny Grav]]>> behind it.
+    <</if>>
 <</if>>
 
 Nero's stiff, pulsing cock twitches wildly in counterpoint to
@@ -23981,7 +24008,14 @@ In the reflection of
 <<= $n1_gravNoticed ? "the": "a">>
 <<n1-no-loop [[small mirror|n1y/F Horny Mirror]]>>
 on the desk,
-Nero sees glowing crystals
+Nero sees
+<<if $n1_gravKnown>>
+    Gravity Crystals
+<<elseif $n1_gravViewed>>
+    Dream Crystals
+<<else>>
+    glowing crystals
+<</if>>
 behind the
 <<n1-no-loop [[cross|n1y/F Horny Cross]]>>
 that's holding him tight.
@@ -24001,17 +24035,23 @@ Nero with a warmth that feels... <em>right</em>,
 like he was always meant to be there,
 bound to the cross with erotic delight.
 
-?P
-XXX link to struggle
+<<if $n2_ivexGone>>
+    ?P
+    He wants to dance to that irregular pattern and
+    feel the pulse of it synchronize with his own beating pulse.
+    His arms and legs want to writhe. The wolf shakes and squirms.
+<</if>>
 
 ?P
 <ul class="actions">
+    <<if $n2_ivexGone>>
+        <<include [[n2b/F Struggle Action]]>>
+    <</if>>
     <li>$t_afterLook</li>
 </ul>
 
-<<if $n1_mageSight>>
-    <<set $n1_gravViewedMageSight = true>>
-<</if>>
+<!-- horny look doesn't add any info unless mage sight -->
+<<set $n1_mageSight && ($n1_gravViewedMageSight = true)>>
 <</nobr>>
 
 
@@ -25005,7 +25045,11 @@ and he uses all of his strength to try to escape.
 The cross sways a little as the wolf struggles,
 <<if $n1_gravViewedMageSight>>
     and the crystal energy web behind it shimmers slightly,
+<<elseif $n1_gravKnown>>
+    and the Gravity Crystals behind it shift slightly.
 <<elseif $n1_gravViewed>>
+    and the Dream Crystals behind it shift slightly.
+<<elseif $n1_gravNoticed>>
     and the glowing crystals behind it shift slightly,
 <</if>>
 and the small success of his effort encourages him to try harder
@@ -25419,13 +25463,12 @@ Nero picks up the
 <</nobr>>
 
 
-:: n2x/F Wand Try {"position":"7475,5600","size":"100,100"}
+:: n2x/F Wand Try 1 {"position":"7475,5600","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_mageSight>>
 <<vi-ignore n2_extraHorny>>
 <<vi-ignore n2_tooClever>>
-
-<<em-assert !$n1_wandAsked>>
+<<vi-always n1_wandAsked false>>
 
 Nero picks up the
 [[Kopic Classic|n2x/F Kopic]].
@@ -25493,42 +25536,60 @@ maybe find an incel tract or something else nutty
 
 :: n2x/F Kopic {"position":"7575,5850","size":"100,100"}
 <<nobr>>
+<<vi-ignore n2_extraHorny n2_tooClever>>
+
 <<if $n1_mageSight>>
-    The Kopic Classic is currently
+    The Kopic Classic is currently fully charged with exotic energy.
+    Nero still does not know how to align with that energy, but
+
+<<elseif $n1_wandViewedMageSight>>
+    When the wolf had looked earlier at the Kopic Classic,
+    he had seen it was fully charged with exotic energy.
+    Nero still does not know how to align with that energy, but
+
 <<else>>
-    When the wolf had looked earlier with mage-sight at the Kopic Classic,
-    he had seen it was
+    The wolf does not have any magic energy left.
+    But the Kopic Classic might have some in it, and
 <</if>>
-fully charged with exotic energy.
-Nero still does not know how to align with that energy,
-but the secret of wands is that their
-activation does not require any magic from the user.
+the secret of wands is that
+their activation does not require any magic from the user.
 It simply takes a mechanical motion specific to the wand.
 Once the motion is performed by a wielder,
 the spell that's loaded into the wand will
 be unleashed in the direction that it points.
 ?P
-Kopic wands all have a page in their instructions
-that speaks seriously of the need to keep their activation motion secret,
-requesting the new owner of the wand sign a pledge to that effect.
+For that reason Kopic strongly recommends their
+wands to be bonded to their owner,
+which unfortunately adds a 3-second delay to the wand's activation.
+This delay has caused many mage deaths in battle,
+so bonding is not usually done.
+Anyone, even a mundane, can use most any Kopic wand,
+if they know the correct activation motion.
+?P
+Kopic of course recognizes this fact, which is why all their wands
+have a page in their instructions
+that speaks seriously of the need to keep the activation motion secret,
+with a request that the new owner of the wand sign a pledge to that effect.
 The page is handwritten in shimmering kraken ink on metamorphic vellum.
 There's no magic to the pledge. Nothing but honor binds the user to
 the vow of secrecy. But the unmistakable elegance and expense of the page
-underlines the gravity and importance of the vow.
+underlines the seriousness and importance of the vow.
 ?P
 As Kopics are quite widely used, their activation motion is known
-to every mage and mage-adjacent person.
-The motion has also been incorporated into several popular children's rhymes.
+to every mage and mage-adjacent person,
+and has even found its way into several popular children's rhymes.
 ?P
 So it might seem that the pledge of secrecy serves little purpose,
-and the inordinately expensive page could just be omitted from the instructions.
-But it continues to be included with every wand.
-Kopic has found that the expense is quite worth it,
+and the enormously expensive pledge could just be omitted from the instructions.
+?P
+Kopic has instead steadily improved the elegance and expense of the
+printing of the pledge.
+They find the expense quite worth it,
 as the demonstration of the pledge's seriousness
 allows them to disclaim liability
 whenever any of their wands cause damage or injury
 in the hands of an untrained user.
-Which happens about twice a day. Per wand.
+Which happens about twice a month. Per wand.
 ?P
 <<link Return $t_returnKopic>><</link>>
 <</nobr>>
