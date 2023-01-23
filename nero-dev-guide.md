@@ -191,6 +191,10 @@
   to be read, and considered relevant by the constraint tests).
     - It's sometimes useful to write conditions specifically for
       helping compute-variants, and maybe check flags redundantly.
+- If a passage has constraints that only apply to some conditions,
+  eg, an assertion on `t_ivexNear` only if `!$n2_ivexGone`,
+  then you probably need to add `cv-try` for the asserted variables,
+  to help compute-variants find a state that's consistent.
 - For testing `n1_magicPhase` variants, add a `<<cv-try>>` statement:
   - Include `MP_beforeCast` if it's possible.
   - Include any values tested in the passage.
