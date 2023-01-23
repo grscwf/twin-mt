@@ -52,7 +52,7 @@ function listVars(twFile, varListTxt, regexFilter) {
       addMatch(m[1], m.index);
     }
     // V.varname, v.varname, U.varname
-    for (const m of line.matchAll(/\b[vVU][.](\w+)/g)) {
+    for (const m of line.matchAll(/\b[vVU][012]?[.](\w+)/g)) {
       addMatch(m[1], m.index);
     }
     // setup.name

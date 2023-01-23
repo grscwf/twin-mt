@@ -2783,8 +2783,9 @@ let revisitTop = null;
 VI.revisitHere = fn => {
   VT.stop();
   revisitTop = $("html").prop("scrollTop");
+  const active = State.active.variables;
   State.active.variables = clone(State.current.variables);
-  fn && fn();
+  fn && fn(active);
   Engine.play(State.passage);
   $("html").addClass("revisit-here");
 };
@@ -4750,25 +4751,28 @@ Macro.add("n1-patience", {
         .click(() => VI.revisitHere(() => {
           const V = State.variables;
           V.t_patiencePassage = null;
+          V.n2_lustTextPos = null;
         }));
       if (looks > 2) {
         $("<a>").text(" (remind)").appendTo(outer)
-          .click(() => VI.revisitHere(() => {
+          .click(() => VI.revisitHere(V2 => {
             const V = State.variables;
             V.t_patiencePassage = here;
-            V.t_patienceActions = actions;
-            V.t_patienceLooks = looks;
+            V.t_patienceActions = Math.max(2, V2.t_patienceActions);
+            V.t_patienceLooks = Math.max(2, V2.t_patienceLooks);
             V.t_patienceReturn = 1;
+            V.n2_lustTextPos = Math.min(V2.n2_lustTextPos || 0, 4);
           }));
       }
       if (actions > 2) {
         $("<a>").text(" (repeat)").appendTo(outer)
-          .click(() => VI.revisitHere(() => {
+          .click(() => VI.revisitHere(V2 => {
             const V = State.variables;
             V.t_patiencePassage = here;
-            V.t_patienceActions = actions;
-            V.t_patienceLooks = looks;
+            V.t_patienceActions = Math.max(2, V2.t_patienceActions);
+            V.t_patienceLooks = Math.max(2, V2.t_patienceLooks);
             V.t_patienceReturn = 2;
+            V.n2_lustTextPos = Math.min(V2.n2_lustTextPos || 0, 4);
           }));
       }
       if (looks > 1 && actions > 1) {
@@ -16482,7 +16486,7 @@ The fiendish panther gives the wolf's balls a few more light taps with the crop.
 Nero's cock flaps around wildly as he struggles desperately to escape.
 The tip of his cock makes brief contact with the shaft of the crop,
 leaving a drop of pre-cum that forms a strand connected
-to his cock, a strand which stretches, sags, and breaks.
+to his cock, a strand which stretches, sags, and snaps.
 
 ?P
 The panther laughs in his grinning mask at the wolf's desperate writhing.
@@ -24264,7 +24268,7 @@ Candle's Influence:
 
 <br>
 <<fade-in 3s nopulse>>
-    <<include [[n2b/D Lust Text]]>>
+    <<include [[n2b/F Lust Text]]>>
     ?P
 
 <<fade-next 8s nopulse>>
@@ -24408,14 +24412,25 @@ Candle's Influence:
 <</nobr>>
 
 
-:: n2b/D Lust Text [inclusion] {"position":"5400,5700","size":"100,100"}
+:: n2b/F Lust Text [inclusion] {"position":"5375,5650","size":"100,100"}
 <<nobr>>
 <!--
-    player sees this at most 7 times:
+    player sees this at least 4 times (1 + min(looks, actions))
+    and at most 7 times:
         1 + (looks-2) + (actions-2) + 2
         === looks + actions - 1
     candleHorny happens after 2 looks or 1 action.
     candleNearMax happens after 4 looks or 2 actions.
+    
+    paths are;
+        1, 2+, 6, 7
+        1, 2-, 3, 6, 7
+        1, 2-, 3, 4, 6, 7
+        1, 2-, 3, 4, 5, 6, 7
+        
+    link to candle is here when non-horny.
+    non-horny look has the link when ivex not gone.
+    horny has the link in horny-look.
 -->
 <<script>>
     const V = State.variables;
@@ -24424,7 +24439,17 @@ Candle's Influence:
     if (V.n2_candleMax) V.n2_lustTextPos = 7;
 <</script>>
 
-XXX change to graph structure. next-after-action, next-after-look?
+<<set _pointing = `
+    Nero's throbbing red cock pulses with desire and an urgent message that he
+    tries to decipher. It's pointing at something, something important,
+    something it needs. He tries to determine what that is,
+    but his cock is too far away for him to sight along its shaft.
+    He strains his head downward, trying to reach it,
+    remembering that when he was younger he could easily
+    lick his own cock. The memory of the feeling of his tongue
+    touching the tip is both a promise and a taunt.
+`>>
+
 <<switch $n2_lustTextPos>>
 <<case 1>>
     <<em-assert !$n1_candleHorny>>
@@ -24436,22 +24461,30 @@ XXX change to graph structure. next-after-action, next-after-look?
     He does not know how long this clarity will last.
     Better be cautious with his breaths and make plans quickly,
     while he is still <em>able</em> to plan.
+
     <<set _neroAppraise =
         "Nero takes stock of what he sees, and what he knows.">>
 
 <<case 2>>
     <<if $n1_candleHorny>>
         /* 0,1 */
-        XXX lust slow buildup
-
+        _pointing
+    
     <<else>>
         /* 1,0 */
         Ivex's [[flickering red candle|n1x/F Candle]] is almost as distracting
         as Nero's own throbbing red cock. How much longer can he
         keep control of his thoughts?
         He can't stop glancing at the candle,
-        then glancing at his stiff cock, trying to measure them and compare them
-        in his mind, so that he can... That doesn't make any sense!
+        then glancing at his stiff cock,
+        trying to measure them and compare them
+        in his mind. He tries to gauge the firmness of his cock
+        in order to verify the firmness of his mind.
+        It's quite firm already, and he realizes that if he stares at
+        his cock some more, it will become ever more firm.
+        His <em>mind</em> will.
+        His stiff <em>mind</em> will... become firmer now?
+        
         <<set _neroAppraise =
             "Nero quickly forces his brain to make
             a logical assessment of his situation.">>
@@ -24460,42 +24493,44 @@ XXX change to graph structure. next-after-action, next-after-look?
 <<case 3>>
     <<em-assert $n1_candleHorny>>
     /* 2,0 or 1,1 */
-    Nero's stiff red cock is throbbing with desire,
-    aching with a yearning to be touched.
-    He keeps glancing at his cock,
-    trying to gauge its firmness in his mind,
-    using it as a way to measure the firmness <em>of</em> his mind.
-    It's quite firm already, and he realizes that if he stares at
-    his cock some more, it will become ever more firm. His mind.
-    His stiff mind will become firmer now.
+    _pointing
 
 <<case 4>>
     <<em-assert $n1_candleHorny>>
     /* 3,0 or 2,1 */
-    Nero's stiff red cock pulses with desire and an urgent message that he
-    tries to decipher. It's pointing at something, something important,
-    something it needs. He tries to determine what that is,
-    but his cock is too far away for him to sight along its shaft.
-    He strains his head downward, trying to reach it,
-    remembering that when he was younger he could easily
-    lick his own cock. The memory of the feeling of his tongue toching the tip
-    is both a promise and a taunt.
+    Nero stretches his head down as far as he can, extends his tongue
+    as far as he can toward his throbbing red cock.
+    A long thread of drool drops down from his open muzzle and
+    falls on his cock, connecting with the pre-cum that's dripping from it.
+    The light trickle of drool feels like an intensely focused touch
+    that makes the wolf's mind shiver.
+    He jerks his head up, as if the thread of drool were a rope that
+    could pull his cock closer to his muzzle. The thread breaks.
 
 <<case 5>>
     <<em-assert $n1_candleHorny>>
     /* 3,1 */
-    XXX lust 5, maybe focus on trying to lick self
+    Nero whines at his throbbing red cock.
+    His panting breaths are hot but feel like a cool breeze on his cock.
+    The breeze does not bring relief, it just encourages
+    his cock to yearn for more sensation.
+    His tongue laps at empty air,
+    and it feels like the motion is fanning swirls of air that his
+    cock can almost feel.
+    The wolf's earnest licking feels like it summons a ghost of a tongue
+    that teases his cock, tasting the drops of pre-cum and thirsty for more.
 
 <<case 6>>
     <<em-assert $n1_candleHorny>>
     /* 4,? or ?,2 -> 4,2 */
-    The throbbing of Nero's stiff red cock is unbearable now.
+    The stiffness of Nero's throbbing red cock is unbearable now.
     He <em>needs</em> to cum, he can <em>feel</em>
     the army of his cum pulling on all the nerves of his skin,
     ready and eager to shoot foward into action,
     but unable to release their hold on his
     body until they receive the right signal, the right sensation
     from the raised red scepter of his firm, glistening cock.
+    His tongue stretches thirstily.
     His hips thrust urgently.
     His tail bangs rhythmically against the cross.
     His cock flaps wildly,
@@ -24509,9 +24544,19 @@ XXX change to graph structure. next-after-action, next-after-look?
 <<case 7>>
     <<em-assert $n1_candleHorny>>
     /* 5,? or ?,3 */
-
-    XXX lust 7 - candle max - should emphasize mindless
-
+    Nero's mind is overwhelmed with images of the flickering red candle
+    and his throbbing red cock.
+    His cock strains with an intense craving that
+    sucks his whole soul into it,
+    revealing an emptiness inside him that yearns to be filled.
+    He does not know what can fill this desire,
+    or if it even <em>can</em> be fulfilled,
+    but he knows he <em>must</em> seek it.
+    Every atom of his body, mind, and soul
+    is pulling in every direction, a scrambling mass of confusion
+    with the hope that something, <em>anything</em>
+    might be a taste of whatever it is that his cock so desperately needs.
+    
 <<default>>
     <<run throw new Error(`BUG lust text ${n2_lustTextPos}`)>>
 <</switch>>
