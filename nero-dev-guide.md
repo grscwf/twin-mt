@@ -9,6 +9,7 @@
   - [Compute variants](#compute-variants)
 - [Story structure - Passages](#story-structure---passages)
 - [Story structure - State](#story-structure---state)
+- [Rationales](#rationales)
 
 ## Working with Twine
 
@@ -275,3 +276,17 @@
     - This is confusing and unhelpful, but fixing this in compute-variants
       is not straightforward.
     - Rewriting conditionals without `<<if>>` is a simple workaround.
+
+## Rationales
+
+- State.random. SugarCube has an option to seed a deterministic rng,
+  which in theory might be helpful for reproducing sessions.
+  - The problem is that savestats with seeded random are incompatible with
+    states without seeded random.
+  - Conversion is possible, but there's no way to make the seed-added
+    state reproducible.
+  - In general, savestates are not necessarily reproducible anyway,
+    since they can be created from multiple versions of the storygraph.
+  - Approximate reproducible is still useful, but breaking old saves is
+    makes it not worth it.
+  - For any useful reproducible, stub out random with a fixed constant.
