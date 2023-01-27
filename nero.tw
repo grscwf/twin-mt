@@ -481,6 +481,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Templates]]>>
 <<include [[Init 2 Text Style]]>>
 <<include [[Init 2 UI Style]]>>
+<<include [[Init 2 Randomness]]>>
 <<include [[Init 2 Var Info]]>>
 <<include [[Init 3 Visited Passages]]>>
 
@@ -1013,11 +1014,12 @@ CV.render = function() {
   // - all states with every alternate tryVar value
   // - all states with other non-ignored boolean-ish values flipped
 
+  // Note, this can get confused by nondeterministic rng.
+  // Need to avoid using either() and Array random extensions in passages.
+
   const passageText = Story.get(State.passage).text;
   const renders = [];
   const messages = [];
-
-  // TODO deterministic RNG, need to avoid either() and Array extensions
 
   let checked = 0;
   let tried = 0;
@@ -1202,9 +1204,8 @@ function mark(node, c) {
 :: Init 2 Count Words [inclusion] {"position":"2750,500","size":"100,100"}
 <<script>>
 
-MagesTower.countWords = function(text, verbose) {
+MagesTower.countWords = function(text) {
   const tokens = text.split(/(<[<].*?>>|<.*>)/);
-  if (verbose) console.log({tokens});
   let n = 0;
   const skipTo = (p, re) => {
     while (p < tokens.length && !re.test(tokens[p])) ++p;
@@ -1225,7 +1226,6 @@ MagesTower.countWords = function(text, verbose) {
     } else {
       const words = t.split(/[\s]+/).filter(w => /\w/.test(w) && w !== "?P");
       n += words.length;
-      if (verbose) console.log({ t, words });
     }
   }
   return n;
@@ -1486,7 +1486,7 @@ function getFails() {
     <a id=EM-debug class=EM-button>[debug]</a>
     <div class=EM-fail-intro>
       Assertions failed.
-      Passage can be nonsensical.
+      Passage may be nonsensical.
     </div>
   `);
   fails.find("#EM-debug").click(() => {
@@ -1854,9 +1854,10 @@ function record(from, to, dom) {
   dom.find(`[data-passage="${to.title}"]`).addClass("log-next");
   dom.find(".random-walk-chosen").removeClass("random-walk-chosen");
   dom.find(".fade-in-hidden").removeClass("fade-in-hidden");
+  dom.find(".fade-in-absorb").removeClass("fade-in-absorb");
   dom.find(".patience-debug").remove();
   dom.find(".ro-debug").remove();
-  dom.find(".debug").removeAttr("aria-label title");
+  dom.find(".debug").replaceWith(function() { return $(this).contents(); });
 
   // Remove "Continue" link when it's followed
   const links = []; // dom.find("a[data-passage]");
@@ -1889,17 +1890,34 @@ function openLog() {
     outer.append(section);
     words += MagesTower.countWords($(section).text());
   });
+  
+  const json = JSON.stringify(log);
+  console.log({json: json.length});
+  const compressed = LZString.compressToBase64(json);
 
   const minutes = Math.round(words / 250);
-  $("#ui-dialog-title").append(`${words} words (~${minutes} minutes)`);
+  $("#ui-dialog-title")
+      .append(`${words} words | ~${minutes} min`)
+      .append(` | ${compressed.length} lz`);
 
   $("<a>&#x2191; </a>").prependTo("#ui-dialog-title")
     .on("click", () => {
-      $("#log-outer div:first")[0].scrollIntoView();
+      const divs  = $("#log-outer > div.log-title");
+      if (divs.length) divs[0].scrollIntoView();
+    });
+  $("<a> &#x1f3b2;</a>").appendTo("#ui-dialog-title")
+    .on("click", () => {
+      const divs = $("#log-outer > div.log-title");
+      if (divs.length) {
+        // Should not use State.random()
+        const i = Math.floor(divs.length * Math.random());
+        divs[i].scrollIntoView();
+      }
     });
   $("<a> &#x2193;</a>").appendTo("#ui-dialog-title")
     .on("click", () => {
-      $("#log-outer div:last")[0].scrollIntoView();
+      const divs = $("#log-outer > div.log-title");
+      if (divs.length) divs[divs.length - 1].scrollIntoView();
     });
 
   Dialog.open();
@@ -2030,7 +2048,7 @@ Macro.add("random-once", {
       V[shown] = [];
     }
 
-    const choice = Array.from(avail).random();
+    const choice = MagesTower.pick(avail);
     V[shown].push(choice);
 
     $(this.output).wiki(this.payload[choice].contents);
@@ -2137,10 +2155,12 @@ function initRandomWalk() {
       }
     }
 
-    const i = random(avail.length - 1);
-    $(avail[i]).addClass("random-walk-chosen");
-    avail[i].scrollIntoView(false);
-    lastPick[here] = idOf(avail[i]);
+    // Should not use State.random()
+    const i = Math.floor(avail.length * Math.random());
+    const pick = avail[i];
+    $(pick).addClass("random-walk-chosen");
+    pick.scrollIntoView(false);
+    lastPick[here] = idOf(pick);
     visited.add(lastPick[here]);
     return true;
   };
@@ -2271,7 +2291,7 @@ function initRandomWalk() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === ",") return back();
     if (ev.key === ".") return forward();
-    if (ev.key === "/") return random();
+    if (ev.key === "/") return walk();
     if (ev.key === "\\") return seekToggle();
   });
 }
@@ -2280,7 +2300,7 @@ initRandomWalk();
 <</script>>
 
 
-:: Init 2 Return Head [inclusion] {"position":"3050,600","size":"100,100"}
+:: Init 2 Return Head [inclusion] {"position":"3150,600","size":"100,100"}
 <<append head>><style>
 
 #return-head {
@@ -2814,6 +2834,14 @@ function withinInclude(ctx) {
   return false;
 }
 
+function withinCondition(ctx) {
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === "if") return true;
+    if (ctx.displayName === "switch") return true;
+  }
+  return false;
+}
+
 /** <<vi-always varname value [reason]>> */
 Macro.add("vi-always", {
   handler: function() {
@@ -2825,7 +2853,9 @@ Macro.add("vi-always", {
     if (exp !== actual && !(exp === false && actual == null)) {
       EM.fail(`vi-always ${vname} ${exp}, but actual value is ${actual}`);
     }
-    alwaysVars.set(vname, exp);
+    if (!withinCondition(this)) {
+      alwaysVars.set(vname, exp);
+    }
   }
 });
 
@@ -2841,7 +2871,9 @@ Macro.add("vi-always-if", {
       if (exp !== actual && !(exp === false && actual == null)) {
         EM.fail(`vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
       }
-      alwaysVars.set(vname, exp);
+      if (!withinCondition(this)) {
+        alwaysVars.set(vname, exp);
+      }
     }
   }
 });
@@ -3069,7 +3101,9 @@ function initVarInfo() {
 
     if (outer.find(".var-info-to-do, .var-info-warning").length > 0) {
       outer.addClass("var-info-to-do");
-      EM.assert(!/\/[F]/.test(State.passage), `/F passages should not have TO\DO vars`);
+      if (/\/[F]/.test(State.passage)) {
+        EM.warn(`/F passages should not have TO\DO vars`);
+      }
     }
   });
 }
@@ -7166,7 +7200,7 @@ With a growl of frustration, all $name can do is try to ignore his erection agai
 :: Random Punishment {"position":"1750,3300","size":"100,100"}
 <<silently>>
 <<set $defiance += 2>>\
-<<set $punishment to random(1, 2)>>
+<<set $punishment = MagesTower.pick([1, 2])>>
 <</silently>>
 "Going to remain stubborn, hmm? It's a shame you don't want to play my little game with me... I'll remember that." The panther's smile does diminish with the lack of response. Nevertheless, his hand does not stop teasing the wolf's member. If anything, it moves a little faster, making it even harder for $name to suppress the unnaturally immense pleasure that comes even from such soft movements.
 
@@ -9797,7 +9831,7 @@ Thinking back to his experience in the tower and Ivex's journal, his report on w
 :: Personal Vengeance [ending] {"position":"1450,7225","size":"100,100"}
 <<silently>>
 <<set $gagged = false>>
-<<set $randomGag to random(1, 2)>>
+<<set $randomGag to MagesTower.pick([1, 2])>>
 <<if $randomGag == 1>>
   <<set $lastGag to "his own undergarments">>
 <<elseif $randomGag == 2>>
@@ -12049,8 +12083,6 @@ function analyze(passages) {
     return "unmarked";
   };
 
-  const sample = new Set(passages.randomMany(0));
-
   passages.forEach(p => {
     const kind = getKind(p.title, p.tags);
     kindOf[p.title] = kind;
@@ -12091,9 +12123,7 @@ function analyze(passages) {
       });
       todosIn[p.title] = todos;
     }
-    const verbose = sample.has(p);
-    wordCount[p.title] = MagesTower.countWords(p.text, verbose);
-    if (verbose) console.log({ wordCount: wordCount[p.title], title: p.title });
+    wordCount[p.title] = MagesTower.countWords(p.text);
   });
 
   return { kindOf, todosIn, warnings, wordCount };
@@ -12181,6 +12211,7 @@ function showRandom(dest, info) {
     .sort();
   const reroll = () => {
     body.empty();
+    // Should not use State.random()
     toShow.randomMany(5)
       .forEach(t => todoBlock(info, t).appendTo(body));
   };
@@ -12478,14 +12509,6 @@ Feedback is always welcome! Contact Grayscale on <a href="https://mastodon.socia
     <<set $t_banter = true>>
     <<set $t_didSomeAction = true>>
     <<set $t_ivexNear = true>>
-    <<set $t_ivexReceptive = true>>
-<</link>>
-<<link "> Nero 1F before glitch" "n1cr/D Subby">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n0_barbsFastViewed = true>>
-    <<set $n0_barbsSlowViewed = true>>
-    <<set $t_banter = true>>
-    <<set $t_didSomeAction = true>>
     <<set $t_ivexReceptive = true>>
 <</link>>
 <<link "> Nero 1F subby after glitch" "n1cs/D Ivex Dominant (4,2)">>
@@ -16173,13 +16196,13 @@ There's no way to escape what he knows will happen next.
 <<vi-ignore n1_mageSight>>
 <<vi-ignore-if n1_subby n1_tough n1_abused>>
 
-XXX add more physicality.
 Nero
 <<= $n1_subby ? "whines." : $n1_tough ? "growls." :
     $n1_abused ? "shivers." : "pants.">>
 "I... can't..."
 <<if $n1_subby>>
     The wolf pants and gasps between each word he speaks.
+    His lungs are burning.
     Each breath disturbs a feeling in his chest that wakes
     a sleeping presence in his soul,
     a quiet giant of inexpressible emotion that emerges
@@ -16194,6 +16217,7 @@ Nero
 <<elseif $n1_tough>>
     The wolf's anger makes him bark each word with intensity
     and a rasping breath between them.
+    His pulse is racing.
     His mind feels aware of everything
     his senses can tell him,
     all the smells and
@@ -16209,6 +16233,7 @@ Nero
 <<elseif $n1_abused>>
     The glare of his captor makes the wolf tremble and pant
     between each word he speaks.
+    His heart is pounding.
     His thoughts are racing too quickly for him to understand.
     Each moment, he questions the word he intends to say next,
     considers alternatives and their response,
@@ -16222,6 +16247,7 @@ Nero
 
 <<else>>
     The wolf gasps. He feels out of breath.
+    His throat feels constricted.
     He huffs deeply after each word he speaks,
     and with each breath, he inhales another puff of spicy musk
     that intrigues his spirit, lighting sparks of thoughts and feelings
@@ -16993,7 +17019,7 @@ Nero's memory flashes back to his most recent encounter with a feline cock. It w
 :: n1p/F Barbs Glitch 3 {"position":"5275,2375","size":"100,100"}
 <<nobr>>
 <<set $n0_barbsGlitchViewed = true>>
-<<set $n1_barbs = either(false, true)>>
+<<set $n1_barbs = MagesTower.pick([false, true])>>
 <<set $n1_barbsGlitch = true>>
 <<set $t_ivexNear = true>>
 
@@ -17611,7 +17637,7 @@ up and down the shaft in slow, firm strokes.
 :: n1s/F Sprite [inclusion] {"position":"6150,3775","size":"200,100"}
 <<nobr>>
 <<if $n1_candleHorny>>
-    <<switch random(0, 2)>>
+    <<switch MagesTower.pick([0, 1, 2])>>
     <<case 0>>
         The burr in the Sprite's voice leaves an unbearable shiver in Nero's ear.
     <<case 1>>
@@ -18658,7 +18684,7 @@ $t_afterAction
 <<vi-always n2_ivexGone false>>
 <<vi-ignore n1_candleLit>>
 
-Nero stumbled onto the solution on his sixth attempt.
+Nero stumbled onto the solution on his fourth attempt.
 By then, the two wolves were quite drunk (and much less clothed).
 Nero did not feel like removing his ward again, so rather than dropping the ward and attempting to rapidly reset it, he instead tried to calibrate a Superb Itch that would slip through his ward. This of course would ordinarily mean that the spell would slip through again when it rebounded.
 <</nobr>>
@@ -19564,7 +19590,7 @@ still call it Kelvin's Escape, with a laugh.
     <!-- nothing -->
 
 <<elseif MP_beforeCast === $n1_magicPhase>>
-    <<em-assert !$n1_mageSight>>
+    <<vi-always n1_mageSight false>>
     ?P
     <<if $n1_gravAsked>>
         Doubtful. The wolf would like to be far away if the crystals implode.
@@ -19624,9 +19650,12 @@ still call it Kelvin's Escape, with a laugh.
     <</if>>
 
 <<elseif $n1_gravNoticed>>
+    <<vi-ignore n2_ivexGone>>
     ?P
-    Since magic seems unavailable to the wolf, perhaps it's worthwhile
-    to study the details of the contraption keeping him bound.
+    Since magic seems unavailable to the wolf right now,
+    Nero considers what
+    other approaches might release himself from this contraption.
+    Strength of course is unlikely to succeed, but cleverness might save the day.
 
 <<else>>
     ?P
@@ -22060,7 +22089,7 @@ $t_afterAction
     _neroAppraise
 <<elseif !$n2_ivexGone || $n2_free>>
     Nero
-    <<= _worried ? either(
+    <<= _worried ? MagesTower.pick(
         "broods over",
         "frets over",
         "nervously reviews",
@@ -22069,7 +22098,7 @@ $t_afterAction
         "searches the facts of",
         "tries to calmly analyze",
         "worries over",
-    ) : either(
+    ) : MagesTower.pick(
         "appraises",
         "assesses",
         "considers",
@@ -22370,6 +22399,7 @@ $t_afterAction
 :: n1x/F Nackle 3 {"position":"7700,4900","size":"100,100"}
 <<nobr>>
 <<vi-ignore n1_candleLit>>
+<<vi-ignore n1_mageSight>>
 <<vi-ignore n2_ivexGone>>
 <<vi-ignore n2_free>>
 
@@ -24788,7 +24818,8 @@ function showTable() {
     console.log(line);
   }
 }
-showTable();
+
+// showTable();
 <</script>>\
 
 
@@ -26492,5 +26523,36 @@ subby after naked. ivex is near, creeps.
 [[Continue|n1cs/D Ivex Dominant (4,2)]]
 
 <</nobr>>
+
+
+:: Init 2 Randomness [inclusion] {"position":"3050,600","size":"100,100"}
+<<script>>
+const MT = window.MagesTower || (window.MagesTower = {});
+
+/**
+ * Pick arbitrary item from list or Set, based on State.random()
+ * SugarCube's Array.random(), either(), etc, use Math.random().
+ */
+MT.pick = list => {
+  if (list instanceof Set) list = Array.from(list);
+  const n = Math.floor(list.length * State.random());
+  return list[n];
+};
+
+function getSeed() {
+  const m = /[?&]seed=(\d+)/.exec(location.search);
+  if (m != null) return m[1];
+  return String(Math.random()).slice(2);
+}
+
+function initRandom() {
+  const seed = getSeed();
+  State.prng.init(seed);
+  const state = session.get("state");
+}
+
+// initRandom();
+
+<</script>>
 
 
