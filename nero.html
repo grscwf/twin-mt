@@ -464,7 +464,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -639,26 +639,26 @@ VT.ignore = fn =&gt; {
 };
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="Init 2 Archive" tags="inclusion" position="2450,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-  .archive-body {
+  .arc-body {
     margin-left: 1.5rem;
   }
-  .archive-disabled {
+  .arc-disabled {
     opacity: 0.4;
     pointer-events: none;
   }
-  .archive-title {
+  .arc-title {
     font-weight: bold;
   }
-  .archive-variant {
+  .arc-variant {
     margin-left: 1.5rem;
   }
-  .archive-variant label {
+  .arc-variant label {
     margin-left: 1em;
   }
-  .archive-variant input[type=radio] {
+  .arc-variant input[type=radio] {
     margin-right: 0.4em;
   }
-  .archive-hint {
+  .arc-hint {
     font-size: small;
     font-style: italic;
     margin-left: 1.5rem;
@@ -666,30 +666,60 @@ VT.ignore = fn =&gt; {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-window.MagesTower || (window.MagesTower = {});
-const MT = window.MagesTower;
+const MT = window.MagesTower || (window.MagesTower = {});
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
 
-MT.setVariantDefault = function (varname, rules) {
-  const v = State.variables;
-  if (v[varname] != null &amp;&amp; v[varname] !== &quot;&quot;) return;
-  for (const key of Object.keys(rules)) {
-    if (rules[key]) {
-      v[varname] = key;
-      return;
+/**
+ * &lt;&lt;arc-only&gt;&gt;...&lt;&lt;/arc-only&gt;&gt;
+ * Execute body only when rendering archive text.
+ */
+Macro.add(&quot;arc-only&quot;, {
+  tags: [],
+  handler: function() {
+    const V = State.variables;
+    if (V.t_isArchive) {
+      $(this.output).wiki(this.payload[0].contents);
     }
   }
-};
+});
 
-Macro.add(&quot;archive-variant&quot;, {
-  tags: [&quot;archive-option&quot;],
+/**
+ * &lt;&lt;arc-skip&gt;&gt;...&lt;&lt;/arc-skip&gt;&gt;
+ * Ececute body only when *not* rendering archive text.
+ */
+Macro.add(&quot;arc-skip&quot;, {
+  tags: [],
   handler: function() {
-    const v = State.variables;
+    const V = State.variables;
+    if (!V.t_isArchive) {
+      $(this.output).wiki(this.payload[0].contents);
+    }
+  }
+});
 
-    if (this.args.length !== 2) throw new Error(&quot;expected archive-variant args: varname label&quot;);
-    const label = this.args[0];
-    const varname = this.args[1];
+/**
+ * &lt;&lt;arc-variant &quot;Variant name:&quot; choiceVarName&gt;&gt;
+ * &lt;&lt;arc-option radioValue &quot;Option text&quot; enabled&gt;&gt;
+ *    hint text
+ * &lt;&lt;/arc-variant&gt;&gt;
+ * 
+ * Emit a radio selector for a variant, showing all the arc-options.
+ * - choiceVarName remembers the player&#39;s last selection.
+ * - radioValue is the value assigned to choiceVarName.
+ * - enabled is a boolean.
+ *   - true means the variant is selectable.
+ *   - false means the variant is disabled, and the hint is shown.
+ */
+Macro.add(&quot;arc-variant&quot;, {
+  tags: [&quot;arc-option&quot;],
+  handler: function() {
+    if (this.args.length !== 2) {
+      throw new Error(&quot;expected arc-variant args: varname label&quot;);
+    }
+    const [ label, varname ] = this.args;
+    const V = State.variables;
 
-    const outer = $(&quot;&lt;div class=archive-variant&gt;&quot;).appendTo(this.output);
+    const outer = $(&quot;&lt;div class=arc-variant&gt;&quot;).appendTo(this.output);
     outer.append(label);
 
     const choices = this.payload.slice(1);
@@ -697,18 +727,18 @@ Macro.add(&quot;archive-variant&quot;, {
     // If value doesn&#39;t match an enabled choice, unset it. (should only happen when debugging)
     let matched = false;
     for (const ch of choices) {
-      if (v[varname] === ch.args[0] &amp;&amp; ch.args[2]) {
+      if (V[varname] === ch.args[0] &amp;&amp; ch.args[2]) {
         matched = true;
         break;
       }
     }
-    if (!matched) v[varname] = null;
+    if (!matched) V[varname] = null;
 
     // If value is not set, set it to the first enabled choice.
-    if (v[varname] == null || v[varname] === &quot;&quot;) {
+    if (V[varname] == null || V[varname] === &quot;&quot;) {
       for (const ch of choices) {
         if (ch.args[2]) {
-          v[varname] = ch.args[0];
+          V[varname] = ch.args[0];
           break;
         }
       }
@@ -722,60 +752,80 @@ Macro.add(&quot;archive-variant&quot;, {
       const value = ch.args[0];
       const text = ch.args[1];
       const enabled = ch.args[2];
-      if (enabled &amp;&amp; (v[varname] == null || v[varname] === &quot;&quot;)) {
-        v[varname] = text;
+      if (enabled &amp;&amp; (V[varname] == null || V[varname] === &quot;&quot;)) {
+        V[varname] = text;
       }
       const label = $(&quot;&lt;label&gt;&quot;).wiki(`&lt;&lt;radiobutton &quot;$${varname}&quot; &quot;${value}&quot; autocheck&gt;&gt;`);
       label.append(text).appendTo(outer);
       if (!enabled) {
         if (hint == null) hint = ch.contents;
-        label.addClass(&quot;archive-disabled&quot;);
+        label.addClass(&quot;arc-disabled&quot;);
         label.find(&quot;input&quot;).attr(&quot;disabled&quot;, &quot;disabled&quot;);
       }
     }
     if (hint != null) {
-      const div = $(&quot;&lt;div class=archive-hint&gt;&quot;).wiki(hint).appendTo(outer);
+      const div = $(&quot;&lt;div class=arc-hint&gt;&quot;).wiki(hint).appendTo(outer);
     }
   }
 });
 
-Macro.add(&quot;archive-ending&quot;, {
-  tags: [&quot;archive-variants&quot;],
+/**
+ * &lt;&lt;arc-ending unlocked twineLink&gt;&gt;
+ *   hint text
+ * &lt;&lt;arc-variants&gt;&gt;
+ *   variant selectors
+ * &lt;&lt;/arc-ending&gt;&gt;
+ * 
+ * Emits a link to an archive passage.
+ * - text comes from the twineLink.
+ * - unlocked is a boolean
+ *   - false means link is disabled, and hint text is shown
+ *   - true means link is enabled, and variant selectors are shown
+ */
+Macro.add(&quot;arc-ending&quot;, {
+  tags: [&quot;arc-variants&quot;],
   handler: function() {
     if (this.args.length !== 2 &amp;&amp; this.args.length !== 3) {
-      throw new Error(&quot;expected archive-endings args: boolean link [disabledText]&quot;);
+      throw new Error(&quot;expected arc-endings args: boolean link [disabledText]&quot;);
     }
     const enabled = this.args[0];
     const link = this.args[1];
     const isLink = typeof link === &quot;object&quot; &amp;&amp; link.isLink;
     let offText = this.args[2] || (isLink ? link.text : link);
 
-    const outer = $(&quot;&lt;div class=archive-ending&gt;&quot;).appendTo(this.output);
+    const outer = $(&quot;&lt;div class=arc-ending&gt;&quot;).appendTo(this.output);
     if (!enabled) {
-      $(&#39;&lt;div class=&quot;archive-title archive-disabled&quot;&gt;&#39;).wiki(offText).appendTo(outer);
-      $(&#39;&lt;div class=&quot;archive-hint&quot;&gt;&#39;).wiki(this.payload[0].contents).appendTo(outer);
+      $(&#39;&lt;div class=&quot;arc-title arc-disabled&quot;&gt;&#39;).wiki(offText).appendTo(outer);
+      $(&#39;&lt;div class=&quot;arc-hint&quot;&gt;&#39;).wiki(this.payload[0].contents).appendTo(outer);
       return;
     }
-    $(&quot;&lt;div class=archive-title&gt;&quot;).wiki(isLink ? &#39;[&#39; + `[${link.text}|${link.link}]]` : link).appendTo(outer);
+    $(&quot;&lt;div class=arc-title&gt;&quot;).wiki(isLink ? &#39;[&#39; + `[${link.text}|${link.link}]]` : link).appendTo(outer);
     if (this.payload[1] != null) {
       outer.wiki(this.payload[1].contents);
     }
   }
 });
 
-Macro.add(&quot;archive-barbs&quot;, {
+/**
+ * &lt;&lt;arc-barbs choiceVarName canSmooth canBarbs&gt;&gt;
+ * 
+ * Emit a radio selector for smooth/barbs choice.
+ * - choiceVarName remembers player&#39;s selection.
+ * - canSmooth and canBarbs are booleans indicating if the option is unlocked.
+ */
+Macro.add(&quot;arc-barbs&quot;, {
   handler: function() {
     if (this.args.length !== 3) {
-      throw new Error(&quot;expected archive-barbs args: varname boolean boolean&quot;);
+      throw new Error(&quot;expected arc-barbs args: varname boolean boolean&quot;);
     }
     const varname = this.args[0];
     const smooth = this.args[1];
     const barbs = this.args[2];
     $(this.output).wiki(
-      `&lt;&lt;archive-variant &quot;Variant:&quot; ${varname}&gt;&gt;` +
-      `&lt;&lt;archive-option smooth &quot;Smooth&quot; ${smooth}&gt;&gt;` +
-      `&lt;&lt;archive-option barbs &quot;Barbs&quot; ${barbs}&gt;&gt;` +
-      `&lt;&lt;/archive-variant&gt;&gt;`
+      `&lt;&lt;arc-variant &quot;Variant:&quot; ${varname}&gt;&gt;` +
+      `&lt;&lt;arc-option smooth &quot;Smooth&quot; ${smooth}&gt;&gt;` +
+      `&lt;&lt;arc-option barbs &quot;Barbs&quot; ${barbs}&gt;&gt;` +
+      `&lt;&lt;/arc-variant&gt;&gt;`
     );
   }
 });
@@ -2877,7 +2927,7 @@ Macro.add(&quot;vi-ignore-if&quot;, {
 const str = val =&gt; val == null ? String(val) : JSON.stringify(val);
 
 function varButton(vname) {
-  const v = VT.untracedVariables();
+  const V = VT.untracedVariables();
   const v0 = State.current.variables;
 
   const outer = $(&quot;&lt;span class=var-info-button-outer&gt;&quot;);
@@ -2917,7 +2967,7 @@ function varButton(vname) {
 
   const label = $(&quot;&lt;span class=var-info-button-label&gt;&quot;).appendTo(outer);
 
-  const jval = str(v[vname]);
+  const jval = str(V[vname]);
   if (VT.ctx.wasSet.has(vname)) {
     const jval0 = str(v0[vname]);
     outer.attr(&quot;title&quot;, `${tags}${vname}=${jval0} -&gt;\n${vname}=${jval}`);
@@ -2926,12 +2976,12 @@ function varButton(vname) {
   }
 
   // assume undeclared is boolean
-  const vtype = ET.vars[vname] || (vname in v ? typeof v[vname] : &quot;boolean&quot;);
+  const vtype = ET.vars[vname] || (vname in V ? typeof V[vname] : &quot;boolean&quot;);
 
   const enumList = ET.enums[vtype];
   if (enumList != null) {
     outer.addClass(&quot;var-info-enum&quot;);
-    const sym = enumList[v[vname] || 0];
+    const sym = enumList[V[vname] || 0];
     const sameType = Object.values(ET.vars).filter(t =&gt; t === vtype).length;
     label.text(sym != null ? sym : vname + &quot;=&quot; + jval);
     const n = enumList.length;
@@ -2982,7 +3032,7 @@ function varButton(vname) {
   }
 
   if (vtype === &quot;boolean&quot;) {
-    outer.addClass(&quot;var-info-boolean-&quot; + (v[vname] ? &quot;true&quot; : &quot;false&quot;));
+    outer.addClass(&quot;var-info-boolean-&quot; + (V[vname] ? &quot;true&quot; : &quot;false&quot;));
     label.text(vname);
     if (VT.ctx.wasRead.has(vname)) {
       outer.addClass(&quot;var-info-can-change&quot;);
@@ -3396,32 +3446,32 @@ function initVisited() {
 initVisited();
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="31" name="Init 4 Drekkar" tags="inclusion" position="2450,850" size="100,100">&lt;&lt;script&gt;&gt;
-const v = variables();
-v.name = &quot;Drekkar&quot;;
-v.class = &quot;warrior&quot;;
-v.warrior = true;
-v.mage = false;
+const V = variables();
+V.name = &quot;Drekkar&quot;;
+V.class = &quot;warrior&quot;;
+V.warrior = true;
+V.mage = false;
 
-v.rough_awakening = true;
-v.FurtherDefiance = false;
+V.rough_awakening = true;
+V.FurtherDefiance = false;
 
-v.CurArousal = 10;
-v.MaxArousal = 100;
+V.CurArousal = 10;
+V.MaxArousal = 100;
 
-v.candleTimer = &quot;2s&quot;;
-v.window = false;
-v.office = false;
-v.door = false;
+V.candleTimer = &quot;2s&quot;;
+V.window = false;
+V.office = false;
+V.door = false;
 
-v.lionwatch1 = 40;
-v.lionwatch2 = 20;
-v.lionwatch3 = 20;
-v.lionwatch4 = 40;
-v.lionwatch5 = 50;
-v.lionwatch6 = 60;
-v.lionwatch7 = 90;
-v.lionwatchFinal = v.lionwatch1 + v.lionwatch2 + v.lionwatch3 +
-  v.lionwatch4 + v.lionwatch5 + v.lionwatch6 + v.lionwatch7;
+V.lionwatch1 = 40;
+V.lionwatch2 = 20;
+V.lionwatch3 = 20;
+V.lionwatch4 = 40;
+V.lionwatch5 = 50;
+V.lionwatch6 = 60;
+V.lionwatch7 = 90;
+V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
+  V.lionwatch4 + V.lionwatch5 + V.lionwatch6 + V.lionwatch7;
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="32" name="Init 5 Nero" tags="inclusion" position="2425,1025" size="100,100">&lt;&lt;include [[Init 5a Nero Vars]]&gt;&gt;
 
 &lt;&lt;include [[Init 5b Nero Actions]]&gt;&gt;
@@ -5086,7 +5136,7 @@ The endings in this archive are all static, with no choices beyond the selection
 &lt;div class=&quot;ui-subtitle&quot;&gt;
     Drekkar Endings
 &lt;/div&gt;
-&lt;div class=&quot;archive-body&quot;&gt;
+&lt;div class=&quot;arc-body&quot;&gt;
     &lt;&lt;include [[Interrogation Archive Display]]&gt;&gt;
     &lt;&lt;include [[Enthrallment Archive Display]]&gt;&gt;
     &lt;&lt;include [[Extraction Archive Display]]&gt;&gt;
@@ -5099,7 +5149,7 @@ The endings in this archive are all static, with no choices beyond the selection
 &lt;div class=&quot;ui-subtitle&quot;&gt;
     Nero Endings
 &lt;/div&gt;
-&lt;div class=&quot;archive-body&quot;&gt;
+&lt;div class=&quot;arc-body&quot;&gt;
     &lt;&lt;include [[n0/F Nero Endings]]&gt;&gt;
 &lt;/div&gt;
 
@@ -8077,26 +8127,26 @@ Everything about it is unnatural. Invasive! And the worst part? $name can tell t
 For some reason, that smell feels incredibly &lt;b&gt;arousing&lt;/b&gt;. If he could look at the lion by his side, he would. The wolf starts to understand why the lion was hard and dripping the whole time while working. He himself cannot help it. His cock throbs between his legs, unattended, but the arousal is there, coming from the herbs he&#39;s forced to grind. With how boring the work is, the lust surrounding his body is the only thing his mind can focus on. It feels like torture to feel it and be completely unable to even get close to tend to it.
 
 No matter how much he tries, $name cannot find a way out. He&#39;s trapped there grinding herbs and getting aroused by it until who knows how long after that, Ivex himself opens the door.</tw-passagedata><tw-passagedata pid="168" name="Interrogation Archive Display" tags="inclusion" position="1775,2250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;archive-ending $interrogationEnding
+&lt;&lt;arc-ending $interrogationEnding
     [[Bad Ending: Interrogation|Interrogation Archive]]
 &gt;&gt;
     Interrogation by the hands of the wizard is the first step
     that awaits those that cannot escape his contraptions...
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; interrogationSpell&gt;&gt;
-    &lt;&lt;archive-option freeze &quot;Freeze&quot; $interrogationEndingFreeze&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; interrogationSpell&gt;&gt;
+    &lt;&lt;arc-option freeze &quot;Freeze&quot; $interrogationEndingFreeze&gt;&gt;
         Ivex has a special treatment for northern wolves that like the cold...
-    &lt;&lt;archive-option shock &quot;Shock&quot; $interrogationEndingShock&gt;&gt;
+    &lt;&lt;arc-option shock &quot;Shock&quot; $interrogationEndingShock&gt;&gt;
         Ivex has a special treatment for southern wolves that hate the cold...
-    &lt;&lt;/archive-variant&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
 
-    &lt;&lt;archive-variant &quot;Variant:&quot; interrogationEnd&gt;&gt;
-    &lt;&lt;archive-option mild &quot;Mild&quot; $interrogationEndingMild&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; interrogationEnd&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; $interrogationEndingMild&gt;&gt;
         Ivex treats those that choose collaboration over defiance with &quot;kindness&quot;...
-    &lt;&lt;archive-option harsh &quot;Harsh&quot; $interrogationEndingHarsh&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; $interrogationEndingHarsh&gt;&gt;
         Ivex has a special disdain for those that dare defy his wishes...
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="169" name="Enthrallment 1 (Text)" tags="text" position="1650,4375" size="100,100">The wolf can&#39;t even turn his head to look at the damned mage, but the panther is incredibly happy and amused to find him there with a gemstone around his neck and working next to the lion.
 
 There is nothing $name can do. Ivex compliments the lion for capturing him with a slap to the feline&#39;s bare ass. The wolf is forced to remain there, grinding herbs while Ivex&#39;s hands explore his helpless body, stroke and play with his forcefully aroused cock and even go as far as shoving a finger up his ass.
@@ -8188,17 +8238,17 @@ But there&#39;s no decision to be made. After being exposed to that candle for s
 &lt;span class=&quot;bad-ending&quot;&gt;Bad Ending: &lt;i&gt;Enthrallment&lt;/i&gt;&lt;/span&gt;
 
 [[Return to the Archives|Archives]]</tw-passagedata><tw-passagedata pid="175" name="Enthrallment Archive Display" tags="inclusion" position="1900,2250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;archive-ending $enthrallmentEnding
+&lt;&lt;arc-ending $enthrallmentEnding
     [[Bad Ending: Enthrallment|Enthrallment Archive]]
 &gt;&gt;
     Sometimes a magical accessory is for more than just the looks...
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; lionFuck&gt;&gt;
-    &lt;&lt;archive-option no &quot;None&quot; true&gt;&gt;
-    &lt;&lt;archive-option yes &quot;Lion&quot; $enthrallmentLion&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; lionFuck&gt;&gt;
+    &lt;&lt;arc-option no &quot;None&quot; true&gt;&gt;
+    &lt;&lt;arc-option yes &quot;Lion&quot; $enthrallmentLion&gt;&gt;
         Engaging in arousing activities while overtaken by previous magical lust makes some things impossible to resist...
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="176" name="Lion Pindown (Text)" tags="text" position="1175,4850" size="100,100">The feline is good. Very good. How can someone this strong end up grinding herbs in some psycho mage&#39;s tower?! The wolf&#39;s wondering has to wait, however, because as the lion uses his legs to trap his own, things start getting ugly. Much to the wolf&#39;s dismay, the lion grips him closer than ever and, in that position, the wolf&#39;s cock finds itself hard-pressed against the lion&#39;s own member. It feels warm against the wolf&#39;s sensitive length, tingles of pleasure distracting $name from the urgency of the situation. The lion forces him back, climbing on top of him, dangerously close to pinning him down...
 
 &quot;NO!&quot; the wolf yells at the lion&#39;s face. With a surge of anger, the wolf lets out a loud snarl and bends his knee, hitting the exposed lion straight on the nuts.
@@ -8953,18 +9003,18 @@ All the pleasure around him comes together. The wolf&#39;s eyes roll back as the
 With a drawn-out moan, the wolf&#39;s exposed cock starts pulsing inside the slime and then, as the wolf feels the pleasure of climax overwhelm his entire being, it flexes as the first strong jet of wolf cum is expelled from it.
 
 It doesn&#39;t stop there, and neither does the slime. All the stimulation keeps going as the wolf&#39;s orgasm hits, shooting jet after jet of cum into the slime. His seed seems to be &#39;caught&#39; by the blob. The white, pearly substance is gathered just above his cock, melding together as the wolf is encouraged to shoot more and more. The slime keeps milking him, kneading his cock, his knot, and inflicting pleasure all around his body until the wolf&#39;s cock is reduced to quick throbs, spurting the last remnants of his orgasm. Only then does the slime start slowing down, although the stimulation doesn&#39;t truly stop. It allows the wolf to catch his breath, though. And as he looks down…</tw-passagedata><tw-passagedata pid="211" name="Extraction Archive Display" tags="inclusion" position="2025,2250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;archive-ending $extractionEnding
+&lt;&lt;arc-ending $extractionEnding
     [[Bad Ending: Extraction|Extraction Archive]]
 &gt;&gt;
     Touching unknown magical things always ends badly...
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; extractionVariant&gt;&gt;
-    &lt;&lt;archive-option gentle &quot;Gentle&quot; $extractionGentleEnd&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; extractionVariant&gt;&gt;
+    &lt;&lt;arc-option gentle &quot;Gentle&quot; $extractionGentleEnd&gt;&gt;
         The slime is fine-tuned to reward those that let it do its work...
-    &lt;&lt;archive-option forceful &quot;Forceful&quot; $extractionForcefulEnd&gt;&gt;
+    &lt;&lt;arc-option forceful &quot;Forceful&quot; $extractionForcefulEnd&gt;&gt;
         The slime is fine-tuned to go rougher on those that insist on fighting it...
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="212" name="Extraction Archive" tags="noreturn" position="2025,2350" size="100,100">&lt;&lt;include &quot;Pulled In (Text)&quot;&gt;&gt;
 
 &lt;&lt;include &quot;Pulled Further (Text)&quot;&gt;&gt;
@@ -10317,12 +10367,12 @@ They also handle his tower as a whole. The wolf does not stick around to see it,
 With a handsome amount of gold in his hands, the wolf moves on. The life of an adventurer is like that. Ivex wasn&#39;t the first mage he had to fight and it won&#39;t be the last. The events of the tower stick inside &lt;&lt;print $name&gt;&gt;&#39;s mind, though, and they are enough to make him blush every now and then. He will make sure that such things never happen again.
 
 Or, at least, he will try to.</tw-passagedata><tw-passagedata pid="272" name="Ivex Enthrallment Archive Display" tags="inclusion" position="2275,2250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;archive-ending $enthralmentIvexEnding
+&lt;&lt;arc-ending $enthralmentIvexEnding
     [[Ending: A New Servant|Ivex Enthrallment Archive]]
 &gt;&gt;
     New punishment ideas might come to the adventurer
     if he has experienced terrible things in different timelines...
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="273" name="Ivex Enthrallment Archive" tags="noreturn" position="2275,2350" size="100,100">&lt;&lt;include &quot;Enthrallment Vengeance (Text)&quot;&gt;&gt;
 
 &lt;&lt;include &quot;Ivex Enthrallment 1 (Text)&quot;&gt;&gt;
@@ -10344,12 +10394,12 @@ Or, at least, he will try to.</tw-passagedata><tw-passagedata pid="272" name="Iv
 &lt;span class=&quot;good-ending&quot;&gt;Ending: &lt;i&gt;Ivex&#39;s Enthrallment&lt;/i&gt;&lt;/span&gt;
 
 [[Return to the Archives|Archives]]</tw-passagedata><tw-passagedata pid="274" name="Ivex Extraction Archive Display" tags="inclusion" position="2400,2250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;archive-ending $extractionIvexEnding
+&lt;&lt;arc-ending $extractionIvexEnding
     [[Ending: Energy Supply|Ivex Extraction Archive]]
 &gt;&gt;
     New punishment ideas might come to the adventurer
     if he has experienced terrible things in different timelines...
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="275" name="Ivex Extraction Archive" tags="noreturn" position="2400,2350" size="100,100">&lt;&lt;include &quot;Extraction Vengeance (Text)&quot;&gt;&gt;
 
 &lt;&lt;include &quot;Ivex Extraction 1 (Text)&quot;&gt;&gt;
@@ -10367,11 +10417,11 @@ Or, at least, he will try to.</tw-passagedata><tw-passagedata pid="272" name="Iv
 &lt;span class=&quot;good-ending&quot;&gt;Ending: &lt;i&gt;Ivex&#39;s Extraction&lt;/i&gt;&lt;/span&gt;
 
 [[Return to the Archives|Archives]]</tw-passagedata><tw-passagedata pid="276" name="Ivex Punishment Archive Display" tags="inclusion" position="2150,2250" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;archive-ending $personalEnding
+&lt;&lt;arc-ending $personalEnding
     [[Ending: Punishment|Ivex Punishment Archive]]
 &gt;&gt;
     The spoils of victory...
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="277" name="Ivex Punishment Archive" tags="noreturn" position="2150,2350" size="100,100">The wolf, still holding Ivex up by the scruff, lifts him higher so that he can look at the unconscious feline&#39;s face. Then, without hesitation, $name brings a paw up and gives the panther&#39;s muzzle a hard slap.
 
 Ivex shakes, awakening with a grunt and a mewl. The feline blinks, his feet wiggling up in the air and he looks around confused for a moment before his eyes focus on the large wolf holding him up. The sight of him trying to do something about it, only to realize that his arms are bound behind his back and his bound feet can&#39;t even touch the floor makes for quite an amusing scene.
@@ -11274,8 +11324,8 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="286" name="n0/F Nero Endings" tags="inclusion" position="3225,2225" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
-  const v = State.variables;
-  const t = State.temporary;
+  const V = State.variables;
+  const T = State.temporary;
 
   /**
    * Sets temp vars that combine n9 variant flags.
@@ -11287,15 +11337,15 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
    *   _stem = _stemA || _stemB;
    */
   function rollup(stem, var1, var2) {
-    t[stem] = false;
-    for (const v1 of var1) t[`${stem}${v1}`] = false;
-    for (const v2 of var2) t[`${stem}${v2}`] = false;
+    T[stem] = false;
+    for (const v1 of var1) T[`${stem}${v1}`] = false;
+    for (const v2 of var2) T[`${stem}${v2}`] = false;
     for (const v1 of var1) {
       for (const v2 of var2) {
-        if (v[`n9_${stem}${v1}${v2}`]) {
-          t[stem] = true;
-          t[`${stem}${v1}`] = true;
-          t[`${stem}${v2}`] = true;
+        if (V[`n9_${stem}${v1}${v2}`]) {
+          T[stem] = true;
+          T[`${stem}${v1}`] = true;
+          T[`${stem}${v2}`] = true;
         }
       }
     }
@@ -11307,84 +11357,84 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 
 &lt;&lt;/script&gt;&gt;
 
-&lt;&lt;archive-ending _tamed [[Bad Ending: Tamed|n8/D Tamed]]&gt;&gt;
+&lt;&lt;arc-ending _tamed [[Bad Ending: Tamed|n8/D Tamed]]&gt;&gt;
     Struggling is hopeless...
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_tamedBarbs _tamedSmooth _tamedBarbs&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; n8_tamed&gt;&gt;
-    &lt;&lt;archive-option mild &quot;Mild&quot; _tamedMild&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_tamedBarbs _tamedSmooth _tamedBarbs&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; n8_tamed&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; _tamedMild&gt;&gt;
         Ivex enjoys cooperative victims...
-    &lt;&lt;archive-option harsh &quot;Harsh&quot; _tamedHarsh&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; _tamedHarsh&gt;&gt;
         Ivex enjoys reluctant victims...
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;archive-ending _caged [[Bad Ending: Caged|n8/D Caged]]&gt;&gt;
+&lt;&lt;arc-ending _caged [[Bad Ending: Caged|n8/D Caged]]&gt;&gt;
     Self-control is overrated...
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_cagedBarbs _cagedSmooth _cagedBarbs&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; n8_caged&gt;&gt;
-    &lt;&lt;archive-option mild &quot;Mild&quot; _cagedMild&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_cagedBarbs _cagedSmooth _cagedBarbs&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; n8_caged&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; _cagedMild&gt;&gt;
         Sometimes all that&#39;s needed is a paw...
-    &lt;&lt;archive-option harsh &quot;Harsh&quot; _cagedHarsh&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; _cagedHarsh&gt;&gt;
         Sometimes a paw is not enough...
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;archive-ending _broken [[Challenge Ending: Broken|n8/D Broken]]&gt;&gt;
+&lt;&lt;arc-ending _broken [[Challenge Ending: Broken|n8/D Broken]]&gt;&gt;
     &lt;&lt;if _tamed &amp;&amp; _caged &amp;&amp; _escaped&gt;&gt;
         Remember ?blank and talk to him...
     &lt;&lt;else&gt;&gt;
         Under construction.
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_brokenBarbs _brokenSmooth _brokenBarbs&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_brokenBarbs _brokenSmooth _brokenBarbs&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
 &lt;hr&gt;
 
-&lt;&lt;archive-ending false &quot;Bad Ending: Hunted&quot;&gt;&gt;
+&lt;&lt;arc-ending false &quot;Bad Ending: Hunted&quot;&gt;&gt;
     Under construction.
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_huntedBarbs false false&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; n8_hunted&gt;&gt;
-    &lt;&lt;archive-option mild &quot;Mild&quot; false&gt;&gt;
-    &lt;&lt;archive-option harsh &quot;Harsh&quot; false&gt;&gt;
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_huntedBarbs false false&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; n8_hunted&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;archive-ending false &quot;Bad Ending: Overwhelmed&quot;&gt;&gt;
+&lt;&lt;arc-ending false &quot;Bad Ending: Overwhelmed&quot;&gt;&gt;
     Under construction.
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_overwhelmedBarbs false false&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; n8_overwhelmed&gt;&gt;
-    &lt;&lt;archive-option mild &quot;Mild&quot; false&gt;&gt;
-    &lt;&lt;archive-option harsh &quot;Harsh&quot; false&gt;&gt;
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_overwhelmedBarbs false false&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; n8_overwhelmed&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;archive-ending false &quot;Challenge Ending: Wrecked&quot;&gt;&gt;
+&lt;&lt;arc-ending false &quot;Challenge Ending: Wrecked&quot;&gt;&gt;
     Under construction.
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_wreckedBarbs false false&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_wreckedBarbs false false&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
 &lt;hr&gt;
 
-&lt;&lt;archive-ending false &quot;Ending: Satisfied&quot;&gt;&gt;
+&lt;&lt;arc-ending false &quot;Ending: Satisfied&quot;&gt;&gt;
     Under construction.
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-variant &quot;Variant:&quot; n8_satisfied&gt;&gt;
-    &lt;&lt;archive-option mica &quot;Mica&quot; false&gt;&gt;
-    &lt;&lt;archive-option pevhin &quot;Pevhin&quot; false&gt;&gt;
-    &lt;&lt;archive-option blank &quot;???&quot; false&gt;&gt;
-    &lt;&lt;/archive-variant&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-variant &quot;Variant:&quot; n8_satisfied&gt;&gt;
+    &lt;&lt;arc-option mica &quot;Mica&quot; false&gt;&gt;
+    &lt;&lt;arc-option pevhin &quot;Pevhin&quot; false&gt;&gt;
+    &lt;&lt;arc-option blank &quot;???&quot; false&gt;&gt;
+    &lt;&lt;/arc-variant&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;archive-ending false &quot;Ending: Dominant&quot;&gt;&gt;
+&lt;&lt;arc-ending false &quot;Ending: Dominant&quot;&gt;&gt;
     Under construction.
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_dominantBarbs false false&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_dominantBarbs false false&gt;&gt;
     &lt;!--
         Chase: No | Yes
         Collar: No | Yes
@@ -11393,13 +11443,13 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
         ??? (Rescue): No | Yes
         ??? (Ascend): No | Yes
     --&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;archive-ending false &quot;Challenge Ending: Ascendant&quot;&gt;&gt;
+&lt;&lt;arc-ending false &quot;Challenge Ending: Ascendant&quot;&gt;&gt;
     Under construction.
-&lt;&lt;archive-variants&gt;&gt;
-    &lt;&lt;archive-barbs n8_ascendantBarbs false false&gt;&gt;
-&lt;&lt;/archive-ending&gt;&gt;
+&lt;&lt;arc-variants&gt;&gt;
+    &lt;&lt;arc-barbs n8_ascendantBarbs false false&gt;&gt;
+&lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="287" name="n0/F Project Status" tags="inclusion" position="3375,2650" size="100,100">Nero has a few Bad Endings that are already finished. Check out the [[Archives]] (in the left sidebar menu) to see which endings are available. For the endings you haven&#39;t seen yet, there are some hints on how to reach them.
 
 We&#39;re expecting the rest of Nero&#39;s story to be released to &lt;a target=&quot;_blank&quot; href=&quot;https://www.patreon.com/sleth&quot;&gt;Sleth&#39;s Patreon&lt;/a&gt; later in 2023. Public release will be a month later.
@@ -16446,25 +16496,25 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="420" name="n1s/F Locked Out"
 &lt;/style&gt;
 
 &lt;&lt;script&gt;&gt;
-const v = State.variables;
-const t = State.temporary;
-v.n1_lockoutTime == null &amp;&amp; (v.n1_lockoutTime = 60);
+const V = State.variables;
+const T = State.temporary;
+V.n1_lockoutTime == null &amp;&amp; (V.n1_lockoutTime = 60);
 const turn = State.turns;
 function update() {
   const span = $(&quot;#lockout-time&quot;);
   if (turn !== State.turns || span.length === 0) return;
-  v.n1_lockoutTime--;
-  if (v.n1_lockoutTime &lt; 0) {
-    v.n1_lockoutTime += 4294967296;
-    $(&quot;#at-zero&quot;).text(t.exasperation).addClass(&quot;at-zero-visible&quot;);;
+  V.n1_lockoutTime--;
+  if (V.n1_lockoutTime &lt; 0) {
+    V.n1_lockoutTime += 4294967296;
+    $(&quot;#at-zero&quot;).text(T.exasperation).addClass(&quot;at-zero-visible&quot;);;
   }
-  span.text(v.n1_lockoutTime);
+  span.text(V.n1_lockoutTime);
   setTimeout(update, 1000);
 }
 function initTimer() {
   if (setup.debug) {
     $(&quot;#lockout-time&quot;).css({ cursor: &quot;pointer&quot; }).on(&quot;click&quot;, () =&gt; {
-      v.n1_lockoutTime = 2;
+      V.n1_lockoutTime = 2;
       $(&quot;#at-zero&quot;).text(&quot;&quot;).removeClass(&quot;at-zero-visible&quot;);
     });
   }

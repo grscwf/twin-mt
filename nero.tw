@@ -607,26 +607,26 @@ VT.ignore = fn => {
 
 :: Init 2 Archive [inclusion] {"position":"2450,500","size":"100,100"}
 <<append head>><style>
-  .archive-body {
+  .arc-body {
     margin-left: 1.5rem;
   }
-  .archive-disabled {
+  .arc-disabled {
     opacity: 0.4;
     pointer-events: none;
   }
-  .archive-title {
+  .arc-title {
     font-weight: bold;
   }
-  .archive-variant {
+  .arc-variant {
     margin-left: 1.5rem;
   }
-  .archive-variant label {
+  .arc-variant label {
     margin-left: 1em;
   }
-  .archive-variant input[type=radio] {
+  .arc-variant input[type=radio] {
     margin-right: 0.4em;
   }
-  .archive-hint {
+  .arc-hint {
     font-size: small;
     font-style: italic;
     margin-left: 1.5rem;
@@ -634,30 +634,60 @@ VT.ignore = fn => {
 </style><</append>>
 
 <<script>>
-window.MagesTower || (window.MagesTower = {});
-const MT = window.MagesTower;
+const MT = window.MagesTower || (window.MagesTower = {});
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
 
-MT.setVariantDefault = function (varname, rules) {
-  const v = State.variables;
-  if (v[varname] != null && v[varname] !== "") return;
-  for (const key of Object.keys(rules)) {
-    if (rules[key]) {
-      v[varname] = key;
-      return;
+/**
+ * <<arc-only>>...<</arc-only>>
+ * Execute body only when rendering archive text.
+ */
+Macro.add("arc-only", {
+  tags: [],
+  handler: function() {
+    const V = State.variables;
+    if (V.t_isArchive) {
+      $(this.output).wiki(this.payload[0].contents);
     }
   }
-};
+});
 
-Macro.add("archive-variant", {
-  tags: ["archive-option"],
+/**
+ * <<arc-skip>>...<</arc-skip>>
+ * Ececute body only when *not* rendering archive text.
+ */
+Macro.add("arc-skip", {
+  tags: [],
   handler: function() {
-    const v = State.variables;
+    const V = State.variables;
+    if (!V.t_isArchive) {
+      $(this.output).wiki(this.payload[0].contents);
+    }
+  }
+});
 
-    if (this.args.length !== 2) throw new Error("expected archive-variant args: varname label");
-    const label = this.args[0];
-    const varname = this.args[1];
+/**
+ * <<arc-variant "Variant name:" choiceVarName>>
+ * <<arc-option radioValue "Option text" enabled>>
+ *    hint text
+ * <</arc-variant>>
+ * 
+ * Emit a radio selector for a variant, showing all the arc-options.
+ * - choiceVarName remembers the player's last selection.
+ * - radioValue is the value assigned to choiceVarName.
+ * - enabled is a boolean.
+ *   - true means the variant is selectable.
+ *   - false means the variant is disabled, and the hint is shown.
+ */
+Macro.add("arc-variant", {
+  tags: ["arc-option"],
+  handler: function() {
+    if (this.args.length !== 2) {
+      throw new Error("expected arc-variant args: varname label");
+    }
+    const [ label, varname ] = this.args;
+    const V = State.variables;
 
-    const outer = $("<div class=archive-variant>").appendTo(this.output);
+    const outer = $("<div class=arc-variant>").appendTo(this.output);
     outer.append(label);
 
     const choices = this.payload.slice(1);
@@ -665,18 +695,18 @@ Macro.add("archive-variant", {
     // If value doesn't match an enabled choice, unset it. (should only happen when debugging)
     let matched = false;
     for (const ch of choices) {
-      if (v[varname] === ch.args[0] && ch.args[2]) {
+      if (V[varname] === ch.args[0] && ch.args[2]) {
         matched = true;
         break;
       }
     }
-    if (!matched) v[varname] = null;
+    if (!matched) V[varname] = null;
 
     // If value is not set, set it to the first enabled choice.
-    if (v[varname] == null || v[varname] === "") {
+    if (V[varname] == null || V[varname] === "") {
       for (const ch of choices) {
         if (ch.args[2]) {
-          v[varname] = ch.args[0];
+          V[varname] = ch.args[0];
           break;
         }
       }
@@ -690,60 +720,80 @@ Macro.add("archive-variant", {
       const value = ch.args[0];
       const text = ch.args[1];
       const enabled = ch.args[2];
-      if (enabled && (v[varname] == null || v[varname] === "")) {
-        v[varname] = text;
+      if (enabled && (V[varname] == null || V[varname] === "")) {
+        V[varname] = text;
       }
       const label = $("<label>").wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
       label.append(text).appendTo(outer);
       if (!enabled) {
         if (hint == null) hint = ch.contents;
-        label.addClass("archive-disabled");
+        label.addClass("arc-disabled");
         label.find("input").attr("disabled", "disabled");
       }
     }
     if (hint != null) {
-      const div = $("<div class=archive-hint>").wiki(hint).appendTo(outer);
+      const div = $("<div class=arc-hint>").wiki(hint).appendTo(outer);
     }
   }
 });
 
-Macro.add("archive-ending", {
-  tags: ["archive-variants"],
+/**
+ * <<arc-ending unlocked twineLink>>
+ *   hint text
+ * <<arc-variants>>
+ *   variant selectors
+ * <</arc-ending>>
+ * 
+ * Emits a link to an archive passage.
+ * - text comes from the twineLink.
+ * - unlocked is a boolean
+ *   - false means link is disabled, and hint text is shown
+ *   - true means link is enabled, and variant selectors are shown
+ */
+Macro.add("arc-ending", {
+  tags: ["arc-variants"],
   handler: function() {
     if (this.args.length !== 2 && this.args.length !== 3) {
-      throw new Error("expected archive-endings args: boolean link [disabledText]");
+      throw new Error("expected arc-endings args: boolean link [disabledText]");
     }
     const enabled = this.args[0];
     const link = this.args[1];
     const isLink = typeof link === "object" && link.isLink;
     let offText = this.args[2] || (isLink ? link.text : link);
 
-    const outer = $("<div class=archive-ending>").appendTo(this.output);
+    const outer = $("<div class=arc-ending>").appendTo(this.output);
     if (!enabled) {
-      $('<div class="archive-title archive-disabled">').wiki(offText).appendTo(outer);
-      $('<div class="archive-hint">').wiki(this.payload[0].contents).appendTo(outer);
+      $('<div class="arc-title arc-disabled">').wiki(offText).appendTo(outer);
+      $('<div class="arc-hint">').wiki(this.payload[0].contents).appendTo(outer);
       return;
     }
-    $("<div class=archive-title>").wiki(isLink ? '[' + `[${link.text}|${link.link}]]` : link).appendTo(outer);
+    $("<div class=arc-title>").wiki(isLink ? '[' + `[${link.text}|${link.link}]]` : link).appendTo(outer);
     if (this.payload[1] != null) {
       outer.wiki(this.payload[1].contents);
     }
   }
 });
 
-Macro.add("archive-barbs", {
+/**
+ * <<arc-barbs choiceVarName canSmooth canBarbs>>
+ * 
+ * Emit a radio selector for smooth/barbs choice.
+ * - choiceVarName remembers player's selection.
+ * - canSmooth and canBarbs are booleans indicating if the option is unlocked.
+ */
+Macro.add("arc-barbs", {
   handler: function() {
     if (this.args.length !== 3) {
-      throw new Error("expected archive-barbs args: varname boolean boolean");
+      throw new Error("expected arc-barbs args: varname boolean boolean");
     }
     const varname = this.args[0];
     const smooth = this.args[1];
     const barbs = this.args[2];
     $(this.output).wiki(
-      `<<archive-variant "Variant:" ${varname}>>` +
-      `<<archive-option smooth "Smooth" ${smooth}>>` +
-      `<<archive-option barbs "Barbs" ${barbs}>>` +
-      `<</archive-variant>>`
+      `<<arc-variant "Variant:" ${varname}>>` +
+      `<<arc-option smooth "Smooth" ${smooth}>>` +
+      `<<arc-option barbs "Barbs" ${barbs}>>` +
+      `<</arc-variant>>`
     );
   }
 });
@@ -2929,7 +2979,7 @@ Macro.add("vi-ignore-if", {
 const str = val => val == null ? String(val) : JSON.stringify(val);
 
 function varButton(vname) {
-  const v = VT.untracedVariables();
+  const V = VT.untracedVariables();
   const v0 = State.current.variables;
 
   const outer = $("<span class=var-info-button-outer>");
@@ -2969,7 +3019,7 @@ function varButton(vname) {
 
   const label = $("<span class=var-info-button-label>").appendTo(outer);
 
-  const jval = str(v[vname]);
+  const jval = str(V[vname]);
   if (VT.ctx.wasSet.has(vname)) {
     const jval0 = str(v0[vname]);
     outer.attr("title", `${tags}${vname}=${jval0} ->\n${vname}=${jval}`);
@@ -2978,12 +3028,12 @@ function varButton(vname) {
   }
 
   // assume undeclared is boolean
-  const vtype = ET.vars[vname] || (vname in v ? typeof v[vname] : "boolean");
+  const vtype = ET.vars[vname] || (vname in V ? typeof V[vname] : "boolean");
 
   const enumList = ET.enums[vtype];
   if (enumList != null) {
     outer.addClass("var-info-enum");
-    const sym = enumList[v[vname] || 0];
+    const sym = enumList[V[vname] || 0];
     const sameType = Object.values(ET.vars).filter(t => t === vtype).length;
     label.text(sym != null ? sym : vname + "=" + jval);
     const n = enumList.length;
@@ -3034,7 +3084,7 @@ function varButton(vname) {
   }
 
   if (vtype === "boolean") {
-    outer.addClass("var-info-boolean-" + (v[vname] ? "true" : "false"));
+    outer.addClass("var-info-boolean-" + (V[vname] ? "true" : "false"));
     label.text(vname);
     if (VT.ctx.wasRead.has(vname)) {
       outer.addClass("var-info-can-change");
@@ -3460,32 +3510,32 @@ initVisited();
 
 :: Init 4 Drekkar [inclusion] {"position":"2450,850","size":"100,100"}
 <<script>>
-const v = variables();
-v.name = "Drekkar";
-v.class = "warrior";
-v.warrior = true;
-v.mage = false;
+const V = variables();
+V.name = "Drekkar";
+V.class = "warrior";
+V.warrior = true;
+V.mage = false;
 
-v.rough_awakening = true;
-v.FurtherDefiance = false;
+V.rough_awakening = true;
+V.FurtherDefiance = false;
 
-v.CurArousal = 10;
-v.MaxArousal = 100;
+V.CurArousal = 10;
+V.MaxArousal = 100;
 
-v.candleTimer = "2s";
-v.window = false;
-v.office = false;
-v.door = false;
+V.candleTimer = "2s";
+V.window = false;
+V.office = false;
+V.door = false;
 
-v.lionwatch1 = 40;
-v.lionwatch2 = 20;
-v.lionwatch3 = 20;
-v.lionwatch4 = 40;
-v.lionwatch5 = 50;
-v.lionwatch6 = 60;
-v.lionwatch7 = 90;
-v.lionwatchFinal = v.lionwatch1 + v.lionwatch2 + v.lionwatch3 +
-  v.lionwatch4 + v.lionwatch5 + v.lionwatch6 + v.lionwatch7;
+V.lionwatch1 = 40;
+V.lionwatch2 = 20;
+V.lionwatch3 = 20;
+V.lionwatch4 = 40;
+V.lionwatch5 = 50;
+V.lionwatch6 = 60;
+V.lionwatch7 = 90;
+V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
+  V.lionwatch4 + V.lionwatch5 + V.lionwatch6 + V.lionwatch7;
 <</script>>
 
 
@@ -5202,7 +5252,7 @@ The endings in this archive are all static, with no choices beyond the selection
 <div class="ui-subtitle">
     Drekkar Endings
 </div>
-<div class="archive-body">
+<div class="arc-body">
     <<include [[Interrogation Archive Display]]>>
     <<include [[Enthrallment Archive Display]]>>
     <<include [[Extraction Archive Display]]>>
@@ -5215,7 +5265,7 @@ The endings in this archive are all static, with no choices beyond the selection
 <div class="ui-subtitle">
     Nero Endings
 </div>
-<div class="archive-body">
+<div class="arc-body">
     <<include [[n0/F Nero Endings]]>>
 </div>
 
@@ -8689,26 +8739,26 @@ No matter how much he tries, $name cannot find a way out. He's trapped there gri
 
 :: Interrogation Archive Display [inclusion] {"position":"1775,2250","size":"100,100"}
 <<nobr>>
-<<archive-ending $interrogationEnding
+<<arc-ending $interrogationEnding
     [[Bad Ending: Interrogation|Interrogation Archive]]
 >>
     Interrogation by the hands of the wizard is the first step
     that awaits those that cannot escape his contraptions...
-<<archive-variants>>
-    <<archive-variant "Variant:" interrogationSpell>>
-    <<archive-option freeze "Freeze" $interrogationEndingFreeze>>
+<<arc-variants>>
+    <<arc-variant "Variant:" interrogationSpell>>
+    <<arc-option freeze "Freeze" $interrogationEndingFreeze>>
         Ivex has a special treatment for northern wolves that like the cold...
-    <<archive-option shock "Shock" $interrogationEndingShock>>
+    <<arc-option shock "Shock" $interrogationEndingShock>>
         Ivex has a special treatment for southern wolves that hate the cold...
-    <</archive-variant>>
+    <</arc-variant>>
 
-    <<archive-variant "Variant:" interrogationEnd>>
-    <<archive-option mild "Mild" $interrogationEndingMild>>
+    <<arc-variant "Variant:" interrogationEnd>>
+    <<arc-option mild "Mild" $interrogationEndingMild>>
         Ivex treats those that choose collaboration over defiance with "kindness"...
-    <<archive-option harsh "Harsh" $interrogationEndingHarsh>>
+    <<arc-option harsh "Harsh" $interrogationEndingHarsh>>
         Ivex has a special disdain for those that dare defy his wishes...
-    <</archive-variant>>
-<</archive-ending>>
+    <</arc-variant>>
+<</arc-ending>>
 <</nobr>>\
 
 
@@ -8828,17 +8878,17 @@ But there's no decision to be made. After being exposed to that candle for so lo
 
 :: Enthrallment Archive Display [inclusion] {"position":"1900,2250","size":"100,100"}
 <<nobr>>
-<<archive-ending $enthrallmentEnding
+<<arc-ending $enthrallmentEnding
     [[Bad Ending: Enthrallment|Enthrallment Archive]]
 >>
     Sometimes a magical accessory is for more than just the looks...
-<<archive-variants>>
-    <<archive-variant "Variant:" lionFuck>>
-    <<archive-option no "None" true>>
-    <<archive-option yes "Lion" $enthrallmentLion>>
+<<arc-variants>>
+    <<arc-variant "Variant:" lionFuck>>
+    <<arc-option no "None" true>>
+    <<arc-option yes "Lion" $enthrallmentLion>>
         Engaging in arousing activities while overtaken by previous magical lust makes some things impossible to resist...
-    <</archive-variant>>
-<</archive-ending>>
+    <</arc-variant>>
+<</arc-ending>>
 <</nobr>>\
 
 
@@ -9737,18 +9787,18 @@ It doesn't stop there, and neither does the slime. All the stimulation keeps goi
 
 :: Extraction Archive Display [inclusion] {"position":"2025,2250","size":"100,100"}
 <<nobr>>
-<<archive-ending $extractionEnding
+<<arc-ending $extractionEnding
     [[Bad Ending: Extraction|Extraction Archive]]
 >>
     Touching unknown magical things always ends badly...
-<<archive-variants>>
-    <<archive-variant "Variant:" extractionVariant>>
-    <<archive-option gentle "Gentle" $extractionGentleEnd>>
+<<arc-variants>>
+    <<arc-variant "Variant:" extractionVariant>>
+    <<arc-option gentle "Gentle" $extractionGentleEnd>>
         The slime is fine-tuned to reward those that let it do its work...
-    <<archive-option forceful "Forceful" $extractionForcefulEnd>>
+    <<arc-option forceful "Forceful" $extractionForcefulEnd>>
         The slime is fine-tuned to go rougher on those that insist on fighting it...
-    <</archive-variant>>
-<</archive-ending>>
+    <</arc-variant>>
+<</arc-ending>>
 <</nobr>>\
 
 
@@ -11345,12 +11395,12 @@ Or, at least, he will try to.
 
 :: Ivex Enthrallment Archive Display [inclusion] {"position":"2275,2250","size":"100,100"}
 <<nobr>>
-<<archive-ending $enthralmentIvexEnding
+<<arc-ending $enthralmentIvexEnding
     [[Ending: A New Servant|Ivex Enthrallment Archive]]
 >>
     New punishment ideas might come to the adventurer
     if he has experienced terrible things in different timelines...
-<</archive-ending>>
+<</arc-ending>>
 <</nobr>>\
 
 
@@ -11380,12 +11430,12 @@ Or, at least, he will try to.
 
 :: Ivex Extraction Archive Display [inclusion] {"position":"2400,2250","size":"100,100"}
 <<nobr>>
-<<archive-ending $extractionIvexEnding
+<<arc-ending $extractionIvexEnding
     [[Ending: Energy Supply|Ivex Extraction Archive]]
 >>
     New punishment ideas might come to the adventurer
     if he has experienced terrible things in different timelines...
-<</archive-ending>>
+<</arc-ending>>
 <</nobr>>\
 
 
@@ -11411,11 +11461,11 @@ Or, at least, he will try to.
 
 :: Ivex Punishment Archive Display [inclusion] {"position":"2150,2250","size":"100,100"}
 <<nobr>>
-<<archive-ending $personalEnding
+<<arc-ending $personalEnding
     [[Ending: Punishment|Ivex Punishment Archive]]
 >>
     The spoils of victory...
-<</archive-ending>>
+<</arc-ending>>
 <</nobr>>\
 
 
@@ -12358,8 +12408,8 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 :: n0/F Nero Endings [inclusion] {"position":"3225,2225","size":"100,100"}
 <<nobr>>
 <<script>>
-  const v = State.variables;
-  const t = State.temporary;
+  const V = State.variables;
+  const T = State.temporary;
 
   /**
    * Sets temp vars that combine n9 variant flags.
@@ -12371,15 +12421,15 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
    *   _stem = _stemA || _stemB;
    */
   function rollup(stem, var1, var2) {
-    t[stem] = false;
-    for (const v1 of var1) t[`${stem}${v1}`] = false;
-    for (const v2 of var2) t[`${stem}${v2}`] = false;
+    T[stem] = false;
+    for (const v1 of var1) T[`${stem}${v1}`] = false;
+    for (const v2 of var2) T[`${stem}${v2}`] = false;
     for (const v1 of var1) {
       for (const v2 of var2) {
-        if (v[`n9_${stem}${v1}${v2}`]) {
-          t[stem] = true;
-          t[`${stem}${v1}`] = true;
-          t[`${stem}${v2}`] = true;
+        if (V[`n9_${stem}${v1}${v2}`]) {
+          T[stem] = true;
+          T[`${stem}${v1}`] = true;
+          T[`${stem}${v2}`] = true;
         }
       }
     }
@@ -12391,84 +12441,84 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 
 <</script>>
 
-<<archive-ending _tamed [[Bad Ending: Tamed|n8/D Tamed]]>>
+<<arc-ending _tamed [[Bad Ending: Tamed|n8/D Tamed]]>>
     Struggling is hopeless...
-<<archive-variants>>
-    <<archive-barbs n8_tamedBarbs _tamedSmooth _tamedBarbs>>
-    <<archive-variant "Variant:" n8_tamed>>
-    <<archive-option mild "Mild" _tamedMild>>
+<<arc-variants>>
+    <<arc-barbs n8_tamedBarbs _tamedSmooth _tamedBarbs>>
+    <<arc-variant "Variant:" n8_tamed>>
+    <<arc-option mild "Mild" _tamedMild>>
         Ivex enjoys cooperative victims...
-    <<archive-option harsh "Harsh" _tamedHarsh>>
+    <<arc-option harsh "Harsh" _tamedHarsh>>
         Ivex enjoys reluctant victims...
-    <</archive-variant>>
-<</archive-ending>>
+    <</arc-variant>>
+<</arc-ending>>
 
-<<archive-ending _caged [[Bad Ending: Caged|n8/D Caged]]>>
+<<arc-ending _caged [[Bad Ending: Caged|n8/D Caged]]>>
     Self-control is overrated...
-<<archive-variants>>
-    <<archive-barbs n8_cagedBarbs _cagedSmooth _cagedBarbs>>
-    <<archive-variant "Variant:" n8_caged>>
-    <<archive-option mild "Mild" _cagedMild>>
+<<arc-variants>>
+    <<arc-barbs n8_cagedBarbs _cagedSmooth _cagedBarbs>>
+    <<arc-variant "Variant:" n8_caged>>
+    <<arc-option mild "Mild" _cagedMild>>
         Sometimes all that's needed is a paw...
-    <<archive-option harsh "Harsh" _cagedHarsh>>
+    <<arc-option harsh "Harsh" _cagedHarsh>>
         Sometimes a paw is not enough...
-    <</archive-variant>>
-<</archive-ending>>
+    <</arc-variant>>
+<</arc-ending>>
 
-<<archive-ending _broken [[Challenge Ending: Broken|n8/D Broken]]>>
+<<arc-ending _broken [[Challenge Ending: Broken|n8/D Broken]]>>
     <<if _tamed && _caged && _escaped>>
         Remember ?blank and talk to him...
     <<else>>
         Under construction.
     <</if>>
-<<archive-variants>>
-    <<archive-barbs n8_brokenBarbs _brokenSmooth _brokenBarbs>>
-<</archive-ending>>
+<<arc-variants>>
+    <<arc-barbs n8_brokenBarbs _brokenSmooth _brokenBarbs>>
+<</arc-ending>>
 
 <hr>
 
-<<archive-ending false "Bad Ending: Hunted">>
+<<arc-ending false "Bad Ending: Hunted">>
     Under construction.
-<<archive-variants>>
-    <<archive-barbs n8_huntedBarbs false false>>
-    <<archive-variant "Variant:" n8_hunted>>
-    <<archive-option mild "Mild" false>>
-    <<archive-option harsh "Harsh" false>>
-    <</archive-variant>>
-<</archive-ending>>
+<<arc-variants>>
+    <<arc-barbs n8_huntedBarbs false false>>
+    <<arc-variant "Variant:" n8_hunted>>
+    <<arc-option mild "Mild" false>>
+    <<arc-option harsh "Harsh" false>>
+    <</arc-variant>>
+<</arc-ending>>
 
-<<archive-ending false "Bad Ending: Overwhelmed">>
+<<arc-ending false "Bad Ending: Overwhelmed">>
     Under construction.
-<<archive-variants>>
-    <<archive-barbs n8_overwhelmedBarbs false false>>
-    <<archive-variant "Variant:" n8_overwhelmed>>
-    <<archive-option mild "Mild" false>>
-    <<archive-option harsh "Harsh" false>>
-    <</archive-variant>>
-<</archive-ending>>
+<<arc-variants>>
+    <<arc-barbs n8_overwhelmedBarbs false false>>
+    <<arc-variant "Variant:" n8_overwhelmed>>
+    <<arc-option mild "Mild" false>>
+    <<arc-option harsh "Harsh" false>>
+    <</arc-variant>>
+<</arc-ending>>
 
-<<archive-ending false "Challenge Ending: Wrecked">>
+<<arc-ending false "Challenge Ending: Wrecked">>
     Under construction.
-<<archive-variants>>
-    <<archive-barbs n8_wreckedBarbs false false>>
-<</archive-ending>>
+<<arc-variants>>
+    <<arc-barbs n8_wreckedBarbs false false>>
+<</arc-ending>>
 
 <hr>
 
-<<archive-ending false "Ending: Satisfied">>
+<<arc-ending false "Ending: Satisfied">>
     Under construction.
-<<archive-variants>>
-    <<archive-variant "Variant:" n8_satisfied>>
-    <<archive-option mica "Mica" false>>
-    <<archive-option pevhin "Pevhin" false>>
-    <<archive-option blank "???" false>>
-    <</archive-variant>>
-<</archive-ending>>
+<<arc-variants>>
+    <<arc-variant "Variant:" n8_satisfied>>
+    <<arc-option mica "Mica" false>>
+    <<arc-option pevhin "Pevhin" false>>
+    <<arc-option blank "???" false>>
+    <</arc-variant>>
+<</arc-ending>>
 
-<<archive-ending false "Ending: Dominant">>
+<<arc-ending false "Ending: Dominant">>
     Under construction.
-<<archive-variants>>
-    <<archive-barbs n8_dominantBarbs false false>>
+<<arc-variants>>
+    <<arc-barbs n8_dominantBarbs false false>>
     <!--
         Chase: No | Yes
         Collar: No | Yes
@@ -12477,13 +12527,13 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
         ??? (Rescue): No | Yes
         ??? (Ascend): No | Yes
     -->
-<</archive-ending>>
+<</arc-ending>>
 
-<<archive-ending false "Challenge Ending: Ascendant">>
+<<arc-ending false "Challenge Ending: Ascendant">>
     Under construction.
-<<archive-variants>>
-    <<archive-barbs n8_ascendantBarbs false false>>
-<</archive-ending>>
+<<arc-variants>>
+    <<arc-barbs n8_ascendantBarbs false false>>
+<</arc-ending>>
 <</nobr>>\
 
 
@@ -18066,25 +18116,25 @@ $t_afterAction
 </style>
 
 <<script>>
-const v = State.variables;
-const t = State.temporary;
-v.n1_lockoutTime == null && (v.n1_lockoutTime = 60);
+const V = State.variables;
+const T = State.temporary;
+V.n1_lockoutTime == null && (V.n1_lockoutTime = 60);
 const turn = State.turns;
 function update() {
   const span = $("#lockout-time");
   if (turn !== State.turns || span.length === 0) return;
-  v.n1_lockoutTime--;
-  if (v.n1_lockoutTime < 0) {
-    v.n1_lockoutTime += 4294967296;
-    $("#at-zero").text(t.exasperation).addClass("at-zero-visible");;
+  V.n1_lockoutTime--;
+  if (V.n1_lockoutTime < 0) {
+    V.n1_lockoutTime += 4294967296;
+    $("#at-zero").text(T.exasperation).addClass("at-zero-visible");;
   }
-  span.text(v.n1_lockoutTime);
+  span.text(V.n1_lockoutTime);
   setTimeout(update, 1000);
 }
 function initTimer() {
   if (setup.debug) {
     $("#lockout-time").css({ cursor: "pointer" }).on("click", () => {
-      v.n1_lockoutTime = 2;
+      V.n1_lockoutTime = 2;
       $("#at-zero").text("").removeClass("at-zero-visible");
     });
   }

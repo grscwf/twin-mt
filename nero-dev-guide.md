@@ -281,7 +281,7 @@
 
 - State.random. SugarCube has an option to seed a deterministic rng,
   which in theory might be helpful for reproducing sessions.
-  - The problem is that savestats with seeded random are incompatible with
+  - The problem is that savestates with seeded random are incompatible with
     states without seeded random.
   - Conversion is possible, but there's no way to make the seed-added
     state reproducible.
@@ -290,3 +290,8 @@
   - Approximate reproducible is still useful, but breaking old saves is
     makes it not worth it.
   - For any useful reproducible, stub out random with a fixed constant.
+  - Also, if deterministic rng is enabled, SugarCube's structure makes it
+    awkward to render a passage independent of history, as used by archives.
+    (It's not impossible, but has some awkward caveats.)
+
+    
