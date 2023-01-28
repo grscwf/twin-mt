@@ -2303,6 +2303,13 @@ function initRandomWalk() {
     if (ev.key === "/") return walk();
     if (ev.key === "\\") return seekToggle();
   });
+
+  $(document).on("click", ev => {
+    if (ev.target && ev.target.tagName !== "A") {
+      const chosen = $("#passages .random-walk-chosen");
+      chosen.removeClass("random-walk-chosen");
+    }
+  });
 }
 
 initRandomWalk();
@@ -3212,6 +3219,8 @@ const KEY = "passage-notes-1";
 
 PN.isUsable = checkUsable();
 
+PN.selectedText = "";
+
 PN.getFull = () => {
   if (!PN.isUsable) return "";
   return persist.getItem(KEY) ?? "";
@@ -3290,6 +3299,11 @@ PN.tryReplaceOne = (passage, old, val) => {
   return val.trimEnd();
 };
 
+// capture selection before click deselects it
+function pointerDown() {
+  PN.selectedText = getSelection().toString().trim();
+}
+
 function openPopup() {
   State.variables.t_notesOrigin = State.passage;
   const popupTitle = "[[Passage Notes Popup]]".slice(2, -2);
@@ -3303,7 +3317,8 @@ function renderButton() {
   $("#notes-button").remove();
   const outer = $("<div>")
     .attr("id", "notes-button")
-    .click(openPopup)
+    .on("pointerdown", pointerDown)
+    .on("click", openPopup)
     .appendTo("#story");
   $("<div>").attr("id", "notes-line-1").text("notes").appendTo(outer);
   const line2 = $("<div>").attr("id", "notes-line-2").appendTo(outer);
@@ -5831,8 +5846,25 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   $(document).one(":dialogopening", () => {
     $("#NP-input").on("input", onInput);
     restoreSession();
+    appendSelected();
     uiUpdate();
   });
+
+  $(document).one(":dialogopened", () => {
+    $("#NP-input").focus();
+  });
+
+  function appendSelected() {
+    if (PN.selectedText == null || PN.selectedText === "") return;
+    const q = PN.selectedText.replace(/^/gm, "> ") + "\n";
+    let val = T.editVal.trim();
+    if (val !== "" && val.slice(-1) !== "\n") {
+      val += "\n";
+    }
+    val += q;
+    $("#NP-input").val(val);
+    saveValue(val);
+  }
 
   function restoreSession() {
     T.savedVal = PN.getOne(V.t_notesOrigin);

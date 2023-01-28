@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="nero" startnode="45" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="45" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position: relative;
   /* #story has 2.5em top margin */
@@ -464,7 +464,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -2283,6 +2283,13 @@ function initRandomWalk() {
     if (ev.key === &quot;/&quot;) return walk();
     if (ev.key === &quot;\\&quot;) return seekToggle();
   });
+
+  $(document).on(&quot;click&quot;, ev =&gt; {
+    if (ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
+      const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+      chosen.removeClass(&quot;random-walk-chosen&quot;);
+    }
+  });
 }
 
 initRandomWalk();
@@ -3156,6 +3163,8 @@ const KEY = &quot;passage-notes-1&quot;;
 
 PN.isUsable = checkUsable();
 
+PN.selectedText = &quot;&quot;;
+
 PN.getFull = () =&gt; {
   if (!PN.isUsable) return &quot;&quot;;
   return persist.getItem(KEY) ?? &quot;&quot;;
@@ -3234,6 +3243,11 @@ PN.tryReplaceOne = (passage, old, val) =&gt; {
   return val.trimEnd();
 };
 
+// capture selection before click deselects it
+function pointerDown() {
+  PN.selectedText = getSelection().toString().trim();
+}
+
 function openPopup() {
   State.variables.t_notesOrigin = State.passage;
   const popupTitle = &quot;[[Passage Notes Popup]]&quot;.slice(2, -2);
@@ -3247,7 +3261,8 @@ function renderButton() {
   $(&quot;#notes-button&quot;).remove();
   const outer = $(&quot;&lt;div&gt;&quot;)
     .attr(&quot;id&quot;, &quot;notes-button&quot;)
-    .click(openPopup)
+    .on(&quot;pointerdown&quot;, pointerDown)
+    .on(&quot;click&quot;, openPopup)
     .appendTo(&quot;#story&quot;);
   $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-1&quot;).text(&quot;notes&quot;).appendTo(outer);
   const line2 = $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-2&quot;).appendTo(outer);
@@ -5687,8 +5702,25 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   $(document).one(&quot;:dialogopening&quot;, () =&gt; {
     $(&quot;#NP-input&quot;).on(&quot;input&quot;, onInput);
     restoreSession();
+    appendSelected();
     uiUpdate();
   });
+
+  $(document).one(&quot;:dialogopened&quot;, () =&gt; {
+    $(&quot;#NP-input&quot;).focus();
+  });
+
+  function appendSelected() {
+    if (PN.selectedText == null || PN.selectedText === &quot;&quot;) return;
+    const q = PN.selectedText.replace(/^/gm, &quot;&gt; &quot;) + &quot;\n&quot;;
+    let val = T.editVal.trim();
+    if (val !== &quot;&quot; &amp;&amp; val.slice(-1) !== &quot;\n&quot;) {
+      val += &quot;\n&quot;;
+    }
+    val += q;
+    $(&quot;#NP-input&quot;).val(val);
+    saveValue(val);
+  }
 
   function restoreSession() {
     T.savedVal = PN.getOne(V.t_notesOrigin);
@@ -22335,8 +22367,7 @@ He knows now who to pray to for his throbbing red cock&#39;s release.
 $t_afterAction
 
 &lt;&lt;set $n1_bottleNameKnown = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="523" name="n1y/F Horny Penguin Scream" tags="" position="6425,7075" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="523" name="n1y/F Horny Penguin Scream" tags="" position="6425,7075" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 Nero screams at
@@ -22374,8 +22405,7 @@ His angry throaty voice drowns out the penguin&#39;s own pitifully weak squawks.
 ?P
 $t_afterAction
 
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="524" name="n2a/F Restart Ivex Gone" tags="section-start" position="3925,5975" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="524" name="n2a/F Restart Ivex Gone" tags="section-start" position="3925,5975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
 &lt;!-- in case state-load fails --&gt;
 &lt;&lt;set $n1_naked = true&gt;&gt;
@@ -23059,12 +23089,10 @@ the young wolf gave the wrong answer.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;set $n2_struggled = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\
-</tw-passagedata><tw-passagedata pid="543" name="n2b/D Struggle 3 Horny" tags="inclusion" position="5150,6675" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="543" name="n2b/D Struggle 3 Horny" tags="inclusion" position="5150,6675" size="100,100">&lt;&lt;nobr&gt;&gt;
 XXX yes this is reachable
 
-&lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="544" name="n2b/F Struggle 2 Horny" tags="inclusion" position="5150,6575" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="544" name="n2b/F Struggle 2 Horny" tags="inclusion" position="5150,6575" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 Nero strains with all his might in his bonds again,
 to try to break the leather, or break the wooden cross,
@@ -23148,8 +23176,7 @@ His cock twitches with eagerness to celebrate his imminent victory
 as he struggles, and gasps, and struggles some more.
 
 &lt;&lt;set $n2_struggled = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\
-</tw-passagedata><tw-passagedata pid="546" name="n2f/D Free Action" tags="" position="5325,7250" size="200,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="546" name="n2f/D Free Action" tags="" position="5325,7250" size="200,200">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;n1-patience 10 6&gt;&gt;
     &quot;Ivex is gone, for now.&quot;
