@@ -639,9 +639,6 @@ VT.ignore = fn =&gt; {
 };
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="Init 2 Archive" tags="inclusion" position="2450,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-  .arc-body {
-    margin-left: 1.5rem;
-  }
   .arc-disabled {
     opacity: 0.4;
     pointer-events: none;
@@ -5184,40 +5181,101 @@ The snapping comes from right beside his ear. The wolf adventurer frowns, but co
 The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, memories start to return. Memories of who he is...
 
 [[Choose your adventurer|Choose Character]]</tw-passagedata><tw-passagedata pid="44" name="Archives" tags="noreturn" position="2500,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;style&gt;
+  body { overflow-y: scroll; }
+  .arc-body {
+    margin-left: 1.5rem;
+  }
+  .arc-closable:not(.arc-open) {
+    display: none;
+  }
+  .arc-switch {
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-left: 0.5em;
+  }
+&lt;/style&gt;
+
+&lt;&lt;script&gt;&gt;
+  const T = State.temporary;
+
+  T.open = which =&gt; {
+    $(&quot;.arc-closable&quot;).removeClass(&quot;arc-open&quot;);
+    $(&quot;.arc-switch&quot;).text(&quot;(show)&quot;);
+    $(`.arc-closable-${which}`).addClass(&quot;arc-open&quot;);
+    $(`.arc-switch-${which}`).text(&quot;(hide)&quot;);
+  };
+
+  T.toggle = which =&gt; {
+    const now = State.metadata.get(&quot;arc-open&quot;);
+    const next = now === which ? &quot;none&quot; : which;
+    State.metadata.set(&quot;arc-open&quot;, next);
+    T.open(next);
+  };
+
+  T.switch = which =&gt; {
+    let mkp =
+      `&lt;a class=&quot;arc-switch arc-switch-${which}&quot;` +
+      ` onclick=&quot;SugarCube.State.temporary.toggle(&#39;${which}&#39;)&quot;` +
+      `&gt;(show)&lt;/a&gt;`;
+    return mkp;
+  };
+
+  $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
+    const now = State.metadata.get(&quot;arc-open&quot;);
+    T.open(now || &quot;intro&quot;);
+  });
+&lt;&lt;/script&gt;&gt;
+
 &lt;&lt;return-head&gt;&gt;
 
-&lt;span class=&quot;ui-title&quot;&gt;
+&lt;div class=&quot;ui-title&quot;&gt;
     Welcome to the Mage&#39;s Tower Archives
-&lt;/span&gt;
+    &lt;&lt;= _switch(&quot;intro&quot;)&gt;&gt;
+&lt;/div&gt;
 
-&lt;&lt;set _detail = `
-?P
-Here you can revisit different endings that the adventurers have met in their time in the Mage&#39;s Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer&#39;s choices during the game, these also can be set here, provided they have been seen before.
-?P
-Grayed out endings and variations are paths that have not yet been found. Most of them are shown with a hint as to what path the adventurer should take to reach them. There are also many hints within the stories about the paths to take.
-?P
-The endings in this archive are all static, with no choices beyond the selection of variations on this page. A few of the actual endings have choices that are more complicated than what can be selected below. If you want to re-experience those dynamic endings, not just the static version offered here, you can save a game at the point the ending begins.
-`&gt;&gt;
+&lt;div class=&quot;arc-body&quot;&gt;
+    &lt;div class=&quot;arc-closable arc-closable-intro&quot;&gt;
+        &lt;br&gt;
+        Here you can revisit all the endings and keywords
+        that the adventurers have seen
+        in their time in the Mage&#39;s Tower.
+        When an adventurer experiences an ending,
+        it will be unlocked here.
+        If an ending has different variations
+        due to the adventurer&#39;s choices during the game,
+        these also can be set here,
+        provided they have been seen before.
+        ?P
+        Grayed out endings and variations are paths
+        that have not yet been found.
+        Most of them are shown with a hint
+        as to what path the adventurer should take to reach them.
+        There are also many hints within the stories for each path.
+        ?P
+        The endings in this archive are all static,
+        with no choices beyond the selection of variations on this page.
+        A few of the actual endings have choices
+        that are more complicated than what can be selected below.
+        If you want to re-experience those dynamic endings,
+        not just the static version offered here,
+        you can save a game at the point the ending begins.
+    &lt;/div&gt;
 
-&lt;&lt;if !$mt_archiveDetailViewed&gt;&gt;
-    &lt;&lt;= _detail&gt;&gt;
-    &lt;&lt;set $mt_archiveDetailViewed = true&gt;&gt;
-&lt;&lt;else&gt;&gt;
-    &lt;&lt;linkreplace
-        &#39;&lt;span class=&quot;ui-title-more&quot;&gt;(show more information)&lt;/span&gt;&#39; t8n
-    &gt;&gt;
-        &lt;&lt;= _detail&gt;&gt;
-    &lt;&lt;/linkreplace&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
-?P
-&lt;span class=&quot;imp-info&quot;&gt;Unlocked endings are only kept within a save.&lt;/span&gt; To keep all unlocked endings, make sure to always use and load the same save file.
+    &lt;br&gt;
+    &lt;span class=&quot;imp-info&quot;&gt;
+      Unlocking is only kept within a save.
+    &lt;/span&gt;
+    To keep all unlocked endings and keywords,
+    make sure to always use and load the same save file.
+&lt;/div&gt;
 
 &lt;hr&gt;
 &lt;div class=&quot;ui-subtitle&quot;&gt;
     Drekkar Endings
+    &lt;&lt;= _switch(&quot;drekkar&quot;)&gt;&gt;
 &lt;/div&gt;
-&lt;div class=&quot;arc-body&quot;&gt;
+&lt;div class=&quot;arc-body arc-closable arc-closable-drekkar&quot;&gt;
     &lt;&lt;include [[Interrogation Archive Display]]&gt;&gt;
     &lt;&lt;include [[Enthrallment Archive Display]]&gt;&gt;
     &lt;&lt;include [[Extraction Archive Display]]&gt;&gt;
@@ -5230,16 +5288,18 @@ The endings in this archive are all static, with no choices beyond the selection
 &lt;hr&gt;
 &lt;div class=&quot;ui-subtitle&quot;&gt;
     Nero Endings
+    &lt;&lt;= _switch(&quot;nero&quot;)&gt;&gt;
 &lt;/div&gt;
-&lt;div class=&quot;arc-body&quot;&gt;
+&lt;div class=&quot;arc-body arc-closable arc-closable-nero&quot;&gt;
     &lt;&lt;include [[n0/F Nero Ending Index]]&gt;&gt;
 &lt;/div&gt;
 
 &lt;hr&gt;
 &lt;div class=&quot;ui-subtitle&quot;&gt;
-    Nero Keywords
+    Nero Keywords &lt;&lt;= Nero.kwCount()&gt;&gt;
+    &lt;&lt;= _switch(&quot;nero-kw&quot;)&gt;&gt;
 &lt;/div&gt;
-&lt;div class=&quot;arc-body&quot;&gt;
+&lt;div class=&quot;arc-body arc-closable arc-closable-nero-kw&quot;&gt;
     &lt;&lt;include [[n0/F Nero Keyword Index]]&gt;&gt;
 &lt;/div&gt;
 
@@ -24903,11 +24963,28 @@ Nero.keywords = {
 };
 
 function obscure(i, kw) {
+  return kw.title;
   if (kw.reveal) return &quot;&quot;;
   return kw.title.replace(/[^A-Z ]/g, &quot; . &quot;);
 }
 
+Nero.kwCount = () =&gt; {
+  const V = State.variables;
+  let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
+  let unlocked = 0;
+  const keys = Object.keys(Nero.keywords);
+  for (const key of keys) {
+    const vn = `n9_kw_${key}`;
+    if (V[vn]) unlocked++;
+  }
+  const total = V.n9_escaped ? keys.length : &quot;?&quot;;
+  mkp += `(${unlocked} of ${total})`;
+  mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
+  return mkp;
+};
+
 Nero.listKeywords = () =&gt; {
+  const V = State.variables;
   let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
   const keys = Object.keys(Nero.keywords);
   keys.sort((a, b) =&gt; {
@@ -24918,6 +24995,8 @@ Nero.listKeywords = () =&gt; {
   for (let i = 0; i &lt; keys.length; i++) {
     const key = keys[i];
     const kw = Nero.keywords[key];
+    const vn = `n9_kw_${key}`;
+    if (!V.n9_escaped &amp;&amp; !V[vn]) continue;
     const hidden = obscure(i, kw);
     mkp += `&lt;&lt;arc-ending $` + `n9_kw_${key}`;
     mkp += ` [\[${kw.title}|n0/F Nero Keyword]]`;

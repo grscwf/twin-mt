@@ -607,9 +607,6 @@ VT.ignore = fn => {
 
 :: Init 2 Archive [inclusion] {"position":"2450,500","size":"100,100"}
 <<append head>><style>
-  .arc-body {
-    margin-left: 1.5rem;
-  }
   .arc-disabled {
     opacity: 0.4;
     pointer-events: none;
@@ -5300,40 +5297,101 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 
 :: Archives [noreturn] {"position":"2500,2000","size":"100,100"}
 <<nobr>>
+<style>
+  body { overflow-y: scroll; }
+  .arc-body {
+    margin-left: 1.5rem;
+  }
+  .arc-closable:not(.arc-open) {
+    display: none;
+  }
+  .arc-switch {
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-left: 0.5em;
+  }
+</style>
+
+<<script>>
+  const T = State.temporary;
+
+  T.open = which => {
+    $(".arc-closable").removeClass("arc-open");
+    $(".arc-switch").text("(show)");
+    $(`.arc-closable-${which}`).addClass("arc-open");
+    $(`.arc-switch-${which}`).text("(hide)");
+  };
+
+  T.toggle = which => {
+    const now = State.metadata.get("arc-open");
+    const next = now === which ? "none" : which;
+    State.metadata.set("arc-open", next);
+    T.open(next);
+  };
+
+  T.switch = which => {
+    let mkp =
+      `<a class="arc-switch arc-switch-${which}"` +
+      ` onclick="SugarCube.State.temporary.toggle('${which}')"` +
+      `>(show)</a>`;
+    return mkp;
+  };
+
+  $(document).one(":passagedisplay", () => {
+    const now = State.metadata.get("arc-open");
+    T.open(now || "intro");
+  });
+<</script>>
+
 <<return-head>>
 
-<span class="ui-title">
+<div class="ui-title">
     Welcome to the Mage's Tower Archives
-</span>
+    <<= _switch("intro")>>
+</div>
 
-<<set _detail = `
-?P
-Here you can revisit different endings that the adventurers have met in their time in the Mage's Tower. When an adventurer goes through an ending in the game for the first time, it will be unlocked here to be revisited at any time. If an ending has different variations due to the adventurer's choices during the game, these also can be set here, provided they have been seen before.
-?P
-Grayed out endings and variations are paths that have not yet been found. Most of them are shown with a hint as to what path the adventurer should take to reach them. There are also many hints within the stories about the paths to take.
-?P
-The endings in this archive are all static, with no choices beyond the selection of variations on this page. A few of the actual endings have choices that are more complicated than what can be selected below. If you want to re-experience those dynamic endings, not just the static version offered here, you can save a game at the point the ending begins.
-`>>
+<div class="arc-body">
+    <div class="arc-closable arc-closable-intro">
+        <br>
+        Here you can revisit all the endings and keywords
+        that the adventurers have seen
+        in their time in the Mage's Tower.
+        When an adventurer experiences an ending,
+        it will be unlocked here.
+        If an ending has different variations
+        due to the adventurer's choices during the game,
+        these also can be set here,
+        provided they have been seen before.
+        ?P
+        Grayed out endings and variations are paths
+        that have not yet been found.
+        Most of them are shown with a hint
+        as to what path the adventurer should take to reach them.
+        There are also many hints within the stories for each path.
+        ?P
+        The endings in this archive are all static,
+        with no choices beyond the selection of variations on this page.
+        A few of the actual endings have choices
+        that are more complicated than what can be selected below.
+        If you want to re-experience those dynamic endings,
+        not just the static version offered here,
+        you can save a game at the point the ending begins.
+    </div>
 
-<<if !$mt_archiveDetailViewed>>
-    <<= _detail>>
-    <<set $mt_archiveDetailViewed = true>>
-<<else>>
-    <<linkreplace
-        '<span class="ui-title-more">(show more information)</span>' t8n
-    >>
-        <<= _detail>>
-    <</linkreplace>>
-<</if>>
-
-?P
-<span class="imp-info">Unlocked endings are only kept within a save.</span> To keep all unlocked endings, make sure to always use and load the same save file.
+    <br>
+    <span class="imp-info">
+      Unlocking is only kept within a save.
+    </span>
+    To keep all unlocked endings and keywords,
+    make sure to always use and load the same save file.
+</div>
 
 <hr>
 <div class="ui-subtitle">
     Drekkar Endings
+    <<= _switch("drekkar")>>
 </div>
-<div class="arc-body">
+<div class="arc-body arc-closable arc-closable-drekkar">
     <<include [[Interrogation Archive Display]]>>
     <<include [[Enthrallment Archive Display]]>>
     <<include [[Extraction Archive Display]]>>
@@ -5346,16 +5404,18 @@ The endings in this archive are all static, with no choices beyond the selection
 <hr>
 <div class="ui-subtitle">
     Nero Endings
+    <<= _switch("nero")>>
 </div>
-<div class="arc-body">
+<div class="arc-body arc-closable arc-closable-nero">
     <<include [[n0/F Nero Ending Index]]>>
 </div>
 
 <hr>
 <div class="ui-subtitle">
-    Nero Keywords
+    Nero Keywords <<= Nero.kwCount()>>
+    <<= _switch("nero-kw")>>
 </div>
-<div class="arc-body">
+<div class="arc-body arc-closable arc-closable-nero-kw">
     <<include [[n0/F Nero Keyword Index]]>>
 </div>
 
@@ -27228,11 +27288,28 @@ Nero.keywords = {
 };
 
 function obscure(i, kw) {
+  return kw.title;
   if (kw.reveal) return "";
   return kw.title.replace(/[^A-Z ]/g, " . ");
 }
 
+Nero.kwCount = () => {
+  const V = State.variables;
+  let mkp = "<<nobr>>";
+  let unlocked = 0;
+  const keys = Object.keys(Nero.keywords);
+  for (const key of keys) {
+    const vn = `n9_kw_${key}`;
+    if (V[vn]) unlocked++;
+  }
+  const total = V.n9_escaped ? keys.length : "?";
+  mkp += `(${unlocked} of ${total})`;
+  mkp += "<</nobr>>";
+  return mkp;
+};
+
 Nero.listKeywords = () => {
+  const V = State.variables;
   let mkp = "<<nobr>>";
   const keys = Object.keys(Nero.keywords);
   keys.sort((a, b) => {
@@ -27243,6 +27320,8 @@ Nero.listKeywords = () => {
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const kw = Nero.keywords[key];
+    const vn = `n9_kw_${key}`;
+    if (!V.n9_escaped && !V[vn]) continue;
     const hidden = obscure(i, kw);
     mkp += `<<arc-ending $` + `n9_kw_${key}`;
     mkp += ` [\[${kw.title}|n0/F Nero Keyword]]`;
