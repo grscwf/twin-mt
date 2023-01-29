@@ -1506,13 +1506,17 @@ EM.runsWithoutFail = (fn) =&gt; {
 };
 
 /** Add str as a new error-message note. */
-EM.note = (str) =&gt; {
+EM.note = (str, header) =&gt; {
   if (EM.noMessage) return;
   const note = $(`
     &lt;div class=EM-note&gt;
       &lt;a class=&quot;EM-close EM-button&quot;&gt;[close]&lt;/a&gt;
     &lt;/div&gt;
   `).appendTo(getInner());
+  if (header != null &amp;&amp; header !== &quot;&quot;) {
+    note.append(document.createTextNode(header));
+    note.append(document.createElement(&quot;br&quot;));
+  }
   note.append(document.createTextNode(str));
   note.find(&quot;.EM-close&quot;).click(() =&gt; note.remove());
   return note;
@@ -1521,7 +1525,7 @@ EM.note = (str) =&gt; {
 /** Add str as a warning. */
 EM.warn = (str) =&gt; {
   EM.hasWarnings = true;
-  EM.note(str);
+  EM.note(str, &quot;Warning&quot;);
 };
 
 /** Add str as a new error-message assertion failure. */
@@ -2960,7 +2964,8 @@ Macro.add(&quot;vi-always-if&quot;, {
     if (VT.untracedGet(cond)) {
       const actual = VT.untracedGet(vname);
       if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
-        EM.fail(`vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
+        EM.fail(
+          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
       }
       if (!withinCondition(this)) {
         alwaysVars.set(vname, exp);
@@ -3131,7 +3136,7 @@ function varButton(vname) {
 }
 
 function initVarInfo() {
-  if (!setup.debug) return;
+  if (!setup.tester) return;
 
   $(document).on(&quot;:passagestart&quot;, () =&gt; {
     alwaysVars.clear();
@@ -3140,9 +3145,35 @@ function initVarInfo() {
   });
 
   $(document).on(&quot;:passageend&quot;, () =&gt; {
-    $(&quot;.var-info&quot;).remove();
     VT.stop();
 
+    VT.ctx.wasTopRead.forEach(vn =&gt; {
+      if (alwaysVars.has(vn)) {
+        const c = alwaysVars.get(vn);
+        EM.warn(`vi-always ${vn} ${c}, but var was read`);
+      }
+      if (Nero.varIsConstant(vn)) {
+        const c = Nero.getVarconstant(vn);
+        EM.warn(`${vn} always ${c} in this section, but var was read`);
+      }
+    });
+
+    const notable = Nero.getNotable();
+    const to_do = notable.filter(
+      vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !VT.ctx.wasRead.has(vn));
+    if (to_do.length &amp;&amp; /\/[F]/.test(State.passage)) {
+      EM.warn(`/F passage has unused notable vars: ${to_do}`);
+    }
+    
+    if (!setup.debug) return;
+
+    const touched = new Set();
+    VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
+    VT.ctx.wasSet.forEach(v =&gt; touched.add(v));
+    VT.ctx.wasDeleted.forEach(v =&gt; touched.add(v));
+    notable.forEach(f =&gt; touched.add(f));
+
+    $(&quot;.var-info&quot;).remove();
     const outer = $(&quot;&lt;div class=var-info&gt;&quot;);
 
     if ($(&quot;#return-head&quot;).length) {
@@ -3166,21 +3197,6 @@ function initVarInfo() {
       .appendTo(outer)
       .click(() =&gt; CV.render());
 
-    const touched = new Set();
-    VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
-    VT.ctx.wasSet.forEach(v =&gt; touched.add(v));
-    VT.ctx.wasDeleted.forEach(v =&gt; touched.add(v));
-
-    VT.ctx.wasTopRead.forEach(vn =&gt; {
-      EM.assert(!alwaysVars.has(vn),
-        `${vn} is expected to always be ${alwaysVars.get(vn)} and should not be read`);
-      if (Nero.varIsConstant(vn)) {
-        EM.warn(`${vn} is always ${sexp} in this section and should not be read`);
-      }
-    });
-
-    const notable = Nero.getNotable();
-    notable.forEach(f =&gt; touched.add(f));
 
     if (touched.size) {
       const el = $(&quot;&lt;span class=var-info-touched&gt;&quot;).appendTo(outer);
@@ -3190,12 +3206,7 @@ function initVarInfo() {
     $(&quot;&lt;span class=var-info-separator&gt;&quot;).text(&quot;||&quot;).appendTo(outer);
     $(&quot;&lt;span class=var-info-passage&gt;&quot;).text(State.passage).appendTo(outer);
 
-    if (outer.find(&quot;.var-info-to-do, .var-info-warning&quot;).length &gt; 0) {
-      outer.addClass(&quot;var-info-to-do&quot;);
-      if (/\/[F]/.test(State.passage)) {
-        EM.warn(`/F passages should not have TO\DO vars`);
-      }
-    }
+    if (to_do.length) outer.addClass(&quot;var-info-to-do&quot;);
   });
 }
 
@@ -5172,7 +5183,7 @@ Macro.add(&quot;pw-misfire&quot;, {
 &lt;&lt;set $passedContentWarning = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\
 \
-The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
+The sound of snapping fingers feels distant at first. As consciousness returns, the sound grows closer and closer until it&#39;s loud enough to be annoying.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that&#39;s all he can remember, sort of. It was bright, it was sudden, and now...
 
@@ -5180,7 +5191,7 @@ The snapping comes from right beside his ear. The wolf adventurer frowns, but co
 
 The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, memories start to return. Memories of who he is...
 
-[[Choose your adventurer|Choose Character]]</tw-passagedata><tw-passagedata pid="44" name="Archives" tags="noreturn" position="2500,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[Choose your adventurer...|Choose Character]]</tw-passagedata><tw-passagedata pid="44" name="Archives" tags="noreturn" position="2500,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;style&gt;
   body { overflow-y: scroll; }
   .arc-body {
@@ -5319,7 +5330,7 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
     } else {
         T.titleDelay1 = &#39;1s&#39;;
         T.titleDelay2 = &#39;2s&#39;;
-        T.titleDelay3 = &#39;3s&#39;;
+        T.titleDelay3 = &#39;2s&#39;;
         V.titleSeen = true;
     }
     if (V.passedContentWarning) {
@@ -5357,15 +5368,13 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 &lt;&lt;link &#39;Load Game&#39;&gt;&gt;
     &lt;&lt;run UI.saves()&gt;&gt;
 &lt;&lt;/link&gt;&gt;
-&lt;&lt;if $passedContentWarning&gt;&gt;\
-    &lt;&lt;link &#39;Content Warning&#39;&gt;&gt;
-        &lt;&lt;script&gt;&gt;
-            Dialog.setup(&quot;Content Warning&quot;);
-            Dialog.wiki(&quot;&lt;&lt;include [[Content Warning]]&gt;&gt;&quot;);
-            Dialog.open();
-        &lt;&lt;/script&gt;&gt;
-    &lt;&lt;/link&gt;&gt;
-&lt;&lt;/if&gt;&gt;\
+&lt;&lt;link &#39;Content Warning&#39;&gt;&gt;
+    &lt;&lt;script&gt;&gt;
+        Dialog.setup(&quot;Content Warning&quot;);
+        Dialog.wiki(&quot;&lt;&lt;include [[Content Warning]]&gt;&gt;&quot;);
+        Dialog.open();
+    &lt;&lt;/script&gt;&gt;
+&lt;&lt;/link&gt;&gt;
 \
 [[Credits]]
 \
@@ -5528,7 +5537,7 @@ Thank you so much!</tw-passagedata><tw-passagedata pid="47" name="Choose Charact
 
 ?P
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;[[Continue as Drekkar|Drekkar Start]]&lt;/li&gt;
+    &lt;li&gt;[[Continue as Drekkar...|Drekkar Start]]&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/div&gt;
 
@@ -5537,12 +5546,12 @@ Thank you so much!</tw-passagedata><tw-passagedata pid="47" name="Choose Charact
 
 ?P
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;[[Continue as Nero|n1a/F Nero Start]]&lt;/li&gt;
+    &lt;li&gt;[[Continue as Nero...|n1a/F Nero Start]]&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/div&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="48" name="Content Warning" tags="inclusion" position="2675,1375" size="100,100">This interactive story features male/male sexual content. If you find this distasteful or are under the age of 18, please exit now.
 
-Moreover, this story contains detailed descriptions of immoral characters performing perverse and sinister acts, including: dubious consent and lack of consent, mind control, cock and ball torture, male chastity, and others. If these themes make you uncomfortable or are not enjoyable for you, proceed only at your own discretion.
+Moreover, this story contains detailed descriptions of immoral characters performing abusive and perverse actions, including: dubious consent and lack of consent, mind control, cock and ball torture, male chastity, and others. If these themes make you uncomfortable or are not enjoyable for you, proceed only at your own discretion.
 
 &lt;div style=&#39;float: right;&#39;&gt;\
 &lt;&lt;button Proceed&gt;&gt;
@@ -11879,7 +11888,7 @@ It&#39;s &lt;em&gt;him&lt;/em&gt;.
 
 It&#39;s Ivex, the panther mage who&#39;s the reason for Nero&#39;s current &quot;errand&quot;.
 
-The panther says brightly, &quot;Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay close attention when I&#39;m speaking to you.&quot;
+The panther speaks brightly. &quot;Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay close attention when I&#39;m talking to you.&quot;
 
 Well. Nero had thought that locating the malevolent mage would be the difficult part of the task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, &lt;em&gt;notice&lt;/em&gt; the trap before stepping into it. His aching balls agreed with that.
 
@@ -16493,7 +16502,7 @@ up and down the shaft in slow, firm strokes.
     &lt;&lt;include [[n1s/F Locked Out]]&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG: sprite magicPhase ${n1_magicPhase}`)&gt;&gt;
+    &lt;&lt;run throw new Error(`BUG: sprite magicPhase ${$n1_magicPhase}`)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -16641,7 +16650,7 @@ $t_afterAction
     Nero regrets.
 
 &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG: impatient passwordTries ${n1_passwordTries}`)&gt;&gt;
+    &lt;&lt;run throw new Error(`BUG: impatient passwordTries ${$n1_passwordTries}`)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -16778,7 +16787,7 @@ function update() {
   setTimeout(update, 1000);
 }
 function initTimer() {
-  if (setup.debug) {
+  if (setup.tester) {
     $(&quot;#lockout-time&quot;).css({ cursor: &quot;pointer&quot; }).on(&quot;click&quot;, () =&gt; {
       V.n1_lockoutTime = 2;
       $(&quot;#at-zero&quot;).text(&quot;&quot;).removeClass(&quot;at-zero-visible&quot;);
@@ -16854,7 +16863,7 @@ XXX
     &lt;&lt;set $t_magicAction = &quot;[[&#39;\&quot;Please, stop the music!\&quot;&#39;|n1s/D Impatient]]&quot;&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG: on hold passwordTries ${n1_passwordTries}`);&gt;&gt;
+    &lt;&lt;run throw new Error(`BUG: on hold passwordTries ${$n1_passwordTries}`);&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="423" name="n1s/F Itch 1" tags="" position="5700,3625" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -18365,7 +18374,7 @@ still call it Kelvin&#39;s Escape, with a laugh.
     is spreading through the room,
     which is not much larger than an ordinary room at an inn.
 &lt;&lt;else&gt;&gt;
-    The room is an average size, not much larger than an ordinary room at an inn.
+    The room is of average size, not much larger than an ordinary room at an inn.
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;if $n1_mageSight&gt;&gt;
     The space is filled with a tangle of exotic energy that emanates from
@@ -18535,7 +18544,7 @@ is continuous and uninterrupted across all of the desk&#39;s visible surfaces.
 &lt;&lt;else&gt;&gt;
     It appears to have been carved from a single, massive block of wood,
     which of course is unlikely.
-    It&#39;s probably just a magical veneer applied to a cheap assemblage
+    It&#39;s probably just a sloppy magical veneer applied to a cheap assemblage
     of ordinary lumber.
 &lt;&lt;/if&gt;&gt;
 
@@ -19513,15 +19522,17 @@ The entire arrangement is disturbingly symmetric.
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="463" name="n1x/F Bottle" tags="has-hole" position="7125,4650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n2_free&gt;&gt;
+&lt;&lt;cv-ignore t_kwAnnounce&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
+Sitting on top of
 &lt;&lt;if $n1_candleLit&gt;&gt;
-    Atop the same cabinet that the
+    the cabinet the
     &lt;&lt;n1-no-loop [[flickering red candle|n1x/F Candle]]&gt;&gt;
     came from
 &lt;&lt;else&gt;&gt;
-    Atop one of the wooden cabinets in the room
+    a wooden cabinet
 &lt;&lt;/if&gt;&gt;
 is a clear glass bottle of unusually large size.
 But what&#39;s most unusual about the bottle is what&#39;s inside it,
@@ -20301,7 +20312,7 @@ XXX
     &lt;/ul&gt;
 
 &lt;&lt;else&gt;&gt;
-    &lt;&lt;run throw new Error(`unexpected magicPhase ${n1_magicPhase}`)&gt;&gt;
+    &lt;&lt;run throw new Error(`unexpected magicPhase ${$n1_magicPhase}`)&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="471" name="n1x/D Map Ask" tags="" position="7325,3725" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
@@ -21162,14 +21173,14 @@ Nackle himself was not particularly strong in magic ability.
 The magister&#39;s report mentions that an analysis of the charred skull
 indicates that his spectral arc-weight could not be more than
 &lt;span class=nobr&gt;30 Stalvers,&lt;/span&gt;
-which is perhaps enough to cast a spell that can
+which is perhaps enough to power a spell that can
 levitate two small pebbles.
 
 ?P
 The unfortunate mage&#39;s genius was in developing an extraordinary matrix
-of lesser-known glyphs that can be bonded to both
-the spectral power mesh and
-the telekinetic energy field in a room.
+of lesser-known glyphs that bonds the
+telekinetic energy field to the mesh of spectral power
+within a room.
 Once the matrix is installed,
 contact with the construct allows a mage to telekinetically
 move objects in the room with considerable force,
@@ -21930,6 +21941,7 @@ that caused the crystals to disappear, taking his genitals with them.
 
 &lt;&lt;arc-skip&gt;&gt;
     ?P
+    &lt;&lt;nero-kw gravity&gt;&gt;
     &lt;&lt;link Return $t_returnGrav&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="505" name="n1x/F Grav Ask 2" tags="" position="5950,5400" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -21937,10 +21949,12 @@ that caused the crystals to disappear, taking his genitals with them.
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 
+&lt;&lt;nero-kw-announce&gt;&gt;
+
 [[Gravity Crystals|n1x/F Gravity Crystals 1]] are definitely an
-inappropriate tool for holding up a bondage cross.
+inappropriate tool for holding a bondage cross.
 Nero is professionally horrified.
-He blurts out, &quot;I&#39;ve never been able to control more than four!
+He blurts out, &quot;I&#39;ve never been able to stabilize more than four!
 How are you avoiding Rankine Calamity?&quot;
 
 ?P
@@ -25026,7 +25040,7 @@ Nero.showKeyword = key =&gt; {
 
 /**
  * &lt;&lt;nero-kw kwname&gt;&gt;
- * Unlocks kwname if locked, and sets it to announce soon.
+ * If kwname is locked, set it to unlock at the next nero-kw-announce.
  */
 Macro.add(&quot;nero-kw&quot;, {
   handler: function() {
@@ -25037,7 +25051,6 @@ Macro.add(&quot;nero-kw&quot;, {
     const V = State.variables;
     const vn = `n9_kw_${key}`;
     if (!V[vn]) {
-      V[vn] = true;
       if (V.t_kwAnnounce != null) {
         throw new Error(`conflicting kw announce ${key} ${V.t_kwAnnounce}`);
       }
@@ -25049,7 +25062,7 @@ Macro.add(&quot;nero-kw&quot;, {
 
 /**
  * &lt;&lt;nero-kw-announce&gt;&gt;
- * Announce any recent kw announce.
+ * If a kw unlock is pending, do it, and announce it.
  */
 Macro.add(&quot;nero-kw-announce&quot;, {
   handler: function() {
@@ -25061,9 +25074,12 @@ Macro.add(&quot;nero-kw-announce&quot;, {
     const kw = Nero.keywords[key];
     if (kw == null) throw new Error(`nero-kw-announce ${key} not found`);
 
+    const vn = `n9_kw_${key}`;
+    V[vn] = true;
+
     $(this.output).wiki(
       `&lt;meta-text&gt;\
-        Keyword: ${kw.title} is now unlocked in the Archive.\
+        Keyword: ${kw.title} unlocked in the Archive.\
       &lt;/meta-text&gt;\
       ?P`);
   }

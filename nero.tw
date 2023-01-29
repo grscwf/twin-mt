@@ -1498,13 +1498,17 @@ EM.runsWithoutFail = (fn) => {
 };
 
 /** Add str as a new error-message note. */
-EM.note = (str) => {
+EM.note = (str, header) => {
   if (EM.noMessage) return;
   const note = $(`
     <div class=EM-note>
       <a class="EM-close EM-button">[close]</a>
     </div>
   `).appendTo(getInner());
+  if (header != null && header !== "") {
+    note.append(document.createTextNode(header));
+    note.append(document.createElement("br"));
+  }
   note.append(document.createTextNode(str));
   note.find(".EM-close").click(() => note.remove());
   return note;
@@ -1513,7 +1517,7 @@ EM.note = (str) => {
 /** Add str as a warning. */
 EM.warn = (str) => {
   EM.hasWarnings = true;
-  EM.note(str);
+  EM.note(str, "Warning");
 };
 
 /** Add str as a new error-message assertion failure. */
@@ -3012,7 +3016,8 @@ Macro.add("vi-always-if", {
     if (VT.untracedGet(cond)) {
       const actual = VT.untracedGet(vname);
       if (exp !== actual && !(exp === false && actual == null)) {
-        EM.fail(`vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
+        EM.fail(
+          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
       }
       if (!withinCondition(this)) {
         alwaysVars.set(vname, exp);
@@ -3183,7 +3188,7 @@ function varButton(vname) {
 }
 
 function initVarInfo() {
-  if (!setup.debug) return;
+  if (!setup.tester) return;
 
   $(document).on(":passagestart", () => {
     alwaysVars.clear();
@@ -3192,9 +3197,35 @@ function initVarInfo() {
   });
 
   $(document).on(":passageend", () => {
-    $(".var-info").remove();
     VT.stop();
 
+    VT.ctx.wasTopRead.forEach(vn => {
+      if (alwaysVars.has(vn)) {
+        const c = alwaysVars.get(vn);
+        EM.warn(`vi-always ${vn} ${c}, but var was read`);
+      }
+      if (Nero.varIsConstant(vn)) {
+        const c = Nero.getVarconstant(vn);
+        EM.warn(`${vn} always ${c} in this section, but var was read`);
+      }
+    });
+
+    const notable = Nero.getNotable();
+    const to_do = notable.filter(
+      vn => !ignoreVars.has(vn) && !alwaysVars.has(vn) && !VT.ctx.wasRead.has(vn));
+    if (to_do.length && /\/[F]/.test(State.passage)) {
+      EM.warn(`/F passage has unused notable vars: ${to_do}`);
+    }
+    
+    if (!setup.debug) return;
+
+    const touched = new Set();
+    VT.ctx.wasRead.forEach(v => touched.add(v));
+    VT.ctx.wasSet.forEach(v => touched.add(v));
+    VT.ctx.wasDeleted.forEach(v => touched.add(v));
+    notable.forEach(f => touched.add(f));
+
+    $(".var-info").remove();
     const outer = $("<div class=var-info>");
 
     if ($("#return-head").length) {
@@ -3218,21 +3249,6 @@ function initVarInfo() {
       .appendTo(outer)
       .click(() => CV.render());
 
-    const touched = new Set();
-    VT.ctx.wasRead.forEach(v => touched.add(v));
-    VT.ctx.wasSet.forEach(v => touched.add(v));
-    VT.ctx.wasDeleted.forEach(v => touched.add(v));
-
-    VT.ctx.wasTopRead.forEach(vn => {
-      EM.assert(!alwaysVars.has(vn),
-        `${vn} is expected to always be ${alwaysVars.get(vn)} and should not be read`);
-      if (Nero.varIsConstant(vn)) {
-        EM.warn(`${vn} is always ${sexp} in this section and should not be read`);
-      }
-    });
-
-    const notable = Nero.getNotable();
-    notable.forEach(f => touched.add(f));
 
     if (touched.size) {
       const el = $("<span class=var-info-touched>").appendTo(outer);
@@ -3242,12 +3258,7 @@ function initVarInfo() {
     $("<span class=var-info-separator>").text("||").appendTo(outer);
     $("<span class=var-info-passage>").text(State.passage).appendTo(outer);
 
-    if (outer.find(".var-info-to-do, .var-info-warning").length > 0) {
-      outer.addClass("var-info-to-do");
-      if (/\/[F]/.test(State.passage)) {
-        EM.warn(`/F passages should not have TO\DO vars`);
-      }
-    }
+    if (to_do.length) outer.addClass("var-info-to-do");
   });
 }
 
@@ -5284,7 +5295,7 @@ Macro.add("pw-misfire", {
 <<set $passedContentWarning = true>>
 <</nobr>>\
 \
-The sound of snapping fingers feels distant at first. As consciousness returns, it grows closer and closer until it starts becoming loud.
+The sound of snapping fingers feels distant at first. As consciousness returns, the sound grows closer and closer until it's loud enough to be annoying.
 
 The snapping comes from right beside his ear. The wolf adventurer frowns, but consciousness has not returned in its entirety just yet. He feels as if... as if he had fallen down a well. At least that's all he can remember, sort of. It was bright, it was sudden, and now...
 
@@ -5292,7 +5303,7 @@ The snapping comes from right beside his ear. The wolf adventurer frowns, but co
 
 The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, memories start to return. Memories of who he is...
 
-[[Choose your adventurer|Choose Character]]
+[[Choose your adventurer...|Choose Character]]
 
 
 :: Archives [noreturn] {"position":"2500,2000","size":"100,100"}
@@ -5439,7 +5450,7 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
     } else {
         T.titleDelay1 = '1s';
         T.titleDelay2 = '2s';
-        T.titleDelay3 = '3s';
+        T.titleDelay3 = '2s';
         V.titleSeen = true;
     }
     if (V.passedContentWarning) {
@@ -5477,15 +5488,13 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 <<link 'Load Game'>>
     <<run UI.saves()>>
 <</link>>
-<<if $passedContentWarning>>\
-    <<link 'Content Warning'>>
-        <<script>>
-            Dialog.setup("Content Warning");
-            Dialog.wiki("<<include [[Content Warning]]>>");
-            Dialog.open();
-        <</script>>
-    <</link>>
-<</if>>\
+<<link 'Content Warning'>>
+    <<script>>
+        Dialog.setup("Content Warning");
+        Dialog.wiki("<<include [[Content Warning]]>>");
+        Dialog.open();
+    <</script>>
+<</link>>
 \
 [[Credits]]
 \
@@ -5656,7 +5665,7 @@ Thank you so much!
 
 ?P
 <ul class="actions">
-    <li>[[Continue as Drekkar|Drekkar Start]]</li>
+    <li>[[Continue as Drekkar...|Drekkar Start]]</li>
 </ul>
 </div>
 
@@ -5665,7 +5674,7 @@ Thank you so much!
 
 ?P
 <ul class="actions">
-    <li>[[Continue as Nero|n1a/F Nero Start]]</li>
+    <li>[[Continue as Nero...|n1a/F Nero Start]]</li>
 </ul>
 </div>
 <</nobr>>
@@ -5674,7 +5683,7 @@ Thank you so much!
 :: Content Warning [inclusion] {"position":"2675,1375","size":"100,100"}
 This interactive story features male/male sexual content. If you find this distasteful or are under the age of 18, please exit now.
 
-Moreover, this story contains detailed descriptions of immoral characters performing perverse and sinister acts, including: dubious consent and lack of consent, mind control, cock and ball torture, male chastity, and others. If these themes make you uncomfortable or are not enjoyable for you, proceed only at your own discretion.
+Moreover, this story contains detailed descriptions of immoral characters performing abusive and perverse actions, including: dubious consent and lack of consent, mind control, cock and ball torture, male chastity, and others. If these themes make you uncomfortable or are not enjoyable for you, proceed only at your own discretion.
 
 <div style='float: right;'>\
 <<button Proceed>>
@@ -13023,7 +13032,7 @@ It's <em>him</em>.
 
 It's Ivex, the panther mage who's the reason for Nero's current "errand".
 
-The panther says brightly, "Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay close attention when I'm speaking to you."
+The panther speaks brightly. "Welcome to my domain, foolish wolf. My name is Ivex the Magnificent, and you really should pay close attention when I'm talking to you."
 
 Well. Nero had thought that locating the malevolent mage would be the difficult part of the task. But here he is, not even a week since accepting the commission. Nero makes a mental note: Walking into traps is useful. But next time, perhaps, <em>notice</em> the trap before stepping into it. His aching balls agreed with that.
 
@@ -18082,7 +18091,7 @@ up and down the shaft in slow, firm strokes.
     <<include [[n1s/F Locked Out]]>>
 
 <<default>>
-    <<run throw new Error(`BUG: sprite magicPhase ${n1_magicPhase}`)>>
+    <<run throw new Error(`BUG: sprite magicPhase ${$n1_magicPhase}`)>>
 <</switch>>
 
 ?P
@@ -18242,7 +18251,7 @@ $t_afterAction
     Nero regrets.
 
 <<default>>
-    <<run throw new Error(`BUG: impatient passwordTries ${n1_passwordTries}`)>>
+    <<run throw new Error(`BUG: impatient passwordTries ${$n1_passwordTries}`)>>
 <</switch>>
 
 ?P
@@ -18395,7 +18404,7 @@ function update() {
   setTimeout(update, 1000);
 }
 function initTimer() {
-  if (setup.debug) {
+  if (setup.tester) {
     $("#lockout-time").css({ cursor: "pointer" }).on("click", () => {
       V.n1_lockoutTime = 2;
       $("#at-zero").text("").removeClass("at-zero-visible");
@@ -18479,7 +18488,7 @@ XXX
     <<set $t_magicAction = "[['\"Please, stop the music!\"'|n1s/D Impatient]]">>
 
 <<default>>
-    <<run throw new Error(`BUG: on hold passwordTries ${n1_passwordTries}`);>>
+    <<run throw new Error(`BUG: on hold passwordTries ${$n1_passwordTries}`);>>
 <</switch>>
 
 <</nobr>>\
@@ -20106,7 +20115,7 @@ still call it Kelvin's Escape, with a laugh.
     is spreading through the room,
     which is not much larger than an ordinary room at an inn.
 <<else>>
-    The room is an average size, not much larger than an ordinary room at an inn.
+    The room is of average size, not much larger than an ordinary room at an inn.
 <</if>>
 <<if $n1_mageSight>>
     The space is filled with a tangle of exotic energy that emanates from
@@ -20284,7 +20293,7 @@ is continuous and uninterrupted across all of the desk's visible surfaces.
 <<else>>
     It appears to have been carved from a single, massive block of wood,
     which of course is unlikely.
-    It's probably just a magical veneer applied to a cheap assemblage
+    It's probably just a sloppy magical veneer applied to a cheap assemblage
     of ordinary lumber.
 <</if>>
 
@@ -21302,15 +21311,17 @@ The entire arrangement is disturbingly symmetric.
 :: n1x/F Bottle [has-hole] {"position":"7125,4650","size":"100,100"}
 <<nobr>>
 <<vi-ignore n2_free>>
+<<cv-ignore t_kwAnnounce>>
 
 <<nero-kw-announce>>
 
+Sitting on top of
 <<if $n1_candleLit>>
-    Atop the same cabinet that the
+    the cabinet the
     <<n1-no-loop [[flickering red candle|n1x/F Candle]]>>
     came from
 <<else>>
-    Atop one of the wooden cabinets in the room
+    a wooden cabinet
 <</if>>
 is a clear glass bottle of unusually large size.
 But what's most unusual about the bottle is what's inside it,
@@ -22118,7 +22129,7 @@ XXX
     </ul>
 
 <<else>>
-    <<run throw new Error(`unexpected magicPhase ${n1_magicPhase}`)>>
+    <<run throw new Error(`unexpected magicPhase ${$n1_magicPhase}`)>>
 <</if>>
 <</nobr>>
 
@@ -23051,14 +23062,14 @@ Nackle himself was not particularly strong in magic ability.
 The magister's report mentions that an analysis of the charred skull
 indicates that his spectral arc-weight could not be more than
 <span class=nobr>30 Stalvers,</span>
-which is perhaps enough to cast a spell that can
+which is perhaps enough to power a spell that can
 levitate two small pebbles.
 
 ?P
 The unfortunate mage's genius was in developing an extraordinary matrix
-of lesser-known glyphs that can be bonded to both
-the spectral power mesh and
-the telekinetic energy field in a room.
+of lesser-known glyphs that bonds the
+telekinetic energy field to the mesh of spectral power
+within a room.
 Once the matrix is installed,
 contact with the construct allows a mage to telekinetically
 move objects in the room with considerable force,
@@ -23883,6 +23894,7 @@ that caused the crystals to disappear, taking his genitals with them.
 
 <<arc-skip>>
     ?P
+    <<nero-kw gravity>>
     <<link Return $t_returnGrav>><</link>>
 <</arc-skip>>
 <</nobr>>
@@ -23894,10 +23906,12 @@ that caused the crystals to disappear, taking his genitals with them.
 <<vi-always n2_ivexGone false>>
 <<vi-ignore n1_candleLit>>
 
+<<nero-kw-announce>>
+
 [[Gravity Crystals|n1x/F Gravity Crystals 1]] are definitely an
-inappropriate tool for holding up a bondage cross.
+inappropriate tool for holding a bondage cross.
 Nero is professionally horrified.
-He blurts out, "I've never been able to control more than four!
+He blurts out, "I've never been able to stabilize more than four!
 How are you avoiding Rankine Calamity?"
 
 ?P
@@ -27351,7 +27365,7 @@ Nero.showKeyword = key => {
 
 /**
  * <<nero-kw kwname>>
- * Unlocks kwname if locked, and sets it to announce soon.
+ * If kwname is locked, set it to unlock at the next nero-kw-announce.
  */
 Macro.add("nero-kw", {
   handler: function() {
@@ -27362,7 +27376,6 @@ Macro.add("nero-kw", {
     const V = State.variables;
     const vn = `n9_kw_${key}`;
     if (!V[vn]) {
-      V[vn] = true;
       if (V.t_kwAnnounce != null) {
         throw new Error(`conflicting kw announce ${key} ${V.t_kwAnnounce}`);
       }
@@ -27374,7 +27387,7 @@ Macro.add("nero-kw", {
 
 /**
  * <<nero-kw-announce>>
- * Announce any recent kw announce.
+ * If a kw unlock is pending, do it, and announce it.
  */
 Macro.add("nero-kw-announce", {
   handler: function() {
@@ -27386,9 +27399,12 @@ Macro.add("nero-kw-announce", {
     const kw = Nero.keywords[key];
     if (kw == null) throw new Error(`nero-kw-announce ${key} not found`);
 
+    const vn = `n9_kw_${key}`;
+    V[vn] = true;
+
     $(this.output).wiki(
       `<meta-text>\
-        Keyword: ${kw.title} is now unlocked in the Archive.\
+        Keyword: ${kw.title} unlocked in the Archive.\
       </meta-text>\
       ?P`);
   }
