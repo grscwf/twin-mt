@@ -60,8 +60,8 @@ function listVars(twFile, varListTxt, regexFilter) {
       addMatch(m[1], m.index);
     }
     const macros = [
-      /[<]archive-barbs\s+(\w+)/g,
-      /[<]archive-variant\s+(\w+)/g,
+      /[<]arc-barbs\s+(\w+)/g,
+      /[<]arc-variant\s+(\w+)/g,
       /[<]random-once\s+(\w+)/g,
       /[<]state-load\s+(\w+)/g,
       /[<]state-save\s+(\w+)/g,

@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="45" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<tw-storydata name="nero" startnode="45" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position: relative;
   /* #story has 2.5em top margin */
@@ -464,7 +464,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -666,12 +666,42 @@ VT.ignore = fn =&gt; {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-const MT = window.MagesTower || (window.MagesTower = {});
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const MT = window.MagesTower || (window.MagesTower = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+
+/** Clear State.temporary and copy temp into it. */
+const setTemporary = temp =&gt; {
+  State.clearTemporary();
+  const T = State.temporary;
+  for (const [k, v] of Object.entries(temp)) {
+    T[k] = v;
+  }
+};
+
+/**
+ * Render passsage in a scratch state with t_isArchive true,
+ * and emit it to dest.
+ */
+MT.arcInclude = (passage, dest) =&gt; {
+  VT.ignore(() =&gt; {
+    const text = Story.get(passage).text;
+    const saveVars = State.variables;
+    const saveTemp = clone(State.temporary);
+    try {
+      State.variables = { t_isArchive: true };
+      State.clearTemporary();
+      $(dest).wiki(text);
+    } finally {
+      State.variables = saveVars;
+      setTemporary(saveTemp);
+    }
+  });
+};
 
 /**
  * &lt;&lt;arc-only&gt;&gt;...&lt;&lt;/arc-only&gt;&gt;
- * Execute body only when rendering archive text.
+ * Emit body only when rendering archive text.
  */
 Macro.add(&quot;arc-only&quot;, {
   tags: [],
@@ -685,7 +715,7 @@ Macro.add(&quot;arc-only&quot;, {
 
 /**
  * &lt;&lt;arc-skip&gt;&gt;...&lt;&lt;/arc-skip&gt;&gt;
- * Ececute body only when *not* rendering archive text.
+ * Emit body only when *not* rendering archive text.
  */
 Macro.add(&quot;arc-skip&quot;, {
   tags: [],
@@ -693,6 +723,22 @@ Macro.add(&quot;arc-skip&quot;, {
     const V = State.variables;
     if (!V.t_isArchive) {
       $(this.output).wiki(this.payload[0].contents);
+    }
+  }
+});
+
+/**
+ * &lt;&lt;arc-include twineLink&gt;&gt;
+ * Render twineLink in a scratch state with t_isArchive true,
+ * and emit it.
+ */
+Macro.add(&quot;arc-include&quot;, {
+  handler: function() {
+    const [link] = this.args;
+    if (link.isLink) {
+      MT.arcInclude(link.link, this.output);
+    } else {
+      MT.arcInclude(String(link), this.output);
     }
   }
 });
