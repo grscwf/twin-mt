@@ -3783,6 +3783,12 @@ Nero.flags = {
       other: &quot;&quot;,
     },
   },
+  
+  n1_bottleNameKnown: {
+    implies: {
+      n1_bottleViewed: true,
+    },
+  },
 
   // true if lust candle is now compulsive
   n1_candleHorny: {
@@ -4302,45 +4308,59 @@ Nero.getNotable = (here) =&gt; {
 Nero.enumImplies = {
   n1_magicPhase: {
     [MP_beforeCast]: {
+      n1_bottleTouchTried: false,
       n1_mageSight: false,
       n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_triedMagic]: {
+      n1_bottleTouchTried: false,
       n1_mageSight: false,
       n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_mageSight]: {
+      n1_bottleTouchTried: false,
       n1_mageSight: true,
       n1_naked: true,
       n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_wantDevice]: {
+      n1_bottleTouchTried: false,
       n1_mageSight: true,
       n1_naked: true,
       n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_wantName]: {
+      n1_bottleViewed: true,
+      n1_bottleTouchTried: false,
       n1_mageSight: true,
       n1_naked: true,
       n1_passwordsTried: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_wantTouch]: {
+      n1_bottleViewed: true,
       n1_mageSight: true,
       n1_naked: true,
       n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_wantPassword]: {
+      n1_bottleViewed: true,
       n1_mageSight: true,
       n1_naked: true,
       // can&#39;t pass wantTouch without asking about penguin
@@ -4348,14 +4368,18 @@ Nero.enumImplies = {
       n1_penguinNameKnown: true,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_onHold]: {
+      n1_bottleViewed: true,
       n1_mageSight: true,
       n1_naked: true,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_contact]: {
+      n1_bottleViewed: true,
       n1_mageSight: true,
       n1_naked: true,
       n1_penguinCoinDropped: true,
@@ -4367,10 +4391,12 @@ Nero.enumImplies = {
       n2_tooClever: true,
     },
     [MP_lockedOut]: {
+      n1_bottleViewed: true,
       n1_mageSight: true,
       n1_naked: true,
       n2_free: false,
       n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
     },
     [MP_broken]: {
       n1_mageSight: false,
@@ -4384,6 +4410,9 @@ Nero.enumImplies = {
   },
 
   n2_magicPhaseBroken: {
+    null: {
+      n2_mirrorBroken: false,
+    },
     [MP_beforeCast]: {
       // can&#39;t escape without mage-sight
       impossible: true,
@@ -4393,6 +4422,7 @@ Nero.enumImplies = {
       impossible: true,
     },
     [MP_mageSight]: {
+      n1_bottleTouchTried: false,
       n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
@@ -4403,6 +4433,7 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantDevice]: {
+      n1_bottleTouchTried: false,
       n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
@@ -4413,6 +4444,8 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantName]: {
+      n1_bottleTouchTried: false,
+      n1_bottleViewed: true,
       n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
@@ -4423,6 +4456,7 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantTouch]: {
+      n1_bottleViewed: true,
       n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
@@ -4441,6 +4475,7 @@ Nero.enumImplies = {
       impossible: true,
     },
     [MP_contact]: {
+      n1_bottleViewed: true,
       n1_mageSight: false,
       n1_magicPhase: MP_broken,
       n1_naked: true,
@@ -4480,7 +4515,8 @@ Nero.checkState = (state, used, interactive) =&gt; {
     }
   }
   for (const x of Object.keys(Nero.enumImplies)) {
-    const rules = Nero.enumImplies[x][state[x]];
+    const xval = state[x] == null ? &quot;null&quot; : state[x];
+    const rules = Nero.enumImplies[x][xval];
     if (rules == null) continue;
     if (rules.impossible) {
       if (!interactive) return false;
@@ -19523,6 +19559,15 @@ The entire arrangement is disturbingly symmetric.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="463" name="n1x/F Bottle" tags="has-hole" position="7125,4650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n2_free&gt;&gt;
 &lt;&lt;cv-ignore t_kwAnnounce&gt;&gt;
+&lt;&lt;cv-ignore n1_candleLit&gt;&gt; &lt;!-- trivial variation --&gt;
+&lt;&lt;cv-ignore n1_mageSight&gt;&gt; &lt;!-- trivial variation --&gt;
+&lt;&lt;cv-ignore n1_abused n1_naked&gt;&gt; &lt;!-- trivial variations --&gt;
+&lt;&lt;cv-ignore n1_subby&gt;&gt; &lt;!-- minor variations --&gt;
+&lt;&lt;cv-try n1_magicPhase
+  `MP_beforeCast` `MP_wantDevice` `MP_wantName` `MP_wantPassword`
+  `MP_contact` `MP_broken`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseBroken
+  null `MP_mageSight` `MP_wantDevice` `MP_wantName`&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -19563,97 +19608,105 @@ several questions that the wolf
 ?P
 Such as:
 
-&lt;ul&gt;
-&lt;&lt;if $n1_bottleViewed&gt;&gt;
-    &lt;&lt;if $n1_magicPhase &lt; MP_wantDevice
-        || ($n2_mirrorBroken &amp;&amp; $n2_magicPhaseBroken &lt; MP_wantDevice)
-    &gt;&gt;
-        &lt;li&gt;
-            How does Ivex expect to use
-            [[Nackle&#39;s Poltergeist Device|n1x/F Nackle 1]]
-            when it&#39;s anchored on a metallic horse cock that can&#39;t be touched?
-        &lt;/li&gt;
-    &lt;&lt;else&gt;&gt;
-        &lt;li&gt;
-            Why did Ivex choose a bottled metallic horse cock as the anchor
-            for [[Nackle&#39;s Poltergeist Device|n1x/F Nackle 1]]?
-        &lt;/li&gt;
-        &lt;&lt;if MP_wantDevice === $n1_magicPhase&gt;&gt;
-            &lt;li&gt;
-                Is this a device that the Sprite can contact?
-            &lt;/li&gt;
-            &lt;&lt;set _t = `Tell the Sprite, &quot;Please, Nackle&#39;s Poltergeist Device.&quot;`&gt;&gt;
-            &lt;&lt;actions-add  [[_t|n1s/D Say Device]]&gt;&gt;
-        &lt;&lt;/if&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
+&lt;&lt;script&gt;&gt;
+  const V = State.variables;
+  const q = [];
+  
+  const phase = V.n2_mirrorBroken ? V.n2_magicPhaseBroken : V.n1_magicPhase;
+  
+  const first = !V.n1_bottleViewed;
+  const maybeHole = !V.n1_bottleTouchTried &amp;&amp; MP_wantTouch === phase;
+  const knowSprite = MP_wantDevice &lt;= phase;
+  const nameAsked = MP_wantName &lt;= phase;
+  const knowName = V.n1_bottleNameKnown;
+  const sawKnife = V.n1_deskViewed;
+  
+  q.push(`What magic was used to insert that extremely large item
+    through the bottle&#39;s narrow neck?`);
 
-    &lt;li&gt;
-        &lt;&lt;if $n2_free&gt;&gt;
-            Could Nero have used the device
-        &lt;&lt;elseif $n1_magicPhase &lt; MP_wantDevice&gt;&gt;
-            Is there a way that Nero can use the device
-        &lt;&lt;else&gt;&gt;
-            Will Nero have a chance to use the device
-        &lt;&lt;/if&gt;&gt;
-        &lt;&lt;if $n1_deskViewed&gt;&gt;
-            to grab the &lt;&lt;n1-no-loop [[letter opener|n1x/F Knife]]&gt;&gt;?
-        &lt;&lt;else&gt;&gt;
-            to somehow escape?
-        &lt;&lt;/if&gt;&gt;
-    &lt;/li&gt;
-&lt;&lt;/if&gt;&gt;
+  q.push(`Is it appropriate to call something of such enormous size a dildo?`);
 
-&lt;&lt;if $n1_bottleNameKnown&gt;&gt;
-    &lt;li&gt;
-        Why did Ivex give the name Lance &lt;em&gt;Rock&lt;/em&gt;-hard
-        to a giant &lt;em&gt;metal&lt;/em&gt; cock?
-    &lt;/li&gt;
-&lt;&lt;/if&gt;&gt;
+  if (knowName) {
+    q.push(`Why did Ivex give the name Lance &lt;em&gt;Rock&lt;/em&gt;-hard
+      to a giant &lt;em&gt;metal&lt;/em&gt; cock?`);
+    
+    if (MP_wantName === V.n1_magicPhase) {
+      const t = `Tell the Sprite, &quot;Please, Lance Rockhard.&quot;`;
+      Nero.actionsAdd(`[[${t}|n1s/D Say Lance]]`);
+    }
+  }
 
-&lt;&lt;if ($n2_mirrorBroken &amp;&amp; MP_wantName &lt;= $n2_magicPhaseBroken)
-    || (!$n2_mirrorBroken &amp;&amp; MP_wantName &lt;= $n1_magicPhase)
-&gt;&gt;
-    &lt;li&gt;
-        Does Ivex have &lt;em&gt;another&lt;/em&gt; enormous bottled cock
-        in a cabinet somewhere?
-    &lt;/li&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;if MP_wantName === $n1_magicPhase &amp;&amp; $n1_bottleNameKnown&gt;&gt;
-    &lt;&lt;actions-add [[Tell the Sprite, &quot;Please, Lance Rockhard.&quot;`|n1s/D Say Lance]]&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+  if (maybeHole) {
+    q.push(`Is the bottle&#39;s opening the hole that the Sprite
+      &lt;&lt;= $n2_mirrorBroken ? &quot;wanted&quot; : &quot;wants&quot;&gt;&gt;
+      him to touch?`);
+  }
+  
+  if (first) {
+    q.push(`Why would a bottled metallic horse dildo have the glyphs for
+      [[Nackle&#39;s Poltergeist Device|n1x/F Nackle 1]] inscribed on it?`);
 
-&lt;li&gt;
-    What magic was used to insert that
-    extremely large item through the bottle&#39;s narrow neck?
-&lt;/li&gt;
+  } else {
+    if (knowSprite) {
+      q.push(`Why did Ivex choose a bottled metallic horse cock as the anchor
+        for [[Nackle&#39;s Poltergeist Device|n1x/F Nackle 1]]?`);
+    
+      if (MP_wantDevice === V.n1_magicPhase) {
+        q.push(`Is this a device that the Sprite can contact?`);
+        
+        const t = `Tell the Sprite, &quot;Please, Nackle&#39;s Poltergeist Device.&quot;`;
+        Nero.actionsAdd(`[[${t}|n1s/D Say Device]]`);
+        
+      } else if (MP_wantDevice === V.n2_magicPhaseBroken) {
+        q.push(`Was this a device that the Sprite could have contacted?`);
+      }
+      
+    } else {
+      q.push(`How does Ivex expect to use
+        [[Nackle&#39;s Poltergeist Device|n1x/F Nackle 1]]
+        when it&#39;s anchored on a metallic horse cock that can&#39;t be touched?`);
+    }
+    
+    if (nameAsked) {
+      q.push(`Why does Ivex have more than one Nackle&#39;s device in this room?`);
 
-&lt;&lt;if !$n1_bottleViewed&gt;&gt;
-    &lt;li&gt;
-        Is it appropriate to call something of such enormous size a dildo?
-    &lt;/li&gt;
-    &lt;li&gt;
-        And why would a bottled metallic horse dildo have the glyphs for
-        [[Nackle&#39;s Poltergeist Device|n1x/F Nackle 1]] inscribed on it?
-    &lt;/li&gt;
+      q.push(`Is there &lt;em&gt;another&lt;/em&gt; enormous bottled cock
+        in a cabinet somewhere?`);
+    }
 
-&lt;&lt;elseif !$n1_bottleTouchTried &amp;&amp; MP_wantTouch === $n1_magicPhase&gt;&gt;
-    &lt;li&gt;
-        And is the bottle&#39;s opening the hole that the Sprite
-        &lt;&lt;= $n2_mirrorBroken ? &quot;wanted&quot; : &quot;wants&quot;&gt;&gt;
-        him to touch?
-    &lt;/li&gt;
+    if (V.n2_tooClever) {
+      /* TODO: nothing? */
+    
+    } else if (V.n2_free) {
+      q.push(`Could Nero have used Nackle&#39;s device to escape more quickly?`);
 
-&lt;&lt;else&gt;&gt;
-    &lt;li&gt;
-        And is it appropriate to call something of such enormous size a dildo?
-    &lt;/li&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;/ul&gt;
+    } else if (knowSprite &amp;&amp; sawKnife) {
+      q.push(`Will Nero have a chance to grab the
+        &lt;&lt;n1-no-loop [[letter opener|n1x/F Knife]]&gt;&gt;
+        with Nackle&#39;s device?`);
+    
+    } else {
+      q.push(`Is there some way Nero can use the device to escape?`);
+    }
+  }
+  
+  const last = q.length - 1;
+  q[last] = q[last].replace(/^[A-Z]/, m =&gt; &quot;And &quot; + m[0].toLowerCase());
+  
+  /* Can drop the first 2 questions if list is large. */
+  /* Keep 1st before 2nd, to reinforce the hole idea. */
+  if (q.length &gt; 5) q.splice(1, 1);
+  if (q.length &gt; 5) q.shift();
+  
+  $(output).wiki(`&lt;ul&gt;&lt;li&gt;${q.join(&quot;&lt;/li&gt;&lt;li&gt;&quot;)}&lt;/li&gt;&lt;/ul&gt;`);
+
+&lt;&lt;/script&gt;&gt;
 
 &lt;&lt;if $n2_ivexGone&gt;&gt;
-    Well, there&#39;s no way to answer any of those questions now.
+    Nero suspects that Ivex would have been eager
+    to answer questions about it.
     &lt;&lt;if $n1_magicPhase === MP_contact&gt;&gt;
-        At least Nero is able to use the device.
+        But answers aren&#39;t necessary to use the device.
         &lt;&lt;actions-add [[Use Nackle&#39;s Device.|n1s/D Use Lance]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
@@ -19661,8 +19714,8 @@ Such as:
     &lt;&lt;if MP_wantName === $n1_magicPhase&gt;&gt;
         The Sprite will not contact the device unless Nero
         tells it this particular device&#39;s name.
-        Nero reluctantly considers the various conversational
-        gambits he can try that might trick Ivex into revealing the name.
+        Nero reluctantly considers various conversational
+        gambits that might trick Ivex into revealing the name.
     &lt;&lt;else&gt;&gt;
         Nero, against his better judgment,
         considers asking a question out loud.
