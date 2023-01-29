@@ -474,7 +474,7 @@ The Mage's Tower (Nero)
 <<include [[Init 2 Pick Unseen]]>>
 <<include [[Init 2 Random Once]]>>
 <<include [[Init 2 Random Walk]]>>
-<<include [[Init 2 Return Head]]>>
+<<include [[Init 2 Return Sticky]]>>
 <<include [[Init 2 Saves]]>>
 <<include [[Init 2 Sidebar]]>>
 <<include [[Init 2 State]]>>
@@ -654,14 +654,14 @@ const setTemporary = temp => {
 MT.arcInclude = (passage, dest) => {
   VT.ignore(() => {
     const text = Story.get(passage).text;
-    const saveVars = State.variables;
+    const saveVars = State.active.variables;
     const saveTemp = clone(State.temporary);
     try {
-      State.variables = { t_isArchive: true };
+      State.active.variables = { t_isArchive: true };
       State.clearTemporary();
       $(dest).wiki(text);
     } finally {
-      State.variables = saveVars;
+      State.active.variables = saveVars;
       setTemporary(saveTemp);
     }
   });
@@ -784,7 +784,7 @@ Macro.add("arc-variant", {
 });
 
 /**
- * <<arc-ending unlocked twineLink>>
+ * <<arc-ending unlocked twineLink [disabledText [setter]]>>
  *   hint text
  * <<arc-variants>>
  *   variant selectors
@@ -799,13 +799,13 @@ Macro.add("arc-variant", {
 Macro.add("arc-ending", {
   tags: ["arc-variants"],
   handler: function() {
-    if (this.args.length !== 2 && this.args.length !== 3) {
-      throw new Error("expected arc-endings args: boolean link [disabledText]");
+    if (this.args.length < 2 || this.args.length > 4) {
+      throw new Error("expected arc-endings args: boolean link [disabledText [setter]]");
     }
-    const enabled = this.args[0];
-    const link = this.args[1];
+    let [enabled, link, offText, setter] = this.args;
     const isLink = typeof link === "object" && link.isLink;
-    let offText = this.args[2] || (isLink ? link.text : link);
+    offText = offText || (isLink ? link.text : link);
+    setter = setter || "";
 
     const outer = $("<div class=arc-ending>").appendTo(this.output);
     if (!enabled) {
@@ -813,7 +813,13 @@ Macro.add("arc-ending", {
       $('<div class="arc-hint">').wiki(this.payload[0].contents).appendTo(outer);
       return;
     }
-    $("<div class=arc-title>").wiki(isLink ? '[' + `[${link.text}|${link.link}]]` : link).appendTo(outer);
+    
+    const title = $("<div class=arc-title>").appendTo(outer);
+    if (isLink) {
+      title.wiki(`[\[${link.text}|${link.link}][${setter}]]`);
+    } else {
+      title.wiki(`[\[${link}][${setter}]]`);
+    }
     if (this.payload[1] != null) {
       outer.wiki(this.payload[1].contents);
     }
@@ -843,7 +849,6 @@ Macro.add("arc-barbs", {
     );
   }
 });
-
 
 <</script>>
 
@@ -2054,28 +2059,34 @@ initLog();
 <<script>>
 
 function announceEnding(dest, type, vname, text) {
-  if (!State.variables[vname]) {
+  const V = State.variables;
+  if (!V[vname]) {
     $(dest).append(
       `<meta-text>${text} is now unlocked in the Archive.</meta-text>`);
-    State.variables[vname] = true;
+    V[vname] = true;
   } else {
     $(dest).append(`<meta-ending-${type}>${text}</meta-ending-${type}>`);
   }
 }
+
+/**
+ * <<meta-ending [good|bad] varname1 text1 varname2 text2>>
+ * Announce an ending. If it's locked, unlock it, and announce the unlocking.
+ * - If n1_barbs, use varname1 and text1
+ * - If !n1_barbs, use varname2 and text2
+ */
 Macro.add("meta-ending", {
   handler: function() {
-    const type = this.args[0];
-    const vn1 = this.args[1];
-    const text1 = this.args[2];
-    const vn2 = this.args[3];
-    const text2 = this.args[4];
-    if (vn2 != null && State.variables.n1_barbs) {
+    const [type, vn1, text1, vn2, text2] = this.args;
+    const V = State.variables;
+    if (vn2 != null && V.n1_barbs) {
       announceEnding(this.output, type, vn2, text2);
     } else {
       announceEnding(this.output, type, vn1, text1);
     }
   }
 });
+
 <</script>>
 
 
@@ -2412,48 +2423,68 @@ initRandomWalk();
 <</script>>
 
 
-:: Init 2 Return Head [inclusion] {"position":"3150,600","size":"100,100"}
+:: Init 2 Return Sticky [inclusion] {"position":"3150,600","size":"100,100"}
 <<append head>><style>
 
-#return-head {
+#return-head,
+#return-tail {
   background-color: #111;
   line-height: 1.75;
+  position: sticky;
+  z-index: 10;
+}
+
+#return-head {
   margin-top: -1em;
   padding-top: 1em;
-  position: sticky;
   top: 0;
-  z-index: 10;
+}
+
+#return-tail {
+  padding-bottom: 1em;
+  bottom: 0;
 }
 
 </style><</append>>
 
 <<script>>
-function addHead(contents) {
+function addReturn(where, contents) {
   ErrorMessage.assert(
     tags().includes("noreturn"),
     "tags should have noreturn");
 
   $(document).one(":passagedisplay", () => {
     MagesTower.autoStow();
-    $("#return-head").remove();
-    $("<div id=return-head>")
-      .prependTo("#passages")
+    $(`#return-${where}`).remove();
+    const div = $(`<div id=return-${where}>`)
       .wiki(`<<link "Return to the game" $return>><</link>>`)
-      .wiki(contents)
-      .append("<hr>");
+      .wiki(contents);
+    if (where === "head") {
+      div.append("<hr>");
+      $("#passages").prepend(div, "<br>");
+    } else {
+      div.prepend("<hr>");
+      $("#passages").append("<br>", div);
+    }
   });
 }
 
 Macro.add("return-head", {
   handler: function() {
-    addHead("");
+    addReturn("head", "");
+  }
+});
+
+Macro.add("return-tail", {
+  handler: function() {
+    addReturn("tail", "");
   }
 });
 
 Macro.add("return-block", {
   tags: [],
   handler: function() {
-    addHead(this.payload[0].contents);
+    addReturn("head", this.payload[0].contents);
   }
 });
 <</script>>
@@ -2707,8 +2738,11 @@ em em {
   width: 0;
 }
 #passages .ui-title {
-  font-size: 1.1em;
+  font-size: 1.2rem;
   font-weight: bold;
+}
+#passages span.ui-title {
+  display: inline-block;
 }
 #passages .ui-title-more {
   font-size: 0.8em;
@@ -3597,6 +3631,7 @@ V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
 <<include [[Init 5b Nero Patience]]>>
 <<include [[Init 5b Nero Templates]]>>
 
+<<include [[Init 5c Nero Keywords]]>>
 <<include [[Init 5c Nero Password]]>>
 
 
@@ -5307,12 +5342,21 @@ The endings in this archive are all static, with no choices beyond the selection
     <<include [[Ivex Enthrallment Archive Display]]>>
     <<include [[Ivex Extraction Archive Display]]>>
 </div>
+
 <hr>
 <div class="ui-subtitle">
     Nero Endings
 </div>
 <div class="arc-body">
-    <<include [[n0/F Nero Endings]]>>
+    <<include [[n0/F Nero Ending Index]]>>
+</div>
+
+<hr>
+<div class="ui-subtitle">
+    Nero Keywords
+</div>
+<div class="arc-body">
+    <<include [[n0/F Nero Keyword Index]]>>
 </div>
 
 <</nobr>>
@@ -5395,7 +5439,9 @@ The endings in this archive are all static, with no choices beyond the selection
 <<nobr>>
 <<return-head>>
 
-<h1>Credits</h1>
+<div class="ui-title">Credits</div>
+
+<br>
 The writing and development of this interactive story was made by me, [[Sleth|http://www.slethstories.com/]].
 
 ?P
@@ -12451,7 +12497,7 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 <</nobr>>
 
 
-:: n0/F Nero Endings [inclusion] {"position":"3225,2225","size":"100,100"}
+:: n0/F Nero Ending Index [inclusion] {"position":"3225,2225","size":"100,100"}
 <<nobr>>
 <<script>>
   const V = State.variables;
@@ -12882,13 +12928,23 @@ Threat. Yes. That is definitely a threat.
 
 
 :: n1a/F Hangover Info {"position":"3350,1575","size":"100,100"}
+<<nobr>>
+
 Pearson's Hangover Cantrip is a simple spell, but its construction is more subtle than it appears. It's often the first off-book spell that academy students learn, because of its usefulness in curing the consequences of alcoholic indulgence, of course. But the main reason it's popular is because older students find it hilarious when a novice attempts it while drunk.
 
+?P
 Most spoken spells require extremely precise enunciation to have any effect at all. Pearson's is different. It works if it's said correctly, yes. But if the caster slurs or stumbles the invocation, it doesn't merely fail. It turns their fur bright pink for the day.
 
+?P
 Needless to say, Nero only made that mistake once.
 
+<<arc-skip>>
+?P
+<<nero-kw pearson>>
 [[Return|n1a/F Nero Start]]
+
+<</arc-skip>>
+<</nobr>>
 
 
 :: n1a/F Feign Sleep 4 [big-mood] {"position":"3800,1750","size":"100,100"}
@@ -17243,17 +17299,24 @@ Many years ago, when Nero was still a novice student...
 <<vi-ignore n2_ivexGone>>
 
 Nero's Endgame is an unusual spell construction. The wolf realized he needed it during the Triestorm incident.
-<</nobr>>
 
+?P
 It had begun with a simple request. Lord Estrivar of the Triestorm Council had asked him to find Perosolamew, the Lord's missing parrot. This was a trivial divination that Nero would normally decline and post on a student jobs board, but Estrivar was insistent and pleasant and offered an extremely generous retainer.
 
+?P
 Five days later, Nero was naked and gagged, with chains stretching his limbs between four anvils, in the secret lair of the Triestorm blacksmiths guild, who were preparing to sacrifice him to Perfect Steel Blank, the (probably not real) demigod of Unsheathed Swords.
 
+?P
 Back then, Nero's entire magic repertoire required spoken words, complex gestures, and specially prepared materials. None of which were available to him at that moment. Nobody even knew he was there. Escape was impossible.
 
+?P
 So when the Greater Hammerer finished sharpening his knife and brought it toward the wolf's exposed crotch, Nero made a solemn vow to never be this helpless again. Provided of course he survived the situation...
 
+<<arc-skip>>
+?P
 [[Continue|n1s/F Endgame Info 2]]
+<</arc-skip>>
+<</nobr>>
 
 
 :: n1s/F Endgame Info 2 {"position":"4000,1375","size":"100,100"}
@@ -17270,15 +17333,17 @@ Two weeks later, Nero enlisted the aid of the fabulous
     (a brilliant wolf who teaches at Windbone Magic Academy)
 <</if>>
 to shave his ass and tattoo on his skin a compact glyph matrix he designed himself. It's a single-use spell, consuming itself when cast, and requiring another session of shaving and tattooing to prepare again. Which is not altogether unpleasant, but still quite time consuming. This is not a spell he can use often, but it's extremely useful when there are no better options.
-<</nobr>>
 
+?P
 All he has to do is hold in his mind an image of the glyphs on his ass, exactly as he had seen in a mirror, and mentally <em>twist</em> their alignment in a particular way. And then the magic energy in the matrix unlocks to release a one-two combo.
 
+?P
 First comes Raven's Diversion, which can absorb up to 68 joules of energy from both magical and physical sources of harm. 68 joules is not the upper limit of Raven's spell, but it's the best that Nero can do within the constraints imposed by the canvas of his ass.
 
+?P
 And then comes Mudge's Invisibility, which is not so much an invisibility spell as a "shrink a person to the size of an acorn" spell. Since the person's clothes and other accessories are not also shrunk, the spell is more a ribald parlor trick than a regular tool of working mages. But it has the virtue of being the shortest glyph-stream that's likely to free Nero from any type of physical restraint.
 
-<<nobr>>
+?P
 The unusual ass-tattoo construction has another limitation:
 neither spell will last very long.
 About 3 seconds.
@@ -17296,10 +17361,13 @@ Maybe another second if his bladder is full.
     It's saved his life more than once.
 <</if>>
 
+<<arc-skip>>
 ?P
+<<nero-kw endgame>>
 <<link Return $t_returnEndgame>><</link>>
 
 <<set $n1_taraIntroduced = true>>
+<</arc-skip>>
 <</nobr>>
 
 
@@ -26773,5 +26841,100 @@ function initRandom() {
 // initRandom();
 
 <</script>>
+
+
+:: n0/F Nero Keyword Index [inclusion] {"position":"3225,2350","size":"100,100"}
+<<nobr>>
+<<= Nero.listKeywords()>>
+<</nobr>>
+
+
+:: n0/F Nero Keyword [noreturn] {"position":"3325,2350","size":"100,100"}
+<<nobr>>
+<<= Nero.showKeyword($t_keyword)>>
+?P
+<<link "Return to game" $return>><</link>>
+<</nobr>>
+
+
+:: Init 5c Nero Keywords [inclusion] {"position":"3125,1200","size":"100,100"}
+<<script>>
+Nero.keywords = {
+  antimagic: {
+    title: "Anti-Magic Fields",
+    passages: [
+    ]
+  },
+
+  endgame: {
+    title: "Nero's Endgame",
+    passages: [
+      "[[n1s/F Endgame Info 1]]",
+      "[[n1s/F Endgame Info 2]]",
+    ],
+  },
+  
+  pearson: {
+    title: "Pearson's Hangover Cantrip",
+    passages: [
+      "[[n1a/F Hangover Info]]",
+    ],
+  },
+};
+
+Nero.listKeywords = () => {
+  let mkp = "<<nobr>>";
+  const keys = Object.keys(Nero.keywords).sort((a, b) => {
+    return a.title < b.title ? -1 : a.title > b.title ? +1 : 0;
+  });
+  for (const key of keys) {
+    const kw = Nero.keywords[key];
+    mkp += `<<arc-ending $` + `n9_kw_${key}`;
+    mkp += ` [\[${kw.title}|n0/F Nero Keyword]]`;
+    mkp += ` "" "$t_keyword = '${key}'">>`;
+    mkp += `<</arc-ending>>\n`;
+  }
+  mkp += "<</nobr>>";
+  return mkp;
+};
+
+Nero.showKeyword = key => {
+  const kw = Nero.keywords[key];
+  if (kw == null) return `Unknown keyword ${key}`;
+  
+  let mkp = "<<nobr>>";
+  mkp += `<div class=ui-title>${kw.title}</div>\n`;
+  mkp += `<hr>\n`;
+  
+  for (let i = 0; i < kw.passages.length; i++) {
+    if (i !== 0) mkp += "<hr>\n";
+    mkp += `<<arc-include ${kw.passages[i]}>>\n`;
+  }
+
+  mkp += "<</nobr>>";
+  return mkp;
+}
+
+/** <<nero-kw kwname>> */
+Macro.add("nero-kw", {
+  handler: function() {
+    const [key] = this.args;
+    const kw = Nero.keywords[key];
+    if (kw == null) throw new Error(`nero-kw ${key} not found`);
+    
+    const V = State.variables;
+    const vn = `n9_kw_${key}`;
+    if (!V[vn]) {
+      V[vn] = true;
+      $(this.output).wiki(
+      	`<meta-text>\
+          Keyword: ${kw.title} is now unlocked in the Archive.\
+        </meta-text>\
+        ?P`);
+    }
+  }
+});
+
+<</script>>\
 
 
