@@ -5064,6 +5064,7 @@ Macro.add("n1-patience", {
 <</append>>
 
 <<script>>
+
 Template.add("barbed", () => {
   const V = State.variables;
   return V.n1_barbsGlitch ? Nero.barbGlitch[0] :
@@ -5086,6 +5087,9 @@ function master(p1, p2) {
     return `${name}${p1}`;
   }
 }
+Template.add("master", () => master(".", "!"));
+Template.add("mastern", () => master("", ""));
+Template.add("masterq", () => master("?", "!?"));
 
 function spell() {
   const V = State.variables;
@@ -5101,12 +5105,24 @@ function spell() {
     return "his earlier spell";
   }
 }
-
-Template.add("master", () => master(".", "!"));
-Template.add("mastern", () => master("", ""));
-Template.add("masterq", () => master("?", "!?"));
-
 Template.add("spell", () => spell());
+
+function crystals() {
+  const V = State.variables;
+  if (V.n1_gravKnown) {
+    return "Gravity Crystals";
+  } else if (V.n1_gravViewed) {
+    if (V.n2_struggled) {
+      return "Dream Crystals (?)";
+    } else {
+      return "Dream Crystals";
+    }
+  } else {
+    return "glowing crystals";
+  }
+}
+Template.add("crystals", () => crystals());
+
 <</script>>
 
 
@@ -25428,31 +25444,22 @@ He holds that image in his mind, and <em>twists</em> it...
 
 <!--
     can be here 3 times (patience actions).
-    3rd time is always horny.
+    2nd and 3rd time are always horny.
 -->
 
 <<if $n2_struggledAgain>>
     <<include [[n2b/D Struggle 3 Horny]]>>
 
 <<elseif $n2_struggled>>
-    <<if $n1_candleHorny>>
-        <<include [[n2b/F Struggle 2 Horny]]>>
-    <<elseif $n1_gravNoticed && $n1_mageSight>>
-        <<include [[n2b/F Struggle Insight]]>>
-    <<else>>
-        <<include [[n2b/F Struggle 2 Normal]]>>
-    <</if>>
+    <<include [[n2b/F Struggle 2 Horny]]>>
 
 <<else>>
     <<if $n1_candleHorny>>
         <<include [[n2b/F Struggle 1 Horny]]>>
     <<else>>
-        <<include [[n2b/F Struggle 1 Normal]]>>
+        <<include [[n2b/F Struggle Normal 1]]>>
     <</if>>
 <</if>>
-
-?P
-$t_afterAction
 
 <</nobr>>
 
@@ -25678,26 +25685,24 @@ He'd better escape before his sexual appetites become any more confused.
 <</nobr>>
 
 
-:: n2b/F Struggle 1 Normal [inclusion] {"position":"5250,6475","size":"100,100"}
+:: n2b/F Struggle Normal 1 [inclusion] {"position":"5250,6475","size":"100,100"}
 <<nobr>>
 <<vi-always n1_candleHorny false>>
-
-<<set _crystals =
-    $n1_gravKnown ? "Gravity Crystals" :
-    $n1_gravViewed ? "Dream Crystals" : "glowing crystals">>
+<<vi-ignore n1_mageSight>>
+<<cv-try n1_magicPhase `MP_beforeCast` `MP_mageSight`>>
 
 The wolf strains at his leather bonds.
 Now that Ivex is gone, Nero feels free to exert all his strength
 to test his bondage, perhaps holding back just a little bit,
 to avoid breathing too deeply of the candle's fumes.
 ?P
-The cross sways a little as the wolf struggles,
+The cross sways as the wolf struggles,
 <<if $n1_gravNoticed>>
     <<if $n1_mageSight>>
-        the _crystals behind it shift slightly,
+        the ?crystals behind it shift slightly,
         and their energy web shimmers,
     <<else>>
-        and the _crystals behind it shift slightly,
+        and the ?crystals behind it shift slightly,
     <</if>>
 <</if>>
 but he isn't really
@@ -25716,15 +25721,9 @@ the young wolf gave the wrong answer.
     if he applies it right.
 <</if>>
 
-<<if $n1_gravViewed && !$n1_gravKnown>>
-    ?P
-    Wait... The cross <em>swayed</em>. That should be impossible
-    with Dream Crystals. Their hold is rigid and perfect.
-    What <em>are</em> those crystals?
-<</if>>
-
-<<set $n2_struggled = true>>
-<</nobr>>\
+?P
+[[Continue|n2b/F Struggle Normal 1a]]
+<</nobr>>
 
 
 :: n2b/D Struggle 3 Horny [inclusion] {"position":"5150,6675","size":"100,100"}
@@ -25738,10 +25737,6 @@ XXX yes this is reachable
 <<nobr>>
 <<vi-always n1_candleHorny true>>
 
-<<set _crystals =
-    $n1_gravKnown ? "Gravity Crystals" :
-    $n1_gravViewed ? "Dream Crystals" : "glowing crystals">>
-
 Nero uses aching muscles to strain with all his might in his bonds again,
 to try to break the leather, or break the wooden cross,
 or even just pull it loose so that he can fall forward
@@ -25750,7 +25745,7 @@ and rub his throbbing red cock against the surface of the floor.
 ?P
 Each jerk of the cross makes it sway slightly.
 <<if $n1_gravNoticed>>
-    The _crystals
+    The ?crystals
     behind it shift slightly in response,
     <<if $n1_mageSight>>
         and their web of immense energy flickers with an unspoken message,
@@ -25790,10 +25785,6 @@ from desire and a longing for an embrace, or even the slightest touch.
 <<nobr>>
 <<vi-always n1_candleHorny true>>
 
-<<set _crystals =
-    $n1_gravKnown ? "Gravity Crystals" :
-    $n1_gravViewed ? "Dream Crystals" : "glowing crystals">>
-
 The wolf strains at his leather bonds, seeking release for his throbbing cock.
 Now that the domineering panther is gone,
 Nero feels his own spirit expanding to fill the absence,
@@ -25803,9 +25794,9 @@ The cross sways a little as the wolf
 <<if $n1_gravNoticed>>
     struggles,
     <<if $n1_mageSight>>
-        the _crystals behind it shift slightly, and their energy web shimmers.
+        the ?crystals behind it shift slightly, and their energy web shimmers.
     <<else>>
-        and the _crystals behind it shift slightly.
+        and the ?crystals behind it shift slightly.
     <</if>>
 <<else>>
     struggles.
@@ -27518,5 +27509,91 @@ $(document).on(":passageend", () => {
 });
 
 <</script>>\
+
+
+:: n2b/F Struggle Normal 1a {"position":"5350,6475","size":"100,100"}
+<<nobr>>
+<<vi-always n1_candleHorny false>>
+<<vi-ignore n1_mageSight>>
+<<cv-ignore t_afterAction>>
+
+Nero tests the secureness of the wooden cross with his struggles.
+<<if $n1_gravViewed>>
+    <<if $n1_gravKnown>>
+        The Gravity Crystals (six of them!) holding the cross
+        are a calamity waiting to happen,
+        and maybe he can make that happen sooner.
+    <<else>>
+        The Dream Crystals (six of them!) holding the cross
+        are power-hungry monsters that will
+        exhaust any energy supply with enough time,
+        and maybe he can make that happen faster.
+    <</if>>
+    ?P
+    <<if $n1_mageSight>>
+        And his struggling does seem to be having an effect!
+        Each jerk starts a flicker in the energy web that travels
+        through the strands until the crystals return to their
+        original position.
+        If he can just time his struggles so that the flickers
+        reinforce each other...
+    <<else>>
+        Each jerk of the cross makes the crystals shift slightly,
+        but they quickly return to place with no noticeable change
+        in their glow. The wolf tries some jerks in different directions
+        and different patterns, but nothing seems to have much effect.
+    <</if>>
+<<else>>
+    Each jerk makes the cross
+    <<if $n1_gravNoticed>>
+        and the crystals behind it shift slightly, but everything
+    <<else>>
+        shift slightly, but it
+    <</if>>
+    quickly returns
+    to its original position.
+    The wolf tries some jerks in different directions and
+    different patterns, but nothing seems to have much effect.
+<</if>>
+?P
+
+The straining of his muscles, the <em>restraint</em> on his muscles,
+feels electric.
+The leather bonds are stimulating the wolf's nerves and senses in
+ways he hasn't felt before.
+An adrenaline-fueled excitement rushes into his lungs,
+filling them deeply with warmth,
+and then driving down deeper to add its heat
+to his groin and his throbbing red cock.
+
+?P
+All of that sensation is unbearably erotic,
+and the wolf writhes in the leather straps
+again to feel again this unexpected awakening of a sexual desire
+to be <em>bound</em>. His cock drips and shivers in synchrony with
+
+<<if $n1_gravViewed && !$n1_gravKnown>>
+    his panting breaths and sweaty squirms on the swaying cross.
+    ?P
+    Wait... The cross <em>moves</em>.
+    That should be impossible
+    with Dream Crystals!
+    Their hold is rigid and perfect.
+    What <em>are</em> those crystals?
+
+<<else>>
+    his sweaty squirms and panting breaths of spicy air.
+    ?P
+    Wait... it's spicy air from the <em>flickering red candle</em>.
+    Nero <em>isn't</em> aroused by bondage.
+    It's <em>just</em> the candle having its effect on him.
+    He'd better escape before his sexual appetites become any more confused.
+<</if>>
+
+?P
+$t_afterAction
+
+<<set $n2_struggled = true>>
+<</nobr>>
 
 
