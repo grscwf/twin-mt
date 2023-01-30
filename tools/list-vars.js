@@ -47,19 +47,12 @@ function listVars(twFile, varListTxt, regexFilter) {
     }
     passageMap[lno] = passage;
 
-    // $varname
-    for (const m of line.matchAll(/[$](\w+)/g)) {
-      addMatch(m[1], m.index);
-    }
-    // V.varname, v.varname, U.varname
-    for (const m of line.matchAll(/\b[vVU][012]?[.](\w+)/g)) {
-      addMatch(m[1], m.index);
-    }
-    // setup.name
-    for (const m of line.matchAll(/\b(setup[.]\w+)/g)) {
-      addMatch(m[1], m.index);
-    }
-    const macros = [
+    const patterns = [
+      /[$](\w+)/g,
+      /\b[vVU][012]?[.](\w+)/g,
+      /\b(setup[.]\w+)/g,
+      /\b(n[0-9]_\w+):/g,
+      /\b(t_\w+):/g,
       /[<]arc-barbs\s+(\w+)/g,
       /[<]arc-variant\s+(\w+)/g,
       /[<]random-once\s+(\w+)/g,
@@ -70,7 +63,7 @@ function listVars(twFile, varListTxt, regexFilter) {
       /[<]vi-ignore\s+(\w+(?:\s+\w+)*)/g,
       /[<]vi-ignore-if\s+(\w+(?:\s+\w+)+)/g,
     ];
-    for (const re of macros) {
+    for (const re of patterns) {
       for (const m of line.matchAll(re)) {
         const vars = m[1].split(/\s+/);
         vars.forEach(vn => addMatch(vn, m.index));
