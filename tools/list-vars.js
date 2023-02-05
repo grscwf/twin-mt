@@ -55,6 +55,7 @@ function listVars(twFile, varListTxt, regexFilter) {
       /\b(t_\w+):/g,
       /[<]arc-barbs\s+(\w+)/g,
       /[<]arc-variant\s+(\w+)/g,
+      /[<]meta-ending\s+\w+\s+(\w+)/g,
       /[<]random-once\s+(\w+)/g,
       /[<]state-load\s+(\w+)/g,
       /[<]state-save\s+(\w+)/g,

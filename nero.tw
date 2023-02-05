@@ -769,7 +769,7 @@ Macro.add("arc-variant", {
       const label = $("<label>").wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
       label.append(text).appendTo(outer);
       if (!enabled) {
-        if (hint == null) hint = ch.contents;
+        if (hint == null) hint = `(${text}) ${ch.contents}`;
         label.addClass("arc-disabled");
         label.find("input").attr("disabled", "disabled");
       }
@@ -824,24 +824,18 @@ Macro.add("arc-ending", {
 });
 
 /**
- * <<arc-barbs choiceVarName canSmooth canBarbs>>
+ * <<arc-barbs choiceVarName>>
  * 
  * Emit a radio selector for smooth/barbs choice.
  * - choiceVarName remembers player's selection.
- * - canSmooth and canBarbs are booleans indicating if the option is unlocked.
  */
 Macro.add("arc-barbs", {
   handler: function() {
-    if (this.args.length !== 3) {
-      throw new Error("expected arc-barbs args: varname boolean boolean");
-    }
     const varname = this.args[0];
-    const smooth = this.args[1];
-    const barbs = this.args[2];
     $(this.output).wiki(
       `<<arc-variant "Variant:" ${varname}>>` +
-      `<<arc-option smooth "Smooth" ${smooth}>>` +
-      `<<arc-option barbs "Barbs" ${barbs}>>` +
+      `  <<arc-option smooth "Smooth" true>>` +
+      `  <<arc-option barbs "Barbs" true>>` +
       `<</arc-variant>>`
     );
   }
@@ -2071,20 +2065,14 @@ function announceEnding(dest, type, vname, text) {
 }
 
 /**
- * <<meta-ending [good|bad] varname1 text1 varname2 text2>>
+ * <<meta-ending [good|bad] varname1 text1>>
  * Announce an ending. If it's locked, unlock it, and announce the unlocking.
- * - If n1_barbs, use varname1 and text1
- * - If !n1_barbs, use varname2 and text2
  */
 Macro.add("meta-ending", {
   handler: function() {
-    const [type, vn1, text1, vn2, text2] = this.args;
+    const [type, vn1, text1] = this.args;
     const V = State.variables;
-    if (vn2 != null && V.n1_barbs) {
-      announceEnding(this.output, type, vn2, text2);
-    } else {
-      announceEnding(this.output, type, vn1, text1);
-    }
+    announceEnding(this.output, type, vn1, text1);
   }
 });
 
@@ -2707,6 +2695,17 @@ Macro.add("state-load", {
 :: Init 2 Templates [inclusion] {"position":"2750,700","size":"100,100"}
 <<script>>
 Template.add("P", "<br><br>");
+
+Template.add("cssArchive", `<<nobr>>
+  <style>
+    body, .var-info, #return-head, #return-tail {
+      background-color: #123;
+    }
+    body {
+      color: #eee;
+    }
+  </style>
+<</nobr>>`);
 <</script>>
 
 
@@ -3639,11 +3638,12 @@ V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
 <<include [[Init 5b Nero Patience]]>>
 <<include [[Init 5b Nero Templates]]>>
 
+<<include [[Init 5c Nero Endings]]>>
 <<include [[Init 5c Nero Keywords]]>>
 <<include [[Init 5c Nero Password]]>>
 
 
-:: Init 5a Nero Vars [inclusion] {"position":"2875,1000","size":"100,100"}
+:: Init 5a Nero Vars [inclusion] {"position":"2875,975","size":"100,100"}
 <<script>>
 // This has a :passagestart that should run before any other Nero :passagestart
 
@@ -5360,6 +5360,8 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 
 :: Archives [noreturn] {"position":"2500,2000","size":"100,100"}
 <<nobr>>
+?cssArchive
+
 <style>
   body { overflow-y: scroll; }
   .arc-body {
@@ -5558,6 +5560,8 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 
 :: Credits [noreturn] {"position":"2650,1925","size":"100,100"}
 <<nobr>>
+?cssArchive
+
 <<return-head>>
 
 <div class="ui-title">Credits</div>
@@ -12620,72 +12624,51 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 
 :: n0/F Nero Ending Index [inclusion] {"position":"3225,2225","size":"100,100"}
 <<nobr>>
+<!--
+  n9_ vars are endings and keywords that are unlocked.
+  n8_ vars are selected options that persist.
+-->
 <<script>>
   const V = State.variables;
   const T = State.temporary;
-
-  /**
-   * Sets temp vars that combine n9 variant flags.
-   * Eg, rollup('stem', ['A', 'B'], ['X', 'Y']) will set:
-   *   _stemA = n9_stemAX || n9_stemAY;
-   *   _stemB = n9_stemBX || n9_stemBY;
-   *   _stemX = n9_stemAX || n9_stemBX;
-   *   _stemY = n9_stemAY || n9_stemBY;
-   *   _stem = _stemA || _stemB;
-   */
-  function rollup(stem, var1, var2) {
-    T[stem] = false;
-    for (const v1 of var1) T[`${stem}${v1}`] = false;
-    for (const v2 of var2) T[`${stem}${v2}`] = false;
-    for (const v1 of var1) {
-      for (const v2 of var2) {
-        if (V[`n9_${stem}${v1}${v2}`]) {
-          T[stem] = true;
-          T[`${stem}${v1}`] = true;
-          T[`${stem}${v2}`] = true;
-        }
-      }
-    }
-  }
-
-  rollup('tamed', ['Mild', 'Harsh'], ['Smooth', 'Barbs']);
-  rollup('caged', ['Mild', 'Harsh'], ['Smooth', 'Barbs']);
-  rollup('broken', ['Smooth', 'Barbs'], ['']);
-
+  
+  T.tamed = V.n9_tamedHarsh || V.n9_tamedMild;
+  T.caged = V.n9_cagedHarsh || V.n9_cagedMild;
+  T.escaped = false;
 <</script>>
 
-<<arc-ending _tamed [[Bad Ending: Tamed|n8/D Tamed]]>>
+<<arc-ending _tamed [[Bad Ending: Tamed|n0/F Nero Ending]]>>
     Struggling is hopeless...
 <<arc-variants>>
-    <<arc-barbs n8_tamedBarbs _tamedSmooth _tamedBarbs>>
+    <<arc-barbs n8_tamedBarbs>>
     <<arc-variant "Variant:" n8_tamed>>
-    <<arc-option mild "Mild" _tamedMild>>
-        Ivex enjoys cooperative victims...
-    <<arc-option harsh "Harsh" _tamedHarsh>>
-        Ivex enjoys reluctant victims...
+        <<arc-option mild "Mild" $n9_tamedMild>>
+            Ivex enjoys cooperative victims...
+        <<arc-option harsh "Harsh" $n9_tamedHarsh>>
+            Ivex enjoys reluctant victims...
     <</arc-variant>>
 <</arc-ending>>
 
-<<arc-ending _caged [[Bad Ending: Caged|n8/D Caged]]>>
+<<arc-ending _caged [[Bad Ending: Caged|n0/F Nero Ending]]>>
     Self-control is overrated...
 <<arc-variants>>
-    <<arc-barbs n8_cagedBarbs _cagedSmooth _cagedBarbs>>
+    <<arc-barbs n8_cagedBarbs>>
     <<arc-variant "Variant:" n8_caged>>
-    <<arc-option mild "Mild" _cagedMild>>
-        Sometimes all that's needed is a paw...
-    <<arc-option harsh "Harsh" _cagedHarsh>>
-        Sometimes a paw is not enough...
+        <<arc-option mild "Mild" $n9_cagedMild>>
+            Sometimes all that's needed is a paw...
+        <<arc-option harsh "Harsh" $n9_cagedHarsh>>
+            Sometimes a paw is not enough...
     <</arc-variant>>
 <</arc-ending>>
 
-<<arc-ending _broken [[Challenge Ending: Broken|n8/D Broken]]>>
+<<arc-ending _broken [[Challenge Ending: Broken|n0/F Nero Ending]]>>
     <<if _tamed && _caged && _escaped>>
         Remember ?blank and talk to him...
     <<else>>
         Under construction.
     <</if>>
 <<arc-variants>>
-    <<arc-barbs n8_brokenBarbs _brokenSmooth _brokenBarbs>>
+    <<arc-barbs n8_brokenBarbs>>
 <</arc-ending>>
 
 <hr>
@@ -12693,27 +12676,27 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 <<arc-ending false "Bad Ending: Hunted">>
     Under construction.
 <<arc-variants>>
-    <<arc-barbs n8_huntedBarbs false false>>
+    <<arc-barbs n8_huntedBarbs>>
     <<arc-variant "Variant:" n8_hunted>>
-    <<arc-option mild "Mild" false>>
-    <<arc-option harsh "Harsh" false>>
+        <<arc-option mild "Mild" false>>
+        <<arc-option harsh "Harsh" false>>
     <</arc-variant>>
 <</arc-ending>>
 
 <<arc-ending false "Bad Ending: Overwhelmed">>
     Under construction.
 <<arc-variants>>
-    <<arc-barbs n8_overwhelmedBarbs false false>>
+    <<arc-barbs n8_overwhelmedBarbs>>
     <<arc-variant "Variant:" n8_overwhelmed>>
-    <<arc-option mild "Mild" false>>
-    <<arc-option harsh "Harsh" false>>
+        <<arc-option mild "Mild" false>>
+        <<arc-option harsh "Harsh" false>>
     <</arc-variant>>
 <</arc-ending>>
 
 <<arc-ending false "Challenge Ending: Wrecked">>
     Under construction.
 <<arc-variants>>
-    <<arc-barbs n8_wreckedBarbs false false>>
+    <<arc-barbs n8_wreckedBarbs>>
 <</arc-ending>>
 
 <hr>
@@ -12722,16 +12705,16 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
     Under construction.
 <<arc-variants>>
     <<arc-variant "Variant:" n8_satisfied>>
-    <<arc-option mica "Mica" false>>
-    <<arc-option pevhin "Pevhin" false>>
-    <<arc-option blank "???" false>>
+        <<arc-option mica "Mica" false>>
+        <<arc-option pevhin "Pevhin" false>>
+        <<arc-option blank "???" false>>
     <</arc-variant>>
 <</arc-ending>>
 
 <<arc-ending false "Ending: Dominant">>
     Under construction.
 <<arc-variants>>
-    <<arc-barbs n8_dominantBarbs false false>>
+    <<arc-barbs n8_dominantBarbs>>
     <!--
         Chase: No | Yes
         Collar: No | Yes
@@ -12745,7 +12728,7 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 <<arc-ending false "Challenge Ending: Ascendant">>
     Under construction.
 <<arc-variants>>
-    <<arc-barbs n8_ascendantBarbs false false>>
+    <<arc-barbs n8_ascendantBarbs>>
 <</arc-ending>>
 <</nobr>>\
 
@@ -26512,13 +26495,14 @@ revenge on ivex: [[n9x/S dominant]]
 lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 
 
-:: n8/D Tamed [noreturn] {"position":"3375,2225","size":"100,100"}
+:: n0/F Nero Ending [noreturn] {"position":"3325,2225","size":"100,100"}
+<<nobr>>
+?cssArchive
 
-
-:: n8/D Caged [noreturn] {"position":"3500,2225","size":"100,100"}
-
-
-:: n8/D Broken [noreturn] {"position":"3625,2225","size":"100,100"}
+<<= Nero.showEnding($t_ending)>>
+<hr>
+<<link "Return to game" $return>><</link>>
+<</nobr>>
 
 
 :: n9a/F Tamed [ending] {"position":"4100,6550","size":"100,100"}
@@ -26690,9 +26674,7 @@ nero whines. dumps all his info amid torture, feels ashamed at failing, but ends
 sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
 ?P
-<<meta-ending bad
-    n9_tamedHarshSmooth "Bad Ending: Tamed (Smooth, Harsh)"
-    n9_tamedHarshBarbs "Bad Ending: Tamed (Barbs, Harsh)">>
+<<meta-ending bad n9_tamedHarsh "Bad Ending: Tamed (Harsh)">>
 
 ?P
 <ul class="actions">
@@ -26723,9 +26705,7 @@ chastity is too entwined with his life essence, there isn't a simple solution.
 nero is ashamed, doesn't want to stay, runs back before ivex gets mad.
 gives up, mental suicide with dumb gem.
 
-<<meta-ending bad
-    n9_brokenSmooth "Challenge Ending: Broken (Smooth)"
-    n9_brokenBarbs "Challenge Ending: Broken (Barbs)">>
+<<meta-ending bad n9_broken "Challenge Ending: Broken">>
 
 <ul class="actions">
     <<if $n2_tooClever>>
@@ -26750,9 +26730,7 @@ applies portal-box chastity, keeps Nero caged until he's desperate and submits,
 
 important: portal-box is small, strong feeling of confined
 
-<<meta-ending bad
-    n9_cagedMildSmooth "Bad Ending: Caged (Smooth, Mild)"
-    n9_cagedMildBarbs "Bad Ending: Caged (Barbs, Mild)">>
+<<meta-ending bad n9_cagedMild "Bad Ending: Caged (Mild)">>
 
 <ul class="actions">
     <<if $n2_tooClever>>
@@ -26775,9 +26753,7 @@ Ivex returns, is amused that nero almost escapes, is amused that he's struggling
 
 applies portal-box chastity in overstim mode. keeps nero in a cage until he surrenders,
 
-<<meta-ending bad
-    n9_cagedHarshSmooth "Bad Ending: Caged (Smooth, Harsh)"
-    n9_cagedHarshBarbs "Bad Ending: Caged (Barbs, Harsh)">>
+<<meta-ending bad n9_cagedHarsh "Bad Ending: Caged (Harsh)">>
 
 <ul class="actions">
     <<if $n2_tooClever>>
@@ -27166,15 +27142,7 @@ function initRandom() {
 
 :: n0/F Nero Keyword [noreturn] {"position":"3325,2350","size":"100,100"}
 <<nobr>>
-<style>
-  body, .var-info {
-    background-color: #123;
-  }
-  body {
-    color: #eee;
-  }
-</style>
-
+?cssArchive
 
 <<= Nero.showKeyword($t_keyword)>>
 <hr>
@@ -27391,12 +27359,10 @@ Nero.showKeyword = key => {
   let mkp = "<<nobr>>";
   mkp += `<div class=ui-title>${kw.title}</div>\n`;
   mkp += `<hr>\n`;
-  
   for (let i = 0; i < kw.passages.length; i++) {
     if (i !== 0) mkp += "<hr>\n";
     mkp += `<<arc-include ${kw.passages[i]}>>\n`;
   }
-
   mkp += "<</nobr>>";
   return mkp;
 }
@@ -27814,16 +27780,25 @@ the limited chamber that the wolf allows.
 
 ?P
 <<if $n1_barbs>>
-  The barbed head of thexxx barbed head
+  The barbed head of Ivex's cock brushes firmly at the
+  wolf's tongue and the sensitive skin at the roof of his mouth.
+  It's a light rasp that almost tickles when the panther
+  presses forward, and a harsher scratch when the panther
+  pulls back. Nero tries to encourage his mouth to produce
+  more saliva to mix with the pre-cum, to coat the spines and
+  make their glide less prickly.
+  
 <<else>>
-  xxx smooth head
+  The smooth head of Ivex's cock presses firmly into
+  the wolf's tongue to mix pre-cum with saliva,
+  coating the whole inner surface of the mouth
+  with a slickness that allows the panther's cock to
+  glide smoothly in and out, in a rhythm that almost tickles.
+  
 <</if>>
-, clamp
 
-XXX 
 
-transition to mouth-fucking.
-thrusting, hold, encourage more tongue.
+hold, encourage more tongue.
 thrust more.
 grasping head, ears, pumping. rasping mouth of barbs.
 trouble breathing.
@@ -27849,9 +27824,7 @@ ivex laughs, some light abuse, and nero keeps begging.
 sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
 
 ?P
-<<meta-ending bad
-    n9_tamedMildSmooth "Bad Ending: Tamed (Smooth, Mild)"
-    n9_tamedMildBarbs "Bad Ending: Tamed (Barbs, Mild)">>
+<<meta-ending bad n9_tamedMild "Bad Ending: Tamed (Mild)">>
 
 ?P
 <ul class="actions">
@@ -27859,5 +27832,31 @@ sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 <</nobr>>
+
+
+:: Init 5c Nero Endings {"position":"3250,1950","size":"100,100"}
+<<script>>
+
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+
+Nero.endings = {
+};
+
+Nero.showEnding = key => {
+  const end = Nero.endings[key];
+  if (end == null) return `Unknown ending ${key}`;
+
+  let mkp = "<<nobr>>";
+  mkp += `<div class=ui-title>${kw.title}</div>\n`;
+  mkp += `<hr>\n`;
+  for (let i = 0; i < kw.passages.length; i++) {
+    if (i !== 0) mkp += "<hr>\n";
+    mkp += `<<arc-include ${kw.passages[i]}>>\n`;
+  }
+  mkp += "<</nobr>>";
+  return mkp;
+};
+
+<</script>>
 
 

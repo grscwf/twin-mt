@@ -677,10 +677,10 @@ const setTemporary = temp =&gt; {
 };
 
 /**
- * Render passsage in a scratch state with t_isArchive true,
- * and emit it to dest.
+ * Create a scratch state with t_isArchive === true,
+ * evaluate script, then render passage to dest.
  */
-MT.arcInclude = (passage, dest) =&gt; {
+MT.arcInclude = (dest, passage, script) =&gt; {
   VT.ignore(() =&gt; {
     const text = Story.get(passage).text;
     const saveVars = State.active.variables;
@@ -688,6 +688,9 @@ MT.arcInclude = (passage, dest) =&gt; {
     try {
       State.active.variables = { t_isArchive: true };
       State.clearTemporary();
+      if (script != null) {
+        $(dest).wiki(`&lt;&lt;run ${script}&gt;&gt;`);
+      }
       $(dest).wiki(text);
     } finally {
       State.active.variables = saveVars;
@@ -725,18 +728,15 @@ Macro.add(&quot;arc-skip&quot;, {
 });
 
 /**
- * &lt;&lt;arc-include twineLink&gt;&gt;
- * Render twineLink in a scratch state with t_isArchive true,
- * and emit it.
+ * &lt;&lt;arc-include passage [script]&gt;&gt;
+ * Create a scratch state with t_isArchive true,
+ * evaluate the script, and render passage.
  */
 Macro.add(&quot;arc-include&quot;, {
   handler: function() {
-    const [link] = this.args;
-    if (link.isLink) {
-      MT.arcInclude(link.link, this.output);
-    } else {
-      MT.arcInclude(String(link), this.output);
-    }
+    const [link, script] = this.args;
+    const passage = link.isLink ? link.link : String(link);
+    MT.arcInclude(this.output, passage, script);
   }
 });
 
@@ -801,7 +801,7 @@ Macro.add(&quot;arc-variant&quot;, {
       const label = $(&quot;&lt;label&gt;&quot;).wiki(`&lt;&lt;radiobutton &quot;$${varname}&quot; &quot;${value}&quot; autocheck&gt;&gt;`);
       label.append(text).appendTo(outer);
       if (!enabled) {
-        if (hint == null) hint = ch.contents;
+        if (hint == null) hint = `(${text}) ${ch.contents}`;
         label.addClass(&quot;arc-disabled&quot;);
         label.find(&quot;input&quot;).attr(&quot;disabled&quot;, &quot;disabled&quot;);
       }
@@ -856,26 +856,34 @@ Macro.add(&quot;arc-ending&quot;, {
 });
 
 /**
- * &lt;&lt;arc-barbs choiceVarName canSmooth canBarbs&gt;&gt;
+ * &lt;&lt;arc-barbs choiceVarName&gt;&gt;
  * 
  * Emit a radio selector for smooth/barbs choice.
  * - choiceVarName remembers player&#39;s selection.
- * - canSmooth and canBarbs are booleans indicating if the option is unlocked.
  */
 Macro.add(&quot;arc-barbs&quot;, {
   handler: function() {
-    if (this.args.length !== 3) {
-      throw new Error(&quot;expected arc-barbs args: varname boolean boolean&quot;);
-    }
     const varname = this.args[0];
-    const smooth = this.args[1];
-    const barbs = this.args[2];
     $(this.output).wiki(
       `&lt;&lt;arc-variant &quot;Variant:&quot; ${varname}&gt;&gt;` +
-      `&lt;&lt;arc-option smooth &quot;Smooth&quot; ${smooth}&gt;&gt;` +
-      `&lt;&lt;arc-option barbs &quot;Barbs&quot; ${barbs}&gt;&gt;` +
+      `  &lt;&lt;arc-option smooth &quot;Smooth&quot; true&gt;&gt;` +
+      `  &lt;&lt;arc-option barbs &quot;Barbs&quot; true&gt;&gt;` +
       `&lt;&lt;/arc-variant&gt;&gt;`
     );
+  }
+});
+
+/**
+ * &lt;&lt;arc-set-barbs varName&gt;&gt;
+ * At an ending, set the default for smooth/barbs choice.
+ */
+Macro.add(&quot;arc-set-barbs&quot;, {
+  handler: function() {
+    const [vname] = this.args;
+    const V = State.variables;
+    if (V[vname] == null) {
+      V[vname] = V[&quot;n1_barbs&quot;] ? &quot;barbs&quot; : &quot;smooth&quot;;
+    }
   }
 });
 
@@ -2063,20 +2071,14 @@ function announceEnding(dest, type, vname, text) {
 }
 
 /**
- * &lt;&lt;meta-ending [good|bad] varname1 text1 varname2 text2&gt;&gt;
+ * &lt;&lt;meta-ending [good|bad] varname1 text1&gt;&gt;
  * Announce an ending. If it&#39;s locked, unlock it, and announce the unlocking.
- * - If n1_barbs, use varname1 and text1
- * - If !n1_barbs, use varname2 and text2
  */
 Macro.add(&quot;meta-ending&quot;, {
   handler: function() {
-    const [type, vn1, text1, vn2, text2] = this.args;
+    const [type, vn1, text1] = this.args;
     const V = State.variables;
-    if (vn2 != null &amp;&amp; V.n1_barbs) {
-      announceEnding(this.output, type, vn2, text2);
-    } else {
-      announceEnding(this.output, type, vn1, text1);
-    }
+    announceEnding(this.output, type, vn1, text1);
   }
 });
 
@@ -2667,6 +2669,17 @@ Macro.add(&quot;state-load&quot;, {
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="25" name="Init 2 Templates" tags="inclusion" position="2750,700" size="100,100">&lt;&lt;script&gt;&gt;
 Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
+
+Template.add(&quot;cssArchive&quot;, `&lt;&lt;nobr&gt;&gt;
+  &lt;style&gt;
+    body, .var-info, #return-head, #return-tail {
+      background-color: #112;
+    }
+    body {
+      color: #ddc;
+    }
+  &lt;/style&gt;
+&lt;&lt;/nobr&gt;&gt;`);
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="26" name="Init 2 Text Style" tags="inclusion" position="2850,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 em em {
@@ -3571,8 +3584,9 @@ V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
 &lt;&lt;include [[Init 5b Nero Patience]]&gt;&gt;
 &lt;&lt;include [[Init 5b Nero Templates]]&gt;&gt;
 
-&lt;&lt;include [[Init 5c Nero Keywords]]&gt;&gt;
-&lt;&lt;include [[Init 5c Nero Password]]&gt;&gt;</tw-passagedata><tw-passagedata pid="33" name="Init 5a Nero Vars" tags="inclusion" position="2875,1000" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;include [[Init 5c Nero Ending]]&gt;&gt;
+&lt;&lt;include [[Init 5c Nero Keyword]]&gt;&gt;
+&lt;&lt;include [[Init 5c Nero Password]]&gt;&gt;</tw-passagedata><tw-passagedata pid="33" name="Init 5a Nero Vars" tags="inclusion" position="2875,975" size="100,100">&lt;&lt;script&gt;&gt;
 // This has a :passagestart that should run before any other Nero :passagestart
 
 EnumType.define(&quot;MagicPhase&quot;, [
@@ -5244,6 +5258,8 @@ The snapping comes from right beside his ear. The wolf adventurer frowns, but co
 The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, memories start to return. Memories of who he is...
 
 [[Choose your adventurer...|Choose Character]]</tw-passagedata><tw-passagedata pid="44" name="Archives" tags="noreturn" position="2500,2000" size="100,100">&lt;&lt;nobr&gt;&gt;
+?cssArchive
+
 &lt;style&gt;
   body { overflow-y: scroll; }
   .arc-body {
@@ -5434,6 +5450,8 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 &lt;&lt;/timed&gt;&gt;\
 &lt;/div&gt; &lt;!--title-container--&gt;\
 &lt;/div&gt; &lt;!--title-screen--&gt;\</tw-passagedata><tw-passagedata pid="46" name="Credits" tags="noreturn" position="2650,1925" size="100,100">&lt;&lt;nobr&gt;&gt;
+?cssArchive
+
 &lt;&lt;return-head&gt;&gt;
 
 &lt;div class=&quot;ui-title&quot;&gt;Credits&lt;/div&gt;
@@ -11536,72 +11554,62 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
     &lt;li&gt;[[Try again from the beginning.|Title Screen]]&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="286" name="n0/F Nero Ending Index" tags="inclusion" position="3225,2225" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;!--
+  n9_ vars are endings and keywords that are unlocked.
+  n8_ vars are selected options that persist.
+--&gt;
 &lt;&lt;script&gt;&gt;
   const V = State.variables;
   const T = State.temporary;
-
-  /**
-   * Sets temp vars that combine n9 variant flags.
-   * Eg, rollup(&#39;stem&#39;, [&#39;A&#39;, &#39;B&#39;], [&#39;X&#39;, &#39;Y&#39;]) will set:
-   *   _stemA = n9_stemAX || n9_stemAY;
-   *   _stemB = n9_stemBX || n9_stemBY;
-   *   _stemX = n9_stemAX || n9_stemBX;
-   *   _stemY = n9_stemAY || n9_stemBY;
-   *   _stem = _stemA || _stemB;
-   */
-  function rollup(stem, var1, var2) {
-    T[stem] = false;
-    for (const v1 of var1) T[`${stem}${v1}`] = false;
-    for (const v2 of var2) T[`${stem}${v2}`] = false;
-    for (const v1 of var1) {
-      for (const v2 of var2) {
-        if (V[`n9_${stem}${v1}${v2}`]) {
-          T[stem] = true;
-          T[`${stem}${v1}`] = true;
-          T[`${stem}${v2}`] = true;
-        }
-      }
-    }
-  }
-
-  rollup(&#39;tamed&#39;, [&#39;Mild&#39;, &#39;Harsh&#39;], [&#39;Smooth&#39;, &#39;Barbs&#39;]);
-  rollup(&#39;caged&#39;, [&#39;Mild&#39;, &#39;Harsh&#39;], [&#39;Smooth&#39;, &#39;Barbs&#39;]);
-  rollup(&#39;broken&#39;, [&#39;Smooth&#39;, &#39;Barbs&#39;], [&#39;&#39;]);
-
+  
+  T.tamed = V.n9_tamedHarsh || V.n9_tamedMild;
+  T.caged = V.n9_cagedHarsh || V.n9_cagedMild;
 &lt;&lt;/script&gt;&gt;
 
-&lt;&lt;arc-ending _tamed [[Bad Ending: Tamed|n8/D Tamed]]&gt;&gt;
+&lt;&lt;arc-ending _tamed
+    [[Bad Ending: Tamed|n0/F Nero Ending]]
+    &quot;&quot;
+    &quot;$t_ending = [&#39;tamed&#39;, $n8_tamedBarbs, $n8_tamed]&quot;
+&gt;&gt;
     Struggling is hopeless...
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_tamedBarbs _tamedSmooth _tamedBarbs&gt;&gt;
     &lt;&lt;arc-variant &quot;Variant:&quot; n8_tamed&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; _tamedMild&gt;&gt;
-        Ivex enjoys cooperative victims...
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; _tamedHarsh&gt;&gt;
-        Ivex enjoys reluctant victims...
+        &lt;&lt;arc-option mild &quot;Mild&quot; $n9_tamedMild&gt;&gt;
+            Ivex enjoys cooperative victims...
+        &lt;&lt;arc-option harsh &quot;Harsh&quot; $n9_tamedHarsh&gt;&gt;
+            Ivex enjoys reluctant victims...
     &lt;&lt;/arc-variant&gt;&gt;
+    &lt;&lt;arc-barbs n8_tamedBarbs&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;arc-ending _caged [[Bad Ending: Caged|n8/D Caged]]&gt;&gt;
+&lt;&lt;arc-ending _caged
+    [[Bad Ending: Caged|n0/F Nero Ending]]
+    &quot;&quot;
+    &quot;$t_ending = [&#39;caged&#39;, $n8_cagedBarbs, $n8_caged]&quot;
+&gt;&gt;
     Self-control is overrated...
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_cagedBarbs _cagedSmooth _cagedBarbs&gt;&gt;
     &lt;&lt;arc-variant &quot;Variant:&quot; n8_caged&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; _cagedMild&gt;&gt;
-        Sometimes all that&#39;s needed is a paw...
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; _cagedHarsh&gt;&gt;
-        Sometimes a paw is not enough...
+        &lt;&lt;arc-option mild &quot;Mild&quot; $n9_cagedMild&gt;&gt;
+            Sometimes all that&#39;s needed is a paw...
+        &lt;&lt;arc-option harsh &quot;Harsh&quot; $n9_cagedHarsh&gt;&gt;
+            Sometimes a paw is not enough...
     &lt;&lt;/arc-variant&gt;&gt;
+    &lt;&lt;arc-barbs n8_cagedBarbs&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;arc-ending _broken [[Challenge Ending: Broken|n8/D Broken]]&gt;&gt;
-    &lt;&lt;if _tamed &amp;&amp; _caged &amp;&amp; _escaped&gt;&gt;
+&lt;&lt;arc-ending _broken
+    [[Challenge Ending: Broken|n0/F Nero Ending]]
+    &quot;&quot;
+    &quot;$t_ending = [&#39;broken&#39;, $n8_brokenBarbs]&quot;
+&gt;&gt;
+    &lt;&lt;if _tamed &amp;&amp; _caged &amp;&amp; $n9_escaped&gt;&gt;
         Remember ?blank and talk to him...
     &lt;&lt;else&gt;&gt;
         Under construction.
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_brokenBarbs _brokenSmooth _brokenBarbs&gt;&gt;
+    &lt;&lt;arc-barbs n8_brokenBarbs&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;hr&gt;
@@ -11609,27 +11617,27 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 &lt;&lt;arc-ending false &quot;Bad Ending: Hunted&quot;&gt;&gt;
     Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_huntedBarbs false false&gt;&gt;
+    &lt;&lt;arc-barbs n8_huntedBarbs&gt;&gt;
     &lt;&lt;arc-variant &quot;Variant:&quot; n8_hunted&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
+        &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
+        &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
     &lt;&lt;/arc-variant&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;&lt;arc-ending false &quot;Bad Ending: Overwhelmed&quot;&gt;&gt;
     Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_overwhelmedBarbs false false&gt;&gt;
+    &lt;&lt;arc-barbs n8_overwhelmedBarbs&gt;&gt;
     &lt;&lt;arc-variant &quot;Variant:&quot; n8_overwhelmed&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
+        &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
+        &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
     &lt;&lt;/arc-variant&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;&lt;arc-ending false &quot;Challenge Ending: Wrecked&quot;&gt;&gt;
     Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_wreckedBarbs false false&gt;&gt;
+    &lt;&lt;arc-barbs n8_wreckedBarbs&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;hr&gt;
@@ -11638,16 +11646,16 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
     Under construction.
 &lt;&lt;arc-variants&gt;&gt;
     &lt;&lt;arc-variant &quot;Variant:&quot; n8_satisfied&gt;&gt;
-    &lt;&lt;arc-option mica &quot;Mica&quot; false&gt;&gt;
-    &lt;&lt;arc-option pevhin &quot;Pevhin&quot; false&gt;&gt;
-    &lt;&lt;arc-option blank &quot;???&quot; false&gt;&gt;
+        &lt;&lt;arc-option mica &quot;Mica&quot; false&gt;&gt;
+        &lt;&lt;arc-option pevhin &quot;Pevhin&quot; false&gt;&gt;
+        &lt;&lt;arc-option blank &quot;???&quot; false&gt;&gt;
     &lt;&lt;/arc-variant&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;&lt;arc-ending false &quot;Ending: Dominant&quot;&gt;&gt;
     Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_dominantBarbs false false&gt;&gt;
+    &lt;&lt;arc-barbs n8_dominantBarbs&gt;&gt;
     &lt;!--
         Chase: No | Yes
         Collar: No | Yes
@@ -11661,7 +11669,7 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 &lt;&lt;arc-ending false &quot;Challenge Ending: Ascendant&quot;&gt;&gt;
     Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-    &lt;&lt;arc-barbs n8_ascendantBarbs false false&gt;&gt;
+    &lt;&lt;arc-barbs n8_ascendantBarbs&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="287" name="n0/F Project Status" tags="inclusion" position="3375,2650" size="100,100">Nero has a few Bad Endings that are already finished. Check out the [[Archives]] (in the left sidebar menu) to see which endings are available. For the endings you haven&#39;t seen yet, there are some hints on how to reach them.
 
@@ -13913,7 +13921,7 @@ of a hated ex, which then alters the mood of everything connected
 to those memories.
 ?P
 The primary defense against substitution is to carefully check
-one&#39;s spirit and memories for inconsistencies. Has the pet thrown dishes
+one&#39;s memories and spirit for inconsistencies. Has the pet thrown dishes
 in anger on other days? Did the ex wear nothing but a collar on other nights?
 Once the substitution is identified, it&#39;s a simple matter to reverse it.
 ?P
@@ -13923,7 +13931,7 @@ a very subtle swap will have very little effect.
 So the task is to find an exchange that is significant
 enough to create the intended effect,
 but does not need excessive rearrangements to
-prevent inconsistencies from being noticed.
+prevent the inconsistencies from being noticed.
 ?P
 The &lt;em&gt;strength&lt;/em&gt; of substitution, the reason it&#39;s commissioned
 at steep prices,
@@ -13934,13 +13942,14 @@ The altered mind will seem to have always been that way.
 But stable substitution is not a fast process. It requires days
 or even weeks of observation to find a suitable rearrangement.
 Mage fights do not have time for that.
-So substitution battles are messy affairs whose
-dominant theme is confusion, and the victor can easily undo
-all the rearrangements after sufficient rest.
+So battles involving substitution are messy affairs whose
+dominant theme is confusion, and the victor or an ally can easily undo
+all the rearrangements after a sufficient rest.
 ?P
 There are sometimes rumors of an &lt;em&gt;advanced&lt;/em&gt;
-form of substitution that can rapidly and automatically repair any
-inconsistencies. Many experts have deeply investigated this claim
+form of substitution that can rapidly and automatically repair
+inconsistencies whenever they get noticed.
+Many experts have deeply investigated this claim
 from many angles,
 and the verdict is always the same: no such magic exists,
 and it&#39;s impossible for it to ever exist.
@@ -14032,7 +14041,7 @@ Well, it fails more often than it succeeds.
 The problem with the process is that
 the mind naturally fills the hole of a missing memory
 with a confabulation that changes the shape of the memories adjacent.
-So when the original memory is restored,
+So if too much time passes before the original memory is restored,
 it no longer fits exactly in the place it was removed.
 Parts of the confabulation might not get erased,
 and adjacent memories might get bruised or shattered by the intrusion.
@@ -14110,7 +14119,8 @@ The imp is instructed not on what is restricted, but on what is permitted,
 and it diligently adds shackles to every intention that is not explicitly allowed.
 ?P
 Simple imps make victims into mindless thralls.
-The best imps from skilled inhibitionists will create a performance that
+But sophisticated imps
+from skilled inhibitionists will create a performance that
 seems quite an ordinary person. Only mages are able to see the imp
 that&#39;s continually frustrating the desires of the actual person
 that the performance pretends to be.
@@ -18022,13 +18032,13 @@ in this room or within the cross itself.
 
 ?P
 There&#39;s really only one spell suitable for this occasion.
-It&#39;s a favorite of lapine mages,
+It&#39;s a favorite of rabbit mages,
 and well-known to thieves with a bit of magic.
 It&#39;s the pragmatic and reliable [[Oil of Dragons|n1s/F Oil Info]].
 
 ?P
 The wolf twitches his ears and speaks the arcane syllables
-that every rabbit mage knows...
+that every lapine mage knows...
 
 ?P
 [[Continue|n1s/F Cast Alone 2]]
@@ -18047,7 +18057,8 @@ will learn it early in their education.
 Casting it on a person (or on oneself) makes the subject&#39;s skin and fur
 (and feathers if any) nearly frictionless,
 making the subject difficult to hold with snares or ropes,
-or anything that uses simple constriction to restrain a body part in some way.
+or anything else that uses simple constriction
+to restrain a body part in some way.
 It&#39;s one of the best spells for escape, for those that need spells of escape,
 despite the mild inconvenience of it.
 ?P
@@ -23265,7 +23276,6 @@ Candle&#39;s Influence:
     ?P
     His tongue laps with thirst.
     His hips thrust with urgency.
-    His tail lashes rhythmically.
     His cock flaps wildly,
     and its shaft slaps against his belly to smear his fur with
     pre-cum, but that glancing blow is not enough.
@@ -23576,7 +23586,8 @@ help struggling anyway, to feel that embrace more deeply,
 and to prove to the cross&#39;s wooden voice that the wolf has strength
 that it can use, that he &lt;em&gt;can&lt;/em&gt; be more than just
 a helpless victim of unlucky fates. His cock quivers and weeps
-from desire and a longing for an embrace, or even the slightest touch.
+from desire and a longing for an embrace, or even the slightest
+pat on its head.
 
 ?P
 $t_afterAction
@@ -23608,7 +23619,7 @@ to achieve what he knows he &lt;em&gt;can&lt;/em&gt;.
 Someone asked him a long time ago if he wanted to be
 a warrior or a mage, and they had laughed with scorn when
 the young wolf gave the wrong answer.
-But that someone is dead now,
+But that someone is dead now.
 Nero emerged victorious then, and he will be victorious again.
 ?P
 His cock twitches with eagerness to celebrate his imminent victory
@@ -24307,9 +24318,18 @@ if had caged or dominated, can look in boxes.
 
 boyscout choice: [[n9x/S satisfied]]
 revenge on ivex: [[n9x/S dominant]]
-lion gives nero ideas, nero takes over: [[n9x/S ascendant]]</tw-passagedata><tw-passagedata pid="568" name="n8/D Tamed" tags="noreturn" position="3375,2225" size="100,100"></tw-passagedata><tw-passagedata pid="569" name="n8/D Caged" tags="noreturn" position="3500,2225" size="100,100"></tw-passagedata><tw-passagedata pid="570" name="n8/D Broken" tags="noreturn" position="3625,2225" size="100,100"></tw-passagedata><tw-passagedata pid="571" name="n9a/F Tamed" tags="ending" position="4100,6550" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;meta-ending-bad&gt;Bad Ending: Tamed&lt;/meta-ending-bad&gt;
-?P
+lion gives nero ideas, nero takes over: [[n9x/S ascendant]]</tw-passagedata><tw-passagedata pid="568" name="n0/F Nero Ending" tags="noreturn" position="3325,2225" size="100,100">&lt;&lt;nobr&gt;&gt;
+?cssArchive
+
+&lt;&lt;= Nero.showEnding($t_ending)&gt;&gt;
+&lt;hr&gt;
+&lt;&lt;link &quot;Return to game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="569" name="n9a/F Tamed" tags="ending" position="4100,6550" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;arc-skip&gt;&gt;
+    &lt;meta-ending-bad&gt;Bad Ending: Tamed&lt;/meta-ending-bad&gt;
+    ?P
+&lt;&lt;/arc-skip&gt;&gt;
 
 When Ivex returns through a door behind Nero,
 the red lust candle flickers briefly from the draft,
@@ -24368,12 +24388,14 @@ It&#39;s a repellent idea, even in this unbearably horny state.
 But the paw firmly grasping his balls gives a few quick squeezes,
 as a reminder of what can happen if the wolf refuses.
 
-?P
-&lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;[[He licks reluctantly...|n9a/F Tamed Mild 1]]&lt;/li&gt;
-    &lt;li&gt;[[He clamps his jaw shut...|n9a/D Tamed Harsh]]&lt;/li&gt;
-&lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="572" name="n9a/F Tamed Mild 1" tags="" position="3325,6425" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;arc-skip&gt;&gt;
+    ?P
+    &lt;ul class=&quot;actions&quot;&gt;
+        &lt;li&gt;[[He licks reluctantly...|n9a/F Tamed Mild 1]]&lt;/li&gt;
+        &lt;li&gt;[[He clamps his jaw shut...|n9a/D Tamed Harsh]]&lt;/li&gt;
+    &lt;/ul&gt;
+&lt;&lt;/arc-skip&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="570" name="n9a/F Tamed Mild 1" tags="" position="3300,6400" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 He licks reluctantly, hesitantly.
 Nero does not think he can avoid satisfying the panther
@@ -24394,8 +24416,8 @@ will soon allow another attempt at escape.
     glides lightly across the saliva-slick surface of
     the wolf&#39;s curling tongue.
 &lt;&lt;/if&gt;&gt;
-The scent of pre-cum and the taste of the panther have flavors
-unlike any female that Nero has bedded,
+The scent of pre-cum and the taste of the panther&#39;s cock
+have flavors unlike any female that Nero has bedded,
 different even from the musk of his own arousal that&#39;s
 leaking from his own throbbing red cock.
 
@@ -24403,7 +24425,7 @@ leaking from his own throbbing red cock.
 Ivex&#39;s musk is... not the worst thing the wolf has ever
 felt with his tongue,
 but it&#39;s overwhelming,
-and entirely too much of the panther&#39;s arrogant presence.
+and entirely too much of the panther&#39;s brutish presence.
 Nero continues to give small, tentative licks,
 with a small hope that an inadequate performance will
 drive the panther to impatiently grab his own cock and
@@ -24414,7 +24436,7 @@ But Ivex growls and squeezes the wolf&#39;s balls until the
 upside-down wolf gasps.
 The panther presses the tip of one finger into the side of
 Nero&#39;s sensitive cock, with the claw just
-barely touching the skin.
+barely touching the skin of the cock.
 &quot;This is not the time to play the shy virgin.
 You are lapping eagerly at a delicious treat, like so.&quot;
 He demonstrates a motion by rubbing his finger along the head
@@ -24443,10 +24465,12 @@ on his tongue has become too much.
 But a scratch of the panther&#39;s claw against the wolf&#39;s cock
 makes him rapidly extend his tongue and resume licking again.
 
-?P
-[[Continue|n9a/F Tamed Mild 2]]
+&lt;&lt;arc-skip&gt;&gt;
+    ?P
+    [[Continue|n9a/F Tamed Mild 2]]
+&lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="573" name="n9a/D Tamed Harsh" tags="done" position="3425,6550" size="100,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="571" name="n9a/D Tamed Harsh" tags="done" position="3425,6550" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 XXX
 no way is nero sucking ivex off. he&#39;s escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
@@ -24468,16 +24492,15 @@ nero whines. dumps all his info amid torture, feels ashamed at failing, but ends
 sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
 ?P
-&lt;&lt;meta-ending bad
-    n9_tamedHarshSmooth &quot;Bad Ending: Tamed (Smooth, Harsh)&quot;
-    n9_tamedHarshBarbs &quot;Bad Ending: Tamed (Barbs, Harsh)&quot;&gt;&gt;
+&lt;&lt;meta-ending bad n9_tamedHarsh &quot;Bad Ending: Tamed (Harsh)&quot;&gt;&gt;
+&lt;&lt;arc-set-barbs n8_tamedBarbs&gt;&gt;
 
 ?P
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;li&gt;[[Try again from Ivex&#39;s disappearance.|n2a/F Restart Ivex Gone]]&lt;/li&gt;
     &lt;li&gt;[[Try again from the beginning.|Title Screen]]&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="574" name="n9a/D Broken" tags="done" position="3850,7450" size="100,100">&lt;meta-ending-bad&gt;Challenge Ending: Broken&lt;/meta-ending-bad&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="572" name="n9a/D Broken" tags="done" position="3850,7450" size="100,100">&lt;meta-ending-bad&gt;Challenge Ending: Broken&lt;/meta-ending-bad&gt;
 
 nero clever escape, balls aching, only mildly horny, tries wand, an obvious bad idea.
 
@@ -24497,9 +24520,8 @@ chastity is too entwined with his life essence, there isn&#39;t a simple solutio
 nero is ashamed, doesn&#39;t want to stay, runs back before ivex gets mad.
 gives up, mental suicide with dumb gem.
 
-&lt;&lt;meta-ending bad
-    n9_brokenSmooth &quot;Challenge Ending: Broken (Smooth)&quot;
-    n9_brokenBarbs &quot;Challenge Ending: Broken (Barbs)&quot;&gt;&gt;
+&lt;&lt;meta-ending bad n9_broken &quot;Challenge Ending: Broken&quot;&gt;&gt;
+&lt;&lt;arc-set-barbs n8_brokenBarbs&gt;&gt;
 
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n2_tooClever&gt;&gt;
@@ -24508,7 +24530,7 @@ gives up, mental suicide with dumb gem.
         &lt;li&gt;[[Try again from Ivex&#39;s disappearance.|n2a/F Restart Ivex Gone]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;li&gt;[[Try again from the beginning.|Title Screen]]&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="575" name="n9a/D Caged Mild" tags="done" position="3550,7200" size="100,100">&lt;meta-ending-bad&gt;Bad Ending: Caged (Mild)&lt;/meta-ending-bad&gt;
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="573" name="n9a/D Caged Mild" tags="done" position="3550,7200" size="100,100">&lt;meta-ending-bad&gt;Bad Ending: Caged (Mild)&lt;/meta-ending-bad&gt;
 
 Nero, extra horny, and no self-control. paws off. defeated by horny lack of discipline.
 
@@ -24520,9 +24542,8 @@ applies portal-box chastity, keeps Nero caged until he&#39;s desperate and submi
 
 important: portal-box is small, strong feeling of confined
 
-&lt;&lt;meta-ending bad
-    n9_cagedMildSmooth &quot;Bad Ending: Caged (Smooth, Mild)&quot;
-    n9_cagedMildBarbs &quot;Bad Ending: Caged (Barbs, Mild)&quot;&gt;&gt;
+&lt;&lt;meta-ending bad n9_cagedMild &quot;Bad Ending: Caged (Mild)&quot;&gt;&gt;
+&lt;&lt;arc-set-barbs n8_cagedBarbs&gt;&gt;
 
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n2_tooClever&gt;&gt;
@@ -24531,7 +24552,7 @@ important: portal-box is small, strong feeling of confined
         &lt;li&gt;[[Try again from Ivex&#39;s disappearance.|n2a/F Restart Ivex Gone]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;li&gt;[[Try again from the beginning.|Title Screen]]&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="576" name="n9a/D Caged Harsh" tags="done" position="3700,7350" size="100,100">&lt;meta-ending-bad&gt;Bad Ending: Caged (Harsh)&lt;/meta-ending-bad&gt;
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="574" name="n9a/D Caged Harsh" tags="done" position="3700,7350" size="100,100">&lt;meta-ending-bad&gt;Bad Ending: Caged (Harsh)&lt;/meta-ending-bad&gt;
 
 nero escaped, very horny, resisted pawing off, but didn&#39;t resist using wand. defeated by horny curiosity.
 
@@ -24541,9 +24562,8 @@ Ivex returns, is amused that nero almost escapes, is amused that he&#39;s strugg
 
 applies portal-box chastity in overstim mode. keeps nero in a cage until he surrenders,
 
-&lt;&lt;meta-ending bad
-    n9_cagedHarshSmooth &quot;Bad Ending: Caged (Smooth, Harsh)&quot;
-    n9_cagedHarshBarbs &quot;Bad Ending: Caged (Barbs, Harsh)&quot;&gt;&gt;
+&lt;&lt;meta-ending bad n9_cagedHarsh &quot;Bad Ending: Caged (Harsh)&quot;&gt;&gt;
+&lt;&lt;arc-set-barbs n8_cagedBarbs&gt;&gt;
 
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n2_tooClever&gt;&gt;
@@ -24552,43 +24572,43 @@ applies portal-box chastity in overstim mode. keeps nero in a cage until he surr
         &lt;li&gt;[[Try again from Ivex&#39;s disappearance.|n2a/F Restart Ivex Gone]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;li&gt;[[Try again from the beginning.|Title Screen]]&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="577" name="n9e/S hunted" tags="ending" position="3675,8150" size="100,100">got here because lion is rapey, and you&#39;ve lost the slippery ring
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="575" name="n9e/S hunted" tags="ending" position="3675,8150" size="100,100">got here because lion is rapey, and you&#39;ve lost the slippery ring
 
 you can try to satisfy the lion, or try to continue to escape
 
 maybe, leave harsh for the ring+lion ending
 
 [[n9e/S hunted mild]]
-[[n9e/S hunted harsh]]</tw-passagedata><tw-passagedata pid="578" name="n9e/S hunted mild" tags="ending" position="3500,8075" size="100,100">lion is rapey, nero tries to satisfy him
+[[n9e/S hunted harsh]]</tw-passagedata><tw-passagedata pid="576" name="n9e/S hunted mild" tags="ending" position="3500,8075" size="100,100">lion is rapey, nero tries to satisfy him
 uses his paw. lion cums, lion forces nero to lick it up, and then immediately gets rapey again.
 the cum is aphrodisiac, nero ends up pawing himself too
 he&#39;s stuck in a loop pawing with lion and licking it up until Ivex returns.
 
-Ivex is amused and decides to chain nero to the lion as part of an assembly line, the lion can continually grind while nero continually paws. nero isn&#39;t compelled by anything but horniness and fear of the lion.</tw-passagedata><tw-passagedata pid="579" name="n9e/S hunted harsh" tags="ending" position="3500,8250" size="100,100">lion is rapey, nero tries to evade.
+Ivex is amused and decides to chain nero to the lion as part of an assembly line, the lion can continually grind while nero continually paws. nero isn&#39;t compelled by anything but horniness and fear of the lion.</tw-passagedata><tw-passagedata pid="577" name="n9e/S hunted harsh" tags="ending" position="3500,8250" size="100,100">lion is rapey, nero tries to evade.
 gets caught, pinned down and raped.
 it&#39;s over quick, lion takes a rest,
 nero tries to escape again, lion gets rapey again, pursues again.
 it&#39;s an endless loop until Ivex arrives.
 
-Ivex is amused and makes nero permanent prey. safe hole in keep, lust spell, inhibitor spell. can get relief by grabbing a one-time remedy from lion, but locked out from safe hole for n minutes, have to keep evading lion.</tw-passagedata><tw-passagedata pid="580" name="n9e/S overwhelmed mild" tags="ending" position="3575,8450" size="100,100">slippery ring is locked on. lion isn&#39;t following or hunting
+Ivex is amused and makes nero permanent prey. safe hole in keep, lust spell, inhibitor spell. can get relief by grabbing a one-time remedy from lion, but locked out from safe hole for n minutes, have to keep evading lion.</tw-passagedata><tw-passagedata pid="578" name="n9e/S overwhelmed mild" tags="ending" position="3575,8450" size="100,100">slippery ring is locked on. lion isn&#39;t following or hunting
 
 nero is stiffened and oversensitized. movement is hard, and any touch is overstim. the ring was only meant to apply to a small area, applying to a large area magnifies its effects. more contact is more overstim
 
 nero struggles to reduce the contact area, ends up perched on the toes of one foot.
 
-ivex returns and is amused, turns nero into an office ornament. likes to push nero and watch him collapse to the ground and then struggle to get back up.</tw-passagedata><tw-passagedata pid="581" name="n9e/S wrecked" tags="ending" position="3725,8850" size="100,100">slippery ring locks on, and lion is hunting.
+ivex returns and is amused, turns nero into an office ornament. likes to push nero and watch him collapse to the ground and then struggle to get back up.</tw-passagedata><tw-passagedata pid="579" name="n9e/S wrecked" tags="ending" position="3725,8850" size="100,100">slippery ring locks on, and lion is hunting.
 
 should probably also make this require thrall (to match ivex ending), which means adding a little complexity to the lion transitions. (or else change the ivex ending)
 
 lion rapes, extreme overstimulation.
 
-Ivex is amused and turns nero into lion&#39;s toy? doesn&#39;t fit with lion&#39;s role. also could be stronger.</tw-passagedata><tw-passagedata pid="582" name="n9e/S overwhelmed harsh" tags="ending" position="3600,8650" size="100,100">slippery ring locked on, lion is following
+Ivex is amused and turns nero into lion&#39;s toy? doesn&#39;t fit with lion&#39;s role. also could be stronger.</tw-passagedata><tw-passagedata pid="580" name="n9e/S overwhelmed harsh" tags="ending" position="3600,8650" size="100,100">slippery ring locked on, lion is following
 
 lion puts thrall gem on nero and goes back to what he was doing
 
 thrall and stim fight each other. thrall is a mind program but can&#39;t override stim reaction. tries to follow thrall program, but stim keeps getting in the way, and also prevents nero from being fully subsumed.
 
-ivex returns and is amused by the glitch, lets the glitch continue forever, plays with it sometimes.</tw-passagedata><tw-passagedata pid="583" name="n9x/S dominant" tags="ending" position="4425,8950" size="100,100">if no bad endings, straightforward fuck, simpler than drekkar&#39;s.
+ivex returns and is amused by the glitch, lets the glitch continue forever, plays with it sometimes.</tw-passagedata><tw-passagedata pid="581" name="n9x/S dominant" tags="ending" position="4425,8950" size="100,100">if no bad endings, straightforward fuck, simpler than drekkar&#39;s.
 
 if had caged, can use portal-box chastity.
 if had broken, can use phase chastity instead.
@@ -24607,7 +24627,7 @@ if had wrecked, can use thrall instead.
 
 if all of the above, lion asks you to rescue companion. you do, and companion asks to be un-rescued. this tips you toward taking over Ivex&#39;s domain.
 
-otherwise, fulfill contract.</tw-passagedata><tw-passagedata pid="584" name="n9x/S satisfied" tags="ending" position="4275,8950" size="100,100">satisfy contract.
+otherwise, fulfill contract.</tw-passagedata><tw-passagedata pid="582" name="n9x/S satisfied" tags="ending" position="4275,8950" size="100,100">satisfy contract.
 turn ivex into authorities.
 
 horny ending depending on barb choice
@@ -24616,7 +24636,7 @@ smooth - mica. colleague visit, friendly mage battle, mica loses and sucks cock 
 
 barbs - pevhin. nero wants to see lady temesca, but she&#39;s out, he settles for pevhin instead, has him wear her clothes, fucks his ass
 
-glitch - blank shows up at his home and rides his cock</tw-passagedata><tw-passagedata pid="585" name="n9x/S ascendant" tags="ending" position="4575,8950" size="100,100">this is all endings involving the lion</tw-passagedata><tw-passagedata pid="586" name="n1s/F Cast Horny 2" tags="" position="5900,3250" size="100,100">&lt;&lt;nobr&gt;&gt;
+glitch - blank shows up at his home and rides his cock</tw-passagedata><tw-passagedata pid="583" name="n9x/S ascendant" tags="ending" position="4575,8950" size="100,100">this is all endings involving the lion</tw-passagedata><tw-passagedata pid="584" name="n1s/F Cast Horny 2" tags="" position="5900,3250" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_naked true&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore-if n2_ivexGone n1_candleLit&gt;&gt;
@@ -24662,7 +24682,7 @@ $t_afterAction
 
 &lt;&lt;set $n1_castOil = true&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="587" name="n2b/F Desperate Magic 2" tags="" position="4775,6075" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="585" name="n2b/F Desperate Magic 2" tags="" position="4775,6075" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny true&gt;&gt;
 &lt;&lt;vi-ignore-if n1_castEndgame n1_mageSight&gt;&gt;
 
@@ -24707,7 +24727,7 @@ launch from his ass...
     [[Continue|n2b/F Desperate Magic 3]]
     
 &lt;&lt;/fade-in&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="588" name="n2b/F Desperate Magic 3" tags="" position="4675,6075" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="586" name="n2b/F Desperate Magic 3" tags="" position="4675,6075" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny true&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -24763,7 +24783,7 @@ an endless now. The erotic torment lasts forever...
 
 &lt;&lt;set _hasSprite &amp;&amp; ($n2_magicPhaseBroken = $n1_magicPhase)&gt;&gt;
 &lt;&lt;set _hasSprite &amp;&amp; ($n1_magicPhase = MP_broken)&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="589" name="n1cr/D Subby Deep" tags="big-mood" position="4275,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="587" name="n1cr/D Subby Deep" tags="big-mood" position="4275,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -24801,7 +24821,7 @@ XXX
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;set $n1_subby = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="590" name="n1cs/D Subby Strip" tags="" position="4475,4150" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="588" name="n1cs/D Subby Strip" tags="" position="4475,4150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_naked false&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
 
@@ -24815,7 +24835,7 @@ XXX ivex makes a gesture
 
 &lt;&lt;set $n1_naked &amp;&amp; ($t_ivexNear = true)&gt;&gt;
 &lt;&lt;set $t_afterNaked = &quot;[[Continue|n1cs/D Subby Stripped]]&quot;&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="591" name="n1cs/D Subby Stripped" tags="" position="4375,4175" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="589" name="n1cs/D Subby Stripped" tags="" position="4375,4175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;barbs-announce maybe&gt;&gt;
@@ -24830,7 +24850,7 @@ subby after naked. ivex is near, creeps.
 ?P
 [[Continue|n1cs/D Ivex Dominant (4,2)]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="592" name="Init 2 Randomness" tags="inclusion" position="3050,600" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="590" name="Init 2 Randomness" tags="inclusion" position="3050,600" size="100,100">&lt;&lt;script&gt;&gt;
 const MT = window.MagesTower || (window.MagesTower = {});
 
 /**
@@ -24857,24 +24877,16 @@ function initRandom() {
 
 // initRandom();
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="593" name="n0/F Nero Keyword Index" tags="inclusion" position="3225,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="591" name="n0/F Nero Keyword Index" tags="inclusion" position="3225,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;= Nero.listKeywords()&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="594" name="n0/F Nero Keyword" tags="noreturn" position="3325,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;style&gt;
-  body, .var-info {
-    background-color: #123;
-  }
-  body {
-    color: #eee;
-  }
-&lt;/style&gt;
-
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="592" name="n0/F Nero Keyword" tags="noreturn" position="3325,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
+?cssArchive
 
 &lt;&lt;= Nero.showKeyword($t_keyword)&gt;&gt;
 &lt;hr&gt;
 &lt;&lt;link &quot;Return to game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="595" name="Init 5c Nero Keywords" tags="inclusion" position="3425,1275" size="100,100">&lt;&lt;script&gt;&gt;
+</tw-passagedata><tw-passagedata pid="593" name="Init 5c Nero Keyword" tags="inclusion" position="3425,1275" size="100,100">&lt;&lt;script&gt;&gt;
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
 
 Nero.keywords = {
@@ -25045,7 +25057,8 @@ Nero.kwCount = () =&gt; {
     const vn = `n9_kw_${key}`;
     if (V[vn]) unlocked++;
   }
-  const total = V.n9_escaped ? keys.length : &quot;?&quot;;
+  const reveal = V.n9_escaped || unlocked === keys.length;
+  const total = reveal ? keys.length : &quot;?&quot;;
   mkp += `(${unlocked} of ${total})`;
   mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
   return mkp;
@@ -25082,12 +25095,10 @@ Nero.showKeyword = key =&gt; {
   let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
   mkp += `&lt;div class=ui-title&gt;${kw.title}&lt;/div&gt;\n`;
   mkp += `&lt;hr&gt;\n`;
-  
   for (let i = 0; i &lt; kw.passages.length; i++) {
     if (i !== 0) mkp += &quot;&lt;hr&gt;\n&quot;;
     mkp += `&lt;&lt;arc-include ${kw.passages[i]}&gt;&gt;\n`;
   }
-
   mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
   return mkp;
 }
@@ -25148,7 +25159,7 @@ $(document).on(&quot;:passageend&quot;, () =&gt; {
 });
 
 &lt;&lt;/script&gt;&gt;\
-</tw-passagedata><tw-passagedata pid="596" name="n2b/F Struggle Normal 2" tags="" position="5425,6350" size="100,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="594" name="n2b/F Struggle Normal 2" tags="" position="5425,6350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;cv-ignore t_afterAction&gt;&gt;
@@ -25230,7 +25241,7 @@ to be &lt;em&gt;bound&lt;/em&gt;. His cock drips and shivers in synchrony with
 $t_afterAction
 
 &lt;&lt;set $n2_struggled = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="597" name="n1s/F Tap 4" tags="" position="6825,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="595" name="n1s/F Tap 4" tags="" position="6825,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
@@ -25287,7 +25298,7 @@ But this is definitely an improvement over being simply
 $t_afterAction
 
 &lt;&lt;set $n1_magicPhase = MP_wantDevice&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="598" name="n9a/F Tamed Mild 2" tags="" position="3325,6325" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="596" name="n9a/F Tamed Mild 2" tags="" position="3300,6300" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 Ivex sketches arcs up and down the shaft of the cock,
 draws spirals around the head of the cock,
@@ -25298,11 +25309,10 @@ Even the occasional sharp line traced by the panther&#39;s claw
 just makes the wolf&#39;s cock eager for more.
 
 ?P
-The panther&#39;s erect cock is longer than the wolf&#39;s muzzle,
-and Nero does not want the full length of it in his mouth,
+Nero does not want the full length of the panther inside his mouth,
 but he moves his head forward along the side of the cock,
-and stretches his tongue forward to touch the skin
-near the sheath at the base of the panther&#39;s cock,
+and he stretches his tongue out to touch the skin of the cock
+near the sheath at its base,
 hoping that Ivex will do the same and touch the wolf&#39;s bulging knot.
 The wolf tries his best to tease and suggest moves for the dance,
 tries to lead the dance, not follow.
@@ -25310,7 +25320,7 @@ tries to lead the dance, not follow.
 ?P
 Ivex laughs and says, &quot;Good doggy.&quot; He stops toying with the
 wolf&#39;s cock and relaxes into the rhythm of the slurps of
-the wolf&#39;s tongue on his cock.
+the tongue on his cock.
 
 ?P
 Nero continues to lick some earnest suggestions
@@ -25330,20 +25340,23 @@ The wolf soon learns the language of the panther&#39;s control,
 and he becomes a yoked animal, resigned to obedience,
 responding to wordless directions.
 
-?P
-[[Continue|n9a/F Tamed Mild 3]]
+&lt;&lt;arc-skip&gt;&gt;
+    ?P
+    [[Continue|n9a/F Tamed Mild 3]]
+&lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="599" name="n9a/F Tamed Mild 3" tags="" position="3325,6225" size="100,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="597" name="n9a/F Tamed Mild 3" tags="" position="3300,6200" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-Nero&#39;s own cock is still achingly erect, but its hunger is now distant
-from his attention. His world is now entirely dominated by the
+Nero&#39;s own cock is still achingly erect,
+but its hunger has become distant from his attention.
+His world is now entirely dominated by the
 panther&#39;s cock, its heat and scent,
 &lt;&lt;if $n1_barbs&gt;&gt;
     its spiny head and stiff shaft,
 &lt;&lt;else&gt;&gt;
     its slick head and stiff shaft,
 &lt;&lt;/if&gt;&gt;
-all its twitches and all the purrs that the panther makes
+with all its twitches and all the sounds from the panther
 in response to the motions of the wolf&#39;s tongue.
 Nero intently studies the panther&#39;s mood as best he can from
 his inverted position,
@@ -25352,12 +25365,12 @@ The wolf tries making slight noises, repeating the ones
 that Ivex seems to enjoy.
 
 ?P
-&quot;You are quite a talented student,&quot; says the panther.
+&quot;You are quite the talented student,&quot; says the panther.
 &quot;Or perhaps you&#39;ve done this many times before?&quot;
 
 ?P
 He laughs and takes a step back. Nero relaxes his tongue,
-but worries what the panther is going to do next.
+but worries about what the panther is going to do next.
 
 ?P
 Ivex makes a gesture, and the wooden cross tilts away from him,
@@ -25372,9 +25385,9 @@ bite down on anything that I place close enough to these jaws.&quot;
 Nero shakes his head in denial.
 
 ?P
-Ivex smiles and pulls a green gem out from a pocket.
-He throws it at the wolf&#39;s crotch, where it sticks to the
-shaft of the wolf&#39;s throbbing red cock.
+Ivex smiles and pulls an orange gem out from a pocket.
+He leans forward and places the gem against the shaft
+of the wolf&#39;s throbbing red cock.
 
 ?P
 The result is fire, a feeling of fire that consumes his entire cock.
@@ -25386,29 +25399,33 @@ The fire recedes. The panther releases his grasp.
 Nero looks down toward
 his crotch, expecting to see a charred ruin, but the ache at
 his groin is still just his throbbing red cock, unharmed,
-with the green gem glowing and still attached.
+with the orange gem glowing and still attached to it.
 
 ?P
 &quot;You&#39;re quite the little liar.&quot; Ivex shakes his head
 with a feral grin.
-&quot;Do you really expect me to believe that you&#39;ve never considered
+&quot;Do you really expect me to believe that you&#39;ve &lt;em&gt;never&lt;/em&gt; considered
 sinking your teeth into such warm-blooded meat?
-Maybe you really should have been a rabbit instead of a wolf.&quot;
+Maybe you actually are a rabbit,
+mistakenly given the body of a wolf.&quot;
 
 ?P
 The panther snorts.
 &quot;And while I do appreciate those little whimpers you make as you
-lick my cock, they&#39;re clearly another lie.
-I will &lt;em&gt;eventually&lt;/em&gt; find the
+lick my cock, they&#39;re clearly another lie,
+another pretense intended to manipulate me.
+I suppose I will &lt;em&gt;eventually&lt;/em&gt; find the
 truth of what you are beneath all your clever distractions,
-and &lt;em&gt;some day&lt;/em&gt; you will learn how to make pleasing sounds
+and maybe &lt;em&gt;some day&lt;/em&gt; you will learn how to make pleasing sounds
 that are earnest and spontaneous.
 But right now, satisfying me will be... a simple task.&quot;
 
-?P
-[[Continue|n9a/D Tamed Mild 4]]
+&lt;&lt;arc-skip&gt;&gt;
+    ?P
+    [[Continue|n9a/F Tamed Mild 4]]
+&lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-</tw-passagedata><tw-passagedata pid="600" name="n1s/F Cast Alone 2" tags="" position="6125,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="598" name="n1s/F Cast Alone 2" tags="" position="6125,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n1_candleLit true&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
@@ -25465,44 +25482,253 @@ But right now, satisfying me will be... a simple task.&quot;
 &lt;&lt;set $n1_castOil = true&gt;&gt;
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;set $t_returnAntiMagic = State.passage&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="601" name="n9a/D Tamed Mild 4" tags="done" position="3325,6125" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;cv-ignore n9_tamedMildBarbs n9_tamedMildSmooth&gt;&gt; &lt;!-- trivial difference --&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="599" name="n9a/F Tamed Mild 4" tags="" position="3300,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 The panther uses a finger to nudge the wolf&#39;s mouth open,
-and Nero tries to prepare himself
-for what he suspected, what he &lt;em&gt;knows&lt;/em&gt; will come next.
+and Nero braces himself for what he suspected,
+what he &lt;em&gt;knows&lt;/em&gt; will come next.
 
 ?P
 Ivex presses his cock into the wolf&#39;s mouth slowly.
 Nero tries to make his mouth a tunnel,
 tries to grip the shaft between the inner surface of his mouth
-and his tongue, to try to satisfy the panther without
-taking the full length of the cock in his face.
+and his tongue, striving to satisfy the panther without
+taking the full length of the cock inside his face.
 The wolf guards his throat with the base of his tongue,
 and the panther seems happy enough to rub his cock within
 the limited chamber that the wolf allows.
 
 ?P
 &lt;&lt;if $n1_barbs&gt;&gt;
-  The barbed head of thexxx barbed head
+  The barbed head of Ivex&#39;s cock brushes firmly against the
+  wolf&#39;s tongue and the sensitive skin at the roof of his mouth.
+  It&#39;s a light rasp that almost tickles when the panther
+  presses forward, and a harsher scratch when the panther
+  pulls back. Nero tries to encourage his mouth to produce
+  more saliva to mix with the pre-cum, so that the liquid
+  can coat the spines and make their glide less prickly.
+  
 &lt;&lt;else&gt;&gt;
-  xxx smooth head
+  The smooth head of Ivex&#39;s cock presses its pre-cum
+  firmly into the wolf&#39;s tongue and mixes with the wolf&#39;s saliva,
+  coating the whole inner surface of the mouth
+  with a slickness that allows the panther&#39;s cock to
+  glide smoothly back and forth,
+  with a rhythm that&#39;s almost a tickle.
+  
 &lt;&lt;/if&gt;&gt;
-, clamp
-
-XXX 
-
-transition to mouth-fucking.
-thrusting, hold, encourage more tongue.
-thrust more.
-grasping head, ears, pumping. rasping mouth of barbs.
-trouble breathing.
 
 ?P
-ivex cums, reaction to cum.
+The panther grips the sides of the wolf&#39;s head and continues
+a slow, steady thrust, in and out. Soon, the motion becomes stronger,
+more urgent. The panther&#39;s swinging balls become a distracting
+and unpleasant sight,
+so Nero closes his eyes as he struggles to hold his
+mouth and tongue in a position that the panther can use to
+rub and satisfy his cock.
 
 ?P
-calls nero a good doggy, fetches collar with taming gem, puts it on.
+The motion of the cock becomes a rapid
+&lt;&lt;= $n1_barbs ? &quot;rasping&quot; : &quot;jabbing&quot;&gt;&gt;
+of the wolf&#39;s mouth, as deep as Nero&#39;s tongue will allow,
+and the wolf hopes that Ivex is now close to cumming.
+The panther&#39;s purring becomes a growl,
+and it seems like his insistent cock is almost ready to shoot.
+But then Ivex stops at the end of a thrust, without shooting.
+
+?P
+Ivex taps the underside of the wolf&#39;s jaw and says, &quot;Open.&quot;
+
+?P
+Nero hesitates a moment, but he obeys before the hesitation
+can be interpreted as a resistance that needs to be punished.
+He opens his jaw widely and relaxes his tongue to allow
+the panther to slide his cock all the way in,
+to rest its
+&lt;&lt;= $n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;&gt;&gt;
+head against the entrance of Nero&#39;s throat.
+
+?P
+[[Continue|n9a/F Tamed Mild 5]]
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="600" name="Init 5c Nero Ending" tags="inclusion" position="3250,1975" size="100,100">&lt;&lt;script&gt;&gt;
+
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+
+Nero.endings = {
+  tamed_harsh: {
+    title: &quot;Bad Ending: Tamed (Harsh)&quot;,
+    passages: [
+    	&quot;[[n9a/D Tamed Harsh]]&quot;,
+    ]
+  },
+  tamed_mild: {
+    title: &quot;Bad Ending: Tamed (Mild)&quot;,
+    passages: [
+        &quot;[[n9a/F Tamed]]&quot;,
+        &quot;[[n9a/F Tamed Mild 1]]&quot;,
+        &quot;[[n9a/F Tamed Mild 2]]&quot;,
+        &quot;[[n9a/F Tamed Mild 3]]&quot;,
+        &quot;[[n9a/F Tamed Mild 4]]&quot;,
+        &quot;[[n9a/F Tamed Mild 5]]&quot;,
+    ]
+  }
+};
+
+Nero.showEnding = info =&gt; {
+  const [name, barbOption, variant] = info;
+  const key = name + (variant == null ? &quot;&quot; : `_${variant}`);
+  const barbs = barbOption === &quot;barbs&quot;;
+  const barbsText = barbs ? &quot;(Barbs)&quot; : &quot;(Smooth)&quot;;
+
+  const end = Nero.endings[key];
+  if (end == null) return `Unknown ending ${key}`;
+
+  let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
+  mkp += `&lt;div class=ui-title&gt;${end.title} ${barbsText}&lt;/div&gt;\n`;
+  mkp += `&lt;hr&gt;\n`;
+  for (let i = 0; i &lt; end.passages.length; i++) {
+    if (i !== 0) mkp += &quot;&lt;hr&gt;\n&quot;;
+    mkp += `&lt;&lt;arc-include ${end.passages[i]} &quot;$n1_barbs = ${barbs}&quot;&gt;&gt;\n`;
+  }
+  mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
+  return mkp;
+};
+
+&lt;&lt;/script&gt;&gt;
+</tw-passagedata><tw-passagedata pid="601" name="n9a/F Tamed Mild 5" tags="" position="3200,6400" size="100,100">&lt;&lt;nobr&gt;&gt;
+
+Ivex pushes the wolf&#39;s muzzle to close and grip the full length
+of his cock. Not thrusting, not yet. Just holding himself still
+at an uncomfortable depth, and stroking the fur on the side of
+the muzzle as the wolf struggles to adapt
+to the size of the intrusion.
+?P
+Nero&#39;s nose is pressed into the panther&#39;s balls,
+and the musk is difficult to breathe.
+The wolf feels himself almost sneezing from the fur invading
+his nostrils,
+almost gagging from the
+&lt;&lt;= $n1_barbs ? &quot;spiny&quot; : &quot;thick&quot;&gt;&gt;
+cock head pressed into his throat,
+but he fights those reflexes and forces himself to remain
+a perfect sleeve for the sadistic panther&#39;s cock.
+
+?P
+The wolf does not know how much longer he can hold still with the
+cock irritating his throat. He flutters his tongue against the
+cock&#39;s shaft, to try to encourage the panther to &lt;em&gt;move&lt;/em&gt;
+and start a rhythm that will give Nero space to recover.
+
+?P
+The panther does not move. Nero makes his tongue massage the
+cock more strongly, more urgently.
+He starts to whine, but when he hears his own noise,
+he remembers what the panther said, remembers Ivex&#39;s contempt
+of the wolf&#39;s attempts to influence him.
+Nero stops his tongue,
+stops his sounds, and he relaxes his mouth and mind into surrender.
+
+?P
+Ivex laughs. &quot;You &lt;em&gt;are&lt;/em&gt; a quick learner. I will have to
+see what I can do with that. But first...&quot;
+
+?P
+[[Continue|n9a/F Tamed Mild 6]]
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="602" name="n9a/F Tamed Mild 6" tags="" position="3200,6300" size="100,100">&lt;&lt;nobr&gt;&gt;
+
+The panther&#39;s fucking is fast and brutal.
+One hand grips one of the wolf&#39;s ears firmly.
+The other hand directs the wolf&#39;s muzzle
+to stay aligned with the panther&#39;s thrusts.
+&lt;&lt;if $n1_barbs&gt;&gt;
+    The spiny head of the panther&#39;s cock ravages
+&lt;&lt;else&gt;&gt;
+    The battering ram of the panther&#39;s cock bruises
+&lt;&lt;/if&gt;&gt;
+the walls of the wolf&#39;s throat, withdraws and then enters again,
+with no time to recover between each pounding assault.
+?P
+Nero thrashes his limbs
+in the leather bonds, bashes his fists into the wooden cross,
+to try to keep his tortured head motionless
+for the savage pleasure of the panther&#39;s cock.
+The wolf strives to make his muzzle a perfect hole,
+because he suspects,
+he &lt;em&gt;knows&lt;/em&gt;, that if he cannot
+satisfy the panther in this moment,
+the punishments that come will be worse than what he&#39;s
+experiencing now.
+Nero&#39;s entire body becomes a writhing, gasping sacrifice
+on Ivex&#39;s wooden altar of lust.
+?P
+And then, Ivex &lt;em&gt;is&lt;/em&gt; satisfied by the wolf&#39;s surrender.
+His final, terrible thrust shoots cum deep inside the wolf&#39;s throat.
+Nero does not taste it, but he feels it.
+The unfamiliar texture of it sticks
+to the sides of his throat as he tries
+to swallow it all down.
+?P
+And then, he &lt;em&gt;does&lt;/em&gt; taste it, as Ivex pulls back
+and drags the ?barbed head of his cock along the wolf&#39;s tongue.
+The smear of Ivex&#39;s cum is... not the worst thing that
+the wolf has ever felt with his tongue, but he resolves
+to never taste it again.
+
+?P
+Ivex seems quite pleased for the moment.
+His cock is already becoming limp.
+He&#39;s unlikely to be able to fuck
+the wolf again without time to recover.
+
+?P
+There will be plenty more chances now to make new plans for escape.
+
+?P
+[[Continue|n9a/F Tamed Mild 7]]
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="603" name="n9a/F Tamed Mild 7" tags="" position="3200,6200" size="100,100">&lt;&lt;nobr&gt;&gt;
+
+Ivex wipes his softening cock against the fur of the wolf&#39;s face.
+
+?P
+&quot;What a good dog you are,&quot; says the panther. &quot;I will admit,
+I tend to prefer the wolves that try to fight me to the end,
+but none of the other cowards were nearly as skilled and clever
+as you&#39;ve proven yourself to be.&quot;
+
+?P
+The panther continues to stroke the wolf&#39;s head with a motion
+that might be pleasant for a lover,
+if it weren&#39;t being done with the
+&lt;&lt;= $n1_barbs ? &quot;barbed&quot; : &quot;glistening&quot;&gt;&gt; tip of the panther&#39;s
+reeking cock.
+
+?P
+&quot;I&#39;m quite eager, &lt;em&gt;fervid&lt;/em&gt; to know what else you will be
+able to do under my direction. But I have no illusions about
+your devotion to my cock.&quot;
+
+?P
+Ivex chuckles and makes a gesture.
+Something new floats out from another cabinet and lands in his paw.
+It&#39;s a leather collar like the ones people put on pets,
+with a green gem embedded in the center of it.
+
+?P
+The panther touches the gem, and it starts to glow.
+He puts the collar around the bound wolf&#39;s neck,
+and buckles it shut.
+A moment later, the wolf feels a presence stretch out of
+the gem and invade his spirit.
+
+?P
+[[Continue|n9a/D Tamed Mild 8]]
+&lt;&lt;/nobr&gt;&gt;
+</tw-passagedata><tw-passagedata pid="604" name="n9a/D Tamed Mild 8" tags="" position="3200,6100" size="100,100">&lt;&lt;nobr&gt;&gt;
+
+XXX fight!
 
 ?P
 taming is a repression fight. nero is kinda wrong about it. ivex&#39;s automated repression is too rapid to be a raw power fight. the taming gem is aimed at removing anything related to resistance, which is a lot.
@@ -25519,9 +25745,8 @@ ivex laughs, some light abuse, and nero keeps begging.
 sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
 
 ?P
-&lt;&lt;meta-ending bad
-    n9_tamedMildSmooth &quot;Bad Ending: Tamed (Smooth, Mild)&quot;
-    n9_tamedMildBarbs &quot;Bad Ending: Tamed (Barbs, Mild)&quot;&gt;&gt;
+&lt;&lt;meta-ending bad n9_tamedMild &quot;Bad Ending: Tamed (Mild)&quot;&gt;&gt;
+&lt;&lt;arc-set-barbs n8_tamedBarbs&gt;&gt;
 
 ?P
 &lt;ul class=&quot;actions&quot;&gt;
