@@ -645,10 +645,10 @@ const setTemporary = temp => {
 };
 
 /**
- * Render passsage in a scratch state with t_isArchive true,
- * and emit it to dest.
+ * Create a scratch state with t_isArchive === true,
+ * evaluate script, then render passage to dest.
  */
-MT.arcInclude = (passage, dest) => {
+MT.arcInclude = (dest, passage, script) => {
   VT.ignore(() => {
     const text = Story.get(passage).text;
     const saveVars = State.active.variables;
@@ -656,6 +656,9 @@ MT.arcInclude = (passage, dest) => {
     try {
       State.active.variables = { t_isArchive: true };
       State.clearTemporary();
+      if (script != null) {
+        $(dest).wiki(`<<run ${script}>>`);
+      }
       $(dest).wiki(text);
     } finally {
       State.active.variables = saveVars;
@@ -693,18 +696,15 @@ Macro.add("arc-skip", {
 });
 
 /**
- * <<arc-include twineLink>>
- * Render twineLink in a scratch state with t_isArchive true,
- * and emit it.
+ * <<arc-include passage [script]>>
+ * Create a scratch state with t_isArchive true,
+ * evaluate the script, and render passage.
  */
 Macro.add("arc-include", {
   handler: function() {
-    const [link] = this.args;
-    if (link.isLink) {
-      MT.arcInclude(link.link, this.output);
-    } else {
-      MT.arcInclude(String(link), this.output);
-    }
+    const [link, script] = this.args;
+    const passage = link.isLink ? link.link : String(link);
+    MT.arcInclude(this.output, passage, script);
   }
 });
 
@@ -838,6 +838,20 @@ Macro.add("arc-barbs", {
       `  <<arc-option barbs "Barbs" true>>` +
       `<</arc-variant>>`
     );
+  }
+});
+
+/**
+ * <<arc-set-barbs varName>>
+ * At an ending, set the default for smooth/barbs choice.
+ */
+Macro.add("arc-set-barbs", {
+  handler: function() {
+    const [vname] = this.args;
+    const V = State.variables;
+    if (V[vname] == null) {
+      V[vname] = V["n1_barbs"] ? "barbs" : "smooth";
+    }
   }
 });
 
@@ -2699,10 +2713,10 @@ Template.add("P", "<br><br>");
 Template.add("cssArchive", `<<nobr>>
   <style>
     body, .var-info, #return-head, #return-tail {
-      background-color: #123;
+      background-color: #112;
     }
     body {
-      color: #eee;
+      color: #ddc;
     }
   </style>
 <</nobr>>`);
@@ -3638,8 +3652,8 @@ V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
 <<include [[Init 5b Nero Patience]]>>
 <<include [[Init 5b Nero Templates]]>>
 
-<<include [[Init 5c Nero Endings]]>>
-<<include [[Init 5c Nero Keywords]]>>
+<<include [[Init 5c Nero Ending]]>>
+<<include [[Init 5c Nero Keyword]]>>
 <<include [[Init 5c Nero Password]]>>
 
 
@@ -12634,35 +12648,46 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
   
   T.tamed = V.n9_tamedHarsh || V.n9_tamedMild;
   T.caged = V.n9_cagedHarsh || V.n9_cagedMild;
-  T.escaped = false;
 <</script>>
 
-<<arc-ending _tamed [[Bad Ending: Tamed|n0/F Nero Ending]]>>
+<<arc-ending _tamed
+    [[Bad Ending: Tamed|n0/F Nero Ending]]
+    ""
+    "$t_ending = ['tamed', $n8_tamedBarbs, $n8_tamed]"
+>>
     Struggling is hopeless...
 <<arc-variants>>
-    <<arc-barbs n8_tamedBarbs>>
     <<arc-variant "Variant:" n8_tamed>>
         <<arc-option mild "Mild" $n9_tamedMild>>
             Ivex enjoys cooperative victims...
         <<arc-option harsh "Harsh" $n9_tamedHarsh>>
             Ivex enjoys reluctant victims...
     <</arc-variant>>
+    <<arc-barbs n8_tamedBarbs>>
 <</arc-ending>>
 
-<<arc-ending _caged [[Bad Ending: Caged|n0/F Nero Ending]]>>
+<<arc-ending _caged
+    [[Bad Ending: Caged|n0/F Nero Ending]]
+    ""
+    "$t_ending = ['caged', $n8_cagedBarbs, $n8_caged]"
+>>
     Self-control is overrated...
 <<arc-variants>>
-    <<arc-barbs n8_cagedBarbs>>
     <<arc-variant "Variant:" n8_caged>>
         <<arc-option mild "Mild" $n9_cagedMild>>
             Sometimes all that's needed is a paw...
         <<arc-option harsh "Harsh" $n9_cagedHarsh>>
             Sometimes a paw is not enough...
     <</arc-variant>>
+    <<arc-barbs n8_cagedBarbs>>
 <</arc-ending>>
 
-<<arc-ending _broken [[Challenge Ending: Broken|n0/F Nero Ending]]>>
-    <<if _tamed && _caged && _escaped>>
+<<arc-ending _broken
+    [[Challenge Ending: Broken|n0/F Nero Ending]]
+    ""
+    "$t_ending = ['broken', $n8_brokenBarbs]"
+>>
+    <<if _tamed && _caged && $n9_escaped>>
         Remember ?blank and talk to him...
     <<else>>
         Under construction.
@@ -15195,7 +15220,7 @@ of a hated ex, which then alters the mood of everything connected
 to those memories.
 ?P
 The primary defense against substitution is to carefully check
-one's spirit and memories for inconsistencies. Has the pet thrown dishes
+one's memories and spirit for inconsistencies. Has the pet thrown dishes
 in anger on other days? Did the ex wear nothing but a collar on other nights?
 Once the substitution is identified, it's a simple matter to reverse it.
 ?P
@@ -15205,7 +15230,7 @@ a very subtle swap will have very little effect.
 So the task is to find an exchange that is significant
 enough to create the intended effect,
 but does not need excessive rearrangements to
-prevent inconsistencies from being noticed.
+prevent the inconsistencies from being noticed.
 ?P
 The <em>strength</em> of substitution, the reason it's commissioned
 at steep prices,
@@ -15216,13 +15241,14 @@ The altered mind will seem to have always been that way.
 But stable substitution is not a fast process. It requires days
 or even weeks of observation to find a suitable rearrangement.
 Mage fights do not have time for that.
-So substitution battles are messy affairs whose
-dominant theme is confusion, and the victor can easily undo
-all the rearrangements after sufficient rest.
+So battles involving substitution are messy affairs whose
+dominant theme is confusion, and the victor or an ally can easily undo
+all the rearrangements after a sufficient rest.
 ?P
 There are sometimes rumors of an <em>advanced</em>
-form of substitution that can rapidly and automatically repair any
-inconsistencies. Many experts have deeply investigated this claim
+form of substitution that can rapidly and automatically repair
+inconsistencies whenever they get noticed.
+Many experts have deeply investigated this claim
 from many angles,
 and the verdict is always the same: no such magic exists,
 and it's impossible for it to ever exist.
@@ -15322,7 +15348,7 @@ Well, it fails more often than it succeeds.
 The problem with the process is that
 the mind naturally fills the hole of a missing memory
 with a confabulation that changes the shape of the memories adjacent.
-So when the original memory is restored,
+So if too much time passes before the original memory is restored,
 it no longer fits exactly in the place it was removed.
 Parts of the confabulation might not get erased,
 and adjacent memories might get bruised or shattered by the intrusion.
@@ -15404,7 +15430,8 @@ The imp is instructed not on what is restricted, but on what is permitted,
 and it diligently adds shackles to every intention that is not explicitly allowed.
 ?P
 Simple imps make victims into mindless thralls.
-The best imps from skilled inhibitionists will create a performance that
+But sophisticated imps
+from skilled inhibitionists will create a performance that
 seems quite an ordinary person. Only mages are able to see the imp
 that's continually frustrating the desires of the actual person
 that the performance pretends to be.
@@ -19721,13 +19748,13 @@ in this room or within the cross itself.
 
 ?P
 There's really only one spell suitable for this occasion.
-It's a favorite of lapine mages,
+It's a favorite of rabbit mages,
 and well-known to thieves with a bit of magic.
 It's the pragmatic and reliable [[Oil of Dragons|n1s/F Oil Info]].
 
 ?P
 The wolf twitches his ears and speaks the arcane syllables
-that every rabbit mage knows...
+that every lapine mage knows...
 
 ?P
 [[Continue|n1s/F Cast Alone 2]]
@@ -19749,7 +19776,8 @@ will learn it early in their education.
 Casting it on a person (or on oneself) makes the subject's skin and fur
 (and feathers if any) nearly frictionless,
 making the subject difficult to hold with snares or ropes,
-or anything that uses simple constriction to restrain a body part in some way.
+or anything else that uses simple constriction
+to restrain a body part in some way.
 It's one of the best spells for escape, for those that need spells of escape,
 despite the mild inconvenience of it.
 ?P
@@ -25307,7 +25335,6 @@ Candle's Influence:
     ?P
     His tongue laps with thirst.
     His hips thrust with urgency.
-    His tail lashes rhythmically.
     His cock flaps wildly,
     and its shaft slaps against his belly to smear his fur with
     pre-cum, but that glancing blow is not enough.
@@ -25657,7 +25684,8 @@ help struggling anyway, to feel that embrace more deeply,
 and to prove to the cross's wooden voice that the wolf has strength
 that it can use, that he <em>can</em> be more than just
 a helpless victim of unlucky fates. His cock quivers and weeps
-from desire and a longing for an embrace, or even the slightest touch.
+from desire and a longing for an embrace, or even the slightest
+pat on its head.
 
 ?P
 $t_afterAction
@@ -25693,7 +25721,7 @@ to achieve what he knows he <em>can</em>.
 Someone asked him a long time ago if he wanted to be
 a warrior or a mage, and they had laughed with scorn when
 the young wolf gave the wrong answer.
-But that someone is dead now,
+But that someone is dead now.
 Nero emerged victorious then, and he will be victorious again.
 ?P
 His cock twitches with eagerness to celebrate his imminent victory
@@ -26507,8 +26535,10 @@ lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 
 :: n9a/F Tamed [ending] {"position":"4100,6550","size":"100,100"}
 <<nobr>>
-<meta-ending-bad>Bad Ending: Tamed</meta-ending-bad>
-?P
+<<arc-skip>>
+    <meta-ending-bad>Bad Ending: Tamed</meta-ending-bad>
+    ?P
+<</arc-skip>>
 
 When Ivex returns through a door behind Nero,
 the red lust candle flickers briefly from the draft,
@@ -26567,15 +26597,17 @@ It's a repellent idea, even in this unbearably horny state.
 But the paw firmly grasping his balls gives a few quick squeezes,
 as a reminder of what can happen if the wolf refuses.
 
-?P
-<ul class="actions">
-    <li>[[He licks reluctantly...|n9a/F Tamed Mild 1]]</li>
-    <li>[[He clamps his jaw shut...|n9a/D Tamed Harsh]]</li>
-</ul>
+<<arc-skip>>
+    ?P
+    <ul class="actions">
+        <li>[[He licks reluctantly...|n9a/F Tamed Mild 1]]</li>
+        <li>[[He clamps his jaw shut...|n9a/D Tamed Harsh]]</li>
+    </ul>
+<</arc-skip>>
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 1 {"position":"3325,6425","size":"100,100"}
+:: n9a/F Tamed Mild 1 {"position":"3300,6400","size":"100,100"}
 <<nobr>>
 
 He licks reluctantly, hesitantly.
@@ -26597,8 +26629,8 @@ will soon allow another attempt at escape.
     glides lightly across the saliva-slick surface of
     the wolf's curling tongue.
 <</if>>
-The scent of pre-cum and the taste of the panther have flavors
-unlike any female that Nero has bedded,
+The scent of pre-cum and the taste of the panther's cock
+have flavors unlike any female that Nero has bedded,
 different even from the musk of his own arousal that's
 leaking from his own throbbing red cock.
 
@@ -26606,7 +26638,7 @@ leaking from his own throbbing red cock.
 Ivex's musk is... not the worst thing the wolf has ever
 felt with his tongue,
 but it's overwhelming,
-and entirely too much of the panther's arrogant presence.
+and entirely too much of the panther's brutish presence.
 Nero continues to give small, tentative licks,
 with a small hope that an inadequate performance will
 drive the panther to impatiently grab his own cock and
@@ -26617,7 +26649,7 @@ But Ivex growls and squeezes the wolf's balls until the
 upside-down wolf gasps.
 The panther presses the tip of one finger into the side of
 Nero's sensitive cock, with the claw just
-barely touching the skin.
+barely touching the skin of the cock.
 "This is not the time to play the shy virgin.
 You are lapping eagerly at a delicious treat, like so."
 He demonstrates a motion by rubbing his finger along the head
@@ -26646,8 +26678,10 @@ on his tongue has become too much.
 But a scratch of the panther's claw against the wolf's cock
 makes him rapidly extend his tongue and resume licking again.
 
-?P
-[[Continue|n9a/F Tamed Mild 2]]
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/F Tamed Mild 2]]
+<</arc-skip>>
 <</nobr>>
 
 
@@ -26675,6 +26709,7 @@ sketch ongoing life as a dumb abused dog craving correction, tease bits of thing
 
 ?P
 <<meta-ending bad n9_tamedHarsh "Bad Ending: Tamed (Harsh)">>
+<<arc-set-barbs n8_tamedBarbs>>
 
 ?P
 <ul class="actions">
@@ -26706,6 +26741,7 @@ nero is ashamed, doesn't want to stay, runs back before ivex gets mad.
 gives up, mental suicide with dumb gem.
 
 <<meta-ending bad n9_broken "Challenge Ending: Broken">>
+<<arc-set-barbs n8_brokenBarbs>>
 
 <ul class="actions">
     <<if $n2_tooClever>>
@@ -26731,6 +26767,7 @@ applies portal-box chastity, keeps Nero caged until he's desperate and submits,
 important: portal-box is small, strong feeling of confined
 
 <<meta-ending bad n9_cagedMild "Bad Ending: Caged (Mild)">>
+<<arc-set-barbs n8_cagedBarbs>>
 
 <ul class="actions">
     <<if $n2_tooClever>>
@@ -26754,6 +26791,7 @@ Ivex returns, is amused that nero almost escapes, is amused that he's struggling
 applies portal-box chastity in overstim mode. keeps nero in a cage until he surrenders,
 
 <<meta-ending bad n9_cagedHarsh "Bad Ending: Caged (Harsh)">>
+<<arc-set-barbs n8_cagedBarbs>>
 
 <ul class="actions">
     <<if $n2_tooClever>>
@@ -27150,7 +27188,7 @@ function initRandom() {
 <</nobr>>
 
 
-:: Init 5c Nero Keywords [inclusion] {"position":"3425,1275","size":"100,100"}
+:: Init 5c Nero Keyword [inclusion] {"position":"3425,1275","size":"100,100"}
 <<script>>
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
 
@@ -27322,7 +27360,8 @@ Nero.kwCount = () => {
     const vn = `n9_kw_${key}`;
     if (V[vn]) unlocked++;
   }
-  const total = V.n9_escaped ? keys.length : "?";
+  const reveal = V.n9_escaped || unlocked === keys.length;
+  const total = reveal ? keys.length : "?";
   mkp += `(${unlocked} of ${total})`;
   mkp += "<</nobr>>";
   return mkp;
@@ -27572,7 +27611,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 2 {"position":"3325,6325","size":"100,100"}
+:: n9a/F Tamed Mild 2 {"position":"3300,6300","size":"100,100"}
 <<nobr>>
 
 Ivex sketches arcs up and down the shaft of the cock,
@@ -27584,11 +27623,10 @@ Even the occasional sharp line traced by the panther's claw
 just makes the wolf's cock eager for more.
 
 ?P
-The panther's erect cock is longer than the wolf's muzzle,
-and Nero does not want the full length of it in his mouth,
+Nero does not want the full length of the panther inside his mouth,
 but he moves his head forward along the side of the cock,
-and stretches his tongue forward to touch the skin
-near the sheath at the base of the panther's cock,
+and he stretches his tongue out to touch the skin of the cock
+near the sheath at its base,
 hoping that Ivex will do the same and touch the wolf's bulging knot.
 The wolf tries his best to tease and suggest moves for the dance,
 tries to lead the dance, not follow.
@@ -27596,7 +27634,7 @@ tries to lead the dance, not follow.
 ?P
 Ivex laughs and says, "Good doggy." He stops toying with the
 wolf's cock and relaxes into the rhythm of the slurps of
-the wolf's tongue on his cock.
+the tongue on his cock.
 
 ?P
 Nero continues to lick some earnest suggestions
@@ -27616,23 +27654,26 @@ The wolf soon learns the language of the panther's control,
 and he becomes a yoked animal, resigned to obedience,
 responding to wordless directions.
 
-?P
-[[Continue|n9a/F Tamed Mild 3]]
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/F Tamed Mild 3]]
+<</arc-skip>>
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 3 {"position":"3325,6225","size":"100,100"}
+:: n9a/F Tamed Mild 3 {"position":"3300,6200","size":"100,100"}
 <<nobr>>
 
-Nero's own cock is still achingly erect, but its hunger is now distant
-from his attention. His world is now entirely dominated by the
+Nero's own cock is still achingly erect,
+but its hunger has become distant from his attention.
+His world is now entirely dominated by the
 panther's cock, its heat and scent,
 <<if $n1_barbs>>
     its spiny head and stiff shaft,
 <<else>>
     its slick head and stiff shaft,
 <</if>>
-all its twitches and all the purrs that the panther makes
+with all its twitches and all the sounds from the panther
 in response to the motions of the wolf's tongue.
 Nero intently studies the panther's mood as best he can from
 his inverted position,
@@ -27641,12 +27682,12 @@ The wolf tries making slight noises, repeating the ones
 that Ivex seems to enjoy.
 
 ?P
-"You are quite a talented student," says the panther.
+"You are quite the talented student," says the panther.
 "Or perhaps you've done this many times before?"
 
 ?P
 He laughs and takes a step back. Nero relaxes his tongue,
-but worries what the panther is going to do next.
+but worries about what the panther is going to do next.
 
 ?P
 Ivex makes a gesture, and the wooden cross tilts away from him,
@@ -27661,9 +27702,9 @@ bite down on anything that I place close enough to these jaws."
 Nero shakes his head in denial.
 
 ?P
-Ivex smiles and pulls a green gem out from a pocket.
-He throws it at the wolf's crotch, where it sticks to the
-shaft of the wolf's throbbing red cock.
+Ivex smiles and pulls an orange gem out from a pocket.
+He leans forward and places the gem against the shaft
+of the wolf's throbbing red cock.
 
 ?P
 The result is fire, a feeling of fire that consumes his entire cock.
@@ -27675,27 +27716,31 @@ The fire recedes. The panther releases his grasp.
 Nero looks down toward
 his crotch, expecting to see a charred ruin, but the ache at
 his groin is still just his throbbing red cock, unharmed,
-with the green gem glowing and still attached.
+with the orange gem glowing and still attached to it.
 
 ?P
 "You're quite the little liar." Ivex shakes his head
 with a feral grin.
-"Do you really expect me to believe that you've never considered
+"Do you really expect me to believe that you've <em>never</em> considered
 sinking your teeth into such warm-blooded meat?
-Maybe you really should have been a rabbit instead of a wolf."
+Maybe you actually are a rabbit,
+mistakenly given the body of a wolf."
 
 ?P
 The panther snorts.
 "And while I do appreciate those little whimpers you make as you
-lick my cock, they're clearly another lie.
-I will <em>eventually</em> find the
+lick my cock, they're clearly another lie,
+another pretense intended to manipulate me.
+I suppose I will <em>eventually</em> find the
 truth of what you are beneath all your clever distractions,
-and <em>some day</em> you will learn how to make pleasing sounds
+and maybe <em>some day</em> you will learn how to make pleasing sounds
 that are earnest and spontaneous.
 But right now, satisfying me will be... a simple task."
 
-?P
-[[Continue|n9a/D Tamed Mild 4]]
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/F Tamed Mild 4]]
+<</arc-skip>>
 <</nobr>>
 
 
@@ -27760,54 +27805,269 @@ But right now, satisfying me will be... a simple task."
 <</nobr>>
 
 
-:: n9a/D Tamed Mild 4 [done] {"position":"3325,6125","size":"100,100"}
+:: n9a/F Tamed Mild 4 {"position":"3300,6100","size":"100,100"}
 <<nobr>>
-<<cv-ignore n9_tamedMildBarbs n9_tamedMildSmooth>> <!-- trivial difference -->
 
 The panther uses a finger to nudge the wolf's mouth open,
-and Nero tries to prepare himself
-for what he suspected, what he <em>knows</em> will come next.
+and Nero braces himself for what he suspected,
+what he <em>knows</em> will come next.
 
 ?P
 Ivex presses his cock into the wolf's mouth slowly.
 Nero tries to make his mouth a tunnel,
 tries to grip the shaft between the inner surface of his mouth
-and his tongue, to try to satisfy the panther without
-taking the full length of the cock in his face.
+and his tongue, striving to satisfy the panther without
+taking the full length of the cock inside his face.
 The wolf guards his throat with the base of his tongue,
 and the panther seems happy enough to rub his cock within
 the limited chamber that the wolf allows.
 
 ?P
 <<if $n1_barbs>>
-  The barbed head of Ivex's cock brushes firmly at the
+  The barbed head of Ivex's cock brushes firmly against the
   wolf's tongue and the sensitive skin at the roof of his mouth.
   It's a light rasp that almost tickles when the panther
   presses forward, and a harsher scratch when the panther
   pulls back. Nero tries to encourage his mouth to produce
-  more saliva to mix with the pre-cum, to coat the spines and
-  make their glide less prickly.
+  more saliva to mix with the pre-cum, so that the liquid
+  can coat the spines and make their glide less prickly.
   
 <<else>>
-  The smooth head of Ivex's cock presses firmly into
-  the wolf's tongue to mix pre-cum with saliva,
+  The smooth head of Ivex's cock presses its pre-cum
+  firmly into the wolf's tongue and mixes with the wolf's saliva,
   coating the whole inner surface of the mouth
   with a slickness that allows the panther's cock to
-  glide smoothly in and out, in a rhythm that almost tickles.
+  glide smoothly back and forth,
+  with a rhythm that's almost a tickle.
   
 <</if>>
 
-
-hold, encourage more tongue.
-thrust more.
-grasping head, ears, pumping. rasping mouth of barbs.
-trouble breathing.
+?P
+The panther grips the sides of the wolf's head and continues
+a slow, steady thrust, in and out. Soon, the motion becomes stronger,
+more urgent. The panther's swinging balls become a distracting
+and unpleasant sight,
+so Nero closes his eyes as he struggles to hold his
+mouth and tongue in a position that the panther can use to
+rub and satisfy his cock.
 
 ?P
-ivex cums, reaction to cum.
+The motion of the cock becomes a rapid
+<<= $n1_barbs ? "rasping" : "jabbing">>
+of the wolf's mouth, as deep as Nero's tongue will allow,
+and the wolf hopes that Ivex is now close to cumming.
+The panther's purring becomes a growl,
+and it seems like his insistent cock is almost ready to shoot.
+But then Ivex stops at the end of a thrust, without shooting.
 
 ?P
-calls nero a good doggy, fetches collar with taming gem, puts it on.
+Ivex taps the underside of the wolf's jaw and says, "Open."
+
+?P
+Nero hesitates a moment, but he obeys before the hesitation
+can be interpreted as a resistance that needs to be punished.
+He opens his jaw widely and relaxes his tongue to allow
+the panther to slide his cock all the way in,
+to rest its
+<<= $n1_barbs ? "barbed" : "smooth">>
+head against the entrance of Nero's throat.
+
+?P
+[[Continue|n9a/F Tamed Mild 5]]
+<</nobr>>
+
+
+:: Init 5c Nero Ending [inclusion] {"position":"3250,1975","size":"100,100"}
+<<script>>
+
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+
+Nero.endings = {
+  tamed_harsh: {
+    title: "Bad Ending: Tamed (Harsh)",
+    passages: [
+    	"[[n9a/D Tamed Harsh]]",
+    ]
+  },
+  tamed_mild: {
+    title: "Bad Ending: Tamed (Mild)",
+    passages: [
+        "[[n9a/F Tamed]]",
+        "[[n9a/F Tamed Mild 1]]",
+        "[[n9a/F Tamed Mild 2]]",
+        "[[n9a/F Tamed Mild 3]]",
+        "[[n9a/F Tamed Mild 4]]",
+        "[[n9a/F Tamed Mild 5]]",
+    ]
+  }
+};
+
+Nero.showEnding = info => {
+  const [name, barbOption, variant] = info;
+  const key = name + (variant == null ? "" : `_${variant}`);
+  const barbs = barbOption === "barbs";
+  const barbsText = barbs ? "(Barbs)" : "(Smooth)";
+
+  const end = Nero.endings[key];
+  if (end == null) return `Unknown ending ${key}`;
+
+  let mkp = "<<nobr>>";
+  mkp += `<div class=ui-title>${end.title} ${barbsText}</div>\n`;
+  mkp += `<hr>\n`;
+  for (let i = 0; i < end.passages.length; i++) {
+    if (i !== 0) mkp += "<hr>\n";
+    mkp += `<<arc-include ${end.passages[i]} "$n1_barbs = ${barbs}">>\n`;
+  }
+  mkp += "<</nobr>>";
+  return mkp;
+};
+
+<</script>>
+
+
+:: n9a/F Tamed Mild 5 {"position":"3200,6400","size":"100,100"}
+<<nobr>>
+
+Ivex pushes the wolf's muzzle to close and grip the full length
+of his cock. Not thrusting, not yet. Just holding himself still
+at an uncomfortable depth, and stroking the fur on the side of
+the muzzle as the wolf struggles to adapt
+to the size of the intrusion.
+?P
+Nero's nose is pressed into the panther's balls,
+and the musk is difficult to breathe.
+The wolf feels himself almost sneezing from the fur invading
+his nostrils,
+almost gagging from the
+<<= $n1_barbs ? "spiny" : "thick">>
+cock head pressed into his throat,
+but he fights those reflexes and forces himself to remain
+a perfect sleeve for the sadistic panther's cock.
+
+?P
+The wolf does not know how much longer he can hold still with the
+cock irritating his throat. He flutters his tongue against the
+cock's shaft, to try to encourage the panther to <em>move</em>
+and start a rhythm that will give Nero space to recover.
+
+?P
+The panther does not move. Nero makes his tongue massage the
+cock more strongly, more urgently.
+He starts to whine, but when he hears his own noise,
+he remembers what the panther said, remembers Ivex's contempt
+of the wolf's attempts to influence him.
+Nero stops his tongue,
+stops his sounds, and he relaxes his mouth and mind into surrender.
+
+?P
+Ivex laughs. "You <em>are</em> a quick learner. I will have to
+see what I can do with that. But first..."
+
+?P
+[[Continue|n9a/F Tamed Mild 6]]
+<</nobr>>
+
+
+:: n9a/F Tamed Mild 6 {"position":"3200,6300","size":"100,100"}
+<<nobr>>
+
+The panther's fucking is fast and brutal.
+One hand grips one of the wolf's ears firmly.
+The other hand directs the wolf's muzzle
+to stay aligned with the panther's thrusts.
+<<if $n1_barbs>>
+    The spiny head of the panther's cock ravages
+<<else>>
+    The battering ram of the panther's cock bruises
+<</if>>
+the walls of the wolf's throat, withdraws and then enters again,
+with no time to recover between each pounding assault.
+?P
+Nero thrashes his limbs
+in the leather bonds, bashes his fists into the wooden cross,
+to try to keep his tortured head motionless
+for the savage pleasure of the panther's cock.
+The wolf strives to make his muzzle a perfect hole,
+because he suspects,
+he <em>knows</em>, that if he cannot
+satisfy the panther in this moment,
+the punishments that come will be worse than what he's
+experiencing now.
+Nero's entire body becomes a writhing, gasping sacrifice
+on Ivex's wooden altar of lust.
+?P
+And then, Ivex <em>is</em> satisfied by the wolf's surrender.
+His final, terrible thrust shoots cum deep inside the wolf's throat.
+Nero does not taste it, but he feels it.
+The unfamiliar texture of it sticks
+to the sides of his throat as he tries
+to swallow it all down.
+?P
+And then, he <em>does</em> taste it, as Ivex pulls back
+and drags the ?barbed head of his cock along the wolf's tongue.
+The smear of Ivex's cum is... not the worst thing that
+the wolf has ever felt with his tongue, but he resolves
+to never taste it again.
+
+?P
+Ivex seems quite pleased for the moment.
+His cock is already becoming limp.
+He's unlikely to be able to fuck
+the wolf again without time to recover.
+
+?P
+There will be plenty more chances now to make new plans for escape.
+
+?P
+[[Continue|n9a/F Tamed Mild 7]]
+<</nobr>>
+
+
+:: n9a/F Tamed Mild 7 {"position":"3200,6200","size":"100,100"}
+<<nobr>>
+
+Ivex wipes his softening cock against the fur of the wolf's face.
+
+?P
+"What a good dog you are," says the panther. "I will admit,
+I tend to prefer the wolves that try to fight me to the end,
+but none of the other cowards were nearly as skilled and clever
+as you've proven yourself to be."
+
+?P
+The panther continues to stroke the wolf's head with a motion
+that might be pleasant for a lover,
+if it weren't being done with the
+<<= $n1_barbs ? "barbed" : "glistening">> tip of the panther's
+reeking cock.
+
+?P
+"I'm quite eager, <em>fervid</em> to know what else you will be
+able to do under my direction. But I have no illusions about
+your devotion to my cock."
+
+?P
+Ivex chuckles and makes a gesture.
+Something new floats out from another cabinet and lands in his paw.
+It's a leather collar like the ones people put on pets,
+with a green gem embedded in the center of it.
+
+?P
+The panther touches the gem, and it starts to glow.
+He puts the collar around the bound wolf's neck,
+and buckles it shut.
+A moment later, the wolf feels a presence stretch out of
+the gem and invade his spirit.
+
+?P
+[[Continue|n9a/D Tamed Mild 8]]
+<</nobr>>
+
+
+:: n9a/D Tamed Mild 8 {"position":"3200,6100","size":"100,100"}
+<<nobr>>
+
+XXX fight!
 
 ?P
 taming is a repression fight. nero is kinda wrong about it. ivex's automated repression is too rapid to be a raw power fight. the taming gem is aimed at removing anything related to resistance, which is a lot.
@@ -27825,6 +28085,7 @@ sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 
 
 ?P
 <<meta-ending bad n9_tamedMild "Bad Ending: Tamed (Mild)">>
+<<arc-set-barbs n8_tamedBarbs>>
 
 ?P
 <ul class="actions">
@@ -27832,31 +28093,5 @@ sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
 <</nobr>>
-
-
-:: Init 5c Nero Endings {"position":"3250,1950","size":"100,100"}
-<<script>>
-
-const EM = window.ErrorMessage || (window.ErrorMessage = {});
-
-Nero.endings = {
-};
-
-Nero.showEnding = key => {
-  const end = Nero.endings[key];
-  if (end == null) return `Unknown ending ${key}`;
-
-  let mkp = "<<nobr>>";
-  mkp += `<div class=ui-title>${kw.title}</div>\n`;
-  mkp += `<hr>\n`;
-  for (let i = 0; i < kw.passages.length; i++) {
-    if (i !== 0) mkp += "<hr>\n";
-    mkp += `<<arc-include ${kw.passages[i]}>>\n`;
-  }
-  mkp += "<</nobr>>";
-  return mkp;
-};
-
-<</script>>
 
 
