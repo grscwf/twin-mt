@@ -614,13 +614,13 @@ VT.ignore = fn => {
   .arc-title {
     font-weight: bold;
   }
-  .arc-variant {
+  .arc-select {
     margin-left: 1.5rem;
   }
-  .arc-variant label {
+  .arc-select label {
     margin-left: 1em;
   }
-  .arc-variant input[type=radio] {
+  .arc-select input[type=radio] {
     margin-right: 0.4em;
   }
   .arc-hint {
@@ -709,28 +709,28 @@ Macro.add("arc-include", {
 });
 
 /**
- * <<arc-variant "Variant name:" choiceVarName>>
+ * <<arc-select choiceVar "Variant name:">>
  * <<arc-option radioValue "Option text" enabled>>
  *    hint text
- * <</arc-variant>>
+ * <</arc-select>>
  * 
  * Emit a radio selector for a variant, showing all the arc-options.
- * - choiceVarName remembers the player's last selection.
+ * - choiceVar remembers the player's last selection.
  * - radioValue is the value assigned to choiceVarName.
  * - enabled is a boolean.
  *   - true means the variant is selectable.
  *   - false means the variant is disabled, and the hint is shown.
  */
-Macro.add("arc-variant", {
+Macro.add("arc-select", {
   tags: ["arc-option"],
   handler: function() {
     if (this.args.length !== 2) {
-      throw new Error("expected arc-variant args: varname label");
+      throw new Error("expected arc-select args: varname label");
     }
-    const [ label, varname ] = this.args;
+    const [varname, label] = this.args;
     const V = State.variables;
 
-    const outer = $("<div class=arc-variant>").appendTo(this.output);
+    const outer = $("<div class=arc-select>").appendTo(this.output);
     outer.append(label);
 
     const choices = this.payload.slice(1);
@@ -824,19 +824,19 @@ Macro.add("arc-ending", {
 });
 
 /**
- * <<arc-barbs choiceVarName>>
+ * <<arc-barbs choiceVar>>
  * 
  * Emit a radio selector for smooth/barbs choice.
- * - choiceVarName remembers player's selection.
+ * - choiceVar remembers player's selection.
  */
 Macro.add("arc-barbs", {
   handler: function() {
-    const varname = this.args[0];
+    const [varname] = this.args;
     $(this.output).wiki(
-      `<<arc-variant "Variant:" ${varname}>>` +
+      `<<arc-select ${varname} "Variant:">>` +
       `  <<arc-option smooth "Smooth" true>>` +
       `  <<arc-option barbs "Barbs" true>>` +
-      `<</arc-variant>>`
+      `<</arc-select>>`
     );
   }
 });
@@ -2713,10 +2713,11 @@ Template.add("P", "<br><br>");
 Template.add("cssArchive", `<<nobr>>
   <style>
     body, .var-info, #return-head, #return-tail {
-      background-color: #112;
+      /* meh, doesn't look that great without rebalancing all the colors */
+      /* background-color: #113; */
     }
     body {
-      color: #ddc;
+      /* color: #ddc; */
     }
   </style>
 <</nobr>>`);
@@ -8976,19 +8977,23 @@ No matter how much he tries, $name cannot find a way out. He's trapped there gri
     Interrogation by the hands of the wizard is the first step
     that awaits those that cannot escape his contraptions...
 <<arc-variants>>
-    <<arc-variant "Variant:" interrogationSpell>>
-    <<arc-option freeze "Freeze" $interrogationEndingFreeze>>
-        Ivex has a special treatment for northern wolves that like the cold...
-    <<arc-option shock "Shock" $interrogationEndingShock>>
-        Ivex has a special treatment for southern wolves that hate the cold...
-    <</arc-variant>>
+    <<arc-select interrogationSpell "Variant:">>
+        <<arc-option freeze "Freeze" $interrogationEndingFreeze>>
+            Ivex has a special treatment for northern wolves
+            that like the cold...
+        <<arc-option shock "Shock" $interrogationEndingShock>>
+            Ivex has a special treatment for southern wolves
+            that hate the cold...
+    <</arc-select>>
 
-    <<arc-variant "Variant:" interrogationEnd>>
-    <<arc-option mild "Mild" $interrogationEndingMild>>
-        Ivex treats those that choose collaboration over defiance with "kindness"...
-    <<arc-option harsh "Harsh" $interrogationEndingHarsh>>
-        Ivex has a special disdain for those that dare defy his wishes...
-    <</arc-variant>>
+    <<arc-select interrogationEnd "Variant:">>
+        <<arc-option mild "Mild" $interrogationEndingMild>>
+            Ivex treats those that choose collaboration
+            over defiance with "kindness"...
+        <<arc-option harsh "Harsh" $interrogationEndingHarsh>>
+            Ivex has a special disdain for those that dare
+            defy his wishes...
+    <</arc-select>>
 <</arc-ending>>
 <</nobr>>\
 
@@ -9114,11 +9119,13 @@ But there's no decision to be made. After being exposed to that candle for so lo
 >>
     Sometimes a magical accessory is for more than just the looks...
 <<arc-variants>>
-    <<arc-variant "Variant:" lionFuck>>
-    <<arc-option no "None" true>>
-    <<arc-option yes "Lion" $enthrallmentLion>>
-        Engaging in arousing activities while overtaken by previous magical lust makes some things impossible to resist...
-    <</arc-variant>>
+    <<arc-select lionFuck "Variant:">>
+        <<arc-option no "None" true>>
+        <<arc-option yes "Lion" $enthrallmentLion>>
+            Engaging in arousing activities while overtaken
+            by previous magical lust makes some things
+            impossible to resist...
+    <</arc-select>>
 <</arc-ending>>
 <</nobr>>\
 
@@ -10023,12 +10030,14 @@ It doesn't stop there, and neither does the slime. All the stimulation keeps goi
 >>
     Touching unknown magical things always ends badly...
 <<arc-variants>>
-    <<arc-variant "Variant:" extractionVariant>>
-    <<arc-option gentle "Gentle" $extractionGentleEnd>>
-        The slime is fine-tuned to reward those that let it do its work...
-    <<arc-option forceful "Forceful" $extractionForcefulEnd>>
-        The slime is fine-tuned to go rougher on those that insist on fighting it...
-    <</arc-variant>>
+    <<arc-select extractionVariant "Variant:">>
+        <<arc-option gentle "Gentle" $extractionGentleEnd>>
+            The slime is fine-tuned to reward
+            those that let it do its work...
+        <<arc-option forceful "Forceful" $extractionForcefulEnd>>
+            The slime is fine-tuned to go rougher
+            on those that insist on fighting it...
+    <</arc-select>>
 <</arc-ending>>
 <</nobr>>\
 
@@ -12653,32 +12662,32 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 <<arc-ending _tamed
     [[Bad Ending: Tamed|n0/F Nero Ending]]
     ""
-    "$t_ending = ['tamed', $n8_tamedBarbs, $n8_tamed]"
+    "$t_ending = ['tamed', $n8_tamedBarbs, $n8_tamedVariant]"
 >>
     Struggling is hopeless...
 <<arc-variants>>
-    <<arc-variant "Variant:" n8_tamed>>
+    <<arc-select n8_tamedVariant "Variant:">>
         <<arc-option mild "Mild" $n9_tamedMild>>
             Ivex enjoys cooperative victims...
         <<arc-option harsh "Harsh" $n9_tamedHarsh>>
             Ivex enjoys reluctant victims...
-    <</arc-variant>>
+    <</arc-select>>
     <<arc-barbs n8_tamedBarbs>>
 <</arc-ending>>
 
 <<arc-ending _caged
     [[Bad Ending: Caged|n0/F Nero Ending]]
     ""
-    "$t_ending = ['caged', $n8_cagedBarbs, $n8_caged]"
+    "$t_ending = ['caged', $n8_cagedBarbs, $n8_cagedVariant]"
 >>
     Self-control is overrated...
 <<arc-variants>>
-    <<arc-variant "Variant:" n8_caged>>
+    <<arc-select n8_cagedVariant "Variant:">>
         <<arc-option mild "Mild" $n9_cagedMild>>
             Sometimes all that's needed is a paw...
         <<arc-option harsh "Harsh" $n9_cagedHarsh>>
             Sometimes a paw is not enough...
-    <</arc-variant>>
+    <</arc-select>>
     <<arc-barbs n8_cagedBarbs>>
 <</arc-ending>>
 
@@ -12702,20 +12711,20 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
     Under construction.
 <<arc-variants>>
     <<arc-barbs n8_huntedBarbs>>
-    <<arc-variant "Variant:" n8_hunted>>
+    <<arc-select n8_huntedVariant "Variant:">>
         <<arc-option mild "Mild" false>>
         <<arc-option harsh "Harsh" false>>
-    <</arc-variant>>
+    <</arc-select>>
 <</arc-ending>>
 
 <<arc-ending false "Bad Ending: Overwhelmed">>
     Under construction.
 <<arc-variants>>
     <<arc-barbs n8_overwhelmedBarbs>>
-    <<arc-variant "Variant:" n8_overwhelmed>>
+    <<arc-select n8_overwhelmedVariant "Variant:">>
         <<arc-option mild "Mild" false>>
         <<arc-option harsh "Harsh" false>>
-    <</arc-variant>>
+    <</arc-select>>
 <</arc-ending>>
 
 <<arc-ending false "Challenge Ending: Wrecked">>
@@ -12729,11 +12738,11 @@ Congratulations! You've reached an "Under Construction" point in Nero's story. T
 <<arc-ending false "Ending: Satisfied">>
     Under construction.
 <<arc-variants>>
-    <<arc-variant "Variant:" n8_satisfied>>
+    <<arc-select n8_satisfiedVariant "Variant:">>
         <<arc-option mica "Mica" false>>
         <<arc-option pevhin "Pevhin" false>>
         <<arc-option blank "???" false>>
-    <</arc-variant>>
+    <</arc-select>>
 <</arc-ending>>
 
 <<arc-ending false "Ending: Dominant">>
@@ -26601,13 +26610,13 @@ as a reminder of what can happen if the wolf refuses.
     ?P
     <ul class="actions">
         <li>[[He licks reluctantly...|n9a/F Tamed Mild 1]]</li>
-        <li>[[He clamps his jaw shut...|n9a/D Tamed Harsh]]</li>
+        <li>[[He clamps his jaw shut...|n9a/D Tamed Harsh 1]]</li>
     </ul>
 <</arc-skip>>
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 1 {"position":"3300,6400","size":"100,100"}
+:: n9a/F Tamed Mild 1 {"position":"3275,6400","size":"100,100"}
 <<nobr>>
 
 He licks reluctantly, hesitantly.
@@ -26630,7 +26639,7 @@ will soon allow another attempt at escape.
     the wolf's curling tongue.
 <</if>>
 The scent of pre-cum and the taste of the panther's cock
-have flavors unlike any female that Nero has bedded,
+have flavors unlike any female that Nero has ever bedded,
 different even from the musk of his own arousal that's
 leaking from his own throbbing red cock.
 
@@ -26681,41 +26690,45 @@ makes him rapidly extend his tongue and resume licking again.
 <<arc-skip>>
     ?P
     [[Continue|n9a/F Tamed Mild 2]]
+    <<set $t_variant = "mild">>
 <</arc-skip>>
 <</nobr>>
 
 
-:: n9a/D Tamed Harsh [done] {"position":"3425,6550","size":"100,100"}
+:: n9a/D Tamed Harsh 1 {"position":"3550,6500","size":"100,100"}
 <<nobr>>
 
-XXX
-no way is nero sucking ivex off. he's escaped from tighter scrapes before, he just has to resist until another opportunity to escape.
+He clamps his jaw shut anyway.
+Nero knows, he expects, that the panther
+will use him for satisfaction in one way or another, but the wolf
+will never be an eagerly whining lackey for the perverted panther's pleasure. Ivex can apply whatever tortures he's able,
+and Nero will suffer, maybe scream, but that is <em>all</em>
+that the panther will get. Ivex can paw himself off to the sounds of
+the wolf's suffering, if that's the type of thing the panther wants.
+And when the panther is done with his sordid pleasure,
+there will be time for Nero to recover, plan, and escape.
 
 ?P
-ivex uses dream crystal to hold nero's jaw open. heavy on cbt.
-nero continually resists with his tongue, but it all just turns ivex on more.
-can do a couple phases, dream crystal release and recharge.
-eventually ivex thrusts deep and cums
+Ivex laughs. "I did not expect a pathetic wolf like you
+to put up such a fight. I'm quite eager to see how <em>much</em>
+of a fight you are capable of."
 
 ?P
-ivex calls nero a bad doggy, applies collar with taming gem.
-similar to tamed mild, but angrier.
+The panther starts with the familiar, with light taps on the wolf's
+trapped balls that become solid punches that make Nero gasp.
+Nero keeps his muzzle shut, only opening it slightly to suck
+in deep breaths when he sees that the panther hands are fully
+occupied with torment at the wolf's crotch.
 
 ?P
-nero whines. dumps all his info amid torture, feels ashamed at failing, but ends up eagerly soaking up ivex's approval, success is when ivex is happy.
+The wolf's own cock remains stiff and steady
 
-?P
-sketch ongoing life as a dumb abused dog craving correction, tease bits of things that are on floor 2.
 
-?P
-<<meta-ending bad n9_tamedHarsh "Bad Ending: Tamed (Harsh)">>
-<<arc-set-barbs n8_tamedBarbs>>
-
-?P
-<ul class="actions">
-    <li>[[Try again from Ivex's disappearance.|n2a/F Restart Ivex Gone]]</li>
-    <li>[[Try again from the beginning.|Title Screen]]</li>
-</ul>
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Harsh 2]]
+    <<set $t_variant = "harsh">>
+<</arc-skip>>
 <</nobr>>
 
 
@@ -26999,6 +27012,8 @@ launch from his ass...
     [[Continue|n2b/F Desperate Magic 3]]
     
 <</fade-in>>
+
+<<set $n2_castDesperate = true>>
 <</nobr>>
 
 
@@ -27611,7 +27626,7 @@ $t_afterAction
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 2 {"position":"3300,6300","size":"100,100"}
+:: n9a/F Tamed Mild 2 {"position":"3275,6300","size":"100,100"}
 <<nobr>>
 
 Ivex sketches arcs up and down the shaft of the cock,
@@ -27661,7 +27676,7 @@ responding to wordless directions.
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 3 {"position":"3300,6200","size":"100,100"}
+:: n9a/F Tamed Mild 3 {"position":"3275,6200","size":"100,100"}
 <<nobr>>
 
 Nero's own cock is still achingly erect,
@@ -27805,7 +27820,7 @@ But right now, satisfying me will be... a simple task."
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 4 {"position":"3300,6100","size":"100,100"}
+:: n9a/F Tamed Mild 4 {"position":"3275,6100","size":"100,100"}
 <<nobr>>
 
 The panther uses a finger to nudge the wolf's mouth open,
@@ -27865,15 +27880,18 @@ Ivex taps the underside of the wolf's jaw and says, "Open."
 
 ?P
 Nero hesitates a moment, but he obeys before the hesitation
-can be interpreted as a resistance that needs to be punished.
-He opens his jaw widely and relaxes his tongue to allow
+can be interpreted as a resistance that needs to be punished
+by that orange gem of fire on his cock.
+He opens his jaw widely and relaxes his tongue, to allow
 the panther to slide his cock all the way in,
 to rest its
 <<= $n1_barbs ? "barbed" : "smooth">>
 head against the entrance of Nero's throat.
 
-?P
-[[Continue|n9a/F Tamed Mild 5]]
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/F Tamed Mild 5]]
+<</arc-skip>>
 <</nobr>>
 
 
@@ -27886,7 +27904,15 @@ Nero.endings = {
   tamed_harsh: {
     title: "Bad Ending: Tamed (Harsh)",
     passages: [
-    	"[[n9a/D Tamed Harsh]]",
+        "[[n9a/F Tamed]]",
+    	"[[n9a/D Tamed Harsh 1]]",
+    	"[[n9a/D Tamed Harsh 2]]",
+    	"[[n9a/D Tamed Harsh 3]]",
+    	"[[n9a/D Tamed Harsh 4]]",
+    	"[[n9a/D Tamed Harsh 5]]",
+    	"[[n9a/D Tamed Harsh 6]]",
+    	"[[n9a/D Tamed Harsh 7]]",
+    	"[[n9a/D Tamed Harsh 8]]",
     ]
   },
   tamed_mild: {
@@ -27898,6 +27924,9 @@ Nero.endings = {
         "[[n9a/F Tamed Mild 3]]",
         "[[n9a/F Tamed Mild 4]]",
         "[[n9a/F Tamed Mild 5]]",
+        "[[n9a/F Tamed Mild 6]]",
+        "[[n9a/F Tamed Mild 7]]",
+        "[[n9a/D Tamed Mild 8]]",
     ]
   }
 };
@@ -27925,14 +27954,14 @@ Nero.showEnding = info => {
 <</script>>
 
 
-:: n9a/F Tamed Mild 5 {"position":"3200,6400","size":"100,100"}
+:: n9a/F Tamed Mild 5 {"position":"3175,6400","size":"100,100"}
 <<nobr>>
 
 Ivex pushes the wolf's muzzle to close and grip the full length
 of his cock. Not thrusting, not yet. Just holding himself still
 at an uncomfortable depth, and stroking the fur on the side of
 the muzzle as the wolf struggles to adapt
-to the size of the intrusion.
+to the size of the intrusion in his mouth.
 ?P
 Nero's nose is pressed into the panther's balls,
 and the musk is difficult to breathe.
@@ -27941,7 +27970,7 @@ his nostrils,
 almost gagging from the
 <<= $n1_barbs ? "spiny" : "thick">>
 cock head pressed into his throat,
-but he fights those reflexes and forces himself to remain
+but he fights those animal reflexes and forces himself to remain
 a perfect sleeve for the sadistic panther's cock.
 
 ?P
@@ -27963,12 +27992,14 @@ stops his sounds, and he relaxes his mouth and mind into surrender.
 Ivex laughs. "You <em>are</em> a quick learner. I will have to
 see what I can do with that. But first..."
 
-?P
-[[Continue|n9a/F Tamed Mild 6]]
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/F Tamed Mild 6]]
+<</arc-skip>>
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 6 {"position":"3200,6300","size":"100,100"}
+:: n9a/F Tamed Mild 6 {"position":"3175,6300","size":"100,100"}
 <<nobr>>
 
 The panther's fucking is fast and brutal.
@@ -28018,12 +28049,14 @@ the wolf again without time to recover.
 ?P
 There will be plenty more chances now to make new plans for escape.
 
-?P
-[[Continue|n9a/F Tamed Mild 7]]
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/F Tamed Mild 7]]
+<</arc-skip>>
 <</nobr>>
 
 
-:: n9a/F Tamed Mild 7 {"position":"3200,6200","size":"100,100"}
+:: n9a/F Tamed Mild 7 {"position":"3175,6200","size":"100,100"}
 <<nobr>>
 
 Ivex wipes his softening cock against the fur of the wolf's face.
@@ -28042,56 +28075,203 @@ if it weren't being done with the
 reeking cock.
 
 ?P
-"I'm quite eager, <em>fervid</em> to know what else you will be
-able to do under my direction. But I have no illusions about
-your devotion to my cock."
+"I'm quite eager, <em>fervid</em> to know what else you are
+capable of doing under my direction. But I have no illusions about
+your current devotion to my cock."
 
 ?P
 Ivex chuckles and makes a gesture.
 Something new floats out from another cabinet and lands in his paw.
-It's a leather collar like the ones people put on pets,
+It's a leather strap of the variety that people use as collars on pets,
 with a green gem embedded in the center of it.
 
 ?P
-The panther touches the gem, and it starts to glow.
+The panther touches the gem, and the gem starts to glow.
 He puts the collar around the bound wolf's neck,
 and buckles it shut.
 A moment later, the wolf feels a presence stretch out of
 the gem and invade his spirit.
 
-?P
-[[Continue|n9a/D Tamed Mild 8]]
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/D Tamed Mild 8]]
+<</arc-skip>>
 <</nobr>>
 
 
-:: n9a/D Tamed Mild 8 {"position":"3200,6100","size":"100,100"}
+:: n9a/D Tamed Mild 8 {"position":"3175,6100","size":"100,100"}
 <<nobr>>
 
 XXX fight!
 
 ?P
-taming is a repression fight. nero is kinda wrong about it. ivex's automated repression is too rapid to be a raw power fight. the taming gem is aimed at removing anything related to resistance, which is a lot.
+ivex, congrats on being the first subject of my new device.
 
-?P
-plan right now is to make the fight not too detailed, brief suggestive bits that don't require having read the MC passages, but have more resonance if you have read them. stretch goal is to have an "extended version" endings that are unlocked by collecting the right "keynote" passages.
+nero, recognizes imp, prepares for an inhibition fight,
+prepares to test what the boundaries are.
 
-?P
-once nero loses, ivex tries questioning, but taming has taken away too much.
-ivex is angry and nero is very cringing.
-ivex laughs, some light abuse, and nero keeps begging.
+ivex starts talking about thrall spell and its problems.
 
-?P
-sketch ongoing life as a dumb loyal dog, tease bits of things that are on floor 2.
+imp takes a little while to sync with nero's spirit.
 
+continue, no page transition, words start disappearing.
+
+it's any word related to "attack", "resist", or "escape".
+the underlying rule is focused on intentions aimed at ivex,
+attack ivex, etc.
+it removes the intention, not just words, but the visible effect
+to the player is the removal of words, making those ideas
+inexpressible and incomprehensible.
+
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Mild 9]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/F Tamed Restart [done] {"position":"3275,5800","size":"100,100"}
+<<nobr>>
 ?P
-<<meta-ending bad n9_tamedMild "Bad Ending: Tamed (Mild)">>
+<<if $t_variant === "harsh">>
+    <<meta-ending bad n9_tamedHarsh "Bad Ending: Tamed (Harsh)">>
+<<else>>
+    <<meta-ending bad n9_tamedMild "Bad Ending: Tamed (Mild)">>
+<</if>>
 <<arc-set-barbs n8_tamedBarbs>>
+
+?P
+<<if $n2_castDesperate>>
+    Nero's magic was inadequate for escaping the wooden cross.
+    But perhaps in some alternate timeline, the wolf mage
+    can find a way to break free.
+
+<<elseif !$n1_gravNoticed>>
+    Nero was not able to break free from the wooden cross.
+    But perhaps in some alternate timeline, the wolf mage
+    can find a flaw that will help him escape.
+    
+<<else>>
+    Nero did not understand the ?crystals enough to break
+    their hold on the wooden cross.
+    But perhaps in some alternate timeline, the wolf mage
+    can find a way to see what he needs to do.
+<</if>>
 
 ?P
 <ul class="actions">
     <li>[[Try again from Ivex's disappearance.|n2a/F Restart Ivex Gone]]</li>
     <li>[[Try again from the beginning.|Title Screen]]</li>
 </ul>
+<</nobr>>
+
+
+:: n9a/D Tamed Harsh 2 {"position":"3550,6400","size":"100,100"}
+<<nobr>>
+
+escalating torture
+
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Harsh 3]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/D Tamed Harsh 3 {"position":"3550,6300","size":"100,100"}
+<<nobr>>
+
+green gem comes out
+
+
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Harsh 4]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/D Tamed Harsh 4 {"position":"3550,6200","size":"100,100"}
+<<nobr>>
+
+dream crystal comes out
+
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Harsh 5]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/D Tamed Harsh 8 {"position":"3450,6200","size":"100,100"}
+<<nobr>>
+collar, similar to mild, but angrier.
+might be able to use the same nodes?
+ongoing life as an abused dog craving correction.
+
+<<arc-skip>>
+    ?P
+    [[n9a/F Tamed Restart]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/D Tamed Harsh 5 {"position":"3450,6500","size":"100,100"}
+<<nobr>>
+
+tongue fight, resistance just makes ivex hornier.
+
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Harsh 6]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/D Tamed Harsh 6 {"position":"3450,6400","size":"100,100"}
+<<nobr>>
+
+torture, exhaustion, no more fight, passive victim
+
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Harsh 7]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/D Tamed Harsh 7 {"position":"3450,6300","size":"100,100"}
+<<nobr>>
+
+spooge, aftermath.
+
+<<arc-skip>>
+    ?P
+    [[n9a/D Tamed Harsh 8]]
+<</arc-skip>>
+<</nobr>>
+
+
+:: n9a/D Tamed Mild 9 {"position":"3175,6000","size":"100,100"}
+<<nobr>>
+
+now in dumb dog mode.
+?P
+ivex tries questioning, but taming has taken away too much.
+ivex is angry and nero is very cringing.
+ivex laughs, some light abuse, and nero keeps begging.
+
+?P
+sketch ongoing life as a dumb loyal dog,
+tease bits of things that are on floor 2.
+
+nero still has disturbing dreams of ivex screaming or dying in some way
+while nero is nearby, but they're lacking in intent
+
+<<arc-skip>>
+    ?P
+    [[Continue|n9a/F Tamed Restart]]
+<</arc-skip>>
 <</nobr>>
 
 
