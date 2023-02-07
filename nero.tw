@@ -612,6 +612,10 @@ VT.ignore = fn => {
     opacity: 0.4;
     pointer-events: none;
   }
+  .arc-picklocked {
+    opacity: 0.6;
+    text-decoration: #990 underline;
+  }
   .arc-title {
     font-weight: bold;
   }
@@ -730,13 +734,15 @@ Macro.add("arc-select", {
     }
     const [varname, label] = this.args;
     const V = State.variables;
+    const T = State.temporary;
 
     const outer = $("<div class=arc-select>").appendTo(this.output);
     outer.append(label);
 
     const choices = this.payload.slice(1);
 
-    // If value doesn't match an enabled choice, unset it. (should only happen when debugging)
+    // If value doesn't match an enabled choice, unset it.
+    // (should only happen when debugging)
     let matched = false;
     for (const ch of choices) {
       if (V[varname] === ch.args[0] && ch.args[2]) {
@@ -764,12 +770,15 @@ Macro.add("arc-select", {
       const value = ch.args[0];
       const text = ch.args[1];
       const enabled = ch.args[2];
-      if (enabled && (V[varname] == null || V[varname] === "")) {
+      const unlocked = enabled || T.lockpick;
+      if (unlocked && (V[varname] == null || V[varname] === "")) {
         V[varname] = text;
       }
-      const label = $("<label>").wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
+      const label = $("<label>")
+      	.wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
       label.append(text).appendTo(outer);
-      if (!enabled) {
+      label.toggleClass("arc-picklocked", !enabled);
+      if (!unlocked) {
         if (hint == null) hint = `(${text}) ${ch.contents}`;
         label.addClass("arc-disabled");
         label.find("input").attr("disabled", "disabled");
@@ -798,21 +807,27 @@ Macro.add("arc-ending", {
   tags: ["arc-variants"],
   handler: function() {
     if (this.args.length < 2 || this.args.length > 4) {
-      throw new Error("expected arc-endings args: boolean link [disabledText [setter]]");
+      throw new Error(
+        "expected arc-endings args: boolean link [disabledText [setter]]");
     }
     let [enabled, link, offText, setter] = this.args;
+    const T = State.temporary;
+    const unlocked = enabled || T.lockpick;
     const isLink = typeof link === "object" && link.isLink;
     offText = offText || (isLink ? link.text : link);
     setter = setter || "";
 
     const outer = $("<div class=arc-ending>").appendTo(this.output);
-    if (!enabled) {
-      $('<div class="arc-title arc-disabled">').wiki(offText).appendTo(outer);
-      $('<div class="arc-hint">').wiki(this.payload[0].contents).appendTo(outer);
+    if (!unlocked) {
+      $('<div class="arc-title arc-disabled">')
+        .wiki(offText).appendTo(outer);
+      $('<div class="arc-hint">')
+        .wiki(this.payload[0].contents).appendTo(outer);
       return;
     }
     
     const title = $("<div class=arc-title>").appendTo(outer);
+    title.toggleClass("arc-picklocked", !enabled);
     if (isLink) {
       title.wiki(`[\[${link.text}|${link.link}][${setter}]]`);
     } else {
@@ -5422,6 +5437,25 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
     const now = State.metadata.get("arc-open");
     T.open(now || "intro");
   });
+  
+  function lockpickSetup() {
+    T.lockpick = setup.debug && State.metadata.get("arc-lockpick");
+    if (!setup.tester) return;
+    $(document).one(":passagedisplay", () => {
+      const el = $("#arc-lockpick");
+      el.prop("checked", T.lockpick);
+      el.on("input", lockpickUpdate);
+    });
+  }
+  
+  function lockpickUpdate() {
+    const el = $("#arc-lockpick");
+    const val = !!el.prop("checked");
+    State.metadata.set("arc-lockpick", val);
+    VarInfo.revisitHere();
+  }
+  
+  lockpickSetup();
 <</script>>
 
 <<return-head>>
@@ -5461,10 +5495,18 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 
     <br>
     <span class="imp-info">
-      Unlocking is only kept within a save.
+        Unlocking is only kept within a save.
     </span>
     To keep all unlocked endings and keywords,
     make sure to always use and load the same save file.
+    
+    <<if setup.debug>>
+        ?P
+        <label>
+            &#x1f527; bypass locks
+            <input id=arc-lockpick type=checkbox>
+        </label>
+    <</if>>
 </div>
 
 <hr>
@@ -16202,11 +16244,11 @@ Ivex leans his masculine body into the wolf, and then moves his masked muzzle cl
 "All of you believe, that there is something you can do, that will save you from ending up, <em>here</em>..."
 
 ?P
-The panther takes hold of Nero's exposed balls.
+The panther takes hold of Nero's
 <<if $n1_abused>>
-    Not squeezing, not yet.
+    aching balls. Not squeezing, not yet.
 <<else>>
-    Not squeezing them.
+    exposed balls. Not squeezing them.
 <</if>>
 Just cupping them, delicately, as the wolf's cock continues to strain its way to becoming fully, glisteningly erect.
 
@@ -16377,7 +16419,7 @@ and roughly strokes the fur on the wolf's naked chest again.
     ?P
     "Good! I'm quite pleased to see that."
     Ivex claps his hands and makes a purring sound.
-    It's quite eerie and menacing when filtered through the mask.
+    The sound is quite eerie and menacing when filtered through the mask.
     "But I think I know something that
     will make you even more comfortable."
 <<else>>
@@ -17349,7 +17391,8 @@ The wolf shivers.
 <<else>>
     Events have progressed beyond simple interrogation.
 <</if>>
-The undressing spell was disturbingly powerful and precise.
+Ivex's undressing spell was disturbingly powerful and precise,
+as if it were something that he practiced often.
 
 <<if $n0_barbsFastViewed>>
     ?P
@@ -19551,34 +19594,36 @@ $t_afterAction
 
 :: n1s/F Pyron Node {"position":"6950,5875","size":"100,100"}
 <<nobr>>
-<<vi-ignore n1_candleLit>>
-<<vi-ignore n2_ivexGone>>
-<<vi-ignore t_ivexReceptive>>
-<<vi-always n2_free false>>
-<<em-assert !$n1_candleHorny>>
+<<arc-skip>>
+    <<vi-ignore n1_candleLit>>
+    <<vi-ignore n2_ivexGone>>
+    <<vi-ignore t_ivexReceptive>>
+    <<vi-always n2_free false>>
+    <<em-assert !$n1_candleHorny>>
+<</arc-skip>>
 
-Pyron nodes are square crystals that have become
+Pyron nodes are square-ish crystals that have become
 a common substrate for the preparation and storage
 of spells and other magic constructs.
 They're one of the most exciting innovations of modern magic.
-Each node is no bigger than a coin, but just one node is
-able to hold as much magic as an
+Each pyron node is no bigger than a coin, but a mage only needs
+just one of them to hold as much magic as an
 entire cabinet of spellbooks and scrolls.
 
 ?P
 Expert mages are able to directly manipulate the magic axioms
 that create the pyron node itself,
 but the practice is somewhat esoteric.
-Most mages will use magic devices that are constructed
-from pyron nodes, without bothering to understand in
+Most mages will use the pyron node within a magical device
+without bothering to understand in
 detail the construction of those devices.
 
 ?P
 The most flexible such device is the modern reinvention of the
 magic mirror. Traditional magic mirrors are arduous creations,
 requiring many years of patient nurturing to allow the raw materials
-of sand and ore to align themselves to a complex spectral labyrinth,
-and then a few years of gentle forging to turn the raw materials
+of sand and ore to align themselves to a complex spectral labyrinth.
+And then comes a few years of gentle forging to turn the raw materials
 into their finished form without disturbing the spectral connections
 between them.
 Once that's done,
@@ -19599,16 +19644,16 @@ instrument of magic.
 ?P
 The modern magic mirror is different.
 It's made of ordinary glass in a suitably stylish frame,
-glued to a common pyron node
-that can hold the glyph matrixes that are the magic of the mirror.
+glued to a pyron node
+that holds the glyph matrixes that are the magic of the mirror.
 The matrixes can be quite complex, but even the most complex of them
-is easy to duplicate in another pyron node,
+will be easy to duplicate to another pyron node,
 making it simple to have many such mirrors with identical magic.
 
 ?P
 Windbone Magic Academy has a one-semester class that's devoted
 to the basics of preparing and casting spells with the
-pyron node in a common magic mirror.
+pyron node in a standard magic mirror.
 Another six semesters are available for learning increasingly
 elaborate constructions that pyron nodes make possible,
 culminating in a course that discusses the possibilites
@@ -19622,7 +19667,7 @@ is that the node can store dozens of life-like images that can be
 displayed in the mirror whenever the mage requests it.
 
 ?P
-Usually they're pornographic.
+Usually the images are pornographic.
 
 <<arc-skip>>
     ?P
@@ -19748,10 +19793,10 @@ that I'm unlikely to say to any of my subjects, ?master"
 Pyron nodes are versatile substrates for magic,
 but they're quite different from traditional
 substrates such as spellbooks and scrolls.
-Spells inscribed in pyron nodes require much more
-attention to many axioms that are normally implicit
+Spells inscribed in pyron nodes require considerably more
+attention to structural axioms that are normally implicit
 in traditional magic.
-These axioms are part of the education of every modern mage,
+These structural axioms are part of the education of every modern mage,
 but most mages find the use of them tedious and unpleasant.
 Fortunately, mages in recent years have developed an alternative.
 
@@ -19761,7 +19806,8 @@ that have a small amount of intelligence
 and a diligent obedience to command.
 Creating a Sprite requires an <em>entire</em> pyron node,
 which is not a small expense.
-But in return, the mage gains an assistant that's able to perform
+But in return, the pyron node becomes an
+assistant that's able to perform
 a wide variety of simple magics whenever the mage
 speaks to it.
 For instance, a carnival wizard can prepare a complex cascade of spells
@@ -19783,7 +19829,7 @@ that could be interpreted as a command, which led to many amusing
 and occasionally fatal accidents. A mage in middle of a
 passionate embrace might cry out, "Enter me now!"
 without remembering that a nearby Sprite will also hear the command
-and diligently try to obey it.
+and attempt to obey it.
 
 ?P
 The latest Sprites are
@@ -20597,9 +20643,8 @@ Another shelf
 <</if>>
 a [[stack of coins|n1x/F Coins]].
 
-The rest of the shelves are taken up by unlabeled boxes
-of a type that are commonly used for storage:
-plain wood with simple lids.
+The rest of the shelves are taken up by plain wooden
+storage boxes with simple lids, identical and unlabeled.
     
 <<if $n2_free>>
     <<if !$n2_bookcasesSearched>>
@@ -20739,7 +20784,8 @@ plain wood with simple lids.
     <<else>>
         <<= $n1_naked ? "his naked self" : "himself">> in it.
         Not that he particularly <em>needs</em> to see his own
-        <<= $n1_naked ? "slender, masculine body" : "smartly-dressed body">>,
+        <<= $n1_naked ? "slender, masculine body"
+            : "fashionably-robed body">>,
         but the view also reveals an interesting arrangement of
         [[glowing crystals|n1x/F Grav]]
     <</if>>
@@ -23623,9 +23669,9 @@ by that most infamous of fox mages,
 Kelvin the Elder.
 ?P
 Dream Crystals are a reconstruction of the
-Dream Salt axioms into a flexible matrix that can
-be easily manipulated by mages.
-The result is a crystal that has the ability to hold
+Dream Salt axioms into a flexible matrix that
+is easy for mages to manipulate.
+The result is a crystal with the ability to hold
 <em>any</em> chosen material firmly
 in a specific position, for as long as there is energy powering it.
 ?P
@@ -24259,8 +24305,10 @@ Unless the panther's energy source is enormous!
 <<if MP_beforeCast === $n1_magicPhase>>
     <<vi-ignore n2_ivexGone>>
     ?P
-    Well, this is all intellectually fascinating, but not particularly useful.
-    Nero reminds himself that he needs to focus on escape.
+    Well, this is all intellectually fascinating,
+    but not particularly useful.
+    Nero reminds himself that he really should focus on
+    the magic he needs to escape.
 
 <<elseif $n2_ivexGone>>
     ?P
@@ -24352,7 +24400,7 @@ Unless the panther's energy source is enormous!
     <<if $n1_mageSight>>
         swirl of exotic energies that spiral around the
     <<else>>
-        insistent pulse of the
+        insistent throb of the
     <</if>>
     [[flickering red candle|n1y/F Horny Candle]],
     tries to aim his attention toward finding a flaw in the
@@ -24971,7 +25019,12 @@ His eyes latch on to the
 <<n1-no-loop [[massive portrait of femininity|n1y/F Horny Painting]]>>
 hanging on the far wall,
 but his mind keeps returning to obsessive imagination
-of Ivex's erect, ?barbed cock.
+of Ivex's
+<<if $n1_barbs>>
+    erect, barbed cock.
+<<else>>
+    smooth, erect cock.
+<</if>>
 
 ?P
 <ul class=actions>
@@ -25066,8 +25119,8 @@ His angry throaty voice drowns out the penguin's own pitifully weak squawks.
 <<if $n2_ivexGone>>
     The penguin is not impressed. Nero yowls until he's out of breath.
 <<else>>
-    Ivex grabs the wolf's muzzle and says, "Enough."
-    XXX hunter2.
+    Ivex grabs the wolf's muzzle and says, "Enough.
+    Hunter Two is not a threat."
     ?P
     <<if $n1_subby>>
         The confidence of the panther makes Nero tremble,
@@ -25079,6 +25132,7 @@ His angry throaty voice drowns out the penguin's own pitifully weak squawks.
     <</if>>
 <</if>>
 
+<!-- XXX pw known hunter two -->
 ?P
 $t_afterAction
 
@@ -25684,7 +25738,7 @@ fails to catch mirror, it falls on ground and shatters.
 <<elseif $n1_candleHorny>>
     <!-- up to 3 times (actions) -->
     <<if $n2_struggledAgain>>
-        <<mtl [[n2b/D Struggle Horny 3]]>>
+        <<mtl [[n2b/F Struggle Horny 3]]>>
             Struggle on the cross some more.
         <</mtl>>
     <<elseif $n2_struggled>>
@@ -25747,9 +25801,30 @@ the young wolf gave the wrong answer.
 <</nobr>>
 
 
-:: n2b/D Struggle Horny 3 {"position":"4975,6500","size":"100,100"}
+:: n2b/F Struggle Horny 3 {"position":"4975,6500","size":"100,100"}
 <<nobr>>
-XXX yes this is reachable
+<<vi-always n1_candleHorny true>>
+<<vi-ignore n1_mageSight>>
+
+Nero pulls his limbs taut and then stretches them out,
+rubbing them as much as he can within the leather straps,
+as strongly as he can against the wooden cross.
+The straps do not slide smoothly.
+The surface of the leather yanks at the hairs of his fur,
+and the edges of the leather dig deep into his skin
+as he jerks his limbs the way he wishes he could jerk his cock.
+
+?P
+His motions do not satisfy his cock, but it feels like
+he is close to finding some other way to satisfy his desire.
+The wolf's entire body is a sexual organ, a throbbing
+ache in his soul that grows stronger as he thrusts
+against his bonds.
+Nero screams at the wooden cross holding him back.
+He clasps his fists as tight as he can, until he can
+feel them, imagine them grasping something, grasping his cock,
+choking the head held tightly in his paws,
+squeezing as long as it takes for the aching to stop.
 
 ?P
 $t_afterAction
@@ -25798,9 +25873,9 @@ judgment of his proper place in the world, but he can't
 help struggling anyway, to feel that embrace more deeply,
 and to prove to the cross's wooden voice that the wolf has strength
 that it can use, that he <em>can</em> be more than just
-a helpless victim of unlucky fates. His cock quivers and weeps
+a helpless victim of unlucky fates. His cock quivers and leaks
 from desire and a longing for an embrace, or even the slightest
-pat on its head.
+little pat on its head.
 
 ?P
 $t_afterAction
@@ -26644,7 +26719,9 @@ lion gives nero ideas, nero takes over: [[n9x/S ascendant]]
 
 <<= Nero.showEnding($t_ending)>>
 <hr>
-<<link "Return to game" $return>><</link>>
+[[Return to the Archives|Archives]]
+<br>
+<<link "Return to the game" $return>><</link>>
 <</nobr>>
 
 
@@ -26852,7 +26929,7 @@ would never seek to enter any place that guaranteed his pain.
 
 <<arc-skip>>
     ?P
-    [[Continue|n9a/D Tamed Harsh 2]]
+    [[Continue|n9a/F Tamed Harsh 2]]
     <<set $t_variant = "harsh">>
 <</arc-skip>>
 <</nobr>>
@@ -27326,7 +27403,9 @@ function initRandom() {
 
 <<= Nero.showKeyword($t_keyword)>>
 <hr>
-<<link "Return to game" $return>><</link>>
+[[Return to the Archives|Archives]]
+<br>
+<<link "Return to the game" $return>><</link>>
 <</nobr>>
 
 
@@ -27512,6 +27591,7 @@ Nero.kwCount = () => {
 
 Nero.listKeywords = () => {
   const V = State.variables;
+  const T = State.temporary;
   let mkp = "<<nobr>>";
   const keys = Object.keys(Nero.keywords);
   keys.sort((a, b) => {
@@ -27523,7 +27603,7 @@ Nero.listKeywords = () => {
     const key = keys[i];
     const kw = Nero.keywords[key];
     const vn = `n9_kw_${key}`;
-    if (!V.n9_escaped && !V[vn]) continue;
+    if (!V.n9_escaped && !V[vn] && !T.lockpick) continue;
     const hidden = obscure(i, kw);
     mkp += `<<arc-ending $` + `n9_kw_${key}`;
     mkp += ` [\[${kw.title}|n0/F Nero Keyword]]`;
@@ -27659,7 +27739,7 @@ The leather bonds are stimulating the wolf's nerves and senses in
 ways he hasn't felt before.
 An adrenaline-fueled excitement rushes into his lungs,
 filling them deeply with warmth,
-and then driving down deeper to add its heat
+and then driving down deeper to add heat
 to his groin and his throbbing red cock.
 
 ?P
@@ -28033,7 +28113,7 @@ Nero.endings = {
     passages: [
         "[[n9a/F Tamed]]",
     	"[[n9a/F Tamed Harsh 1]]",
-    	"[[n9a/D Tamed Harsh 2]]",
+    	"[[n9a/F Tamed Harsh 2]]",
     	"[[n9a/D Tamed Harsh 3]]",
     	"[[n9a/D Tamed Harsh 4]]",
     	"[[n9a/D Tamed Harsh 5]]",
@@ -28191,7 +28271,7 @@ Ivex wipes his softening cock against the fur of the wolf's face.
 ?P
 "What a good dog you are," says the panther. "I will admit,
 I tend to prefer the wolves that try to fight me to the end,
-but none of the other cowards were nearly as skilled and clever
+but none of the other obedient cowards were nearly as skilled and clever
 as you've proven yourself to be."
 
 ?P
@@ -28259,7 +28339,7 @@ inexpressible and incomprehensible.
 
 :: n9a/F Tamed Restart [done] {"position":"3275,5800","size":"100,100"}
 <<nobr>>
-?P
+
 <<if $t_variant === "harsh">>
     <<meta-ending bad n9_tamedHarsh "Bad Ending: Tamed (Harsh)">>
 <<else>>
@@ -28269,7 +28349,7 @@ inexpressible and incomprehensible.
 
 ?P
 <<if $n2_castDesperate>>
-    Nero's magic was inadequate for escaping the wooden cross.
+    Nero's magic was unfortunately inadequate for escaping the wooden cross.
     But perhaps in some alternate timeline, the wolf mage
     can find a way to break free.
 
@@ -28293,24 +28373,89 @@ inexpressible and incomprehensible.
 <</nobr>>
 
 
-:: n9a/D Tamed Harsh 2 {"position":"3550,6400","size":"100,100"}
+:: n9a/F Tamed Harsh 2 {"position":"3550,6400","size":"100,100"}
 <<nobr>>
 
-ivex, pull balls, aches and ropes of pain.
-licks balls with rough tongue,
-sinks teeth into skin.
-sharp pain unlike the other.
+Ivex pulls the wolf's balls outward, again, but this time
+there is no arcane candle to transmute the pain.
+And perhaps the panther is also stretching the wolf's
+nutsack harder now.
+Nero feels the strain as burning ropes
+that connect the aching in his balls to a twisting
+knot in his gut. He fights the feeling of nausea
+and the pounding of the blood rushing in his upside-down head.
 
-nero whines through his nose and clamped jaw.
+?P
+He feels a firm touch and a wetness on his stretched-out balls.
+The panther is using his tongue
+to lick against the grain of the fur,
+to expose a bit of skin
+and rasp the rough surface of the tongue against
+the sensitive skin stretched tight
+against the wolf's throbbing nuts.
 
-ivex bites the other ball sac, pulls on sheath with teeth,
-scrapes tongue and teeth across the wolf's cock.
+?P
+The end of each stroke of the tongue is almost pleasant,
+and the cooling from the evaporating liquid is almost a relief.
+It's a small bit of sensation that Nero would normally not
+notice. It would not deserve any attention if it were
+a note in a symphony of pleasure. But played right now,
+in this rhapsody of agony, the slight, cooling caress is a shiver
+of ecstasy that the wolf does not know how to process.
 
-mocking pride, what a lovely appetizer, you're doing great.
+?P
+Ivex finishes his tasting of the wolf's furry balls
+by teasing them with his teeth. The tips of tha panther's teeth
+move to grasp the sides of one ball at its widest bulge.
+The grasp is light for a moment, for two licks of
+the tongue. And then he bites.
+
+?P
+Nero screams between gritted teath. He does not know
+if the panther has bitten through, or even drawn any blood,
+but the pain is a sharp glass spike that consumes his
+attention in a way that the punching aches did not.
+
+?P
+The panther releases his bite, and then moves to bite the
+other ball before the wolf can recover. The experience
+and memory of the bite on the first ball does not make it
+any easier to endure the bite of the second.
+
+?P
+When the panther releases that ball and returns his attention
+to the first, Nero gasps out, "No!" but then clamps his mouth
+shut again, with a feeling of shame.
+
+?P
+ivex chuckles, and then bites down, more gently,
+increasing pressure slowly until the wolf begins to whine.
+The panther lingers at that bearable point,
+and then pulses his jaws slightly together in a slow,
+steady rhythm, licking his tongue on the wolf's aching balls
+between each slight pulse of painful, unbearable pressure.
+
+?P
+And then he clamps his jaw down tight for the briefest moment,
+before releasing the ball completely. Nero screams and writhes
+the story of agony in his bonds,
+while his cock becomes drenched with pleasure.
+The panther is gently licking the shaft of the wolf's dripping cock,
+as it somehow stays erect while Nero is still
+reacting and recovering from the intense, impossible pain.
+
+?P
+When Nero does recover, when the sensations provided by the panther
+are starting to feel uncomfortably pleasant, Ivex relaxes his grasp,
+takes a step back, and laughs.
+
+?P
+"That was wonderful! You should have been a warrior.
+Willpower like that is wasted on a mage."
 
 <<arc-skip>>
     ?P
-    [[n9a/D Tamed Harsh 3]]
+    [[Continue|n9a/D Tamed Harsh 3]]
 <</arc-skip>>
 <</nobr>>
 
@@ -28318,7 +28463,8 @@ mocking pride, what a lovely appetizer, you're doing great.
 :: n9a/D Tamed Harsh 3 {"position":"3550,6300","size":"100,100"}
 <<nobr>>
 
-ivex, time for the main course. pulls out orange gem.
+ivex, that was a nice appetizer.
+time for the main course. pulls out orange gem.
 puts on nero's cock.
 turns it up slowly, nero feels the burning slowly.
 then suddenly raises it high.
@@ -28457,29 +28603,26 @@ while nero is nearby, but they're lacking in intent
 <<vi-always n2_free false>>
 
 Sprites are also able to answer simple questions and engage in
-pleasantly meaningless conversation.
-Early Sprites were limited to showing words within
+pleasant conversation within the limits of their small intelligence.
+Early Sprites could only respond by showing words within
 an attached surface like a mirror or crystal sphere,
 and modern Sprites can still do that.
 But modern Sprites are also able to assemble loose matter
-into a golem that can speak its words aloud.
+into a small golem that can speak its words aloud.
 
 ?P
-Carnival wizards will sometimes request impressive golems made of
-sparkling pebbles or colored sand, but professional mages
-will usually allow the Sprite to use the pragmatic,
-modern convention, which is to construct the golem out of
-the wax within the ear of the mage.
+Carnival wizards will sometimes request dazzling golems made of
+sparkling pebbles or glittering sand, but professional mages
+will usually allow the Sprite to construct a golem in
+the conventional, pragmatic way, 
+which is to make the golem out of the wax within the ear of the mage.
 
 ?P
-A lion mage named Alegosi was the first to discover the usefulness
-of a Sprite-golem within her ear. It <em>is</em> quite useful to
-be able to hear a Sprite that nobody else can, and
-carnival wizards quickly applied this technique to their
-mind-reading acts.
-
-?P
-But Alegosi was concerned that a conversation with a Sprite is
+A lion mage named Alegosi was the first to consider
+placing the Sprite's golem entirely within her ear.
+Mages quickly recognized how useful it is to
+be able to hear a Sprite that nobody else can.
+But Alegosi was concerned that these conversations become
 asymmetric. The mage speaks words aloud, and the Sprite's response
 is unnoticeable by others. Mages are already barely tolerated for
 their various eccentric behaviors,
@@ -28488,20 +28631,23 @@ puts a person firmly in the category of possessed or insane.
 
 ?P
 So Alegosi spent some time trying to develop a way of commanding
-her Sprite with just her internal voice.
+her Sprite without audible speech, using just her internal voice.
 
 ?P
 She eventually did succeed. Her command of her Sprite became
 rapid and more complex. Her Sprite's understanding of her desires
-became stronger and more precise. The Sprite learned to reflect
+became stronger and more precise. The Sprite learned to assist
+and reflect
 useful ideas back to her in ways that no colleague could match.
 
 ?P
 The lion mage's conversations with her Sprite became deeper and more
-intimate, and together, they constructed a realm of imagination that
-was perfectly attuned to Alegosi's desires, a place of
-endless fascination created by
-their combined abilities in a continually evolving dance.
+intimate, until one day they constructed together
+a realm of imagination that
+was perfectly attuned to Alegosi's desires,
+a place of profound fascination and surprising pleasures,
+continually refreshed by their combined abilities
+in an endlessly evolving dance.
 
 ?P
 Alegosi's body is a roped-off exhibit at Ransamaran Ivory today,
@@ -28509,17 +28655,18 @@ still sitting in a chair in a corner of a room that classes
 still use for instruction in laboratory experiments.
 Her body is somewhat dessicated, but still quite well-preserved.
 Perhaps some day she will be moved to
-some place less disturbing to novice mages.
+some place less upsetting to novice mages.
 But nobody wants to disturb the body of such a powerful mage,
 while she's still breathing, still alive.
 
 ?P
 The mysterious author of the original, basic model of Sprite
-continues to publish updated versions that have Alegosi's
-method of communicating with just an internal voice.
+continues to provide new versions that incorporate Alegosi's
+mechanism for communicating with just an internal voice.
 But no mage has ventured to use it more than once or twice.
-And all of the most popular augmentations of the basic Sprite
-have that function removed entirely.
+And all of the most popular modifications of the basic
+model of Sprite begin with an instruction to remove
+that function entirely.
 
 <<arc-skip>>
     ?P
