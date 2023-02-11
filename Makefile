@@ -23,9 +23,7 @@ nero-to-html:
 		tweego nero.tw -o nero.html
 
 nero-to-tw:
-	WSLENV=$$WSLENV:TWEEGO_PATH/l \
-	TWEEGO_PATH=./assets \
-		tweego -d nero.html -o nero.tw
+	npm run tw-to-html
 
 nero-version:
 	node tools/update-version.js nero.tw nero.html
