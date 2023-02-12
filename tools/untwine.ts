@@ -69,13 +69,15 @@ async function untwine(htmlFiles: string[]) {
 }
 
 async function untwineOne(htmlFile: string) {
-  const rule = rules.find((r) => (r.target = htmlFile));
+  const rule = rules.find((r) => r.target === htmlFile);
   if (rule == null) {
     throw new Error(`No rule for ${htmlFile}`);
   }
 
   const existing = await findExisting(rule);
-  const twee = await runP(`tweego -d ${htmlFile}`, { echo: false });
+  const cmd = `tweego -d ${htmlFile}`;
+  console.log(cmd);
+  const twee = await runP(cmd, { echo: false });
 
   let newFiles = 0;
   let updated = 0;
