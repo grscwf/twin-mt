@@ -148,7 +148,8 @@ async function watch(force: boolean) {
       console.log(`${path} changed, rebuilding ${target}`);
       rebuild();
     };
-    const watcher = chokidar.watch(rule.dirs, { ignoreInitial: true });
+    const dirs = await fglob(rule.dirs, { onlyFiles: false });
+    const watcher = chokidar.watch(dirs, { ignoreInitial: true });
     watcher.on("add", maybeRebuild);
     watcher.on("change", maybeRebuild);
     watcher.on("unlink", maybeRebuild);
