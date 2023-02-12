@@ -9,21 +9,13 @@
  */
 
 import { Command } from "@commander-js/extra-typings";
-import cp from "child_process";
 import chokidar from "chokidar";
 import { createHash } from "crypto";
 import type { Stats } from "fs";
 import fsp from "fs/promises";
-import { promisify } from "util";
-import { setupEnv } from "./lib";
+import { runP, setupEnv, timestamp } from "./lib";
 import type { Rule } from "./rules";
 import { rules } from "./rules";
-
-const execP = promisify(cp.exec);
-type ExecPException = cp.ExecException & {
-  stdout?: string | undefined;
-  stderr?: string | undefined;
-}
 
 async function main(argv: string[]) {
   setupEnv();
@@ -75,16 +67,7 @@ async function needsBuild(rule: Rule, force: boolean) {
 
 async function buildRule(rule: Rule): Promise<void> {
   console.log(timestamp(), rule.toHtml);
-  try {
-    const { stdout, stderr } = await execP(rule.toHtml);
-    process.stdout.write(stdout);
-    process.stderr.write(stderr);
-  } catch (e) {
-    const err = e as ExecPException;
-    process.stdout.write(err.stdout ?? "");
-    process.stderr.write(err.stderr ?? "");
-    throw e;
-  }
+  await runP(rule.toHtml);
 }
 
 async function watch(force: boolean) {
@@ -176,11 +159,6 @@ async function checksum(file: string): Promise<string> {
   const hash = createHash("sha256"); // overkill, but not expensive
   hash.update(data);
   return hash.digest("hex");
-}
-
-function timestamp(): string {
-  const now = new Date().toISOString();
-  return now.replace("T", " ");
 }
 
 main(process.argv).catch((e) => {

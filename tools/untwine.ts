@@ -10,17 +10,9 @@
  */
 
 import { Command } from "@commander-js/extra-typings";
-import { setupEnv } from "./lib";
-import type { Rule } from "./rules";
+import { runP, setupEnv } from "./lib";
 import { rules } from "./rules";
-import cp from "child_process";
-import { promisify } from "util";
 
-const execP = promisify(cp.exec);
-type ExecPException = cp.ExecException & {
-  stdout?: string | undefined;
-  stderr?: string | undefined;
-}
 
 async function main(argv: string[]) {
   setupEnv();
@@ -43,30 +35,27 @@ async function checkGit(ignoreDirty: boolean): Promise<void> {
   try {
     const command = "git status --porcelain";
     console.log(command);
-    const { stdout, stderr } = await execP(command);
-    process.stdout.write(stdout);
-    process.stderr.write(stderr);
-    if (stdout === "" && stderr === "") {
-      console.log("repo is clean");
+    const stdout = await runP(command);
+    if (stdout === "") {
+      console.log("Repo is clean.");
       return;
     }
     if (ignoreDirty) {
-      console.log("ignoring dirty repo, because --ignore-dirty");
+      console.log("Ignoring dirty repo, because --ignore-dirty");
       return;
     }
-    console.error("repo is dirty. Untwine may be destructive.");
-    console.error("Please commit changes first (or run with --ignore-dirty");
-    process.exit(1);
+    console.error("Error: Repo is dirty.");
   } catch (e) {
-    const err = e as ExecPException;
-    process.stdout.write(err.stdout ?? "");
-    process.stderr.write(err.stderr ?? "");
+    console.error(e);
     if (ignoreDirty) {
       console.log("Ignoring git error, because --ignore-dirty");
       return;
     }
-    throw e;
+    console.error("Error: Unable to determine if repo is clean.");
   }
+  console.error("Untwine can be destructive.");
+  console.error("Please commit changes first (or run with --ignore-dirty)");
+  process.exit(1);
 }
 
 async function untwine(htmlFiles: string[]) {
