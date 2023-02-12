@@ -3,14 +3,20 @@ export type Rule = {
   dirs: string[];
 };
 
+const common = [
+  "tw-common",
+  "tw-drekkar-1",
+  "tw-drekkar-2",
+]
+
 // Note: pathnames are relative to cwd
 export const rules: Rule[] = [
   {
     target: "index.html",
-    dirs: ["tw-common", "tw-drekkar", "tw-drekkar-only"],
+    dirs: [...common, "tw-drekkar-only"],
   },
   {
     target: "nero.html",
-    dirs: ["tw-common", "tw-drekkar", "tw-nero", "tw-nero-changed"],
+    dirs: [...common, "tw-nero-*", "tw-nero-other"],
   },
 ];

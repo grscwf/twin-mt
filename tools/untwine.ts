@@ -171,7 +171,7 @@ async function maybeUpdate(fname: string, value: string) {
 
 /** Returns a normal filename for a passage title. */
 function fnameForTitle(title: string): string {
-  return title.replaceAll(/[()']/g, "").replaceAll(/[/\s]+/g, "-") + ".tw";
+  return title.replaceAll(/[()']/g, "").replaceAll(/[/,\s]+/g, "-") + ".tw";
 }
 
 main(process.argv).catch((e) => {

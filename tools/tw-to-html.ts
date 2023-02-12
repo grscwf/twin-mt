@@ -69,13 +69,7 @@ async function needsBuild(rule: Rule, force: boolean) {
 }
 
 async function buildRule(rule: Rule): Promise<void> {
-  const dirs = [];
-  for (const dir of rule.dirs) {
-    try {
-      await fsp.stat(dir);
-      dirs.push(dir);
-    } catch {}
-  }
+  const dirs = await fglob(rule.dirs, { onlyFiles: false });
   const cmd = `tweego -o ${rule.target} ${dirs.join(" ")}`;
   console.log(timestamp(), cmd);
   await runP(cmd, { echo: true });
