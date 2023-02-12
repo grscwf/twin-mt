@@ -16,7 +16,7 @@ import path from "path";
 import { runP, setupEnv } from "./lib";
 import { Rule, rules } from "./rules";
 
-const headerRE = /^:: ([^\[{]+)(?:\s[\[{].*)?$/gm;
+const headerRE = /^:: ([^\[{\r\n]+)(?:\s[\[{][^\r\n]*)?[\r\n]/gm;
 
 async function main(argv: string[]) {
   setupEnv();
@@ -92,7 +92,7 @@ async function untwineOne(htmlFile: string) {
       await makeNew(rule, title, passage);
       newFiles++;
     } else {
-      updated += await maybeUpdate(f, passage) ? 1 : 0;
+      updated += (await maybeUpdate(f, passage)) ? 1 : 0;
     }
   }
 
@@ -136,6 +136,7 @@ async function findExisting(rule: Rule) {
 /** Creates a new .tw file for a passage. */
 async function makeNew(rule: Rule, fname: string, passage: string) {
   const dir = rule.dirs.at(-1)!;
+  await fsp.mkdir(dir, { recursive: true });
   const fpath = path.join(dir, fname);
   try {
     const fh = await fsp.open(fpath, "wx");
