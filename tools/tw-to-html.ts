@@ -2,7 +2,7 @@
 /*
  * ts-node builder.ts [--watch]
  *
- * Combine .tw files into .html files.
+ * Combine .tw files into Twine .html files.
  *
  * In watch mode, continually watch .tw files and rebuild if .tw files change.
  * Complains and exits if someone else changes the .html files.
@@ -11,35 +11,18 @@
 import { Command } from "@commander-js/extra-typings";
 import cp from "child_process";
 import chokidar from "chokidar";
-import fsp from "fs/promises";
 import { createHash } from "crypto";
+import type { Stats } from "fs";
+import fsp from "fs/promises";
+import { promisify } from "util";
+import { setupEnv } from "./lib";
+import type { Rule } from "./rules";
+import { rules } from "./rules";
 
-type Rule = {
-  target: string;
-  deps: string[];
-  command: string;
-};
-
-// Note: pathnames are relative to cwd
-const rules: Rule[] = [
-  {
-    target: "nero.html",
-    deps: ["nero.tw"],
-    command: "tweego nero.tw -o nero.html",
-  },
-  {
-    target: "index.html",
-    deps: ["story.tw"],
-    command: "tweego story.tw -o index.html",
-  }
-];
-
-function setupEnv() {
-  const env = process.env;
-  env["TWEEGO_PATH"] = "./assets";
-  if (env["WSLENV"] != null) {
-    env["WSLENV"] = `${env["WSLENV"]}:TWEEGO_PATH/l`;
-  }
+const execP = promisify(cp.exec);
+type ExecPException = cp.ExecException & {
+  stdout?: string | undefined;
+  stderr?: string | undefined;
 }
 
 async function main(argv: string[]) {
@@ -90,28 +73,31 @@ async function needsBuild(rule: Rule, force: boolean) {
   }
 }
 
-function buildRule(rule: Rule): Promise<void> {
-  return new Promise((resolve, reject) => {
-    try {
-      console.log(timestamp(), rule.command);
-      const proc = cp.spawn(rule.command, { shell: true, stdio: "inherit" });
-      proc.on("error", (e) => reject(e));
-      proc.on("exit", (code, sig) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          let msg = `Failure when running: ${rule.command}\n`;
-          msg += `Exited with ${code} ${sig}`;
-          reject(new Error(msg));
-        }
-      });
-    } catch (e) {
-      reject(e);
-    }
-  });
+async function buildRule(rule: Rule): Promise<void> {
+  console.log(timestamp(), rule.toHtml);
+  try {
+    const { stdout, stderr } = await execP(rule.toHtml);
+    process.stdout.write(stdout);
+    process.stderr.write(stderr);
+  } catch (e) {
+    const err = e as ExecPException;
+    process.stdout.write(err.stdout ?? "");
+    process.stderr.write(err.stderr ?? "");
+    throw e;
+  }
 }
 
 async function watch(force: boolean) {
+  const targets = rules.map((r) => r.target);
+
+  // We record the time a build started, because if a dep changes during
+  // a build, the result might be stale, so we need to build again.
+  const buildStartedTime = new Map<string, number>();
+  const now = Date.now();
+  for (const t of targets) {
+    buildStartedTime.set(t, now);
+  }
+
   await buildOnce(force);
   console.log("Watching...");
 
@@ -120,16 +106,16 @@ async function watch(force: boolean) {
   // somehow writes to the file without changing its mtime.
   // So we detect changes by checksumming the file.
 
-  const targets = rules.map((r) => r.target);
   const checksums = new Map<string, string>();
   for (const target of targets) {
     checksums.set(target, await checksum(target));
   }
 
   const isBuilding = new Set<string>();
+  const needsRebuild = new Set<string>();
 
+  /** Exit if target has changed unexpected. */
   const checkTarget = async (target: string) => {
-    if (isBuilding.has(target)) return;
     const ck = await checksum(target);
     if (ck !== checksums.get(target)) {
       console.log(`Exiting: someone else changed ${target}`);
@@ -142,26 +128,42 @@ async function watch(force: boolean) {
   }
 
   for (const rule of rules) {
-    const startRebuild = async (path: string) => {
-      const target = rule.target;
+    const target = rule.target;
+    const rebuild = async () => {
       if (isBuilding.has(target)) return;
-      await checkTarget(target);
-      console.log(`${path} changed, rebuilding ${target}`);
       isBuilding.add(target);
-      buildRule(rule)
-        .then(async () => {
-          checksums.set(target, await checksum(target));
-          isBuilding.delete(target);
-        })
-        .catch((e) => {
-          console.error(e);
-          process.exit(1);
-        });
+      buildStartedTime.set(target, Date.now());
+      await checkTarget(target);
+      try {
+        await buildRule(rule);
+        checksums.set(target, await checksum(target));
+        isBuilding.delete(target);
+        if (needsRebuild.has(target)) {
+          console.log(`${target} deps changed during build, rebuilding`);
+          needsRebuild.delete(target);
+          await rebuild();
+        }
+      } catch (e) {
+        console.error(e);
+        process.exit(1);
+      }
+    };
+    const maybeRebuild = async (path: string, stat: Stats | undefined) => {
+      if (isBuilding.has(target)) {
+        const t = buildStartedTime.get(target);
+        if (t == null || stat == null || stat.mtime.getTime() >= t) {
+          console.log(`${path} changed during build of ${target}`);
+          needsRebuild.add(target);
+        }
+        return;
+      }
+      console.log(`${path} changed, rebuilding ${target}`);
+      rebuild();
     };
     const watcher = chokidar.watch(rule.deps, { ignoreInitial: true });
-    watcher.on("add", startRebuild);
-    watcher.on("change", startRebuild);
-    watcher.on("unlink", startRebuild);
+    watcher.on("add", maybeRebuild);
+    watcher.on("change", maybeRebuild);
+    watcher.on("unlink", maybeRebuild);
     watcher.on("error", (e) => {
       console.error(e);
       process.exit(1);
@@ -181,6 +183,6 @@ function timestamp(): string {
   return now.replace("T", " ");
 }
 
-(async () => {
-  await main(process.argv);
-})();
+main(process.argv).catch((e) => {
+  throw e;
+});
