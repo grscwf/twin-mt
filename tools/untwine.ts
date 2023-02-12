@@ -123,7 +123,7 @@ async function findExisting(rule: Rule) {
       throw new Error(`[[${title}]] is duplicated in ${file} and ${other}`);
     }
 
-    const f = filenameForTitle(title);
+    const f = fnameForTitle(title);
     if (f !== path.basename(file)) {
       console.log(`Note: [[${title}]] expected filename is ${f}, not ${file}`);
     }
@@ -134,9 +134,10 @@ async function findExisting(rule: Rule) {
 }
 
 /** Creates a new .tw file for a passage. */
-async function makeNew(rule: Rule, fname: string, passage: string) {
+async function makeNew(rule: Rule, title: string, passage: string) {
   const dir = rule.dirs.at(-1)!;
   await fsp.mkdir(dir, { recursive: true });
+  const fname = fnameForTitle(title);
   const fpath = path.join(dir, fname);
   try {
     const fh = await fsp.open(fpath, "wx");
@@ -160,7 +161,7 @@ async function maybeUpdate(fname: string, value: string) {
 }
 
 /** Returns a normal filename for a passage title. */
-function filenameForTitle(title: string): string {
+function fnameForTitle(title: string): string {
   return title.replaceAll(/[()']/g, "").replaceAll(/[/\s]+/g, "-") + ".tw";
 }
 
