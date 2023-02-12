@@ -12,15 +12,21 @@ export function setupEnv(): void {
   }
 }
 
+
+export type RunOptions = {
+  echo?: boolean;
+};
+
 /**
  * Executes a shell command.
  * Writes stdout/stderr to parent stdout/stderr.
  * Rejects on error or non-empty stderr.
  * Resolves to output that was written to stdout.
  */
-export function runP(command: string): Promise<string> {
+export function runP(command: string, options?: RunOptions): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
+      const opts = options ?? {};
       let stdout = "";
       let gotStderr = false;
       const child = cp.spawn(command, { shell: true });
@@ -29,8 +35,8 @@ export function runP(command: string): Promise<string> {
         process.stderr.write(data);
       });
       child.stdout.on("data", (data: Buffer) => {
-        stdout += data.toString("utf-8");
-        process.stdout.write(data);
+        stdout += data.toString("utf8");
+        if (opts.echo) process.stdout.write(data);
       });
       child.on("error", (e) => {
         reject(e);

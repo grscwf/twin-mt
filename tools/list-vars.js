@@ -26,7 +26,7 @@ function main(args) {
 }
 
 function listVars(twFile, varListTxt, regexFilter) {
-  const text = fs.readFileSync(twFile, "utf-8");
+  const text = fs.readFileSync(twFile, "utf8");
   const lines = text.split(/\r?\n/);
   const vars = [];
   const passageMap = [];
@@ -85,7 +85,7 @@ function listVars(twFile, varListTxt, regexFilter) {
   const unknown = new Set();
   const unused = new Set();
   if (varListTxt != null && varListTxt !== "") {
-    const varList = fs.readFileSync(varListTxt, "utf-8");
+    const varList = fs.readFileSync(varListTxt, "utf8");
     const known = new Set();
     for (const m of varList.matchAll(/^(\w+)/gm)) {
       known.add(m[1]);

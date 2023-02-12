@@ -67,7 +67,7 @@ async function needsBuild(rule: Rule, force: boolean) {
 
 async function buildRule(rule: Rule): Promise<void> {
   console.log(timestamp(), rule.toHtml);
-  await runP(rule.toHtml);
+  await runP(rule.toHtml, { echo: true });
 }
 
 async function watch(force: boolean) {

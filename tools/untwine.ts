@@ -39,7 +39,7 @@ async function checkGit(ignoreDirty: boolean): Promise<void> {
   try {
     const command = "git status --porcelain";
     console.log(command);
-    const stdout = await runP(command);
+    const stdout = await runP(command, { echo: true });
     if (stdout === "") {
       console.log("Repo is clean.");
       return;
@@ -75,7 +75,7 @@ async function untwineOne(htmlFile: string) {
   }
 
   const existing = await findExisting(rule);
-  const twee = await runP(`tweego -d ${htmlFile}`);
+  const twee = await runP(`tweego -d ${htmlFile}`, { echo: false });
 
   let newFiles = 0;
   let updated = 0;

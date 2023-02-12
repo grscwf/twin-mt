@@ -9,7 +9,7 @@ function usage() {
 function main(args) {
   if (args.length !== 1) usage();
   const fname = args[0];
-  const twText = fs.readFileSync(fname, "utf-8");
+  const twText = fs.readFileSync(fname, "utf8");
   const mtime = fs.statSync(fname).mtime;
   const timestamp = mtime.toISOString()
     .replace(/T/, ' ').replace(/\..*/, '');

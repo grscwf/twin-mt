@@ -25,7 +25,7 @@ const pattern =
   /(div id=(?:"|&quot;)story-version(?:"|&quot;)(?:>|&gt;)\s*)(v[\d.]+)/s;
 
 function updateVersion(file) {
-  const text = fs.readFileSync(file, "utf-8");
+  const text = fs.readFileSync(file, "utf8");
   const m = pattern.exec(text);
   if (m == null) fail(`story-version not found in ${file}`);
 
@@ -36,7 +36,7 @@ function updateVersion(file) {
   console.log(`Changing version from ${version} to ${newVersion} in ${file}`);
 
   const newText = text.slice(0, matchStart) + newVersion + text.slice(matchEnd);
-  fs.writeFileSync(file, newText, "utf-8");
+  fs.writeFileSync(file, newText, "utf8");
 }
 
 function genVersion(oldVersion) {

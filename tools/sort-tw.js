@@ -11,7 +11,7 @@ function usage(msg) {
 
 function main(fname) {
   if (fname == null) usage("missing fname arg");
-  const src = fs.readFileSync(fname, "utf-8");
+  const src = fs.readFileSync(fname, "utf8");
   const passages = src.split(/^::/mg).slice(1).map(p => "::" + p);
 
   const sections = {
