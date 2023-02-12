@@ -1,6 +1,7 @@
 import cp from "child_process";
 
-const json = (o: unknown) => JSON.stringify(o);
+/** Alias for JSON.stringify */
+export const json = (o: unknown) => JSON.stringify(o);
 
 /** Sets env vars for running tweego */
 export function setupEnv(): void {
