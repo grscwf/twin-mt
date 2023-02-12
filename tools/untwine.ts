@@ -80,6 +80,7 @@ async function untwineOne(htmlFile: string) {
   const twee = await runP(cmd, { echo: false });
 
   let newFiles = 0;
+  let unchanged = 0;
   let updated = 0;
 
   const headers = Array.from(twee.matchAll(headerRE));
@@ -87,19 +88,24 @@ async function untwineOne(htmlFile: string) {
     const title = headers[i]![1]!;
     const start = headers[i]!.index;
     const end = i + 1 < headers.length ? headers[i + 1]!.index : twee.length;
-    const passage = twee.slice(start, end);
+
+    let passage = twee.slice(start, end).trimEnd();
+    passage += passage.includes("\r") ? "\r\n" : "\n";
 
     const f = existing.get(title);
     if (f == null) {
       await makeNew(rule, title, passage);
       newFiles++;
+    } else if (await maybeUpdate(f, passage)) {
+      updated++;
     } else {
-      updated += (await maybeUpdate(f, passage)) ? 1 : 0;
+      unchanged++;
     }
   }
 
-  console.log(`Updated ${updated} files`);
-  console.log(`Created ${newFiles} new files`);
+  console.log(`${newFiles} files created`);
+  console.log(`${updated} files updated`);
+  console.log(`${unchanged} files unchanged`);
 }
 
 /** Returns a map of existing passage title -> filename */
@@ -157,7 +163,6 @@ async function makeNew(rule: Rule, title: string, passage: string) {
 async function maybeUpdate(fname: string, value: string) {
   const current = await fsp.readFile(fname, "utf8");
   if (current === value) return false;
-  console.log(`Updating ${fname}`);
   fsp.writeFile(fname, value);
   return true;
 }
