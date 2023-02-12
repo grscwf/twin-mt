@@ -1,0 +1,236 @@
+:: Init 2 Log [inclusion] {"position":"2550,600","size":"100,100"}
+<<append head>><style>
+
+#log-button {
+    background-color: #fff;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    cursor: pointer;
+    font-size: 18px;
+    min-width: 2em;
+    opacity: 0.1;
+    padding: 2px 4px;
+    position: fixed;
+    right: 4px;
+    text-align: center;
+    top: 90px;
+    z-index: 20;
+}
+#log-button:hover {
+  background-color: #333;
+  border-color: #eee;
+  color: #eee;
+  opacity: 1;
+}
+
+#log-outer {
+  max-width: min(90vw, 40em);
+}
+
+#log-outer a {
+  color: #aac;
+  cursor: text;
+}
+#log-outer ul.actions a {
+  color: #669;
+}
+#log-outer#log-outer a.log-next {
+  color: #6ef;
+}
+
+#log-outer ul.actions li::before {
+  filter: saturate(0);
+}
+
+#log-outer hr {
+  border-color: #333;
+}
+
+#log-outer .random-walk-chosen {
+  outline: none;
+}
+
+#log-outer .log-title {
+  border-bottom: 1px solid #666;
+  margin-bottom: 12px;
+  text-align: right;
+}
+
+#log-outer .log-title span {
+  background-color: #333;
+  border: 1px solid #666;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  color: #999;
+  display: inline-block;
+  font-size: 12px;
+  opacity: 0.8;
+  padding: 2px 6px;
+}
+#log-outer .log-title span:hover {
+  border-color: #fff;
+  background-color: #111;
+  color: #fff;
+  opacity: 1;
+}
+
+</style><</append>>
+
+<<script>>
+
+const KEY = "mt-log-1";
+let log = [];
+let from = {
+  turn: -1,
+  title: "",
+};
+
+function saveLog() {
+  // console.log("save", log.map(e => [e.turn, e.html.slice(0, 30)]));
+  State.metadata.set(KEY, log);
+}
+
+function initLog() {
+  if (!setup.tester) return;
+  log = State.metadata.get(KEY) || [];
+
+  $("<div id=log-button>")
+    .appendTo("#story")
+    .text("log")
+    .on("click", () => openLog());
+
+  $(document).on(":passageinit", ev => {
+    updateLog(ev.passage.title);
+  });
+  $(document).on(":passagestart", () => {
+    from = { turn: State.turns, title: State.passage };
+  });
+}
+
+function updateLog(toTitle) {
+    if (from.turn < 0) return;
+
+    const toTurn = State.turns < from.turn ? State.turns : State.turns + 1;
+    const to = { turn: toTurn, title: toTitle };
+    const dom = $(".passage");
+
+    // console.log(from, to, { text: dom.text().slice(0, 50) });
+
+    // Clear log when using a jump point, and don't record it.
+    if (from.turn < to.turn && from.title === "n0/F Jump To") {
+      log = [];
+      saveLog();
+      return;
+    }
+
+    // Don't record motion from or to a "noreturn"
+    if (Story.get(from.title).tags.includes("noreturn")) return;
+    if (Story.get(to.title).tags.includes("noreturn")) return;
+
+    // Don't record title screen
+    if (from.title === "Title Screen") return;
+
+    // Clear log at Bound (and record it).
+    if (from.turn < to.turn && (from.title === "Bound" || to.title === "Bound")) {
+      log = [];
+      saveLog();
+    }
+
+    record(from, to, dom);
+}
+
+function record(from, to, dom) {
+  // backward or refresh
+  if (to.turn <= from.turn) {
+    log = log.filter(e => e.turn < to.turn);
+    saveLog();
+    return;
+  }
+
+  // No passage?
+  if (dom.length !== 1) return;
+
+  dom = dom.clone();
+  dom.find(`[data-passage="${to.title}"]`).addClass("log-next");
+  dom.find(".random-walk-chosen").removeClass("random-walk-chosen");
+  dom.find(".fade-in-hidden").removeClass("fade-in-hidden");
+  dom.find(".fade-in-absorb").removeClass("fade-in-absorb");
+  dom.find("[data-name=silently]").remove();
+  dom.find(".patience-debug").remove();
+  dom.find(".ro-debug").remove();
+  dom.find(".debug").replaceWith(function() { return $(this).contents(); });
+  
+  // Remove "Continue" link when it's followed
+  const links = []; // dom.find("a[data-passage]");
+  if (links.length) {
+    let last = links[links.length - 1];
+    if (last.textContent === "Continue" && last.classList.contains("log-next")) {
+      if (last.parentElement.tagName === "SPAN") {
+        last = last.parentElement;
+      }
+      last.remove();
+      const br = dom.find("br");
+      if (br.length) br[br.length - 1].remove();
+    }
+  }
+
+  // remove trailing br
+  while (dom[0] != null && dom[0].lastChild != null &&
+    dom[0].lastChild.tagName === "BR"
+  ) {
+    dom[0].lastChild.remove();
+  }
+
+  const html = dom[0].outerHTML;
+  log.push({ turn: from.turn, title: from.title, html });
+  saveLog();
+}
+
+function openLog() {
+  Dialog.setup("");
+  const outer = $("<div id=log-outer>").appendTo(Dialog.body());
+  let words = 0;
+  log.forEach((e, i) => {
+    $("<div class=log-title>")
+      .append($("<span>").text(e.title))
+      .appendTo(outer);
+    const section = $.parseHTML(e.html);
+    outer.append(section);
+    words += MagesTower.countWords($(section).text());
+  });
+  
+  const json = JSON.stringify(log);
+  console.log({json: json.length});
+  const compressed = LZString.compressToBase64(json);
+
+  const minutes = Math.round(words / 250);
+  $("#ui-dialog-title")
+      .append(`${words} words | ~${minutes} min`)
+      .append(` | ${compressed.length} lz`);
+
+  $("<a>&#x2191; </a>").prependTo("#ui-dialog-title")
+    .on("click", () => {
+      const divs  = $("#log-outer > div.log-title");
+      if (divs.length) divs[0].scrollIntoView();
+    });
+  $("<a> &#x1f3b2;</a>").appendTo("#ui-dialog-title")
+    .on("click", () => {
+      const divs = $("#log-outer > div.log-title");
+      if (divs.length) {
+        // Should not use State.random()
+        const i = Math.floor(divs.length * Math.random());
+        divs[i].scrollIntoView();
+      }
+    });
+  $("<a> &#x2193;</a>").appendTo("#ui-dialog-title")
+    .on("click", () => {
+      const divs = $("#log-outer > div.log-title");
+      if (divs.length) divs[divs.length - 1].scrollIntoView();
+    });
+
+  Dialog.open();
+}
+
+initLog();
+<</script>>

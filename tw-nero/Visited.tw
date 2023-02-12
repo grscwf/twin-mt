@@ -1,0 +1,122 @@
+:: Visited [noreturn] {"position":"2175,1525","size":"100,100"}
+<<nobr>>
+
+<<return-block>>
+    <span class=vp-colsep>||</span>
+    <a id=vp-clear>
+        Clear visited
+    </a>
+    <span class=vp-colsep>||</span>
+    <label>
+        <input id=vp-mark type=checkbox>
+        Mark visited links
+        <span id=vp-on-hover>
+            on hover
+        </span>
+    </label>
+
+    <div id=visited-head-2></div>
+<</return-block>>
+
+<style>
+#vp-on-hover.vp-no-hover {
+  display: none;
+}
+
+.vp-colsep {
+  color: #666;
+  margin: 0 .5em;
+}
+.vp-ssep {
+  height: 1em;
+}
+.vp-symbol {
+  color: #666;
+  display: inline-block;
+  font-family: tme-fa-icons;
+  margin-right: .4em;
+  text-align: center;
+  width: 1em;
+}
+.vp-visited {
+  color: #999;
+}
+.vp-visited .vp-title {
+  text-decoration: line-through;
+}
+
+</style>
+
+<<script>>
+const VP = VisitedPassages;
+
+function clear() {
+  VP.clear();
+  render();
+}
+
+function pct(x, y) {
+  return Math.round(x / y * 100) + "%";
+}
+
+function render() {
+  const V = State.variables;
+
+  const colsep = "<span class=vp-colsep>||</span>";
+
+  $("#vp-body").remove();
+  const out = $("<div id=vp-body>").appendTo(".passage");
+  const head2 = $("#visited-head-2");
+
+  $("#vp-clear").on("click", clear);
+
+  $("#vp-mark")
+      .prop("checked", VP.getMarksEnabled())
+      .on("change", ev => VP.setMarksEnabled(ev.target.checked));
+
+  const canHover = window.matchMedia && matchMedia("(hover: hover)").matches;
+  $("#vp-on-hover").toggleClass("vp-no-hover", !canHover);
+
+  const passages = Story.lookup();
+  const relevant = passages.filter(p =>
+    !p.tags.includes("inclusion") && /^n/.test(p.title)
+  );
+  const titles = relevant.map(p => p.title).sort();
+
+  const nt = titles.length;
+  const nv = titles.filter(t => VP.has(t)).length;
+  $("<div class=vp-stats>").appendTo(head2).append([
+    `${nt} passages`,
+    colsep,
+    `${nv} (${pct(nv, nt)}) visited`,
+    colsep,
+    `${nt - nv} (${pct(nt - nv, nt)}) not visited`
+  ]);
+
+  let curSection = null;
+  titles.forEach(title => {
+    const section = title.replace(/[/\s].*/, "");
+    if (curSection != null && section !== curSection) {
+      $("<div class=vp-ssep>").appendTo(out);
+    }
+    curSection = section;
+
+    const visited = VP.has(title);
+    const outer = $("<div class=vp-item>")
+      .addClass(visited ? "vp-visited" : "vp-unvisited")
+      .appendTo(out);
+    $("<span class=vp-symbol>")
+      .text(visited ? "\ue803" : ".")
+      .appendTo(outer);
+    $("<span class=vp-title>")
+      .text(title)
+      .appendTo(outer);
+  });
+  $(out).append("<hr>");
+  $(out).wiki(`<<link "Return to the game" $return>><</link>>`);
+}
+
+$(document).one(":passagedisplay", render);
+<</script>>
+
+<</nobr>>

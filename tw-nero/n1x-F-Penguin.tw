@@ -1,0 +1,184 @@
+:: n1x/F Penguin [has-hole maybe-password] {"position":"7175,4325","size":"100,100"}
+<<nobr>>
+<<vi-ignore n2_ivexGone>>
+
+<!--
+  coin starts in penguin's mouth.
+    (dropped false, known false)
+  viewing penguin causes coin to drop.
+  	(dropped true, known false)
+  asking receptive ivex about penguin makes him notice the coin is dropped.
+    (dropped false, known true)
+  looking at penguin again causes coin to drop again.
+    (dropped true, known true)
+-->
+
+<<cv-try n1_magicPhase
+	`MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
+    `MP_contact` `MP_broken`>>
+<<cv-try n2_magicPhaseBroken `null` `MP_mageSight` `MP_wantTouch`>>
+<<cv-try n1_passwordsTried `null` `["Hunter Too"]`>> /* maybe also need Please */
+
+<!-- passed wantTouch, so we know the coin was important -->
+<<set _importantCoin =
+    (MP_wantTouch < $n1_magicPhase
+       && $n1_magicPhase < MP_broken)
+    || MP_contact === $n2_magicPhaseBroken
+>>
+
+Traditionalist mages often keep several skeletal or taxidermied animals
+in their lair, more for the gloomy ambiance than any practical purpose.
+
+<<if $n1_penguinNameKnown>>
+    Ivex has his deceased pet penguin, named Hunter Too, atop
+    <<if $n1_candleLit>>
+        the cabinet that the
+        <<n1-no-loop [[flickering red candle|n1x/F Candle]]>>
+        came from.
+    <<else>>
+        a cabinet.
+    <</if>>
+    For some reason, Ivex had it taxidermied
+<<else>>
+    Ivex has one such animal atop
+    <<if $n1_candleLit>>
+        the cabinet that the
+        <<n1-no-loop [[flickering red candle|n1x/F Candle]]>>
+        came from.
+    <<else>>
+        a cabinet.
+    <</if>>
+    It's a penguin, and it appears to be taxidermied,
+<</if>>
+with its beak gaping open and its wings spread wide,
+in a pose that seems more appropriate
+for an eagle or an owl, not a flightless waterfowl.
+
+<<if $n1_mageSight>>
+    ?P
+    Even stranger, the surface of the penguin is an iillusion.
+    There <em>is</em> an actual penguin there,
+    with the same coloration,
+    in exactly that pose.
+    <<if $n2_free>>
+        But the physical penguin is one millimeter smaller than
+        the identical illusion that's covering it.
+    <<else>>
+        The physical penguin is identical to the illusion that's covering it.
+    <</if>>
+<</if>>
+
+?P
+Nero stares at the penguin in perplexity.
+<<if $n1_penguinCoinDropped>>
+    He remembers the mouth had been holding
+    <<= _importantCoin ? "an important coin"
+        : $n1_penguinNameKnown ? "a coin" : "a coin-like object">>,
+    which has fallen and rolled off somewhere.
+<<elseif $n1_penguinNameKnown>>
+    While he's staring, the
+    <<= _importantCoin ? "important" : "">>
+    coin in the penguin's mouth drops again,
+    and disappears somewhere on the floor, again.
+<<else>>
+    While he's staring, an object suddenly drops from the penguin's mouth,
+    and then disappears somewhere on the floor.
+    It looked like a coin,
+    <<if $n1_coinThrown>>
+        perhaps similar to the
+        <<= $n1_coinThrownAgain ? "ones" : "one">>
+        that Ivex had flung earlier at the wolf's crotch.
+    <<elseif $n1_bookcasesViewed>>
+        perhaps similar to the ones on the bookshelf.
+    <<else>>
+        but Nero is not certain of it.
+    <</if>>
+<</if>>
+
+?P
+<<if MP_wantTouch === $n2_magicPhaseBroken
+    || MP_wantTouch === $n1_magicPhase
+>>
+    The gaping mouth of the penguin leads him to wonder,
+    could <em>that</em> be the hole that the Sprite
+    <<= $n2_free ? "wanted to be" : "wants">>
+    touched?
+    <<if $n2_free>>
+        <!-- broken -->
+        Unfortunately, there's no way of testing that now.
+    <<elseif $n2_ivexGone>>
+        Perhaps Ivex could have been persuaded to touch it,
+        but he's gone now, and there's no way
+        for Nero to reach the penguin himself.
+    <<elseif $n1_penguinNameKnown>>
+        ?P
+        Ivex seemed sensitive about his penguin.
+        <<if $n1_ivexWasReceptive>>
+            Nero perhaps should have asked earlier,
+            when the panther was more relaxed,
+            but there will certainly be another opportunity to ask again.
+        <<else>>
+            Nero does not think it will be useful to mention it again
+            until the panther is more relaxed.
+        <</if>>
+    <<else>>
+        And could Ivex be persuaded to touch it?
+        <<actions-add [[Tell Ivex, "Something just dropped from the beak..."|n1x/D Penguin Ask]]>>
+    <</if>>
+
+<<elseif MP_wantPassword === $n1_magicPhase
+    || MP_onHold === $n1_magicPhase
+>>
+    <<pw-suggest "Hunter Too">>
+        The names of pets are commonly used as passwords.
+        Perhaps "Hunter Too" is Ivex's password?
+    <<pw-fail>>
+        The penguin's name, "Hunter Too", was not the password.
+        It's possible that Ivex is using some variant of the name,
+        but there are too many possible variations that could be tried.
+        Nero hopes that the password is something else.
+    <</pw-suggest>>
+
+<<elseif $n2_free>>
+    The wolf considers searching for it,
+    <<if $n2_cabinetUnderViewed>>
+        but the layers of dirt and shed fur under the cabinets
+        would make that task unpleasant.
+        And it seems quite unnecessary anyway.
+    <<else>>
+        but a brief look under one cabinet reveals deep layers
+        of dirt and shed fur. He decides that the unpleasant task
+        is probably unnecessary anyway.
+    <</if>>
+    ?P
+    The penguin itself is a disturbing display of Ivex's
+    demented psyche,
+    but it doesn't seem useful or important right now.
+
+<<else>>
+    <<if $n1_penguinNameKnown>>
+        Why does Ivex keep
+        <<= _impotantCoin ? "such an important" : "a">>
+        coin in his penguin's mouth,
+        if it keeps falling out?
+        Why taxidermy the penguin in such a ridiculous pose?
+    <<else>>
+        Why was there a coin-like object in the penguin's mouth?
+        Why even a penguin?
+    <</if>>
+    ?P
+    Well, whatever Ivex's reasons for displaying
+    <<= $n1_penguinNameKnown ? "his deceased pet" : "a penguin">>
+    in such a state,
+    it doesn't seem useful or important right now.
+<</if>>
+
+?P
+<ul class="actions">
+    <<actions-get>>
+    <li>$t_afterLook</li>
+</ul>
+
+<<set $n1_penguinCoinDropped = true>>
+<<set $n2_free && ($n2_cabinetUnderViewed = true)>>
+<</nobr>>

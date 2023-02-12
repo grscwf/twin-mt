@@ -1,0 +1,30 @@
+:: Init 2 Count Words [inclusion] {"position":"2750,500","size":"100,100"}
+<<script>>
+
+MagesTower.countWords = function(text) {
+  const tokens = text.split(/(<[<].*?>>|<.*>)/);
+  let n = 0;
+  const skipTo = (p, re) => {
+    while (p < tokens.length && !re.test(tokens[p])) ++p;
+    return p;
+  };
+  for (let p = 0; p < tokens.length; p++) {
+    const t = tokens[p].trim();
+    if (t === "") {
+      /* nothing */
+    } else if (/^<?<script/.test(t)) {
+      n += 1;
+      p = skipTo(p, /^<?<[/]script/);
+    } else if (t.startsWith("<style")) {
+      n += 1;
+      p = skipTo(p, /^<[/]style/);
+    } else if (t.startsWith("<")) {
+      n += 1;
+    } else {
+      const words = t.split(/[\s]+/).filter(w => /\w/.test(w) && w !== "?P");
+      n += words.length;
+    }
+  }
+  return n;
+}
+<</script>>

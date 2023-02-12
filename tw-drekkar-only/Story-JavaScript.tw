@@ -1,0 +1,64 @@
+:: Story JavaScript [script]
+Config.ui.stowBarInitially = true;
+
+if (!Config.debug) {
+  Config.history.controls = false;
+}
+
+if (Config.debug) {
+  // set flag for StoryMenu (can't use Config.debug; it's always false for StoryMenu)
+  setup.enableDebugMenu = true;
+
+  // set base url for html images (this happens too late for css images)
+  $('head').prepend('<base href="https://magestower.slethstories.com/">');
+
+  // add debugging class for css
+  $('html').addClass('debugging');
+
+  // start with debugview off
+  setTimeout(() => DebugView.disable());
+}
+
+l10nStrings.restartTitle = 'Reset';
+l10nStrings.restartPrompt = 'Archive unlocks and unsaved progress will be lost.<br><br>Are you sure you want to reset everything and start over?';
+
+$(document.head).append("<link rel='icon' href='images/mt_icon_tr.png'>");
+
+$(document).on(':passagestart', function (ev) {
+    if (! ev.passage.tags.contains("noreturn")) {
+        State.variables.return = ev.passage.title;
+    }
+});
+
+/* Health Bar code - Start */
+window.Health = function (CurHP, MaxHP, BarID, Horizontal, Container) {
+    if (Container == undefined) {
+        console.log("Container undefined!!");
+        Container = document;
+    }
+    var HP = parseInt((CurHP / MaxHP) * 100).clamp(0, 100);
+    var BarElement = $(Container).find("#" + BarID);
+    if (Horizontal) {
+        BarElement.css({ width: HP + "%" });
+    } else {
+        BarElement.css({ height: HP + "%" });
+    }
+    //BarElement.attr("title", CurHP + "/" + MaxHP);
+    //$(Container).find("#" + BarID + "bkg").attr("title", CurHP + "/" + MaxHP + " HP");
+};
+/* Health Bar code - End */
+
+/* Arousal Bar Macro - Start */
+macros.arousalbar = {
+    handler: function(place, macroName, params, parser) {
+        var CurArousal = params[0];
+        var MaxArousal = params[1];
+        
+        $(document).one(':passagerender', function (ev) {
+            Health(CurArousal, MaxArousal, "horizontalhealthbar", true, ev.content);
+        });
+        
+        new Wikifier(place, "<div id=\"horizontalhealthbarbkg\" class=\"hzbarbkg\"><div id=\"horizontalhealthbar\" class=\"hzbar\"></div></div>");
+    }
+}
+/* Arousal Bar Macro - End */

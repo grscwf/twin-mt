@@ -1,0 +1,154 @@
+:: Archives [noreturn] {"position":"2500,2000","size":"100,100"}
+<<nobr>>
+?cssArchive
+
+<style>
+  body { overflow-y: scroll; }
+  .arc-body {
+    margin-left: 1.5rem;
+  }
+  .arc-closable:not(.arc-open) {
+    display: none;
+  }
+  .arc-switch {
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-left: 0.5em;
+  }
+</style>
+
+<<script>>
+  const T = State.temporary;
+
+  T.open = which => {
+    $(".arc-closable").removeClass("arc-open");
+    $(".arc-switch").text("(show)");
+    $(`.arc-closable-${which}`).addClass("arc-open");
+    $(`.arc-switch-${which}`).text("(hide)");
+  };
+
+  T.toggle = which => {
+    const now = State.metadata.get("arc-open");
+    const next = now === which ? "none" : which;
+    State.metadata.set("arc-open", next);
+    T.open(next);
+  };
+
+  T.switch = which => {
+    let mkp =
+      `<a class="arc-switch arc-switch-${which}"` +
+      ` onclick="SugarCube.State.temporary.toggle('${which}')"` +
+      `>(show)</a>`;
+    return mkp;
+  };
+
+  $(document).one(":passagedisplay", () => {
+    const now = State.metadata.get("arc-open");
+    T.open(now || "intro");
+  });
+  
+  function lockpickSetup() {
+    T.lockpick = setup.debug && State.metadata.get("arc-lockpick");
+    if (!setup.tester) return;
+    $(document).one(":passagedisplay", () => {
+      const el = $("#arc-lockpick");
+      el.prop("checked", T.lockpick);
+      el.on("input", lockpickUpdate);
+    });
+  }
+  
+  function lockpickUpdate() {
+    const el = $("#arc-lockpick");
+    const val = !!el.prop("checked");
+    State.metadata.set("arc-lockpick", val);
+    VarInfo.revisitHere();
+  }
+  
+  lockpickSetup();
+<</script>>
+
+<<return-head>>
+
+<div class="ui-title">
+    Welcome to the Mage's Tower Archives
+    <<= _switch("intro")>>
+</div>
+
+<div class="arc-body">
+    <div class="arc-closable arc-closable-intro">
+        <br>
+        Here you can revisit all the endings and keywords
+        that the adventurers have seen
+        in their time in the Mage's Tower.
+        When an adventurer experiences an ending,
+        it will be unlocked here.
+        If an ending has different variations
+        due to the adventurer's choices during the game,
+        these also can be set here,
+        provided they have been seen before.
+        ?P
+        Grayed out endings and variations are paths
+        that have not yet been found.
+        Most of them are shown with a hint
+        as to what path the adventurer should take to reach them.
+        There are also many hints within the stories for each path.
+        ?P
+        The endings in this archive are all static,
+        with no choices beyond the selection of variations on this page.
+        A few of the actual endings have choices
+        that are more complicated than what can be selected below.
+        If you want to re-experience those dynamic endings,
+        not just the static version offered here,
+        you can save a game at the point the ending begins.
+    </div>
+
+    <br>
+    <span class="imp-info">
+        Unlocking is only kept within a save.
+    </span>
+    To keep all unlocked endings and keywords,
+    make sure to always use and load the same save file.
+    
+    <<if setup.debug>>
+        ?P
+        <label>
+            &#x1f527; bypass locks
+            <input id=arc-lockpick type=checkbox>
+        </label>
+    <</if>>
+</div>
+
+<hr>
+<div class="ui-subtitle">
+    Drekkar Endings
+    <<= _switch("drekkar")>>
+</div>
+<div class="arc-body arc-closable arc-closable-drekkar">
+    <<include [[Interrogation Archive Display]]>>
+    <<include [[Enthrallment Archive Display]]>>
+    <<include [[Extraction Archive Display]]>>
+    <hr>
+    <<include [[Ivex Punishment Archive Display]]>>
+    <<include [[Ivex Enthrallment Archive Display]]>>
+    <<include [[Ivex Extraction Archive Display]]>>
+</div>
+
+<hr>
+<div class="ui-subtitle">
+    Nero Endings
+    <<= _switch("nero")>>
+</div>
+<div class="arc-body arc-closable arc-closable-nero">
+    <<include [[n0/F Nero Ending Index]]>>
+</div>
+
+<hr>
+<div class="ui-subtitle">
+    Nero Keywords <<= Nero.kwCount()>>
+    <<= _switch("nero-kw")>>
+</div>
+<div class="arc-body arc-closable arc-closable-nero-kw">
+    <<include [[n0/F Nero Keyword Index]]>>
+</div>
+
+<</nobr>>

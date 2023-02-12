@@ -1,0 +1,114 @@
+:: Init 1 Var Trace [inclusion] {"position":"2450,375","size":"100,100"}
+<<script>>
+window.VarTrace || (window.VarTrace = {});
+const VT = window.VarTrace;
+
+VT.ctx = newContext();
+
+VT._unproxied = null;
+const myBrand = Symbol("VarTraceBrand");
+
+function newContext() {
+  return {
+    withinInclude: false,
+    wasDeleted: new Set(),
+    wasRead: new Set(),
+    wasSet: new Set(),
+    wasTopRead: new Set(),
+  };
+}
+
+Macro.add("var-trace-ignore", {
+  tags: [],
+  handler: function() {
+    const body = this.payload[0].contents;
+    VT.ignore(() => $(this.output).wiki(body));
+  }
+});
+
+const origInclude = Macro.get("include");
+Macro.delete("include");
+Macro.add("include", {
+  handler: function() {
+    const save = VT.ctx.withinInclude;
+    VT.ctx.withinInclude = true;
+    try {
+      origInclude.handler.call(this);
+    } finally {
+      VT.ctx.withinInclude = save;
+    }
+  }
+});
+
+/** Start tracing. */
+VT.start = () => {
+  VT.stop();
+  VT.ctx = newContext();
+  VT._unproxied = State.active.variables;
+  State.active.variables = new Proxy(VT._unproxied, {
+    defineProperty(o, prop) {
+      if (typeof prop === "string") VT.ctx.wasSet.add(prop);
+      return Reflect.defineProperty(...arguments);
+    },
+    deleteProperty(o, prop) {
+      if (typeof prop === "string") VT.ctx.wasDeleted.add(prop);
+      return Reflect.deleteProperty(...arguments);
+    },
+    get(o, prop) {
+      if (prop === "_varTrace") return myBrand;
+      if (typeof prop === "string") {
+        VT.ctx.wasRead.add(prop);
+        if (!VT.ctx.withinInclude) VT.ctx.wasTopRead.add(prop);
+      }
+      return Reflect.get(...arguments);
+    },
+    set(o, prop) {
+      if (typeof prop === "string") VT.ctx.wasSet.add(prop);
+      return Reflect.set(...arguments);
+    },
+  });
+};
+
+/** Stop tracing. */
+VT.stop = () => {
+  if ((State.active.variables._varTrace ?? myBrand) !== myBrand) {
+    throw new Error("Multiple instances of Var Trace in conflict.");
+  }
+  if (VT._unproxied != null) {
+    State.active.variables = VT._unproxied;
+    VT._unproxied = null;
+  }
+};
+
+/** Get vname's value without tracing it. */
+VT.untracedGet = vname => {
+  return (VT._unproxied ?? State.active.variables)[vname];
+}
+
+/** Set vname's value without tracing it. */
+VT.untracedSet = (vname, value) => {
+  (VT._unproxied ?? State.active.variables)[vname] = value;
+};
+
+/** Delete vname's value without tracing it. */
+VT.untracedDelete = vname => {
+  delete (VT._unproxied ?? State.active.variables)[vname];
+};
+
+VT.untracedVariables = () => {
+  return VT._unproxied ?? State.active.variables;
+}
+
+/** Run fn without tracing any variables during its execution. */
+VT.ignore = fn => {
+  if (VT._unproxied == null) return fn();
+  const proxy = State.active.variables;
+  State.active.variables = VT._unproxied;
+  try {
+    return fn();
+  } finally {
+    State.active.variables = proxy;
+  }
+};
+
+<</script>>

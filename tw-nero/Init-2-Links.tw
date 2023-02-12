@@ -1,0 +1,29 @@
+:: Init 2 Links [inclusion] {"position":"2450,600","size":"100,100"}
+<<script>>
+
+/**
+ * <<mtl $link [$script]>>
+ *   $text
+ * <</mtl>>
+ * Similar to <li><<link $text $link>><<run $script>><</link>></li>
+ * Allows double-bracket syntax for the link.
+ */
+Macro.add("mtl", {
+  tags: [],
+  handler: function() {
+    const [link, code] = this.args;
+    const title = linkTitle(link);
+    State.temporary.mtText = String(this.payload[0].contents);
+    const body = code == null ? "" : `<<run ${code}>>`;
+    $(this.output).wiki(`<li><<link _mtText "${title}">>${body}<</link>></li>`);
+  }
+});
+
+function linkTitle(link) {
+  if (link.isLink) return link.link;
+  const str = String(link);
+  const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
+  return m == null ? str : m[1];
+}
+
+<</script>>

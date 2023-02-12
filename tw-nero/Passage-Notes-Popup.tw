@@ -1,0 +1,120 @@
+:: Passage Notes Popup [inclusion] {"position":"2025,1100","size":"100,100"}
+<<nobr>>
+<<script>>
+  const PN = window.PassageNotes;
+  const T = State.temporary;
+  const V = State.variables;
+  const session = window.sessionStorage;
+
+  T.savedVal = "";
+  T.editVal = "";
+  T.hasConflict = false;
+
+  $(document).one(":dialogopening", () => {
+    $("#NP-input").on("input", onInput);
+    restoreSession();
+    appendSelected();
+    uiUpdate();
+  });
+
+  $(document).one(":dialogopened", () => {
+    $("#NP-input").focus();
+  });
+
+  function appendSelected() {
+    if (PN.selectedText == null || PN.selectedText === "") return;
+    const q = PN.selectedText.replace(/^/gm, "> ") + "\n";
+    let val = T.editVal.trim();
+    if (val !== "" && val.slice(-1) !== "\n") {
+      val += "\n";
+    }
+    val += q;
+    $("#NP-input").val(val);
+    saveValue(val);
+  }
+
+  function restoreSession() {
+    T.savedVal = PN.getOne(V.t_notesOrigin);
+    T.editVal = session.getItem("notes-single:" + V.t_notesOrigin) ?? T.savedVal;
+    $("#NP-input").val(T.editVal);
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+  }
+
+  function uiUpdate() {
+    $("#NP-conflict").toggleClass("NP-conflict-hidden", !T.hasConflict);
+  }
+
+  function onInput(ev) {
+    saveValue($("#NP-input").val(), false);
+  }
+
+  function saveValue(val, overwrite) {
+    T.editVal = val;
+    if (overwrite || !T.hasConflict) {
+      T.savedVal = PN.tryReplaceOne(V.t_notesOrigin, T.savedVal, T.editVal);
+    }
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    const key = "notes-single:" + V.t_notesOrigin;
+    if (T.hasConflict) {
+      session.setItem(key, val);
+    } else {
+      session.removeItem(key);
+    }
+    uiUpdate();
+  }
+
+  T.addCurrentState = () => {
+    const wasRead = [...window.VarTrace.ctx.wasRead].sort();
+    const obj = {};
+    for (const vn of wasRead) {
+      const val = State.current.variables[vn];
+      if (val != null) obj[vn] = val;
+    }
+    const json = JSON.stringify(obj);
+    const text = `enterState = ${json}`;
+    const newVal = T.editVal + "\n" + text;
+    $("#NP-input").val(newVal);
+    saveValue(newVal, false);
+  }
+<</script>>
+<style>
+  .NP-subtitle {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 0 0 0.5em 0;
+  }
+  #NP-input {
+    min-width: 10em;
+    width: 95%;
+  }
+  .NP-conflict-hidden {
+    display: none;
+  }
+  .NP-conflict-important {
+    color: #fe9;
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+  #ui-dialog-body a {
+    display: inline-block;
+    margin-top: .5em;
+  }
+</style>
+<div class="NP-subtitle">
+    Notes for [passage $t_notesOrigin]
+</div>
+<textarea id="NP-input" rows="8" placeholder="Enter text here"></textarea>
+<br>
+<div id="NP-conflict">
+  <div class="NP-conflict-important">
+      Notes for this passage has an edit conflict!
+  </div>
+  [[See conflict|Passage Notes Single][Dialog.close()]]
+</div>
+<<link "Append a summary of the current state">>
+    <<run _addCurrentState()>>
+<</link>>
+<br>
+[[View all notes|Passage Notes Top][Dialog.close()]]
+<br>
+<</nobr>>

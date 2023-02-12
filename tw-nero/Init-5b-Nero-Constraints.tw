@@ -1,0 +1,876 @@
+:: Init 5b Nero Constraints [inclusion] {"position":"2825,1150","size":"100,100"}
+<<script>>
+const ET = EnumType;
+
+// - Passages are grouped into story sections by a prefix in their title.
+// - Every passage must be in exactly one section.
+Nero.sections = {
+  // n0 - passages that aren't part of the story
+  n0_meta: /^n0/,
+
+  // n1 - everything before Ivex leaves
+  n1a_intro: /^n1a/,
+  n1cn_neutral: /^n1cn/,
+  n1cr_receptive: /^n1cr/,
+  n1cs_subby: /^n1cs/,
+  n1cx_transition: /^n1cx/,
+  n1d_candle: /^n1d/,
+  n1e_horny: /^n1e/,
+  n1f_clever: /^n1f/,
+
+  // n1 - special modules
+  n1p_barbs: /^n1p/,
+  n1s_magic: /^n1s/,
+  n1x_look: /^n1x/,
+  n1y_lookHorny: /^n1y/,
+
+  // n2 - restart at Ivex leaving, until exit 1F
+  n2a_start: /^n2a/,
+  n2b_bound: /^n2b/,
+  n2f_free: /^n2f/,
+
+  // n2 - special modules
+  n2x_lookFree: /^n2x/,
+
+  // n3 - 2nd floor
+  n3a_start: /^n3a/,
+
+  // n8 - all archives
+  n8_archive: /^n8/,
+
+  // n9 - all endings
+  n9_ending: /^n9/,
+
+  // not Nero
+  other: /^[^n]/,
+};
+
+function checkSections() {
+  if (!setup.tester) return;
+  Story.lookup().forEach(({ title }) => {
+    const matches = Object.entries(Nero.sections)
+      .flatMap(([s, re]) => re.test(title) ? [s] : []);
+    if (matches.length === 0) {
+      console.error(`[\[${title}]] does not match any section`);
+    } else if (matches.length > 1) {
+      console.error(`[\[${title}]] should not match multiple sections: ${matches}`);
+    }
+  });
+}
+
+checkSections();
+
+Nero.getSection = (here) => {
+  here || (here = State.passage);
+  for (const [s, re] of Object.entries(Nero.sections)) {
+    if (re.test(here)) return s;
+  }
+  console.error(`[\[${here}]] does not match any section`);
+  return "unknown";
+};
+
+// - Flags are booleans where null or undefined is equivalent to false.
+// - "implies" are constraints on other vars when the flag is true.
+//   - The constraints can be any type of value, not just flags.
+// - "sections" are constraints for the flag within a section.
+//   - "" means the flag can be any value and isn't important in the section.
+//   - "notable" means the flag's value should have an effect in the section.
+Nero.flags = {
+  // true if Ivex has smashed Nero's balls
+  n1_abused: {
+    implies: {
+      // no constraints
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: "",
+      n1cn_neutral: "notable",
+      n1cr_receptive: "notable",
+      n1cs_subby: "",
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: "notable",
+      n1f_clever: "notable",
+      n1p_barbs: "",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: "",
+      n2a_start: "",
+      n2b_bound: "",
+      n2f_free: "",
+      n2x_lookFree: "",
+      n3a_start: "",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+  
+  n1_bottleNameKnown: {
+    implies: {
+      n1_bottleViewed: true,
+    },
+  },
+
+  // true if lust candle is now compulsive
+  n1_candleHorny: {
+    implies: {
+      n1_candleLit: true,
+      t_ivexReceptive: false,
+      n1_naked: true,
+      n2_extraHorny: false,
+      n2_free: false,
+      n2_tooClever: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: true,
+      n1f_clever: "notable",
+      n1p_barbs: false,
+      n1s_magic: "",
+      n1x_look: false,
+      n1y_lookHorny: true,
+      n2a_start: false,
+      n2b_bound: "notable",
+      n2f_free: false,
+      n2x_lookFree: false,
+      n3a_start: false,
+      n8_archive: "",
+      n9_ending: false,
+      other: "",
+    },
+  },
+
+  // true if lust candle is lit (and ivex is masked)
+  n1_candleLit: {
+    implies: {
+      t_ivexReceptive: false,
+      n2_extraHorny: false,
+      n2_free: false,
+      n2_tooClever: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: true,
+      n1e_horny: true,
+      n1f_clever: "notable",
+      n1p_barbs: "",
+      n1s_magic: /ivex/im,
+      n1x_look: /ivex/im,
+      n1y_lookHorny: true,
+      n2a_start: false,
+      n2b_bound: true,
+      n2f_free: false,
+      n2x_lookFree: false,
+      n3a_start: false,
+      n8_archive: "",
+      n9_ending: false,
+      other: "",
+    },
+  },
+
+  n1_gravAsked: {
+    implies: {
+      n1_gravViewed: true,
+    }
+  },
+  n1_gravViewed: {
+    implies: {
+      n1_gravNoticed: true,
+    }
+  },
+
+  // true if Nero can see magic
+  n1_mageSight: {
+    implies: {
+      n1_naked: true,
+      n2_deskBurned: false,
+      n2_extraHorny: false,
+      n2_mirrorBroken: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: "notable",
+      n1cr_receptive: "notable",
+      n1cs_subby: "notable",
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: "notable",
+      n1f_clever: true,
+      n1p_barbs: false,
+      n1s_magic: "",
+      n1x_look: "notable",
+      n1y_lookHorny: "notable",
+      n2a_start: "notable",
+      n2b_bound: "notable",
+      n2f_free: "notable",
+      n2x_lookFree: "notable",
+      n3a_start: "notable",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+
+  // true if Nero is naked
+  n1_naked: {
+    implies: {
+      // no constraints
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: "",
+      n1cn_neutral: "notable",
+      n1cr_receptive: "notable",
+      n1cs_subby: true,
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: true,
+      n1f_clever: true,
+      n1p_barbs: "",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: true,
+      n2a_start: true,
+      n2b_bound: true,
+      n2f_free: true,
+      n2x_lookFree: true,
+      n3a_start: true,
+      n8_archive: "",
+      n9_ending: true,
+      other: "",
+    },
+  },
+
+  // true if Nero is very compliant
+  n1_subby: {
+    implies: {
+      n1_naked: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: true,
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: "notable",
+      n1f_clever: "notable",
+      n1p_barbs: "",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: "",
+      n2a_start: "",
+      n2b_bound: "",
+      n2f_free: "",
+      n2x_lookFree: "",
+      n3a_start: "",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+
+  // true if Nero resists after being abused
+  n1_tough: {
+    implies: {
+      n1_abused: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: "",
+      n1cx_transition: "notable",
+      n1d_candle: "notable",
+      n1e_horny: "notable",
+      n1f_clever: "",
+      n1p_barbs: "",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: "",
+      n2a_start: "",
+      n2b_bound: "",
+      n2f_free: "",
+      n2x_lookFree: "",
+      n3a_start: "",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+
+  // true if Ivex is near the cross
+  t_ivexNear: {
+    implies: {
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: "",
+      n1cn_neutral: "",
+      n1cr_receptive: "",
+      n1cs_subby: "",
+      n1cx_transition: "",
+      n1d_candle: "",
+      n1e_horny: "",
+      n1f_clever: "",
+      n1p_barbs: "",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: "",
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: false,
+      n2x_lookFree: false,
+      n3a_start: false,
+      n8_archive: "",
+      n9_ending: false,
+      other: "",
+    },
+  },
+
+  // true if Ivex is intrigued and suggestible
+  t_ivexReceptive: {
+    implies: {
+      n1_candleLit: false,
+      n1_candleHorny: false,
+      n2_extraHorny: false,
+      n2_free: false,
+      n2_ivexGone: false,
+      n2_tooClever: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: true,
+      n1cs_subby: true,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1f_clever: "",
+      n1p_barbs: "",
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: false,
+      n2x_lookFree: false,
+      n3a_start: false,
+      n8_archive: "",
+      n9_ending: false,
+      other: "",
+    },
+  },
+
+  n2_cabinetUnderViewed: {
+    implies: {
+      n1_penguinCoinDropped: true,
+      n2_free: true,
+    }
+  },
+
+  // true after easy escape
+  n2_deskBurned: {
+    implies: {
+      n1_mageSight: false,
+    },
+  },
+
+  // true if Nero is free with a distracting amount of lust (easy escape)
+  n2_extraHorny: {
+    implies: {
+      n1_candleHorny: false,
+      n1_candleLit: false,
+      t_ivexReceptive: false,
+      n1_mageSight: false,
+      n1_naked: true,
+      n2_free: true,
+      n2_ivexGone: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1f_clever: false,
+      n1p_barbs: false,
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: "notable",
+      n2x_lookFree: "notable",
+      n3a_start: "notable",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+
+  // true if Nero is free (easy or hard)
+  n2_free: {
+    implies: {
+      n1_candleHorny: false,
+      n1_candleLit: false,
+      t_ivexReceptive: false,
+      n1_naked: true,
+      n2_ivexGone: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1f_clever: false,
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: true,
+      n2x_lookFree: true,
+      n3a_start: true,
+      n8_archive: "",
+      n9_ending: true,
+      other: "",
+    },
+  },
+
+  // true if Ivex has left
+  n2_ivexGone: {
+    implies: {
+      t_ivexReceptive: false,
+      n1_naked: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1f_clever: false,
+      n1p_barbs: false,
+      n1s_magic: "notable",
+      n1x_look: "notable",
+      n1y_lookHorny: "notable",
+      n2a_start: true,
+      n2b_bound: true,
+      n2f_free: true,
+      n2x_lookFree: true,
+      n3a_start: true,
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+
+  // true if the mirror is broken (easy escape)
+  n2_mirrorBroken: {
+    implies: {
+      n1_mageSight: false,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1f_clever: false,
+      n1p_barbs: false,
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: "",
+      n2x_lookFree: "",
+      n3a_start: "",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+
+  // true if Nero did the hard escape and got extra-abused
+  n2_tooClever: {
+    implies: {
+      n1_candleHorny: false,
+      n1_candleLit: false,
+      t_ivexReceptive: false,
+      n1_mageSight: true,
+      n1_magicPhase: MP_contact,
+      n1_naked: true,
+      n2_free: true,
+      n2_ivexGone: true,
+    },
+    sections: {
+      n0_meta: "",
+      n1a_intro: false,
+      n1cn_neutral: false,
+      n1cr_receptive: false,
+      n1cs_subby: false,
+      n1cx_transition: false,
+      n1d_candle: false,
+      n1e_horny: false,
+      n1f_clever: false,
+      n1p_barbs: false,
+      n1s_magic: "",
+      n1x_look: "",
+      n1y_lookHorny: false,
+      n2a_start: false,
+      n2b_bound: false,
+      n2f_free: "notable",
+      n2x_lookFree: "notable",
+      n3a_start: "",
+      n8_archive: "",
+      n9_ending: "",
+      other: "",
+    },
+  },
+};
+
+function checkFlags() {
+  if (!setup.tester) return;
+  const sections = new Set(Object.keys(Nero.sections));
+  Object.keys(Nero.flags).forEach(x => {
+    // check sections
+    if (Nero.flags[x].sections != null) {
+      sections.forEach(s => {
+        if (!(s in Nero.flags[x].sections)) {
+          console.error(`flag ${x} is missing section ${s}`);
+        }
+      });
+      Object.keys(Nero.flags[x].sections).forEach(s => {
+        if (!sections.has(s)) {
+          console.error(`flag ${x} has unknown section ${s}`);
+        }
+      });
+    }
+    // check contrapositive
+    Object.keys(Nero.flags[x].implies).forEach(y => {
+      if (Nero.flags[x].implies[y] === false) {
+        if (Nero.flags[y].implies[x] !== false) {
+          console.error(`flag ${x} implies !${y} is missing contrapositive`);
+        }
+      }
+    });
+  });
+}
+
+checkFlags();
+
+Nero.getVarExpectation = (vname) => {
+  const f = Nero.flags[vname];
+  if (f == null || f.sections == null) return [false, false];
+  const sect = Nero.getSection();
+  const exp = f.sections[sect];
+  if (exp == null || exp === "") {
+    return [false, false];
+  } else if (exp === "notable") {
+    return [true, false];
+  } else if (exp instanceof RegExp) {
+    const passage = Story.get(State.passage);
+    const notable = exp.test(passage.text);
+    return [notable, false];
+  } else {
+    return [false, true, exp];
+  }
+};
+Nero.getVarConstant = vn => {
+  const [_, isConst, val] = Nero.getVarExpectation(vn);
+  if (!isConst) throw new Error(`${vn} is not constant`);
+  return val;
+};
+Nero.varIsConstant = vn => {
+  const [_, isConst] = Nero.getVarExpectation(vn);
+  return isConst;
+};
+Nero.varIsNotable = vn => {
+  const [isNotable] = Nero.getVarExpectation(vn);
+  return isNotable;
+};
+
+Nero.getNotable = (here) => {
+  const s = Nero.getSection(here);
+  return Object.keys(Nero.flags).filter(f => Nero.varIsNotable(f));
+};
+
+Nero.enumImplies = {
+  n1_magicPhase: {
+    [MP_beforeCast]: {
+      n1_bottleTouchTried: false,
+      n1_mageSight: false,
+      n1_passwordsTried: false,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_triedMagic]: {
+      n1_bottleTouchTried: false,
+      n1_mageSight: false,
+      n1_passwordsTried: false,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_mageSight]: {
+      n1_bottleTouchTried: false,
+      n1_mageSight: true,
+      n1_naked: true,
+      n1_passwordsTried: false,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_wantDevice]: {
+      n1_bottleTouchTried: false,
+      n1_mageSight: true,
+      n1_naked: true,
+      n1_passwordsTried: false,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_wantName]: {
+      n1_bottleViewed: true,
+      n1_bottleTouchTried: false,
+      n1_mageSight: true,
+      n1_naked: true,
+      n1_passwordsTried: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_wantTouch]: {
+      n1_bottleViewed: true,
+      n1_mageSight: true,
+      n1_naked: true,
+      n1_passwordsTried: false,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_wantPassword]: {
+      n1_bottleViewed: true,
+      n1_mageSight: true,
+      n1_naked: true,
+      // can't pass wantTouch without asking about penguin
+      n1_penguinCoinDropped: true,
+      n1_penguinNameKnown: true,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_onHold]: {
+      n1_bottleViewed: true,
+      n1_mageSight: true,
+      n1_naked: true,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_contact]: {
+      n1_bottleViewed: true,
+      n1_mageSight: true,
+      n1_naked: true,
+      n1_penguinCoinDropped: true,
+      n1_penguinNameKnown: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+      n2_tooClever: true,
+    },
+    [MP_lockedOut]: {
+      n1_bottleViewed: true,
+      n1_mageSight: true,
+      n1_naked: true,
+      n2_free: false,
+      n2_magicPhaseBroken: false,
+      n2_mirrorBroken: false,
+    },
+    [MP_broken]: {
+      n1_mageSight: false,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    }
+  },
+
+  n2_magicPhaseBroken: {
+    null: {
+      n2_mirrorBroken: false,
+    },
+    [MP_beforeCast]: {
+      // can't escape without mage-sight
+      impossible: true,
+    },
+    [MP_triedMagic]: {
+      // can't escape without mage-sight
+      impossible: true,
+    },
+    [MP_mageSight]: {
+      n1_bottleTouchTried: false,
+      n1_mageSight: false,
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantDevice]: {
+      n1_bottleTouchTried: false,
+      n1_mageSight: false,
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantName]: {
+      n1_bottleTouchTried: false,
+      n1_bottleViewed: true,
+      n1_mageSight: false,
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantTouch]: {
+      n1_bottleViewed: true,
+      n1_mageSight: false,
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_wantPassword]: {
+      // broken at wantPassword always becomes contact, briefly
+      impossible: true,
+    },
+    [MP_onHold]: {
+      // broken at onHold always becomes contact, briefly
+      impossible: true,
+    },
+    [MP_contact]: {
+      n1_bottleViewed: true,
+      n1_mageSight: false,
+      n1_magicPhase: MP_broken,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: true,
+      n2_tooClever: false,
+    },
+    [MP_lockedOut]: {
+      // broken at lockedOut always becomes contact, briefly
+      impossible: true,
+    },
+    [MP_broken]: {
+      impossible: true,
+    }
+  }
+}
+
+const EM = ErrorMessage;
+const VT = VarTrace;
+
+Nero.checkState = (state, used, interactive) => {
+  for (const x of Object.keys(Nero.flags)) {
+    if (!state[x]) continue;
+    if (used && !used.has(x)) continue;
+    for (const y of Object.keys(Nero.flags[x].implies)) {
+      if (used && !used.has(y)) continue;
+      const val = state[y] == null ? false : state[y];
+      const exp = Nero.flags[x].implies[y];
+      if (val !== exp) {
+        if (!interactive) return false;
+        const expStr = typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
+        EM.fail(
+          `${x} === ${state[x]} should imply ${expStr}; currently, ${y} === ${state[y]}`);
+      }
+    }
+  }
+  for (const x of Object.keys(Nero.enumImplies)) {
+    const xval = state[x] == null ? "null" : state[x];
+    const rules = Nero.enumImplies[x][xval];
+    if (rules == null) continue;
+    if (rules.impossible) {
+      if (!interactive) return false;
+      const sval = ET.symbolic(x, state[x]);
+      EM.fail(`${x} === ${sval} should be impossible`);
+      continue;
+    }
+    if (used && !used.has(x)) continue;
+    for (const y of Object.keys(rules)) {
+      if (used && !used.has(y)) continue;
+      const val = state[y] == null ? false : state[y];
+      const exp = rules[y];
+      if (val !== exp) {
+        if (!interactive) return false;
+        const expStr = typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
+        const sval = ET.symbolic(x, state[x]);
+        EM.fail(
+          `${x} === ${sval} should imply ${expStr}; currently, ${y} === ${state[y]}`);
+      }
+    }
+  }
+  return true;
+};
+
+Nero.checkConstraints = () => {
+  const here = State.passage;
+  if (!/^n/.test(here)) return true;
+  return VT.ignore(() => {
+    /* note: current state, not active state */
+    return Nero.checkState(State.current.variables, VT.ctx.wasRead, true);
+  });
+};
+
+$(document).on(":passageend", Nero.checkConstraints);
+<</script>>

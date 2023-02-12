@@ -1,0 +1,60 @@
+:: n1s/F Locked Out [inclusion] {"position":"6200,3650","size":"100,100"}
+<<nobr>>
+<<if $n1_candleHorny>>
+    <<set _exasperation = "Nero lets out a scream at Ivex's incompetence.">>
+<<else>>
+    <<set _exasperation = "Ivex's spell construction is sloppy. Nero suppresses a sigh.">>
+<</if>>
+
+<style>
+  #at-zero {
+    opacity: 0;
+    transition: opacity 1s 2s ease-in;
+  }
+  #at-zero.at-zero-visible {
+    opacity: 1;
+  }
+</style>
+
+<<script>>
+const V = State.variables;
+const T = State.temporary;
+V.n1_lockoutTime == null && (V.n1_lockoutTime = 60);
+const turn = State.turns;
+function update() {
+  const span = $("#lockout-time");
+  if (turn !== State.turns || span.length === 0) return;
+  V.n1_lockoutTime--;
+  if (V.n1_lockoutTime < 0) {
+    V.n1_lockoutTime += 4294967296;
+    $("#at-zero").text(T.exasperation).addClass("at-zero-visible");;
+  }
+  span.text(V.n1_lockoutTime);
+  setTimeout(update, 1000);
+}
+function initTimer() {
+  if (setup.tester) {
+    $("#lockout-time").css({ cursor: "pointer" }).on("click", () => {
+      V.n1_lockoutTime = 2;
+      $("#at-zero").text("").removeClass("at-zero-visible");
+    });
+  }
+  update();
+}
+setTimeout(initTimer, 1000);
+<</script>>
+
+"Authentication failed. Please wait
+<span class="imp-info">
+    @@#lockout-time;$n1_lockoutTime@@
+    seconds
+</span>
+before trying again, ?master"
+
+@@#at-zero;@@
+
+<<if $n1_lockoutTime > 30>>
+    <<= _exasperation>>
+<</if>>
+
+<</nobr>>\

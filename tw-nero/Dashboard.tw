@@ -1,0 +1,293 @@
+:: Dashboard [noreturn] {"position":"2200,1925","size":"100,100"}
+<<nobr>>
+<<return-head>>
+
+<style>
+.dash-stats {
+  margin-left: 1em;
+  text-indent: -1em;
+  user-select: all;
+}
+.dash-stats span {
+  white-space: nowrap;
+}
+.dash-vsep {
+  color: #666;
+}
+.dash-title {
+  font-weight: bold;
+}
+.dash-roll {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  margin-left: .5em;
+}
+.dash-roll:hover {
+  border-color: #999;
+}
+.dash-body,
+.dash-body {
+  margin-left: 1em;
+}
+.dash-todo-item {
+  margin-left: 3em;
+  text-indent: -1em;
+}
+.dash-passages label {
+  margin-right: 1em;
+}
+.dash-passages.dash-which-unfinished .dash-passage-finished {
+  display: none;
+}
+</style>
+
+<</nobr>>\
+<div id=dash-outer></div>\
+<<script>>
+
+const countable = new Set([
+  "markF", "markD", "markP", "unmarked",
+]);
+const incomplete = new Set([
+  "markD", "markP",
+]);
+
+function analyze(passages) {
+  /* Map of title -> kind */
+  const kindOf = {};
+  /* Map of title -> Array of { todo, snippet } */
+  const todosIn = {};
+  const warnings = [];
+  /* Map of title -> n */
+  const wordCount = {};
+
+  const addTodo = (key, title, snippet) => {
+    const list = todos[key] ??= [];
+    snippet = (snippet ?? "").trim();
+    const p = list.findIndex(e => e.title === title);
+    if (snippet === "") {
+      /* already have an entry, don't need another */
+      if (p < 0) list.push({ title, snippet });
+    } else {
+      /* non-empty entry suppresses empty entry */
+      if (0 <= p && list[p].snippet === "") list.splice(p, 1);
+      list.push({ title, snippet });
+    }
+  };
+
+  const getKind = (title, tags) => {
+    if (tags.includes("noreturn")) return "noreturn";
+    if (/^Init /.test(title)) return "init";
+    if (/^Story/.test(title)) return "twine";
+    const m = /^\w\d+\w*[/]([DFPS])/.exec(title);
+    if (m != null) return `mark${m[1]}`;
+    return "unmarked";
+  };
+
+  passages.forEach(p => {
+    const kind = getKind(p.title, p.tags);
+    kindOf[p.title] = kind;
+
+    const todos = [];
+    const add = (tag, snippet) => {
+      if (!todos.find(t => t.tag === tag && t.snippet === snippet)) {
+        todos.push({ tag, snippet });
+      }
+    };
+
+    const todoRE = /\bTO[D]O\b\S*[ \t]*(\S*)(.*)/g;
+    for (const m of p.text.matchAll(todoRE)) {
+      add(`TO\DO ${m[1]}`, m[2]);
+    }
+    const exesRE =/\bX[X]X\b\S*(.*)/g;
+    for (const m of p.text.matchAll(exesRE)) {
+      add("X\XX", m[1]);
+    }
+
+    if (["markF", "unmarked"].includes(kind)) {
+      if (todos.find(e => e.todo === "X\XX")) {
+        warnings.push(`${p.title} - ${kind} should not have X\XX`);
+      }
+    }
+    if (todos.length) {
+      if (todos.length > 1) {
+        /* remove any no-snippet exes if there are other todos */
+        const p = todos.findIndex(t => t.tag === "X\XX" && t.snippet === "");
+        if (p >= 0) todos.splice(p, 1);
+      }
+      todos.sort((a, b) => {
+        if (a.key < b.key) return -1;
+        if (a.key > b.key) return +1;
+        if (a.snippet < b.snippet) return -1;
+        if (a.snippet > b.snippet) return +1;
+        return 0;
+      });
+      todosIn[p.title] = todos;
+    }
+    wordCount[p.title] = MagesTower.countWords(p.text);
+  });
+
+  return { kindOf, todosIn, warnings, wordCount };
+}
+
+function summarizeTo(dest, info, label) {
+  const count = Object.values(info.kindOf)
+    .reduce((obj, k) => {
+      obj[k] = 1 + (obj[k] ?? 0);
+      return obj;
+    }, {});
+
+  const n = Object.keys(count)
+    .filter(k => countable.has(k))
+    .reduce((sum, k) => sum + count[k], 0);
+  const uncounted = Object.keys(count)
+    .filter(k => !countable.has(k));
+
+  const pct = i => (i / n * 100).toFixed(0) + "%";
+
+  const outer = $("<div class=dash-stats>").appendTo(dest);
+  const sep = "<span class=dash-vsep> || </span>";
+
+  $("<span>").text(`${n} ${label}`).appendTo(outer);
+
+  $(outer).append(sep);
+  const words = Object.keys(info.wordCount)
+    .filter(t => countable.has(info.kindOf[t]))
+    .reduce((sum, t) => sum + info.wordCount[t], 0);
+  $("<span>").appendTo(outer)
+    .text(`${(words / 1000).toFixed(1)}K words`);
+
+  if (count.unmarked > 0) {
+    outer.append(sep);
+    $("<span>").appendTo(outer)
+      .text(`${pct(count.unmarked)} unflagged ${count.unmarked}`).appendTo(outer);
+  }
+
+  const hasTodo = title => info.todosIn[title]?.find(e => e.todo !== "X\XX");
+
+  const ut = Object.keys(info.todosIn)
+    .filter(title => info.kindOf[title] === "unmarked" && hasTodo(title))
+    .length;
+  if (ut > 0) {
+    outer.append(sep);
+    $("<span>").appendTo(outer)
+      .text(`${pct(ut)} unflagged* ${ut}`);
+  }
+  if (count.markF > 0) {
+    outer.append(sep);
+    $("<span>").appendTo(outer)
+      .text(`${pct(count.markF)} F ${count.markF}`).appendTo(outer);
+  }
+  const ft = Object.keys(info.todosIn)
+    .filter(title => info.kindOf[title] === "markF" && hasTodo(title))
+    .length;
+  if (ft > 0) {
+    outer.append(sep);
+    $("<span>").appendTo(outer)
+      .text(`${pct(ft)} F* ${ft}`);
+  }
+  if (count.markD > 0) {
+    outer.append(sep);
+    $("<span>").appendTo(outer)
+      .text(`${pct(count.markD)} D ${count.markD}`);
+  }
+  if (count.markP > 0) {
+    outer.append(sep);
+    $("<span>").appendTo(outer)
+      .text(`${pct(count.markP)} P ${count.markP}`);
+  }
+  uncounted.sort().forEach((kind, i) => {
+    outer.append(i === 0 ? `${sep}uncounted: ` : ", ");
+    $("<span>").appendTo(outer)
+      .text(`${kind} ${count[kind]}`);
+  });
+}
+
+function showRandom(dest, info) {
+  const block = $("<div class=dash-random>").appendTo(dest);
+  const head = $("<div class=dash-head>").appendTo(block);
+  const body = $("<div class=dash-body>").appendTo(block);
+  const toShow = Object.keys(info.kindOf)
+    .filter(t => info.todosIn[t] || incomplete.has(info.kindOf[t]))
+    .sort();
+  const reroll = () => {
+    body.empty();
+    // Should not use State.random()
+    toShow.randomMany(5)
+      .forEach(t => todoBlock(info, t).appendTo(body));
+  };
+  $("<span class=dash-title>").text("Random unfinished").appendTo(head);
+  $("<a class=dash-roll>").appendTo(head).html("&#x1f3b2;")
+    .on("click", () => reroll());
+  reroll();
+}
+
+function todoBlock(info, title) {
+  const block = $("<div class=dash-todo-block>");
+  $("<div class=dash-todo-title>").wiki(`[\[${title}]]`).appendTo(block);
+  const todos = info.todosIn[title] || [];
+  todos.forEach(todo => {
+    $("<div class=dash-todo-item>").appendTo(block).append(
+      $("<span class=dash-todo-tag>").text(todo.tag),
+      $("<span class=dash-todo-snippet>").text(todo.snippet),
+    );
+  });
+  return block;
+}
+
+function setWhich(which) {
+  State.temporary.which = which;
+  State.metadata.set("dashWhich", which);
+  $(".dash-passages")
+    .toggleClass("dash-which-all", which === "all")
+    .toggleClass("dash-which-unfinished", which === "unfinished");
+}
+
+function showPassages(dest, info) {
+  const block = $("<div class=dash-passages>").appendTo(dest);
+  const head = $("<div class=dash-head>").appendTo(block);
+  const body = $("<div class=dash-body>").appendTo(block);
+
+  setWhich(State.metadata.get("dashWhich") || "all");
+  $("<label class=dash-which>").appendTo(head)
+    .wiki("<<radiobutton '_which' all autocheck>> All")
+    .on("change", () => setWhich("all"));
+  $("<label class=dash-which>").appendTo(head)
+    .wiki("<<radiobutton '_which' unfinished autocheck>> Unfinished")
+    .on("change", () => setWhich("unfinished"));
+
+  for (const title of Object.keys(info.kindOf).sort()) {
+    const finished = info.todosIn[title] == null && !incomplete.has(info.kindOf[title]);
+    todoBlock(info, title).appendTo(body)
+      .addClass(finished ? "dash-passage-finished" : "dash-passage-unfinished");
+  }
+}
+
+const passages = Story.lookup()
+  .sort((a, b) => a.title < b.title ? -1 : a.title > b.title ? +1 : 0);
+
+const neroPassages = passages
+  .filter(p => /^n\d/.test(p.title));
+const neroInfo = analyze(neroPassages);
+
+const otherPassages = passages
+  .filter(p => !/^n\d/.test(p.title));
+const otherInfo = analyze(otherPassages);
+
+function render() {
+  const dest = $("#dash-outer");
+  summarizeTo(dest, neroInfo, "Nero passages");
+  summarizeTo(dest, otherInfo, "Drekkar passages");
+  if (neroInfo.warnings.length) {
+    $(dest).append("<hr>");
+    neroInfo.warnings.forEach(w => {
+      $("<div class=dash-warning").text(w).appendTo(dest)
+    });
+  }
+  $(dest).append("<hr>");
+  showRandom(dest, neroInfo);
+  $(dest).append("<hr>");
+  showPassages(dest, neroInfo);
+};
+$(document).one(":passagedisplay", render);
+<</script>>\

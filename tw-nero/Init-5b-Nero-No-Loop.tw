@@ -1,0 +1,31 @@
+:: Init 5b Nero No Loop [inclusion] {"position":"2725,1250","size":"100,100"}
+<<script>>
+/**
+ * For a link to a look passage, allow the link if it hasn't been seen recently.
+ * Seen recently is: within the last 10 passages, since the latest n1-patience passage.
+ */
+Macro.add("n1-no-loop", {
+  handler: function() {
+    const link = this.args[0];
+    if (!link.isLink) throw new Error("Expected arg to be a link");
+    if (recentlyViewed(link.link)) {
+      $(this.output).wiki(link.text);
+    } else {
+      State.temporary.noLoopLink = link;
+      $(this.output).wiki("<<link _noLoopLink.text _noLoopLink.link>><</link>>");
+    }
+  }
+});
+
+function recentlyViewed(name) {
+  const limit = VarTrace.untracedGet("t_patiencePassage");
+  const max = 10;
+  for (let i = 1; i < max; i++) {
+    const past = State.peek(-i);
+    if (past == null) return false;
+    if (past.title === limit) return false;
+    if (past.title === name) return true;
+  }
+  return false;
+}
+<</script>>

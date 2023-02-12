@@ -1,0 +1,222 @@
+:: n1x/F Bottle [has-hole] {"position":"7125,4650","size":"100,100"}
+<<nobr>>
+<<vi-ignore n2_free>>
+<<cv-ignore t_kwAnnounce>>
+<<cv-ignore n1_candleLit>> <!-- trivial variation -->
+<<cv-ignore n1_mageSight>> <!-- trivial variation -->
+<<cv-ignore n1_abused n1_naked>> <!-- trivial variations -->
+<<cv-ignore n1_subby>> <!-- minor variations -->
+<<cv-try n1_magicPhase
+  `MP_beforeCast` `MP_wantDevice` `MP_wantName` `MP_wantPassword`
+  `MP_contact` `MP_broken`>>
+<<cv-try n2_magicPhaseBroken
+  null `MP_mageSight` `MP_wantDevice` `MP_wantName`>>
+  
+<<nero-kw-announce>>
+
+Sitting on top of
+<<if $n1_candleLit>>
+    the cabinet the
+    <<n1-no-loop [[flickering red candle|n1x/F Candle]]>>
+    came from
+<<else>>
+    a wooden cabinet
+<</if>>
+is a clear glass bottle of unusually large size.
+But what's most unusual about the bottle is what's inside it,
+which appears to be a horse's member larger than Nero's forearm,
+submerged in
+<<if $n1_mageSight>>
+    a light yellow liquid that pulses with exotic energy.
+<<else>>
+    some light yellow liquid.
+<</if>>
+The horse cock is silvery and metallic,
+so it isn't from a living specimen.
+Probably.
+
+?P
+The bottle's prominent placement in the room raises
+several questions that the wolf
+<<if $n1_subby>>
+    would love to know the answers to.
+<<elseif $n1_abused && !$n2_ivexGone>>
+    is afraid that Ivex will gladly answer.
+<<elseif $n1_naked>>
+    is <em>quite</em> sure that he does not want answered.
+<<else>>
+    is not sure he wants answered.
+<</if>>
+
+?P
+Such as:
+
+<<script>>
+  const V = State.variables;
+  const q = [];
+  
+  const phase = V.n2_mirrorBroken ? V.n2_magicPhaseBroken : V.n1_magicPhase;
+  
+  const first = !V.n1_bottleViewed;
+  const maybeHole = !V.n1_bottleTouchTried && MP_wantTouch === phase;
+  const knowSprite = MP_wantDevice <= phase;
+  const nameAsked = MP_wantName <= phase;
+  const knowName = V.n1_bottleNameKnown;
+  const sawKnife = V.n1_deskViewed;
+  
+  q.push(`What magic was used to insert that extremely large item
+    through the bottle's narrow neck?`);
+
+  q.push(`Is it appropriate to call something of such enormous size a dildo?`);
+
+  if (knowName) {
+    q.push(`Why did Ivex give the name Lance <em>Rock</em>-hard
+      to a giant <em>metal</em> cock?`);
+    
+    if (MP_wantName === V.n1_magicPhase) {
+      const t = `Tell the Sprite, "Please, Lance Rockhard."`;
+      Nero.actionsAdd(`[[${t}|n1s/D Say Lance]]`);
+    }
+  }
+
+  if (maybeHole) {
+    q.push(`Is the bottle's opening the hole that the Sprite
+      <<= $n2_mirrorBroken ? "wanted" : "wants">>
+      him to touch?`);
+  }
+  
+  if (first) {
+    q.push(`Why would a bottled metallic horse dildo have the glyphs for
+      [[Nackle's Poltergeist Device|n1x/F Nackle 1]] inscribed on it?`);
+
+  } else {
+    if (knowSprite) {
+      q.push(`Why did Ivex choose a bottled metallic horse cock as the anchor
+        for [[Nackle's Poltergeist Device|n1x/F Nackle 1]]?`);
+    
+      if (MP_wantDevice === V.n1_magicPhase) {
+        q.push(`Is this a device that the Sprite can contact?`);
+        
+        const t = `Tell the Sprite, "Please, Nackle's Poltergeist Device."`;
+        Nero.actionsAdd(`[[${t}|n1s/D Say Device]]`);
+        
+      } else if (MP_wantDevice === V.n2_magicPhaseBroken) {
+        q.push(`Was this a device that the Sprite could have contacted?`);
+      }
+      
+    } else {
+      q.push(`How does Ivex expect to use
+        [[Nackle's Poltergeist Device|n1x/F Nackle 1]]
+        when it's anchored on a metallic horse cock that can't be touched?`);
+    }
+    
+    if (nameAsked) {
+      q.push(`Why does Ivex have more than one Nackle's device in this room?`);
+
+      q.push(`Is there <em>another</em> enormous bottled cock
+        in a cabinet somewhere?`);
+    }
+
+    if (V.n2_tooClever) {
+      /* TODO: nothing? */
+    
+    } else if (V.n2_free) {
+      q.push(`Could Nero have used Nackle's device to escape more quickly?`);
+
+    } else if (knowSprite && sawKnife) {
+      q.push(`Will Nero have a chance to grab the
+        <<n1-no-loop [[letter opener|n1x/F Knife]]>>
+        with Nackle's device?`);
+    
+    } else {
+      q.push(`Is there some way Nero can use the device to escape?`);
+    }
+  }
+  
+  const last = q.length - 1;
+  q[last] = q[last].replace(/^[A-Z]/, m => "And " + m[0].toLowerCase());
+  
+  /* Can drop the first 2 questions if list is large. */
+  /* Keep 1st before 2nd, to reinforce the hole idea. */
+  if (q.length > 5) q.splice(1, 1);
+  if (q.length > 5) q.shift();
+  
+  $(output).wiki(`<ul><li>${q.join("</li><li>")}</li></ul>`);
+
+<</script>>
+
+<!--
+  Any time <= wantName, can learn name from normal ask or horny ask.
+  At wantName, need name to go to wantTouch.
+  If learned name from horny ask, ivex is gone.
+-->
+<<em-assert !$n1_bottleAskedHorny || $n2_ivexGone>>
+
+<<if $n2_ivexGone>>
+    Nero suspects that Ivex would have been eager
+    to talk more about it.
+    <<if $n1_magicPhase === MP_contact>>
+        But answers aren't necessary to use the device.
+        <<actions-add [[Use Nackle's Device.|n1s/D Use Lance]]>>
+    <</if>>
+
+<<elseif !$n1_bottleNameKnown>>
+    <<if MP_wantName === $n1_magicPhase>>
+        The Sprite will not contact the device unless Nero
+        tells it this particular device's name.
+        Nero reluctantly considers various conversational
+        gambits that might trick Ivex into revealing the name.
+    <<else>>
+        Nero, against his better judgment,
+        considers asking a question out loud.
+    <</if>>
+    <<actions-add [[Ask Ivex about the bottle.|n1x/F Bottle Ask Name]]>>
+
+<<elseif MP_wantTouch === $n1_magicPhase>>
+    <<if $n1_bottleTouchTried>>
+        The Sprite did not respond when Ivex touched the bottle,
+        so this is probably not the hole that it wants touched.
+        ?P
+        Well, it's possible that Ivex did not touch it correctly, but
+        <<if $n1_subby>>
+            but Nero does not want to bother Ivex about it again.
+        <<else>>
+            but Nero does <em>not</em> want to ask Ivex about it again.
+        <</if>>
+    <<else>>
+        When Nero had asked before,
+        Ivex had grasped the neck of the bottle with pride.
+        Perhaps he can be persuaded to touch it again.
+        <<if $n1_subby>>
+            TODO subby - maybe a subby hesitation
+        <<else>>
+            Nero hesitates.
+            Does he really want to provide
+            the perverted panther with more opportunity to
+            speak uncomfortably strange innuendo?
+        <</if>>
+        <<actions-add [[Ask Ivex again about the bottle.|n1x/D Bottle Ask Touch]]>>
+    <</if>>
+
+<<else>>
+    <<if $n1_subby>>
+        But when Nero asked about
+        the bottle earlier,
+        Ivex's response was more lewd than informative,
+        and it seems unlikely he'll respond differently just yet.
+        Nero will have to wait.
+    <<else>>
+        Ivex was obnoxiously lewd when Nero asked about
+        the bottle earlier.
+        The wolf does <em>not</em> want to bring it up again.
+    <</if>>
+<</if>>
+
+?P
+<ul class="actions">
+    <<actions-get>>
+    <li>$t_afterLook</li>
+</ul>
+
+<<set $n1_bottleViewed = true>>
+<</nobr>>

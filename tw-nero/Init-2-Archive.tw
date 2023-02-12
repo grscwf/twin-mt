@@ -1,0 +1,266 @@
+:: Init 2 Archive [inclusion] {"position":"2450,500","size":"100,100"}
+<<append head>><style>
+  .arc-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .arc-picklocked {
+    opacity: 0.6;
+    text-decoration: #990 underline;
+  }
+  .arc-title {
+    font-weight: bold;
+  }
+  .arc-select {
+    margin-left: 1.5rem;
+  }
+  .arc-select label {
+    margin-left: 1em;
+  }
+  .arc-select input[type=radio] {
+    margin-right: 0.4em;
+  }
+  .arc-hint {
+    font-size: small;
+    font-style: italic;
+    margin-left: 1.5rem;
+  }
+</style><</append>>
+
+<<script>>
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const MT = window.MagesTower || (window.MagesTower = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+
+/** Clear State.temporary and copy temp into it. */
+const setTemporary = temp => {
+  State.clearTemporary();
+  const T = State.temporary;
+  for (const [k, v] of Object.entries(temp)) {
+    T[k] = v;
+  }
+};
+
+/**
+ * Create a scratch state with t_isArchive === true,
+ * evaluate script, then render passage to dest.
+ */
+MT.arcInclude = (dest, passage, script) => {
+  VT.ignore(() => {
+    const text = Story.get(passage).text;
+    const saveVars = State.active.variables;
+    const saveTemp = clone(State.temporary);
+    try {
+      State.active.variables = { t_isArchive: true };
+      State.clearTemporary();
+      if (script != null) {
+        $(dest).wiki(`<<run ${script}>>`);
+      }
+      $(dest).wiki(text);
+    } finally {
+      State.active.variables = saveVars;
+      setTemporary(saveTemp);
+    }
+  });
+};
+
+/**
+ * <<arc-only>>...<</arc-only>>
+ * Emit body only when rendering archive text.
+ */
+Macro.add("arc-only", {
+  tags: [],
+  handler: function() {
+    const V = State.variables;
+    if (V.t_isArchive) {
+      $(this.output).wiki(this.payload[0].contents);
+    }
+  }
+});
+
+/**
+ * <<arc-skip>>...<</arc-skip>>
+ * Emit body only when *not* rendering archive text.
+ */
+Macro.add("arc-skip", {
+  tags: [],
+  handler: function() {
+    const V = State.variables;
+    if (!V.t_isArchive) {
+      $(this.output).wiki(this.payload[0].contents);
+    }
+  }
+});
+
+/**
+ * <<arc-include passage [script]>>
+ * Create a scratch state with t_isArchive true,
+ * evaluate the script, and render passage.
+ */
+Macro.add("arc-include", {
+  handler: function() {
+    const [link, script] = this.args;
+    const passage = link.isLink ? link.link : String(link);
+    MT.arcInclude(this.output, passage, script);
+  }
+});
+
+/**
+ * <<arc-select choiceVar "Variant name:">>
+ * <<arc-option radioValue "Option text" enabled>>
+ *    hint text
+ * <</arc-select>>
+ * 
+ * Emit a radio selector for a variant, showing all the arc-options.
+ * - choiceVar remembers the player's last selection.
+ * - radioValue is the value assigned to choiceVarName.
+ * - enabled is a boolean.
+ *   - true means the variant is selectable.
+ *   - false means the variant is disabled, and the hint is shown.
+ */
+Macro.add("arc-select", {
+  tags: ["arc-option"],
+  handler: function() {
+    if (this.args.length !== 2) {
+      throw new Error("expected arc-select args: varname label");
+    }
+    const [varname, label] = this.args;
+    const V = State.variables;
+    const T = State.temporary;
+
+    const outer = $("<div class=arc-select>").appendTo(this.output);
+    outer.append(label);
+
+    const choices = this.payload.slice(1);
+
+    // If value doesn't match an enabled choice, unset it.
+    // (should only happen when debugging)
+    let matched = false;
+    for (const ch of choices) {
+      if (V[varname] === ch.args[0] && ch.args[2]) {
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) V[varname] = null;
+
+    // If value is not set, set it to the first enabled choice.
+    if (V[varname] == null || V[varname] === "") {
+      for (const ch of choices) {
+        if (ch.args[2]) {
+          V[varname] = ch.args[0];
+          break;
+        }
+      }
+    }
+
+    let hint = null;
+    for (const ch of choices) {
+      if (ch.args.length !== 3) {
+        throw new Error("expected choice args: value text boolean");
+      }
+      const value = ch.args[0];
+      const text = ch.args[1];
+      const enabled = ch.args[2];
+      const unlocked = enabled || T.lockpick;
+      if (unlocked && (V[varname] == null || V[varname] === "")) {
+        V[varname] = text;
+      }
+      const label = $("<label>")
+      	.wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
+      label.append(text).appendTo(outer);
+      label.toggleClass("arc-picklocked", !enabled);
+      if (!unlocked) {
+        if (hint == null) hint = `(${text}) ${ch.contents}`;
+        label.addClass("arc-disabled");
+        label.find("input").attr("disabled", "disabled");
+      }
+    }
+    if (hint != null) {
+      const div = $("<div class=arc-hint>").wiki(hint).appendTo(outer);
+    }
+  }
+});
+
+/**
+ * <<arc-ending unlocked twineLink [disabledText [setter]]>>
+ *   hint text
+ * <<arc-variants>>
+ *   variant selectors
+ * <</arc-ending>>
+ * 
+ * Emits a link to an archive passage.
+ * - text comes from the twineLink.
+ * - unlocked is a boolean
+ *   - false means link is disabled, and hint text is shown
+ *   - true means link is enabled, and variant selectors are shown
+ */
+Macro.add("arc-ending", {
+  tags: ["arc-variants"],
+  handler: function() {
+    if (this.args.length < 2 || this.args.length > 4) {
+      throw new Error(
+        "expected arc-endings args: boolean link [disabledText [setter]]");
+    }
+    let [enabled, link, offText, setter] = this.args;
+    const T = State.temporary;
+    const unlocked = enabled || T.lockpick;
+    const isLink = typeof link === "object" && link.isLink;
+    offText = offText || (isLink ? link.text : link);
+    setter = setter || "";
+
+    const outer = $("<div class=arc-ending>").appendTo(this.output);
+    if (!unlocked) {
+      $('<div class="arc-title arc-disabled">')
+        .wiki(offText).appendTo(outer);
+      $('<div class="arc-hint">')
+        .wiki(this.payload[0].contents).appendTo(outer);
+      return;
+    }
+    
+    const title = $("<div class=arc-title>").appendTo(outer);
+    title.toggleClass("arc-picklocked", !enabled);
+    if (isLink) {
+      title.wiki(`[\[${link.text}|${link.link}][${setter}]]`);
+    } else {
+      title.wiki(`[\[${link}][${setter}]]`);
+    }
+    if (this.payload[1] != null) {
+      outer.wiki(this.payload[1].contents);
+    }
+  }
+});
+
+/**
+ * <<arc-barbs choiceVar>>
+ * 
+ * Emit a radio selector for smooth/barbs choice.
+ * - choiceVar remembers player's selection.
+ */
+Macro.add("arc-barbs", {
+  handler: function() {
+    const [varname] = this.args;
+    $(this.output).wiki(
+      `<<arc-select ${varname} "Variant:">>` +
+      `  <<arc-option smooth "Smooth" true>>` +
+      `  <<arc-option barbs "Barbs" true>>` +
+      `<</arc-select>>`
+    );
+  }
+});
+
+/**
+ * <<arc-set-barbs varName>>
+ * At an ending, set the default for smooth/barbs choice.
+ */
+Macro.add("arc-set-barbs", {
+  handler: function() {
+    const [vname] = this.args;
+    const V = State.variables;
+    if (V[vname] == null) {
+      V[vname] = V["n1_barbs"] ? "barbs" : "smooth";
+    }
+  }
+});
+
+<</script>>

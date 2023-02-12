@@ -1,0 +1,36 @@
+:: Init 5a Nero Vars [inclusion] {"position":"2875,975","size":"100,100"}
+<<script>>
+// This has a :passagestart that should run before any other Nero :passagestart
+
+EnumType.define("MagicPhase", [
+  "MP_beforeCast",
+  "MP_triedMagic",
+  "MP_mageSight",
+  "MP_wantDevice",
+  "MP_wantName",
+  "MP_wantTouch",
+  "MP_wantPassword",
+  "MP_onHold",
+  "MP_contact",
+  "MP_lockedOut",
+  "MP_broken",
+]);
+EnumType.declareVar("n1_magicPhase", "MagicPhase");
+EnumType.declareVar("n2_magicPhaseBroken", "MagicPhase");
+
+// Define temp var with a getter, so read tracking works.
+function defTemp(vname, fn) {
+  Object.defineProperty(State.temporary, vname, { enumerable: true, get: fn });
+}
+
+$(document).on(":passagestart", () => {
+  defTemp("ivexAngry", () => {
+    const V = State.variables;
+    return V.t_patienceActions === 0 || V.t_patienceLooks === 0;
+  });
+  VarTrace.ignore(() => {
+    const V = State.variables;
+    V.n1_magicPhase != null || (V.n1_magicPhase = 0);
+  });
+});
+<</script>>

@@ -1,0 +1,182 @@
+:: Init 5b Nero Patience [inclusion] {"position":"2825,1250","size":"100,100"}
+<<append head>><style>
+.patience-debug:not(.patience-debug-show) > :not(label) {
+  display: none;
+}
+</style><</append>>
+
+<<script>>
+const VI = VarInfo;
+const EM = ErrorMessage;
+
+/**
+ * <<n1-patience $looks $actions>>
+ *     $firstText
+ * <<n1-remind>>
+ *     $remindText
+ * <<n1-repeat>>
+ *     $repeatText
+ * <<n1-warn>>
+ *     $warnText
+ * <<n1-insist>>
+ *     $insistText
+ * <</n1-patience>>
+ *
+ * Basically, player can do $looks-1 or $actions-1 before getting $warnText.
+ * Once you see $warnText, the next look or action will get $insistText.
+ *
+ * Max looks/actions before warn is
+ *    1 + ($looks - 2 + $actions - 2) === $looks + $actions - 3
+ * Plus warn and insist, max times player is at node is
+ *    $looks + $actions - 1
+ *
+ * If visiting this node for the first time
+ *   - set look count and action count
+ *   - emit $firstText
+ * If returning from look or action, and either count is 0
+ *   - emit $insistText
+ *   - suppress looks and actions
+ * If returning from look or action, and either count is now 1,
+ *   - set both counts to 1
+ *   - emit $warnText
+ * If returning from look
+ *   - emit $remindText
+ * If returning from action
+ *   - emit $repeatText
+ */
+Macro.add("n1-patience", {
+  tags: ["n1-remind", "n1-repeat", "n1-warn", "n1-insist"],
+  handler: function() {
+    const [looks, actions] = this.args;
+
+    let firstText, remindText, repeatText, warnText, insistText;
+    for (const p of this.payload) {
+      switch (p.name) {
+        case "n1-patience": firstText = p.contents; break;
+        case "n1-remind": remindText = p.contents; break;
+        case "n1-repeat": repeatText = p.contents; break;
+        case "n1-warn": warnText = p.contents; break;
+        case "n1-insist": insistText = p.contents; break;
+        default: throw new Error(`bug n1-patience ${p.name}`);
+      }
+    }
+    if (looks > 2) EM.assert(remindText != null, "should have n1-remind");
+    if (looks <= 2) EM.assert(remindText == null, "should NOT have n1-remind");
+    if (actions > 2) EM.assert(repeatText != null, "should have n1-repeat");
+    if (actions <= 2) EM.assert(repeatText == null, "should NOT have n1-repeat");
+    if (actions === 1) EM.assert(looks === 1, "actions === 1 should have looks === 1");
+    if (looks === 1) EM.assert(actions === 1, "looks === 1 should have actions === 1");
+    if (actions === 1) EM.assert(firstText.trim() === "", "should have empty initial text");
+    EM.assert(warnText != null, "should have n1-warn");
+    EM.assert(insistText != null, "should have n1-insist");
+
+    const V = State.variables;
+    const T = State.temporary;
+    const here = State.passage;
+
+    if (V.t_patiencePassage !== here) {
+      // This is our first visit here
+      V.t_patienceLooks = looks;
+      V.t_patienceActions = actions;
+      V.t_patiencePassage = here;
+      V.t_patienceReturn = 0;
+    } else if (V.t_patienceReturn === 1) {
+      // Return from look
+      V.t_patienceLooks--;
+    } else if (V.t_patienceReturn === 2) {
+      // Return from action
+      V.t_patienceActions--;
+      V.t_didSomeAction = true;
+    }
+    T.patienceAdvanced = V.t_patienceReturn > 0;
+
+    T.patience = Math.min(V.t_patienceLooks, V.t_patienceActions);
+
+    // At warn state, only allow 1 more look or action.
+    if (T.patience === 1) {
+      V.t_patienceLooks = 1;
+      V.t_patienceActions = 1;
+    }
+
+    // set return links
+    V.t_afterLook = `[\[Do something else.|${here}][$t_patienceReturn = 1]]`;
+    // V.t_afterLookContinue = `[\[Continue|${here}][$t_patienceReturn = 1]]`;
+    V.t_afterActionAbort = `[\[Do something else.|${here}][$t_patienceReturn = 2]]`;
+    V.t_afterAction = `[\[Continue|${here}][$t_patienceReturn = 2]]`;
+
+    // Patience text
+    if (T.patience <= 0) {
+      $(this.output).wiki(insistText);
+    } else if (T.patience === 1) {
+      $(this.output).wiki(warnText);
+    } else {
+      switch (V.t_patienceReturn) {
+        case 0: $(this.output).wiki(firstText); break;
+        case 1: $(this.output).wiki(remindText); break;
+        case 2: $(this.output).wiki(repeatText); break;
+        default: throw new Error(`bug: patienceReturn ${V.t_patienceReturn}`);
+      }
+    }
+    V.t_patienceReturn = 0;
+
+    if (setup.debug) {
+      let debug = !!State.metadata.get("patienceDebug");
+      const outer = $("<span class=patience-debug>").appendTo(this.output)
+        .toggleClass("patience-debug-show", debug);
+      $("<label>").append(" &#x1f527;").appendTo(outer)
+        .click(() => {
+          debug = !debug;
+          State.metadata.set("patienceDebug", debug);
+          outer.toggleClass("patience-debug-show", debug);
+        });
+      $("<a>").text("(reset)").appendTo(outer)
+        .click(() => VI.revisitHere(() => {
+          const V = State.variables;
+          V.t_patiencePassage = null;
+          V.n2_lustTextPos = null;
+        }));
+      if (looks > 2) {
+        $("<a>").text(" (remind)").appendTo(outer)
+          .click(() => VI.revisitHere(V2 => {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = Math.max(2, V2.t_patienceActions);
+            V.t_patienceLooks = Math.max(2, V2.t_patienceLooks);
+            V.t_patienceReturn = 1;
+            V.n2_lustTextPos = Math.min(V2.n2_lustTextPos || 0, 4);
+          }));
+      }
+      if (actions > 2) {
+        $("<a>").text(" (repeat)").appendTo(outer)
+          .click(() => VI.revisitHere(V2 => {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = Math.max(2, V2.t_patienceActions);
+            V.t_patienceLooks = Math.max(2, V2.t_patienceLooks);
+            V.t_patienceReturn = 2;
+            V.n2_lustTextPos = Math.min(V2.n2_lustTextPos || 0, 4);
+          }));
+      }
+      if (looks > 1 && actions > 1) {
+        $("<a>").text(" (warn)").appendTo(outer)
+          .click(() => VI.revisitHere(() => {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = 1;
+            V.t_patienceLooks = 1;
+            V.t_patienceReturn = -1;
+          }));
+      }
+      $("<a>").text(" (insist)").appendTo(outer)
+        .click(() => VI.revisitHere(() => {
+          const V = State.variables;
+          V.t_patiencePassage = here;
+          V.t_patienceActions = 0;
+          V.t_patienceLooks = 0;
+          V.t_patienceReturn = -1;
+        }));
+    }
+  }
+});
+
+<</script>>
