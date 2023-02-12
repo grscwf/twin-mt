@@ -69,6 +69,8 @@ async function untwine(htmlFiles: string[]) {
 }
 
 async function untwineOne(htmlFile: string) {
+  console.log('');
+
   const rule = rules.find((r) => r.target === htmlFile);
   if (rule == null) {
     throw new Error(`No rule for ${htmlFile}`);
@@ -112,7 +114,7 @@ async function untwineOne(htmlFile: string) {
 async function findExisting(rule: Rule) {
   const existing = new Map<string, string>();
   const patterns = rule.dirs.map((d) => `${d}/**/*.tw`);
-  console.log("Searching for existing twee files in", patterns);
+  console.log("Searching", patterns);
   const files = await fglob(patterns);
   for (const file of files) {
     const twee = await fsp.readFile(file, "utf8");
