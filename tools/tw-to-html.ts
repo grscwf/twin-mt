@@ -27,6 +27,11 @@ const rules: Rule[] = [
     deps: ["nero.tw"],
     command: "tweego nero.tw -o nero.html",
   },
+  {
+    target: "index.html",
+    deps: ["story.tw"],
+    command: "tweego story.tw -o index.html",
+  }
 ];
 
 function setupEnv() {

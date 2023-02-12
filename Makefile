@@ -1,11 +1,6 @@
 default:
 	@echo no default
 
-story-to-html:
-	WSLENV=$$WSLENV:TWEEGO_PATH/l \
-	TWEEGO_PATH=./assets \
-		tweego story.tw -o index.html
-
 story-to-tw:
 	WSLENV=$$WSLENV:TWEEGO_PATH/l \
 	TWEEGO_PATH=./assets \
@@ -16,9 +11,6 @@ nero-check:
 
 nero-stats:
 	node tools/nero-stats.js nero.tw
-
-nero-to-html:
-	npm run tw-to-html
 
 nero-to-tw:
 	WSLENV=$$WSLENV:TWEEGO_PATH/l \
