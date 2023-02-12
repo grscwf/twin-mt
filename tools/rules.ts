@@ -7,7 +7,7 @@ export type Rule = {
 export const rules: Rule[] = [
   {
     target: "nero.html",
-    dirs: ["tw-common", "tw-drekkar", "tw-nero"],
+    dirs: ["tw-common", "tw-drekkar", "tw-nero", "tw-nero-changed"],
   },
   {
     target: "index.html",
