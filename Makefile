@@ -18,12 +18,12 @@ nero-stats:
 	node tools/nero-stats.js nero.tw
 
 nero-to-html:
-	WSLENV=$$WSLENV:TWEEGO_PATH/l \
-	TWEEGO_PATH=./assets \
-		tweego nero.tw -o nero.html
+	npm run tw-to-html
 
 nero-to-tw:
-	npm run tw-to-html
+	WSLENV=$$WSLENV:TWEEGO_PATH/l \
+	TWEEGO_PATH=./assets \
+		tweego -d nero.html -o nero.tw
 
 nero-version:
 	node tools/update-version.js nero.tw nero.html
