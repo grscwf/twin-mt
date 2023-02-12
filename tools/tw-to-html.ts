@@ -16,6 +16,7 @@ import fsp from "fs/promises";
 import { runP, setupEnv, timestamp } from "./lib";
 import type { Rule } from "./rules";
 import { rules } from "./rules";
+import fglob from "fast-glob";
 
 async function main(argv: string[]) {
   setupEnv();
@@ -45,7 +46,9 @@ async function needsBuild(rule: Rule, force: boolean) {
     console.log(`${rule.target} does not exist`);
     return true;
   }
-  for (const dep of rule.deps) {
+  const patterns = rule.dirs.map((d) => `${d}/**/*.tw`);
+  const deps = await fglob(patterns);
+  for (const dep of deps) {
     const dStat = await fsp.stat(dep);
     if (dStat == null) {
       console.log(`${rule.target} dep ${dep} does not exist`);
@@ -66,8 +69,16 @@ async function needsBuild(rule: Rule, force: boolean) {
 }
 
 async function buildRule(rule: Rule): Promise<void> {
-  console.log(timestamp(), rule.toHtml);
-  await runP(rule.toHtml, { echo: true });
+  const dirs = [];
+  for (const dir of rule.dirs) {
+    try {
+      await fsp.stat(dir);
+      dirs.push(dir);
+    } catch {}
+  }
+  const cmd = `tweego -o ${rule.target} ${dirs.join(" ")}`;
+  console.log(timestamp(), cmd);
+  await runP(cmd, { echo: true });
 }
 
 async function watch(force: boolean) {
@@ -143,7 +154,7 @@ async function watch(force: boolean) {
       console.log(`${path} changed, rebuilding ${target}`);
       rebuild();
     };
-    const watcher = chokidar.watch(rule.deps, { ignoreInitial: true });
+    const watcher = chokidar.watch(rule.dirs, { ignoreInitial: true });
     watcher.on("add", maybeRebuild);
     watcher.on("change", maybeRebuild);
     watcher.on("unlink", maybeRebuild);
