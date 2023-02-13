@@ -89,6 +89,7 @@ let from = {
 function saveLog() {
   // console.log("save", log.map(e => [e.turn, e.html.slice(0, 30)]));
   State.metadata.set(KEY, log);
+  MagesTower.log = log;
 }
 
 function initLog() {
@@ -101,18 +102,19 @@ function initLog() {
     .on("click", () => openLog());
 
   $(document).on(":passageinit", ev => {
-    updateLog(ev.passage.title);
+    updateLog(ev.passage.title, MagesTower.mtaCode());
   });
   $(document).on(":passagestart", () => {
     from = { turn: State.turns, title: State.passage };
   });
 }
 
-function updateLog(toTitle) {
+function updateLog(toTitle, mtaCode) {
     if (from.turn < 0) return;
 
     const toTurn = State.turns < from.turn ? State.turns : State.turns + 1;
     const to = { turn: toTurn, title: toTitle };
+    if (mtaCode != null) to.mtaCode = mtaCode;
     const dom = $(".passage");
 
     // console.log(from, to, { text: dom.text().slice(0, 50) });
@@ -152,7 +154,6 @@ function record(from, to, dom) {
   if (dom.length !== 1) return;
 
   dom = dom.clone();
-  dom.find(`[data-passage="${to.title}"]`).addClass("log-next");
   dom.find(".random-walk-chosen").removeClass("random-walk-chosen");
   dom.find(".fade-in-hidden").removeClass("fade-in-hidden");
   dom.find(".fade-in-absorb").removeClass("fade-in-absorb");
@@ -160,20 +161,12 @@ function record(from, to, dom) {
   dom.find(".patience-debug").remove();
   dom.find(".ro-debug").remove();
   dom.find(".debug").replaceWith(function() { return $(this).contents(); });
-  
-  // Remove "Continue" link when it's followed
-  const links = []; // dom.find("a[data-passage]");
-  if (links.length) {
-    let last = links[links.length - 1];
-    if (last.textContent === "Continue" && last.classList.contains("log-next")) {
-      if (last.parentElement.tagName === "SPAN") {
-        last = last.parentElement;
-      }
-      last.remove();
-      const br = dom.find("br");
-      if (br.length) br[br.length - 1].remove();
-    }
+
+  let next = dom.find(`[data-passage="${to.title}"]`);
+  if (next.length > 1 && to.mtaCode != null) {
+    next = next.filter(`[data-mta-code="${to.mtaCode}"]`);
   }
+  next.addClass("log-next");
 
   // remove trailing br
   while (dom[0] != null && dom[0].lastChild != null &&

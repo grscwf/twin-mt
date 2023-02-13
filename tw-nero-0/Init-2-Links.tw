@@ -39,23 +39,29 @@ Macro.add("mtl", {
 });
 
 function makeLink(link, code, text) {
-  const T = State.temporary;
-  T.mtaThisDest = linkTitle(link);
-  T.mtaThisText = String(text);
   let body = "";
   if (code != null) {
-    T.mtaThisPayload = code;
-    body = `<<run $mtaPayload = _mtaThisPayload>><<run ${code}>>`;
+    body = `<<run $mtaPayload = "${code}">><<run ${code}>>`;
   }
   const el = document.createDocumentFragment();
+  State.temporary.mtaThisDest = linkTitle(link);
+  State.temporary.mtaThisText = String(text);
   $(el).wiki(`<<link _mtaThisText _mtaThisDest>>${body}<</link>>`);
   if (code != null) {
-    $(el).find("a").attr("data-mt-code", code);
+    $(el).find("a").attr("data-mta-code", code);
   }
   return el;
 }
 
+function linkTitle(link) {
+  if (link.isLink) return link.link;
+  const str = String(link);
+  const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
+  return m == null ? str : m[1];
+}
+
 $(document).on(":passagestart", () => {
+  // Move $mtaPayload to _mtaCode so it doesn't persist further
   const T = State.temporary;
   const V = State.variables;
   if (V.mtaPayload != null) {
@@ -64,11 +70,14 @@ $(document).on(":passagestart", () => {
   }
 })
 
-function linkTitle(link) {
-  if (link.isLink) return link.link;
-  const str = String(link);
-  const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
-  return m == null ? str : m[1];
-}
+/**
+ * Returns the mta code for the link to here, or null.
+ * This works regardless of passagestart ordering.
+ */
+MagesTower.mtaCode = () => {
+  const T = State.temporary;
+  const V = State.variables;
+  return T.mtaCode || V.mtaPayload || null;
+};
 
 <</script>>
