@@ -16,50 +16,66 @@
   word-break: break-all;
 }
 
+.jump-cmp::after {
+  color: #ccc;
+  margin-left: .5em;
+}
+
 .jump-cmp-same::after {
-  content: " [ you are here ]";
-  color: #ccc;
-}
-
-.jump-cmp-extends::after {
-  content: " [ you were here ]";
-  color: #ccc;
-}
-
-.jump-cmp-begins::after {
-  content: " [ you can reach here ]";
-  color: #ccc;
+  content: " \2190  you are here";
 }
 
 </style>
 
-<span class="ui-title">Jump To</span>
-
-<<script>>
-    /* should do this only on jump, but this is fine. */
-    MagesTower.forgetWalkHistory();
-<</script>>
-
-<hr>
-[[> Title Screen|Title Screen]]
-<br>
-[[> Bound|Bound]]
-<br>
 [[> Test Page|testing]]
-<hr>
+?P
+
+<<link [[> Title Screen|Title Screen]]>>
+    <<run MagesTower.forgetWalkHistory()>>
+<</link>>
+<br>
 
 <<script>>
 
 const jumps = [
   {
-    title: "Nero, first action, abused",
+    title: "Bound",
+    path: [],
+  },
+  "--",
+  {
+    title: "Nero 1F, first action, abused",
     path: [
       "n1a/F Nero Start",
       "n1a/F Feign Sleep 1",
       "n1cn/F Ivex Intro 2",
-      "n1cn/F First Action (5,2)"
+      "n1cn/F First Action (5,2)",
     ],
-  }
+  },
+  {
+    title: "Nero 1F, first action, naked, barbs",
+    path: [
+      "n1a/F Nero Start",
+      "n1a/F Endgame 1",
+      "n1a/F Endgame 2",
+      "n1p/F Barbs Slow 6y1",
+      "n1a/F Endgame 4",
+      "n1cn/F Ivex Intro 2",
+      "n1cn/F First Action (5,2)",
+    ],
+    vars: {
+      n0_barbsSlowViewed: false
+    }
+  },
+  {
+    title: "Nero 1F, first action, normal",
+    path: [
+      "n1a/F Nero Start",
+      "n1a/F Hello 1",
+      "n1cn/F Ivex Intro 2",
+      "n1cn/F First Action (5,2)",
+    ],
+  },
 ];
 
 State.temporary.listJumps = () => {
@@ -67,7 +83,7 @@ State.temporary.listJumps = () => {
 
   const comparePaths = (p, q) => {
     for (let i = 0; i < p.length; i++) {
-      if (i >= q.length) return "extemds";
+      if (i >= q.length) return "extends";
       if (typeof p[i] === "string") {
         if (p[i] !== q[i]) return "different";
       } else {
@@ -81,8 +97,15 @@ State.temporary.listJumps = () => {
 
   let mkp = "<<nobr>>";
   for (const j of jumps) {
+    if (j === "--") {
+      mkp += "<br>";
+      continue;
+    } else if (j === "----") {
+      mkp += "<hr>";
+      continue;
+    }
     const cmp = comparePaths(j.path, currentPath);
-    mkp += `<div class="jump-cmp-${cmp}">`;
+    mkp += `<div class="jump-cmp jump-cmp-${cmp}">`;
     mkp += `<<link "> ${j.title}">>`;
     mkp += `<<run _doJump("${j.title}")>>`;
     mkp += `<</link>>`;
@@ -93,9 +116,15 @@ State.temporary.listJumps = () => {
 };
 
 State.temporary.doJump = title => {
+  MagesTower.forgetWalkHistory();
   const jump = jumps.find(j => j.title === title);
   if (jump == null) throw new Error(`Unknown jump: ${title}`);
   Engine.play("Bound");
+  if (jump.vars != null) {
+    for (const vn of Object.keys(jump.vars)) {
+      State.variables[vn] = jump.vars[vn];
+    }
+  }
   MagesTower.seekStart(jump.path);
 };
 
@@ -103,9 +132,6 @@ State.temporary.doJump = title => {
 
 <<= _listJumps()>>
 
-<<link "> Nero 1F start" "n1a/F Nero Start">>
-    <<state-delete n1_ n2_ t_>>
-<</link>>
 <hr>
 Current path:
 <div id="jump-path">
