@@ -81,13 +81,12 @@
 
 const KEY = "mt-log-1";
 let log = [];
-let from = {
+let here = {
   turn: -1,
   title: "",
 };
 
 function saveLog() {
-  // console.log("save", log.map(e => [e.turn, e.html.slice(0, 30)]));
   State.metadata.set(KEY, log);
   MagesTower.log = log;
 }
@@ -105,47 +104,49 @@ function initLog() {
     updateLog(ev.passage.title, MagesTower.mtaCode());
   });
   $(document).on(":passagestart", () => {
-    from = { turn: State.turns, title: State.passage };
+    here = { turn: State.turns, title: State.passage };
+    const mtaCode = MagesTower.mtaCode();
+    if (mtaCode != null) here.mtaCode = mtaCode;
   });
 }
 
-function updateLog(toTitle, mtaCode) {
-    if (from.turn < 0) return;
+function updateLog(nextTitle, mtaCode) {
+    if (here.turn < 0) return;
 
-    const toTurn = State.turns < from.turn ? State.turns : State.turns + 1;
-    const to = { turn: toTurn, title: toTitle };
-    if (mtaCode != null) to.mtaCode = mtaCode;
+    const next = { title: nextTitle };
+    next.turn = State.turns < here.turn ? State.turns : State.turns + 1;
+    if (mtaCode != null) next.mtaCode = mtaCode;
     const dom = $(".passage");
 
-    // console.log(from, to, { text: dom.text().slice(0, 50) });
+    // console.log(here, to, { text: dom.text().slice(0, 50) });
 
     // Clear log when using a jump point, and don't record it.
-    if (from.turn < to.turn && from.title === "n0/F Jump To") {
+    if (here.turn < next.turn && here.title === "n0/F Jump To") {
       log = [];
       saveLog();
       return;
     }
 
     // Don't record motion from or to a "noreturn"
-    if (Story.get(from.title).tags.includes("noreturn")) return;
-    if (Story.get(to.title).tags.includes("noreturn")) return;
+    if (Story.get(here.title).tags.includes("noreturn")) return;
+    if (Story.get(next.title).tags.includes("noreturn")) return;
 
     // Don't record title screen
-    if (from.title === "Title Screen") return;
+    if (here.title === "Title Screen") return;
 
     // Clear log at Bound (and record it).
-    if (from.turn < to.turn && (from.title === "Bound" || to.title === "Bound")) {
+    if (here.turn < next.turn && (here.title === "Bound" || next.title === "Bound")) {
       log = [];
       saveLog();
     }
 
-    record(from, to, dom);
+    record(here, next, dom);
 }
 
-function record(from, to, dom) {
+function record(here, next, dom) {
   // backward or refresh
-  if (to.turn <= from.turn) {
-    log = log.filter(e => e.turn < to.turn);
+  if (next.turn <= here.turn) {
+    log = log.filter(e => e.turn < next.turn);
     saveLog();
     return;
   }
@@ -162,11 +163,11 @@ function record(from, to, dom) {
   dom.find(".ro-debug").remove();
   dom.find(".debug").replaceWith(function() { return $(this).contents(); });
 
-  let next = dom.find(`[data-passage="${to.title}"]`);
-  if (next.length > 1 && to.mtaCode != null) {
-    next = next.filter(`[data-mta-code="${to.mtaCode}"]`);
+  let link = dom.find(`[data-passage="${next.title}"]`);
+  if (link.length > 1 && next.mtaCode != null) {
+    link = link.filter(`[data-mta-code="${next.mtaCode}"]`);
   }
-  next.addClass("log-next");
+  link.addClass("log-next");
 
   // remove trailing br
   while (dom[0] != null && dom[0].lastChild != null &&
@@ -176,7 +177,9 @@ function record(from, to, dom) {
   }
 
   const html = dom[0].outerHTML;
-  log.push({ turn: from.turn, title: from.title, html });
+  const entry = { turn: here.turn, title: here.title, html };
+  if (here.mtaCode) entry.mtaCode = here.mtaCode;
+  log.push(entry);
   saveLog();
 }
 

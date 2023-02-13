@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5220,13 +5220,12 @@ MagesTower.mtaCode = () =&gt; {
 
 const KEY = &quot;mt-log-1&quot;;
 let log = [];
-let from = {
+let here = {
   turn: -1,
   title: &quot;&quot;,
 };
 
 function saveLog() {
-  // console.log(&quot;save&quot;, log.map(e =&gt; [e.turn, e.html.slice(0, 30)]));
   State.metadata.set(KEY, log);
   MagesTower.log = log;
 }
@@ -5244,47 +5243,49 @@ function initLog() {
     updateLog(ev.passage.title, MagesTower.mtaCode());
   });
   $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    from = { turn: State.turns, title: State.passage };
+    here = { turn: State.turns, title: State.passage };
+    const mtaCode = MagesTower.mtaCode();
+    if (mtaCode != null) here.mtaCode = mtaCode;
   });
 }
 
-function updateLog(toTitle, mtaCode) {
-    if (from.turn &lt; 0) return;
+function updateLog(nextTitle, mtaCode) {
+    if (here.turn &lt; 0) return;
 
-    const toTurn = State.turns &lt; from.turn ? State.turns : State.turns + 1;
-    const to = { turn: toTurn, title: toTitle };
-    if (mtaCode != null) to.mtaCode = mtaCode;
+    const next = { title: nextTitle };
+    next.turn = State.turns &lt; here.turn ? State.turns : State.turns + 1;
+    if (mtaCode != null) next.mtaCode = mtaCode;
     const dom = $(&quot;.passage&quot;);
 
-    // console.log(from, to, { text: dom.text().slice(0, 50) });
+    // console.log(here, to, { text: dom.text().slice(0, 50) });
 
     // Clear log when using a jump point, and don&#39;t record it.
-    if (from.turn &lt; to.turn &amp;&amp; from.title === &quot;n0/F Jump To&quot;) {
+    if (here.turn &lt; next.turn &amp;&amp; here.title === &quot;n0/F Jump To&quot;) {
       log = [];
       saveLog();
       return;
     }
 
     // Don&#39;t record motion from or to a &quot;noreturn&quot;
-    if (Story.get(from.title).tags.includes(&quot;noreturn&quot;)) return;
-    if (Story.get(to.title).tags.includes(&quot;noreturn&quot;)) return;
+    if (Story.get(here.title).tags.includes(&quot;noreturn&quot;)) return;
+    if (Story.get(next.title).tags.includes(&quot;noreturn&quot;)) return;
 
     // Don&#39;t record title screen
-    if (from.title === &quot;Title Screen&quot;) return;
+    if (here.title === &quot;Title Screen&quot;) return;
 
     // Clear log at Bound (and record it).
-    if (from.turn &lt; to.turn &amp;&amp; (from.title === &quot;Bound&quot; || to.title === &quot;Bound&quot;)) {
+    if (here.turn &lt; next.turn &amp;&amp; (here.title === &quot;Bound&quot; || next.title === &quot;Bound&quot;)) {
       log = [];
       saveLog();
     }
 
-    record(from, to, dom);
+    record(here, next, dom);
 }
 
-function record(from, to, dom) {
+function record(here, next, dom) {
   // backward or refresh
-  if (to.turn &lt;= from.turn) {
-    log = log.filter(e =&gt; e.turn &lt; to.turn);
+  if (next.turn &lt;= here.turn) {
+    log = log.filter(e =&gt; e.turn &lt; next.turn);
     saveLog();
     return;
   }
@@ -5301,11 +5302,11 @@ function record(from, to, dom) {
   dom.find(&quot;.ro-debug&quot;).remove();
   dom.find(&quot;.debug&quot;).replaceWith(function() { return $(this).contents(); });
 
-  let next = dom.find(`[data-passage=&quot;${to.title}&quot;]`);
-  if (next.length &gt; 1 &amp;&amp; to.mtaCode != null) {
-    next = next.filter(`[data-mta-code=&quot;${to.mtaCode}&quot;]`);
+  let link = dom.find(`[data-passage=&quot;${next.title}&quot;]`);
+  if (link.length &gt; 1 &amp;&amp; next.mtaCode != null) {
+    link = link.filter(`[data-mta-code=&quot;${next.mtaCode}&quot;]`);
   }
-  next.addClass(&quot;log-next&quot;);
+  link.addClass(&quot;log-next&quot;);
 
   // remove trailing br
   while (dom[0] != null &amp;&amp; dom[0].lastChild != null &amp;&amp;
@@ -5315,7 +5316,9 @@ function record(from, to, dom) {
   }
 
   const html = dom[0].outerHTML;
-  log.push({ turn: from.turn, title: from.title, html });
+  const entry = { turn: here.turn, title: here.title, html };
+  if (here.mtaCode) entry.mtaCode = here.mtaCode;
+  log.push(entry);
   saveLog();
 }
 
