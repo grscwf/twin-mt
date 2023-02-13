@@ -1,21 +1,52 @@
 :: Init 2 Links [inclusion] {"position":"2450,600","size":"100,100"}
 <<script>>
 
+function makeLink(link, code, text) {
+  const title = linkTitle(link);
+  State.temporary.mtText = String(text);
+  const body = code == null ? "" : `<<run ${code}>>`;
+  const el = document.createDocumentFragment();
+  $(el).wiki(`<<link _mtText "${title}">>${body}<</link>>`);
+  if (code != null) {
+    $(el).find("a").attr("data-mt-code", code);
+  }
+  console.log(el);
+  return el;
+}
+
+/**
+ * <<mta $link [$code]>>
+ *   $text
+ * <</mta>>
+ * 
+ * Similar to <<link $text $link>><<run $code>><</link>>
+ * Allows double-bracket syntax for the link.
+ * Adds a data-mt-code attribute for disambiguation.
+ */
+Macro.add("mta", {
+  tags: [],
+  handler: function() {
+    const [link, code] = this.args;
+    const text = this.payload[0].contents;
+    makeLink(link, code, text)
+      .appendTo(this.output);
+  }
+});
+
 /**
  * <<mtl $link [$script]>>
  *   $text
  * <</mtl>>
- * Similar to <li><<link $text $link>><<run $script>><</link>></li>
- * Allows double-bracket syntax for the link.
+ * 
+ * <<mta>> but wrapped in <li></li>
  */
 Macro.add("mtl", {
   tags: [],
   handler: function() {
     const [link, code] = this.args;
-    const title = linkTitle(link);
-    State.temporary.mtText = String(this.payload[0].contents);
-    const body = code == null ? "" : `<<run ${code}>>`;
-    $(this.output).wiki(`<li><<link _mtText "${title}">>${body}<</link>></li>`);
+    const text = this.payload[0].contents;
+    $("<li>").append(makeLink(link, code, text))
+      .appendTo(this.output);
   }
 });
 
