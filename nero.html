@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5097,14 +5097,15 @@ Macro.add(&quot;mtl&quot;, {
 });
 
 function makeLink(link, code, text) {
+  const el = document.createDocumentFragment();
+  const dest = linkTitle(link);
+  State.temporary.mtaThisText = String(text);
+
   let body = &quot;&quot;;
   if (code != null) {
-    body = `&lt;&lt;run $mtaPayload = &quot;${code}&quot;&gt;&gt;&lt;&lt;run ${code}&gt;&gt;`;
+    body = `&lt;&lt;run $mtaPayload = [&quot;${dest}&quot;,&quot;${code}&quot;]; ${code}&gt;&gt;`;
   }
-  const el = document.createDocumentFragment();
-  State.temporary.mtaThisDest = linkTitle(link);
-  State.temporary.mtaThisText = String(text);
-  $(el).wiki(`&lt;&lt;link _mtaThisText _mtaThisDest&gt;&gt;${body}&lt;&lt;/link&gt;&gt;`);
+  $(el).wiki(`&lt;&lt;link _mtaThisText &quot;${dest}&quot;&gt;&gt;${body}&lt;&lt;/link&gt;&gt;`);
   if (code != null) {
     $(el).find(&quot;a&quot;).attr(&quot;data-mta-code&quot;, code);
   }
@@ -5118,24 +5119,11 @@ function linkTitle(link) {
   return m == null ? str : m[1];
 }
 
-$(document).on(&quot;:passagestart&quot;, () =&gt; {
-  // Move $mtaPayload to _mtaCode so it doesn&#39;t persist further
-  const T = State.temporary;
-  const V = State.variables;
-  if (V.mtaPayload != null) {
-    T.mtaCode = V.mtaPayload;
-    delete V.mtaPayload;
-  }
-})
-
-/**
- * Returns the mta code for the link to here, or null.
- * This works regardless of passagestart ordering.
- */
+/** Returns the mta code for the link to here, or null. */
 MagesTower.mtaCode = () =&gt; {
-  const T = State.temporary;
-  const V = State.variables;
-  return T.mtaCode || V.mtaPayload || null;
+  const p = State.variables.mtaPayload;
+  if (p == null || p[0] !== State.passage) return null;
+  return p[1];
 };
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="168" name="Init 2 Log" tags="inclusion" position="2550,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
@@ -5217,127 +5205,168 @@ MagesTower.mtaCode = () =&gt; {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
+/*
+ * This module provides a story transcript of a play session, by taking
+ * snapshots of the rendered html of each passage.
+ *
+ * In principle, we could reconstruct the transcript by replaying the path.
+ * SugarCube has an option for deterministic rng, but its implementation is
+ * awkward. We&#39;d have to manage the rng state ourselves.
+ *
+ * If we want to expose transcript to players, we should probably try to that,
+ * because replay from path is a much smaller savestate than html snapshot.
+ * (Note, we can&#39;t just use passage history, we have to save rng state
+ * and disambiguation for links with setters.)
+ */
+
 const MT = window.MagesTower || (window.MagesTower = {});
 
 const KEY = &quot;mt-log-1&quot;;
-const KEY2 = &quot;mt-log-2&quot;;
+
+/**
+ * Array of entries of everything before current passage.
+ * Entry is:
+ * - turn: number - history turn
+ * - title: string - passage title
+ * - html: string - html snapshot
+ * - mtaCode: string - disambiguator if prev has multiple links here
+ * - noChoice: boolean - true if there&#39;s only one link out from here
+ * - pending: boolean - true if this was before visiting a noreturn passage
+ */
 MT.log = [];
 
-// current passage if in story, or latest story passage. 
-MT.storyPosition = null;
-
-// current passage, which might not be noreturn (not in story)
-let here = {
-  turn: -1,
-  title: &quot;&quot;,
-};
+/**
+ * passageinit can trigger after momentActivate, which means State
+ * isn&#39;t necessarily what&#39;s currently displayed.
+ * This keeps track of what&#39;s currently visible.
+ * - turn: number
+ * - title: string
+ */
+MT.displayedPassage = null;
 
 function saveLog() {
   State.metadata.set(KEY, MT.log);
-  State.metadata.set(KEY2, MT.storyPosition);
 }
 
 function initLog() {
   if (!setup.tester) return;
+
   MT.log = State.metadata.get(KEY) || [];
-  MT.storyPosition = State.metadata.get(KEY2) || null;
 
   $(&quot;&lt;div id=log-button&gt;&quot;)
     .appendTo(&quot;#story&quot;)
     .text(&quot;log&quot;)
     .on(&quot;click&quot;, () =&gt; openLog());
 
-  $(document).on(&quot;:passageinit&quot;, ev =&gt; {
-    if ($(&quot;#story a[data-passage]&quot;).length === 1) {
-      here.noChoice = true;
-    }
-    updateLog(ev.passage.title, MagesTower.mtaCode());
-  });
-  $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    here = { turn: State.turns, title: State.passage };
-    const mtaCode = MagesTower.mtaCode();
-    if (mtaCode != null) here.mtaCode = mtaCode;
-    if (!tags().includes(&quot;noreturn&quot;)) {
-      MT.storyPosition = here;
-      saveLog();
-    }
-  });
+  $(document).on(&quot;:passageinit&quot;, captureOnExit);
+  $(document).on(&quot;:passagedisplay&quot;, captureOnEnter);
 }
 
-function updateLog(nextTitle, mtaCode) {
-    if (here.turn &lt; 0) return;
-    debugger;
+/**
+ * Runs at passageinit to capture the displayed passage,
+ * before it gets overwritten with the next passage.
+ */
+function captureOnExit(ev) {
+  const next = ev.passage;
+  if (next == null) return;
 
-    const next = { title: nextTitle };
-    next.turn = State.turns &lt; here.turn ? State.turns : State.turns + 1;
-    if (mtaCode != null) next.mtaCode = mtaCode;
-    const dom = $(&quot;.passage&quot;);
+  const dp = MT.displayedPassage;
+  if (dp == null) return;
 
-    // Clear log when using a jump point, and don&#39;t record it.
-    if (here.turn &lt; next.turn &amp;&amp; here.title === &quot;n0/F Jump To&quot;) {
-      MT.log = [];
-      MT.storyPosition = null;
-      saveLog();
-      return;
-    }
+  if (MT.log.length === 0) return;
 
-    // Don&#39;t record title screen
-    if (here.title === &quot;Title Screen&quot;) return;
+  // Any passage we want to log, should already have an entry
+  const entry = MT.log[MT.log.length - 1];
+  if (entry.title !== dp.title || entry.turn !== dp.turn) return;
 
-    // Don&#39;t record motion from a &quot;noreturn&quot;
-    if (Story.get(here.title).tags.includes(&quot;noreturn&quot;)) return;
-
-    // Don&#39;t record motion to a &quot;noreturn&quot;
-    if (Story.get(next.title).tags.includes(&quot;noreturn&quot;)) return;
-
-    // Clear log at Bound (and record it).
-    if (here.turn &lt; next.turn &amp;&amp; (here.title === &quot;Bound&quot; || next.title === &quot;Bound&quot;)) {
-      MT.log = [];
-      saveLog();
-    }
-
-    record(here, next, dom);
+  const jq = $(&quot;.passage&quot;);
+  entry.pending = next.tags.includes(&quot;noreturn&quot;);
+  entry.noChoice = jq.find(&quot;a[data-passage]&quot;).length &lt;= 1;
+  entry.html = cleanHtml(jq, next.title, entry.mtaCode);
+  saveLog();
 }
 
-function record(here, next, dom) {
-  // backward or refresh
-  if (next.turn &lt;= here.turn) {
-    MT.log = MT.log.filter(e =&gt; e.turn &lt; next.turn);
-    saveLog();
-    return;
+/** Runs at passagedisplay to capture the just-rendered passage */
+function captureOnEnter(ev) {
+  MT.displayedPassage = null;
+
+  const title = State.passage;
+  const turn = State.turns;
+  const mtaCode = MagesTower.mtaCode();
+
+  if (tags().includes(&quot;noreturn&quot;)) return;
+  if (title === &quot;Title Screen&quot;) return;
+
+  MT.displayedPassage = { turn, title };
+  
+  // If we&#39;re starting over, clear log.
+  if (title === &quot;Bound&quot;) {
+    MT.log = [];
   }
 
-  // No passage?
-  if (dom.length !== 1) return;
+  // TODO: truncate log at restart points
 
-  dom = dom.clone();
-  dom.find(&quot;.random-walk-chosen&quot;).removeClass(&quot;random-walk-chosen&quot;);
-  dom.find(&quot;.fade-in-hidden&quot;).removeClass(&quot;fade-in-hidden&quot;);
-  dom.find(&quot;.fade-in-absorb&quot;).removeClass(&quot;fade-in-absorb&quot;);
-  dom.find(&quot;[data-name=silently]&quot;).remove();
-  dom.find(&quot;.patience-debug&quot;).remove();
-  dom.find(&quot;.ro-debug&quot;).remove();
-  dom.find(&quot;.debug&quot;).replaceWith(function() { return $(this).contents(); });
+  // Remove future entries
+  MT.log = MT.log.filter(e =&gt; e.turn &lt; turn
+    || (e.turn === turn &amp;&amp; e.title === title &amp;&amp; e.mtaCode === mtaCode));
+  
+  let entry = { title, turn, mtaCode };
 
-  let link = dom.find(`[data-passage=&quot;${next.title}&quot;]`);
-  if (link.length &gt; 1 &amp;&amp; next.mtaCode != null) {
-    link = link.filter(`[data-mta-code=&quot;${next.mtaCode}&quot;]`);
+  // If we returned from a noreturn, we should update an existing entry
+  if (MT.log.length &gt; 0) {
+    const last = MT.log[MT.log.length - 1];
+    if (last.pending &amp;&amp; last.title === title) {
+      const pTitle = State.peek(-1).title;
+      const prev = Story.get(pTitle);
+      if (prev.tags.includes(&quot;noreturn&quot;)) {
+        MT.log.pop();
+        entry = last;
+        entry.turn = turn;
+        // keep old mtaCode
+      }
+    }
   }
-  link.addClass(&quot;log-next&quot;);
+
+  MT.log.push(entry);
+
+  entry.pending = true;
+
+  const jq = $(&quot;.passage&quot;);
+  entry.noChoice = jq.find(&quot;a[data-passage]&quot;).length &lt;= 1;
+  entry.html = cleanHtml(jq, null, null);
+  saveLog();
+}
+
+/**
+ * Returns a cleaned up html string of the passage at jq.
+ * nextTitle and nextCode are used to highlight the link being followed.
+ */
+function cleanHtml(jq, nextTitle, nextCode) {
+  jq = jq.clone();
+  jq.removeClass(&quot;passage-in&quot;);
+  jq.find(&quot;.random-walk-chosen&quot;).removeClass(&quot;random-walk-chosen&quot;);
+  jq.find(&quot;.fade-in-hidden&quot;).removeClass(&quot;fade-in-hidden&quot;);
+  jq.find(&quot;.fade-in-absorb&quot;).removeClass(&quot;fade-in-absorb&quot;);
+  jq.find(&quot;[data-name=silently]&quot;).remove();
+  jq.find(&quot;.patience-debug&quot;).remove();
+  jq.find(&quot;.ro-debug&quot;).remove();
+  jq.find(&quot;.debug&quot;).replaceWith(function() { return $(this).contents(); });
+
+  // highlight the link followed.
+  if (nextTitle != null) {
+    let link = jq.find(`a[data-passage=&quot;${nextTitle}&quot;]`);
+    if (link.length &gt; 1 &amp;&amp; nextCode != null) {
+      link = link.filter(`[data-mt-code=&quot;${nextCode}&quot;]`);
+    }
+    link.addClass(&quot;log-next&quot;);
+  }
 
   // remove trailing br
-  while (dom[0] != null &amp;&amp; dom[0].lastChild != null &amp;&amp;
-    dom[0].lastChild.tagName === &quot;BR&quot;
-  ) {
-    dom[0].lastChild.remove();
+  while (jq[0].lastChild != null &amp;&amp; jq[0].lastChild.tagName === &quot;BR&quot;) {
+    jq[0].lastChild.remove();
   }
 
-  const html = dom[0].outerHTML;
-  const entry = { turn: here.turn, title: here.title, html };
-  if (here.mtaCode) entry.mtaCode = here.mtaCode;
-  if (here.noChoice) entry.noChoice = true;
-  MT.log.push(entry);
-  saveLog();
+  return jq[0].outerHTML;
 }
 
 function openLog() {
@@ -5345,6 +5374,7 @@ function openLog() {
   const outer = $(&quot;&lt;div id=log-outer&gt;&quot;).appendTo(Dialog.body());
   let words = 0;
   MT.log.forEach((e, i) =&gt; {
+    if (e.pending &amp;&amp; e.title === State.passage) return;
     $(&quot;&lt;div class=log-title&gt;&quot;)
       .append($(&quot;&lt;span&gt;&quot;).text(e.title))
       .appendTo(outer);
@@ -5352,10 +5382,10 @@ function openLog() {
     outer.append(section);
     words += MagesTower.countWords($(section).text());
   });
-  
+
   const json = JSON.stringify(MT.log);
-  console.log({logJsonLength: json.length});
   const compressed = LZString.compressToBase64(json);
+  console.log({ logJson: json.length, compressed: compressed.length });
 
   const minutes = Math.round(words / 250);
   $(&quot;#ui-dialog-title&quot;)
@@ -5597,14 +5627,6 @@ MT.getPath = () =&gt; {
       path.push({ code: entry.mtaCode, title: entry.title });
     } else {
       path.push(entry.title);
-    }
-  }
-  const sp = MT.storyPosition;
-  if (sp != null) {
-    if (sp.mtaCode != null) {
-      path.push({ code: sp.mtaCode, title: sp.title });
-    } else {
-      path.push(sp.title);
     }
   }
   return path;
