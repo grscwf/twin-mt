@@ -56,14 +56,44 @@ MT.forgetWalkHistory = () => {
   lastPick = {};
 };
 
+/**
+ * Returns a traversable path from the current play log.
+ * Path is an array of next-passage titles or objects.
+ * Object is when a passage has multiple links to the next-passage.
+ * If a passage only has next-passage, that next-passage can be omitted.
+ */
+MT.getPath = () => {
+  const path = [];
+  for (const entry of MagesTower.log || []) {
+    if (entry.noChoice) continue;
+    if (entry.mtaCode != null) {
+      path.push({ code: entry.mtaCode, title: entry.title });
+    } else {
+      path.push(entry.title);
+    }
+  }
+  const sp = MT.storyPosition;
+  if (sp != null) {
+    if (sp.mtaCode != null) {
+      path.push({ code: sp.mtaCode, title: sp.title });
+    } else {
+      path.push(sp.title);
+    }
+  }
+  return path;
+};
+
 /** Random walk */
 function initRandomWalk() {
   if (!setup.tester) return;
 
-  // TODO - add setter to id
-  const idOf = el => $(el).attr("data-passage");
+  const idOf = el => {
+    const title = $(el).attr("data-passage");
+    const mtaCode = $(el).attr("data-mta-code");
+    return `${title}/${mtaCode}`;
+  };
 
-  const walk = () => {
+  const goRandom = () => {
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
       chosen.click();
@@ -96,7 +126,7 @@ function initRandomWalk() {
     return true;
   };
 
-  const back = () => {
+  const goBack = () => {
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length > 0) {
       chosen.removeClass("random-walk-chosen");
@@ -105,9 +135,9 @@ function initRandomWalk() {
     }
   };
 
-  const forward = () => {
+  const goForward = () => {
     if (State.length === State.size) {
-      walk();
+      goRandom();
       return;
     }
 
@@ -117,7 +147,7 @@ function initRandomWalk() {
       if (chosen.attr("data-passage") === next) {
         Engine.forward();
       } else {
-        walk();
+        goRandom();
       }
       return;
     }
@@ -135,19 +165,28 @@ function initRandomWalk() {
   let seeking = false;
   let seekMoved = false;
   let seekForce = false;
+  let seekPath = null;
 
   const seekToggle = () => {
-    seeking = !seeking;
-    $("#rw-seek").toggleClass("rw-seeking", seeking);
     if (seeking) {
-      seekMoved = false;
-      seekForce = false;
-      seekNext();
+      seekStop();
+    } else {
+      seekStart();
     }
+  };
+
+  const seekStart = path => {
+    $("#rw-seek").addClass("rw-seeking");
+    seeking = true;
+    seekMoved = false;
+    seekForce = false;
+    seekPath = path;
+    seekNext();
   };
 
   const seekStop = () => {
     seeking = false;
+    seekPath = null;
     $("#rw-seek").removeClass("rw-seeking");
   };
 
@@ -175,13 +214,21 @@ function initRandomWalk() {
       seekMoved = true;
       chosen[0].click();
       setTimeout(seekNext, 200);
-    } else {
-      if (walk()) {
-        setTimeout(seekNext, 100);
-      } else {
-        seekStop();
-      }
+      return;
     }
+
+    if (seekPath != null) {
+      if (seekPath.length === 0) return seekStop();
+      const next = seekPath[0];
+      // XXX
+    }
+
+    if (goRandom()) {
+      setTimeout(seekNext, 100);
+      return;
+    }
+    
+    seekStop();
   };
 
   $(() => {
@@ -192,7 +239,7 @@ function initRandomWalk() {
     $("<a>")
       .attr("title", "<ctrl-comma> backward")
       .text("back")
-      .click(back)
+      .click(goBack)
       .appendTo(outer);
     if (setup.debug) {
       $("<a id=rw-seek>")
@@ -204,13 +251,13 @@ function initRandomWalk() {
       $("<a>")
         .attr("title", "<ctrl-slash> random")
         .text("rand")
-        .click(walk)
+        .click(goRandom)
         .appendTo(outer);
     }
     $("<a>")
       .attr("title", "<ctrl-period> forward")
       .text("forw")
-      .click(forward)
+      .click(goForward)
       .appendTo(outer);
   });
 
@@ -220,9 +267,9 @@ function initRandomWalk() {
     const focus = document.activeElement;
     const tag = focus != null ? focus.tagName : "";
     if (/^(textarea|input|select)$/i.test(tag)) return;
-    if (ev.key === ",") return back();
-    if (ev.key === ".") return forward();
-    if (ev.key === "/") return walk();
+    if (ev.key === ",") return goBack();
+    if (ev.key === ".") return goForward();
+    if (ev.key === "/") return goRandom();
     if (ev.key === "\\") return seekToggle();
   });
 

@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5217,22 +5217,30 @@ MagesTower.mtaCode = () =&gt; {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
+const MT = window.MagesTower || (window.MagesTower = {});
 
 const KEY = &quot;mt-log-1&quot;;
-let log = [];
+const KEY2 = &quot;mt-log-2&quot;;
+MT.log = [];
+
+// current passage if in story, or latest story passage. 
+MT.storyPosition = null;
+
+// current passage, which might not be noreturn (not in story)
 let here = {
   turn: -1,
   title: &quot;&quot;,
 };
 
 function saveLog() {
-  State.metadata.set(KEY, log);
-  MagesTower.log = log;
+  State.metadata.set(KEY, MT.log);
+  State.metadata.set(KEY2, MT.storyPosition);
 }
 
 function initLog() {
   if (!setup.tester) return;
-  log = State.metadata.get(KEY) || [];
+  MT.log = State.metadata.get(KEY) || [];
+  MT.storyPosition = State.metadata.get(KEY2) || null;
 
   $(&quot;&lt;div id=log-button&gt;&quot;)
     .appendTo(&quot;#story&quot;)
@@ -5240,12 +5248,18 @@ function initLog() {
     .on(&quot;click&quot;, () =&gt; openLog());
 
   $(document).on(&quot;:passageinit&quot;, ev =&gt; {
+    if ($(&quot;#story a[data-passage]&quot;).length === 1) {
+      here.noChoice = true;
+    }
     updateLog(ev.passage.title, MagesTower.mtaCode());
   });
   $(document).on(&quot;:passagestart&quot;, () =&gt; {
     here = { turn: State.turns, title: State.passage };
     const mtaCode = MagesTower.mtaCode();
     if (mtaCode != null) here.mtaCode = mtaCode;
+    if (!tags().includes(&quot;noreturn&quot;)) {
+      MT.storyPosition = here;
+    }
   });
 }
 
@@ -5257,25 +5271,26 @@ function updateLog(nextTitle, mtaCode) {
     if (mtaCode != null) next.mtaCode = mtaCode;
     const dom = $(&quot;.passage&quot;);
 
-    // console.log(here, to, { text: dom.text().slice(0, 50) });
-
     // Clear log when using a jump point, and don&#39;t record it.
     if (here.turn &lt; next.turn &amp;&amp; here.title === &quot;n0/F Jump To&quot;) {
-      log = [];
+      MT.log = [];
+      MT.storyPosition = null;
       saveLog();
       return;
     }
 
-    // Don&#39;t record motion from or to a &quot;noreturn&quot;
-    if (Story.get(here.title).tags.includes(&quot;noreturn&quot;)) return;
-    if (Story.get(next.title).tags.includes(&quot;noreturn&quot;)) return;
-
     // Don&#39;t record title screen
     if (here.title === &quot;Title Screen&quot;) return;
 
+    // Don&#39;t record motion from a &quot;noreturn&quot;
+    if (Story.get(here.title).tags.includes(&quot;noreturn&quot;)) return;
+
+    // Don&#39;t record motion to a &quot;noreturn&quot;
+    if (Story.get(next.title).tags.includes(&quot;noreturn&quot;)) return;
+
     // Clear log at Bound (and record it).
     if (here.turn &lt; next.turn &amp;&amp; (here.title === &quot;Bound&quot; || next.title === &quot;Bound&quot;)) {
-      log = [];
+      MT.log = [];
       saveLog();
     }
 
@@ -5285,7 +5300,7 @@ function updateLog(nextTitle, mtaCode) {
 function record(here, next, dom) {
   // backward or refresh
   if (next.turn &lt;= here.turn) {
-    log = log.filter(e =&gt; e.turn &lt; next.turn);
+    MT.log = MT.log.filter(e =&gt; e.turn &lt; next.turn);
     saveLog();
     return;
   }
@@ -5318,7 +5333,8 @@ function record(here, next, dom) {
   const html = dom[0].outerHTML;
   const entry = { turn: here.turn, title: here.title, html };
   if (here.mtaCode) entry.mtaCode = here.mtaCode;
-  log.push(entry);
+  if (here.noChoice) entry.noChoice = true;
+  MT.log.push(entry);
   saveLog();
 }
 
@@ -5326,7 +5342,7 @@ function openLog() {
   Dialog.setup(&quot;&quot;);
   const outer = $(&quot;&lt;div id=log-outer&gt;&quot;).appendTo(Dialog.body());
   let words = 0;
-  log.forEach((e, i) =&gt; {
+  MT.log.forEach((e, i) =&gt; {
     $(&quot;&lt;div class=log-title&gt;&quot;)
       .append($(&quot;&lt;span&gt;&quot;).text(e.title))
       .appendTo(outer);
@@ -5335,8 +5351,8 @@ function openLog() {
     words += MagesTower.countWords($(section).text());
   });
   
-  const json = JSON.stringify(log);
-  console.log({json: json.length});
+  const json = JSON.stringify(MT.log);
+  console.log({logJsonLength: json.length});
   const compressed = LZString.compressToBase64(json);
 
   const minutes = Math.round(words / 250);
@@ -5554,14 +5570,44 @@ MT.forgetWalkHistory = () =&gt; {
   lastPick = {};
 };
 
+/**
+ * Returns a traversable path from the current play log.
+ * Path is an array of next-passage titles or objects.
+ * Object is when a passage has multiple links to the next-passage.
+ * If a passage only has next-passage, that next-passage can be omitted.
+ */
+MT.getPath = () =&gt; {
+  const path = [];
+  for (const entry of MagesTower.log || []) {
+    if (entry.noChoice) continue;
+    if (entry.mtaCode != null) {
+      path.push({ code: entry.mtaCode, title: entry.title });
+    } else {
+      path.push(entry.title);
+    }
+  }
+  const sp = MT.storyPosition;
+  if (sp != null) {
+    if (sp.mtaCode != null) {
+      path.push({ code: sp.mtaCode, title: sp.title });
+    } else {
+      path.push(sp.title);
+    }
+  }
+  return path;
+};
+
 /** Random walk */
 function initRandomWalk() {
   if (!setup.tester) return;
 
-  // TODO - add setter to id
-  const idOf = el =&gt; $(el).attr(&quot;data-passage&quot;);
+  const idOf = el =&gt; {
+    const title = $(el).attr(&quot;data-passage&quot;);
+    const mtaCode = $(el).attr(&quot;data-mta-code&quot;);
+    return `${title}/${mtaCode}`;
+  };
 
-  const walk = () =&gt; {
+  const goRandom = () =&gt; {
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length === 1) {
       chosen.click();
@@ -5594,7 +5640,7 @@ function initRandomWalk() {
     return true;
   };
 
-  const back = () =&gt; {
+  const goBack = () =&gt; {
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length &gt; 0) {
       chosen.removeClass(&quot;random-walk-chosen&quot;);
@@ -5603,9 +5649,9 @@ function initRandomWalk() {
     }
   };
 
-  const forward = () =&gt; {
+  const goForward = () =&gt; {
     if (State.length === State.size) {
-      walk();
+      goRandom();
       return;
     }
 
@@ -5615,7 +5661,7 @@ function initRandomWalk() {
       if (chosen.attr(&quot;data-passage&quot;) === next) {
         Engine.forward();
       } else {
-        walk();
+        goRandom();
       }
       return;
     }
@@ -5633,19 +5679,28 @@ function initRandomWalk() {
   let seeking = false;
   let seekMoved = false;
   let seekForce = false;
+  let seekPath = null;
 
   const seekToggle = () =&gt; {
-    seeking = !seeking;
-    $(&quot;#rw-seek&quot;).toggleClass(&quot;rw-seeking&quot;, seeking);
     if (seeking) {
-      seekMoved = false;
-      seekForce = false;
-      seekNext();
+      seekStop();
+    } else {
+      seekStart();
     }
+  };
+
+  const seekStart = path =&gt; {
+    $(&quot;#rw-seek&quot;).addClass(&quot;rw-seeking&quot;);
+    seeking = true;
+    seekMoved = false;
+    seekForce = false;
+    seekPath = path;
+    seekNext();
   };
 
   const seekStop = () =&gt; {
     seeking = false;
+    seekPath = null;
     $(&quot;#rw-seek&quot;).removeClass(&quot;rw-seeking&quot;);
   };
 
@@ -5673,13 +5728,21 @@ function initRandomWalk() {
       seekMoved = true;
       chosen[0].click();
       setTimeout(seekNext, 200);
-    } else {
-      if (walk()) {
-        setTimeout(seekNext, 100);
-      } else {
-        seekStop();
-      }
+      return;
     }
+
+    if (seekPath != null) {
+      if (seekPath.length === 0) return seekStop();
+      const next = seekPath[0];
+      // XXX
+    }
+
+    if (goRandom()) {
+      setTimeout(seekNext, 100);
+      return;
+    }
+    
+    seekStop();
   };
 
   $(() =&gt; {
@@ -5690,7 +5753,7 @@ function initRandomWalk() {
     $(&quot;&lt;a&gt;&quot;)
       .attr(&quot;title&quot;, &quot;&lt;ctrl-comma&gt; backward&quot;)
       .text(&quot;back&quot;)
-      .click(back)
+      .click(goBack)
       .appendTo(outer);
     if (setup.debug) {
       $(&quot;&lt;a id=rw-seek&gt;&quot;)
@@ -5702,13 +5765,13 @@ function initRandomWalk() {
       $(&quot;&lt;a&gt;&quot;)
         .attr(&quot;title&quot;, &quot;&lt;ctrl-slash&gt; random&quot;)
         .text(&quot;rand&quot;)
-        .click(walk)
+        .click(goRandom)
         .appendTo(outer);
     }
     $(&quot;&lt;a&gt;&quot;)
       .attr(&quot;title&quot;, &quot;&lt;ctrl-period&gt; forward&quot;)
       .text(&quot;forw&quot;)
-      .click(forward)
+      .click(goForward)
       .appendTo(outer);
   });
 
@@ -5718,9 +5781,9 @@ function initRandomWalk() {
     const focus = document.activeElement;
     const tag = focus != null ? focus.tagName : &quot;&quot;;
     if (/^(textarea|input|select)$/i.test(tag)) return;
-    if (ev.key === &quot;,&quot;) return back();
-    if (ev.key === &quot;.&quot;) return forward();
-    if (ev.key === &quot;/&quot;) return walk();
+    if (ev.key === &quot;,&quot;) return goBack();
+    if (ev.key === &quot;.&quot;) return goForward();
+    if (ev.key === &quot;/&quot;) return goRandom();
     if (ev.key === &quot;\\&quot;) return seekToggle();
   });
 
@@ -12158,7 +12221,7 @@ I will mention how much I enjoy this gift
 when I send them my reply. And if turns out that
 &lt;em&gt;this&lt;/em&gt;&amp;mdash;&quot;
 He punctuates the word with a slap to the wolf&#39;s crotch.
-&quot;&amp;mdash;is somehow a reason for this...
+&quot;&amp;mdash;is somehow a reason for the...
 secret council to reject me,
 then I wouldn&#39;t want to join them anyway!&quot;
 

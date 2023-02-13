@@ -78,22 +78,30 @@
 </style><</append>>
 
 <<script>>
+const MT = window.MagesTower || (window.MagesTower = {});
 
 const KEY = "mt-log-1";
-let log = [];
+const KEY2 = "mt-log-2";
+MT.log = [];
+
+// current passage if in story, or latest story passage. 
+MT.storyPosition = null;
+
+// current passage, which might not be noreturn (not in story)
 let here = {
   turn: -1,
   title: "",
 };
 
 function saveLog() {
-  State.metadata.set(KEY, log);
-  MagesTower.log = log;
+  State.metadata.set(KEY, MT.log);
+  State.metadata.set(KEY2, MT.storyPosition);
 }
 
 function initLog() {
   if (!setup.tester) return;
-  log = State.metadata.get(KEY) || [];
+  MT.log = State.metadata.get(KEY) || [];
+  MT.storyPosition = State.metadata.get(KEY2) || null;
 
   $("<div id=log-button>")
     .appendTo("#story")
@@ -101,12 +109,18 @@ function initLog() {
     .on("click", () => openLog());
 
   $(document).on(":passageinit", ev => {
+    if ($("#story a[data-passage]").length === 1) {
+      here.noChoice = true;
+    }
     updateLog(ev.passage.title, MagesTower.mtaCode());
   });
   $(document).on(":passagestart", () => {
     here = { turn: State.turns, title: State.passage };
     const mtaCode = MagesTower.mtaCode();
     if (mtaCode != null) here.mtaCode = mtaCode;
+    if (!tags().includes("noreturn")) {
+      MT.storyPosition = here;
+    }
   });
 }
 
@@ -118,25 +132,26 @@ function updateLog(nextTitle, mtaCode) {
     if (mtaCode != null) next.mtaCode = mtaCode;
     const dom = $(".passage");
 
-    // console.log(here, to, { text: dom.text().slice(0, 50) });
-
     // Clear log when using a jump point, and don't record it.
     if (here.turn < next.turn && here.title === "n0/F Jump To") {
-      log = [];
+      MT.log = [];
+      MT.storyPosition = null;
       saveLog();
       return;
     }
 
-    // Don't record motion from or to a "noreturn"
-    if (Story.get(here.title).tags.includes("noreturn")) return;
-    if (Story.get(next.title).tags.includes("noreturn")) return;
-
     // Don't record title screen
     if (here.title === "Title Screen") return;
 
+    // Don't record motion from a "noreturn"
+    if (Story.get(here.title).tags.includes("noreturn")) return;
+
+    // Don't record motion to a "noreturn"
+    if (Story.get(next.title).tags.includes("noreturn")) return;
+
     // Clear log at Bound (and record it).
     if (here.turn < next.turn && (here.title === "Bound" || next.title === "Bound")) {
-      log = [];
+      MT.log = [];
       saveLog();
     }
 
@@ -146,7 +161,7 @@ function updateLog(nextTitle, mtaCode) {
 function record(here, next, dom) {
   // backward or refresh
   if (next.turn <= here.turn) {
-    log = log.filter(e => e.turn < next.turn);
+    MT.log = MT.log.filter(e => e.turn < next.turn);
     saveLog();
     return;
   }
@@ -179,7 +194,8 @@ function record(here, next, dom) {
   const html = dom[0].outerHTML;
   const entry = { turn: here.turn, title: here.title, html };
   if (here.mtaCode) entry.mtaCode = here.mtaCode;
-  log.push(entry);
+  if (here.noChoice) entry.noChoice = true;
+  MT.log.push(entry);
   saveLog();
 }
 
@@ -187,7 +203,7 @@ function openLog() {
   Dialog.setup("");
   const outer = $("<div id=log-outer>").appendTo(Dialog.body());
   let words = 0;
-  log.forEach((e, i) => {
+  MT.log.forEach((e, i) => {
     $("<div class=log-title>")
       .append($("<span>").text(e.title))
       .appendTo(outer);
@@ -196,8 +212,8 @@ function openLog() {
     words += MagesTower.countWords($(section).text());
   });
   
-  const json = JSON.stringify(log);
-  console.log({json: json.length});
+  const json = JSON.stringify(MT.log);
+  console.log({logJsonLength: json.length});
   const compressed = LZString.compressToBase64(json);
 
   const minutes = Math.round(words / 250);

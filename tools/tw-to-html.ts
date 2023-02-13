@@ -17,6 +17,9 @@ import { runP, setupEnv, timestamp } from "./lib";
 import type { Rule } from "./rules";
 import { rules } from "./rules";
 import fglob from "fast-glob";
+import ansi from 'ansi-colors';
+
+const buildDelay = 200; // msec
 
 async function main(argv: string[]) {
   setupEnv();
@@ -40,10 +43,14 @@ async function buildOnce(force: boolean) {
   }
 }
 
+function log(msg: string) {
+  console.log(ansi.dim.cyan(timestamp()), msg);
+}
+
 async function needsBuild(rule: Rule, force: boolean) {
   const tStat = await fsp.stat(rule.target);
   if (tStat == null) {
-    console.log(`${rule.target} does not exist`);
+    log(`${rule.target} does not exist`);
     return true;
   }
   const patterns = rule.dirs.map((d) => `${d}/**/*.tw`);
@@ -51,19 +58,19 @@ async function needsBuild(rule: Rule, force: boolean) {
   for (const dep of deps) {
     const dStat = await fsp.stat(dep);
     if (dStat == null) {
-      console.log(`${rule.target} dep ${dep} does not exist`);
+      log(`${rule.target} dep ${dep} does not exist`);
       return true;
     }
     if (dStat.mtime > tStat.mtime) {
-      console.log(`${rule.target} dep ${dep} is more recent`);
+      log(`${rule.target} dep ${dep} is more recent`);
       return true;
     }
   }
   if (force) {
-    console.log(`${rule.target} already up-to-date, but --force build anyway`);
+    log(`${rule.target} already up-to-date, but --force build anyway`);
     return true;
   } else {
-    console.log(`${rule.target} already up-to-date`);
+    log(`${rule.target} already up-to-date`);
     return false;
   }
 }
@@ -71,8 +78,9 @@ async function needsBuild(rule: Rule, force: boolean) {
 async function buildRule(rule: Rule): Promise<void> {
   const dirs = await fglob(rule.dirs, { onlyFiles: false });
   const cmd = `tweego -o ${rule.target} ${dirs.join(" ")}`;
-  console.log(timestamp(), cmd);
+  log(cmd);
   await runP(cmd, { echo: true });
+  log("done");
 }
 
 async function watch(force: boolean) {
@@ -87,7 +95,7 @@ async function watch(force: boolean) {
   }
 
   await buildOnce(force);
-  console.log("Watching...");
+  log("Watching...");
 
   // We want to avoid overwriting a target if something else changes it.
   // Unfortunately, if a file is being watched in WSL, Twine in Windows
@@ -106,7 +114,7 @@ async function watch(force: boolean) {
   const checkTarget = async (target: string) => {
     const ck = await checksum(target);
     if (ck !== checksums.get(target)) {
-      console.log(`Exiting: someone else changed ${target}`);
+      log(`Exiting: someone else changed ${target}`);
       process.exit(1);
     }
   };
@@ -120,6 +128,7 @@ async function watch(force: boolean) {
     const rebuild = async () => {
       if (isBuilding.has(target)) return;
       isBuilding.add(target);
+      await timeout(buildDelay);
       buildStartedTime.set(target, Date.now());
       await checkTarget(target);
       try {
@@ -127,7 +136,7 @@ async function watch(force: boolean) {
         checksums.set(target, await checksum(target));
         isBuilding.delete(target);
         if (needsRebuild.has(target)) {
-          console.log(`${target} deps changed during build, rebuilding`);
+          log(`${target} deps changed during build, rebuilding`);
           needsRebuild.delete(target);
           await rebuild();
         }
@@ -140,12 +149,12 @@ async function watch(force: boolean) {
       if (isBuilding.has(target)) {
         const t = buildStartedTime.get(target);
         if (t == null || stat == null || stat.mtime.getTime() >= t) {
-          console.log(`${path} changed during build of ${target}`);
+          log(`${path} changed during build of ${target}`);
           needsRebuild.add(target);
         }
         return;
       }
-      console.log(`${path} changed, rebuilding ${target}`);
+      log(`${path} changed, rebuilding ${target}`);
       rebuild();
     };
     const dirs = await fglob(rule.dirs, { onlyFiles: false });
@@ -165,6 +174,10 @@ async function checksum(file: string): Promise<string> {
   const hash = createHash("sha256"); // overkill, but not expensive
   hash.update(data);
   return hash.digest("hex");
+}
+
+function timeout(msec: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, msec));
 }
 
 main(process.argv).catch((e) => {
