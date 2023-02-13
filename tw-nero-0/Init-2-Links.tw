@@ -1,19 +1,6 @@
 :: Init 2 Links [inclusion] {"position":"2450,600","size":"100,100"}
 <<script>>
 
-function makeLink(link, code, text) {
-  const title = linkTitle(link);
-  State.temporary.mtText = String(text);
-  const body = code == null ? "" : `<<run ${code}>>`;
-  const el = document.createDocumentFragment();
-  $(el).wiki(`<<link _mtText "${title}">>${body}<</link>>`);
-  if (code != null) {
-    $(el).find("a").attr("data-mt-code", code);
-  }
-  console.log(el);
-  return el;
-}
-
 /**
  * <<mta $link [$code]>>
  *   $text
@@ -22,6 +9,7 @@ function makeLink(link, code, text) {
  * Similar to <<link $text $link>><<run $code>><</link>>
  * Allows double-bracket syntax for the link.
  * Adds a data-mt-code attribute for disambiguation.
+ * Also arranges for the next passage to get the code as _mtaCode
  */
 Macro.add("mta", {
   tags: [],
@@ -49,6 +37,32 @@ Macro.add("mtl", {
       .appendTo(this.output);
   }
 });
+
+function makeLink(link, code, text) {
+  const T = State.temporary;
+  T.mtaThisDest = linkTitle(link);
+  T.mtaThisText = String(text);
+  let body = "";
+  if (code != null) {
+    T.mtaThisPayload = code;
+    body = `<<run $mtaPayload = _mtaThisPayload>><<run ${code}>>`;
+  }
+  const el = document.createDocumentFragment();
+  $(el).wiki(`<<link _mtaThisText _mtaThisDest>>${body}<</link>>`);
+  if (code != null) {
+    $(el).find("a").attr("data-mt-code", code);
+  }
+  return el;
+}
+
+$(document).on(":passagestart", () => {
+  const T = State.temporary;
+  const V = State.variables;
+  if (V.mtaPayload != null) {
+    T.mtaCode = V.mtaPayload;
+    delete V.mtaPayload;
+  }
+})
 
 function linkTitle(link) {
   if (link.isLink) return link.link;

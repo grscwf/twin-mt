@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5059,19 +5059,6 @@ Macro.add(&quot;fade-in&quot;, {
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="167" name="Init 2 Links" tags="inclusion" position="2450,600" size="100,100">&lt;&lt;script&gt;&gt;
 
-function makeLink(link, code, text) {
-  const title = linkTitle(link);
-  State.temporary.mtText = String(text);
-  const body = code == null ? &quot;&quot; : `&lt;&lt;run ${code}&gt;&gt;`;
-  const el = document.createDocumentFragment();
-  $(el).wiki(`&lt;&lt;link _mtText &quot;${title}&quot;&gt;&gt;${body}&lt;&lt;/link&gt;&gt;`);
-  if (code != null) {
-    $(el).find(&quot;a&quot;).attr(&quot;data-mt-code&quot;, code);
-  }
-  console.log(el);
-  return el;
-}
-
 /**
  * &lt;&lt;mta $link [$code]&gt;&gt;
  *   $text
@@ -5080,6 +5067,7 @@ function makeLink(link, code, text) {
  * Similar to &lt;&lt;link $text $link&gt;&gt;&lt;&lt;run $code&gt;&gt;&lt;&lt;/link&gt;&gt;
  * Allows double-bracket syntax for the link.
  * Adds a data-mt-code attribute for disambiguation.
+ * Also arranges for the next passage to get the code as _mtaCode
  */
 Macro.add(&quot;mta&quot;, {
   tags: [],
@@ -5107,6 +5095,32 @@ Macro.add(&quot;mtl&quot;, {
       .appendTo(this.output);
   }
 });
+
+function makeLink(link, code, text) {
+  const T = State.temporary;
+  T.mtaThisDest = linkTitle(link);
+  T.mtaThisText = String(text);
+  let body = &quot;&quot;;
+  if (code != null) {
+    T.mtaThisPayload = code;
+    body = `&lt;&lt;run $mtaPayload = _mtaThisPayload&gt;&gt;&lt;&lt;run ${code}&gt;&gt;`;
+  }
+  const el = document.createDocumentFragment();
+  $(el).wiki(`&lt;&lt;link _mtaThisText _mtaThisDest&gt;&gt;${body}&lt;&lt;/link&gt;&gt;`);
+  if (code != null) {
+    $(el).find(&quot;a&quot;).attr(&quot;data-mt-code&quot;, code);
+  }
+  return el;
+}
+
+$(document).on(&quot;:passagestart&quot;, () =&gt; {
+  const T = State.temporary;
+  const V = State.variables;
+  if (V.mtaPayload != null) {
+    T.mtaCode = V.mtaPayload;
+    delete V.mtaPayload;
+  }
+})
 
 function linkTitle(link) {
   if (link.isLink) return link.link;
