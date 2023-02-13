@@ -1,6 +1,38 @@
 :: n0/F Jump To [noreturn] {"position":"3100,1475","size":"100,100"}
 <<nobr>>
 <<auto-stow>>
+
+<<return-head>>
+
+<style>
+
+#jump-path {
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #999;
+  font: 12px monospace;
+  margin-top: 4px;
+  padding: 8px;
+  word-break: break-all;
+}
+
+.jump-cmp-same::after {
+  content: " [ you are here ]";
+  color: #ccc;
+}
+
+.jump-cmp-extends::after {
+  content: " [ you were here ]";
+  color: #ccc;
+}
+
+.jump-cmp-begins::after {
+  content: " [ you can reach here ]";
+  color: #ccc;
+}
+
+</style>
+
 <span class="ui-title">Jump To</span>
 
 <<script>>
@@ -8,98 +40,76 @@
     MagesTower.forgetWalkHistory();
 <</script>>
 
-<</nobr>>
 <hr>
 [[> Title Screen|Title Screen]]
+<br>
+[[> Bound|Bound]]
+<br>
 [[> Test Page|testing]]
 <hr>
+
+<<script>>
+
+const jumps = [
+  {
+    title: "Nero, first action, abused",
+    path: [
+      "n1a/F Nero Start",
+      "n1a/F Feign Sleep 1",
+      "n1cn/F Ivex Intro 2",
+      "n1cn/F First Action (5,2)"
+    ],
+  }
+];
+
+State.temporary.listJumps = () => {
+  const currentPath = MagesTower.getPath();
+
+  const comparePaths = (p, q) => {
+    for (let i = 0; i < p.length; i++) {
+      if (i >= q.length) return "extemds";
+      if (typeof p[i] === "string") {
+        if (p[i] !== q[i]) return "different";
+      } else {
+        if (p[i].title !== q[i].title) return "different";
+        if (p[i].code !== q[i].code) return "different";
+      }
+    }
+    if (p.length < q.length) return "begins";
+    return "same";
+  };
+
+  let mkp = "<<nobr>>";
+  for (const j of jumps) {
+    const cmp = comparePaths(j.path, currentPath);
+    mkp += `<div class="jump-cmp-${cmp}">`;
+    mkp += `<<link "> ${j.title}">>`;
+    mkp += `<<run _doJump("${j.title}")>>`;
+    mkp += `<</link>>`;
+    mkp += '</div>';
+  }
+  mkp += "<</nobr>>";
+  return mkp;
+};
+
+State.temporary.doJump = title => {
+  const jump = jumps.find(j => j.title === title);
+  if (jump == null) throw new Error(`Unknown jump: ${title}`);
+  Engine.play("Bound");
+  MagesTower.seekStart(jump.path);
+};
+
+<</script>>
+
+<<= _listJumps()>>
+
 <<link "> Nero 1F start" "n1a/F Nero Start">>
     <<state-delete n1_ n2_ t_>>
 <</link>>
-<<link "> Nero 1F first action, neutral" "n1cn/F First Action (5,2)">>
-    <<state-delete n1_ n2_ t_>>
-<</link>>
-<<link "> Nero 1F first action, naked" "n1cn/F First Action (5,2)">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n0_barbsSlowViewed = true>>
-    <<set $n1_barbsSlow = true>>
-    <<set $n1_castEndgame = true>>
-    <<set $n1_magicPhase = 1>>
-    <<set $n1_naked = true>>
-<</link>>
-<<link "> Nero 1F first action, abused" "n1cn/F First Action (5,2)">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n1_abused = true>>
-<</link>>
-<<link "> Nero 1F sprite ready, neutral, recruiting" "n1cr/F Ivex Skeptical (2,4)">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n0_barbsSlowViewed = true>>
-    <<set $n1_barbsSlow = true>>
-    <<set $n1_coinThrown = true>>
-    <<set $n1_deskViewed = true>>
-    <<set $n1_mageSight = true>>
-    <<set $n1_magicPhase = MP_wantDevice>>
-    <<set $n1_naked = true>>
-    <<set $n1_studyViewed = true>>
-    <<set $t_banter = true>>
-    <<set $t_didSomeAction = true>>
-    <<set $t_ivexNear = true>>
-    <<set $t_ivexReceptive = true>>
-<</link>>
-<<link "> Nero 1F sprite ready, neutral, submitting" "n1cr/F Ivex Demanding (4,2)">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n0_barbsSlowViewed = true>>
-    <<set $n1_barbsSlow = true>>
-    <<set $n1_deskViewed = true>>
-    <<set $n1_mageSight = true>>
-    <<set $n1_magicPhase = MP_wantDevice>>
-    <<set $n1_naked = true>>
-    <<set $n1_studyViewed = true>>
-    <<set $t_banter = true>>
-    <<set $t_didSomeAction = true>>
-    <<set $t_ivexNear = true>>
-    <<set $t_ivexReceptive = true>>
-<</link>>
-<<link "> Nero 1F subby after glitch" "n1cs/D Ivex Dominant (4,2)">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n0_barbsFastViewed = true>>
-    <<set $n0_barbsGlitchViewed = true>>
-    <<set $n0_barbsSlowViewed = true>>
-    <<set $n1_barbsGlitch = true>>
-    <<set $n1_naked = true>>
-    <<set $n1_subby = true>>
-    <<set $t_banter = true>>
-    <<set $t_didSomeAction = true>>
-    <<set $t_ivexReceptive = true>>
-<</link>>
-<<link "> Nero 1F start candle" "n1cx/F Start Candle 1">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $t_didSomeAction = true>>
-    <<set $t_stalling = true>>
-<</link>>
-<<link "> Nero 1F candle horny" "n1d/F Candle Horny">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n0_barbsFastViewed = true>>
-    <<set $n1_barbs = true>>
-    <<set $n1_barbsFast = true>>
-    <<set $n1_candleLit = true>>
-    <<set $n1_naked = true>>
-    <<set $t_didSomeAction = true>>
-    <<set $t_stalling = true>>
-<</link>>
-<<link "> Nero 1F Ivex gone<super>*</super>" "n2a/F Restart Ivex Gone">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n1_naked = true>>
-<</link>>
-<<link "> Nero 1F easy escape<super>*</super>" "n2f/D Free Action">>
-    <<state-delete n1_ n2_ t_>>
-    <<set $n1_naked = true>>
-    <<set $n1_magicPhase = MP_broken>>
-    <<set $n2_magicPhaseBroken = MP_mageSight>>
-    <<set $n2_extraHorny = true>>
-    <<set $n2_free = true>>
-    <<set $n2_ivexGone = true>>
-    <<set $n2_mirrorBroken = true>>
-<</link>>
 <hr>
-<super>*</super> State is incomplete and will not happen in normal play.
+Current path:
+<div id="jump-path">
+    <<= JSON.stringify(MagesTower.getPath(), null, 2)>>
+</div>
+
+<</nobr>>

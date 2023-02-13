@@ -56,6 +56,11 @@ MT.forgetWalkHistory = () => {
   lastPick = {};
 };
 
+const pathIgnore = [
+  "Bound",
+  "Choose Character",
+];
+
 /**
  * Returns a traversable path from the current play log.
  * Path is an array of next-passage titles or objects.
@@ -64,8 +69,14 @@ MT.forgetWalkHistory = () => {
  */
 MT.getPath = () => {
   const path = [];
-  for (const entry of MagesTower.log || []) {
-    if (entry.noChoice) continue;
+  const log = MagesTower.log;
+  if (log == null || log.length === 0) return [];
+  if (log[0].title !== "Bound") return [];
+
+  for (let i = 0; i < log.length; i++) {
+    if (i > 0 && log[i - 1].noChoice) continue;
+    const entry = log[i];
+    if (pathIgnore.includes(entry.title)) continue;
     if (entry.mtaCode != null) {
       path.push({ code: entry.mtaCode, title: entry.title });
     } else {
@@ -175,7 +186,7 @@ function initRandomWalk() {
     }
   };
 
-  const seekStart = path => {
+  const seekStart = MagesTower.seekStart = path => {
     $("#rw-seek").addClass("rw-seeking");
     seeking = true;
     seekMoved = false;
@@ -220,7 +231,32 @@ function initRandomWalk() {
     if (seekPath != null) {
       if (seekPath.length === 0) return seekStop();
       const next = seekPath[0];
-      // XXX
+      const links = $("#story a[data-passage]");
+      const isStep = (el, step) => {
+        const title = el.getAttribute("data-passage");
+        const code = el.getAttribute("data-mta-code");
+        if (typeof step === "string") {
+          return title === step;
+        } else {
+          return title === step.title && code === step.code;
+        }
+      };
+      for (const link of links) {
+        if (isStep(link, next)) {
+          seekPath.shift();
+          $(link).addClass("random-walk-chosen");
+          setTimeout(seekNext, 100);
+          return;
+        }
+      }
+      if (links.length === 1) {
+        links.addClass("random-walk-chosen");
+        setTimeout(seekNext, 100);
+        return;
+      }
+
+      ErrorMessage.warn(`Broken path: ${JSON.stringify(next)}`);
+      return seekStop();
     }
 
     if (goRandom()) {
