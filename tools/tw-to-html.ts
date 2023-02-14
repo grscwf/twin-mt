@@ -89,6 +89,7 @@ async function watch(force: boolean) {
   // We record the time a build started, because if a dep changes during
   // a build, the result might be stale, so we need to build again.
   const buildStartedTime = new Map<string, number>();
+
   const now = Date.now();
   for (const t of targets) {
     buildStartedTime.set(t, now);
@@ -113,9 +114,12 @@ async function watch(force: boolean) {
 
   /** Exit if target has changed unexpected. */
   const checkTarget = async (target: string) => {
+    if (isBuilding.has(target)) return;
     const ck = await checksum(target);
     if (ck !== checksums.get(target)) {
       log(`Exiting: someone else changed ${target}`);
+      log(`expected: ${checksums.get(target)}`);
+      log(`currently: ${ck}`);
       process.exit(1);
     }
   };
@@ -129,13 +133,15 @@ async function watch(force: boolean) {
     const rebuild = async () => {
       if (isBuilding.has(target)) return;
       if (buildPending.has(target)) return;
+
       buildPending.add(target);
       await timeout(buildDelay);
+      await checkTarget(target);
 
+      buildStartedTime.set(target, Date.now());
       buildPending.delete(target);
       isBuilding.add(target);
-      buildStartedTime.set(target, Date.now());
-      await checkTarget(target);
+
       try {
         await buildRule(rule);
         checksums.set(target, await checksum(target));
@@ -177,9 +183,12 @@ async function watch(force: boolean) {
 
 async function checksum(file: string): Promise<string> {
   const data = await fsp.readFile(file);
-  const hash = createHash("sha256"); // overkill, but not expensive
-  hash.update(data);
-  return hash.digest("hex");
+  const hasher = createHash("sha256"); // overkill, but not expensive
+  hasher.update(data);
+  const hash = hasher.digest("hex");
+  const st = await fsp.stat(file);
+  const time = st.mtime.getTime();
+  return `${time} ${hash}`;
 }
 
 function timeout(msec: number): Promise<void> {
