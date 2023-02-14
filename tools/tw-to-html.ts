@@ -108,6 +108,7 @@ async function watch(force: boolean) {
   }
 
   const isBuilding = new Set<string>();
+  const buildPending = new Set<string>();
   const needsRebuild = new Set<string>();
 
   /** Exit if target has changed unexpected. */
@@ -127,8 +128,12 @@ async function watch(force: boolean) {
     const target = rule.target;
     const rebuild = async () => {
       if (isBuilding.has(target)) return;
-      isBuilding.add(target);
+      if (buildPending.has(target)) return;
+      buildPending.add(target);
       await timeout(buildDelay);
+
+      buildPending.delete(target);
+      isBuilding.add(target);
       buildStartedTime.set(target, Date.now());
       await checkTarget(target);
       try {
@@ -146,6 +151,7 @@ async function watch(force: boolean) {
       }
     };
     const maybeRebuild = async (path: string, stat: Stats | undefined) => {
+      if (buildPending.has(target)) return;
       if (isBuilding.has(target)) {
         const t = buildStartedTime.get(target);
         if (t == null || stat == null || stat.mtime.getTime() >= t) {
