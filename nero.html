@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5120,9 +5120,10 @@ function linkTitle(link) {
 }
 
 /** Returns the mta code for the link to here, or null. */
-MagesTower.mtaCode = () =&gt; {
+MagesTower.mtaCode = (here) =&gt; {
+  here ||= State.passage;
   const p = State.variables.mtaPayload;
-  if (p == null || p[0] !== State.passage) return null;
+  if (p == null || p[0] !== here) return null;
   return p[1];
 };
 
@@ -5282,7 +5283,8 @@ function captureOnExit(ev) {
   const jq = $(&quot;.passage&quot;);
   entry.pending = next.tags.includes(&quot;noreturn&quot;);
   entry.noChoice = jq.find(&quot;a[data-passage]&quot;).length &lt;= 1;
-  entry.html = cleanHtml(jq, next.title, entry.mtaCode);
+  const nextCode = MagesTower.mtaCode(next.title);
+  entry.html = cleanHtml(jq, next.title, nextCode);
   saveLog();
 }
 
@@ -5355,7 +5357,7 @@ function cleanHtml(jq, nextTitle, nextCode) {
   if (nextTitle != null) {
     let link = jq.find(`a[data-passage=&quot;${nextTitle}&quot;]`);
     if (link.length &gt; 1 &amp;&amp; nextCode != null) {
-      link = link.filter(`[data-mt-code=&quot;${nextCode}&quot;]`);
+      link = link.filter(`[data-mta-code=&quot;${nextCode}&quot;]`);
     }
     link.addClass(&quot;log-next&quot;);
   }
@@ -11544,16 +11546,16 @@ But he&#39;s more disheartened by Ivex&#39;s contempt at his clumsy lie.
 [[Continue|n1cx/F Start Candle 1]]
 
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="251" name="n1cr/D Subby Deep 2" tags="" position="4325,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="251" name="n1cr/F Subby Deep 2" tags="" position="4325,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 Ivex chuckles and places the letter opener back on the desk.
-&quot;Training you will be quite fun.
+&quot;Yes, training you will be quite fun.
 No I have &lt;em&gt;not&lt;/em&gt; removed my own balls.
 And I much prefer my subjects to keep theirs as well.
 They&#39;re more... productive that way.
 So you have no reason to worry on that front.
-With the help of my training, you will become
+And with my help, you will soon become
 quite useful and productive yourself.&quot;
 
 ?P
@@ -11563,18 +11565,33 @@ the panther mage is in love with his own cleverness,
 and Nero has no qualms about stroking &lt;em&gt;that&lt;/em&gt;.
 
 ?P
-Ivex says, &quot;I&#39;m sure your behavior here is more motivated
-by expedience than from genuine admiration.
+Ivex says, &quot;I&#39;m sure your behavior right now is motivated
+more by expedience than genuine admiration.
+So let me give
+&lt;&lt;= $n1_naked ? &quot;another,&quot; : &quot;a&quot;&gt;&gt;
+small demonstration of my powers.&quot;
 
-
-XXX
 ?P
 &lt;&lt;if $n1_naked&gt;&gt;
+    He raises both arms theatrically, then claps his hands twice...
+
+    ?P
     [[Continue|n1cs/D Subby Naked]]
 &lt;&lt;else&gt;&gt;
-    [[Continue|n1cs/D Subby Strip]]
+    He raises his left arm theatrically,
+    then snaps his fingers...
+
+    ?P
+    &lt;&lt;if !$n1_abused &amp;&amp; $n0_barbsSlowViewed &amp;&amp; $n0_barbsFastViewed&gt;&gt;
+        [[Continue|n1p/F Barbs Glitch 1]]
+    &lt;&lt;elseif $n1_abused&gt;&gt;
+        [[Continue|n1p/F Barbs Fast 1]]
+    &lt;&lt;else&gt;&gt;
+        [[Continue|n1p/F Barbs Slow 1]]
+    &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
+&lt;&lt;set $t_afterNaked = &quot;[[Continue|n1cs/D Subby Stripped]]&quot;&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="252" name="n1cr/D Subby Light" tags="big-mood" position="4475,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -12531,12 +12548,21 @@ Ivex laughs. &quot;I almost believe you. But you are very quick to
 answer, without any idea of what I will demand.&quot;
 
 ?P
-The panther tilts his head and considers the
-&lt;&lt;= $n1_naked ? &quot;naked&quot; : &quot;bound&quot;&gt;&gt;
-wolf for a long moment.
+&lt;&lt;if $t_ivexNear&gt;&gt;
+    He paces away from the
+    &lt;&lt;= $n1_naked ? &quot;naked&quot; : &quot;bound&quot;&gt;&gt;
+    wolf to pick up
+    to the desk, picks up a letter opener,
+&lt;&lt;else&gt;&gt;
+    He tilts his head to consider the
+    &lt;&lt;= $n1_naked ? &quot;naked&quot; : &quot;bound&quot;&gt;&gt;
+    wolf, and then picks
+&lt;&lt;/if&gt;&gt;
+a letter opener from the desk.
 
 ?P
-He asks, &quot;What if I hand you a knife and tell you to remove your own testicles?&quot;
+&quot;What if I hand you a knife and
+tell you to remove your own testicles?&quot;
 
 ?P
 Nero is
@@ -12546,12 +12572,7 @@ Should he say yes? Surely, no sane person would say yes?
 He hesitates. &quot;If you gave me a good reason for it...&quot;
 
 ?P
-&lt;&lt;if $t_ivexNear&gt;&gt;
-    Ivex moves to the desk, picks up a letter opener,
-&lt;&lt;else&gt;&gt;
-    Ivex picks up a letter opener from the desk,
-&lt;&lt;/if&gt;&gt;
-then places the sharp edge of it against his own crotch.
+Ivex places the sharp edge of the letter opener against his own crotch.
 &quot;I&#39;ve already removed my own. I will explain to you the
 reason &lt;em&gt;after&lt;/em&gt; you have done it yourself.&quot;
 
@@ -12574,7 +12595,7 @@ for time. &quot;Did... you really remove your own testicles?&quot;
 Oh. That&#39;s the trap. Nero&#39;s ears flatten in dismay.
 
 ?P
-[[Continue|n1cr/D Subby Deep 2]]
+[[Continue|n1cr/F Subby Deep 2]]
 
 &lt;&lt;set $n1_subby = true&gt;&gt;
 &lt;&lt;set $n1_subbyDeep = true&gt;&gt;
@@ -14064,6 +14085,7 @@ All of Nero&#39;s clothes disappear.
 ?P
 The wolf shivers.
 &lt;&lt;if $n1_subby&gt;&gt;
+    XXX elaborate more, it&#39;s impressive.
     Events are proceeding in the expected direction.
 &lt;&lt;else&gt;&gt;
     Events have progressed beyond simple interrogation.
@@ -14210,6 +14232,7 @@ But his rational mind reminds him of his immediate peril, and he manages to shov
 All of Nero&#39;s clothes disappear.
 &lt;&lt;/nobr&gt;&gt;
 
+XXX slower, this is !abused.
 The wolf shivers. He knew this was going to happen, sooner or later, but the panther&#39;s stripping spell was incredibly powerful and precise. Ivex&#39;s tail is twitching in excitement as he approches, and his right paw is brazenly grabbing his own crotch. Nero can&#39;t stop staring at it, anticipating the moment when Ivex loosens his pants and presents his feline cock.
 
 Nero&#39;s memory flashes back to his most recent encounter with a feline cock. It was just last month...
@@ -14250,8 +14273,12 @@ and felt the shaft of the jaguar&#39;s...
 ?P
 &lt;&lt;set _link = &quot;[[n1p/F Barbs Glitch 3]]&quot;.slice(2, -2)&gt;&gt;
 &lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;&lt;&lt;link &quot;... ##barbed-1## cock rubbing against his paws.&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
-    &lt;li&gt;&lt;&lt;link &quot;... ##barbed-2## cock gliding against his paws.&quot; _link&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+    &lt;&lt;mtl [[n1p/F Barbs Glitch 3]] &quot;//1&quot;&gt;&gt;
+        ... ##barbed-1## cock rubbing against his paws.
+    &lt;&lt;/mtl&gt;&gt;
+    &lt;&lt;mtl [[n1p/F Barbs Glitch 3]] &quot;//2&quot;&gt;&gt;
+        ... ##barbed-2## cock rubbing against his paws.
+    &lt;&lt;/mtl&gt;&gt;
 &lt;/ul&gt;
 &lt;&lt;/glitch-text&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="312" name="n1p/F Barbs Glitch 3" tags="" position="5275,2375" size="100,100">&lt;&lt;nobr&gt;&gt;
