@@ -5,8 +5,7 @@ export type Rule = {
 
 const common = [
   "tw-common",
-  "tw-drekkar-1",
-  "tw-drekkar-2",
+  "tw-drekkar-?",
 ]
 
 // Note: pathnames are relative to cwd
