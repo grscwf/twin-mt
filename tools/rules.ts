@@ -16,6 +16,6 @@ export const rules: Rule[] = [
   },
   {
     target: "nero.html",
-    dirs: [...common, "tw-nero-*", "tw-nero-other"],
+    dirs: [...common, "tw-nero-*", "tw-nero-0"],
   },
 ];
