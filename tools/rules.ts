@@ -5,14 +5,15 @@ export type Rule = {
 
 const common = [
   "tw-common",
-  "tw-drekkar-?",
+  // Note: fast-globa has a bug with "tw-drekkar-?"
+  "tw-drekkar-*",
 ]
 
 // Note: pathnames are relative to cwd
 export const rules: Rule[] = [
   {
     target: "index.html",
-    dirs: [...common, "tw-drekkar-only"],
+    dirs: [...common, "tw-only-drekkar"],
   },
   {
     target: "nero.html",

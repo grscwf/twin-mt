@@ -163,7 +163,9 @@ async function makeNew(rule: Rule, title: string, passage: string) {
  * Returns true if file needed updating.
  */
 async function maybeUpdate(fname: string, value: string) {
-  const current = await fsp.readFile(fname, "utf8");
+  let current = await fsp.readFile(fname, "utf8");
+  current = current.replaceAll(/\r\n/g, '\n');
+  value = value.replaceAll(/\r\n/g, '\n');
   if (current === value) return false;
   fsp.writeFile(fname, value);
   return true;
