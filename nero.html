@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -8744,10 +8744,11 @@ EnumType.define(&quot;MagicPhase&quot;, [
   &quot;MP_onHold&quot;,
   &quot;MP_contact&quot;,
   &quot;MP_lockedOut&quot;,
-  &quot;MP_broken&quot;,
+  &quot;MP_drained&quot;, // had mageSight, but didn&#39;t connect to Sprite
+  &quot;MP_broken&quot;,  // did connect to Sprite
 ]);
 EnumType.declareVar(&quot;n1_magicPhase&quot;, &quot;MagicPhase&quot;);
-EnumType.declareVar(&quot;n2_magicPhaseBroken&quot;, &quot;MagicPhase&quot;);
+EnumType.declareVar(&quot;n2_magicPhaseLost&quot;, &quot;MagicPhase&quot;);
 
 // Define temp var with a getter, so read tracking works.
 function defTemp(vname, fn) {
@@ -8759,6 +8760,8 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
     const V = State.variables;
     return V.t_patienceActions === 0 || V.t_patienceLooks === 0;
   });
+
+  // Initialize n1_magicPhase
   VarTrace.ignore(() =&gt; {
     const V = State.variables;
     V.n1_magicPhase != null || (V.n1_magicPhase = 0);
@@ -9470,7 +9473,7 @@ Nero.enumImplies = {
       n1_mageSight: false,
       n1_passwordsTried: false,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_triedMagic]: {
@@ -9478,7 +9481,7 @@ Nero.enumImplies = {
       n1_mageSight: false,
       n1_passwordsTried: false,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_mageSight]: {
@@ -9487,7 +9490,7 @@ Nero.enumImplies = {
       n1_naked: true,
       n1_passwordsTried: false,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_wantDevice]: {
@@ -9496,7 +9499,7 @@ Nero.enumImplies = {
       n1_naked: true,
       n1_passwordsTried: false,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_wantName]: {
@@ -9505,7 +9508,7 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_naked: true,
       n1_passwordsTried: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_wantTouch]: {
@@ -9514,7 +9517,7 @@ Nero.enumImplies = {
       n1_naked: true,
       n1_passwordsTried: false,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_wantPassword]: {
@@ -9525,7 +9528,7 @@ Nero.enumImplies = {
       n1_penguinCoinDropped: true,
       n1_penguinNameKnown: true,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_onHold]: {
@@ -9533,7 +9536,7 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_naked: true,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
     [MP_contact]: {
@@ -9544,7 +9547,7 @@ Nero.enumImplies = {
       n1_penguinNameKnown: true,
       n2_free: true,
       n2_ivexGone: true,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
       n2_tooClever: true,
     },
@@ -9553,8 +9556,17 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_naked: true,
       n2_free: false,
-      n2_magicPhaseBroken: false,
+      n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
+    },
+    [MP_drained]: {
+      n1_mageSight: false,
+      n1_naked: true,
+      n2_extraHorny: true,
+      n2_free: true,
+      n2_ivexGone: true,
+      n2_mirrorBroken: false,
+      n2_tooClever: false,
     },
     [MP_broken]: {
       n1_mageSight: false,
@@ -9567,7 +9579,7 @@ Nero.enumImplies = {
     }
   },
 
-  n2_magicPhaseBroken: {
+  n2_magicPhaseLost: {
     null: {
       n2_mirrorBroken: false,
     },
@@ -9582,12 +9594,12 @@ Nero.enumImplies = {
     [MP_mageSight]: {
       n1_bottleTouchTried: false,
       n1_mageSight: false,
-      n1_magicPhase: MP_broken,
+      n1_magicPhase: MP_drained,
       n1_naked: true,
       n2_extraHorny: true,
       n2_free: true,
       n2_ivexGone: true,
-      n2_mirrorBroken: true,
+      n2_mirrorBroken: false,
       n2_tooClever: false,
     },
     [MP_wantDevice]: {
@@ -9880,7 +9892,9 @@ Macro.add(&quot;misfire-please&quot;, {
   tags: [],
   handler: function() {
     const V = VT.untracedVariables();
-    if (V.n2_mirrorBroken || V.n1_magicPhase &lt; MP_wantDevice) return;
+    if (V.n1_magicPhase &lt; MP_wantDevice) return;
+    if (V.n2_magicPhaseLost != null) return;
+    // XXX misfire-please when MP_wantPassword
     $(this.output).wiki(this.payload[0].contents);
   }
 });
@@ -11526,6 +11540,38 @@ const jumps = [
       &quot;n1e/F Snap Jaws&quot;,
       &quot;n1e/F Crop 1&quot;,
       &quot;n2b/F Alone (5,3)&quot;
+    ],
+  },
+  {
+    title: &quot;Nero alone, last chance, normal, barbs&quot;,
+    vars: {
+      n0_barbsFastViewed: false,
+    },
+    path: [
+      &quot;n1a/F Nero Start&quot;,
+      &quot;n1a/F Hello 1&quot;,
+      &quot;n1cn/F Ivex Intro 2&quot;,
+      &quot;n1cn/F Rebuff&quot;,
+      &quot;n1d/F Strip Resist&quot;,
+      {
+        &quot;code&quot;: &quot;$n1_barbs = true&quot;,
+        &quot;title&quot;: &quot;n1p/F Barbs Fast 5&quot;
+      },
+      &quot;n1d/F Cock Rise 1&quot;,
+      &quot;n1e/F Snap Jaws&quot;,
+      {
+        &quot;code&quot;: &quot;//1&quot;,
+        &quot;title&quot;: &quot;n1e/F Crop 1&quot;
+      },
+      &quot;n1s/F Cast Alone 1&quot;,
+      &quot;n1s/F Cast Alone 2&quot;,
+      &quot;n2b/F Alone (5,3)&quot;,
+      &quot;n1s/F Cast Sight Horny&quot;,
+      &quot;n1y/F Horny Candle&quot;,
+      &quot;n1y/F Horny Mirror&quot;,
+      &quot;n1y/F Horny Grav&quot;,
+      &quot;n2b/F Struggle Horny 1&quot;,
+      &quot;n2b/F Alone (5,3)&quot;,
     ],
   },
 ];
@@ -17891,11 +17937,11 @@ before trying again, ?master&quot;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="424" name="n1s/F Mirror Broken" tags="inclusion" position="6050,3650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;em-assert MP_mageSight &lt;= $n2_magicPhaseBroken&gt;&gt;
+&lt;&lt;em-assert MP_mageSight &lt;= $n2_magicPhaseLost&gt;&gt;
 
 With the mirror broken, Nero has unfortunately lost access
 to its store of magical
-&lt;&lt;if MP_wantDevice &lt;= $n2_magicPhaseBroken&gt;&gt;
+&lt;&lt;if MP_wantDevice &lt;= $n2_magicPhaseLost&gt;&gt;
     energy, and the Sprite&#39;s golem in his ear has crumbled.
 &lt;&lt;else&gt;&gt;
     energy.
@@ -19244,7 +19290,7 @@ a wand with precision.
     looks to be a squishy solid.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n2_mirrorBroken &amp;&amp; MP_wantTouch === $n2_magicPhaseBroken&gt;&gt;
+&lt;&lt;if MP_wantTouch === $n2_magicPhaseLost&gt;&gt;
     ?P
     Could the attachment be the hole that the Sprite wanted him to touch?
     Well, there&#39;s no way to test that theory now.
@@ -19568,7 +19614,7 @@ $t_afterAction
 &lt;&lt;cv-try n1_magicPhase
   `MP_beforeCast` `MP_wantDevice` `MP_wantName` `MP_wantPassword`
   `MP_contact` `MP_broken`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseBroken
+&lt;&lt;cv-try n2_magicPhaseLost
   null `MP_mageSight` `MP_wantDevice` `MP_wantName`&gt;&gt;
   
 &lt;&lt;nero-kw-announce&gt;&gt;
@@ -19613,7 +19659,7 @@ Such as:
   const V = State.variables;
   const q = [];
   
-  const phase = V.n2_mirrorBroken ? V.n2_magicPhaseBroken : V.n1_magicPhase;
+  const phase = V.n2_magicPhaseLost ?? V.n1_magicPhase;
   
   const first = !V.n1_bottleViewed;
   const maybeHole = !V.n1_bottleTouchTried &amp;&amp; MP_wantTouch === phase;
@@ -19658,7 +19704,7 @@ Such as:
         const t = `Tell the Sprite, &quot;Please, Nackle&#39;s Poltergeist Device.&quot;`;
         Nero.actionsAdd(`[[${t}|n1s/D Say Device]]`);
         
-      } else if (MP_wantDevice === V.n2_magicPhaseBroken) {
+      } else if (MP_wantDevice === V.n2_magicPhaseLost) {
         q.push(`Was this a device that the Sprite could have contacted?`);
       }
       
@@ -20055,18 +20101,12 @@ a small stack of
     &lt;span class=nobr&gt;&lt;em&gt;et cetera&lt;/em&gt;&lt;/span&gt;.
     &lt;&lt;if $n1_mageSight&gt;&gt;
         Some of the coins are imbued with exotic energy.
-        &lt;&lt;if $n2_mirrorBroken &amp;&amp; $n2_magicPhaseBroken &lt; MP_wantTouch&gt;&gt;
-            There isn&#39;t an obvious reason why the coins would be magic,
-            or why the magic would only be on some, not all of them.
-        &lt;&lt;elseif MP_wantTouch !== $n2_magicPhaseBroken&gt;&gt;
-            At least one of them
-            &lt;&lt;= $n2_mirrorBroken ? &quot;had&quot; : &quot;has&quot;&gt;&gt;
-            something to do with the Sprite,
-            but what are the rest of them for?
-        &lt;&lt;/if&gt;&gt;
+        At least one of them has
+        something to do with the Sprite,
+        but what are the rest of them for?
     &lt;&lt;/if&gt;&gt;
 
-    &lt;&lt;if MP_wantTouch === $n2_magicPhaseBroken&gt;&gt;
+    &lt;&lt;if MP_wantTouch === $n2_magicPhaseLost&gt;&gt;
         Perhaps one of the coins is the hole that the Sprite
         wanted to be touched? If so, how would Ivex have known
         which of the coins to use? Maybe any of them would do?
@@ -21753,7 +21793,7 @@ but he does not remember its name.
     &lt;&lt;/if&gt;&gt;
     ?P
 
-    &lt;&lt;if MP_wantDevice &lt;= $n2_magicPhaseBroken&gt;&gt;
+    &lt;&lt;if MP_wantDevice &lt;= $n2_magicPhaseLost&gt;&gt;
         It&#39;s unfortunate that the mirror is broken.
         The magic made available by the mirror was small,
         much less than wolf mage&#39;s usual powers,
@@ -22100,7 +22140,7 @@ the surface of a metallic horse cock trapped inside a bottle.
 &lt;&lt;cv-try n1_magicPhase
   `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
   `MP_contact` `MP_broken`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseBroken `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
 &lt;&lt;cv-try n1_passwordsTried `[]` `[&quot;Ivy&quot;]`&gt;&gt; /* TODO probably need please-ivy */
 &lt;&lt;set _lusted = $n1_paintingViewedHorny&gt;&gt;
 
@@ -22216,7 +22256,7 @@ the surface of a metallic horse cock trapped inside a bottle.
     &lt;&lt;em-assert !$n2_free&gt;&gt;
     &lt;&lt;include [[n1x/F Painting WantTouch]]&gt;&gt;
 
-&lt;&lt;elseif MP_wantTouch === $n2_magicPhaseBroken&gt;&gt;
+&lt;&lt;elseif MP_wantTouch === $n2_magicPhaseLost&gt;&gt;
     &lt;&lt;include [[n1x/F Painting WantTouch]]&gt;&gt;
 
 &lt;&lt;elseif MP_wantPassword === $n1_magicPhase
@@ -22261,14 +22301,14 @@ the surface of a metallic horse cock trapped inside a bottle.
 &lt;&lt;cv-try n1_magicPhase
 	`MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
     `MP_contact` `MP_broken`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseBroken `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
 &lt;&lt;cv-try n1_passwordsTried `null` `[&quot;Hunter Too&quot;]`&gt;&gt; /* maybe also need Please */
 
 &lt;!-- passed wantTouch, so we know the coin was important --&gt;
 &lt;&lt;set _importantCoin =
     (MP_wantTouch &lt; $n1_magicPhase
        &amp;&amp; $n1_magicPhase &lt; MP_broken)
-    || MP_contact === $n2_magicPhaseBroken
+    || MP_contact === $n2_magicPhaseLost
 &gt;&gt;
 
 Traditionalist mages often keep several skeletal or taxidermied animals
@@ -22341,7 +22381,7 @@ Nero stares at the penguin in perplexity.
 &lt;&lt;/if&gt;&gt;
 
 ?P
-&lt;&lt;if MP_wantTouch === $n2_magicPhaseBroken
+&lt;&lt;if MP_wantTouch === $n2_magicPhaseLost
     || MP_wantTouch === $n1_magicPhase
 &gt;&gt;
     The gaping mouth of the penguin leads him to wonder,
@@ -22759,7 +22799,7 @@ $t_afterAction
 &lt;&lt;vi-ignore n2_ivexGone t_ivexReceptive&gt;&gt;
 &lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_wantTouch`
     `MP_contact` `MP_broken`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseBroken `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
 
 The room is amply lit
 &lt;&lt;if $n1_candleLit&gt;&gt;
@@ -22768,7 +22808,7 @@ The room is amply lit
 &lt;&lt;/if&gt;&gt;
 by a solitary round window that&#39;s about a meter in diameter.
 
-&lt;&lt;if $n2_mirrorBroken &amp;&amp; MP_wantTouch === $n2_magicPhaseBroken&gt;&gt;
+&lt;&lt;if MP_wantTouch === $n2_magicPhaseLost&gt;&gt;
     &lt;&lt;include [[n1x/F Window WantTouch]]&gt;&gt;
     ?P
 &lt;&lt;/if&gt;&gt;
@@ -23668,7 +23708,7 @@ fails to catch mirror, it falls on ground and shatters.
 &lt;&lt;set $n2_extraHorny = true&gt;&gt;
 &lt;&lt;set $n2_free = true&gt;&gt;
 &lt;&lt;set $n2_mirrorBroken = true&gt;&gt;
-&lt;&lt;set $n2_magicPhaseBroken = $n1_magicPhase&gt;&gt;
+&lt;&lt;set $n2_magicPhaseLost = $n1_magicPhase&gt;&gt;
 
 &lt;&lt;set $n1_magicPhase = MP_broken&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="518" name="n2b/F Alone (5,3)" tags="" position="5050,6000" size="200,200">&lt;&lt;nobr&gt;&gt;
@@ -23809,7 +23849,7 @@ an endless now. The erotic torment lasts forever...
 ?P
 [[Continue|n9a/F Tamed]]
 
-&lt;&lt;set _hasSprite &amp;&amp; ($n2_magicPhaseBroken = $n1_magicPhase)&gt;&gt;
+&lt;&lt;set _hasSprite &amp;&amp; ($n2_magicPhaseLost = $n1_magicPhase)&gt;&gt;
 &lt;&lt;set _hasSprite &amp;&amp; ($n1_magicPhase = MP_broken)&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="521" name="n2b/F Desperate Magic 1" tags="" position="4875,6075" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny true&gt;&gt;
@@ -24325,7 +24365,7 @@ triumphant cock.
 [[Continue|n9a/D Caged Mild]]
 
 &lt;&lt;set $n1_mageSight = false&gt;&gt;
-&lt;&lt;set $n2_magicPhaseBroken = $n1_magicPhase&gt;&gt;
+&lt;&lt;set $n2_magicPhaseLost = $n1_magicPhase&gt;&gt;
 
 &lt;&lt;set $n1_magicPhase = MP_broken&gt;&gt;
 
@@ -24768,6 +24808,12 @@ His bones are rattled, and his aching limbs complain about
 new chafing from the leather straps.
 But he &lt;em&gt;does&lt;/em&gt; manage to keep hold of the letter opener!
 
+&lt;&lt;if MP_mageSight === $n1_magicPhase&gt;&gt;
+    XXX energy drained, mage sight gone.
+    maybe there was some way to keep mage sight,
+    but no matter. he doesn&#39;t need it.
+&lt;&lt;/if&gt;&gt;
+
 ?P
 Smoke from the desk rises and gathers on the ceiling.
 The air near the floor is cool and clear.
@@ -24792,6 +24838,11 @@ and then he starts the work of setting himself free.
 
 &lt;&lt;set $n1_candleLit = false&gt;&gt;
 &lt;&lt;set $n2_deskBurned = true&gt;&gt;
+&lt;&lt;run if (MP_mageSight === $n1_magicPhase) {
+    $n1_mageSight = false;
+    $n1_magicPhase = MP_drained;
+    $n2_magicPhaseLost = MP_mageSight;
+}&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="542" name="n2b/F Use Knife 2" tags="" position="5225,7125" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;

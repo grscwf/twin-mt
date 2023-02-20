@@ -204,7 +204,7 @@
     `[MP_mageSight, MP_contact]`.
   - If the passage checks `n2_free`,
     include both `MP_contact` and `MP_broken`.
-- For testing `n2_magicPhaseBroken` variants:
+- For testing `n2_magicPhaseLost` variants:
   - Include `null`, `MP_mageSight`, and any values tested in the passage.
   - Note, these values are impossible: `MP_beforeCast`, `MP_triedMagic`,
     `MP_wantPassword`
