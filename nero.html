@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -6445,7 +6445,7 @@ Macro.add(&quot;mta&quot;, {
   handler: function() {
     const [link, code] = this.args;
     const text = this.payload[0].contents;
-    makeLink(link, code, text)
+    $(makeLink(link, code, text))
       .appendTo(this.output);
   }
 });
@@ -9583,8 +9583,16 @@ Macro.add(&quot;misfire-please&quot;, {
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="Init 5b Nero No Loop" tags="inclusion" position="2725,1250" size="100,100">&lt;&lt;script&gt;&gt;
 /**
- * For a link to a look passage, allow the link if it hasn&#39;t been seen recently.
- * Seen recently is: within the last 10 passages, since the latest n1-patience passage.
+ * &lt;&lt;n1-no-loop [[text|passage]]&gt;&gt;
+ * 
+ * For a link to a look passage, allow the link if it hasn&#39;t been
+ * seen recently. Otherwise just show the text.
+ * 
+ * Seen recently is:
+ * - within the last 10 passages,
+ * - since the latest n1-patience passage.
+ * 
+ * Note, text gets re-substituted, unlike normal [[]] links.
  */
 Macro.add(&quot;n1-no-loop&quot;, {
   handler: function() {
@@ -9873,6 +9881,16 @@ function crystals() {
   }
 }
 Template.add(&quot;crystals&quot;, () =&gt; crystals());
+
+function globe() {
+  const V = State.variables;
+  if (V.n1_globeViewed) {
+    return `snow globe`;
+  } else {
+    return `arcane globe`;
+  }
+}
+Template.add(&quot;globe&quot;, () =&gt; globe());
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="252" name="Init 5c Nero Ending" tags="inclusion" position="3250,1975" size="100,100">&lt;&lt;script&gt;&gt;
 
@@ -20458,15 +20476,6 @@ is continuous and uninterrupted across all of the desk&#39;s visible surfaces.
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n2_mirrorBroken&gt;&gt;
-    ?P
-    On the floor beside the desk lies the shattered remains of
-    a [[magic mirror|n1x/F Mirror]].
-    Nero wonders if there was some way he could have avoided
-    the loss of such a valuable tool.
-    But he&#39;s confident he can escape regardless.
-&lt;&lt;/if&gt;&gt;
-
 &lt;&lt;if $n2_free&gt;&gt;
     &lt;&lt;if $n2_deskSearched&gt;&gt;
         &lt;&lt;actions-add [[Search the desk again.|n2x/F Desk Search]]&gt;&gt;
@@ -21459,11 +21468,11 @@ was merely an actor hired by Rankine, with no magic ability of his own.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n2_free&gt;&gt;
+    &lt;&lt;if $n2_tooClever&gt;&gt;
+        His groin is still aching from the brutal torture of the
+        Gravity Crystal.
+    &lt;&lt;/if&gt;&gt;
     &lt;&lt;if $n2_knifeTaken || $n2_mirrorTaken&gt;&gt;
-        &lt;&lt;if $n2_tooClever&gt;&gt;
-            His balls and groin are still aching from the brutal torture of the
-            Gravity Crystal.
-        &lt;&lt;/if&gt;&gt;
         He&#39;s holding
         &lt;&lt;if $n2_knifeTaken&gt;&gt;
             a [[letter opener|n1x/F Knife]]
@@ -21475,16 +21484,15 @@ was merely an actor hired by Rankine, with no magic ability of his own.
             a [[magic mirror|n1x/F Mirror]]
         &lt;&lt;/if&gt;&gt;
         while standing naked
-    &lt;&lt;elseif $n2_tooClever&gt;&gt;
-        His balls and groin are still aching from the brutal torture of the
-        Gravity Crystal.
     &lt;&lt;else&gt;&gt;
     	He&#39;s standing naked
     &lt;&lt;/if&gt;&gt;
     in middle of [[Ivex&#39;s study|n1x/F Study]].
 
-&lt;&lt;else&gt;&gt;
+    The [[wooden cross|n1x/F Cross]]
+    has fallen over and is lying on the ground.
 
+&lt;&lt;else&gt;&gt;
 
     &lt;&lt;if $n1_abused &amp;&amp; $n1_naked&gt;&gt;
         He and his aching, exposed balls are bound
@@ -21557,48 +21565,36 @@ was merely an actor hired by Rankine, with no magic ability of his own.
     ?P
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n2_free &amp;&amp; !$n1_deskViewed&gt;&gt;
-    The [[wooden cross|n1x/F Cross]]
-    has fallen over and is resting against
-    the desk.
+&lt;&lt;if $n2_mirrorBroken&gt;&gt;
+    On the ground near the desk is a [[broken mirror|n1x/F Mirror]].
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_deskViewed&gt;&gt;
-    &lt;&lt;if $n2_free&gt;&gt;
-        The [[wooden cross|n1x/F Cross]]
-        has fallen over and is resting against
-        the &lt;&lt;= _desk&gt;&gt;, which has
-    &lt;&lt;else&gt;&gt;
-        The &lt;&lt;= _desk&gt;&gt; has
-    &lt;&lt;/if&gt;&gt;
+    The &lt;&lt;= _desk&gt;&gt; has
     &lt;&lt;script&gt;&gt;
         State.temporary.listDesk = (dest) =&gt; {
-          const V = State.variables;
-          const objs = [];
-          if (!V.n2_knifeTaken) {
-              objs.push(&quot;a [[letter opener|n1x/F Knife]]&quot;);
-          }
-          if (V.n1_globeViewed) {
-              objs.push(&quot;a [[snow globe|n1x/F Globe]]&quot;);
-          } else {
-              objs.push(&quot;an [[arcane globe|n1x/F Globe]]&quot;);
-          }
-          if (!V.n2_mirrorTaken) {
-              if (V.n2_mirrorBroken) {
-                  objs.push(&quot;a [[broken mirror|n1x/F Mirror]]&quot;);
-              } else {
-                  objs.push(&quot;a [[small mirror|n1x/F Mirror]]&quot;);
-              }
-          }
-          switch (objs.length) {
-              case 1: $(dest).wiki(`${objs[0]} among its clutter.`); break;
-              case 2: $(dest).wiki(`${objs[0]} and ${objs[1]}.`); break;
-              default: {
-                  const last = objs.pop();
-                  $(dest).wiki(`${objs.join(&quot;, &quot;)}, and ${last}.`);
-                  break;
-              }
-          }
+            const V = State.variables;
+            const objs = [];
+            if (!V.n2_knifeTaken) {
+                objs.push(&quot;a [[letter opener|n1x/F Knife]]&quot;);
+            }
+            if (V.n1_globeViewed) {
+                objs.push(&quot;a [[snow globe|n1x/F Globe]]&quot;);
+            } else {
+                objs.push(&quot;an [[arcane globe|n1x/F Globe]]&quot;);
+            }
+            if (!V.n2_mirrorTaken &amp;&amp; !V.n2_mirrorBroken) {
+                objs.push(&quot;a [[small mirror|n1x/F Mirror]]&quot;);
+            }
+            switch (objs.length) {
+                case 1: $(dest).wiki(`${objs[0]} among its clutter.`); break;
+                case 2: $(dest).wiki(`${objs[0]} and ${objs[1]}.`); break;
+                default: {
+                    const last = objs.pop();
+                    $(dest).wiki(`${objs.join(&quot;, &quot;)}, and ${last}.`);
+                    break;
+                }
+            }
         };
     &lt;&lt;/script&gt;&gt;
     &lt;&lt;script&gt;&gt;
@@ -21749,47 +21745,37 @@ but he does not remember its name.
 
     &lt;&lt;if MP_wantDevice &lt;= $n2_magicPhaseLost&gt;&gt;
         It&#39;s unfortunate that the mirror is broken.
-        The magic made available by the mirror was small,
-        much less than wolf mage&#39;s usual powers,
+        The mirror&#39;s pyron node provided only a small amount of
+        energy, much less than wolf mage&#39;s usual powers,
         but it might still have been helpful elsewhere in this place.
         ?P
         Well, no point dwelling on might-have-beens.
         There are certainly ways to escape this place
         without the help of the mirror.
-    &lt;&lt;elseif $n1_mirrorNoticedIllusion&gt;&gt;
-        He wonders why Ivex bothered to disguise the mirror
-        and make it seem like ordinary wood.
-        But understanding this is probably as futile a pursuit
-        as fathoming the purpose of &lt;em&gt;anything&lt;/em&gt;
-        in the deranged mage&#39;s room.
-        ?P
-        The wolf is grateful that the mirror was available to help him
-        destroy the Gravity Crystals.
-        Perhaps if the mirror were still intact, it would have some
-        use beyond just showing the wolf his own nakedness.
-        ?P
-        But unfortunately it&#39;s broken now.
-        No point dwelling on might-have-beens.
-        There are certainly ways to escape without the mirror.
     &lt;&lt;else&gt;&gt;
-        Nero wonders why the panther mage would have such
-        an object at his desk. If it were simple vanity,
-        wouldn&#39;t he have a larger mirror mounted on a wall?
+        &lt;&lt;if $n1_mirrorNoticedIllusion&gt;&gt;
+            Nero wonders why Ivex bothered to disguise the mirror
+            and make it seem like ordinary wood.
+        &lt;&lt;else&gt;&gt;
+            Nero wonders why the panther mage would have such
+            an object at his desk. If it were simple vanity,
+            wouldn&#39;t he have a larger one mounted on a wall?
+        &lt;&lt;/if&gt;&gt;
         But understanding the mirror is probably as futile
         a pursuit as fathoming the purpose of &lt;em&gt;anything&lt;/em&gt;
         in the deranged mage&#39;s room.
         ?P
         The wolf is grateful that the mirror was available to help him
-        destroy the Gravity Crystals. It&#39;s unfortunate that it&#39;s broken now,
+        destroy the ?crystals. It&#39;s unfortunate that it&#39;s broken now,
         but the intact mirror was unlikely to have much use beyond
         showing the wolf his own nakedness better.
         It&#39;s fulfilled its purpose. Nero offers a mental salute
         in tribute to the service of the plain, simple mirror.
     &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif $n2_free&gt;&gt;
+&lt;&lt;elseif $n2_tooClever&gt;&gt;
     &lt;&lt;vi-always n1_mageSight true&gt;&gt;
-    &lt;&lt;em-assert $n2_tooClever&gt;&gt;
+    &lt;&lt;vi-always n2_free true&gt;&gt;
 
     The small mirror
     &lt;&lt;= $n2_mirrorTaken ? &quot;in Nero&#39;s hand&quot; : &quot;on the desk&quot;&gt;&gt;
@@ -21809,13 +21795,31 @@ but he does not remember its name.
         &lt;&lt;actions-add [[Take the mirror.|n2x/D Mirror Take]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
+&lt;&lt;elseif $n2_free&gt;&gt;
+    &lt;&lt;vi-always n1_mageSight false&gt;&gt;
+    &lt;&lt;vi-always n2_deskBurned true&gt;&gt;
+    &lt;&lt;em-assert !$n2_tooClever&gt;&gt;
+
+    Propped up against the
+    &lt;&lt;n1-no-loop [[?globe|n1x/F Globe]]&gt;&gt;
+    amid the burnt ruins on Ivex&#39;s desk,
+    there&#39;s a mirror that&#39;s a little larger than Nero&#39;s hand.
+    &lt;&lt;if $n1_mirrorNoticedIllusion&gt;&gt;
+        The frame is shaped like a rectangle with rounded corners,
+        and appears to be plain dark wood, but Nero remembers
+        seeing that the wood is an illusion covering mage-silver.
+    &lt;&lt;else&gt;&gt;
+        The frame is plain dark wood and
+        shaped like a rectangle with rounded corners.
+    &lt;&lt;/if&gt;&gt;
+    ?P
+    Nero is grateful that the mirror was available to
+    help him destroy the ?crystals, but there doesn&#39;t seem to be
+    any other use for the mirror now.
+
 &lt;&lt;else&gt;&gt;
     Propped up against the
-    &lt;&lt;if $n1_globeViewed&gt;&gt;
-        &lt;&lt;n1-no-loop [[snow globe|n1x/F Globe]]&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-        &lt;&lt;n1-no-loop [[arcane globe|n1x/F Globe]]&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
+    &lt;&lt;n1-no-loop [[?globe|n1x/F Globe]]&gt;&gt;
     &lt;&lt;if $n1_candleLit&gt;&gt;
         near the
         &lt;&lt;n1-no-loop [[flickering red candle|n1x/F Candle]]&gt;&gt;
@@ -23337,10 +23341,8 @@ He writhes some more.
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="510" name="n1y/F Horny Mirror" tags="" position="6375,6500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
-&lt;&lt;set _globe = $n1_globeViewed ? &quot;snow globe&quot; : &quot;arcane globe&quot;&gt;&gt;
-
 Resting against the
-&lt;&lt;n1-no-loop [[_globe|n1y/F Horny Globe]]&gt;&gt;
+&lt;&lt;n1-no-loop [[?globe|n1y/F Horny Globe]]&gt;&gt;
 on the desk, there&#39;s a small mirror
 
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -23467,8 +23469,7 @@ But his quivering cock disagrees.
     Nero wrests his attention away from the pantheress
     and searches the room for something completely asexual
     that he can focus on:
-    &lt;&lt;set _globe = $n1_globeViewed ? &quot;snow globe&quot; : &quot;arcane globe&quot;&gt;&gt;
-    the [[_globe|n1y/F Horny Globe]] on the desk,
+    the [[?globe|n1y/F Horny Globe]] on the desk,
     the [[letter opener|n1y/F Horny Knife]] near it,
     anything other than that disturbingly arousing portrait.
 &lt;&lt;/if&gt;&gt;
