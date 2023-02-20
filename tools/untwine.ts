@@ -10,13 +10,11 @@
  */
 
 import { Command } from "@commander-js/extra-typings";
-import fglob from "fast-glob";
+import fastGlob from "fast-glob";
 import fsp from "fs/promises";
 import path from "path";
-import { runP, setupEnv } from "./lib";
+import { headerRE, runP, setupEnv } from "./lib";
 import { Rule, rules } from "./rules";
-
-const headerRE = /^:: ([^\[{\r\n]+)(?:\s[\[{][^\r\n]*)?[\r\n]/gm;
 
 async function main(argv: string[]) {
   setupEnv();
@@ -115,7 +113,7 @@ async function findExisting(rule: Rule) {
   const existing = new Map<string, string>();
   const patterns = rule.dirs.map((d) => `${d}/**/*.tw`);
   console.log("Searching", patterns);
-  const files = await fglob(patterns);
+  const files = await fastGlob(patterns);
   for (const file of files) {
     const twee = await fsp.readFile(file, "utf8");
 

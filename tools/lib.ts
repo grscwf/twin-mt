@@ -1,5 +1,8 @@
 import cp from "child_process";
 
+/** Matches twee passage header. Note /g flag */
+export const headerRE = /^:: ([^\[{\r\n]+)(?:\s[\[{][^\r\n]*)?[\r\n]/gm;
+
 /** Alias for JSON.stringify */
 export const json = (o: unknown) => JSON.stringify(o);
 

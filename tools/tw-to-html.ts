@@ -16,7 +16,7 @@ import fsp from "fs/promises";
 import { runP, setupEnv, timestamp } from "./lib";
 import type { Rule } from "./rules";
 import { rules } from "./rules";
-import fglob from "fast-glob";
+import fastGlob from "fast-glob";
 import ansi from 'ansi-colors';
 
 const buildDelay = 200; // msec
@@ -54,7 +54,7 @@ async function needsBuild(rule: Rule, force: boolean) {
     return true;
   }
   const patterns = rule.dirs.map((d) => `${d}/**/*.tw`);
-  const deps = await fglob(patterns);
+  const deps = await fastGlob(patterns);
   for (const dep of deps) {
     const dStat = await fsp.stat(dep);
     if (dStat == null) {
@@ -76,7 +76,7 @@ async function needsBuild(rule: Rule, force: boolean) {
 }
 
 async function buildRule(rule: Rule): Promise<void> {
-  const dirs = await fglob(rule.dirs, { onlyFiles: false });
+  const dirs = await fastGlob(rule.dirs, { onlyFiles: false });
   const cmd = `tweego -o ${rule.target} ${dirs.join(" ")}`;
   log(cmd);
   await runP(cmd, { echo: true });
@@ -169,7 +169,7 @@ async function watch(force: boolean) {
       log(`${path} changed, rebuilding ${target}`);
       rebuild();
     };
-    const dirs = await fglob(rule.dirs, { onlyFiles: false });
+    const dirs = await fastGlob(rule.dirs, { onlyFiles: false });
     const watcher = chokidar.watch(dirs, { ignoreInitial: true });
     watcher.on("add", maybeRebuild);
     watcher.on("change", maybeRebuild);

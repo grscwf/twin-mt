@@ -5,7 +5,7 @@ export type Rule = {
 
 const common = [
   "tw-common",
-  // Note: fast-globa has a bug with "tw-drekkar-?"
+  // Note: fast-glob has a bug with "tw-drekkar-?"
   "tw-drekkar-*",
 ]
 
