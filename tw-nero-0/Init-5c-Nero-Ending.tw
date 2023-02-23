@@ -39,9 +39,14 @@ Nero.endings = {
 
 Nero.showEnding = info => {
   const [name, barbOption, variant] = info;
+
   const key = name + (variant == null ? "" : `_${variant}`);
+
   const barbs = barbOption === "barbs";
   const barbsText = barbs ? "(Barbs)" : "(Smooth)";
+
+  const V = State.variables;
+  const blank = V.n1_castEndgame;
 
   const end = Nero.endings[key];
   if (end == null) return `Unknown ending ${key}`;
@@ -54,7 +59,9 @@ Nero.showEnding = info => {
   mkp += `<hr>\n`;
   for (let i = 0; i < end.passages.length; i++) {
     if (i !== 0) mkp += "<hr>\n";
-    mkp += `<<arc-include ${end.passages[i]} "$n1_barbs = ${barbs}">>\n`;
+    let vars = `$n1_barbs = ${barbs};`;
+    vars += `$n1_castEndgame = ${blank};`;
+    mkp += `<<arc-include ${end.passages[i]} "${vars}">>\n`;
   }
   mkp += "<</nobr>>";
   return mkp;
