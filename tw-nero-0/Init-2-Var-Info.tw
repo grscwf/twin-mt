@@ -183,9 +183,16 @@ const Nero = window.Nero || (window.Nero = {});
 const VI = window.VarInfo || (window.VarInfo = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
+const alwaysConditional = new Set();
 const alwaysVars = new Map();
 const ignoreVars = new Set();
 let revisitTop = null;
+
+$(document).on(":passagestart", () => {
+  alwaysConditional.clear();
+  alwaysVars.clear();
+  ignoreVars.clear();
+});
 
 VI.revisitHere = fn => {
   VT.stop();
@@ -240,8 +247,9 @@ Macro.add("vi-always", {
     if (exp !== actual && !(exp === false && actual == null)) {
       EM.fail(`vi-always ${vname} ${exp}, but actual value is ${actual}`);
     }
-    if (!withinCondition(this)) {
-      alwaysVars.set(vname, exp);
+    alwaysVars.set(vname, exp);
+    if (withinCondition(this)) {
+      alwaysConditional.add(vname);
     }
   }
 });
@@ -259,8 +267,9 @@ Macro.add("vi-always-if", {
         EM.fail(
           `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
       }
-      if (!withinCondition(this)) {
-        alwaysVars.set(vname, exp);
+      alwaysVars.set(vname, exp);
+      if (withinCondition(this)) {
+        alwaysConditional.add(vname);
       }
     }
   }
@@ -431,8 +440,6 @@ function initVarInfo() {
   if (!setup.tester) return;
 
   $(document).on(":passagestart", () => {
-    alwaysVars.clear();
-    ignoreVars.clear();
     VT.start();
   });
 
@@ -440,7 +447,7 @@ function initVarInfo() {
     VT.stop();
 
     VT.ctx.wasTopRead.forEach(vn => {
-      if (alwaysVars.has(vn)) {
+      if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
         const c = alwaysVars.get(vn);
         EM.warn(`vi-always ${vn} ${c}, but var was read`);
       }

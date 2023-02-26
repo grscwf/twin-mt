@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -7732,9 +7732,16 @@ const Nero = window.Nero || (window.Nero = {});
 const VI = window.VarInfo || (window.VarInfo = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
+const alwaysConditional = new Set();
 const alwaysVars = new Map();
 const ignoreVars = new Set();
 let revisitTop = null;
+
+$(document).on(&quot;:passagestart&quot;, () =&gt; {
+  alwaysConditional.clear();
+  alwaysVars.clear();
+  ignoreVars.clear();
+});
 
 VI.revisitHere = fn =&gt; {
   VT.stop();
@@ -7789,8 +7796,9 @@ Macro.add(&quot;vi-always&quot;, {
     if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
       EM.fail(`vi-always ${vname} ${exp}, but actual value is ${actual}`);
     }
-    if (!withinCondition(this)) {
-      alwaysVars.set(vname, exp);
+    alwaysVars.set(vname, exp);
+    if (withinCondition(this)) {
+      alwaysConditional.add(vname);
     }
   }
 });
@@ -7808,8 +7816,9 @@ Macro.add(&quot;vi-always-if&quot;, {
         EM.fail(
           `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
       }
-      if (!withinCondition(this)) {
-        alwaysVars.set(vname, exp);
+      alwaysVars.set(vname, exp);
+      if (withinCondition(this)) {
+        alwaysConditional.add(vname);
       }
     }
   }
@@ -7980,8 +7989,6 @@ function initVarInfo() {
   if (!setup.tester) return;
 
   $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    alwaysVars.clear();
-    ignoreVars.clear();
     VT.start();
   });
 
@@ -7989,7 +7996,7 @@ function initVarInfo() {
     VT.stop();
 
     VT.ctx.wasTopRead.forEach(vn =&gt; {
-      if (alwaysVars.has(vn)) {
+      if (alwaysVars.has(vn) &amp;&amp; !alwaysConditional.has(vn)) {
         const c = alwaysVars.get(vn);
         EM.warn(`vi-always ${vn} ${c}, but var was read`);
       }
@@ -9721,7 +9728,7 @@ Macro.add(&quot;n1-patience&quot;, {
 
     // set return links
     V.t_afterLook = `[\[Do something else.|${here}][$t_patienceReturn = 1]]`;
-    // V.t_afterLookContinue = `[\[Continue|${here}][$t_patienceReturn = 1]]`;
+    V.t_afterLookContinue = `[\[Continue|${here}][$t_patienceReturn = 1]]`;
     V.t_afterActionAbort = `[\[Do something else.|${here}][$t_patienceReturn = 2]]`;
     V.t_afterAction = `[\[Continue|${here}][$t_patienceReturn = 2]]`;
 
@@ -15887,7 +15894,7 @@ take a moment to rest and hate ivex.
 &lt;&lt;set $n2_tooClever = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[n2f/D Free Action]]</tw-passagedata><tw-passagedata pid="361" name="n1p/F Barbs Fast 1" tags="big-mood" position="5300,2625" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[n2f/F Free Action]]</tw-passagedata><tw-passagedata pid="361" name="n1p/F Barbs Fast 1" tags="big-mood" position="5300,2625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;set $n1_naked = true&gt;&gt;
 
 All of Nero&#39;s clothes disappear.
@@ -20285,6 +20292,8 @@ a small stack of
     `MP_beforeCast` `MP_triedMagic` `MP_contact` `MP_broken`&gt;&gt;
 
 &lt;&lt;if $n2_free&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    &lt;&lt;vi-always n2_ivexGone true&gt;&gt;
     &lt;&lt;em-assert !!$n1_mageSight !== !!$n2_deskBurned&gt;&gt;
     The cross that had trapped the wolf is an imposing piece of furniture.
     even with one leg broken.
@@ -20319,10 +20328,14 @@ a small stack of
         not two boards attached together.
         ?P
         This, of course, is unlikely.
-        Nero wonders why the panther mage has gone to the trouble of
-        putting an illusion of wood on the cross,
-        but not made the tiniest bit of effort to give it
-        a realistic appearance.
+        The broken part does seem to be wood. Perhaps that&#39;s also
+        an illusion? Nero is baffled. Did Ivex create an illusion
+        of wood realistic enough to splinter, but neglect to add
+        a realistic joint?
+        Or did he take an ordinary wooden cross and add an illusion
+        to hide the joint?
+        Neither possibility makes much sense.
+            
         ?P
         Well, whatever the reason for its appearance,
     &lt;&lt;/if&gt;&gt;
@@ -20519,7 +20532,6 @@ a small stack of
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
 
-&lt;&lt;em-assert !$n2_free || $n2_mirrorBroken || $n2_mirrorTaken&gt;&gt;
 &lt;&lt;em-assert $n2_free || !$n2_knifeTaken&gt;&gt;
 &lt;&lt;em-assert $n2_free || !$n2_mirrorBroken&gt;&gt;
 &lt;&lt;em-assert $n2_free || !$n2_mirrorTaken&gt;&gt;
@@ -20576,7 +20588,7 @@ is continuous and uninterrupted across all of the desk&#39;s visible surfaces.
 &lt;&lt;else&gt;&gt;
     The rest of the clutter on the desk appears to be ordinary papers and
     writing tools: pens and ink, wax seal, blotter,
-    &lt;&lt;if !$n2_knifeTaken &amp;&amp; MP_beforeCast === $n1_magicPhase&gt;&gt;
+    &lt;&lt;if !$n2_free &amp;&amp; !$n2_knifeTaken &amp;&amp; MP_beforeCast === $n1_magicPhase&gt;&gt;
         &lt;&lt;n1-no-loop [[letter opener|n1x/F Knife]]&gt;&gt;,
     &lt;&lt;/if&gt;&gt;
     and so forth.
@@ -20584,25 +20596,19 @@ is continuous and uninterrupted across all of the desk&#39;s visible surfaces.
 
 &lt;&lt;if $n2_knifeTaken&gt;&gt;
     None of them look particularly interesting.
-&lt;&lt;elseif MP_beforeCast === $n1_magicPhase&gt;&gt;
+&lt;&lt;elseif $n2_free || MP_beforeCast === $n1_magicPhase&gt;&gt;
     None of them seem particularly useful to Nero&#39;s situation right now.
 &lt;&lt;else&gt;&gt;
     ?P
     The most interesting of the tools is
     a &lt;&lt;n1-no-loop [[letter opener|n1x/F Knife]]&gt;&gt;
-    &lt;&lt;if $n2_free&gt;&gt;
-        that was sharp enough to cut Nero&#39;s bonds.
-        It might be worth taking.
-        &lt;&lt;actions-add [[Take the letter opener.|n2x/D Knife Take]]&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-        that may be sharp enough to cut Nero&#39;s bonds,
-        if only there were a way to reach it...
-        &lt;&lt;if $n1_bottleViewed&gt;&gt;
-            ?P
-            Or for &lt;em&gt;it&lt;/em&gt; to reach &lt;em&gt;him&lt;/em&gt;,
-            which might be possible with the help of
-            [[Nackle&#39;s Device!|n1x/F Bottle]]
-        &lt;&lt;/if&gt;&gt;
+    that may be sharp enough to cut Nero&#39;s bonds,
+    if only there were a way to reach it...
+    &lt;&lt;if $n1_bottleViewed&gt;&gt;
+        ?P
+        Or for &lt;em&gt;it&lt;/em&gt; to reach &lt;em&gt;him&lt;/em&gt;,
+        which might be possible with the help of
+        [[Nackle&#39;s Device!|n1x/F Bottle]]
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -21471,6 +21477,8 @@ was merely an actor hired by Rankine, with no magic ability of his own.
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
 
 &lt;&lt;if $n2_knifeTaken&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    &lt;&lt;vi-always n2_free true&gt;&gt;
     Nero is holding an ordinary letter opener, probably made of steel,
     that was sharp enough to cut his leather bonds.
     &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -21484,10 +21492,10 @@ was merely an actor hired by Rankine, with no magic ability of his own.
     even after he regains full use of his magic.
 
 &lt;&lt;elseif $n2_free&gt;&gt;
-    Amid the
-    &lt;&lt;= $n2_deskBurned ? &quot;burned mess&quot; : &quot;clutter&quot;&gt;&gt;
-    on the desk is an ordinary letter opener, probably made of steel,
-    that was sharp enough to cut
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    The letter opener is on the floor where Nero dropped it.
+    It&#39;s probably made of steel,
+    and it was sharp enough to cut
     Nero&#39;s leather bonds.
     &lt;&lt;if $n1_mageSight&gt;&gt;
         There&#39;s nothing magical about it, and its lack of a grip would make
@@ -21621,6 +21629,10 @@ was merely an actor hired by Rankine, with no magic ability of his own.
 
     The [[wooden cross|n1x/F Cross]]
     has fallen over and is lying on the ground.
+    &lt;&lt;if !$n2_knifeTaken&gt;&gt;
+        On the floor nearby is the [[letter opener|n1x/F Knife]].
+    &lt;&lt;/if&gt;&gt;
+    ?P
 
 &lt;&lt;else&gt;&gt;
 
@@ -21672,7 +21684,11 @@ was merely an actor hired by Rankine, with no magic ability of his own.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_wallViewed&gt;&gt;
-    The [[far wall|n1x/F Wall]] has
+    &lt;&lt;if $n2_free&gt;&gt;
+        One [[wall|n1x/F Wall]] has
+    &lt;&lt;else&gt;&gt;
+        The [[far wall|n1x/F Wall]] has
+    &lt;&lt;/if&gt;&gt;
     a [[prominent round window|n1x/F Window]],
     a [[large map|n1x/F Map]],
     &lt;&lt;if $n1_paintingMomKnown&gt;&gt;
@@ -21682,7 +21698,7 @@ was merely an actor hired by Rankine, with no magic ability of his own.
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
-    The far wall has
+    &lt;&lt;= $n2_free ? &quot;One wall&quot; : &quot;The far wall&quot;&gt;&gt; has
     a [[prominent round window|n1x/F Window]]
     and [[some decorations|n1x/F Wall]] adorning it.
 &lt;&lt;/if&gt;&gt;
@@ -21705,7 +21721,7 @@ was merely an actor hired by Rankine, with no magic ability of his own.
         State.temporary.listDesk = (dest) =&gt; {
             const V = State.variables;
             const objs = [];
-            if (!V.n2_knifeTaken) {
+            if (!V.n2_knifeTaken &amp;&amp; !V.n2_free) {
                 objs.push(&quot;a [[letter opener|n1x/F Knife]]&quot;);
             }
             if (V.n1_globeViewed) {
@@ -21926,6 +21942,7 @@ but he does not remember its name.
     &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;elseif $n2_free&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     &lt;&lt;vi-always n1_mageSight false&gt;&gt;
     &lt;&lt;vi-always n2_deskBurned true&gt;&gt;
     &lt;&lt;em-assert !$n2_tooClever&gt;&gt;
@@ -22098,6 +22115,8 @@ activities that Winterdew hinted at, but left unspecified in her report.
     &lt;&lt;set $n1_magicPhase = 0&gt;&gt;
 &lt;&lt;/arc-only&gt;&gt;
 
+&lt;&lt;set _phase = $n2_magicPhaseLost || $n1_magicPhase&gt;&gt;
+
 A typical installation of Nackle&#39;s Poltergeist Device places the glyphs
 on the underside of a table,
 or on some other hidden surface that&#39;s convenient to touch.
@@ -22114,7 +22133,7 @@ But this is the first time Nero&#39;s seen these glyphs installed on
 the surface of a metallic horse cock trapped inside a bottle.
 
 ?P
-&lt;&lt;if $n1_magicPhase &lt; MP_mageSight&gt;&gt;
+&lt;&lt;if _phase &lt; MP_mageSight&gt;&gt;
     &lt;&lt;vi-always n1_mageSight false&gt;&gt;
 
     The unusual substrate for the spell is perhaps just an
@@ -22134,16 +22153,20 @@ the surface of a metallic horse cock trapped inside a bottle.
         the panther&#39;s magic.
     &lt;&lt;/arc-skip&gt;&gt;
 
-&lt;&lt;elseif $n1_magicPhase &lt; MP_wantName&gt;&gt;
-    &lt;&lt;vi-always n1_mageSight true&gt;&gt;
+&lt;&lt;elseif _phase &lt; MP_wantName&gt;&gt;
 
 	Setting aside the perhaps unanswerable question of &lt;em&gt;why&lt;/em&gt;
     a horse cock, the &lt;em&gt;where&lt;/em&gt; of the horse cock is a puzzle
     that demands an answer.
     Nackle &lt;em&gt;requires&lt;/em&gt; a mage to have contact with the
     matrix, which is clearly not possible when the glyphs are in a bottle.
-    But the energized liquid in the bottle suggests that the
-    horse-cock Nackle is not merely an obscene office ornament.
+    &lt;&lt;if $n1_mageSight&gt;&gt;
+        And the energized liquid in the bottle suggests that the
+        horse-cock Nackle is not merely an obscene office ornament.
+    &lt;&lt;else&gt;&gt;
+        It&#39;s strange to put so much effort into creating such a
+        weirdly obscene office ornament.
+    &lt;&lt;/if&gt;&gt;
 
     ?P
     Perhaps Ivex has found some other way to use the glyph matrix?
@@ -22233,6 +22256,7 @@ the surface of a metallic horse cock trapped inside a bottle.
 &lt;&lt;set _lusted = $n1_paintingViewedHorny&gt;&gt;
 
 &lt;&lt;if $n2_extraHorny&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     &lt;&lt;vi-always n2_ivexGone true&gt;&gt;
     The large painting beside the window
     depicts a plump black pantheress in a
@@ -22258,7 +22282,7 @@ the surface of a metallic horse cock trapped inside a bottle.
         a lingering after-effect of that distressing red candle.
     &lt;&lt;elseif _lusted&gt;&gt;
         delights, despite his mind reminding himself
-        that his earlier lust for her was due &lt;em&gt;entirely&lt;/em&gt;
+        that his earlier lust for her was due &lt;em&gt;&lt;em&gt;entirely&lt;/em&gt;&lt;/em&gt;
         to that distressing red candle.
     &lt;&lt;else&gt;&gt;
         delights.
@@ -22583,19 +22607,20 @@ Nero stares at the penguin in perplexity.
 pompous, dirty, and dominated by the
 &lt;&lt;n1-no-loop [[wooden cross|n1x/F Cross]]&gt;&gt;
 &lt;&lt;if $n2_free&gt;&gt;
-    that&#39;s fallen over and leaning on the
-    &lt;&lt;if $n2_deskBurned&gt;&gt;
-        &lt;&lt;n1-no-loop [[slightly-burned desk|n1x/F Desk]]&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-        &lt;&lt;n1-no-loop [[cluttered desk|n1x/F Desk]]&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
+    that&#39;s fallen over and lying on the floor
     near the
-    &lt;&lt;n1-no-loop [[prominent round window|n1x/F Window]]&gt;&gt;.
+    &lt;&lt;if $n2_deskBurned&gt;&gt;
+        &lt;&lt;n1-no-loop [[slightly-burned desk|n1x/F Desk]]&gt;&gt;.
+    &lt;&lt;else&gt;&gt;
+        &lt;&lt;n1-no-loop [[cluttered desk|n1x/F Desk]]&gt;&gt;.
+    &lt;&lt;/if&gt;&gt;
 
     ?P
     &lt;&lt;if $n1_wallViewed&gt;&gt;
         The &lt;&lt;n1-no-loop [[wall|n1x/F Wall]]&gt;&gt;
-        with the window is bare except for
+        with the
+        &lt;&lt;n1-no-loop [[prominent round window|n1x/F Window]]&gt;&gt;
+        is bare except for
         a &lt;&lt;n1-no-loop [[large map|n1x/F Map]]&gt;&gt;
         &lt;&lt;if $n1_paintingMomKnown&gt;&gt;
             and a &lt;&lt;n1-no-loop [[painting of Ivex&#39;s mother|n1x/F Painting]]&gt;&gt;.
@@ -22603,7 +22628,9 @@ pompous, dirty, and dominated by the
             and a &lt;&lt;n1-no-loop [[painting of a pantheress|n1x/F Painting]]&gt;&gt;.
         &lt;&lt;/if&gt;&gt;
     &lt;&lt;else&gt;&gt;
-        The wall with the window is bare except for
+        The wall with the
+        &lt;&lt;n1-no-loop [[prominent round window|n1x/F Window]]&gt;&gt;
+        is bare except for
         &lt;&lt;n1-no-loop [[some decorations|n1x/F Wall]]&gt;&gt;.
     &lt;&lt;/if&gt;&gt;
     The opposite wall has a
@@ -23818,7 +23845,7 @@ mirror is hot from fire. he fumbles it, tries to catch it
 
 fails to catch mirror, it falls on ground and shatters.
 
-[[Continue|n2f/D Free Action]]
+[[Continue|n2f/F Free Action]]
 
 &lt;&lt;set $n1_mageSight = false&gt;&gt;
 &lt;&lt;set $n2_extraHorny = true&gt;&gt;
@@ -24254,7 +24281,7 @@ Now that he has freedom to move about in Ivex&#39;s domain,
 fulfilling his commission &lt;em&gt;will&lt;/em&gt; be easy.
 
 ?P
-[[Continue|n2f/D Free Action]]
+[[Continue|n2f/F Free Action]]
 
 &lt;&lt;set $n2_extraHorny = true&gt;&gt;
 &lt;&lt;set $n2_free = true&gt;&gt;
@@ -25126,7 +25153,70 @@ from distracting him from the problem of escape.
 drop knife
 &lt;&lt;/nobr&gt;&gt;
 
-[[Continue|n2f/D Leave]]</tw-passagedata><tw-passagedata pid="547" name="n2f/D Free Action" tags="" position="5425,7475" size="200,200">&lt;&lt;nobr&gt;&gt;
+[[Continue|n2f/D Leave]]</tw-passagedata><tw-passagedata pid="547" name="n2f/D Last Chance" tags="" position="5675,7775" size="200,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+
+forward into uncertainty and adventure.
+
+?P
+warn no way back.
+
+?P
+&lt;&lt;if $n2_mirrorBroken&gt;&gt;
+    regrets about the mirror, it could have been useful
+&lt;&lt;elseif $n2_mirrorTaken&gt;&gt;
+    Nero has the mirror, it should prove useful.
+&lt;&lt;else&gt;&gt;
+    Nero takes the mirror, he&#39;ll probably need it.
+    &lt;&lt;set $n2_mirrorTaken = true&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+
+?P
+&lt;&lt;actions-add [[Leave through the door.|n2f/D Leave]]&gt;&gt;
+
+&lt;&lt;if !$n2_knifeTaken&gt;&gt;
+    maybe he should bring something else?
+    but no pockets, so having hand free might be better.
+&lt;&lt;else&gt;&gt;
+    he has the letter opener, which might be useful. but maybe a free hand is better.
+    &lt;&lt;actions-add [[Leave without the letter opener.|n2f/D Drop Knife]]&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+
+?P
+&lt;ul class=&quot;actions&quot;&gt;
+    &lt;&lt;actions-get&gt;&gt;
+    &lt;li&gt;[[Look around some more.|n2f/F Free Action]]&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="548" name="n2f/D Leave" tags="" position="5500,7875" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n2_extraHorny&gt;&gt;
+&lt;&lt;vi-ignore n2_mirrorBroken&gt;&gt;
+&lt;&lt;vi-ignore n2_tooClever&gt;&gt;
+
+touch gem, door opens, walk through.
+&lt;&lt;/nobr&gt;&gt;
+
+[[Continue|n3a/D Start]]</tw-passagedata><tw-passagedata pid="549" name="n2f/D Touch Door" tags="" position="5900,7625" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_extraHorny&gt;&gt;
+
+&lt;&lt;set $n2_doorOpened = true&gt;&gt;
+
+&lt;&lt;if $n1_mageSight&gt;&gt;
+    door open, with magic
+&lt;&lt;else&gt;&gt;
+    door open
+&lt;&lt;/if&gt;&gt;
+
+?P
+look through. a moment later, door swings shut.
+no handle on other side of door, so this looks like a one-way trip.
+
+?P
+&lt;ul class=&quot;actions&quot;&gt;
+    &lt;li&gt;[[Ready to leave?|n2f/D Last Chance]]&lt;/li&gt;
+    &lt;li&gt;$t_afterLook&lt;/li&gt;
+&lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="550" name="n2f/F Free Action" tags="" position="5425,7475" size="200,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore-if n2_pawed n2_extraHorny&gt;&gt;
 
 &lt;&lt;n1-patience 4 4&gt;&gt;
@@ -25137,8 +25227,10 @@ drop knife
     Ivex is gone, for now.
 &lt;&lt;n1-warn&gt;&gt;
     Ivex is gone, but he might return at any moment.
+    There&#39;s no time to waste!
     &lt;&lt;set $t_patienceLooks = 2&gt;&gt;
     &lt;&lt;set $t_patienceActions = 2&gt;&gt;
+    &lt;&lt;set _neroAppraise = &quot;Nero quickly assesses his situation.&quot;&gt;&gt;
 &lt;&lt;n1-insist&gt;&gt;
     &lt;&lt;run throw new Error(`free action bug`) &gt;&gt;
 &lt;&lt;/n1-patience&gt;&gt;
@@ -25149,7 +25241,7 @@ drop knife
 ?P
 &lt;&lt;if $n2_pawed&gt;&gt;
     The wolf&#39;s cock is still achingly erect, and it does not
-    seem satisfied by that one extremely brief paw job.
+    seem satisfied by that extremely brief paw job.
     It yearns for something more, and it will likely be continually
     distracting until Nero does something about it.
 
@@ -25182,69 +25274,6 @@ drop knife
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="548" name="n2f/D Last Chance" tags="" position="5675,7775" size="200,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
-
-forward into uncertainty and adventure.
-
-?P
-warn no way back.
-
-?P
-&lt;&lt;if $n2_mirrorBroken&gt;&gt;
-    regrets about the mirror, it could have been useful
-&lt;&lt;elseif $n2_mirrorTaken&gt;&gt;
-    Nero has the mirror, it should prove useful.
-&lt;&lt;else&gt;&gt;
-    Nero takes the mirror, he&#39;ll probably need it.
-    &lt;&lt;set $n2_mirrorTaken = true&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
-?P
-&lt;&lt;actions-add [[Leave through the door.|n2f/D Leave]]&gt;&gt;
-
-&lt;&lt;if !$n2_knifeTaken&gt;&gt;
-    maybe he should bring something else?
-    but no pockets, so having hand free might be better.
-&lt;&lt;else&gt;&gt;
-    he has the letter opener, which might be useful. but maybe a free hand is better.
-    &lt;&lt;actions-add [[Leave without the letter opener.|n2f/D Drop Knife]]&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
-?P
-&lt;ul class=&quot;actions&quot;&gt;
-    &lt;&lt;actions-get&gt;&gt;
-    &lt;li&gt;[[Look around some more.|n2f/D Free Action]]&lt;/li&gt;
-&lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="549" name="n2f/D Leave" tags="" position="5500,7875" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
-&lt;&lt;vi-ignore n2_extraHorny&gt;&gt;
-&lt;&lt;vi-ignore n2_mirrorBroken&gt;&gt;
-&lt;&lt;vi-ignore n2_tooClever&gt;&gt;
-
-touch gem, door opens, walk through.
-&lt;&lt;/nobr&gt;&gt;
-
-[[Continue|n3a/D Start]]</tw-passagedata><tw-passagedata pid="550" name="n2f/D Touch Door" tags="" position="5900,7625" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-ignore n2_extraHorny&gt;&gt;
-
-&lt;&lt;set $n2_doorOpened = true&gt;&gt;
-
-&lt;&lt;if $n1_mageSight&gt;&gt;
-    door open, with magic
-&lt;&lt;else&gt;&gt;
-    door open
-&lt;&lt;/if&gt;&gt;
-
-?P
-look through. a moment later, door swings shut.
-no handle on other side of door, so this looks like a one-way trip.
-
-?P
-&lt;ul class=&quot;actions&quot;&gt;
-    &lt;li&gt;[[Ready to leave?|n2f/D Last Chance]]&lt;/li&gt;
-    &lt;li&gt;$t_afterLook&lt;/li&gt;
-&lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="551" name="n2f/F Resist Pawing" tags="" position="5300,7350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight n2_extraHorny n2_tooClever&gt;&gt;
 
@@ -25259,7 +25288,7 @@ Nero releases his cock, reluctantly, then stands to stretch and
 shake his aching limbs to prepare for whatever he has to do next.
 
 ?P
-[[Continue|n2f/D Free Action]]
+[[Continue|n2f/F Free Action]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="552" name="n2x/D Books Search" tags="" position="7400,4900" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 suspects the repeated books are a facade. surprised to find that they&#39;re real books.
@@ -25274,7 +25303,7 @@ yearbook, something weird about it
 maybe find an incel tract or something else nutty
 
 ?P
-&lt;&lt;= $n2_booksSearched ? $t_afterLook : $t_afterAction&gt;&gt;
+&lt;&lt;= $n2_booksSearched ? $t_afterLookContinue : $t_afterAction&gt;&gt;
 &lt;&lt;set $n2_booksSearched = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="553" name="n2x/D Knife Take" tags="" position="7175,5525" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;em-assert !$n2_knifeTaken&gt;&gt;
@@ -25336,6 +25365,8 @@ Nero picks up the
 &lt;&lt;set $t_returnKopic = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="558" name="n2x/F Bookcases Search" tags="" position="7350,5200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n2_extraHorny&gt;&gt;
+&lt;&lt;vi-ignore n2_tooClever&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;set $n2_bookcasesSearchedMageSight != null
     || ($n2_bookcasesSearchedMageSight = $n1_mageSight)&gt;&gt;
@@ -25388,9 +25419,11 @@ boxes is a waste of time.
 There are better things to do before Ivex returns.
 
 ?P
-&lt;&lt;= $n2_bookcasesSearched ? $t_afterLook : $t_afterAction&gt;&gt;
+&lt;&lt;= $n2_bookcasesSearched ? $t_afterLookContinue : $t_afterAction&gt;&gt;
 &lt;&lt;set $n2_bookcasesSearched = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="559" name="n2x/F Cabinet Search" tags="" position="7275,4450" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n2_extraHorny n2_tooClever&gt;&gt;
 
 The first drawer
 &lt;&lt;= $n2_cabinetSearched ? &quot;appeared&quot; : &quot;that Nero opens appears&quot;&gt;&gt;
@@ -25408,14 +25441,14 @@ still sticky.
 
 ?P
 Nero decides
-&lt;&lt;= $n2_cabinetSearched ? &quot;(again&quot;) : &quot;&quot;&gt;&gt;
+&lt;&lt;= $n2_cabinetSearched ? &quot;(again)&quot; : &quot;&quot;&gt;&gt;
 that searching the
 &lt;&lt;= $n2_cabinetSearched ? &quot;&quot; : &quot;remaining&quot;&gt;&gt;
 drawers of the unpainted cabinet is a waste of time.
 There are better things to do before Ivex returns.
 
 ?P
-&lt;&lt;= $n2_cabinetSearched ? $t_afterLook : $t_afterAction&gt;&gt;
+&lt;&lt;= $n2_cabinetSearched ? $t_afterLookContinue : $t_afterAction&gt;&gt;
 &lt;&lt;set $n2_cabinetSearched = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="560" name="n2x/F Desk Search 2" tags="" position="7175,5825" size="100,100">&lt;&lt;nobr&gt;&gt;
 
@@ -25575,19 +25608,21 @@ Which happens about twice a month. Per wand.
     &lt;&lt;link Return $t_returnKopic&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="563" name="n2x/F Wand Tried" tags="inclusion" position="7725,5450" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-always n1_candleLit false&gt;&gt;
 &lt;&lt;vi-always n2_free true&gt;&gt;
-&lt;&lt;vi-always n2_ivexGone false&gt;&gt;
+&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 The magic wand with its weird squishy attachment is still making alarming
 growling and rattling noises from its lair beneath a bookcase
 on the other side of the room. It&#39;s definitely not just a standard
-Kopic Classic wand. Nero does not have any idea why
+Kopic Classic. Nero does not have any idea why
 Ivex would even have such a thing, and the wolf does not
 want to go anywhere near it to find out.
 
 ?P
-It&#39;s probably completely useless to his adventure anyway.
+Perhaps he should have asked the panther about the wand earlier?
+Well, it&#39;s probably completely useless to Nero&#39;s adventure anyway.
 
 ?P
 &lt;ul class=actions&gt;
