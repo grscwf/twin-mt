@@ -131,7 +131,9 @@ the 4th or 5th playthrough.
     escape. 2nd playthrough should pass the easy escape, which gives a lot more
     time to look around and find the poltergeist device.
 - These steps can be done before (1):
-  - (2-A) Try casting any spell.
+  - (2-A) Try casting any non-attack spell
+    (attack closes off conversation paths, which means there isn't enough
+    time to do everything else).
   - (3-A) Cast mage-sight.
   - (4-A) Tap the mirror to get the Sprite.
 - Player will probably be here on 1st - 2rd playthrough.
@@ -145,12 +147,13 @@ the 4th or 5th playthrough.
     doesn't need another playthrough.
 - (7-A) Ask the Sprite to contact the named device.
 - Sprite now asks Nero to touch its hole.
-- (8-A) Ask Ivex about the penguin.
+- (8-A) Ask Ivex about the penguin, when he's receptive.
   - This is a little tricky. There are several red herrings. It's possible
     that Ivex will leave before the player finds this.
   - If Ivex leaves, the Easy escape gives the player plenty of time to find
     hints to the hole.
-- Player will probably be here on 1st - 3rd playthrough.
+  - It's also a little tricky to figure out "Ivex receptive".
+- Player will probably be here on 1st - 4th playthrough.
 - Sprite now asks Nero for password.
 - (9-A) Ask Ivex about the snow globe.
   - This is very unlikely to happen on 1st playthrough. There's no hint about
@@ -158,7 +161,7 @@ the 4th or 5th playthrough.
     possible passwords.
   - If the player doesn't get this before Ivex leaves, the Easy escape
     automatically gives the player the password.
-- Player will probably be here on 2nd - 4th playthrough.
+- Player will probably be here on 2nd - 5th playthrough.
 - The password is a big tease:
   - There's a moment when it seems like it succeeds, and then it becomes
     another failure.
@@ -178,9 +181,11 @@ There are clues to it, but it's meant to be
 hard to find.
 <details>
 
-- You must have seen Mica and Pevhin already in other playthroughs.
+- You must have seen Mica already in other playthroughs.
 - Pick the neutral starting option (not naked or abused).
-- Follow the dialog branches to subby. You should get the "Barbs?" glitch.
+- Follow the dialog branches to becoming an apprentice.
+- When Ivex removes Nero's clothes, use the 3rd option,
+  which is hidden but briefly shown.
 - Finish the hard escape.
 - Use the wand.
 

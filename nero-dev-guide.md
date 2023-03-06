@@ -1,8 +1,8 @@
 # Dev guide for Nero <!-- omit in toc -->
 
-- [Working with Twine](#working-with-twine)
+- [About Twine and Twee](#about-twine-and-twee)
 - [Working with Twee](#working-with-twee)
-- [Dev workflows](#dev-workflows)
+- [Working with Twine](#working-with-twine)
 - [Debug controls](#debug-controls)
   - [Right side buttons](#right-side-buttons)
   - [Var info](#var-info)
@@ -11,72 +11,124 @@
 - [Story structure - State](#story-structure---state)
 - [Rationales](#rationales)
 
-## Working with Twine
+## About Twine and Twee
 
-- Twine 2.5.1.0 has a bug where sometimes it tries to save the story file
-  twice simultaneously, stepping on itself. Most of the time, the result
-  is just a harmless alert box.
-  - Occasionally, the result is invisibly deleting the story file.
-    The file is gone from disk, not saved, but you don't find out until
-    you quit Twine and restart.
-  - The symptom of this is you start getting save failure alerts on almost
-    every edit. One simple way to recover is to Publish the story, quit
-    and restart Twine, then import the published story.
-  - You might also be able to recover the story from `Documents/Twine/Backups`.
-- Twine's "Test from here" is sometimes useful, but generally the best dev
-  workflow is to open `Documents/Twine/Stories/nero.html` directly
-  in your browser.
-  - Twine updates that file automatically on every edit,
-    and reload in the browser will redisplay the current passage,
-    using the latest version of the story file.
-- Append `?debug` to the URL to enable debug controls.
+- There are two source formats for the story: Twine and Twee.
+  - In general, creating paths is easier in Twine,
+    and editing is easier with Twee.
+- Twine's source format is a playable `.html` file, with all the
+  story data in a `<tw-storydata>` section.
+  - Twine keeps its `.html` storyfiles in `Documents/Twine/Stories`.
+  - Export/publish from Twine will save a copy of the storyfile
+    wherever you want.
+  - Import into Twine will create or overwrite an existing storyfile.
+- Twee is a plaintext format, files with a `.tw` suffix.
+  - The program `tweego` will combine `.tw` files into an `.html` storyfile
+    that can be played and/or imported into Twine.
+  - `tweego` can also decompile an `.html` storyfile into a `.tw` file,
+    but it doesn't (yet) have a way to auto-split.
+  - This project has a NodeJS script that will do the auto-splitting.
+    Details are below.
+- The `.tw` files are the "primary" source, and the `.html` storyfile is
+  built from the `.tw` files.
+  - Converting the other way is supported because there are several things
+    that are easier to do in Twine.
+
 
 ## Working with Twee
 
-- `.tw` files are Twee format, which is sometimes easier to work with than
-  Twine's `.html` story files.
-- `make nero-to-tw` will convert `nero.html` to `nero.tw`.
-- `make nero-to-html` will convert `nero.tw` to `nero.html`.
-- Generally, you probably want to do most of your editing in Twine,
-  because the visualization of storygraph structure is much better than the
-  options available elsewhere, but some edits are easier to do in `.tw`.
-- `make nero-check` will verify that state variables in `nero.tw` are all
-  declared in the file `nero-vars.txt`.
-- When using `vscode`, the `T3LT` extension will check the syntax of
-  sugarcube macros in a `.tw` file. User macros are declared in the file
-  `t3lt.twee-config.yml`.
+- Setup:
+  - Install node and npm:
+    - If you don't already have node and npm,
+      install [volta](https://volta.sh/).
+    - volta will automatically get a usable node/npm version.
+    - If you don't want to use volta, node >=18 and npm >=9 should work.
+      (Earlier versions might work, but untested.)
+  - Install tweego:
+    - Download the binary from https://www.motoslave.net/tweego/ and
+      place it somewhere in your PATH
+    - TODO: use https://www.npmjs.com/package/tweego-bin instead
+  - Run `npm install`
+  - If you're using `vscode` (recommended), install the `T3LT` extension.
+- Basic workflow:
+  - In your browser, open `twin-mt/nero.html?debug`
+  - Run `npm run watch`
+  - Edit some `.tw` files. `watch` should automatically rebuild `nero.html`
+    very quickly.
+  - Reload the page in your browser to test your edits.
+- Committing changes:
+  - Run `npm run check` and fix any undeclared/unused vars it reports.
+  - If you aren't using `watch`, run `npm run to-html`
+  - Run `git add . && git commit -am "some description"`
+  - Run `git push`
+- npm scripts:
+  - `npm run check` will check the `.tw` files for undeclared and unused
+    variables, which might be typos.
+    - Variables are declared in the file `nero-vars.txt`.
+  - `npm run to-html` will build the `.html` storyfiles from the `.tw` files.
+    - The file `tools/rules.ts` describe which `.tw` files are used to build
+      each `.html` storyfile.
+  - `npm run watch` continually rebuilds the `.html` files whenever a
+    `.tw` file changes.
+    - It's somewhat careful to avoid overwriting an exported `.html` storyfile.
+  - `npm run untwine` will break the `.html` storyfiles apart into `.tw` files.
+    - This is potentially destructive, so it asks you to `git commit` any
+      changes before proceeding, so you can easily see what untwining does,
+      and undo it if it screws up.
+    - Untwining looks at existing `.tw` files to see what filename each
+      passage currently has, and it will update those files.
+    - If the `.html` storyfile has a passage that doesn't yet have a `.tw`
+      file, untwine will create a new one with a filename derived from the
+      passage name. You can move/rename the file however you like, and
+      the new name will be used in subsequent untwines.
+    - untwine does not delete or rename passages.
+      - If a passage is deleted in Twine, the `.tw` file will have to be
+        manually deleted.
+      - If a passage is renamed in Twine, untwine will create a new `.tw`
+        file, and the old one will have to be manually deleted.
 
-## Dev workflows
+## Working with Twine
 
-- Primary workflow - editing in Twine.
+- Basic workflow:
   - Import `twin-mt/nero.html` into Twine.
     - This can be skipped if `nero.html` was not changed outside Twine.
-  - In your browser, open `Documents/Twine/Stories/nero.html?debug`.
+  - In your browser, open `Documents/Twine/Stories/nero.html?debug`
   - Navigate in the story to an area of interest.
-    - Use "GOTO NERO" in the sidebar to jump to a particular section.
+    - Use "JUMP TO" in the sidebar to jump to a particular section.
   - Make edits in Twine.
-  - Reload page in browser to test the edits.
-  - Periodically:
-    - Publish to `twin-mt/nero.html`.
-    - Run `make nero-to-tw`
-      - The `.tw` diff is easier to read than the `.html` diff.
-    - Run `git commit`
-    - Run `git push`
-- Alternate workflow - editing the `.tw` file.
-  - Publish the Twine story to `twin-mt/nero.html`.
-  - In your browser, open `twin-mt/nero.html?debug`.
-  - Run `make nero-to-tw`.
-  - Make edits to the `.tw` file.
-  - Run `make nero-to-html`.
-  - Reload page in browser to test the edits.
-  - When done:
-    - Run `git commit`
-    - Run `git push`
-    - Import `twin-mt/nero.html` into Twine.
+  - Reload the page in your browser to test the edits.
+- Committing changes:
+  - Publish to `twin-mt/nero.html`
+  - Run `git add . && git commit -am "Before untwine"`
+  - Run `npm run untwine`
+  - Run `git diff` to verify that the untwining did what you expected.
+  - If passages were deleted or renamed in Twine,
+    manually delete obsolete `.tw` files.
+  - If passages were added or renamed in Twine,
+    move the new `.tw` files into an appropriate subdirectory.
+  - Run `npm run check` and fix any unused/undeclared vars it reports.
+  - Run `git add . && git commit -am "After untwine"`
+  - Run `git push`
+- Twine 2.5.1.0 has a bug where sometimes it tries to save the storyfile
+  twice simultaneously, stepping on itself. Most of the time, the result
+  is just a harmless alert box.
+  - Occasionally, the result is invisibly deleting the storyfile.
+    The file is gone from disk, not saved, but you don't find out until
+    you quit Twine and restart.
+  - The symptom of this is you start getting save failure alerts on almost
+    every edit. One simple way to recover is to export/publish the story,
+    quit and restart Twine, then import the published story.
+  - You might also be able to recover the story from `Documents/Twine/Backups`.
+- Twine's "Test from here" is sometimes useful, but generally the best dev
+  workflow is to open Twine's storyfile directly in your browser.
+  - Twine updates the storyfile automatically on every edit.
+  - Reload in the browser will redisplay the current passage,
+    using the latest version of the storyfile.
 
 ## Debug controls
 
-- Debug mode turns on several features:
+- Adding `?debug` or `?tester` to the URL will turn on some debug controls.
+- `?debug` mode turns on several features:
   - The top has a "var-info" display. 
   - The right side has several buttons.
   - The left menu has some utilties, marked with a wrench icon.
@@ -85,6 +137,8 @@
   - The bottom right is SugarCube's debug panel, which is somewhat redundant,
     but there are a few things it can do that aren't easy to do with the
     other debug controls.
+- `?tester` mode is a subset of `?debug`, enabling some controls that
+  are useful for play-testing, without spoilers.
 
 ### Right side buttons
 - "notes" opens a textbox for writing or editing notes about
@@ -219,7 +273,6 @@
     - `n2` is from Ivex leaving (restartable) to exiting the first floor.
     - `n3` (todo) is the second floor (restartable).
     - `n4` (todo) is after escaping (restartable).
-    - `n8` is Nero's ending archives.
     - `n9` is Nero's endings.
   - The lowercase letters after the digit indicate a section within the chapter.
     - Some sections are "modules" that are used by multiple passages.
@@ -233,15 +286,16 @@
     - `/P` is "plan" - passage has an outline of logic.
     - `/S` is "sketch" - passage is a vague sketch.
     - Doing this in the passage title (instead of passage tags) lets us
-      color the links to draft passages.
+      easily color the links to draft passages.
+      TODO: use in-passage decl instead; renaming is annoying in twee.
 - If a script or style is only used by a single passage, it's usually inlined
   in the passage.
 - Large scripts used by a single passage are usually extracted to a
   a side passage with a direct `<<include>>`
 - Scripts and styles used by multiple passages are in `Init` sections at
   the top of the story-graph.
-  - These unfortunately do not get syntax-highlighting the way that the
-    special "Story Javascript" and "Story Stylesheet" passages do.
+  - These unfortunately do not get syntax-highlighting in Twine.
+    (It's fine in vscode with T3LT.)
   - The main reason these are split out is because it's awkward to work with
     very large passages in Twine.
   - It's also helpful to bundle related javascript and stylesheets together.
