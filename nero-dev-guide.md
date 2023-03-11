@@ -65,6 +65,9 @@
   - `npm run check` will check the `.tw` files for undeclared and unused
     variables, which might be typos.
     - Variables are declared in the file `nero-vars.txt`.
+    - In the report, "Used once" are vars that seem to be only used
+      in one place. This might mean the var is unnecessary, but it's also
+      possible that the var is used in a way the script does not detect.
   - `npm run to-html` will build the `.html` storyfiles from the `.tw` files.
     - The file `tools/rules.ts` describe which `.tw` files are used to build
       each `.html` storyfile.
