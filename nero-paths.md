@@ -106,7 +106,8 @@ A player will probably find this on their 1st or 2nd playthrough.
 - There are additional Bad Endings here:
   - Bad Ending: Caged Mild - paw off before leaving.
   - Bad Ending: Caged Harsh - paw off with wand before leaving. This is meant
-    to be a little hard to find.
+    to be a little hard to find. It requires asking Ivex about the wand,
+    which can be done when the Sprite wants touch or password.
 </details>
 
 ### 1st Floor Hard
