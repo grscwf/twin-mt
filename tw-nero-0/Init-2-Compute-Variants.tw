@@ -106,9 +106,11 @@ CV.render = function() {
   CV.ignore.forEach(vn => usedSet.delete(vn));
 
   // if flag has an expectation for this section, limit to that value
+  const sect = Nero.getSection();
   usedSet.forEach(vn => {
-    if (Nero.varIsConstant(vn)) {
-      CV.tryVars[vn] = [Nero.getVarConstant(vn)];
+    const [_, isConst, val] = Nero.getVarExpectation(vn, sect);
+    if (isConst) {
+      CV.tryVars[vn] = [val];
     }
   });
 
@@ -194,14 +196,17 @@ CV.render = function() {
         CV.ignore.add(vn);
         return;
       }
+      usedSet.add(vn);
       if (state[vn] == null || typeof state[vn] === "boolean") {
-        usedSet.add(vn);
-        // add the inverse value to the todo list
-        [...done, ...todo].forEach(st1 => {
-          const st2 = clone(st1);
-          st2[vn] = !st2[vn];
-          todo.push(st2);
-        });
+        const [_, isConst] = Nero.getVarExpectation(vn, sect);
+        if (!isConst) {
+          // add the inverse value to the todo list
+          [...done, ...todo].forEach(st1 => {
+            const st2 = clone(st1);
+            st2[vn] = !st2[vn];
+            todo.push(st2);
+          });
+        }
       }
     });
 
