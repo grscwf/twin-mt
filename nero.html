@@ -98,7 +98,7 @@ var LZString={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="nero" startnode="652" creator="Twine" creator-version="2.5.1" format="SugarCube" format-version="2.36.1" ifid="F420476E-098A-46C9-9EFF-9652F277776A" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
+	<!-- UUID://F420476E-098A-46C9-9EFF-9652F277776A// --><tw-storydata name="nero" startnode="652" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="F420476E-098A-46C9-9EFF-9652F277776A" zoom="0.6" format="SugarCube" format-version="2.36.1" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* Title Screen - Start */
 .title-container {
   position: relative;
   /* #story has 2.5em top margin */
@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -8452,6 +8452,22 @@ EnumType.define(&quot;MagicPhase&quot;, [
 EnumType.declareVar(&quot;n1_magicPhase&quot;, &quot;MagicPhase&quot;);
 EnumType.declareVar(&quot;n2_magicPhaseLost&quot;, &quot;MagicPhase&quot;);
 
+/*
+ * Places where Ivex has asked a question, and may be near enough to hear
+ * Nero trying to talk to the Sprite.
+ */
+EnumType.define(&quot;IvexContext&quot;, [
+  &quot;IC_distant&quot;,
+  &quot;IC_gone&quot;,
+  &quot;IC_explainTheft&quot;, // recruit &gt; Ivex Trap
+  &quot;IC_lickPaw&quot;, // subby &gt; Ivex Dominant
+  &quot;IC_begForMe&quot;, // subby &gt; Ivex Cruel
+  &quot;IC_comfortable&quot;, // candle lit &gt; Comfort Check
+  &quot;IC_whoSentYou&quot;, // candle horny &gt; Light Squeeze, Heavy Squeeze
+]);
+EnumType.declareVar(&quot;n1_ivexContext&quot;, &quot;IvexContext&quot;);
+
+
 // Define temp var with a getter, so read tracking works.
 function defTemp(vname, fn) {
   Object.defineProperty(State.temporary, vname, { enumerable: true, get: fn });
@@ -12898,6 +12914,9 @@ He shakes his head, nods, but then shakes his head again.
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
+&lt;&lt;vi-always t_ivexNear false&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_distant&gt;&gt;
+
 &lt;&lt;n1-patience 5 3&gt;&gt;
     Ivex (the Magnificent) speaks. &quot;Again I ask. Who sent you?&quot;
 &lt;&lt;n1-remind&gt;&gt;
@@ -13085,6 +13104,10 @@ Not that Nero would ever tell that to his
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="299" name="n1cn/F Ivex Disdainful (1,1)" tags="" position="4275,3650" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
+
+&lt;&lt;vi-always t_ivexNear false&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_distant&gt;&gt;
+
 
 &lt;&lt;n1-patience 1 1&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
@@ -13307,6 +13330,9 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="303" name="n1cn/F Ivex Offended (1,1)" tags="" position="4075,2425" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
+
+&lt;&lt;vi-always t_ivexNear false&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_distant&gt;&gt;
 
 &lt;&lt;n1-patience 1 1&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
@@ -14244,6 +14270,9 @@ of Ivex if the panther fails to deduce this explanation himself.
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
+&lt;&lt;vi-always t_ivexNear false&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_distant&gt;&gt;
+
 &lt;&lt;n1-patience 4 2&gt;&gt;
     Ivex hesitates a moment.
     &quot;If I accept you as an apprentice... Will you do everything I ask?&quot;
@@ -14293,6 +14322,9 @@ of Ivex if the panther fails to deduce this explanation himself.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="321" name="n1cr/F Ivex Fascinated (2,4)" tags="" position="4150,2975" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused n1_mageSight n1_naked&gt;&gt;
 
+&lt;&lt;vi-always t_ivexNear false&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_distant&gt;&gt;
+
 &lt;&lt;n1-patience 2 4&gt;&gt;
     Ivex suddenly asks, &quot;Is the secret council&#39;s mind control based on
     inhibition or repression?&quot;
@@ -14330,6 +14362,9 @@ of Ivex if the panther fails to deduce this explanation himself.
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
 
+&lt;&lt;vi-always t_ivexNear false&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_distant&gt;&gt;
+
 &lt;&lt;n1-patience 2 4&gt;&gt;
     Ivex asks with a smirk, &quot;Have you thought of a suitably
     impressive name for your secret guild of mages yet?&quot;
@@ -14357,6 +14392,9 @@ of Ivex if the panther fails to deduce this explanation himself.
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="323" name="n1cr/F Ivex Trap (2,4)" tags="" position="4125,3475" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused n1_mageSight n1_naked&gt;&gt;
+
+/* ivex can be near or far, always becomes near */
+&lt;&lt;set $n1_ivexContext = IC_explainTheft&gt;&gt;
 
 &lt;&lt;n1-patience 2 4&gt;&gt;
     Ivex shakes his head. &quot;I&#39;m unable to figure this out.
@@ -15240,9 +15278,11 @@ apprentice? Enough of these mind games...&quot;
 ?P
 [[Continue|n1cs/F Ivex Dominant (4,2)]]
 
-&lt;&lt;set $t_ivexNear = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="338" name="n1cs/F Ivex Cruel (4,2)" tags="" position="4350,4675" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+
+/* ivex can be near or far, sometimes becomes near */
+&lt;&lt;set $n1_ivexContext = IC_begForMe&gt;&gt;
 
 &lt;&lt;n1-patience 4 2&gt;&gt;
     &lt;&lt;vi-always t_ivexNear true&gt;&gt;
@@ -15306,6 +15346,9 @@ apprentice? Enough of these mind games...&quot;
 /* t_ivexNear and t_ivxGrabbing are sometimes set in &lt;&lt;n1-patience&gt;&gt; */
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="339" name="n1cs/F Ivex Dominant (4,2)" tags="pw-misfire-start" position="4225,4300" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+
+/* ivex can be near or far, but always becomes near */
+&lt;&lt;set $n1_ivexContext = IC_lickPaw&gt;&gt;
 
 &lt;&lt;n1-patience 4 2&gt;&gt;
     &lt;&lt;if $t_ivexNear&gt;&gt;
@@ -16480,7 +16523,8 @@ Nero quivers in his bonds. The panther lifts his paw off the wolf&#39;s crotch, 
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_subby n1_tough n1_abused&gt;&gt;
 
-&lt;&lt;set $t_ivexReceptive = false&gt;&gt;
+/* ivex can be near or far */
+&lt;&lt;set $n1_ivexContext = IC_comfortable&gt;&gt;
 
 &lt;&lt;n1-patience 2 2&gt;&gt;
     Ivex speaks through the grinning mask. &quot;Are you comfortable?&quot;
@@ -17062,6 +17106,9 @@ Ivex says, &quot;We&#39;ll have to continue this friendly discussion a little la
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_subby n1_tough n1_abused&gt;&gt;
 
+&lt;&lt;vi-always t_ivexNear true&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_whoSentYou&gt;&gt;
+
 &lt;&lt;n1-patience 1 1&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
     Ivex pulls the wolf&#39;s balls and squeezes harder. &quot;Tell me...&quot;
@@ -17090,6 +17137,10 @@ Ivex says, &quot;We&#39;ll have to continue this friendly discussion a little la
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="370" name="n1e/F Light Squeeze (1,1)" tags="" position="4625,5400" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_subby n1_tough n1_abused&gt;&gt;
+
+&lt;&lt;vi-always t_ivexNear true&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_whoSentYou&gt;&gt;
+
 
 &lt;&lt;n1-patience 1 1&gt;&gt;
 &lt;&lt;n1-warn&gt;&gt;
@@ -25893,6 +25944,9 @@ fails to catch mirror, it falls on ground and shatters.
 &lt;&lt;vi-ignore n1_candleHorny&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
+&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_gone&gt;&gt;
+
 Candle&#39;s Influence:
 
 &lt;&lt;n1-patience 5 3&gt;&gt;
@@ -27276,6 +27330,9 @@ He drops the knife with confidence.
 &lt;&lt;set $n2_knifeTaken = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="567" name="n2f/F Free Action" tags="" position="5450,7650" size="200,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore-if n2_pawed n2_extraHorny&gt;&gt;
+
+&lt;&lt;vi-always n2_ivexGone true&gt;&gt;
+&lt;&lt;set $n1_ivexContext = IC_gone&gt;&gt;
 
 &lt;&lt;n1-patience 4 4&gt;&gt;
     Ivex is gone, for now.
