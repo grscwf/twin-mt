@@ -158,9 +158,11 @@
   - "rand" tries to do shuffle, not uniform random, so repeated rand/back can
     potentially do an entire depth-first traversal of the story.
   - "seek" will repeat "rand" until it reaches a passage that's either
-    unfinished, contains a todo mark, or throws an error.
-    - If you start seek from such a passage, seek will not stop until it
+    "draft", contains a todo mark, or throws an error.
+    - If you start seek from a "draft" passage, seek will not stop until it
       reaches a passage tagged "done".
+    - If you start seek from a "done" passage, seek will loop Nero until
+      it encounters an error or a non-draft todo.
     - Seek can be interrupted by pressing the button again.
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
   - <kbd>ctrl-period</kbd> is a shortcut for "forw".

@@ -109,19 +109,30 @@ function initRandomWalk() {
     if (all.length === 0) return false;
 
     let avail = all.filter((i, el) => !visited.has(idOf(el)));
-    if (avail.length === 0) {
-      all.each((i, el) => visited.delete(idOf(el)));
-      avail = all;
-      if (avail.length > 1) {
-        // avoid picking the link we just picked
-        avail = avail.filter((i, el) => idOf(el) !== lastPick[here]);
-        if (avail.length === 0) avail = all;
+    let pick = null;
+    while (pick == null) {
+      if (avail.length === 0) {
+        all.each((i, el) => visited.delete(idOf(el)));
+        avail = all;
+        if (avail.length > 1) {
+          // avoid picking the link we just picked
+          avail = avail.filter((i, el) => idOf(el) !== lastPick[here]);
+          if (avail.length === 0) avail = all;
+        }
+      }
+
+      // Should not use State.random()
+      const i = Math.floor(avail.length * Math.random());
+      pick = avail[i];
+      const code = $(pick).attr("data-mta-code");
+      const avoid = code != null && code.includes("//avoid");
+      if (avoid && Math.random() < .9) {
+        const title = $(pick).attr("data-passage");
+        console.log(`avoiding ${title}`);
+        pick = null;
+        avail.splice(i, 1);
       }
     }
-
-    // Should not use State.random()
-    const i = Math.floor(avail.length * Math.random());
-    const pick = avail[i];
     $(pick).addClass("random-walk-chosen");
     pick.scrollIntoView(false);
     lastPick[here] = idOf(pick);
@@ -202,12 +213,17 @@ function initRandomWalk() {
     if (seekMoved && here === Config.passages.start) return seekStop();
 
     const done = tags().includes("done");
+    if (seekMoved && done) {
+      const steps = MagesTower.log.length;
+      console.log(`done after ${steps} steps at ${here}`);
+    }
     if (seekMoved && done && !seekLoop) return seekStop();
     if (done) {
       MagesTower.forgetWalkHistory();
       Engine.play("Bound");
       seekLoop = true;
-      seekForce = true;
+      seekForce = false;
+      // seekForce = true;
       MagesTower.seekStart(["n1a/F Nero Start"]);
       return;
     }

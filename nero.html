@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -7016,19 +7016,30 @@ function initRandomWalk() {
     if (all.length === 0) return false;
 
     let avail = all.filter((i, el) =&gt; !visited.has(idOf(el)));
-    if (avail.length === 0) {
-      all.each((i, el) =&gt; visited.delete(idOf(el)));
-      avail = all;
-      if (avail.length &gt; 1) {
-        // avoid picking the link we just picked
-        avail = avail.filter((i, el) =&gt; idOf(el) !== lastPick[here]);
-        if (avail.length === 0) avail = all;
+    let pick = null;
+    while (pick == null) {
+      if (avail.length === 0) {
+        all.each((i, el) =&gt; visited.delete(idOf(el)));
+        avail = all;
+        if (avail.length &gt; 1) {
+          // avoid picking the link we just picked
+          avail = avail.filter((i, el) =&gt; idOf(el) !== lastPick[here]);
+          if (avail.length === 0) avail = all;
+        }
+      }
+
+      // Should not use State.random()
+      const i = Math.floor(avail.length * Math.random());
+      pick = avail[i];
+      const code = $(pick).attr(&quot;data-mta-code&quot;);
+      const avoid = code != null &amp;&amp; code.includes(&quot;//avoid&quot;);
+      if (avoid &amp;&amp; Math.random() &lt; .9) {
+        const title = $(pick).attr(&quot;data-passage&quot;);
+        console.log(`avoiding ${title}`);
+        pick = null;
+        avail.splice(i, 1);
       }
     }
-
-    // Should not use State.random()
-    const i = Math.floor(avail.length * Math.random());
-    const pick = avail[i];
     $(pick).addClass(&quot;random-walk-chosen&quot;);
     pick.scrollIntoView(false);
     lastPick[here] = idOf(pick);
@@ -7109,12 +7120,17 @@ function initRandomWalk() {
     if (seekMoved &amp;&amp; here === Config.passages.start) return seekStop();
 
     const done = tags().includes(&quot;done&quot;);
+    if (seekMoved &amp;&amp; done) {
+      const steps = MagesTower.log.length;
+      console.log(`done after ${steps} steps at ${here}`);
+    }
     if (seekMoved &amp;&amp; done &amp;&amp; !seekLoop) return seekStop();
     if (done) {
       MagesTower.forgetWalkHistory();
       Engine.play(&quot;Bound&quot;);
       seekLoop = true;
-      seekForce = true;
+      seekForce = false;
+      // seekForce = true;
       MagesTower.seekStart([&quot;n1a/F Nero Start&quot;]);
       return;
     }
@@ -8759,10 +8775,10 @@ Nero.flags = {
   n1_mageSight: {
     implies: {
       n1_naked: true,
+      n1_mirrorTapped: true,
       n2_deskBurned: false,
       n2_extraHorny: false,
       n2_mirrorBroken: false,
-      n2_mirrorOff: false,
       n2_mirrorWasTapped: false,
     },
     sections: {
@@ -8799,9 +8815,9 @@ Nero.flags = {
     implies: {
       n1_mageSight: true,
       n1_mirrorMagicKnown: true,
+      n1_mirrorTapped: true,
       n1_mirrorViewed: true,
       n2_mirrorBroken: false,
-      n2_mirrorOff: false,
       n2_mirrorWasTapped: false,
     }
   },
@@ -9073,19 +9089,6 @@ Nero.flags = {
       n1_mageSight: false,
       n1_mirrorMagicKnown: true,
       n1_mirrorTapped: false,
-      n2_mirrorOff: false,
-      n2_mirrorTaken: false,
-      n2_mirrorWasTapped: true,
-    },
-  },
-
-  // true if the mirror overheated (easy escape)
-  n2_mirrorOff: {
-    implies: {
-      n1_mageSight: false,
-      n1_mirrorMagicKnown: true,
-      n1_mirrorTapped: false,
-      n2_mirrorBroken: false,
       n2_mirrorTaken: false,
       n2_mirrorWasTapped: true,
     },
@@ -9097,7 +9100,6 @@ Nero.flags = {
       n1_mirrorMagicKnown: true,
       n1_mirrorTapped: true,
       n2_mirrorBroken: false,
-      n2_mirrorOff: false,
       n2_mirrorWasTapped: false,
     },
   },
@@ -9310,7 +9312,6 @@ Nero.enumImplies = {
       n2_ivexGone: true,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
-      n2_mirrorOff: false,
       n2_mirrorWasTapped: false,
       n2_tooClever: true,
       n2_mirrorBroken: false,
@@ -9332,7 +9333,6 @@ Nero.enumImplies = {
       n2_free: true,
       n2_ivexGone: true,
       n2_mirrorBroken: false,
-      n2_mirrorOff: true,
       n2_mirrorWasTapped: true,
       n2_tooClever: false,
     },
@@ -9343,8 +9343,6 @@ Nero.enumImplies = {
       n2_extraHorny: true,
       n2_free: true,
       n2_ivexGone: true,
-      n2_mirrorBroken: true,
-      n2_mirrorOff: false,
       n2_mirrorWasTapped: true,
       n2_tooClever: false,
     }
@@ -9353,7 +9351,6 @@ Nero.enumImplies = {
   n2_magicPhaseLost: {
     null: {
       n2_mirrorBroken: false,
-      n2_mirrorOff: false,
       n2_mirrorWasTapped: false,
     },
     [MP_beforeCast]: {
@@ -9374,7 +9371,6 @@ Nero.enumImplies = {
       n2_free: true,
       n2_ivexGone: true,
       n2_mirrorBroken: false,
-      n2_mirrorOff: false,
       n2_mirrorWasTapped: false,
       n2_tooClever: false,
     },
@@ -20323,7 +20319,6 @@ before trying again, ?master&quot;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="440" name="n1s/F Mage Sight" tags="inclusion" position="5975,3925" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mirrorTapped false&gt;&gt;
 &lt;&lt;vi-always n2_mirrorBroken false&gt;&gt;
-&lt;&lt;vi-always n2_mirrorOff false&gt;&gt;
 &lt;&lt;vi-always n2_mirrorTaken false&gt;&gt;
 &lt;&lt;vi-always n2_mirrorWasTapped false&gt;&gt;
 
@@ -26309,7 +26304,7 @@ Candle&#39;s Influence:
         &lt;&lt;include [[n2b/F Struggle Action]]&gt;&gt;
         &lt;&lt;actions-optional $t_magicAction&gt;&gt;
         &lt;&lt;if $n2_candleMax&gt;&gt;
-            &lt;&lt;mtl [[n2b/F Desperate Magic 1]]&gt;&gt;
+            &lt;&lt;mtl [[n2b/F Desperate Magic 1]] &quot;//avoid&quot;&gt;&gt;
                 Desperately cast a spell.
             &lt;&lt;/mtl&gt;&gt;
         &lt;&lt;/if&gt;&gt;
@@ -27021,7 +27016,6 @@ do it right.
     $n1_mageSight = false;
     $n1_mirrorTapped = false;
     $n2_magicPhaseLost = $n1_magicPhase;
-    $n2_mirrorOff = true;
     $n2_mirrorWasTapped = true;
 
     $n1_magicPhase = MP_tapLost;
@@ -27705,7 +27699,7 @@ He drops the knife with confidence.
 ?P
 &lt;ul class=&quot;actions&quot;&gt;
     &lt;&lt;if $n2_pawed&gt;&gt;
-        &lt;&lt;mtl [[n9a/D Caged Mild]]&gt;&gt;
+        &lt;&lt;mtl [[n9a/D Caged Mild]] &quot;//avoid&quot;&gt;&gt;
             Paw off until satisfied.
         &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;else&gt;&gt;
@@ -27719,6 +27713,8 @@ He drops the knife with confidence.
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="568" name="n2f/F Last Chance" tags="" position="5525,7950" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore-if n2_mirrorBroken n2_tooClever&gt;&gt;
+&lt;&lt;vi-ignore-if n2_mirrorTaken n2_tooClever&gt;&gt;
 
 &lt;&lt;cv-ignore n2_towerViewed&gt;&gt; /* trivial difference */
 
