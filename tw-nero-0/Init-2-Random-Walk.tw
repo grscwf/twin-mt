@@ -166,9 +166,12 @@ function initRandomWalk() {
   };
 
   let seeking = false;
-  let seekMoved = false;
   let seekForce = false;
+  let seekLoop = false
+  let seekMoved = false;
   let seekPath = null;
+
+  const seekDelay = 50;
 
   const seekToggle = () => {
     if (seeking) {
@@ -182,9 +185,8 @@ function initRandomWalk() {
     $("#rw-seek").addClass("rw-seeking");
     seeking = true;
     seekMoved = false;
-    seekForce = false;
     seekPath = path;
-    seekNext();
+    setTimeout(seekNext, seekDelay);
   };
 
   const seekStop = () => {
@@ -198,7 +200,17 @@ function initRandomWalk() {
 
     if (!seeking) return seekStop();
     if (seekMoved && here === Config.passages.start) return seekStop();
-    if (tags().includes("done")) return seekStop();
+
+    const done = tags().includes("done");
+    if (seekMoved && done && !seekLoop) return seekStop();
+    if (done) {
+      MagesTower.forgetWalkHistory();
+      Engine.play("Bound");
+      seekLoop = true;
+      seekForce = true;
+      MagesTower.seekStart(["n1a/F Nero Start"]);
+      return;
+    }
 
     let hasProblem = false;
     hasProblem = hasProblem || ErrorMessage.hasFails;
@@ -217,8 +229,12 @@ function initRandomWalk() {
     if (chosen.length === 1) {
       seekMoved = true;
       chosen[0].click();
-      setTimeout(seekNext, 200);
+      setTimeout(seekNext, seekDelay);
       return;
+    }
+
+    if (seekLoop && seekPath != null && seekPath.length === 0) {
+      seekPath = null;
     }
 
     if (seekPath != null) {
@@ -244,7 +260,7 @@ function initRandomWalk() {
       }
       if (links.length === 1) {
         links.addClass("random-walk-chosen");
-        setTimeout(seekNext, 100);
+        setTimeout(seekNext, seekDelay);
         return;
       }
 
@@ -253,7 +269,7 @@ function initRandomWalk() {
     }
 
     if (goRandom()) {
-      setTimeout(seekNext, 100);
+      setTimeout(seekNext, seekDelay);
       return;
     }
     

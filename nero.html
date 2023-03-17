@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -7073,9 +7073,12 @@ function initRandomWalk() {
   };
 
   let seeking = false;
-  let seekMoved = false;
   let seekForce = false;
+  let seekLoop = false
+  let seekMoved = false;
   let seekPath = null;
+
+  const seekDelay = 50;
 
   const seekToggle = () =&gt; {
     if (seeking) {
@@ -7089,9 +7092,8 @@ function initRandomWalk() {
     $(&quot;#rw-seek&quot;).addClass(&quot;rw-seeking&quot;);
     seeking = true;
     seekMoved = false;
-    seekForce = false;
     seekPath = path;
-    seekNext();
+    setTimeout(seekNext, seekDelay);
   };
 
   const seekStop = () =&gt; {
@@ -7105,7 +7107,17 @@ function initRandomWalk() {
 
     if (!seeking) return seekStop();
     if (seekMoved &amp;&amp; here === Config.passages.start) return seekStop();
-    if (tags().includes(&quot;done&quot;)) return seekStop();
+
+    const done = tags().includes(&quot;done&quot;);
+    if (seekMoved &amp;&amp; done &amp;&amp; !seekLoop) return seekStop();
+    if (done) {
+      MagesTower.forgetWalkHistory();
+      Engine.play(&quot;Bound&quot;);
+      seekLoop = true;
+      seekForce = true;
+      MagesTower.seekStart([&quot;n1a/F Nero Start&quot;]);
+      return;
+    }
 
     let hasProblem = false;
     hasProblem = hasProblem || ErrorMessage.hasFails;
@@ -7124,8 +7136,12 @@ function initRandomWalk() {
     if (chosen.length === 1) {
       seekMoved = true;
       chosen[0].click();
-      setTimeout(seekNext, 200);
+      setTimeout(seekNext, seekDelay);
       return;
+    }
+
+    if (seekLoop &amp;&amp; seekPath != null &amp;&amp; seekPath.length === 0) {
+      seekPath = null;
     }
 
     if (seekPath != null) {
@@ -7151,7 +7167,7 @@ function initRandomWalk() {
       }
       if (links.length === 1) {
         links.addClass(&quot;random-walk-chosen&quot;);
-        setTimeout(seekNext, 100);
+        setTimeout(seekNext, seekDelay);
         return;
       }
 
@@ -7160,7 +7176,7 @@ function initRandomWalk() {
     }
 
     if (goRandom()) {
-      setTimeout(seekNext, 100);
+      setTimeout(seekNext, seekDelay);
       return;
     }
     
@@ -15456,7 +15472,8 @@ apprentice? Enough of these mind games...&quot;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;n1-patience 4 2&gt;&gt;
-    &lt;&lt;vi-always t_ivexNear true&gt;&gt;
+    /* using vi-always will complain about the t_ivexNear read below */
+    &lt;&lt;em-assert $t_ivexNear&gt;&gt;
     Ivex removes his hand from the wolf&#39;s muzzle and uses his palm
     to lightly slap the wolf&#39;s balls.
     &lt;&lt;if $n1_abused&gt;&gt;
@@ -15509,7 +15526,7 @@ apprentice? Enough of these mind games...&quot;
         &lt;li&gt;[[Offer a lie.|n1cs/F Plead Lies 1]]&lt;/li&gt;
         &lt;li&gt;[[Plead for mercy.|n1cs/F Plead Mercy]]&lt;/li&gt;
     &lt;&lt;else&gt;&gt;
-        &lt;li&gt;[[Request punishment.|n1cs/F Plead Punishment]]&lt;/li&gt;
+        &lt;li&gt;[[Cautiously request punishment.|n1cs/F Plead Punishment]]&lt;/li&gt;
         &lt;li&gt;[[Reject the choice.|n1cs/F Plead Reason]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;actions-optional $t_magicAction&gt;&gt;
@@ -18380,7 +18397,7 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="402" name="n1s/F Help Device" tags="" position="6125,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
-&lt;&lt;vi-always-if n1_candleHorny t_ivexNear true&gt;&gt;
+&lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
   $n1_candleHorny ? &quot;whines&quot; :
@@ -18509,7 +18526,7 @@ $t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="403" name="n1s/D Help Touch" tags="" position="6250,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_rememberPlease true&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
-&lt;&lt;vi-always-if n1_candleHorny t_ivexNear true&gt;&gt;
+&lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
   $n1_candleHorny ? &quot;whines&quot; :
@@ -18719,14 +18736,14 @@ XXX
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="406" name="n1s/D Say Device" tags="" position="6375,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
-&lt;&lt;vi-always-if n1_candleHorny t_ivexNear true&gt;&gt;
+&lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
   $n1_candleHorny ? &quot;whines&quot; :
   $n2_ivexGone ? &quot;says&quot; :
   &quot;whispers&quot;&gt;&gt;
 
-&lt;&lt;if $n2_ivexGone || !n1_helpDeviceAsked&gt;&gt;
+&lt;&lt;if $n2_ivexGone || !$n1_helpDeviceAsked&gt;&gt;
     /* nothing */
 &lt;&lt;elseif $n1_candleHorny&gt;&gt;
     Nero is too desperate to care about Ivex hearing him.
@@ -18747,8 +18764,6 @@ XXX
     The wolf _speaks, &quot;Nackle&#39;s Poltergeist Device&quot;.
     XXX no response. realizes he forgot to say please.
 &lt;&lt;/if&gt;&gt;
-
-?P
 
 &lt;&lt;switch $t_ivexContext&gt;&gt;
 &lt;&lt;case `IC_gone`&gt;&gt;
