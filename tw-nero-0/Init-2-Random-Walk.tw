@@ -178,11 +178,12 @@ function initRandomWalk() {
 
   let seeking = false;
   let seekForce = false;
-  let seekLoop = false
+  let seekLoop = 0;
   let seekMoved = false;
   let seekPath = null;
 
   const seekDelay = 50;
+  const maxLoop = 5;
 
   const seekToggle = () => {
     if (seeking) {
@@ -212,22 +213,6 @@ function initRandomWalk() {
     if (!seeking) return seekStop();
     if (seekMoved && here === Config.passages.start) return seekStop();
 
-    const done = tags().includes("done");
-    if (seekMoved && done) {
-      const steps = MagesTower.log.length;
-      console.log(`done after ${steps} steps at ${here}`);
-    }
-    if (seekMoved && done && !seekLoop) return seekStop();
-    if (done) {
-      MagesTower.forgetWalkHistory();
-      Engine.play("Bound");
-      seekLoop = true;
-      seekForce = false;
-      // seekForce = true;
-      MagesTower.seekStart(["n1a/F Nero Start"]);
-      return;
-    }
-
     let hasProblem = false;
     hasProblem = hasProblem || ErrorMessage.hasFails;
     hasProblem = hasProblem || ErrorMessage.hasWarnings;
@@ -235,6 +220,27 @@ function initRandomWalk() {
         /\bX[X]X\b|\bTO[D]O\b/.test($(".passage").text());
 
     let isDraft = /[/][DPS]/.test(here);
+
+    const done = tags().includes("done");
+    if (done && seekMoved) {
+      const steps = MagesTower.log.length;
+      console.log(`done after ${steps} steps at ${here}`);
+    }
+
+    if (done && seekMoved && (!seekLoop || isDraft || hasProblem)) {
+      return seekStop();
+    }
+
+    if (done) {
+      seekLoop = seekMoved ? seekLoop - 1 : maxLoop;
+      if (seekLoop <= 0) return seekStop();
+      MagesTower.forgetWalkHistory();
+      Engine.play("Bound");
+      seekForce = false;
+      // seekForce = true;
+      MagesTower.seekStart(["n1a/F Nero Start"]);
+      return;
+    }
 
     if (hasProblem || (isDraft && !seekForce)) {
       if (seekMoved) return seekStop();
