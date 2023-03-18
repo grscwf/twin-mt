@@ -34,7 +34,6 @@
   - Converting the other way is supported because there are several things
     that are easier to do in Twine.
 
-
 ## Working with Twee
 
 - Setup:
@@ -132,7 +131,7 @@
 
 - Adding `?debug` or `?tester` to the URL will turn on some debug controls.
 - `?debug` mode turns on several features:
-  - The top has a "var-info" display. 
+  - The top has a "var-info" display.
   - The right side has several buttons.
   - The left menu has some utilties, marked with a wrench icon.
   - A few macros show a wrench icon within a passage,
@@ -144,6 +143,7 @@
   are useful for play-testing, without spoilers.
 
 ### Right side buttons
+
 - "notes" opens a textbox for writing or editing notes about
   the current passage. "Notes" in the left sidebar has more explanation
   of this feature.
@@ -168,8 +168,14 @@
   - <kbd>ctrl-period</kbd> is a shortcut for "forw".
   - <kbd>ctrl-slash</kbd> is a shortcut for "rand".
   - <kbd>ctrl-backslash</kbd> is a shortcut for "seek".
+  - The randomness can be controlled slightly by marking some links.
+    - Add the comment `//avoid` to the code argument of
+      an `<<mtl>>` or `<<mta>>` link.
+    - If the randomizer chooses an `//avoid` link,
+      90% of the time it will reject it and try again.
 
 ### Var info
+
 - At the top, "var-info" is a compact display of state variables.
   - Pressing "var-info" will show or hide the variables.
   - var-info only shows variables that are read or set by the current passage.
@@ -198,6 +204,7 @@
     - or ignoring it with `<<vi-ignore flag>>`.
 
 ### Compute variants
+
 - var-info has a button "Compute variants", which will try to generate
   all the variants of the current passage
   that might be possible during play.
@@ -249,8 +256,8 @@
 - The states tested and rejected are somewhat sensitive to the order that
   flags are used in the passage (which affects what flags are discovered
   to be read, and considered relevant by the constraint tests).
-    - It's sometimes useful to write conditions specifically for
-      helping compute-variants, and maybe check flags redundantly.
+  - It's sometimes useful to write conditions specifically for
+    helping compute-variants, and maybe check flags redundantly.
 - If a passage has constraints that only apply to some conditions,
   eg, an assertion on `t_ivexNear` only if `!$n2_ivexGone`,
   then you probably need to add `cv-try` for the asserted variables,
@@ -270,6 +277,7 @@
 - TODO: these rules could be automatic.
 
 ## Story structure - Passages
+
 - All of Nero's passages start with a codeword like `n1a/F`.
   - The lowercase `n` indicates it's a Nero passage.
   - The digit is story chapter, divided by restart points.
@@ -308,6 +316,7 @@
     triggering the overlapping-save bug.
 
 ## Story structure - State
+
 - All Nero state vars start with a prefix like `n1_` or `t_`.
   - The `n` is for persistent Nero variables.
   - The digit indicates what chapter sets the variable.
@@ -352,5 +361,3 @@
   - Also, if deterministic rng is enabled, SugarCube's structure makes it
     awkward to render a passage independent of history, as used by archives.
     (It's not impossible, but has some awkward caveats.)
-
-    
