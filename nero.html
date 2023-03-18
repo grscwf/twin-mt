@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -8504,6 +8504,7 @@ EnumType.declareVar(&quot;n2_magicPhaseLost&quot;, &quot;MagicPhase&quot;);
  * Nero trying to talk to the Sprite.
  */
 EnumType.define(&quot;IvexContext&quot;, [
+  &quot;IC_unknown&quot;,
   &quot;IC_gone&quot;,
   &quot;IC_distant&quot;,
   &quot;IC_explainTheft&quot;, // recruit &gt; Ivex Trap
@@ -9443,7 +9444,19 @@ Nero.enumImplies = {
     [MP_tapLost]: {
       impossible: true,
     }
+  },
+
+  // this is iffy, t_ivexContext isn&#39;t meant to be consistent outside
+  // of action nodes and ask nodes.
+  t_ivexContext: {
+    [IC_gone]: {
+      n2_ivexGone: true,
+    },
+    [IC_distant]: {
+      t_ivexNear: false,
+    },
   }
+
 }
 
 const EM = ErrorMessage;
@@ -18701,9 +18714,13 @@ XXX
     &lt;&lt;run throw new Error(`BUG: on hold passwordTries ${$n1_passwordTries}`);&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="405" name="n1s/D Say Lance" tags="" position="6500,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="405" name="n1s/F Say Lance" tags="" position="6500,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n2_free false&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
+
+&lt;&lt;cv-ignore n1_spriteQuiet&gt;&gt; /* trivial variation */
+&lt;&lt;cv-ignore n1_opportunist&gt;&gt; /* trivial variation */
 
 &lt;&lt;set _speaks =
   $n1_candleHorny ? &quot;whines&quot; :
@@ -18713,8 +18730,8 @@ XXX
 Nero _speaks to the Sprite, &quot;Please, Lance Rockhard.&quot;
 &lt;&lt;if $n1_candleHorny&gt;&gt;
     It&#39;s a crude name for their shared pursuit of
-    erotic pleasures, but the tool of their captor is
-    better than none at all.
+    erotic pleasures, but using a tool of their captor is
+    better than no tool at all.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;switch $t_ivexContext&gt;&gt;
@@ -18728,12 +18745,14 @@ Nero _speaks to the Sprite, &quot;Please, Lance Rockhard.&quot;
 &lt;&lt;case `IC_explainTheft` `IC_lickPaw` `IC_begForMe`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     ?P
-    Ivex laughs. &quot;XXX&quot;
+    Ivex laughs. &quot;You seem quite obsessed with that.
+    Will you do what I ask?&quot;
 &lt;&lt;case `IC_comfortable` `IC_whoSentYou`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit true&gt;&gt;
     ?P
     Ivex laughs beneath his grinning mask.
-    &quot;XXX&quot;
+    &quot;You seem quite obsessed with that.
+    Will you answer what I ask?&quot;
 &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
@@ -18741,22 +18760,73 @@ Nero _speaks to the Sprite, &quot;Please, Lance Rockhard.&quot;
 ?P
 The Sprite responds.
 &lt;span class=sprite-q&gt;&quot;Got it. You&#39;re awesome, ?masterx
-Hang on a second...&quot;
-
-?P
-Nero is thrilled that he&#39;s found XXX
-
-
-?P
-&quot;... Biomorphic signature has deviated more than 3%. Please verify your identity by touching my hole, ?master&quot;
+Hang on a second, ?master&quot;&lt;/span&gt;
 
 ?P
 &lt;&lt;if $n1_candleHorny&gt;&gt;
-    horny thoughts
+    Nero is thrilled that the Sprite agrees with his choice!
 &lt;&lt;else&gt;&gt;
-    nero thoughts.
+    Nero is thrilled that he&#39;s found a magic device that he will
+    soon be able to use!
 &lt;&lt;/if&gt;&gt;
 
+?P
+&lt;span class=sprite-q&gt;&quot;Ok, I&#39;m supposed to...
+Warning: Biomorphic something or other has deviated more than 6%, ?master
+For your protection, please verify your identity by touching my hole,
+?master&quot;&lt;/span&gt;
+
+?P
+The wolf groans.
+&lt;&lt;if $n1_candleHorny&gt;&gt;
+    He &lt;em&gt;would&lt;/em&gt; touch the Sprite&#39;s hole, if he were &lt;em&gt;able&lt;/em&gt; to.
+    Getting the freedom to &lt;em&gt;do&lt;/em&gt; that is why he&#39;s seducing the
+    Sprite in the first place!
+    ?P
+    This relationship is a disappointment. He will have to find some
+    way to free himself, and stroke his cock alone.
+
+&lt;&lt;elseif $n2_ivexGone&gt;&gt;
+    Of course.
+    ?P
+    It&#39;s almost as if Ivex has arranged his lair to be
+    &lt;em&gt;deliberately&lt;/em&gt; frustrating.
+    Nero considers that thought for a moment, but rejects it.
+    Ivex would have asked the Sprite to make a gloating taunt.
+    This is just unhappy accident.
+    ?P
+    There&#39;s little chance that the wolf can touch the hole,
+    whatever it is. Perhaps if Ivex were still here,
+    Nero could trick him into touching it.
+    But the panther is gone now,
+    and the flickering red candle will not allow time to
+    wait for his return.
+    ?P
+    No matter. There will be some other way to escape. Nero is sure of it.
+    ?P
+    He sets aside thoughts of using that annoying Sprite.
+    Time to focus on what else he can do.
+
+&lt;&lt;else&gt;&gt;
+    Of course. Penetrating a competent mage&#39;s defenses is
+    never &lt;em&gt;that&lt;/em&gt; easy. Nero was, still is, skeptical of
+    Ivex&#39;s competence, but the panther certainly is able of
+    &lt;em&gt;doing&lt;/em&gt; magic.
+    And competence is rarely evenly distributed.
+    It&#39;s quite normal for competent mages to have spots of
+    incompetence here and there.
+    
+    ?P
+    The wolf had just hoped that Ivex&#39;s security system would be one
+    of those spots of incompetence.
+    
+    ?P
+    Well, no matter. Even competent security will have flaws.
+    In this case, all Nero neds to do is identify this hole
+    and trick Ivex into touching it. Simple.
+&lt;&lt;/if&gt;&gt;
+
+?P
 $t_afterAction
 
 &lt;&lt;set $n1_magicPhase = MP_wantTouch&gt;&gt;
@@ -20664,12 +20734,13 @@ so you&#39;ll have to be more specific, ?master
 Tell me the name of the one you want to contact, ?master&quot;&lt;/span&gt;
 
 ?P
+Nero shakes his head.
 &lt;&lt;if $n1_candleHorny&gt;&gt;
-    Nero shakes his head. The Sprite is not being helpful.
+    The Sprite is not being helpful.
     Its response was noticeably passive-aggressive.
     The wolf is feeling doubts about continuing this relationship.
 &lt;&lt;else&gt;&gt;
-    Nero shakes his head. It&#39;s not so odd to have several
+    It&#39;s not so odd to have several
     Nackle devices on different hidden surfaces in a room,
     so that a magician can use whichever one is convenient when
     they move about the room naturally.
@@ -21095,7 +21166,7 @@ that function entirely.
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;if $n1_bottleNameKnown&gt;&gt;
         &lt;&lt;set $t_magicAction =
-            &quot;[[&#39;Tell the Sprite, \&quot;Please, Lance Rockhard\&quot;&#39;|n1s/D Say Lance]]&quot;&gt;&gt;
+            &quot;[[&#39;Tell the Sprite, \&quot;Please, Lance Rockhard\&quot;&#39;|n1s/F Say Lance]]&quot;&gt;&gt;
     &lt;&lt;elseif !$n1_helpDeviceAsked&gt;&gt;
         &lt;&lt;set $t_magicAction =
             &quot;[[&#39;Ask the Sprite, \&quot;Please, help!\&quot;&#39;|n1s/F Help Device]]&quot;&gt;&gt;
@@ -22376,7 +22447,7 @@ Such as:
     
     if (MP_wantName === V.n1_magicPhase) {
       const t = `Tell the Sprite, &quot;Please, Lance Rockhard.&quot;`;
-      Nero.actionsAdd(`[[${t}|n1s/D Say Lance]]`);
+      Nero.actionsAdd(`[[${t}|n1s/F Say Lance]]`);
     }
   }
 
