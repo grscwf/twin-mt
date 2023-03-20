@@ -245,7 +245,9 @@ Macro.add("vi-always", {
     }
     const actual = VT.untracedGet(vname);
     if (exp !== actual && !(exp === false && actual == null)) {
-      EM.fail(`vi-always ${vname} ${exp}, but actual value is ${actual}`);
+      // force a traced read, so it can be toggled
+      const read = State.variables[vname];
+      EM.fail(`vi-always ${vname} ${exp}, but actual value is ${read}`);
     }
     alwaysVars.set(vname, exp);
     if (withinCondition(this)) {
@@ -264,8 +266,10 @@ Macro.add("vi-always-if", {
     if (VT.untracedGet(cond)) {
       const actual = VT.untracedGet(vname);
       if (exp !== actual && !(exp === false && actual == null)) {
+        // force a traced read, so it can be toggled
+        const read = State.variables[vname];
         EM.fail(
-          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${actual}`);
+          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`);
       }
       alwaysVars.set(vname, exp);
       if (withinCondition(this)) {
