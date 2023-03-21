@@ -3,34 +3,23 @@
 <<vi-ignore n2_ivexGone>>
 
 <!--
-  coin starts in penguin's mouth.
-    (dropped false, known false)
-  viewing penguin causes coin to drop.
-  	(dropped true, known false)
-  asking receptive ivex about penguin makes him notice the coin is dropped.
-    (dropped false, known true)
-  looking at penguin again causes coin to drop again.
-    (dropped true, known true)
+  viewing penguin always causes coin to drop, if it hasn't already.
 -->
 
 <<cv-try n1_magicPhase
 	`MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
     `MP_contact` `MP_tapLost`>>
 <<cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`>>
-<<cv-try n1_passwordsTried `null` `["Hunter Too"]`>> /* maybe also need Please */
+<<cv-try n1_passwordsTried `null` `["Hunter Too"]`>> /* maybe also Please */
 
-<!-- passed wantTouch, so we know the coin was important -->
-<<set _importantCoin =
-    (MP_wantTouch < $n1_magicPhase
-       && $n1_magicPhase < MP_tapLost)
-    || MP_contact === $n2_magicPhaseLost
->>
-
-Traditional mages often keep several skeletal or taxidermied animals
+Traditional mages often keep skeletal or taxidermied animals
 in their lair, more for the gloomy ambiance than any practical purpose.
 
-<<if $n1_penguinNameKnown>>
-    Ivex has his deceased pet penguin, named Hunter Too, atop
+<<if $n1_penguinAsked>>
+    Ivex has his deceased familiar,
+    a penguin named Hunter
+    <<= $n1_penguinTouched ? "Too" : "Two">>,
+    atop
     <<if $n1_candleLit>>
         the cabinet that the
         <<n1-no-loop [[flickering red candle|n1x/F Candle]]>>
@@ -72,13 +61,14 @@ for an eagle or an owl, not a flightless waterfowl.
 Nero stares at the penguin in perplexity.
 <<if $n1_penguinCoinDropped>>
     He remembers the mouth had been holding
-    <<= _importantCoin ? "an important coin"
-        : $n1_penguinNameKnown ? "a coin" : "a coin-like object">>,
+    <<= $n1_penguinTouched ? "an important" : "a">>
+    coin-like object
     which has fallen and rolled off somewhere.
-<<elseif $n1_penguinNameKnown>>
+<<elseif $n1_penguinAsked>>
     While he's staring, the
-    <<= _importantCoin ? "important" : "">>
-    coin in the penguin's mouth drops again,
+    <<= $n1_penguinTouched ? "important" : "">>
+    coin-like object
+    in the penguin's mouth drops again,
     and disappears somewhere on the floor, again.
 <<else>>
     While he's staring, an object suddenly drops from the penguin's mouth,
@@ -101,8 +91,8 @@ Nero stares at the penguin in perplexity.
 >>
     The gaping mouth of the penguin leads him to wonder,
     could <em>that</em> be the hole that the Sprite
-    <<= $n2_free ? "wanted to be" : "wants">>
-    touched?
+    <<= $n2_free ? "wanted" : "wants">>
+    him to touch?
     <<if $n2_free>>
         <!-- broken -->
         Unfortunately, there's no way of testing that now.
@@ -110,17 +100,16 @@ Nero stares at the penguin in perplexity.
         Perhaps Ivex could have been persuaded to touch it,
         but he's gone now, and there's no way
         for Nero to reach the penguin himself.
-    <<elseif $n1_penguinNameKnown>>
+    <<elseif $n1_penguinAsked>>
         ?P
-        Ivex seemed sensitive about his penguin.
+        But Ivex seems touchy about his penguin.
         <<if $n1_ivexWasReceptive>>
             Nero perhaps should have asked earlier,
-            when the panther was more relaxed,
-            but there will certainly be another opportunity to ask again.
-        <<else>>
-            Nero does not think it will be useful to mention it again
-            until the panther is more relaxed.
+            when the panther was more relaxed.
         <</if>>
+        It's likely that raising the subject again will be met
+        with more hostility. There are plenty of other
+        holes to try.
     <<else>>
         And could Ivex be persuaded to touch it?
         <<actions-add [[Tell Ivex, "Something just dropped from the beak..."|n1x/F Penguin Ask]]>>
@@ -156,10 +145,10 @@ Nero stares at the penguin in perplexity.
     but it doesn't seem useful or important right now.
 
 <<else>>
-    <<if $n1_penguinNameKnown>>
+    <<if $n1_penguinAsked>>
         Why does Ivex keep
-        <<= _impotantCoin ? "such an important" : "a">>
-        coin in his penguin's mouth,
+        <<= $n1_penguinTouched ? "an important" : "a">>
+        coin-like object in his penguin's mouth,
         if it keeps falling out?
         Why taxidermy the penguin in such a ridiculous pose?
     <<else>>
@@ -168,7 +157,7 @@ Nero stares at the penguin in perplexity.
     <</if>>
     ?P
     Well, whatever Ivex's reasons for displaying
-    <<= $n1_penguinNameKnown ? "his deceased pet" : "a penguin">>
+    <<= $n1_penguinAsked ? "his deceased familiar" : "a penguin">>
     in such a state,
     it doesn't seem useful or important right now.
 <</if>>
