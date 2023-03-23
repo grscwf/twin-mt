@@ -273,7 +273,7 @@
 - For testing `n2_magicPhaseLost` variants:
   - Include `null`, `MP_mageSight`, and any values tested in the passage.
   - Note, these values are impossible: `MP_beforeCast`, `MP_triedMagic`,
-    `MP_wantPassword`, `MP_contact`
+    `MP_onHold`, `MP_lockedOut`, `MP_tapLost`
 - TODO: these rules could be automatic.
 
 ## Story structure - Passages
