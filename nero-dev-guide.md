@@ -96,7 +96,7 @@
     - This can be skipped if `nero.html` was not changed outside Twine.
   - In your browser, open `Documents/Twine/Stories/nero.html?debug`
   - Navigate in the story to an area of interest.
-    - Use "JUMP TO" in the sidebar to jump to a particular section.
+    - Use "WALK PATH" in the sidebar to go to a particular section.
   - Make edits in Twine.
   - Reload the page in your browser to test the edits.
 - Committing changes:
