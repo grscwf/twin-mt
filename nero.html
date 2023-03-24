@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5695,8 +5695,8 @@ CV.tryVars = {};
 
 // vars that are definitely not boolean (but might be null)
 CV.nonbooleans = new Set([
-  &quot;n1_passwordsFound&quot;,
-  &quot;n1_passwordsTried&quot;,
+  &quot;n1_passFound&quot;,
+  &quot;n1_passTried&quot;,
 ]);
 
 Macro.add(&quot;cv-ignore&quot;, {
@@ -9236,7 +9236,6 @@ Nero.enumImplies = {
     [MP_beforeCast]: {
       n1_mageSight: false,
       n1_mirrorTapped: false,
-      n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
@@ -9244,7 +9243,6 @@ Nero.enumImplies = {
     [MP_triedMagic]: {
       n1_mageSight: false,
       n1_mirrorTapped: false,
-      n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
@@ -9253,7 +9251,6 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_mirrorTapped: false,
       n1_naked: true,
-      n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
@@ -9262,7 +9259,6 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_mirrorTapped: true,
       n1_naked: true,
-      n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
@@ -9272,7 +9268,6 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_mirrorTapped: true,
       n1_naked: true,
-      n1_passwordsTried: false,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
@@ -9282,7 +9277,6 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_mirrorTapped: true,
       n1_naked: true,
-      n1_passwordsTried: false,
       n2_free: false,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
@@ -10560,8 +10554,8 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
 
 /**
  * &lt;&lt;pw-found $pw&gt;&gt;
- * Add pw to passwordsFound.
- * Usually for things that Nero sees before he knows he needs a password.
+ * Add pw to passFound.
+ * Can be used for things that Nero sees before he knows he needs a password.
  */
 Macro.add(&quot;pw-found&quot;, {
   handler: function() {
@@ -10570,7 +10564,7 @@ Macro.add(&quot;pw-found&quot;, {
       throw new Error(`pw-found ${pw} undeclared password`);
     }
     const V = State.variables;
-    const found = V.n1_passwordsFound || (V.n1_passwordsFound = []);
+    const found = V.n1_passFound || (V.n1_passFound = []);
     found.push(pw);
   }
 });
@@ -10584,10 +10578,11 @@ Macro.add(&quot;pw-found&quot;, {
  *     $storyTextFail
  * &lt;&lt;/pw-suggest&gt;&gt;
  * Only does something when wantPassword or onHold.
- * The first pw that isn&#39;t in passwordsTried gets added to passwordsFound,
+ * The first pw that isn&#39;t in passTried gets added to passFound,
  * and the corresponding text gets shown.
- * The passwords are not added to passwordsFound until their text is shown,
- * so if a context suggests several passwords at the same time, use &lt;&lt;pw-found&gt;&gt;.
+ * The passwords are not added to passFound until their text is shown,
+ * so if a context suggests several passwords at the same time,
+ * use &lt;&lt;pw-found&gt;&gt;.
  * If all the passwords in the block have been tried, show pw-fail text.
  * Also adds an action to say the password, adding &quot;please&quot; if Nero hasn&#39;t
  * yet noticed the password listener doesn&#39;t need &quot;please&quot;.
@@ -10609,8 +10604,8 @@ Macro.add(&quot;pw-suggest&quot;, {
       }
     }
 
-    const tried = V.n1_passwordsTried || (V.n1_passwordsTried = []);
-    const found = V.n1_passwordsFound || (V.n1_passwordsFound = []);
+    const tried = V.n1_passTried || (V.n1_passTried = []);
+    const found = V.n1_passFound || (V.n1_passFound = []);
 
     let failed = true;
     for (const p of this.payload) {
@@ -10622,10 +10617,8 @@ Macro.add(&quot;pw-suggest&quot;, {
       if (!found.includes(pw)) found.push(pw);
       $(this.output).wiki(p.contents);
       if (wantPassword) {
-        const please = V.n1_passwordNoPlease ? &quot;&quot; : &quot;Please &quot;;
-        const pleaseComma = V.n1_passwordNoPlease ? &quot;&quot; : &quot;Please, &quot;;
-        const text =`Tell the Sprite, &quot;${pleaseComma}${pw}.&quot;`;
-        const code = `$n1_passwordBeingTried = &quot;${please}${pw}&quot;`;
+        const text =`Tell the Sprite, &quot;${pw}&quot;.`;
+        const code = `$n1_passOnHold = &quot;${pw}&quot;`;
         Nero.actionsAdd(&quot;[&quot; + `[\`${text}\`|${sayPassword}][${code}]]`);
       } else {
         $(this.output).append(
@@ -10655,7 +10648,7 @@ Macro.add(&quot;pw-suggest&quot;, {
         $(&quot;&lt;a&gt;&quot;).text(&quot; (reset)&quot;).appendTo(outer)
           .on(&quot;click&quot;, () =&gt; VarInfo.revisitHere(() =&gt; {
             const V = State.variables;
-            const tried = V.n1_passwordsTried || (V.n1_passwordsTried = []);
+            const tried = V.n1_passTried || (V.n1_passTried = []);
             tried.length = 0;
           }));
       }
@@ -10666,7 +10659,7 @@ Macro.add(&quot;pw-suggest&quot;, {
         $(&quot;&lt;a&gt;&quot;).text(` (try ${pw})`).appendTo(outer)
           .on(&quot;click&quot;, () =&gt; VarInfo.revisitHere(() =&gt; {
             const V = State.variables;
-            const tried = V.n1_passwordsTried || (V.n1_passwordsTried = []);
+            const tried = V.n1_passTried || (V.n1_passTried = []);
             tried.push(pw);
           }));
       }
@@ -10685,31 +10678,18 @@ Macro.add(&quot;pw-misfire&quot;, {
     const V = State.variables;
     const U = VT.untracedVariables();
     if (U.n1_magicPhase !== MP_wantPassword) return;
-    V.n1_passwordBeingTried = `#${pw}`;
+    V.n1_passOnHold = `#${pw}`;
     V.n1_magicPhase = MP_onHold;
-    let text = `\
+    const text = `\
       &lt;&lt;nobr&gt;&gt;
       ?P
       The Sprite speaks in Nero&#39;s ear,
-      &lt;span class=sprite-q&gt;&quot;Password received.
-      Please wait while I verify it, ?master&quot;&lt;/span&gt;
-    `;
-    if (V.n1_passwordNoPlease) {
-      text += `
-          Again, the Sprite has misinterpreted conversation as a password.
-          Nero wonders what phrase it has picked up this time.
-      `;
-    } else {
-      text += `
-          Nero does not remember saying &quot;please&quot;.
-          Apparently, the Sprite will consider
-          any utterance he makes to be a password.
-          This will make it somewhat
-          annoying to converse with Ivex at the same time.
-          &lt;&lt;set $n1_passwordNoPlease = true&gt;&gt;
-      `;
-    }
-    text += `&lt;&lt;/nobr&gt;&gt;`;
+      &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right
+      either, ?master
+      Please hold while I double-check it, ?master&lt;/span&gt;
+      Again, the Sprite has misinterpreted conversation as a password.
+      Nero wonders what phrase it has picked up this time.
+      &lt;&lt;/nobr&gt;&gt;`;
     $(this.output).wiki(text);
   }
 });
@@ -12009,6 +11989,41 @@ const jumps = [
     ]
   },
   {
+    title: &quot;Nero - endgame - smooth - action - wantDevice - recruit - receptive - wantTouch - onHold&quot;,
+    vars: {
+      n0_barbsSlowViewed: false
+    },
+    path: [
+      &quot;n1a/F Nero Start&quot;,
+      &quot;n1a/F Endgame 1&quot;,
+      &quot;n1a/F Endgame 2&quot;,
+      &quot;n1p/F Barbs Slow 6n1&quot;,
+      &quot;n1a/F Endgame 4&quot;,
+      &quot;n1cn/F Ivex Intro 2&quot;,
+      &quot;n1cn/F First Action (5,3)&quot;,
+      &quot;n1s/F Cast Sight 1&quot;,
+      &quot;n1x/F Study&quot;,
+      &quot;n1x/F Desk&quot;,
+      &quot;n1x/F Mirror&quot;,
+      &quot;n1s/F Tap 1&quot;,
+      &quot;n1s/F Tap 2&quot;,
+      &quot;n1s/F Tap 4&quot;,
+      &quot;n1x/F Cabinets&quot;,
+      &quot;n1x/F Bottle&quot;,
+      &quot;n1x/F Nackle Brief&quot;,
+      &quot;n1x/F Bottle&quot;,
+      &quot;n1x/F Bottle Ask Name&quot;,
+      &quot;n1cn/F Charm&quot;,
+      &quot;n1cn/F Recruit 1&quot;,
+      &quot;n1s/F Say Device&quot;,
+      &quot;n1cn/F Secret Guild&quot;,
+      &quot;n1s/F Say Lance&quot;,
+      &quot;n1x/F Penguin&quot;,
+      &quot;n1x/F Penguin Ask&quot;,
+      &quot;n1cr/F Ivex Skeptical (2,4)&quot;,
+    ]
+  },
+  {
     title: &quot;Nero - endgame - smooth - action - wantDevice - subby - receptive - wantTouch&quot;,
     vars: {
       n0_barbsSlowViewed: false
@@ -12038,6 +12053,41 @@ const jumps = [
       &quot;n1s/F Say Device&quot;,
       &quot;n1cn/F Apprentice&quot;,
       &quot;n1s/F Say Lance&quot;,
+      &quot;n1cr/F Ivex Demanding (4,2)&quot;,
+    ]
+  },
+  {
+    title: &quot;Nero - endgame - smooth - action - wantDevice - subby - receptive - wantTouch - onHold&quot;,
+    vars: {
+      n0_barbsSlowViewed: false
+    },
+    path: [
+      &quot;n1a/F Nero Start&quot;,
+      &quot;n1a/F Endgame 1&quot;,
+      &quot;n1a/F Endgame 2&quot;,
+      &quot;n1p/F Barbs Slow 6n1&quot;,
+      &quot;n1a/F Endgame 4&quot;,
+      &quot;n1cn/F Ivex Intro 2&quot;,
+      &quot;n1cn/F First Action (5,3)&quot;,
+      &quot;n1s/F Cast Sight 1&quot;,
+      &quot;n1x/F Study&quot;,
+      &quot;n1x/F Desk&quot;,
+      &quot;n1x/F Mirror&quot;,
+      &quot;n1s/F Tap 1&quot;,
+      &quot;n1s/F Tap 2&quot;,
+      &quot;n1s/F Tap 4&quot;,
+      &quot;n1x/F Cabinets&quot;,
+      &quot;n1x/F Bottle&quot;,
+      &quot;n1x/F Nackle Brief&quot;,
+      &quot;n1x/F Bottle&quot;,
+      &quot;n1x/F Bottle Ask Name&quot;,
+      &quot;n1cn/F Charm&quot;,
+      &quot;n1cn/F Collab&quot;,
+      &quot;n1s/F Say Device&quot;,
+      &quot;n1cn/F Apprentice&quot;,
+      &quot;n1s/F Say Lance&quot;,
+      &quot;n1x/F Penguin&quot;,
+      &quot;n1x/F Penguin Ask&quot;,
       &quot;n1cr/F Ivex Demanding (4,2)&quot;,
     ]
   },
@@ -17929,7 +17979,7 @@ full view of snow globe. password trigger. now contacted.
 take a moment to rest and hate ivex.
 
 &lt;&lt;set $n1_magicPhase = MP_contact&gt;&gt;
-&lt;&lt;set $n1_passwordKnown = true&gt;&gt;
+&lt;&lt;set $n1_passIsKnown = true&gt;&gt;
 &lt;&lt;set $n2_free = true&gt;&gt;
 &lt;&lt;set $n2_mirrorTaken = true&gt;&gt;
 &lt;&lt;set $n2_tooClever = true&gt;&gt;
@@ -18680,16 +18730,15 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 &lt;&lt;script&gt;&gt;
   const V = State.variables;
   const T = State.temporary;
-  V.n1_passwordBeingTried || (V.n1_passwordBeingTried = &quot;placeholder for testing&quot;);
-  V.n1_passwordTries = 1 + (V.n1_passwordTries || 0);
-  T.pw = V.n1_passwordBeingTried.replace(/^#/, &quot;&quot;);
-  V.n1_passwordsTried || (V.n1_passwordsTried = []);
-  if (!V.n1_passwordsTried.includes(V.n1_passwordBeingTried)) {
-    V.n1_passwordsTried.push(V.n1_passwordBeingTried);
+  V.n1_passOnHold || (V.n1_passOnHold = &quot;placeholder for testing&quot;);
+  T.pw = V.n1_passOnHold.replace(/^#/, &quot;&quot;);
+  V.n1_passTried || (V.n1_passTried = []);
+  if (!V.n1_passTried.includes(V.n1_passOnHold)) {
+    V.n1_passTried.push(V.n1_passOnHold);
   }
 &lt;&lt;/script&gt;&gt;
 
-&lt;&lt;switch $n1_passwordTries&gt;&gt;
+&lt;&lt;switch $n1_passTried.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
     &lt;&lt;if $n1_candleHorny&gt;&gt;
         Nero whines, &quot;Please, quiet!&quot;
@@ -18753,13 +18802,13 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
     Nero regrets.
 
 &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG: impatient passwordTries ${$n1_passwordTries}`)&gt;&gt;
+    &lt;&lt;run throw new Error(`BUG: impatient passTried ${$n1_passTried.length}`)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
 A moment later, the Sprite says,
 &quot;&lt;&lt;= _pw&gt;&gt; is not the correct password.
-&lt;&lt;switch $n1_passwordTries&gt;&gt;
+&lt;&lt;switch $n1_passTried.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
     &lt;!-- deliberate off-by-one --&gt;
     3 tries remaining, ?master&quot;
@@ -18781,18 +18830,17 @@ A moment later, the Sprite says,
 &lt;&lt;/nobr&gt;&gt;
 
 $t_afterAction</tw-passagedata><tw-passagedata pid="403" name="n1s/D On Hold" tags="inclusion" position="6450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 
-&quot;Checking password... Please hold, ?master&quot;
+&quot;Please continue to hold while I check your password, ?master&quot;
 
 XXX
-&lt;&lt;switch $n1_passwordTries || 0&gt;&gt;
+&lt;&lt;switch $n1_passTried || 0&gt;&gt;
 &lt;&lt;case 0&gt;&gt;
     &lt;&lt;if $n1_candleHorny&gt;&gt;
-        It continues to hum a throbbing, sensual ballad.
+        It resumes humming a throbbing, sensual ballad.
     &lt;&lt;else&gt;&gt;
-        It continues to hum a cheerful children&#39;s song.
+        It resumes humming a cheerful children&#39;s song.
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;set $t_magicAction = &quot;[[&#39;\&quot;Please, quiet!\&quot;&#39;|n1s/D Impatient]]&quot;&gt;&gt;
 
@@ -18805,7 +18853,7 @@ XXX
     &lt;&lt;set $t_magicAction = &quot;[[&#39;\&quot;Please, stop the music!\&quot;&#39;|n1s/D Impatient]]&quot;&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG: on hold passwordTries ${$n1_passwordTries}`);&gt;&gt;
+    &lt;&lt;run throw new Error(`BUG: on hold passTried ${$n1_passTried}`);&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="404" name="n1s/D Say Password" tags="" position="3600,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -18813,8 +18861,7 @@ XXX
 &lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 ?P
-switch on &lt;&lt;= $n1_passwordBeingTried&gt;&gt;.
-add/remove &quot;please&quot; as necessary for passwordNoPlease.
+switch on &lt;&lt;= $n1_passOnHold&gt;&gt;.
 dialog tag varies on subby/etc.
 
 ?P
@@ -20045,7 +20092,7 @@ now at last guess, Nero has second thoughts about every pw.
     The Sprite is asking for a password.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n1_passwordTries &gt; 0&gt;&gt;
+&lt;&lt;if $n1_passTried.length &gt; 0&gt;&gt;
     ?P
     Nero has already tried &lt;&lt;= _listTried()&gt;&gt;
 &lt;&lt;/if&gt;&gt;
@@ -20060,7 +20107,7 @@ now at last guess, Nero has second thoughts about every pw.
 
     $t_afterAction
 &lt;&lt;else&gt;&gt;
-    &lt;&lt;if $n1_passwordsFound.length === 0&gt;&gt;
+    &lt;&lt;if $n1_passFound.length === 0&gt;&gt;
         Nero does not know much about Ivex
         &lt;&lt;if !$n1_subby&gt;&gt;
             (and does not really want to know more),
@@ -20088,7 +20135,7 @@ now at last guess, Nero has second thoughts about every pw.
             &lt;li&gt;
                 &lt;&lt;capture _pw&gt;&gt;
                     &lt;&lt;link _text _sayPassword&gt;&gt;
-                        &lt;&lt;set $n1_passwordBeingTried = _pw&gt;&gt;
+                        &lt;&lt;set $n1_passOnHold = _pw&gt;&gt;
                     &lt;&lt;/link&gt;&gt;
                 &lt;&lt;/capture&gt;&gt;
             &lt;/li&gt;
@@ -20100,9 +20147,8 @@ now at last guess, Nero has second thoughts about every pw.
 const V = State.variables;
 const T = State.temporary;
 
-V.n1_passwordTries || (V.n1_passwordTries = 0);
-V.n1_passwordsTried || (V.n1_passwordsTried = []);
-V.n1_passwordsFound || (V.n1_passwordsFound = []);
+V.n1_passTried || (V.n1_passTried = []);
+V.n1_passFound || (V.n1_passFound = []);
 
 T.sayPassword = &quot;[[n1s/D Say Password]]&quot;.slice(2, -2);
 
@@ -20139,7 +20185,7 @@ T.describe = pw =&gt; {
 };
 
 T.listTried = () =&gt; {
-  const tried = V.n1_passwordsTried || [];
+  const tried = V.n1_passTried || [];
   const desc = i =&gt; T.describe(tried[i]);
   if (tried.length === 1) {
     return `${desc(0)}.`;
@@ -20158,13 +20204,13 @@ T.listTried = () =&gt; {
 T.toTry = [];
 T.hasBasics = false;
 for (const pw of Object.keys(Nero.basicPasswords)) {
-  if (!V.n1_passwordsTried.includes(pw)) {
+  if (!V.n1_passTried.includes(pw)) {
     T.toTry.push(pw);
     T.hasBasics = true;
   }
 }
-for (const pw of V.n1_passwordsFound) {
-  if (!V.n1_passwordsTried.includes(pw)) {
+for (const pw of V.n1_passFound) {
+  if (!V.n1_passTried.includes(pw)) {
     T.toTry.push(pw);
   }
 }
@@ -23608,7 +23654,7 @@ Within the globe is a figurine of
     spell out
     &lt;span class=nobr&gt;&quot;CARPE DICK!&quot;&lt;/span&gt;
 
-    &lt;&lt;if $n1_passwordKnown&gt;&gt;
+    &lt;&lt;if $n1_passIsKnown&gt;&gt;
         ?P
         Nero already has plenty of reason to dislike Ivex.
         But the fact that the panther has chosen
@@ -25181,7 +25227,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
   `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
   `MP_contact` `MP_tapLost`&gt;&gt;
 &lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
-&lt;&lt;cv-try n1_passwordsTried `[]` `[&quot;Ivy&quot;]`&gt;&gt; /* maybe please-ivy */
+&lt;&lt;cv-try n1_passTried `[]` `[&quot;Ivy&quot;]`&gt;&gt; /* maybe please-ivy */
 
 &lt;&lt;set _lusted = $n1_paintingViewedHorny&gt;&gt;
 
@@ -25369,9 +25415,9 @@ of that monstrous creature. Is that a bird of some sort?&quot;
     You&#39;re the best, ?masterx&quot;&lt;/span&gt;
 
     ?P
-    Oh. The hole isn&#39;t in the &lt;em&gt;penguin&lt;/em&gt;, it&#39;s in the
+    Oh. The hole isn&#39;t the &lt;em&gt;penguin&lt;/em&gt;, it&#39;s the
     coin-like object that the
-    penguin was &lt;em&gt;holding&lt;/em&gt;. Of course.
+    penguin was holding. Of course.
 
     ?P
     Ivex stands up and puts the object back in the penguin&#39;s mouth.
@@ -25425,6 +25471,18 @@ of that monstrous creature. Is that a bird of some sort?&quot;
     The wolf does &lt;em&gt;not&lt;/em&gt; want to hear &lt;em&gt;that&lt;/em&gt; story.
     He quickly changes the subject.
     &quot;Right. What was it you were asking me earlier?&quot;
+
+    ?P
+    The Sprite speaks again.
+    &lt;span class=sprite-q&gt;&quot;That password doesn&#39;t sound right, ?master
+    Please hold while I double-check it, ?master&quot;&lt;/span&gt;
+    It starts humming a cheerful children&#39;s song.
+
+    ?P
+    Nero suppresses another sigh. Apparently the Sprite interpreted
+    something he said as the password, &lt;em&gt;without&lt;/em&gt; him
+    saying &quot;please&quot; first. The wolf will have to be careful
+    for the next attempt.
 
 &lt;&lt;else&gt;&gt;
     Ivex looks where the wolf pointed, then
@@ -25512,7 +25570,9 @@ $t_afterAction
 
 &lt;&lt;set $n1_penguinAsked = true&gt;&gt;
 &lt;&lt;set if ($t_ivexReceptive) {
-    $n1_magicPhase = MP_wantPassword;
+    $n1_magicPhase = MP_onHold;
+    $n1_passTried = [];
+    $n1_passOnHold = &quot;#I Dearly Loved My First Familiar As Well&quot;;
     $n1_penguinTouched = true;
     $t_ivexNear = false;
 }
@@ -25528,7 +25588,7 @@ $t_afterAction
 	`MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
     `MP_contact` `MP_tapLost`&gt;&gt;
 &lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
-&lt;&lt;cv-try n1_passwordsTried `null` `[&quot;Hunter Too&quot;]`&gt;&gt; /* maybe also Please */
+&lt;&lt;cv-try n1_passTried `null` `[&quot;Hunter Too&quot;]`&gt;&gt; /* maybe also Please */
 
 Traditional mages often keep skeletal or taxidermied animals
 in their lair, more for the gloomy ambiance than any practical purpose.
@@ -28046,7 +28106,7 @@ toward the floor, out of reach.
 [[Continue|n2b/F Rescue Mirror 3]]
 
 &lt;&lt;set if (MP_wantPassword === $n1_magicPhase) {
-    $n1_passwordKnown = true;
+    $n1_passIsKnown = true;
     $n1_magicPhase = MP_contact;
 }
 $n1_mageSight = false;
@@ -29670,7 +29730,7 @@ Which happens about twice a month. Per wand.
     ordinary and unimportant. The real tragedy is
     the pyron node beneath the glass, which is now cracked in two.
 
-    &lt;&lt;if MP_contact === $n1_magicPhaseLost&gt;&gt;
+    &lt;&lt;if MP_contact === $n2_magicPhaseLost&gt;&gt;
         ?P
         The mirror&#39;s reflection was helpful for destroying the ?crystals.
         But the wolf was
