@@ -57,7 +57,7 @@ const jumps = [
       "n1a/F Nero Start",
       "n1a/F Feign Sleep 1",
       "n1cn/F Ivex Intro 2",
-      "n1cn/F First Action (5,3)",
+      { title: "n1cn/F First Action (5,3)", forced: true },
     ],
   },
   {
@@ -749,22 +749,11 @@ const jumps = [
   },
 ];
 
-State.temporary.listJumps = () => {
-  const currentPath = MagesTower.getPath();
+const MT = MagesTower;
+window.MT = MagesTower;
 
-  const comparePaths = (p, q) => {
-    for (let i = 0; i < p.length; i++) {
-      if (i >= q.length) return "extends";
-      if (typeof p[i] === "string") {
-        if (p[i] !== q[i]) return "different";
-      } else {
-        if (p[i].title !== q[i].title) return "different";
-        if (p[i].code !== q[i].code) return "different";
-      }
-    }
-    if (p.length < q.length) return "begins";
-    return "same";
-  };
+State.temporary.listJumps = () => {
+  const currentPath = MT.getFullPath();
 
   let mkp = "<<nobr>>";
   for (const j of jumps) {
@@ -775,7 +764,7 @@ State.temporary.listJumps = () => {
       mkp += "<hr>";
       continue;
     }
-    const cmp = comparePaths(j.path, currentPath);
+    const cmp = MT.comparePaths(j.path, currentPath);
     mkp += `<div class="jump-cmp jump-cmp-${cmp}">`;
     mkp += `<<link "> ${j.title}">>`;
     mkp += `<<run _doJump("${j.title}")>>`;
@@ -787,7 +776,7 @@ State.temporary.listJumps = () => {
 };
 
 State.temporary.doJump = title => {
-  MagesTower.forgetWalkHistory();
+  MT.forgetWalkHistory();
   const jump = jumps.find(j => j.title === title);
   if (jump == null) throw new Error(`Unknown jump: ${title}`);
   Engine.play("Bound");
@@ -796,7 +785,15 @@ State.temporary.doJump = title => {
       State.variables[vn] = jump.vars[vn];
     }
   }
-  MagesTower.seekStart(jump.path);
+  MT.seekStart(jump.path);
+};
+
+State.temporary.jsPath = () => {
+  const full = MT.getFullPath();
+  const compact = MT.compactPath(full);
+  const json = JSON.stringify(compact, null, 2);
+  const js = json.replace(/"\n/g, '",\n');
+  return js;
 };
 
 <</script>>
@@ -808,9 +805,7 @@ Current path:
 <br>
 <textarea id=jump-path rows="20" readonly></textarea>
 <<done>>
-    <<run $("#jump-path").val(
-      JSON.stringify(MagesTower.getPath(), null, 2).replace(/"\n/g, '",\n')
-    )>>
+    <<run $("#jump-path").val(_jsPath())>>
 <</done>>
 
 <</nobr>>

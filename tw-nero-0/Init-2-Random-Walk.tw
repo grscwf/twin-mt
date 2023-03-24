@@ -56,36 +56,6 @@ MT.forgetWalkHistory = () => {
   lastPick = {};
 };
 
-const pathIgnore = [
-  "Bound",
-  "Choose Character",
-];
-
-/**
- * Returns a traversable path from the current play log.
- * Path is an array of next-passage titles or objects.
- * Object is when a passage has multiple links to the next-passage.
- * If a passage only has next-passage, that next-passage can be omitted.
- */
-MT.getPath = () => {
-  const path = [];
-  const log = MagesTower.log;
-  if (log == null || log.length === 0) return [];
-  if (log[0].title !== "Bound") return [];
-
-  for (let i = 0; i < log.length; i++) {
-    if (i > 0 && i < log.length - 1 && log[i - 1].noChoice) continue;
-    const entry = log[i];
-    if (pathIgnore.includes(entry.title)) continue;
-    if (entry.mtaCode != null) {
-      path.push({ code: entry.mtaCode, title: entry.title });
-    } else {
-      path.push(entry.title);
-    }
-  }
-  return path;
-};
-
 /** Random walk */
 function initRandomWalk() {
   if (!setup.tester) return;
@@ -267,9 +237,9 @@ function initRandomWalk() {
         const title = el.getAttribute("data-passage");
         const code = el.getAttribute("data-mta-code");
         if (typeof step === "string") {
-          return title === step;
+          return title === step && code == null;
         } else {
-          return title === step.title && code === step.code;
+          return title === step.title && (code ?? null) === (step.code ?? null);
         }
       };
       for (const link of links) {
