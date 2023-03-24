@@ -1,0 +1,173 @@
+:: Init 2 Paths [inclusion] {"position":"2600,650","size":"100,100"}
+<<script>>
+/*
+ * This module is about traversable paths.
+ *
+ * type Path = Step[];
+ * type Step = {
+ *   title: string; // passage title
+ *   code?: string; // mta/mtl code of the link into this passage
+ *   forced?: boolean; // true if previous passage did not have alternatives
+ *   name?: string; // waypoint name
+ * }
+ *
+ * A full path includes every step.
+ *
+ * A compact path removes any forced step that isn't first or last.
+ *
+ * This depends on MagesTower.log (for mtaCode and noChoice).
+ */
+
+const MT = window.MagesTower || (window.MagesTower = {});
+
+const pathIgnore = [
+  "Bound",
+  "Choose Character",
+];
+
+/**
+ * Returns a full path of the current play log.
+ */
+MT.getFullPath = () => {
+  const path = [];
+  const log = MT.log;
+  if (log == null || log.length === 0) return [];
+  if (log[0].title !== "Bound") return [];
+
+  for (let i = 0; i < log.length; i++) {
+    const entry = log[i];
+    if (pathIgnore.includes(entry.title)) continue;
+
+    const step = { title: entry.title };
+    if (entry.mtaCode != null) step.code = entry.mtaCode;
+    if (i > 0 && log[i - 1].noChoice) step.forced = true;
+
+    path.push(step);
+  }
+  return path;
+};
+
+/**
+ * Reduces path to a compact path.
+ */
+MT.compactPath = path => {
+  const compact = [];
+  for (let i = 0; i < path.length; i++) {
+    const step = path[i];
+    if (!step.forced || i === 0 || i === path.length - 1) {
+      compact.push(step);
+    }
+  }
+  return compact;
+};
+
+/**
+ * Finds the common prefix of P and Q.
+ * Returns [PN, QN], which is the length of the common prefix in P and Q.
+ *
+ * This does not check against the actual storygraph. If P has a forced
+ * step S that isn't in Q, it's assumed that Q can also have S.
+ */
+MT.commonPathLengths = (p, q) => {
+  const prefix = [];
+  let pi = 0, qi = 0;
+  while (pi < p.length && qi < q.length) {
+    const ps = p[pi];
+    const qs = q[qi];
+    if (ps.forced && !qs.forced) {
+      pi++;
+    } else if (!ps.forced && qs.forced) {
+      qi++;
+    } else if (ps.forced && qs.forced) {
+      if (ps.title === qs.title && ps.code === qs.code && ps.name === qs.name) {
+        pi++, qi++;
+        continue;
+      }
+      // last step can be forced, and one path may elide the other forced steps
+      if (pi === p.length - 1 && qi < q.length - 1) {
+        qi++;
+        continue;
+      }
+      if (pi < p.length - 1 && qi === q.length - 1) {
+        pi++;
+        continue;
+      }
+      // disagreement of forced steps
+      break;
+    } else {
+      const pt = ps.title || ps;
+      const qt = qs.title || qs;
+      if (pt !== qt) break;
+      if (ps.code !== qs.code) break;
+      if (ps.name !== qs.name) break;
+      pi++, qi++;
+    }
+  }
+  return [pi, qi];
+};
+
+/**
+ * Returns a path that's the common prefix of P and Q.
+ * See commonPrefixLengths for caveats.
+ * The path returned will be a subsequence of P or Q, whichever is shorter.
+ */
+MT.commonPath = (p, q) => {
+  const [pn, qn] = MT.commonPathLengths(p, q);
+  return pn < qn ? p.slice(0, pn) : q.slice(0, qn);
+};
+
+/**
+ * Returns true if P and Q are the same path.
+ *
+ * This does not check against the actual storygraph. If P has a forced
+ * step S that isn't in Q, it's assumed that Q can also have S.
+ */
+MT.pathsEqual = (p, q) => {
+  const [pn, qn] = MT.commonPathLengths(p, q);
+  return pn === p.length && qn === q.length;
+};
+
+/**
+ * Compares paths P and Q.
+ * Returns "same" if they're the same.
+ * Returns "begins" if P is a prefix of Q.
+ * Returns "extends" if Q is a prefix of P.
+ * Returns "different" if neither is a prefix of the other.
+ */
+MT.comparePaths = (p, q) => {
+  const [pn, qn] = MT.commonPathLengths(p, q);
+  if (pn === p.length) {
+    if (qn === q.length) {
+      return "same";
+    } else {
+      return "begins";
+    }
+  } else {
+    if (qn === q.length) {
+      return "extends";
+    } else {
+      return "different";
+    }
+  }
+};
+
+const json = o => JSON.stringify(o);
+
+/**
+ * Returns a pretty string that's js for path.
+ */
+MT.pathToJs = (path) => {
+  let str = "[\n";
+  for (const step of path) {
+    str += "  {";
+    if (step.name != null) str += ` name: ${json(step.name)},`;
+    str += ` title: ${json(step.title)}`;
+    if (step.code != null) str += `, code: ${json(step.code)},`;
+    if (step.forced) str += `, forced: true`;
+    str += " },\n";
+  }
+  str += "]\n";
+  return str;
+}
+
+<</script>>
