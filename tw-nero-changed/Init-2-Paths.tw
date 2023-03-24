@@ -5,7 +5,7 @@
  *
  * type Path = Step[];
  * type Step = {
- *   title: string; // passage title
+ *   t: string; // passage title
  *   code?: string; // mta/mtl code of the link into this passage
  *   forced?: boolean; // true if previous passage did not have alternatives
  *   name?: string; // waypoint name
@@ -38,7 +38,7 @@ MT.getFullPath = () => {
     const entry = log[i];
     if (pathIgnore.includes(entry.title)) continue;
 
-    const step = { title: entry.title };
+    const step = { t: entry.title };
     if (entry.mtaCode != null) step.code = entry.mtaCode;
     if (i > 0 && log[i - 1].noChoice) step.forced = true;
 
@@ -79,7 +79,7 @@ MT.commonPathLengths = (p, q) => {
     } else if (!ps.forced && qs.forced) {
       qi++;
     } else if (ps.forced && qs.forced) {
-      if (ps.title === qs.title && ps.code === qs.code && ps.name === qs.name) {
+      if ((ps.t || ps.title) === (qs.t || qs.title) && ps.code === qs.code && ps.name === qs.name) {
         pi++, qi++;
         continue;
       }
@@ -95,8 +95,8 @@ MT.commonPathLengths = (p, q) => {
       // disagreement of forced steps
       break;
     } else {
-      const pt = ps.title || ps;
-      const qt = qs.title || qs;
+      const pt = ps.t || ps.title || ps;
+      const qt = qs.t || qs.title || qs;
       if (pt !== qt) break;
       if (ps.code !== qs.code) break;
       if (ps.name !== qs.name) break;
@@ -161,12 +161,12 @@ MT.pathToJs = (path) => {
   for (const step of path) {
     str += "  {";
     if (step.name != null) str += ` name: ${json(step.name)},`;
-    str += ` title: ${json(step.title)}`;
+    str += ` t: ${json(step.t || step.title)}`;
     if (step.code != null) str += `, code: ${json(step.code)},`;
     if (step.forced) str += `, forced: true`;
     str += " },\n";
   }
-  str += "]\n";
+  str += "],\n";
   return str;
 }
 
