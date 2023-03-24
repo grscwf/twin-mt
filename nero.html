@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -7142,12 +7142,8 @@ function initRandomWalk() {
       const links = $(&quot;#story a[data-passage]&quot;);
       const isStep = (el, step) =&gt; {
         const title = el.getAttribute(&quot;data-passage&quot;);
-        const code = el.getAttribute(&quot;data-mta-code&quot;);
-        if (typeof step === &quot;string&quot;) {
-          return title === step &amp;&amp; code == null;
-        } else {
-          return title === (step.t || step.title) &amp;&amp; (code || null) === (step.code || null);
-        }
+        const code = el.getAttribute(&quot;data-mta-code&quot;) || null;
+        return title === step.t &amp;&amp; code === (step.code || null);
       };
       for (const link of links) {
         if (isStep(link, next)) {
@@ -11581,6 +11577,10 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 .walk-sp .walk-choice {
   position: absolute;
   left: 0;
+}
+
+.walk-choice-future, .walk-choice-unreachable {
+  opacity: 0.6;
 }
 
 .jump-path {
@@ -32015,12 +32015,12 @@ MT.commonPathLengths = (p, q) =&gt; {
   while (pi &lt; p.length &amp;&amp; qi &lt; q.length) {
     const ps = p[pi];
     const qs = q[qi];
-    if (ps.forced &amp;&amp; !qs.forced) {
+    if (ps.t == null || (ps.forced &amp;&amp; !qs.forced)) {
       pi++;
-    } else if (!ps.forced &amp;&amp; qs.forced) {
+    } else if (qs.t == null || (!ps.forced &amp;&amp; qs.forced)) {
       qi++;
     } else if (ps.forced &amp;&amp; qs.forced) {
-      if ((ps.t || ps.title) === (qs.t || qs.title) &amp;&amp; ps.code === qs.code &amp;&amp; ps.name === qs.name) {
+      if (ps.t === qs.t &amp;&amp; ps.code === qs.code &amp;&amp; ps.name === qs.name) {
         pi++, qi++;
         continue;
       }
@@ -32036,9 +32036,7 @@ MT.commonPathLengths = (p, q) =&gt; {
       // disagreement of forced steps
       break;
     } else {
-      const pt = ps.t || ps.title || ps;
-      const qt = qs.t || qs.title || qs;
-      if (pt !== qt) break;
+      if (ps.t !== qs.t) break;
       if (ps.code !== qs.code) break;
       if (ps.name !== qs.name) break;
       pi++, qi++;
