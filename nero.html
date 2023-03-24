@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -6411,6 +6411,7 @@ Macro.add(&quot;fade-in&quot;, {
       const nopulse = section.args[1] === &quot;nopulse&quot;;
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
+      if (MagesTower.seeking) delay = 0;
       const span = $(&quot;&lt;span&gt;&quot;)
       	.addClass(&quot;fade-in fade-in-hidden&quot;)
         .toggleClass(&quot;fade-in-nopulse&quot;, nopulse)
@@ -6958,6 +6959,8 @@ const MT = window.MagesTower || (window.MagesTower = {});
 const visited = new Set();
 let lastPick = {};
 
+MT.seeking = false;
+
 MT.forgetWalkHistory = () =&gt; {
   visited.clear();
   lastPick = {};
@@ -7053,7 +7056,6 @@ function initRandomWalk() {
     }
   };
 
-  let seeking = false;
   let seekForce = false;
   let seekLoop = 0;
   let seekMoved = false;
@@ -7063,7 +7065,7 @@ function initRandomWalk() {
   const maxLoop = 5;
 
   const seekToggle = () =&gt; {
-    if (seeking) {
+    if (MT.seeking) {
       seekStop();
     } else {
       seekStart();
@@ -7072,14 +7074,14 @@ function initRandomWalk() {
 
   const seekStart = MagesTower.seekStart = path =&gt; {
     $(&quot;#rw-seek&quot;).addClass(&quot;rw-seeking&quot;);
-    seeking = true;
+    MT.seeking = true;
     seekMoved = false;
     seekPath = path;
     setTimeout(seekNext, seekDelay);
   };
 
   const seekStop = () =&gt; {
-    seeking = false;
+    MT.seeking = false;
     seekPath = null;
     $(&quot;#rw-seek&quot;).removeClass(&quot;rw-seeking&quot;);
   };
@@ -7087,7 +7089,7 @@ function initRandomWalk() {
   const seekNext = () =&gt; {
     const here = State.passage;
 
-    if (!seeking) return seekStop();
+    if (!MT.seeking) return seekStop();
     if (seekMoved &amp;&amp; here === Config.passages.start) return seekStop();
 
     let hasProblem = false;
@@ -7153,11 +7155,6 @@ function initRandomWalk() {
           return;
         }
       }
-      if (links.length === 1) {
-        links.addClass(&quot;random-walk-chosen&quot;);
-        setTimeout(seekNext, seekDelay);
-        return;
-      }
 
       ErrorMessage.warn(`Broken path: ${JSON.stringify(next)}`);
       return seekStop();
@@ -7184,7 +7181,7 @@ function initRandomWalk() {
     if (setup.debug) {
       $(&quot;&lt;a id=rw-seek&gt;&quot;)
         .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; seek&quot;)
-        .toggleClass(&quot;rw-seeking&quot;, seeking)
+        .toggleClass(&quot;rw-seeking&quot;, MT.seeking)
         .text(&quot;seek&quot;)
         .click(seekToggle)
         .appendTo(outer);
@@ -7214,7 +7211,7 @@ function initRandomWalk() {
   });
 
   $(document).on(&quot;click&quot;, ev =&gt; {
-    if (!seeking &amp;&amp; ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
+    if (!MT.seeking &amp;&amp; ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
       const chosen = $(&quot;#passages .random-walk-chosen&quot;);
       chosen.removeClass(&quot;random-walk-chosen&quot;);
     }
@@ -11749,15 +11746,15 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 }
 
 .walk-choice-past {
-  font-style: italic;
 }
 .walk-choice-future {
+  opacity: 0.6;
 }
 .walk-choice-disjoint {
   opacity: 0.6;
 }
 
-.jump-path {
+#walk-current-path {
   border: 1px solid #666;
   border-radius: 4px;
   color: #999;
@@ -11767,15 +11764,6 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
   word-break: break-all;
   white-space: pre-wrap;
   width: calc(100% - 2em);
-}
-
-.jump-cmp::after {
-  color: #ccc;
-  margin-left: .5em;
-}
-
-.jump-cmp-same::after {
-  content: &quot; \2190  you are here&quot;;
 }
 
 &lt;/style&gt;
@@ -11793,66 +11781,99 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 &lt;&lt;script&gt;&gt;
 
 const walks = [
-  &quot;fast path to free, late mirror&quot;,
+  &quot;fast path to free, mirror viewed late&quot;,
   {
     vars: {
       n0_barbsSlowViewed: false,
     },
     path: [
       { choice: &quot;Nero&quot; },
+      { t: &quot;Choose Character&quot;},
       { t: &quot;n1a/F Nero Start&quot; },
 
       { choice: &quot;abused&quot; },
       { t: &quot;n1a/F Feign Sleep 1&quot; },
+      { t: &quot;n1a/F Feign Sleep 2&quot; },
+      { t: &quot;n1a/F Feign Sleep 3&quot; },
+      { t: &quot;n1a/F Feign Sleep 4&quot; },
+      { t: &quot;n1cn/F Ivex Intro 1&quot; },
       { t: &quot;n1cn/F Ivex Intro 2&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1cn/F Ivex Intro 3&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;itch&quot; },
       { t: &quot;n1s/F Cast Itch 1&quot; },
       { t: &quot;n1s/F Cast Itch 2&quot; },
-      { t: &quot;n1p/F Barbs Slow 5&quot;, forced: true },
+      { t: &quot;n1s/F Cast Itch 3&quot; },
+      { t: &quot;n1p/F Barbs Slow 1&quot; },
+      { t: &quot;n1p/F Barbs Slow 4&quot; },
+      { t: &quot;n1p/F Barbs Slow 5&quot; },
 
       { choice: &quot;smooth&quot; },
       { t: &quot;n1p/F Barbs Slow 6n1&quot; },
+      { t: &quot;n1p/F Barbs Slow 6n2&quot; },
+      { t: &quot;n1p/F Barbs Slow End&quot; },
       { t: &quot;n1s/F Cast Itch 4&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1s/F Cast Itch 5&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;sight&quot; },
       { t: &quot;n1s/F Cast Sight 1&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1s/F Cast Sight 2&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;tough&quot;, width: &quot;rebuff&quot; },
       { t: &quot;n1cn/F Rebuff&quot; },
-      { t: &quot;n1d/F Comfort Check (2,2)&quot;, forced: true },
+      { t: &quot;n1cx/F Start Candle 1&quot; },
+      { t: &quot;n1d/F Start Candle 2&quot; },
+      { t: &quot;n1d/F Comfort Check (2,2)&quot; },
 
       { choice: &quot;alone&quot; },
       { t: &quot;n1d/F Naked Resist&quot; },
+      { t: &quot;n1d/F Cock Rise 1&quot; },
+      { t: &quot;n1d/F Cock Rise 2&quot; },
+      { t: &quot;n1d/F Candle Horny&quot; },
+      { t: &quot;n1e/F Light Squeeze (1,1)&quot; },
       { t: &quot;n1e/F Snap Jaws&quot; },
+      { t: &quot;n1e/F Pull&quot; },
+      { t: &quot;n1e/F Punch&quot; },
+      { t: &quot;n1e/F Heavy Squeeze (1,1)&quot; },
       { t: &quot;n1e/F Crop 1&quot;, code: &quot;//2&quot;, },
-      { t: &quot;n2b/F Alone (5,3)&quot;, forced: true },
+      { t: &quot;n1e/F Crop 2&quot; },
+      { t: &quot;n1e/F Crop 3&quot; },
+      { t: &quot;n1e/F Crop 4&quot; },
+      { t: &quot;n2a/F Restart Ivex Gone&quot; },
+      { t: &quot;n2b/F Relight Candle&quot; },
+      { t: &quot;n2b/F Lust Bar Intro&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;mirror&quot; },
       { t: &quot;n2b/F Struggle Normal 1&quot; },
+      { t: &quot;n2b/F Struggle Normal 2&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
       { t: &quot;n1y/F Horny Candle&quot; },
       { t: &quot;n1y/F Horny Mirror&quot; },
       { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;desperate&quot; },
       { t: &quot;n2b/F Struggle Horny 2&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
       { t: &quot;n2b/F Struggle Horny 3&quot; },
-      { t: &quot;n2b/F Alone (5,3)&quot;, forced: true },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;struggle&quot; },
       { t: &quot;n2b/F Struggle Succeed&quot; },
-      { t: &quot;n2b/F Urgent Choice&quot;, forced: true },
+      { t: &quot;n2b/F Grav Disrupted&quot; },
+      { t: &quot;n2b/F Urgent Choice&quot; },
 
       { choice: &quot;knife&quot; },
       { t: &quot;n2b/F Grab Knife&quot; },
       { t: &quot;n2b/F Use Knife 1&quot; },
+      { t: &quot;n2b/F Use Knife 2&quot; },
 
       { choice: &quot;free&quot; },
       { t: &quot;n2b/F Ignore Mirror&quot; },
-      { t: &quot;n2f/F Free Action&quot;, forced: true },
+      { t: &quot;n2f/F Free Action&quot; },
     ],
   },
   {
@@ -11861,59 +11882,93 @@ const walks = [
     },
     path: [
       { choice: &quot;Nero&quot; },
+      { t: &quot;Choose Character&quot;},
       { t: &quot;n1a/F Nero Start&quot; },
 
       { choice: &quot;chatty&quot;, width: &quot;abused&quot; },
       { t: &quot;n1a/F Hello 1&quot; },
+      { t: &quot;n1a/F Hello 2&quot; },
+      { t: &quot;n1a/F Hello 3&quot; },
+      { t: &quot;n1a/F Hello 4&quot; },
+      { t: &quot;n1cn/F Ivex Intro 1&quot; },
       { t: &quot;n1cn/F Ivex Intro 2&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1cn/F Ivex Intro 3&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;itch&quot; },
       { t: &quot;n1s/F Cast Itch 1&quot; },
       { t: &quot;n1s/F Cast Itch 2&quot; },
-      { t: &quot;n1p/F Barbs Slow 5&quot;, forced: true },
+      { t: &quot;n1s/F Cast Itch 3&quot; },
+      { t: &quot;n1p/F Barbs Slow 1&quot; },
+      { t: &quot;n1p/F Barbs Slow 2n2&quot; },
+      { t: &quot;n1p/F Barbs Slow 4&quot; },
+      { t: &quot;n1p/F Barbs Slow 5&quot; },
 
       { choice: &quot;smooth&quot; },
       { t: &quot;n1p/F Barbs Slow 6n1&quot; },
+      { t: &quot;n1p/F Barbs Slow 6n2&quot; },
+      { t: &quot;n1p/F Barbs Slow End&quot; },
       { t: &quot;n1s/F Cast Itch 4&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1s/F Cast Itch 5&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;sight&quot; },
       { t: &quot;n1s/F Cast Sight 1&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1s/F Cast Sight 2&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
-      { choice: &quot;rebuff&quot;, class: &quot;walk-w-rebuff&quot; },
+      { choice: &quot;rebuff&quot; },
       { t: &quot;n1cn/F Rebuff&quot; },
-      { t: &quot;n1d/F Comfort Check (2,2)&quot;, forced: true },
+      { t: &quot;n1cx/F Start Candle 1&quot; },
+      { t: &quot;n1d/F Start Candle 2&quot; },
+      { t: &quot;n1d/F Comfort Check (2,2)&quot; },
 
       { choice: &quot;alone&quot; },
       { t: &quot;n1d/F Naked Resist&quot; },
+      { t: &quot;n1d/F Cock Rise 1&quot; },
+      { t: &quot;n1d/F Cock Rise 2&quot; },
+      { t: &quot;n1d/F Candle Horny&quot; },
+      { t: &quot;n1e/F Light Squeeze (1,1)&quot; },
       { t: &quot;n1e/F Snap Jaws&quot; },
+      { t: &quot;n1e/F Pull&quot; },
+      { t: &quot;n1e/F Punch&quot; },
+      { t: &quot;n1e/F Heavy Squeeze (1,1)&quot; },
       { t: &quot;n1e/F Crop 1&quot;, code: &quot;//2&quot;, },
-      { t: &quot;n2b/F Alone (5,3)&quot;, forced: true },
+      { t: &quot;n1e/F Crop 2&quot; },
+      { t: &quot;n1e/F Crop 3&quot; },
+      { t: &quot;n1e/F Crop 4&quot; },
+      { t: &quot;n2a/F Restart Ivex Gone&quot; },
+      { t: &quot;n2b/F Relight Candle&quot; },
+      { t: &quot;n2b/F Lust Bar Intro&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;mirror&quot; },
       { t: &quot;n2b/F Struggle Normal 1&quot; },
+      { t: &quot;n2b/F Struggle Normal 2&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
       { t: &quot;n1y/F Horny Candle&quot; },
       { t: &quot;n1y/F Horny Mirror&quot; },
       { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;desperate&quot; },
       { t: &quot;n2b/F Struggle Horny 2&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
       { t: &quot;n2b/F Struggle Horny 3&quot; },
-      { t: &quot;n2b/F Alone (5,3)&quot;, forced: true },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;struggle&quot; },
       { t: &quot;n2b/F Struggle Succeed&quot; },
-      { t: &quot;n2b/F Urgent Choice&quot;, forced: true },
+      { t: &quot;n2b/F Grav Disrupted&quot; },
+      { t: &quot;n2b/F Urgent Choice&quot; },
 
       { choice: &quot;knife&quot; },
       { t: &quot;n2b/F Grab Knife&quot; },
       { t: &quot;n2b/F Use Knife 1&quot; },
+      { t: &quot;n2b/F Use Knife 2&quot; },
 
       { choice: &quot;free&quot; },
       { t: &quot;n2b/F Ignore Mirror&quot; },
-      { t: &quot;n2f/F Free Action&quot;, forced: true },
+      { t: &quot;n2f/F Free Action&quot; },
     ],
   },
   {
@@ -11922,55 +11977,85 @@ const walks = [
     },
     path: [
       { choice: &quot;Nero&quot; },
+      { t: &quot;Choose Character&quot;},
       { t: &quot;n1a/F Nero Start&quot; },
 
       { choice: &quot;endgame&quot;, width: &quot;abused &gt; itch&quot; },
       { t: &quot;n1a/F Endgame 1&quot; },
       { t: &quot;n1a/F Endgame 2&quot; },
-      { t: &quot;n1p/F Barbs Slow 5&quot;, forced: true },
+      { t: &quot;n1a/F Endgame 3&quot; },
+      { t: &quot;n1p/F Barbs Slow 1&quot; },
+      { t: &quot;n1p/F Barbs Slow 2n2&quot; },
+      { t: &quot;n1p/F Barbs Slow 4&quot; },
+      { t: &quot;n1p/F Barbs Slow 5&quot; },
 
       { choice: &quot;smooth&quot; },
       { t: &quot;n1p/F Barbs Slow 6n1&quot; },
+      { t: &quot;n1p/F Barbs Slow 6n2&quot; },
+      { t: &quot;n1p/F Barbs Slow End&quot; },
       { t: &quot;n1a/F Endgame 4&quot; },
+      { t: &quot;n1cn/F Ivex Intro 1&quot; },
       { t: &quot;n1cn/F Ivex Intro 2&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1cn/F Ivex Intro 3&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;sight&quot; },
       { t: &quot;n1s/F Cast Sight 1&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1s/F Cast Sight 2&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;rebuff&quot; },
       { t: &quot;n1cn/F Rebuff&quot; },
-      { t: &quot;n1d/F Comfort Check (2,2)&quot;, forced: true },
+      { t: &quot;n1cx/F Start Candle 1&quot; },
+      { t: &quot;n1d/F Start Candle 2&quot; },
+      { t: &quot;n1d/F Comfort Check (2,2)&quot; },
 
       { choice: &quot;alone&quot; },
       { t: &quot;n1d/F Naked Resist&quot; },
+      { t: &quot;n1d/F Cock Rise 1&quot; },
+      { t: &quot;n1d/F Cock Rise 2&quot; },
+      { t: &quot;n1d/F Candle Horny&quot; },
+      { t: &quot;n1e/F Light Squeeze (1,1)&quot; },
       { t: &quot;n1e/F Snap Jaws&quot; },
+      { t: &quot;n1e/F Pull&quot; },
+      { t: &quot;n1e/F Punch&quot; },
+      { t: &quot;n1e/F Heavy Squeeze (1,1)&quot; },
       { t: &quot;n1e/F Crop 1&quot;, code: &quot;//2&quot;, },
-      { t: &quot;n2b/F Alone (5,3)&quot;, forced: true },
+      { t: &quot;n1e/F Crop 2&quot; },
+      { t: &quot;n1e/F Crop 3&quot; },
+      { t: &quot;n1e/F Crop 4&quot; },
+      { t: &quot;n2a/F Restart Ivex Gone&quot; },
+      { t: &quot;n2b/F Relight Candle&quot; },
+      { t: &quot;n2b/F Lust Bar Intro&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;mirror&quot; },
       { t: &quot;n2b/F Struggle Normal 1&quot; },
+      { t: &quot;n2b/F Struggle Normal 2&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
       { t: &quot;n1y/F Horny Candle&quot; },
       { t: &quot;n1y/F Horny Mirror&quot; },
       { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;desperate&quot; },
       { t: &quot;n2b/F Struggle Horny 2&quot; },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
       { t: &quot;n2b/F Struggle Horny 3&quot; },
-      { t: &quot;n2b/F Alone (5,3)&quot;, forced: true },
+      { t: &quot;n2b/F Alone (5,3)&quot; },
 
       { choice: &quot;struggle&quot; },
       { t: &quot;n2b/F Struggle Succeed&quot; },
-      { t: &quot;n2b/F Urgent Choice&quot;, forced: true },
+      { t: &quot;n2b/F Grav Disrupted&quot; },
+      { t: &quot;n2b/F Urgent Choice&quot; },
 
       { choice: &quot;knife&quot; },
       { t: &quot;n2b/F Grab Knife&quot; },
       { t: &quot;n2b/F Use Knife 1&quot; },
+      { t: &quot;n2b/F Use Knife 2&quot; },
 
       { choice: &quot;free&quot; },
       { t: &quot;n2b/F Ignore Mirror&quot; },
-      { t: &quot;n2f/F Free Action&quot;, forced: true },
+      { t: &quot;n2f/F Free Action&quot; },
     ],
   },
 
@@ -11981,35 +12066,48 @@ const walks = [
     },
     path: [
       { choice: &quot;Nero&quot; },
+      { t: &quot;Choose Character&quot;},
       { t: &quot;n1a/F Nero Start&quot; },
 
       { choice: &quot;abused&quot; },
       { t: &quot;n1a/F Feign Sleep 1&quot; },
+      { t: &quot;n1a/F Feign Sleep 2&quot; },
+      { t: &quot;n1a/F Feign Sleep 3&quot; },
+      { t: &quot;n1a/F Feign Sleep 4&quot; },
+      { t: &quot;n1cn/F Ivex Intro 1&quot; },
       { t: &quot;n1cn/F Ivex Intro 2&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1cn/F Ivex Intro 3&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;recruit&quot; },
       { t: &quot;n1cn/F Charm&quot; },
       { t: &quot;n1cn/F Recruit 1&quot; },
-      { t: &quot;n1cn/F Ivex Offended (1,1)&quot;, forced: true },
+      { t: &quot;n1cn/F Recruit 2&quot; },
+      { t: &quot;n1cn/F Ivex Offended (1,1)&quot; },
 
       { choice: &quot;receptive&quot; },
       { t: &quot;n1cn/F Secret Guild&quot; },
-      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;younger&quot; },
       { t: &quot;n1s/F Cast Younger 1&quot; },
       { t: &quot;n1s/F Cast Younger 2&quot; },
-      { t: &quot;n1p/F Barbs Slow 5&quot;, forced: true },
+      { t: &quot;n1p/F Barbs Slow 1&quot; },
+      { t: &quot;n1p/F Barbs Slow 4&quot; },
+      { t: &quot;n1p/F Barbs Slow 5&quot; },
 
       { choice: &quot;smooth&quot; },
       { t: &quot;n1p/F Barbs Slow 6n1&quot; },
+      { t: &quot;n1p/F Barbs Slow 6n2&quot; },
+      { t: &quot;n1p/F Barbs Slow End&quot; },
       { t: &quot;n1s/F Cast Younger 3&quot; },
+      { t: &quot;n1s/F Cast Younger 4&quot; },
       { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;sight&quot; },
       { t: &quot;n1s/F Cast Sight 1&quot; },
-      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot;, forced: true },
+      { t: &quot;n1s/F Cast Sight 2&quot; },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;tap&quot; },
       { t: &quot;n1x/F Study&quot; },
@@ -12017,8 +12115,9 @@ const walks = [
       { t: &quot;n1x/F Mirror&quot; },
       { t: &quot;n1s/F Tap 1&quot; },
       { t: &quot;n1s/F Tap 2&quot; },
+      { t: &quot;n1s/F Tap 3&quot; },
       { t: &quot;n1s/F Tap 4&quot; },
-      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;bottle&quot; },
       { t: &quot;n1x/F Cabinets&quot; },
@@ -12028,17 +12127,23 @@ const walks = [
 
       { choice: &quot;ask&quot; },
       { t: &quot;n1x/F Bottle Ask Name&quot; },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
+      { t: &quot;n1cr/F Guild Name 1&quot; },
+      { t: &quot;n1cr/F Guild Name 2&quot; },
+      { t: &quot;n1cr/F Guild Name 3&quot; },
+      { t: &quot;n1cr/F Guild Name 4&quot; },
       { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
 
       { choice: &quot;contact&quot; },
       { t: &quot;n1s/F Say Device&quot; },
+      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
       { t: &quot;n1s/F Say Lance&quot; },
-      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
 
       { choice: &quot;penguin&quot; },
       { t: &quot;n1x/F Penguin&quot; },
       { t: &quot;n1x/F Penguin Ask&quot; },
-      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
     ]
   },
     {
@@ -12047,35 +12152,49 @@ const walks = [
     },
     path: [
       { choice: &quot;Nero&quot; },
+      { t: &quot;Choose Character&quot;},
       { t: &quot;n1a/F Nero Start&quot; },
 
       { choice: &quot;chatty&quot;, width: &quot;abused&quot; },
       { t: &quot;n1a/F Hello 1&quot; },
+      { t: &quot;n1a/F Hello 2&quot; },
+      { t: &quot;n1a/F Hello 3&quot; },
+      { t: &quot;n1a/F Hello 4&quot; },
+      { t: &quot;n1cn/F Ivex Intro 1&quot; },
       { t: &quot;n1cn/F Ivex Intro 2&quot; },
-      { t: &quot;n1cn/F First Action (5,3)&quot;, forced: true },
+      { t: &quot;n1cn/F Ivex Intro 3&quot; },
+      { t: &quot;n1cn/F First Action (5,3)&quot; },
 
       { choice: &quot;recruit&quot; },
       { t: &quot;n1cn/F Charm&quot; },
       { t: &quot;n1cn/F Recruit 1&quot; },
-      { t: &quot;n1cn/F Ivex Offended (1,1)&quot;, forced: true },
+      { t: &quot;n1cn/F Recruit 2&quot; },
+      { t: &quot;n1cn/F Ivex Offended (1,1)&quot; },
 
       { choice: &quot;receptive&quot; },
       { t: &quot;n1cn/F Secret Guild&quot; },
-      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;younger&quot; },
       { t: &quot;n1s/F Cast Younger 1&quot; },
       { t: &quot;n1s/F Cast Younger 2&quot; },
-      { t: &quot;n1p/F Barbs Slow 5&quot;, forced: true },
+      { t: &quot;n1p/F Barbs Slow 1&quot; },
+      { t: &quot;n1p/F Barbs Slow 2n2&quot; },
+      { t: &quot;n1p/F Barbs Slow 4&quot; },
+      { t: &quot;n1p/F Barbs Slow 5&quot; },
 
       { choice: &quot;smooth&quot; },
       { t: &quot;n1p/F Barbs Slow 6n1&quot; },
+      { t: &quot;n1p/F Barbs Slow 6n2&quot; },
+      { t: &quot;n1p/F Barbs Slow End&quot; },
       { t: &quot;n1s/F Cast Younger 3&quot; },
+      { t: &quot;n1s/F Cast Younger 4&quot; },
       { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;sight&quot; },
       { t: &quot;n1s/F Cast Sight 1&quot; },
-      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot;, forced: true },
+      { t: &quot;n1s/F Cast Sight 2&quot; },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;tap&quot; },
       { t: &quot;n1x/F Study&quot; },
@@ -12083,8 +12202,9 @@ const walks = [
       { t: &quot;n1x/F Mirror&quot; },
       { t: &quot;n1s/F Tap 1&quot; },
       { t: &quot;n1s/F Tap 2&quot; },
+      { t: &quot;n1s/F Tap 3&quot; },
       { t: &quot;n1s/F Tap 4&quot; },
-      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
 
       { choice: &quot;bottle&quot; },
       { t: &quot;n1x/F Cabinets&quot; },
@@ -12094,17 +12214,23 @@ const walks = [
 
       { choice: &quot;ask&quot; },
       { t: &quot;n1x/F Bottle Ask Name&quot; },
+      { t: &quot;n1cr/F Ivex Skeptical (2,4)&quot; },
+      { t: &quot;n1cr/F Guild Name 1&quot; },
+      { t: &quot;n1cr/F Guild Name 2&quot; },
+      { t: &quot;n1cr/F Guild Name 3&quot; },
+      { t: &quot;n1cr/F Guild Name 4&quot; },
       { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
 
       { choice: &quot;contact&quot; },
       { t: &quot;n1s/F Say Device&quot; },
+      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
       { t: &quot;n1s/F Say Lance&quot; },
-      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
 
       { choice: &quot;penguin&quot; },
       { t: &quot;n1x/F Penguin&quot; },
       { t: &quot;n1x/F Penguin Ask&quot; },
-      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot;, forced: true },
+      { t: &quot;n1cr/F Ivex Fascinated (2,4)&quot; },
     ]
   },
 ];
@@ -12113,7 +12239,7 @@ const MT = MagesTower;
 window.MT = MagesTower;
 
 State.temporary.listWalks = () =&gt; {
-  const current = MT.getFullPath();
+  const current = MT.getPath();
   let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
   for (let i = 0; i &lt; walks.length; i++) {
     if (typeof walks[i] === &quot;string&quot;) {
@@ -12188,12 +12314,9 @@ State.temporary.doWalk = (i, ch) =&gt; {
 };
 
 State.temporary.showCurrentPath = () =&gt; {
-  const full = MT.getFullPath();
-  const fjs = MT.pathToJs(full);
-  const compact = MT.compactPath(full);
-  const cjs = MT.pathToJs(compact);
-  $(&quot;#jump-path-compact&quot;).val(`// current path, compact\n${cjs}`);
-  $(&quot;#jump-path-full&quot;).val(`// current path, full\n${fjs}`);
+  const path = MT.getPath();
+  const js = MT.pathToJs(path);
+  $(&quot;#walk-current-path&quot;).val(`// current path [${path.length}]\n${js}`);
 };
 
 &lt;&lt;/script&gt;&gt;
@@ -12201,8 +12324,7 @@ State.temporary.showCurrentPath = () =&gt; {
 &lt;&lt;= _listWalks()&gt;&gt;
 
 &lt;hr&gt;
-&lt;textarea id=jump-path-compact class=jump-path rows=&quot;15&quot; readonly&gt;&lt;/textarea&gt;
-&lt;textarea id=jump-path-full class=jump-path rows=&quot;15&quot; readonly&gt;&lt;/textarea&gt;
+&lt;textarea id=walk-current-path rows=&quot;15&quot; readonly&gt;&lt;/textarea&gt;
 &lt;&lt;done&gt;&gt;
     &lt;&lt;run _showCurrentPath()&gt;&gt;
 &lt;&lt;/done&gt;&gt;
@@ -31969,30 +32091,24 @@ But there&#39;s no decision to be made. After being exposed to that candle for s
  *
  * type Path = Step[];
  * type Step = {
- *   t: string; // passage title
+ *   t?: string; // passage title
  *   code?: string; // mta/mtl code of the link into this passage
- *   forced?: boolean; // true if previous passage did not have alternatives
- *   name?: string; // waypoint name
+ *   choice?: string; // choice point name
  * }
  *
- * A full path includes every step.
- *
- * A compact path removes any forced step that isn&#39;t first or last.
- *
- * This depends on MagesTower.log (for mtaCode and noChoice).
+ * This depends on MagesTower.log (for mtaCode).
  */
 
 const MT = window.MagesTower || (window.MagesTower = {});
 
 const pathIgnore = [
   &quot;Bound&quot;,
-  &quot;Choose Character&quot;,
 ];
 
 /**
  * Returns a full path of the current play log.
  */
-MT.getFullPath = () =&gt; {
+MT.getPath = () =&gt; {
   const path = [];
   const log = MT.log;
   if (log == null || log.length === 0) return [];
@@ -32004,25 +32120,10 @@ MT.getFullPath = () =&gt; {
 
     const step = { t: entry.title };
     if (entry.mtaCode != null) step.code = entry.mtaCode;
-    if (i &gt; 0 &amp;&amp; log[i - 1].noChoice) step.forced = true;
 
     path.push(step);
   }
   return path;
-};
-
-/**
- * Reduces path to a compact path.
- */
-MT.compactPath = path =&gt; {
-  const compact = [];
-  for (let i = 0; i &lt; path.length; i++) {
-    const step = path[i];
-    if (!step.forced || i === 0 || i === path.length - 1) {
-      compact.push(step);
-    }
-  }
-  return compact;
 };
 
 /**
@@ -32038,26 +32139,10 @@ MT.commonPathLengths = (p, q) =&gt; {
   while (pi &lt; p.length &amp;&amp; qi &lt; q.length) {
     const ps = p[pi];
     const qs = q[qi];
-    if (ps.t == null || (ps.forced &amp;&amp; !qs.forced)) {
+    if (ps.t == null) {
       pi++;
-    } else if (qs.t == null || (!ps.forced &amp;&amp; qs.forced)) {
+    } else if (qs.t == null) {
       qi++;
-    } else if (ps.forced &amp;&amp; qs.forced) {
-      if (ps.t === qs.t &amp;&amp; ps.code === qs.code &amp;&amp; ps.name === qs.name) {
-        pi++, qi++;
-        continue;
-      }
-      // last step can be forced, and one path may elide the other forced steps
-      if (pi === p.length - 1 &amp;&amp; qi &lt; q.length - 1) {
-        qi++;
-        continue;
-      }
-      if (pi &lt; p.length - 1 &amp;&amp; qi === q.length - 1) {
-        pi++;
-        continue;
-      }
-      // disagreement of forced steps
-      break;
     } else {
       if (ps.t !== qs.t) break;
       if (ps.code !== qs.code) break;
@@ -32080,7 +32165,6 @@ MT.pathToJs = (path) =&gt; {
     if (step.name != null) str += ` name: ${json(step.name)},`;
     str += ` t: ${json(step.t || step.title)}`;
     if (step.code != null) str += `, code: ${json(step.code)},`;
-    if (step.forced) str += `, forced: true`;
     str += &quot; },\n&quot;;
   }
   str += &quot;],\n&quot;;

@@ -5,30 +5,24 @@
  *
  * type Path = Step[];
  * type Step = {
- *   t: string; // passage title
+ *   t?: string; // passage title
  *   code?: string; // mta/mtl code of the link into this passage
- *   forced?: boolean; // true if previous passage did not have alternatives
- *   name?: string; // waypoint name
+ *   choice?: string; // choice point name
  * }
  *
- * A full path includes every step.
- *
- * A compact path removes any forced step that isn't first or last.
- *
- * This depends on MagesTower.log (for mtaCode and noChoice).
+ * This depends on MagesTower.log (for mtaCode).
  */
 
 const MT = window.MagesTower || (window.MagesTower = {});
 
 const pathIgnore = [
   "Bound",
-  "Choose Character",
 ];
 
 /**
  * Returns a full path of the current play log.
  */
-MT.getFullPath = () => {
+MT.getPath = () => {
   const path = [];
   const log = MT.log;
   if (log == null || log.length === 0) return [];
@@ -40,25 +34,10 @@ MT.getFullPath = () => {
 
     const step = { t: entry.title };
     if (entry.mtaCode != null) step.code = entry.mtaCode;
-    if (i > 0 && log[i - 1].noChoice) step.forced = true;
 
     path.push(step);
   }
   return path;
-};
-
-/**
- * Reduces path to a compact path.
- */
-MT.compactPath = path => {
-  const compact = [];
-  for (let i = 0; i < path.length; i++) {
-    const step = path[i];
-    if (!step.forced || i === 0 || i === path.length - 1) {
-      compact.push(step);
-    }
-  }
-  return compact;
 };
 
 /**
@@ -74,26 +53,10 @@ MT.commonPathLengths = (p, q) => {
   while (pi < p.length && qi < q.length) {
     const ps = p[pi];
     const qs = q[qi];
-    if (ps.t == null || (ps.forced && !qs.forced)) {
+    if (ps.t == null) {
       pi++;
-    } else if (qs.t == null || (!ps.forced && qs.forced)) {
+    } else if (qs.t == null) {
       qi++;
-    } else if (ps.forced && qs.forced) {
-      if (ps.t === qs.t && ps.code === qs.code && ps.name === qs.name) {
-        pi++, qi++;
-        continue;
-      }
-      // last step can be forced, and one path may elide the other forced steps
-      if (pi === p.length - 1 && qi < q.length - 1) {
-        qi++;
-        continue;
-      }
-      if (pi < p.length - 1 && qi === q.length - 1) {
-        pi++;
-        continue;
-      }
-      // disagreement of forced steps
-      break;
     } else {
       if (ps.t !== qs.t) break;
       if (ps.code !== qs.code) break;
@@ -116,7 +79,6 @@ MT.pathToJs = (path) => {
     if (step.name != null) str += ` name: ${json(step.name)},`;
     str += ` t: ${json(step.t || step.title)}`;
     if (step.code != null) str += `, code: ${json(step.code)},`;
-    if (step.forced) str += `, forced: true`;
     str += " },\n";
   }
   str += "],\n";

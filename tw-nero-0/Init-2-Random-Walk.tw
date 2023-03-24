@@ -51,6 +51,8 @@ const MT = window.MagesTower || (window.MagesTower = {});
 const visited = new Set();
 let lastPick = {};
 
+MT.seeking = false;
+
 MT.forgetWalkHistory = () => {
   visited.clear();
   lastPick = {};
@@ -146,7 +148,6 @@ function initRandomWalk() {
     }
   };
 
-  let seeking = false;
   let seekForce = false;
   let seekLoop = 0;
   let seekMoved = false;
@@ -156,7 +157,7 @@ function initRandomWalk() {
   const maxLoop = 5;
 
   const seekToggle = () => {
-    if (seeking) {
+    if (MT.seeking) {
       seekStop();
     } else {
       seekStart();
@@ -165,14 +166,14 @@ function initRandomWalk() {
 
   const seekStart = MagesTower.seekStart = path => {
     $("#rw-seek").addClass("rw-seeking");
-    seeking = true;
+    MT.seeking = true;
     seekMoved = false;
     seekPath = path;
     setTimeout(seekNext, seekDelay);
   };
 
   const seekStop = () => {
-    seeking = false;
+    MT.seeking = false;
     seekPath = null;
     $("#rw-seek").removeClass("rw-seeking");
   };
@@ -180,7 +181,7 @@ function initRandomWalk() {
   const seekNext = () => {
     const here = State.passage;
 
-    if (!seeking) return seekStop();
+    if (!MT.seeking) return seekStop();
     if (seekMoved && here === Config.passages.start) return seekStop();
 
     let hasProblem = false;
@@ -246,11 +247,6 @@ function initRandomWalk() {
           return;
         }
       }
-      if (links.length === 1) {
-        links.addClass("random-walk-chosen");
-        setTimeout(seekNext, seekDelay);
-        return;
-      }
 
       ErrorMessage.warn(`Broken path: ${JSON.stringify(next)}`);
       return seekStop();
@@ -277,7 +273,7 @@ function initRandomWalk() {
     if (setup.debug) {
       $("<a id=rw-seek>")
         .attr("title", "<ctrl-backslash> seek")
-        .toggleClass("rw-seeking", seeking)
+        .toggleClass("rw-seeking", MT.seeking)
         .text("seek")
         .click(seekToggle)
         .appendTo(outer);
@@ -307,7 +303,7 @@ function initRandomWalk() {
   });
 
   $(document).on("click", ev => {
-    if (!seeking && ev.target && ev.target.tagName !== "A") {
+    if (!MT.seeking && ev.target && ev.target.tagName !== "A") {
       const chosen = $("#passages .random-walk-chosen");
       chosen.removeClass("random-walk-chosen");
     }

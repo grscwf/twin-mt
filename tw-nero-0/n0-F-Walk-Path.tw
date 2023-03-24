@@ -1,0 +1,618 @@
+:: n0/F Walk Path [noreturn] {"position":"3100,1475","size":"100,100"}
+<<nobr>>
+<<auto-stow>>
+
+<<return-head>>
+
+<style>
+
+.walk-path {
+  margin-left: 2em;
+  text-indent: -2em;
+}
+.walk-choice {
+  display: inline-block;
+  margin: 0;
+  text-indent: 0;
+  white-space: nowrap;
+}
+.walk-header {
+  margin-top: 1em;
+}
+
+.walk-sp {
+  position: relative;
+}
+.walk-sp-w {
+  opacity: 0;
+}
+.walk-sp .walk-choice {
+  position: absolute;
+  left: 0;
+}
+
+.walk-choice-past {
+}
+.walk-choice-future {
+  opacity: 0.6;
+}
+.walk-choice-disjoint {
+  opacity: 0.6;
+}
+
+#walk-current-path {
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #999;
+  font: 12px monospace;
+  margin-top: 4px;
+  padding: 8px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  width: calc(100% - 2em);
+}
+
+</style>
+
+[[> test page|testing]]
+<br>
+<<link [[> Title|Title Screen]]>>
+    <<run MagesTower.forgetWalkHistory()>>
+<</link>>
+<br>
+<<link [[> Bound|Bound]]>>
+    <<run MagesTower.forgetWalkHistory()>>
+<</link>>
+
+<<script>>
+
+const walks = [
+  "fast path to free, mirror viewed late",
+  {
+    vars: {
+      n0_barbsSlowViewed: false,
+    },
+    path: [
+      { choice: "Nero" },
+      { t: "Choose Character"},
+      { t: "n1a/F Nero Start" },
+
+      { choice: "abused" },
+      { t: "n1a/F Feign Sleep 1" },
+      { t: "n1a/F Feign Sleep 2" },
+      { t: "n1a/F Feign Sleep 3" },
+      { t: "n1a/F Feign Sleep 4" },
+      { t: "n1cn/F Ivex Intro 1" },
+      { t: "n1cn/F Ivex Intro 2" },
+      { t: "n1cn/F Ivex Intro 3" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "itch" },
+      { t: "n1s/F Cast Itch 1" },
+      { t: "n1s/F Cast Itch 2" },
+      { t: "n1s/F Cast Itch 3" },
+      { t: "n1p/F Barbs Slow 1" },
+      { t: "n1p/F Barbs Slow 4" },
+      { t: "n1p/F Barbs Slow 5" },
+
+      { choice: "smooth" },
+      { t: "n1p/F Barbs Slow 6n1" },
+      { t: "n1p/F Barbs Slow 6n2" },
+      { t: "n1p/F Barbs Slow End" },
+      { t: "n1s/F Cast Itch 4" },
+      { t: "n1s/F Cast Itch 5" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "sight" },
+      { t: "n1s/F Cast Sight 1" },
+      { t: "n1s/F Cast Sight 2" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "tough", width: "rebuff" },
+      { t: "n1cn/F Rebuff" },
+      { t: "n1cx/F Start Candle 1" },
+      { t: "n1d/F Start Candle 2" },
+      { t: "n1d/F Comfort Check (2,2)" },
+
+      { choice: "alone" },
+      { t: "n1d/F Naked Resist" },
+      { t: "n1d/F Cock Rise 1" },
+      { t: "n1d/F Cock Rise 2" },
+      { t: "n1d/F Candle Horny" },
+      { t: "n1e/F Light Squeeze (1,1)" },
+      { t: "n1e/F Snap Jaws" },
+      { t: "n1e/F Pull" },
+      { t: "n1e/F Punch" },
+      { t: "n1e/F Heavy Squeeze (1,1)" },
+      { t: "n1e/F Crop 1", code: "//2", },
+      { t: "n1e/F Crop 2" },
+      { t: "n1e/F Crop 3" },
+      { t: "n1e/F Crop 4" },
+      { t: "n2a/F Restart Ivex Gone" },
+      { t: "n2b/F Relight Candle" },
+      { t: "n2b/F Lust Bar Intro" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "mirror" },
+      { t: "n2b/F Struggle Normal 1" },
+      { t: "n2b/F Struggle Normal 2" },
+      { t: "n2b/F Alone (5,3)" },
+      { t: "n1y/F Horny Candle" },
+      { t: "n1y/F Horny Mirror" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "desperate" },
+      { t: "n2b/F Struggle Horny 2" },
+      { t: "n2b/F Alone (5,3)" },
+      { t: "n2b/F Struggle Horny 3" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "struggle" },
+      { t: "n2b/F Struggle Succeed" },
+      { t: "n2b/F Grav Disrupted" },
+      { t: "n2b/F Urgent Choice" },
+
+      { choice: "knife" },
+      { t: "n2b/F Grab Knife" },
+      { t: "n2b/F Use Knife 1" },
+      { t: "n2b/F Use Knife 2" },
+
+      { choice: "free" },
+      { t: "n2b/F Ignore Mirror" },
+      { t: "n2f/F Free Action" },
+    ],
+  },
+  {
+    vars: {
+      n0_barbsSlowViewed: false,
+    },
+    path: [
+      { choice: "Nero" },
+      { t: "Choose Character"},
+      { t: "n1a/F Nero Start" },
+
+      { choice: "chatty", width: "abused" },
+      { t: "n1a/F Hello 1" },
+      { t: "n1a/F Hello 2" },
+      { t: "n1a/F Hello 3" },
+      { t: "n1a/F Hello 4" },
+      { t: "n1cn/F Ivex Intro 1" },
+      { t: "n1cn/F Ivex Intro 2" },
+      { t: "n1cn/F Ivex Intro 3" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "itch" },
+      { t: "n1s/F Cast Itch 1" },
+      { t: "n1s/F Cast Itch 2" },
+      { t: "n1s/F Cast Itch 3" },
+      { t: "n1p/F Barbs Slow 1" },
+      { t: "n1p/F Barbs Slow 2n2" },
+      { t: "n1p/F Barbs Slow 4" },
+      { t: "n1p/F Barbs Slow 5" },
+
+      { choice: "smooth" },
+      { t: "n1p/F Barbs Slow 6n1" },
+      { t: "n1p/F Barbs Slow 6n2" },
+      { t: "n1p/F Barbs Slow End" },
+      { t: "n1s/F Cast Itch 4" },
+      { t: "n1s/F Cast Itch 5" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "sight" },
+      { t: "n1s/F Cast Sight 1" },
+      { t: "n1s/F Cast Sight 2" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "rebuff" },
+      { t: "n1cn/F Rebuff" },
+      { t: "n1cx/F Start Candle 1" },
+      { t: "n1d/F Start Candle 2" },
+      { t: "n1d/F Comfort Check (2,2)" },
+
+      { choice: "alone" },
+      { t: "n1d/F Naked Resist" },
+      { t: "n1d/F Cock Rise 1" },
+      { t: "n1d/F Cock Rise 2" },
+      { t: "n1d/F Candle Horny" },
+      { t: "n1e/F Light Squeeze (1,1)" },
+      { t: "n1e/F Snap Jaws" },
+      { t: "n1e/F Pull" },
+      { t: "n1e/F Punch" },
+      { t: "n1e/F Heavy Squeeze (1,1)" },
+      { t: "n1e/F Crop 1", code: "//2", },
+      { t: "n1e/F Crop 2" },
+      { t: "n1e/F Crop 3" },
+      { t: "n1e/F Crop 4" },
+      { t: "n2a/F Restart Ivex Gone" },
+      { t: "n2b/F Relight Candle" },
+      { t: "n2b/F Lust Bar Intro" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "mirror" },
+      { t: "n2b/F Struggle Normal 1" },
+      { t: "n2b/F Struggle Normal 2" },
+      { t: "n2b/F Alone (5,3)" },
+      { t: "n1y/F Horny Candle" },
+      { t: "n1y/F Horny Mirror" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "desperate" },
+      { t: "n2b/F Struggle Horny 2" },
+      { t: "n2b/F Alone (5,3)" },
+      { t: "n2b/F Struggle Horny 3" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "struggle" },
+      { t: "n2b/F Struggle Succeed" },
+      { t: "n2b/F Grav Disrupted" },
+      { t: "n2b/F Urgent Choice" },
+
+      { choice: "knife" },
+      { t: "n2b/F Grab Knife" },
+      { t: "n2b/F Use Knife 1" },
+      { t: "n2b/F Use Knife 2" },
+
+      { choice: "free" },
+      { t: "n2b/F Ignore Mirror" },
+      { t: "n2f/F Free Action" },
+    ],
+  },
+  {
+    vars: {
+      n0_barbsSlowViewed: false,
+    },
+    path: [
+      { choice: "Nero" },
+      { t: "Choose Character"},
+      { t: "n1a/F Nero Start" },
+
+      { choice: "endgame", width: "abused > itch" },
+      { t: "n1a/F Endgame 1" },
+      { t: "n1a/F Endgame 2" },
+      { t: "n1a/F Endgame 3" },
+      { t: "n1p/F Barbs Slow 1" },
+      { t: "n1p/F Barbs Slow 2n2" },
+      { t: "n1p/F Barbs Slow 4" },
+      { t: "n1p/F Barbs Slow 5" },
+
+      { choice: "smooth" },
+      { t: "n1p/F Barbs Slow 6n1" },
+      { t: "n1p/F Barbs Slow 6n2" },
+      { t: "n1p/F Barbs Slow End" },
+      { t: "n1a/F Endgame 4" },
+      { t: "n1cn/F Ivex Intro 1" },
+      { t: "n1cn/F Ivex Intro 2" },
+      { t: "n1cn/F Ivex Intro 3" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "sight" },
+      { t: "n1s/F Cast Sight 1" },
+      { t: "n1s/F Cast Sight 2" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "rebuff" },
+      { t: "n1cn/F Rebuff" },
+      { t: "n1cx/F Start Candle 1" },
+      { t: "n1d/F Start Candle 2" },
+      { t: "n1d/F Comfort Check (2,2)" },
+
+      { choice: "alone" },
+      { t: "n1d/F Naked Resist" },
+      { t: "n1d/F Cock Rise 1" },
+      { t: "n1d/F Cock Rise 2" },
+      { t: "n1d/F Candle Horny" },
+      { t: "n1e/F Light Squeeze (1,1)" },
+      { t: "n1e/F Snap Jaws" },
+      { t: "n1e/F Pull" },
+      { t: "n1e/F Punch" },
+      { t: "n1e/F Heavy Squeeze (1,1)" },
+      { t: "n1e/F Crop 1", code: "//2", },
+      { t: "n1e/F Crop 2" },
+      { t: "n1e/F Crop 3" },
+      { t: "n1e/F Crop 4" },
+      { t: "n2a/F Restart Ivex Gone" },
+      { t: "n2b/F Relight Candle" },
+      { t: "n2b/F Lust Bar Intro" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "mirror" },
+      { t: "n2b/F Struggle Normal 1" },
+      { t: "n2b/F Struggle Normal 2" },
+      { t: "n2b/F Alone (5,3)" },
+      { t: "n1y/F Horny Candle" },
+      { t: "n1y/F Horny Mirror" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "desperate" },
+      { t: "n2b/F Struggle Horny 2" },
+      { t: "n2b/F Alone (5,3)" },
+      { t: "n2b/F Struggle Horny 3" },
+      { t: "n2b/F Alone (5,3)" },
+
+      { choice: "struggle" },
+      { t: "n2b/F Struggle Succeed" },
+      { t: "n2b/F Grav Disrupted" },
+      { t: "n2b/F Urgent Choice" },
+
+      { choice: "knife" },
+      { t: "n2b/F Grab Knife" },
+      { t: "n2b/F Use Knife 1" },
+      { t: "n2b/F Use Knife 2" },
+
+      { choice: "free" },
+      { t: "n2b/F Ignore Mirror" },
+      { t: "n2f/F Free Action" },
+    ],
+  },
+
+  "fast path to password",
+  {
+    vars: {
+      n0_barbsSlowViewed: false,
+    },
+    path: [
+      { choice: "Nero" },
+      { t: "Choose Character"},
+      { t: "n1a/F Nero Start" },
+
+      { choice: "abused" },
+      { t: "n1a/F Feign Sleep 1" },
+      { t: "n1a/F Feign Sleep 2" },
+      { t: "n1a/F Feign Sleep 3" },
+      { t: "n1a/F Feign Sleep 4" },
+      { t: "n1cn/F Ivex Intro 1" },
+      { t: "n1cn/F Ivex Intro 2" },
+      { t: "n1cn/F Ivex Intro 3" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "recruit" },
+      { t: "n1cn/F Charm" },
+      { t: "n1cn/F Recruit 1" },
+      { t: "n1cn/F Recruit 2" },
+      { t: "n1cn/F Ivex Offended (1,1)" },
+
+      { choice: "receptive" },
+      { t: "n1cn/F Secret Guild" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "younger" },
+      { t: "n1s/F Cast Younger 1" },
+      { t: "n1s/F Cast Younger 2" },
+      { t: "n1p/F Barbs Slow 1" },
+      { t: "n1p/F Barbs Slow 4" },
+      { t: "n1p/F Barbs Slow 5" },
+
+      { choice: "smooth" },
+      { t: "n1p/F Barbs Slow 6n1" },
+      { t: "n1p/F Barbs Slow 6n2" },
+      { t: "n1p/F Barbs Slow End" },
+      { t: "n1s/F Cast Younger 3" },
+      { t: "n1s/F Cast Younger 4" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "sight" },
+      { t: "n1s/F Cast Sight 1" },
+      { t: "n1s/F Cast Sight 2" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "tap" },
+      { t: "n1x/F Study" },
+      { t: "n1x/F Desk" },
+      { t: "n1x/F Mirror" },
+      { t: "n1s/F Tap 1" },
+      { t: "n1s/F Tap 2" },
+      { t: "n1s/F Tap 3" },
+      { t: "n1s/F Tap 4" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "bottle" },
+      { t: "n1x/F Cabinets" },
+      { t: "n1x/F Bottle" },
+      { t: "n1x/F Nackle Brief" },
+      { t: "n1x/F Bottle" },
+
+      { choice: "ask" },
+      { t: "n1x/F Bottle Ask Name" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+      { t: "n1cr/F Guild Name 1" },
+      { t: "n1cr/F Guild Name 2" },
+      { t: "n1cr/F Guild Name 3" },
+      { t: "n1cr/F Guild Name 4" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+
+      { choice: "contact" },
+      { t: "n1s/F Say Device" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+      { t: "n1s/F Say Lance" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+
+      { choice: "penguin" },
+      { t: "n1x/F Penguin" },
+      { t: "n1x/F Penguin Ask" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+    ]
+  },
+    {
+    vars: {
+      n0_barbsSlowViewed: false,
+    },
+    path: [
+      { choice: "Nero" },
+      { t: "Choose Character"},
+      { t: "n1a/F Nero Start" },
+
+      { choice: "chatty", width: "abused" },
+      { t: "n1a/F Hello 1" },
+      { t: "n1a/F Hello 2" },
+      { t: "n1a/F Hello 3" },
+      { t: "n1a/F Hello 4" },
+      { t: "n1cn/F Ivex Intro 1" },
+      { t: "n1cn/F Ivex Intro 2" },
+      { t: "n1cn/F Ivex Intro 3" },
+      { t: "n1cn/F First Action (5,3)" },
+
+      { choice: "recruit" },
+      { t: "n1cn/F Charm" },
+      { t: "n1cn/F Recruit 1" },
+      { t: "n1cn/F Recruit 2" },
+      { t: "n1cn/F Ivex Offended (1,1)" },
+
+      { choice: "receptive" },
+      { t: "n1cn/F Secret Guild" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "younger" },
+      { t: "n1s/F Cast Younger 1" },
+      { t: "n1s/F Cast Younger 2" },
+      { t: "n1p/F Barbs Slow 1" },
+      { t: "n1p/F Barbs Slow 2n2" },
+      { t: "n1p/F Barbs Slow 4" },
+      { t: "n1p/F Barbs Slow 5" },
+
+      { choice: "smooth" },
+      { t: "n1p/F Barbs Slow 6n1" },
+      { t: "n1p/F Barbs Slow 6n2" },
+      { t: "n1p/F Barbs Slow End" },
+      { t: "n1s/F Cast Younger 3" },
+      { t: "n1s/F Cast Younger 4" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "sight" },
+      { t: "n1s/F Cast Sight 1" },
+      { t: "n1s/F Cast Sight 2" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "tap" },
+      { t: "n1x/F Study" },
+      { t: "n1x/F Desk" },
+      { t: "n1x/F Mirror" },
+      { t: "n1s/F Tap 1" },
+      { t: "n1s/F Tap 2" },
+      { t: "n1s/F Tap 3" },
+      { t: "n1s/F Tap 4" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+
+      { choice: "bottle" },
+      { t: "n1x/F Cabinets" },
+      { t: "n1x/F Bottle" },
+      { t: "n1x/F Nackle Brief" },
+      { t: "n1x/F Bottle" },
+
+      { choice: "ask" },
+      { t: "n1x/F Bottle Ask Name" },
+      { t: "n1cr/F Ivex Skeptical (2,4)" },
+      { t: "n1cr/F Guild Name 1" },
+      { t: "n1cr/F Guild Name 2" },
+      { t: "n1cr/F Guild Name 3" },
+      { t: "n1cr/F Guild Name 4" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+
+      { choice: "contact" },
+      { t: "n1s/F Say Device" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+      { t: "n1s/F Say Lance" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+
+      { choice: "penguin" },
+      { t: "n1x/F Penguin" },
+      { t: "n1x/F Penguin Ask" },
+      { t: "n1cr/F Ivex Fascinated (2,4)" },
+    ]
+  },
+];
+
+const MT = MagesTower;
+window.MT = MagesTower;
+
+State.temporary.listWalks = () => {
+  const current = MT.getPath();
+  let mkp = "<<nobr>>";
+  for (let i = 0; i < walks.length; i++) {
+    if (typeof walks[i] === "string") {
+      mkp += `<div class="walk-header">${walks[i]}</div>`;
+      continue;
+    }
+
+    const addSeg = (ch, type, width) => {
+      if (width != null) mkp += `<span class="walk-sp">`;
+      if (width != null) mkp += `<span class="walk-sp-w">> ${width}</span>`;
+      mkp += `<span class="walk-choice walk-choice-${type}">`;
+      mkp += `<<link "> ${ch}">>`;
+      mkp += `<<run _doWalk(${i}, "${ch}")>>`;
+      mkp += `<</link>>`;
+      if (width != null) mkp += `</span>`;
+      mkp += `</span> `;
+    };
+
+    const path = walks[i].path;
+    const [pn, cn] = MT.commonPathLengths(path, current);
+
+    mkp += `<div class="walk-path">`;
+    if (pn === path.length) {
+      /* all of path is in the past of current */
+      for (const st of path) {
+        if (st.choice != null) addSeg(st.choice, "past", st.width);
+      }
+    } else if (cn === current.length) {
+      /* all of current is on path */
+      /* find finished choice in path */
+      let ppn = pn;
+      while (ppn > 1 && path[ppn].choice == null) ppn--;
+      for (const st of path.slice(0, ppn)) {
+        if (st.choice != null) addSeg(st.choice, "past", st.width);
+      }
+      for (const st of path.slice(ppn)) {
+        if (st.choice != null) addSeg(st.choice, "future", st.width);
+      }
+    } else {
+      /* path and current are disjoint */
+      for (const st of path) {
+        if (st.choice != null) addSeg(st.choice, "disjoint", st.width);
+      }
+    }
+    mkp += `</div>`;
+  }
+  mkp += "<</nobr>>";
+  return mkp;
+};
+
+function getPathChoice(path, ch) {
+  const result = [];
+  let seen = false;
+  for (const step of path) {
+    if (step.choice != null && seen) break;
+    if (step.t != null) result.push(step);
+    if (step.choice != null) seen = step.choice === ch;
+  }
+  return result;
+}
+
+State.temporary.doWalk = (i, ch) => {
+  const walk = walks[i];
+  const path = getPathChoice(walk.path, ch);
+  Engine.play("Bound");
+  if (walk.vars != null) {
+    for (const vn of Object.keys(walk.vars)) {
+      State.variables[vn] = walk.vars[vn];
+    }
+  }
+  MT.seekStart(path);
+};
+
+State.temporary.showCurrentPath = () => {
+  const path = MT.getPath();
+  const js = MT.pathToJs(path);
+  $("#walk-current-path").val(`// current path [${path.length}]\n${js}`);
+};
+
+<</script>>
+
+<<= _listWalks()>>
+
+<hr>
+<textarea id=walk-current-path rows="15" readonly></textarea>
+<<done>>
+    <<run _showCurrentPath()>>
+<</done>>
+
+<</nobr>>
