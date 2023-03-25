@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -7060,6 +7060,7 @@ function initRandomWalk() {
   let seekLoop = 0;
   let seekMoved = false;
   let seekPath = null;
+  let seekDoneFn = null;
 
   const seekDelay = 50;
   const maxLoop = 5;
@@ -7072,17 +7073,19 @@ function initRandomWalk() {
     }
   };
 
-  const seekStart = MagesTower.seekStart = path =&gt; {
+  const seekStart = MagesTower.seekStart = (path, doneFn) =&gt; {
     $(&quot;#rw-seek&quot;).addClass(&quot;rw-seeking&quot;);
     MT.seeking = true;
     seekMoved = false;
     seekPath = path;
+    seekDoneFn = doneFn;
     setTimeout(seekNext, seekDelay);
   };
 
   const seekStop = () =&gt; {
     MT.seeking = false;
     seekPath = null;
+    seekDoneFn = null;
     $(&quot;#rw-seek&quot;).removeClass(&quot;rw-seeking&quot;);
   };
 
@@ -7139,7 +7142,14 @@ function initRandomWalk() {
     }
 
     if (seekPath != null) {
-      if (seekPath.length === 0) return seekStop();
+      while (seekPath.length &amp;&amp; seekPath[0].t == null) {
+        seekPath.shift();
+      }
+      if (seekPath.length === 0) {
+        if (seekDoneFn != null) setTimeout(seekDoneFn);
+        seekStop();
+        return;
+      }
       const next = seekPath[0];
       const links = $(&quot;#story a[data-passage]&quot;);
       const isStep = (el, step) =&gt; {
@@ -7156,7 +7166,8 @@ function initRandomWalk() {
         }
       }
 
-      ErrorMessage.warn(`Broken path: ${JSON.stringify(next)}`);
+      let msg = `Broken path: ${JSON.stringify(next)}`;
+      ErrorMessage.warn(msg);
       return seekStop();
     }
 
@@ -11781,6 +11792,10 @@ Congratulations! You&#39;ve reached an &quot;Under Construction&quot; point in N
 &lt;&lt;link [[&gt; Bound|Bound]]&gt;&gt;
     &lt;&lt;run MagesTower.forgetWalkHistory()&gt;&gt;
 &lt;&lt;/link&gt;&gt;
+?P
+&lt;&lt;link &quot;walk all paths&quot;&gt;&gt;
+    &lt;&lt;run _walkAll()&gt;&gt;
+&lt;&lt;/link&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
 const walks = [
@@ -12883,10 +12898,18 @@ function getPathChoice(path, ch) {
   let seen = false;
   for (const step of path) {
     if (step.choice != null &amp;&amp; seen) break;
-    if (step.t != null) result.push(step);
+    result.push(step);
     if (step.choice != null) seen = step.choice === ch;
   }
   return result;
+}
+
+function setVars(vars) {
+  if (vars != null) {
+    for (const vn of Object.keys(vars)) {
+      State.variables[vn] = vars[vn];
+    }
+  }
 }
 
 State.temporary.doWalk = (i, ch) =&gt; {
@@ -12894,11 +12917,7 @@ State.temporary.doWalk = (i, ch) =&gt; {
   const walk = walks[i];
   const path = getPathChoice(walk.path, ch);
   Engine.play(&quot;Bound&quot;);
-  if (walk.vars != null) {
-    for (const vn of Object.keys(walk.vars)) {
-      State.variables[vn] = walk.vars[vn];
-    }
-  }
+  setVars(walk.vars);
   MT.seekStart(path);
 };
 
@@ -12914,6 +12933,23 @@ State.temporary.showCurrentPath = () =&gt; {
   const js = MT.pathToJs(path);
   $(&quot;#walk-current-path&quot;).val(`// current path [${path.length}]\n${js}`);
 };
+
+State.temporary.walkAll = () =&gt; {
+  let i = 0;
+  const next = () =&gt; {
+    while (i &lt; walks.length &amp;&amp; walks[i].path == null) i++;
+    if (i &gt;= walks.length) {
+      console.log(&quot;done walkAll&quot;);
+      return;
+    }
+    const walk = walks[i++];
+    console.log(`Starting ${MT.pathName(walk.path)}`);
+    Engine.play(&quot;Bound&quot;);
+    setVars(walk.vars);
+    MT.seekStart(walk.path, next);
+  };
+  next();
+}
 
 &lt;&lt;/script&gt;&gt;
 
@@ -32774,6 +32810,15 @@ MT.pathToJs = (path) =&gt; {
   }
   str += &quot;],\n&quot;;
   return str;
+}
+
+MT.pathName = (path) =&gt; {
+  const choices = path.filter(st =&gt; st.choice != null).map(st =&gt; st.choice);
+  if (choices.length) {
+    return choices.join(&quot;&gt; &quot;);
+  }
+  const titles = path.filter(st =&gt; st.t != null).map(st =&gt; st.t);
+  return &quot;&gt; &quot; + titles.join(&quot; &gt; &quot;);
 }
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="643" name="Interrogation Archive Display" tags="inclusion" position="1775,2250" size="100,100">&lt;&lt;nobr&gt;&gt;

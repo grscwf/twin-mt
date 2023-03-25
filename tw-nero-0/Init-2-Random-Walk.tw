@@ -152,6 +152,7 @@ function initRandomWalk() {
   let seekLoop = 0;
   let seekMoved = false;
   let seekPath = null;
+  let seekDoneFn = null;
 
   const seekDelay = 50;
   const maxLoop = 5;
@@ -164,17 +165,19 @@ function initRandomWalk() {
     }
   };
 
-  const seekStart = MagesTower.seekStart = path => {
+  const seekStart = MagesTower.seekStart = (path, doneFn) => {
     $("#rw-seek").addClass("rw-seeking");
     MT.seeking = true;
     seekMoved = false;
     seekPath = path;
+    seekDoneFn = doneFn;
     setTimeout(seekNext, seekDelay);
   };
 
   const seekStop = () => {
     MT.seeking = false;
     seekPath = null;
+    seekDoneFn = null;
     $("#rw-seek").removeClass("rw-seeking");
   };
 
@@ -231,7 +234,14 @@ function initRandomWalk() {
     }
 
     if (seekPath != null) {
-      if (seekPath.length === 0) return seekStop();
+      while (seekPath.length && seekPath[0].t == null) {
+        seekPath.shift();
+      }
+      if (seekPath.length === 0) {
+        if (seekDoneFn != null) setTimeout(seekDoneFn);
+        seekStop();
+        return;
+      }
       const next = seekPath[0];
       const links = $("#story a[data-passage]");
       const isStep = (el, step) => {
@@ -248,7 +258,8 @@ function initRandomWalk() {
         }
       }
 
-      ErrorMessage.warn(`Broken path: ${JSON.stringify(next)}`);
+      let msg = `Broken path: ${JSON.stringify(next)}`;
+      ErrorMessage.warn(msg);
       return seekStop();
     }
 

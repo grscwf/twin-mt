@@ -67,6 +67,10 @@
 <<link [[> Bound|Bound]]>>
     <<run MagesTower.forgetWalkHistory()>>
 <</link>>
+?P
+<<link "walk all paths">>
+    <<run _walkAll()>>
+<</link>>
 
 <<script>>
 const walks = [
@@ -1169,10 +1173,18 @@ function getPathChoice(path, ch) {
   let seen = false;
   for (const step of path) {
     if (step.choice != null && seen) break;
-    if (step.t != null) result.push(step);
+    result.push(step);
     if (step.choice != null) seen = step.choice === ch;
   }
   return result;
+}
+
+function setVars(vars) {
+  if (vars != null) {
+    for (const vn of Object.keys(vars)) {
+      State.variables[vn] = vars[vn];
+    }
+  }
 }
 
 State.temporary.doWalk = (i, ch) => {
@@ -1180,11 +1192,7 @@ State.temporary.doWalk = (i, ch) => {
   const walk = walks[i];
   const path = getPathChoice(walk.path, ch);
   Engine.play("Bound");
-  if (walk.vars != null) {
-    for (const vn of Object.keys(walk.vars)) {
-      State.variables[vn] = walk.vars[vn];
-    }
-  }
+  setVars(walk.vars);
   MT.seekStart(path);
 };
 
@@ -1200,6 +1208,23 @@ State.temporary.showCurrentPath = () => {
   const js = MT.pathToJs(path);
   $("#walk-current-path").val(`// current path [${path.length}]\n${js}`);
 };
+
+State.temporary.walkAll = () => {
+  let i = 0;
+  const next = () => {
+    while (i < walks.length && walks[i].path == null) i++;
+    if (i >= walks.length) {
+      console.log("done walkAll");
+      return;
+    }
+    const walk = walks[i++];
+    console.log(`Starting ${MT.pathName(walk.path)}`);
+    Engine.play("Bound");
+    setVars(walk.vars);
+    MT.seekStart(walk.path, next);
+  };
+  next();
+}
 
 <</script>>
 
