@@ -1,6 +1,7 @@
 :: mt Passage Notes Popup [inclusion] {"position":"2025,1100","size":"100,100"}
 <<nobr>>
 <<script>>
+  const EM = window.ErrorMessage;
   const PN = window.PassageNotes;
   const T = State.temporary;
   const V = State.variables;
@@ -14,6 +15,7 @@
     $("#NP-input").on("input", onInput);
     restoreSession();
     appendSelected();
+    appendMessages();
     uiUpdate();
   });
 
@@ -21,9 +23,10 @@
     $("#NP-input").focus();
   });
 
-  function appendSelected() {
-    if (PN.selectedText == null || PN.selectedText === "") return;
-    const q = PN.selectedText.replace(/^/gm, "-> ") + "\n";
+  function appendQuoted(text) {
+    text = text.trim();
+    if (text === "") return;
+    const q = text.replace(/^/gm, "-> ") + "\n";
     let val = T.editVal.trim();
     if (val !== "" && val.slice(-1) !== "\n") {
       val += "\n";
@@ -31,6 +34,16 @@
     val += q;
     $("#NP-input").val(val);
     saveValue(val);
+  }
+
+  function appendSelected() {
+    if (PN.selectedText == null || PN.selectedText === "") return;
+    appendQuoted(PM.selectedText);
+  }
+  function appendMessages() {
+    if (EM.messages != null && EM.messages.length) {
+      appendQuoted(EM.messages.join("\n"));
+    }
   }
 
   function restoreSession() {
@@ -85,7 +98,7 @@
   }
   #NP-input {
     min-width: 10em;
-    width: 95%;
+    width: calc(100% - 1em);
   }
   .NP-conflict-hidden {
     display: none;

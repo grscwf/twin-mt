@@ -82,6 +82,7 @@ EM.runsWithoutFail = (fn) => {
 /** Add str as a new error-message note. */
 EM.note = (str, header) => {
   if (EM.noMessage) return;
+  EM.messages.push(header == null ? str : `${header}: ${str}`);
   const note = $(`
     <div class=EM-note>
       <a class="EM-close EM-button">[close]</a>
@@ -114,10 +115,12 @@ EM.message = (type, str, context) => {
     debugger;
     EM.debugStop = false;
   }
+  EM.messages.push(`${type}: ${str}`)
   const fails = $(`<div class=EM-${type}>`).text(str)
     .appendTo(getFails());
   const trace = backtrace(context);
   if (trace != null && trace !== "") {
+    EM.messages.push(trace);
     $("<div class=EM-trace>").text(trace)
       .appendTo(fails);
   }
