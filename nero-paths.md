@@ -293,7 +293,7 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
     - To keep the dead-end short, Nero loses the ring entirely if he's holding
       it, not wearing it, when hunted into another room.
     - TODO: This still might be too frustrating? Add generous hints on this
-      failure path, or maybe simplfiy the puzzle by removing the door delay
+      failure path, or maybe simplify the puzzle by removing the door delay
       entirely.
 - This is the complete list of steps needed to escape:
   - (1) Read journal, to find out about the gem in blob.
