@@ -77,8 +77,8 @@ A player will probably find this on their 1st or 2nd playthrough.
 
 <details>
 
-- At the Ivex-gone restart point, Nero is bound to the cross, Ivex is gone, the
-  candle is lit.
+- At the Ivex-gone restart point, Nero is bound to the cross, Ivex is gone,
+  the candle is lit.
 - 4 looks or 2 actions will take the candle to near-max.
   At near-max, the next look or action will take candle to max,
   which forces the final choice.
@@ -86,22 +86,21 @@ A player will probably find this on their 1st or 2nd playthrough.
   hints for the next attempt at 1st Floor Hard.
 - These actions can be done earlier, or can be done here:
   - (1-A) Try casting any spell.
-  - In any order:
-    - (2-A) Cast mage-sight.
-    - (3-L) Look at the mirror to see the grav crystals.
-  - (4-L) Look at the grav crystals with mage-sight.
-  - Optional: Ask Ivex about the grav crystals before he leaves, for a hint.
-- (5-A) When the candle is at max, and Nero has seen the grav crystals with
-  mage-sight, Struggle will disrupt the grav crystals.
+  - (2-A) Cast mage-sight.
+  - (3-L) See the energy web of the crystals with mage-sight.
+    If candleHorny, looking at the mirror is enough.
+- (4-A) When the candle is at max, and Nero has seen the crystals'
+  energy web with mage-sight, struggling will disrupt the grav crystals.
   - Anything other than struggling will fail.
   - This is basically be a 50/50 choice if the player misses the hints.
   - On failure, Nero is overwhelmed by lust, and Ivex returns.
     - Bad Ending: Tamed Mild - cooperate
     - Bad Ending: Tamed Harsh - resist
-- After disrupting the grav crystals, there's a choice between getting the knife
-  first or snuffing the candle first. Unlike Drekkar's story, both options
-  succeed. There's no trap here.
-- Easy solution will break the mirror, making it unavailable on the 2nd Floor,
+- After disrupting the grav crystals, there's a choice between
+  getting the knife first or snuffing the candle first.
+  Unlike Drekkar's story, both options succeed. There's no trap here.
+- Easy solution will break the mirror if it's tapped,
+  making it unavailable on the 2nd Floor,
   and making the 2nd Floor Easy solution unavailable.
 - There are additional Bad Endings here:
   - Bad Ending: Caged Mild - paw off before leaving.
@@ -125,53 +124,54 @@ the 4th or 5th playthrough.
 
 <details>
 
-- (1-L) Look at the bottle, discover it's a poltergeist device.
-  - This should be easy. There are a lot of distractions, but there's plenty
-    of time to stumble onto it.
-  - If the player doesn't find it on 1st playthrough, they might fail the easy
-    escape. 2nd playthrough should pass the easy escape, which gives a lot more
-    time to look around and find the poltergeist device.
-- These steps can be done before (1):
-  - (2-A) Try casting any non-attack spell
-    (attack closes off conversation paths, which means there isn't enough
-    time to do everything else).
-  - (3-A) Cast mage-sight.
-  - (4-A) Tap the mirror to get the Sprite.
+- (1-A) Try casting any non-attack spell
+  (attack closes some conversation paths, which means there isn't enough
+  time to do everything else).
+- (2-A) Cast mage-sight.
+- (3-A) Tap the mirror to get the Sprite.
+  - This is the first step that isn't obvious, but it's unlikely to be missed.
 - Player will probably be here on 1st - 2rd playthrough.
-- (5-A) Ask the Sprite to contact the poltergeist device.
+- (4-L) Look at the bottle, examine the glyphs.
+  - This can be done earlier.
+- (5-A) Ask the Sprite to contact the bottle.
 - Sprite now asks for device name.
-- (6-A) Ask Ivex about the poltergeist device to get the name.
-  - This can be done earlier, anytime after (1).
-  - It's possible for this to need another playthrough, if Ivex has left.
-    But if the player is here on the 2rd playthrough, they've probably looked
+- (6-A) Ask Ivex about the bottle to get the name.
+  - This can be done at the same time as (4-L), saving a look.
+  - If Ivex has left, this will need another playthrough.
+    But if the player is here on the 2nd playthrough, they've probably looked
     at the bottle early enough to have time to ask Ivex. So this probably
     doesn't need another playthrough.
-- (7-A) Ask the Sprite to contact the named device.
+- (7-A) Ask the Sprite to contact the bottle again.
 - Sprite now asks Nero to touch its hole.
 - (8-A) Ask Ivex about the penguin, when he's receptive.
   - This is a little tricky. There are several red herrings. It's possible
     that Ivex will leave before the player finds this.
   - If Ivex leaves, the Easy escape gives the player plenty of time to find
     hints to the hole.
-  - It's also a little tricky to figure out "Ivex receptive".
+  - "Ivex receptive" is also a little tricky. There are hints to it,
+    but it might take a few tries to understand that an attack spell makes
+    this impossible.
 - Player will probably be here on 1st - 4th playthrough.
-- Sprite now asks Nero for password.
-- (9-A) Ask Ivex about the snow globe.
-  - This is very unlikely to happen on 1st playthrough. There's no hint about
-    this before all the other steps are finished, and there are many other
-    possible passwords.
-  - If the player doesn't get this before Ivex leaves, the Easy escape
-    automatically gives the player the password.
+- Sprite asks Nero for password, misinterprets something Nero said as the
+  password, and puts Nero on hold.
+- (9-A) Tell Sprite quiet, to get out of hold.
+- (10-A) Guess any password.
+- (11-A) Ask Ivex about the snow globe.
+  - This is only available after asking one password, and it's no longer
+    available after asking two.
+  - This is very unlikely to happen on 1st playthrough. There's no hint
+    about this before all the other steps are fulfilled, and there are
+    many other possible passwords.
+  - If the player doesn't do this before Ivex leaves, the Easy escape
+    automatically tells the player the password.
 - Player will probably be here on 2nd - 5th playthrough.
 - The password is a big tease:
   - There's a moment when it seems like it succeeds, and then it becomes
     another failure.
-  - Ivex catches on to what the player is doing, denies access to the password,
-    and applies extreme torture with another grav crystal.
   - Player goes through another section that feels like "crap, another
     obstacle, what else do I have to do to get past this."
   - But this turns out to actually work anyway. Nero is free.
-- The mirror is saved. It can be used for 2nd Floor Easy escape.
+- The mirror is saved. It can be taken to the 2nd Floor and used there.
 - There's a Challenge Ending here that's meant to be hard to find.
 
 </details>
@@ -183,11 +183,12 @@ hard to find.
 <details>
 
 - You must have seen Mica already in other playthroughs.
-- Pick the neutral starting option (not naked or abused).
+- Pick the neutral or abused start. (Do not cast Endgame).
 - Follow the dialog branches to becoming an apprentice.
 - When Ivex removes Nero's clothes, use the 3rd option,
   which is hidden but briefly shown.
 - Finish the hard escape.
+- Make sure to ask about the wand before Ivex leaves.
 - Use the wand.
 
 </details>
@@ -204,8 +205,9 @@ finding 1st Floor Hard.
 <details>
 
 - Player has done 1st Floor Hard. Nero escaped 1st floor and has the mirror.
-- (1) Read spellbook, to find out about gems and teleport spell.
+- (1) Read spellbook to find out about gems and the teleport spell.
 - (2) Use mirror and poltergeist device in lion room to immobilize lion.
+  The lion doesn't stay immobilized, but you can repeat it forever.
 - (3) Get a blank gem from the lion room.
 - (4) Energize the gem with teleport.
 - (5) Teleport out.
@@ -256,6 +258,8 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
       - After any action, Nero is forced into an adjacent room after dropping
         everything (but not the ring, if he's wearing it).
       - The lion will chase Nero into the blob.
+    - TODO: getting into hunt mode is a dialog maze. Nero has to find the
+      right way to confuse the lion's instructions.
     - TODO: need a timing subtlety that allows Nero to get both enthralled and
       hunted while wearing ring
   - Nero has to start the lion hunting before wearing the ring. The other
@@ -318,8 +322,8 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
   - Lose ring while hunted:
     - Bad Ending: Hunted Mild - cooperate.
     - Bad Ending: Hunted Harsh - resist.
-  - Neither of these has much warning before it happens, but once the player
-    knows they can happen, they're easy to avoid:
+  - Nene of these failures has much warning before it happens,
+    but once the player knows they can happen, they're easy to avoid:
     - Take off the ring as soon as it's yellow.
     - Don't activate lion hunting until everything is ready.
 - So this is solvable on 1st - 4th playthrough (1st: fail 1F escape, 2nd: fail
