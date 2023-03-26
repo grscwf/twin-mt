@@ -465,7 +465,7 @@ $(document).on(':passagestart', function (ev) {
   if (! ev.passage.tags.contains("noreturn")) {
     State.variables.return = ev.passage.title;
   }
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5696,7 +5696,7 @@ CV.tryVars = {};
 // vars that are definitely not boolean (but might be null)
 CV.nonbooleans = new Set([
   &quot;n1_passFound&quot;,
-  &quot;n1_passTried&quot;,
+  &quot;n1_passFailed&quot;,
 ]);
 
 Macro.add(&quot;cv-ignore&quot;, {
@@ -8472,7 +8472,7 @@ EnumType.define(&quot;MagicPhase&quot;, [
   &quot;MP_wantDevice&quot;,
   &quot;MP_wantName&quot;,
   &quot;MP_wantTouch&quot;,
-  &quot;MP_wantPassword&quot;,
+  &quot;MP_wantPass&quot;,
   &quot;MP_onHold&quot;,
   &quot;MP_contact&quot;,
   &quot;MP_lockedOut&quot;,
@@ -8505,15 +8505,26 @@ function defTemp(vname, fn) {
 }
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
+
+  // Ivex ran out of patience in the most-recent action node.
   defTemp(&quot;ivexAngry&quot;, () =&gt; {
     const V = State.variables;
     return V.t_patienceActions === 0 || V.t_patienceLooks === 0;
   });
 
-  // Initialize n1_magicPhase
+  // Nero thinks he only has one chance left.
+  defTemp(&quot;passDesperate&quot;, () =&gt; {
+    const V = State.variables;
+    const n = (V.n1_passFailed || []).length;
+    return (MP_onHold === V.n1_magicPhase &amp;&amp; n === 1) ||
+      (MP_wantPass === V.n1_magicPhase &amp;&amp; n === 2);
+  });
+
+  // Initialize enums that are generally expected to be non-null
   VarTrace.ignore(() =&gt; {
     const V = State.variables;
     V.n1_magicPhase != null || (V.n1_magicPhase = 0);
+    V.t_ivexContext != null || (V.t_ivexContext = 0);
   });
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="Init 5b Nero Actions" tags="inclusion" position="2625,1150" size="100,100">&lt;&lt;script&gt;&gt;
@@ -9262,7 +9273,7 @@ Nero.enumImplies = {
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
     },
-    [MP_wantPassword]: {
+    [MP_wantPass]: {
       n1_bottleNameKnown: true,
       n1_bottleViewed: true,
       n1_mageSight: true,
@@ -9396,7 +9407,7 @@ Nero.enumImplies = {
       n2_mirrorWasTapped: true,
       n2_tooClever: false,
     },
-    [MP_wantPassword]: {
+    [MP_wantPass]: {
       n1_bottleNameKnown: true,
       n1_bottleViewed: true,
       n1_mageSight: false,
@@ -9680,7 +9691,7 @@ Macro.add(&quot;misfire-please&quot;, {
 
     // password misfires are independent of please misfires,
     // since please is not necessarily the first thing Nero says.
-    if (MP_wantPassword === V.n1_magicPhase) return;
+    if (MP_wantPass === V.n1_magicPhase) return;
 
     $(this.output).wiki(this.payload[0].contents);
   }
@@ -10581,7 +10592,7 @@ Macro.add(&quot;pw-suggest&quot;, {
   tags: [&quot;pw-another&quot;, &quot;pw-fail&quot;],
   handler: function() {
     const V = State.variables;
-    const wantPassword = MP_wantPassword === V.n1_magicPhase;
+    const wantPassword = MP_wantPass === V.n1_magicPhase;
     const onHold = MP_onHold === V.n1_magicPhase;
     if (!wantPassword &amp;&amp; !onHold) return;
 
@@ -10594,16 +10605,16 @@ Macro.add(&quot;pw-suggest&quot;, {
       }
     }
 
-    const tried = V.n1_passTried || (V.n1_passTried = []);
+    const failed = V.n1_passFailed || (V.n1_passFailed = []);
     const found = V.n1_passFound || (V.n1_passFound = []);
 
-    let failed = true;
+    let allFailed = true;
     for (const p of this.payload) {
       if (p.name === &quot;pw-fail&quot;) continue;
       const [pw] = p.args;
-      if (tried.includes(pw)) continue;
+      if (failed.includes(pw)) continue;
 
-      failed = false;
+      allFailed = false;
       if (!found.includes(pw)) found.push(pw);
       $(this.output).wiki(p.contents);
       if (wantPassword) {
@@ -10618,7 +10629,7 @@ Macro.add(&quot;pw-suggest&quot;, {
       break;
     }
 
-    if (failed) {
+    if (allFailed) {
       const p = this.payload.find(p =&gt; p.name === &quot;pw-fail&quot;);
       if (p !== null) $(this.output).wiki(p.contents);
     }
@@ -10638,19 +10649,19 @@ Macro.add(&quot;pw-suggest&quot;, {
         $(&quot;&lt;a&gt;&quot;).text(&quot; (reset)&quot;).appendTo(outer)
           .on(&quot;click&quot;, () =&gt; VarInfo.revisitHere(() =&gt; {
             const V = State.variables;
-            const tried = V.n1_passTried || (V.n1_passTried = []);
-            tried.length = 0;
+            const failed = V.n1_passFailed || (V.n1_passFailed = []);
+            failed.length = 0;
           }));
       }
       for (const p of this.payload) {
         if (p.name === &quot;pw-fail&quot;) continue;
         const [pw] = p.args;
-        if (tried.includes(pw)) continue;
+        if (failed.includes(pw)) continue;
         $(&quot;&lt;a&gt;&quot;).text(` (try ${pw})`).appendTo(outer)
           .on(&quot;click&quot;, () =&gt; VarInfo.revisitHere(() =&gt; {
             const V = State.variables;
-            const tried = V.n1_passTried || (V.n1_passTried = []);
-            tried.push(pw);
+            const failed = V.n1_passFailed || (V.n1_passFailed = []);
+            failed.push(pw);
           }));
       }
     }
@@ -10667,7 +10678,7 @@ Macro.add(&quot;pw-misfire&quot;, {
     const pw = this.args[0];
     const V = State.variables;
     const U = VT.untracedVariables();
-    if (U.n1_magicPhase !== MP_wantPassword) return;
+    if (U.n1_magicPhase !== MP_wantPass) return;
     V.n1_passOnHold = `#${pw}`;
     V.n1_magicPhase = MP_onHold;
     const text = `\
@@ -19187,15 +19198,15 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
   const T = State.temporary;
   V.n1_passOnHold || (V.n1_passOnHold = &quot;placeholder for testing&quot;);
   T.pw = V.n1_passOnHold.replace(/^#/, &quot;&quot;);
-  V.n1_passTried || (V.n1_passTried = []);
-  if (!V.n1_passTried.includes(V.n1_passOnHold)) {
-    V.n1_passTried.push(V.n1_passOnHold);
+  V.n1_passFailed || (V.n1_passFailed = []);
+  if (!V.n1_passFailed.includes(V.n1_passOnHold)) {
+    V.n1_passFailed.push(V.n1_passOnHold);
   }
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;set _whines = $n1_candleHorny ? &quot;whines&quot; : &quot;whispers&quot;&gt;&gt;
 
-&lt;&lt;switch $n1_passTried.length&gt;&gt;
+&lt;&lt;switch $n1_passFailed.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
     &lt;&lt;if $n1_candleHorny&gt;&gt;
         Nero whines, &quot;Please, more!&quot;
@@ -19256,17 +19267,17 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
     Nero regrets.
 
 &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG: impatient passTried ${$n1_passTried.length}`)&gt;&gt;
+    &lt;&lt;run throw new Error(`BUG: impatient passTried ${$n1_passFailed.length}`)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
 A moment later, the Sprite ?sprSays,
 &lt;span class=sprite-q&gt;&quot;&lt;em&gt;&lt;&lt;= _pw&gt;&gt;&lt;/em&gt; is not the correct password.&lt;/span&gt;
 XXX sometimes &quot;that was last month&#39;s password&quot;
-&lt;&lt;switch $n1_passTried.length&gt;&gt;
+&lt;&lt;switch $n1_passFailed.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
     &lt;span class=sprite-q&gt;You have two tries remaining, ?master&quot;&lt;/span&gt;
-    &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 &lt;&lt;case 2&gt;&gt;
     &lt;span class=sprite-q&gt;You have one &lt;span class=impatient-overrun&gt;
         look up the singular form of the
@@ -19276,10 +19287,10 @@ XXX sometimes &quot;that was last month&#39;s password&quot;
         to activate it
     &lt;/span&gt;
     remaining, ?master&quot;&lt;/span&gt;
-    &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 &lt;&lt;case 3&gt;&gt;
     XXX zero tries remaining
-    &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 &lt;&lt;case 4&gt;&gt;
     XXX no more tries
     &lt;&lt;set $n1_magicPhase = MP_lockedOut&gt;&gt;
@@ -19305,7 +19316,7 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="404" name="n1s/D On Hold" ta
 
 &quot;Please continue to hold while I check your password, ?master&quot;
 
-&lt;&lt;switch $n1_passTried.length&gt;&gt;
+&lt;&lt;switch $n1_passFailed.length&gt;&gt;
 &lt;&lt;case 0&gt;&gt;
   &lt;&lt;if $n1_candleHorny&gt;&gt;
     It resumes its soft humming of a throbbing, sensual tune
@@ -19343,7 +19354,7 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="404" name="n1s/D On Hold" ta
   &lt;&lt;set _action = &quot;XXX&quot;&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`BUG: on hold passTried ${$n1_passTried.length}`);&gt;&gt;
+  &lt;&lt;run throw new Error(`BUG: on hold passTried ${$n1_passFailed.length}`);&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;set $t_magicAction =
@@ -20584,9 +20595,9 @@ now at last guess, Nero has second thoughts about every pw.
     The Sprite is asking for a password.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n1_passTried.length &gt; 0&gt;&gt;
+&lt;&lt;if $n1_passFailed.length &gt; 0&gt;&gt;
     ?P
-    Nero has already tried &lt;&lt;= _listTried()&gt;&gt;
+    Nero has already tried &lt;&lt;= _listFailed()&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -20639,7 +20650,7 @@ now at last guess, Nero has second thoughts about every pw.
 const V = State.variables;
 const T = State.temporary;
 
-V.n1_passTried || (V.n1_passTried = []);
+V.n1_passFailed || (V.n1_passFailed = []);
 V.n1_passFound || (V.n1_passFound = []);
 
 T.sayPassword = &quot;[[n1s/D Say Password]]&quot;.slice(2, -2);
@@ -20676,19 +20687,19 @@ T.describe = pw =&gt; {
   }
 };
 
-T.listTried = () =&gt; {
-  const tried = V.n1_passTried || [];
-  const desc = i =&gt; T.describe(tried[i]);
-  if (tried.length === 1) {
+T.listFailed = () =&gt; {
+  const failed = V.n1_passFailed || [];
+  const desc = i =&gt; T.describe(failed[i]);
+  if (failed.length === 1) {
     return `${desc(0)}.`;
-  } else if (tried.length === 2) {
+  } else if (failed.length === 2) {
     return `${desc(0)} and ${desc(1)}.`;
   } else {
     let buf = &quot;&quot;;
-    for (let i = 0; i &lt; tried.length - 1; i++) {
+    for (let i = 0; i &lt; failed.length - 1; i++) {
       buf += `${desc(i)}, `;
     }
-    buf += `and ${desc(tried.length - 1)}.`;
+    buf += `and ${desc(failed.length - 1)}.`;
     return buf;
   }
 };
@@ -20696,13 +20707,13 @@ T.listTried = () =&gt; {
 T.toTry = [];
 T.hasBasics = false;
 for (const pw of Object.keys(Nero.basicPasswords)) {
-  if (!V.n1_passTried.includes(pw)) {
+  if (!V.n1_passFailed.includes(pw)) {
     T.toTry.push(pw);
     T.hasBasics = true;
   }
 }
 for (const pw of V.n1_passFound) {
-  if (!V.n1_passTried.includes(pw)) {
+  if (!V.n1_passFailed.includes(pw)) {
     T.toTry.push(pw);
   }
 }
@@ -22110,7 +22121,7 @@ that function entirely.
         &lt;&lt;/if&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;case `MP_wantPassword`&gt;&gt;
+&lt;&lt;case `MP_wantPass`&gt;&gt;
     &lt;span class=sprite-q&gt;&quot;Please say your password, ?master&quot;&lt;/span&gt;
     &lt;&lt;set $t_magicAction = &quot;[[Guess a password.|n1s/F Guess Password]]&quot;&gt;&gt;
 
@@ -22546,15 +22557,6 @@ XXX hoist this condition
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="461" name="n1x/D Globe WantPassword" tags="inclusion" position="6500,5900" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
 
-XXX The origin of the globe might be Ivex&#39;s favorite vacation spot,
-which is a common choice of password: easy to remember,
-and ostensibly difficult for a rival to guess.
-But such facts about a person are less obscure than they might seem.
-It&#39;s often a simple matter to deduce such details from the tiniest of clues,
-especially when a person decorates their residence
-with souvenirs from that location.
-?P
-
 &lt;&lt;pw-suggest &quot;Carpe Diem&quot;&gt;&gt;
 &lt;&lt;pw-fail&gt;&gt;
     &lt;&lt;set _triedCarpe = true&gt;&gt;
@@ -22568,42 +22570,56 @@ with souvenirs from that location.
     &lt;&lt;set _triedLuminance = true&gt;&gt;
 &lt;&lt;/pw-suggest&gt;&gt;
 
-XXX allow ask if on last try.
+The caverns of the snow globe might be Ivex&#39;s favorite vacation spot,
+which is a common choice of password: easy to remember,
+and difficult for an adversary to guess.
+But such facts are less obscure than they might seem,
+since it&#39;s a simple matter to deduce them from the tiniest of clues,
+such as the souvenirs that a person keeps in their residence.
+?P
+
 
 &lt;&lt;if _triedLiskov &amp;&amp; _triedLuminance&gt;&gt;
     Unfortunately, neither &quot;Caverns of Luminance&quot;
     nor &quot;Caverns of Liskov&quot; is the correct password.
-&lt;&lt;elseif _triedLiskov&gt;&gt;
-    Unfortunately, &quot;Caverns of Liskov&quot; is not the correct password.
-&lt;&lt;elseif _triedLuminance&gt;&gt;
-    Unfortunately, &quot;Caverns of Luminance&quot; is not the correct password.
-&lt;&lt;else&gt;&gt;
-    So the name of the caverns could be the password that the Sprite wants.
-&lt;&lt;/if&gt;&gt;
-
-&lt;&lt;if _triedCarpe&gt;&gt;
-    &lt;&lt;if _triedLiskov || _triedLuminance&gt;&gt;
+    &lt;&lt;if _triedCarpe&gt;&gt;
         It also isn&#39;t &quot;Carpe Diem&quot;.
     &lt;&lt;else&gt;&gt;
-        &quot;Carpe Diem&quot; was also a good idea, but that isn&#39;t it.
+        ?P
+        Perhaps it&#39;s the adage in the globe, &quot;Carpe Diem&quot;?
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if _triedLuminance &amp;&amp; !_triedLiskov&gt;&gt;
-    Perhaps it&#39;s &quot;Caverns of Liskov&quot;?
-&lt;&lt;elseif _triedLiskov &amp;&amp; !_triedLuminance&gt;&gt;
-    Perhaps it&#39;s &quot;Caverns of Luminance&quot;?
-&lt;&lt;/if&gt;&gt;
-
-&lt;&lt;if !_triedCarpe&gt;&gt;
-    &lt;&lt;if _triedLIskov &amp;&amp; _triedLuminance&gt;&gt;
-        Perhaps it&#39;s &quot;Carpe Diem&quot;?
+&lt;&lt;elseif _triedLiskov || _triedLuminance&gt;&gt;
+    &lt;&lt;if _triedLiskov&gt;&gt;
+        Unfortunately, &quot;Caverns of Liskov&quot; is not the correct password.
     &lt;&lt;else&gt;&gt;
-        &quot;Carpe Diem&quot; also seems like a good guess.
+        Unfortunately, &quot;Caverns of Luminance&quot; is not the correct password.
+    &lt;&lt;/if&gt;&gt;
+    &lt;&lt;if _triedCarpe&gt;&gt;
+        It also isn&#39;t &quot;Carpe Diem&quot;.
+    &lt;&lt;/if&gt;&gt;
+    ?P
+    &lt;&lt;if _triedLuminance &amp;&amp; !_triedLiskov&gt;&gt;
+        Perhaps it&#39;s &quot;Caverns of Liskov&quot;?
+    &lt;&lt;elseif _triedLiskov &amp;&amp; !_triedLuminance&gt;&gt;
+        Perhaps it&#39;s &quot;Caverns of Luminance&quot;?
+    &lt;&lt;/if&gt;&gt;
+    &lt;&lt;if !_triedCarpe&gt;&gt;
+        The adage in the globe, &quot;Carpe Diem&quot;, also seems like a possibility.
+    &lt;&lt;/if&gt;&gt;
+
+&lt;&lt;else&gt;&gt;
+    So Ivex&#39;s password might be &quot;Caverns of Luminance&quot;,
+    or &quot;Caverns of Liskov&quot;, whichever is the correct origin of the globe.
+    &lt;&lt;if _triedCarpe&gt;&gt;
+        ?P
+        &quot;Carpe Diem&quot; also seemed possible, but it isn&#39;t the password.
+    &lt;&lt;else&gt;&gt;
+        The adage in the globe, &quot;Carpe Diem&quot;, also seems like a possibility.
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if _triedLiskov || _triedLuminance&gt;&gt;
+&lt;&lt;if _triedLiskov || _triedLuminance || _lastChance&gt;&gt;
     ?P
     Of course, it&#39;s possible that the globe comes from
     some other cavern that starts with &quot;L&quot;, unknown to the wolf.
@@ -22613,8 +22629,6 @@ XXX allow ask if on last try.
         Nero could try asking Ivex about it.
         &lt;&lt;actions-add [[Ask Ivex about the globe.|n1x/D Globe Ask]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;elseif !_triedCarpe&gt;&gt;
-    Any of those possibilities could be worth a try.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="462" name="n1x/F Actions" tags="inclusion" position="5225,3900" size="100,200">&lt;&lt;nobr&gt;&gt;
@@ -22722,7 +22736,7 @@ $t_afterAction
 &lt;&lt;set $n1_booksAsked = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="465" name="n1x/F Books" tags="maybe-password" position="7275,4900" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_mageSight` `MP_wantPassword`&gt;&gt;
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_mageSight` `MP_wantPass`&gt;&gt;
 
 The books in the bookcases
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -22793,7 +22807,7 @@ a small and untidy stack of books that
         The yearbook might provide some useful clues about Ivex&#39;s earlier life.
         &lt;&lt;actions-add [[Search the books.|n2x/F Books Search 1]]&gt;&gt;
 
-    &lt;&lt;elseif MP_wantPassword === $n1_magicPhase
+    &lt;&lt;elseif MP_wantPass === $n1_magicPhase
         || MP_onHold === $n1_magicPhase
     &gt;&gt;
         ?P
@@ -22954,7 +22968,7 @@ $t_afterAction
 &lt;&lt;cv-ignore n1_abused n1_naked&gt;&gt; &lt;!-- trivial variations --&gt;
 &lt;&lt;cv-ignore n1_subby&gt;&gt; &lt;!-- minor variations --&gt;
 &lt;&lt;cv-try n1_magicPhase
-  `MP_beforeCast` `MP_wantDevice` `MP_wantName` `MP_wantPassword`
+  `MP_beforeCast` `MP_wantDevice` `MP_wantName` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
 &lt;&lt;cv-try n2_magicPhaseLost
   null `MP_mageSight` `MP_wantDevice` `MP_wantName`&gt;&gt;
@@ -23341,7 +23355,7 @@ Nero&#39;s getting distracted again. He shakes his head to focus.
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if MP_wantPassword === $n1_magicPhase
+&lt;&lt;if MP_wantPass === $n1_magicPhase
     || MP_onHold === $n1_magicPhase
 &gt;&gt;
     ?P
@@ -24236,7 +24250,7 @@ Within the globe is a figurine of
     &lt;!-- not adding to pw-found until wantPassword --&gt;
 
     ?P
-    &lt;&lt;if MP_wantPassword === $n1_magicPhase
+    &lt;&lt;if MP_wantPass === $n1_magicPhase
         || MP_onHold === $n1_magicPhase
     &gt;&gt;
         &lt;&lt;include [[n1x/D Globe WantPassword]]&gt;&gt;
@@ -25359,7 +25373,7 @@ The X is also on the Parce River, some distance upstream,
 northeast of Uramos. Nero believes there&#39;s a town at that location,
 but he does not remember its name.
 
-&lt;&lt;if MP_wantPassword === $n1_magicPhase
+&lt;&lt;if MP_wantPass === $n1_magicPhase
     || MP_onHold === $n1_magicPhase
 &gt;&gt;
     &lt;&lt;include [[n1x/F Map WantPassword]]&gt;&gt;
@@ -25677,7 +25691,7 @@ activities that Winterdew hinted at, but left unspecified in her report.
 
 &lt;&lt;vi-always n1_paintingMomKnown false&gt;&gt;
 
-&lt;&lt;set _wantPass = MP_wantPassword === $n1_magicPhase
+&lt;&lt;set _wantPass = MP_wantPass === $n1_magicPhase
     || MP_onHold === $n1_magicPhase&gt;&gt;
 
 &lt;&lt;em-assert _wantPass || MP_wantTouch === $n1_magicPhase&gt;&gt;
@@ -25849,10 +25863,10 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
 &lt;&lt;cv-try n1_magicPhase
-  `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
+  `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
 &lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
-&lt;&lt;cv-try n1_passTried `[]` `[&quot;Ivy&quot;]`&gt;&gt; /* maybe please-ivy */
+&lt;&lt;cv-try n1_passFailed `[]` `[&quot;Ivy&quot;]`&gt;&gt;
 
 &lt;&lt;set _lusted = $n1_paintingViewedHorny&gt;&gt;
 
@@ -25969,7 +25983,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
     || MP_wantTouch === $n2_magicPhaseLost&gt;&gt;
     &lt;&lt;include [[n1x/F Painting WantTouch]]&gt;&gt;
 
-&lt;&lt;elseif MP_wantPassword === $n1_magicPhase
+&lt;&lt;elseif MP_wantPass === $n1_magicPhase
     || MP_onHold === $n1_magicPhase
 &gt;&gt;
     &lt;&lt;include [[n1x/F Painting WantPassword]]&gt;&gt;
@@ -26186,7 +26200,7 @@ of that monstrous creature. Is that a bird of some sort?&quot;
 &lt;&lt;set $n1_penguinAsked = true&gt;&gt;
 &lt;&lt;set if ($t_ivexReceptive) {
     $n1_magicPhase = MP_onHold;
-    $n1_passTried = [];
+    $n1_passFailed = [];
     $n1_passOnHold = &quot;#I Dearly Loved My First Familiar As Well&quot;;
     $n1_penguinTouched = true;
     $t_ivexNear = false;
@@ -26200,10 +26214,10 @@ of that monstrous creature. Is that a bird of some sort?&quot;
 --&gt;
 
 &lt;&lt;cv-try n1_magicPhase
-	`MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPassword`
+	`MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPass`
     `MP_contact` `MP_tapLost`&gt;&gt;
 &lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
-&lt;&lt;cv-try n1_passTried `null` `[&quot;Hunter Too&quot;]`&gt;&gt; /* maybe also Please */
+&lt;&lt;cv-try n1_passFailed `null` `[&quot;Hunter Too&quot;]`&gt;&gt; /* maybe also Please */
 
 Traditional mages often keep skeletal or taxidermied animals
 in their lair, more for the gloomy ambiance than any practical purpose.
@@ -26314,7 +26328,7 @@ Nero stares at the penguin in perplexity.
         &lt;&lt;actions-add [[Tell Ivex, &quot;Something just dropped from the beak...&quot;|n1x/F Penguin Ask]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif MP_wantPassword === $n1_magicPhase
+&lt;&lt;elseif MP_wantPass === $n1_magicPhase
     || MP_onHold === $n1_magicPhase
 &gt;&gt;
     &lt;&lt;pw-suggest &quot;Hunter Too&quot;&gt;&gt;
@@ -26740,7 +26754,7 @@ a strange attachment.
     &lt;&lt;actions-add [[Ask Ivex about his wand.|n1x/F Wand Ask]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif MP_wantPassword === $n1_magicPhase
+&lt;&lt;elseif MP_wantPass === $n1_magicPhase
   || MP_onHold === $n1_magicPhase
 &gt;&gt;
   &lt;&lt;if $n1_wandAsked&gt;&gt;
@@ -27300,7 +27314,7 @@ on the wall.
     could have found a comforting home, snug between her
     welcoming thighs.
 
-&lt;&lt;elseif MP_wantPassword === $n1_magicPhase
+&lt;&lt;elseif MP_wantPass === $n1_magicPhase
     || MP_onHold === $n1_magicPhase
 &gt;&gt;
     But he feels that she&#39;s a demigod with an unspoken
@@ -27614,7 +27628,7 @@ flirtatiously out the side of her mouth.
 &lt;&lt;elseif MP_wantTouch === $n1_magicPhase&gt;&gt;
     Her mouth must be the hole that the Sprite wants him to touch!
     Nero strains at his bonds to try to reach it.
-&lt;&lt;elseif MP_wantPassword === $n1_magicPhase
+&lt;&lt;elseif MP_wantPass === $n1_magicPhase
     || MP_onHold === $n1_magicPhase
 &gt;&gt;
     &lt;&lt;if $n1_paintingMomKnown&gt;&gt;
@@ -28210,12 +28224,12 @@ He rests on the floor for a moment to recover.
     ?P
     XXX sprite says, password incorrect, you have N tries remaining.
     please say password.
-    &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 &lt;&lt;elseif MP_lockedOut === $n1_magicPhase&gt;&gt;
     ?P
     XXX sprite says something about losing count, restarting.
     please say password.
-    &lt;&lt;set $n1_magicPhase = MP_wantPassword&gt;&gt;
+    &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -28670,7 +28684,7 @@ loses his energy tap!
 &lt;&lt;em-assert MP_lockedOut !== $n1_magicPhase&gt;&gt;
 
 &lt;&lt;cv-ignore n1_opportunist&gt;&gt; /* trivial difference */
-&lt;&lt;cv-try n1_magicPhase `MP_wantTouch` `MP_wantPassword`&gt;&gt;
+&lt;&lt;cv-try n1_magicPhase `MP_wantTouch` `MP_wantPass`&gt;&gt;
 
 As the wolf grabs the mirror,
 &lt;&lt;if $n1_globeViewed&gt;&gt;
@@ -28703,7 +28717,7 @@ He falls on his side and looks with dismay as the mirror arcs downward,
 toward the floor, out of reach.
 
 ?P
-&lt;&lt;if MP_wantPassword === $n1_magicPhase&gt;&gt;
+&lt;&lt;if MP_wantPass === $n1_magicPhase&gt;&gt;
     The Sprite&#39;s voice returns and ?sprSpeaks one last thing in the wolf&#39;s ear,
     before the mirror&#39;s impact with the floor silences the Sprite forever.
     &lt;span class=sprite-q&gt;&quot;Password is correct, ?masterx&quot;&lt;/span&gt;
@@ -28729,7 +28743,7 @@ toward the floor, out of reach.
 ?P
 [[Continue|n2b/F Rescue Mirror 3]]
 
-&lt;&lt;set if (MP_wantPassword === $n1_magicPhase) {
+&lt;&lt;set if (MP_wantPass === $n1_magicPhase) {
     $n1_passIsKnown = true;
     $n1_magicPhase = MP_contact;
 }

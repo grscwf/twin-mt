@@ -9,7 +9,7 @@ EnumType.define("MagicPhase", [
   "MP_wantDevice",
   "MP_wantName",
   "MP_wantTouch",
-  "MP_wantPassword",
+  "MP_wantPass",
   "MP_onHold",
   "MP_contact",
   "MP_lockedOut",
@@ -42,15 +42,26 @@ function defTemp(vname, fn) {
 }
 
 $(document).on(":passagestart", () => {
+
+  // Ivex ran out of patience in the most-recent action node.
   defTemp("ivexAngry", () => {
     const V = State.variables;
     return V.t_patienceActions === 0 || V.t_patienceLooks === 0;
   });
 
-  // Initialize n1_magicPhase
+  // Nero thinks he only has one chance left.
+  defTemp("passDesperate", () => {
+    const V = State.variables;
+    const n = (V.n1_passFailed || []).length;
+    return (MP_onHold === V.n1_magicPhase && n === 1) ||
+      (MP_wantPass === V.n1_magicPhase && n === 2);
+  });
+
+  // Initialize enums that are generally expected to be non-null
   VarTrace.ignore(() => {
     const V = State.variables;
     V.n1_magicPhase != null || (V.n1_magicPhase = 0);
+    V.t_ivexContext != null || (V.t_ivexContext = 0);
   });
 });
 <</script>>
