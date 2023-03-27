@@ -97,7 +97,7 @@ A player will probably find this on their 1st or 2nd playthrough.
     - Bad Ending: Tamed Mild - cooperate
     - Bad Ending: Tamed Harsh - resist
 - After disrupting the grav crystals, there's a choice between
-  getting the knife first or snuffing the candle first.
+  getting the letter opener first or snuffing the candle first.
   Unlike Drekkar's story, both options succeed. There's no trap here.
 - Easy solution will break the mirror if it's tapped,
   making it unavailable on the 2nd Floor,
