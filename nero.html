@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       State.metadata.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -7547,8 +7547,13 @@ Template.add(&quot;cssArchive&quot;, `&lt;&lt;nobr&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;`);
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="236" name="Init 2 Text Style" tags="inclusion" position="2850,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
+em {
+  margin-right: 0.05em;
+}
+
 em em {
   font-weight: bold;
+  margin-right: 0;
   text-decoration: underline;
 }
 
@@ -9996,7 +10001,9 @@ function tameTextTo(list, node) {
 .master-quiet {
   font-size: 18px;
   font-weight: bold;
+  position: relative;
   text-transform: uppercase;
+  top: 1px;
 }
 .nero-blank {
   color: rgba(0, 0, 0, 0);
@@ -10653,29 +10660,33 @@ Macro.add(&quot;pw-suggest&quot;, {
 });
 
 /**
- * &lt;&lt;pw-misfire $text&gt;&gt;
+ * &lt;&lt;pw-misfire $pw [obvious]&gt;&gt;
  * Nero has said something that the Sprite misinterprets as a password.
  * This starts that process, and emits some text about it.
  */
 Macro.add(&quot;pw-misfire&quot;, {
   handler: function() {
-    const pw = this.args[0];
+    const [pw, opt] = this.args;
     const V = State.variables;
     const U = VT.untracedVariables();
     if (U.n1_magicPhase !== MP_wantPass) return;
     V.n1_passTried.unshift(`#${pw}`);
     V.n1_magicPhase = MP_onHold;
-    const text = `\
-      &lt;&lt;nobr&gt;&gt;
-      ?P
-      The Sprite ?sprSpeaks in Nero&#39;s ear,
-      &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right
-      either, ?master
-      Please hold while I double-check it, ?master&lt;/span&gt;
-      Again, the Sprite has misinterpreted conversation as a password.
-      Nero wonders what phrase it has picked up this time.
-      &lt;&lt;/nobr&gt;&gt;`;
-    $(this.output).wiki(text);
+    let mkp = `&lt;&lt;nobr&gt;&gt;`;
+    mkp += ` ?P`;
+    mkp += ` The Sprite ?sprSpeaks in Nero&#39;s ear.`;
+    mkp += ` &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right`;
+    mkp += ` either, ?master`;
+    mkp += ` Please hold while I double-check it, ?master&quot;&lt;/span&gt;`;
+    mkp += ` ?P`;
+    mkp += ` Again, the Sprite has misinterpreted conversation as a password.`;
+    if (opt === &quot;obvious&quot;) {
+      mkp += ` Nero mentally kicks himself for forgetting.`;
+    } else {
+      mkp += ` Nero wonders what phrase it has picked up this time.`;
+    }
+    mkp += ` &lt;&lt;/nobr&gt;&gt;`;
+    $(this.output).wiki(mkp);
   }
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="fade-in test" tags="" position="3750,775" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -14825,7 +14836,7 @@ and steps away with a laugh.
     but the wolf can&#39;t stall for much longer.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;pw-misfire &quot;The Guilds Name&quot;&gt;&gt;
+&lt;&lt;pw-misfire &quot;The Guilds Name&quot; obvous&gt;&gt;
 
 ?P
 Ivex snarls. &quot;You&#39;re quite the disappointment. I really need to find better
@@ -14866,6 +14877,7 @@ No, of course not... But that would explain...&quot;
 ?P
 Nero suppresses a tail wag. Rarely have his strategems worked as well as this.
 And he didn&#39;t even need to say more than three words to do it!
+
 
 ?P
 [[Continue|n1cr/F Guild Name 2]]
@@ -16333,7 +16345,7 @@ If this is to work, you must also be honest with me.&quot;
 ?P
 Nero already knows what to say.
 He droops his ears slightly
-and counts 6 seconds before speaking.
+and counts six seconds before speaking.
 &quot;The contract is confidential.
 I think you understand,
 that if I breach that confidence, you will not be able
@@ -16349,7 +16361,7 @@ to hold it shut, perhaps to emphasize discreet silence.
 if I wish to test your resolve.&quot;
 
 ?P
-&quot;Y-yes?&quot; the wolf says hesitantly through his closed muzzle.
+&quot;Y-yes?&quot; the wolf says through his closed muzzle.
 Nero did not anticipate this response from the panther,
 and he&#39;s unsure what direction Ivex intends to pursue.
 
@@ -16410,7 +16422,7 @@ his reluctance makes the pursuit more interesting.
 The idea in Nero&#39;s mind, the strategy he&#39;s trying to follow,
 is to offer resistances that are tantalizing but not impenetrable.
 If he presents too strong a rejection,
-the panther will just apply all his strength,
+the panther will just apply all his strength
 and break through all the wolf&#39;s barriers at once.
 ?P
 But small reluctances should make Nero an interesting toy
@@ -16761,7 +16773,13 @@ Nero can&#39;t help cringing and shivering anyway.
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;em-assert !$n1_abused || $n1_tough&gt;&gt;
 
-Nero &lt;&lt;= $n1_abused ? &quot;pleads&quot; : &quot;argues&quot;&gt;&gt;,
+&lt;&lt;if $n1_tough&gt;&gt;
+  Nero tries to ignore the hand on his balls.
+&lt;&lt;else&gt;&gt;
+  Nero is startled by the hand holding his balls.
+&lt;&lt;/if&gt;&gt;
+
+He &lt;&lt;= $n1_tough ? &quot;argues&quot; : &quot;pleads&quot;&gt;&gt;,
 &quot;You are not offering me a real choice.
 If I breach my contract, you can punish me for that.
 If I do not choose, you can punish me for not choosing.
@@ -16769,13 +16787,13 @@ And of course, if I ask for punishment, you will do that as well.&quot;
 
 ?P
 &lt;&lt;if $t_ivexGrabbing&gt;&gt;
-    The panther has not changed his grip on the wolf&#39;s balls.
-    Nero takes a breath and continues,
+  The panther has not changed his grip on the wolf&#39;s balls.
+  Nero takes a breath and continues,
 &lt;&lt;else&gt;&gt;
-    The panther
-    &lt;&lt;= $t_ivexNear ? &quot;moves to grab&quot; : &quot;moves close and grabs&quot;&gt;&gt;
-    the wolf&#39;s balls.
-    Nero is alarmed, but continues,
+  The panther
+  &lt;&lt;= $t_ivexNear ? &quot;moves to grab&quot; : &quot;moves close and grabs&quot;&gt;&gt;
+  the wolf&#39;s balls.
+  Nero is alarmed, but continues,
 &lt;&lt;/if&gt;&gt;
 &quot;Punishment is damaging to any relationship.
 I think you are not serious about having an apprentice,
@@ -16800,14 +16818,14 @@ His breathing is quick and shallow, but he manages to gasp out
 the word, &quot;Please!&quot;
 
 ?P
-Ivex laughs, &quot;Finally, a proper answer! You are begging for
+Ivex laughs. &quot;Finally, a proper answer! You are begging for
 punishment, yes?&quot;
 
 ?P
 &lt;&lt;if $n1_tough&gt;&gt;
-    Nero nods, then growls and shakes his head.
+  Nero nods, then growls and shakes his head.
 &lt;&lt;else&gt;&gt;
-    Nero shakes his head, but then nods vigorously.
+  Nero shakes his head, but then nods vigorously.
 &lt;&lt;/if&gt;&gt;
 
 His mind is confusion.
@@ -16817,19 +16835,19 @@ but his intelligence knows that there may not
 be a way to avoid it.
 
 &lt;&lt;if $n1_tough&gt;&gt;
-    He shouts, &quot;I will not &lt;em&gt;beg&lt;/em&gt; for anything!&quot;
+  He shouts, &quot;I will not &lt;em&gt;beg&lt;/em&gt; for anything!&quot;
 
-    ?P
-    The wolf tenses his body and prepares his mind to endure further abuse.
-    His legs quiver from the tension.
+  ?P
+  The wolf tenses his body and prepares his mind to endure further abuse.
+  His legs quiver from the tension.
 
 &lt;&lt;else&gt;&gt;
-    The best action is to wait for the panther to
-    give a direction and obey it.
+  The best action is to wait for the panther to
+  give a direction and obey it.
 
-    ?P
-    The wolf tries to hold still to signal obedience,
-    but he can&#39;t stop trembling slightly.
+  ?P
+  The wolf tries to hold still to signal obedience,
+  but he can&#39;t stop trembling slightly.
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -17378,8 +17396,8 @@ every spicy breath of air that the wolf inhales.
     and he hopes to escape this place before he&#39;s &lt;em&gt;forced&lt;/em&gt; to do it.
 
     ?P
-    It&#39;s an unpleasant idea. He&#39;s been asked to do it a few times,
-    the few times he&#39;s dallied with pretty men.
+    It&#39;s an unpleasant idea. He&#39;s been asked to do it a few times
+    when he&#39;s dallied with pretty men.
     But he&#39;s always politely refused.
     The wolf is even reluctant to just touch their cock with his paws.
 
@@ -19196,6 +19214,10 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
   const T = State.temporary;
   V.n1_passTried || (V.n1_passTried = [&quot;placeholder for testing&quot;]);
   T.pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
+  T.isWrong = &quot;is not the correct password, ?master&quot;;
+  if (Nero.oldPasswords[T.pw]) {
+    T.isWrong = Nero.oldPasswords[T.pw];
+  }
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;set _whines = $n1_candleHorny ? &quot;whines&quot; : &quot;whispers&quot;&gt;&gt;
@@ -19203,17 +19225,46 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 &lt;&lt;switch $n1_passTried.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
   &lt;&lt;if $n1_candleHorny&gt;&gt;
-    Nero whines, &quot;Please, more!&quot;
+    Nero whines, &quot;Please, be quiet!&quot;
   &lt;&lt;else&gt;&gt;
-    Nero whispers, &quot;Please, be quiet!&quot;
+    Nero whispers, &quot;Please, be quiet.&quot;
   &lt;&lt;/if&gt;&gt;
 
-  &lt;&lt;if !$n2_ivexGone&gt;&gt;
+  &lt;&lt;switch $t_ivexContext&gt;&gt;
+  &lt;&lt;case `IC_gone`&gt;&gt;
+    &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
+    /* nothing */
+  &lt;&lt;case `IC_distant`&gt;&gt;
+    &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
     ?P
-    TODO ivexNear.
-    TODO candleLit-mask.
-    Ivex, something lewd
-  &lt;&lt;/if&gt;&gt;
+    Ivex notices the wolf whispering. &quot;You must speak louder!&quot;
+  &lt;&lt;case `IC_explainTheft`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    Ivex snorts. &quot;Is my questioning affecting your ability to think
+    of a plausible story?&quot;
+  &lt;&lt;case `IC_lickPaw`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    Ivex frowns. &quot;This is not a difficult thing I ask.
+    What traumas in your mind have I touched?&quot;
+  &lt;&lt;case `IC_begForMe`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    Ivex says seriously, &quot;Thinking will not help you make this choice.
+    Do you never listen to your instincts?&quot;
+  &lt;&lt;case `IC_comfortable`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+    ?P
+    Ivex shouts in his mask. &quot;Are! You! Comfortable!&quot;
+  &lt;&lt;case `IC_whoSentYou`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+    ?P
+    Ivex leans in close and whispers in Nero&#39;s ear.
+    &quot;Who. Sent. You.&quot;
+  &lt;&lt;default&gt;&gt;
+    &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
+  &lt;&lt;/switch&gt;&gt;
 
   &lt;&lt;set $n1_spriteQuiet = true&gt;&gt;
   ?P
@@ -19221,7 +19272,11 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
   &lt;span class=sprite-q&gt;&quot;Quiet mode activated, ?master&quot;&lt;/span&gt;
 
   ?P
-  XXX Nero regrets.
+  Nero winces. The Sprite is now speaking softly,
+  except that it&#39;s saying
+  &lt;span class=sprite-q&gt;&quot;?mastern&quot;&lt;/span&gt; louder than before.
+  The panther has messed up the Sprite&#39;s instructions in
+  strange ways.
 
 &lt;&lt;case 2&gt;&gt;
   &lt;&lt;if $n1_candleHorny&gt;&gt;
@@ -19230,12 +19285,38 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
     Nero whispers, &quot;Please, hurry up!&quot;
   &lt;&lt;/if&gt;&gt;
 
-  &lt;&lt;if !$n2_ivexGone&gt;&gt;
+  &lt;&lt;switch $t_ivexContext&gt;&gt;
+  &lt;&lt;case `IC_gone`&gt;&gt;
+    &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
+    /* nothing */
+  &lt;&lt;case `IC_distant`&gt;&gt;
+    &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
     ?P
-    TODO ivexNear.
-    TODO candleLit-mask.
-    Ivex, something horny.
-  &lt;&lt;/if&gt;&gt;
+    XXX Ivex notices the wolf whispering. &quot;What are you mumbling about now?&quot;
+  &lt;&lt;case `IC_explainTheft`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_lickPaw`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_begForMe`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_comfortable`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_whoSentYou`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;default&gt;&gt;
+    &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
+  &lt;&lt;/switch&gt;&gt;
+
 
   ?P
   Sprite, ok, changing music speed
@@ -19247,12 +19328,37 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
   Nero &lt;&lt;= $n1_candleHorny ? &quot;whines&quot; : &quot;whispers&quot;&gt;&gt;,
   &quot;Please, stop the music!&quot;
 
-  &lt;&lt;if !$n2_ivexGone&gt;&gt;
+  &lt;&lt;switch $t_ivexContext&gt;&gt;
+  &lt;&lt;case `IC_gone`&gt;&gt;
+    &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
+    /* nothing */
+  &lt;&lt;case `IC_distant`&gt;&gt;
+    &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
     ?P
-    TODO ivexNear.
-    TODO candleLit-mask.
-    Ivex, something horny.
-  &lt;&lt;/if&gt;&gt;
+    XXX Ivex notices the wolf whispering. &quot;What are you mumbling about now?&quot;
+  &lt;&lt;case `IC_explainTheft`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_lickPaw`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_begForMe`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_comfortable`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;case `IC_whoSentYou`&gt;&gt;
+    &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+    ?P
+    XXX
+  &lt;&lt;default&gt;&gt;
+    &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
+  &lt;&lt;/switch&gt;&gt;
 
   ?P
   Sprite, ok, switching music to &quot;Stop the Music, ?master&quot;
@@ -19266,12 +19372,19 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 
 ?P
 A moment later, the Sprite ?sprSays,
-&lt;span class=sprite-q&gt;&quot;&lt;em&gt;&lt;&lt;= _pw&gt;&gt;&lt;/em&gt; is not the correct password.&lt;/span&gt;
-XXX sometimes &quot;that was last month&#39;s password&quot;
+&lt;span class=sprite-q&gt;&quot;&lt;em&gt;&lt;&lt;= _pw&gt;&gt;&lt;/em&gt; &lt;&lt;= _isWrong&gt;&gt;&lt;/span&gt;
+
 &lt;&lt;switch $n1_passTried.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
   &lt;span class=sprite-q&gt;You have two tries remaining, ?master&quot;&lt;/span&gt;
   &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
+
+  ?P
+  This is a bit concerning. Nero was hoping
+  that he&#39;d have more than two attempts at guessing the password.
+  Well, two is still better than none,
+  and &lt;em&gt;possible&lt;/em&gt; is infinitely more likely than &lt;em&gt;impossible&lt;/em&gt;.
+
 &lt;&lt;case 2&gt;&gt;
   &lt;span class=sprite-q&gt;You have one &lt;span class=impatient-overrun&gt;
     look up the singular form of the
@@ -19282,16 +19395,26 @@ XXX sometimes &quot;that was last month&#39;s password&quot;
   &lt;/span&gt;
   remaining, ?master&quot;&lt;/span&gt;
   &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
+
+
 &lt;&lt;case 3&gt;&gt;
   XXX zero tries remaining
   &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
+
+
 &lt;&lt;case 4&gt;&gt;
   XXX no more tries
   &lt;&lt;set $n1_magicPhase = MP_lockedOut&gt;&gt;
-&lt;&lt;/switch&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;
 
-$t_afterAction</tw-passagedata><tw-passagedata pid="404" name="n1s/D On Hold" tags="inclusion" position="6450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;default&gt;&gt;
+  &lt;&lt;run throw new Error(`unexpected passTried ${$n1_passTried.length}`)&gt;&gt;
+&lt;&lt;/switch&gt;&gt;
+
+?P
+$t_afterAction
+
+/* n1_magicPhase set above */
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="404" name="n1s/D On Hold" tags="inclusion" position="6450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;set _annoyance = () =&gt; {
   $t_spriteHold || ($t_spriteHold = 0);
@@ -19318,14 +19441,15 @@ $t_afterAction</tw-passagedata><tw-passagedata pid="404" name="n1s/D On Hold" ta
     ?P
     Does he know the right password already?
     Or has the Sprite hidden it somewhere in the room for him to find?
-    &lt;&lt;set _action = &quot;more!&quot;&gt;&gt;
+    The humming is making it hard to concentrate.
+    &lt;&lt;set _action = &quot;be quiet!&quot;&gt;&gt;
   &lt;&lt;else&gt;&gt;
     It resumes its soft humming of a cheerful children&#39;s song.
     ?P
     &lt;&lt;= _annoyance()&gt;&gt;
     Nero wonders what the Sprite is doing. In the meantime,
     he can look for more clues to Ivex&#39;s password.
-    &lt;&lt;set _action = &quot;be quiet!&quot;&gt;&gt;
+    &lt;&lt;set _action = &quot;be quiet.&quot;&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;case 2&gt;&gt;
@@ -19363,12 +19487,37 @@ to the Sprite, &quot;$t_passToTry&quot;.
 
 XXX some thoughts related to tries left and/or password.
 
-&lt;&lt;if !$n2_ivexGone&gt;&gt;
+&lt;&lt;switch $t_ivexContext&gt;&gt;
+&lt;&lt;case `IC_gone`&gt;&gt;
+  &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
+  /* nothing */
+&lt;&lt;case `IC_distant`&gt;&gt;
+  &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   ?P
-  ivex: what was that? speak up.
-  vary on ivexNear.
-  add some lewd responses for specific passwords
-&lt;&lt;/if&gt;&gt;
+  XXX Ivex notices the wolf whispering. &quot;What are you mumbling about now?&quot;
+&lt;&lt;case `IC_explainTheft`&gt;&gt;
+  &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+  ?P
+  XXX
+&lt;&lt;case `IC_lickPaw`&gt;&gt;
+  &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+  ?P
+  XXX
+&lt;&lt;case `IC_begForMe`&gt;&gt;
+  &lt;&lt;vi-always n1_candleLit false&gt;&gt;
+  ?P
+  XXX
+&lt;&lt;case `IC_comfortable`&gt;&gt;
+  &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+  ?P
+  XXX
+&lt;&lt;case `IC_whoSentYou`&gt;&gt;
+  &lt;&lt;vi-always n1_candleLit true&gt;&gt;
+  ?P
+  XXX
+&lt;&lt;default&gt;&gt;
+  &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
+&lt;&lt;/switch&gt;&gt;
 
 ?P
 The sprite ?sprSays,
@@ -19694,7 +19843,7 @@ but you definitely have need of my... training.&quot;
 
 ?P
 Nero splays his ears in genuine distress and speaks softly,
-&quot;Yes...&quot;
+&quot;Of course...&quot;
 
 ?P
 The wolf quickly tries to change the subject.
@@ -20061,22 +20210,25 @@ $t_afterAttack
 &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
-Nero is feeling unusually drained. His internal reserve of
-arcane energy
-was depleted by the failed casting of ?spell.
-Normally, his energy would be quickly replenished
-by the natural mesh of power that emerges from the planet,
-but replenishment is not happening here.
+Nero will need mage-sight to understand Ivex&#39;s anti-magic field.
 
 ?P
-Energy deserts are not a rare occurrence,
-but it would be quite odd for a mage like Ivex to place his home
+The wolf hesitates, because he&#39;s feeling unusually drained.
+Most of his arcane energy
+was consumed by the failed casting of ?spell.
+Normally, his energy would be quickly replenished
+by the natural mesh of power that emerges from the planet.
+Replenishment is not happening here.
+
+?P
+Energy deserts are not a rare occurrence.
+Still, it would be quite odd for a mage to place his home
 in such a location.
 There must be some other reason for the drought in this place.
-Nero will need mage-sight to diagnose it.
 
 ?P
-The wolf hesitates. Mage-sight does require energy,
+Mage-sight can also diagnose that problem.
+But it &lt;em&gt;does&lt;/em&gt; require energy,
 and he has very little to spare...
 
 ?P
@@ -21454,12 +21606,12 @@ Usually the images chosen are pornographic.
   &lt;&lt;if $n2_ivexGone&gt;&gt;
     is not here to witness it.
   &lt;&lt;elseif $t_ivexNear&gt;&gt;
-    is unlikely to understand the mistake.
+    is unlikely to realize he&#39;s talking to the Sprite.
   &lt;&lt;else&gt;&gt;
     is not close enough to hear the mistake.
   &lt;&lt;/if&gt;&gt;
   ?P
-  Nero tries again. &quot;Please, Nackle&#39;s Poltergeist Device!&quot;
+  Nero tries again. &quot;Please, Nackle&#39;s Poltergeist Device.&quot;
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;switch $t_ivexContext&gt;&gt;
@@ -21469,7 +21621,7 @@ Usually the images chosen are pornographic.
 &lt;&lt;case `IC_distant`&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   ?P
-  Ivex notices the whispering. &quot;What was that? You must speak louder!&quot;
+  Ivex notices the whispering. &quot;What was that you said?&quot;
 &lt;&lt;case `IC_explainTheft` `IC_lickPaw` `IC_begForMe`&gt;&gt;
   &lt;&lt;vi-always n1_candleLit false&gt;&gt;
   ?P
@@ -21619,11 +21771,10 @@ The wolf shakes his head.
 
 &lt;&lt;else&gt;&gt;
   Of course. Penetrating a competent mage&#39;s defenses is
-  never &lt;em&gt;that&lt;/em&gt; easy. Nero was, and still is, skeptical of
+  never &lt;em&gt;that&lt;/em&gt; easy. Nero is skeptical of
   Ivex&#39;s competence, but the panther
   certainly has &lt;em&gt;some&lt;/em&gt; impressive magic.
   Perhaps he does have real competence.
-  Competence is rarely evenly distributed.
   It&#39;s quite normal for competent mages to have spots of
   incompetence here and there.
   
@@ -22151,7 +22302,11 @@ Nero is elated that he&#39;s found an ordinary
 amid all of Ivex&#39;s exotic magics.
 And apparently not warded!
 This is the slightest of flaws, but it&#39;s all that the wolf mage needs
-to start bypassing the panther&#39;s magic defenses.
+&lt;&lt;if $n1_subby&gt;&gt;
+  to start dissecting the panther&#39;s magic.
+&lt;&lt;else&gt;&gt;
+  to start bypassing the panther&#39;s magic defenses.
+&lt;&lt;/if&gt;&gt;
 
 ?P
 Tapping an unfamiliar node requires patience and precision.
@@ -22177,7 +22332,9 @@ The lupine mage cautiously extends a spectral arc toward the node...
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 
 Nero quickly finds the right harmonics for this node.
-Ivex seems quite careless with his security...
+Ivex seems
+&lt;&lt;= $n1_subby ? &quot;a little&quot; : &quot;quite&quot;&gt;&gt;
+careless with his security...
 
 ?P
 &lt;&lt;fade-in 5s&gt;&gt;
@@ -22308,7 +22465,8 @@ would be difficult for Nero to speak without raising questions.
   The wolf prevents his tail from wagging.
 &lt;&lt;/if&gt;&gt;
 Access to something as powerful as a Sprite
-opens up limitless possibilities for escape!
+opens up limitless possibilities for
+&lt;&lt;= $n1_subby ? &quot;understanding this place!&quot; : &quot;escape!&quot;&gt;&gt;
 ?P
 The Sprite speaks again.
 &lt;span class=sprite-q&gt;&quot;Which device in this room do you wish
@@ -22340,27 +22498,29 @@ $t_afterAction
 &lt;&lt;vi-always n2_free false&gt;&gt;
 
 &lt;&lt;if $n1_candleHorny&gt;&gt;
-    The anti-magic field is as frustrating as the restraints on Nero&#39;s limbs.
-    There must be &lt;em&gt;some&lt;/em&gt; magic he can cast that will
-    let him stroke his cock.
-    But the wolf&#39;s power is still drained by the failure of ?spell.
-    He tries to think of a way to replenish it.
-    &lt;&lt;set $t_magicAction =
-        &quot;[[Search for more magic energy.|n1s/F Cast Sight Horny]]&quot;&gt;&gt;
+  The anti-magic field is as frustrating as the restraints on Nero&#39;s limbs.
+  There must be &lt;em&gt;some&lt;/em&gt; magic he can cast that will
+  let him stroke his cock.
+  But the wolf&#39;s power is still drained by the failure of ?spell.
+  He tries to think of a way to replenish it.
+  &lt;&lt;set $t_magicAction =
+    &quot;[[Search for more magic energy.|n1s/F Cast Sight Horny]]&quot;&gt;&gt;
 &lt;&lt;else&gt;&gt;
-    The wolf&#39;s power has been depleted by the failure of ?spell,
-    but his energy will replenish soon enough.
-    In the meantime, perhaps he should cast mage-sight
-    and look for a flaw in the anti-magic field.
-    &lt;&lt;if $t_ivexReceptive&gt;&gt;
-        Ivex is watching, but mage-sight is a conventional move in tactical magic,
-        and it might show that the wolf mage is not &lt;em&gt;completely&lt;/em&gt;
-        incompetent.
-    &lt;&lt;elseif !$n2_ivexGone&gt;&gt;
-        Ivex is watching, but it&#39;ll be too quick for him to stop,
-        and Nero needs every advantage he can get.
+  The wolf&#39;s power is temporarily depleted by the failure of ?spell.
+  But he has enough power to cast mage-sight
+  &lt;&lt;= $n1_subby ? &quot;to understand&quot; : &quot;and look for a flaw in&quot;&gt;&gt;
+  the anti-magic field.
+  &lt;&lt;if !$n2_ivexGone&gt;&gt;
+    &lt;&lt;if $t_ivexReceptive || $n1_subby&gt;&gt;
+      Mage-sight is a conventional move in tactical magic,
+      and it might show that the wolf mage is not &lt;em&gt;completely&lt;/em&gt;
+      incompetent.
+    &lt;&lt;else&gt;&gt;
+      Ivex is watching, but it&#39;ll be too quick for him to stop,
+      and Nero needs every advantage he can get.
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;set $t_magicAction = &quot;[[Cast mage-sight.|n1s/F Cast Sight 1]]&quot;&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
+  &lt;&lt;set $t_magicAction = &quot;[[Cast mage-sight.|n1s/F Cast Sight 1]]&quot;&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -26183,8 +26343,8 @@ of that monstrous creature. Is that a bird of some sort?&quot;
   &lt;&lt;= _screamed ? &quot;now.&quot; : &quot;right now.&quot;&gt;&gt;
   The wolf is a bit dismayed that the panther responded
   &lt;&lt;= _screamed ? &quot;with such hostility.&quot; : &quot;so coldly.&quot;&gt;&gt;
-  Nero is normally more successful at friendly dialogue
-  with his adversaries.
+  Nero is normally more successful at friendly dialogue with
+  &lt;&lt;= $n1_subby ? &quot;bullies&quot; : &quot;adversaries&quot;&gt;&gt;.
   ?P
   &lt;&lt;if $n1_ivexWasReceptive&gt;&gt;
     Perhaps he should have asked earlier, when the panther was in

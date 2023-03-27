@@ -18,6 +18,10 @@
   const T = State.temporary;
   V.n1_passTried || (V.n1_passTried = ["placeholder for testing"]);
   T.pw = V.n1_passTried[0].replace(/^#/, "");
+  T.isWrong = "is not the correct password, ?master";
+  if (Nero.oldPasswords[T.pw]) {
+    T.isWrong = Nero.oldPasswords[T.pw];
+  }
 <</script>>
 
 <<set _whines = $n1_candleHorny ? "whines" : "whispers">>
@@ -25,17 +29,46 @@
 <<switch $n1_passTried.length>>
 <<case 1>>
   <<if $n1_candleHorny>>
-    Nero whines, "Please, more!"
+    Nero whines, "Please, be quiet!"
   <<else>>
-    Nero whispers, "Please, be quiet!"
+    Nero whispers, "Please, be quiet."
   <</if>>
 
-  <<if !$n2_ivexGone>>
+  <<switch $t_ivexContext>>
+  <<case `IC_gone`>>
+    <<vi-ignore n1_candleLit>>
+    /* nothing */
+  <<case `IC_distant`>>
+    <<vi-ignore n1_candleLit>>
     ?P
-    TODO ivexNear.
-    TODO candleLit-mask.
-    Ivex, something lewd
-  <</if>>
+    Ivex notices the wolf whispering. "You must speak louder!"
+  <<case `IC_explainTheft`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    Ivex snorts. "Is my questioning affecting your ability to think
+    of a plausible story?"
+  <<case `IC_lickPaw`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    Ivex frowns. "This is not a difficult thing I ask.
+    What traumas in your mind have I touched?"
+  <<case `IC_begForMe`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    Ivex says seriously, "Thinking will not help you make this choice.
+    Do you never listen to your instincts?"
+  <<case `IC_comfortable`>>
+    <<vi-always n1_candleLit true>>
+    ?P
+    Ivex shouts in his mask. "Are! You! Comfortable!"
+  <<case `IC_whoSentYou`>>
+    <<vi-always n1_candleLit true>>
+    ?P
+    Ivex leans in close and whispers in Nero's ear.
+    "Who. Sent. You."
+  <<default>>
+    <<run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)>>
+  <</switch>>
 
   <<set $n1_spriteQuiet = true>>
   ?P
@@ -43,7 +76,11 @@
   <span class=sprite-q>"Quiet mode activated, ?master"</span>
 
   ?P
-  XXX Nero regrets.
+  Nero winces. The Sprite is now speaking softly,
+  except that it's saying
+  <span class=sprite-q>"?mastern"</span> louder than before.
+  The panther has messed up the Sprite's instructions in
+  strange ways.
 
 <<case 2>>
   <<if $n1_candleHorny>>
@@ -52,12 +89,38 @@
     Nero whispers, "Please, hurry up!"
   <</if>>
 
-  <<if !$n2_ivexGone>>
+  <<switch $t_ivexContext>>
+  <<case `IC_gone`>>
+    <<vi-ignore n1_candleLit>>
+    /* nothing */
+  <<case `IC_distant`>>
+    <<vi-ignore n1_candleLit>>
     ?P
-    TODO ivexNear.
-    TODO candleLit-mask.
-    Ivex, something horny.
-  <</if>>
+    XXX Ivex notices the wolf whispering. "What are you mumbling about now?"
+  <<case `IC_explainTheft`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    XXX
+  <<case `IC_lickPaw`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    XXX
+  <<case `IC_begForMe`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    XXX
+  <<case `IC_comfortable`>>
+    <<vi-always n1_candleLit true>>
+    ?P
+    XXX
+  <<case `IC_whoSentYou`>>
+    <<vi-always n1_candleLit true>>
+    ?P
+    XXX
+  <<default>>
+    <<run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)>>
+  <</switch>>
+
 
   ?P
   Sprite, ok, changing music speed
@@ -69,12 +132,37 @@
   Nero <<= $n1_candleHorny ? "whines" : "whispers">>,
   "Please, stop the music!"
 
-  <<if !$n2_ivexGone>>
+  <<switch $t_ivexContext>>
+  <<case `IC_gone`>>
+    <<vi-ignore n1_candleLit>>
+    /* nothing */
+  <<case `IC_distant`>>
+    <<vi-ignore n1_candleLit>>
     ?P
-    TODO ivexNear.
-    TODO candleLit-mask.
-    Ivex, something horny.
-  <</if>>
+    XXX Ivex notices the wolf whispering. "What are you mumbling about now?"
+  <<case `IC_explainTheft`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    XXX
+  <<case `IC_lickPaw`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    XXX
+  <<case `IC_begForMe`>>
+    <<vi-always n1_candleLit false>>
+    ?P
+    XXX
+  <<case `IC_comfortable`>>
+    <<vi-always n1_candleLit true>>
+    ?P
+    XXX
+  <<case `IC_whoSentYou`>>
+    <<vi-always n1_candleLit true>>
+    ?P
+    XXX
+  <<default>>
+    <<run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)>>
+  <</switch>>
 
   ?P
   Sprite, ok, switching music to "Stop the Music, ?master"
@@ -88,12 +176,19 @@
 
 ?P
 A moment later, the Sprite ?sprSays,
-<span class=sprite-q>"<em><<= _pw>></em> is not the correct password.</span>
-XXX sometimes "that was last month's password"
+<span class=sprite-q>"<em><<= _pw>></em> <<= _isWrong>></span>
+
 <<switch $n1_passTried.length>>
 <<case 1>>
   <span class=sprite-q>You have two tries remaining, ?master"</span>
   <<set $n1_magicPhase = MP_wantPass>>
+
+  ?P
+  This is a bit concerning. Nero was hoping
+  that he'd have more than two attempts at guessing the password.
+  Well, two is still better than none,
+  and <em>possible</em> is infinitely more likely than <em>impossible</em>.
+
 <<case 2>>
   <span class=sprite-q>You have one <span class=impatient-overrun>
     look up the singular form of the
@@ -104,13 +199,23 @@ XXX sometimes "that was last month's password"
   </span>
   remaining, ?master"</span>
   <<set $n1_magicPhase = MP_wantPass>>
+
+
 <<case 3>>
   XXX zero tries remaining
   <<set $n1_magicPhase = MP_wantPass>>
+
+
 <<case 4>>
   XXX no more tries
   <<set $n1_magicPhase = MP_lockedOut>>
-<</switch>>
-<</nobr>>
 
+<<default>>
+  <<run throw new Error(`unexpected passTried ${$n1_passTried.length}`)>>
+<</switch>>
+
+?P
 $t_afterAction
+
+/* n1_magicPhase set above */
+<</nobr>>
