@@ -4,7 +4,6 @@ This is a description of paths to all of Nero's endings.
 I suggest you don't read this until you've played through
 at least three different Nero ending variations.
 
-
 <details>
   <summary>
     Spoilers
@@ -22,7 +21,7 @@ at least three different Nero ending variations.
 Are you sure you want to see this?
 Nero's story has many hints for all the endings,
 and this description reveals many things that are
-much more fun to discover yourself.
+probably more fun to discover yourself.
 
 <details>
   <summary>
@@ -45,7 +44,7 @@ There are only a few paths that require specific moods.
   option gets there in a different mood/state: `normal`, `naked`, `abused`.
 - (1) `normal` is the baseline mood.
 - (2) `naked` is triggered when Ivex removes Nero's clothes.
-  - `naked` is one of the initial options, and it can also happen at
+  - `naked` is one of the initial choices, and it can also happen at
     several other points.
   - Nero is always `naked` before Ivex leaves.
   - Becoming `naked` also asks barbs/smooth. There are 4 variants:
@@ -58,17 +57,17 @@ There are only a few paths that require specific moods.
 - (4) `tough` is triggered by some choices after `abused`.
 - (5) `subby` is triggered by particular dialog choices.
   - `subby` is needed for reaching one ending.
-- (6) `candleHorny` is triggered when the candle has been lit long enough.
+- (6) `candleHorny` is triggered when the candle has been lit long enough,
+  and goes away when the candle is snuffed or disabled.
 - (7) `extraHorny` is triggered when Nero escapes the cross on
     the easy path.
-  - `extraHorny` is normally false on the hard path, but there's an
-    optional action that can trigger it anyway.
+  - `extraHorny` is normally false on the hard path, but there are
+    optional actions that can trigger it anyway.
 </details>
 
 ### 1st Floor Easy
-The easy solution is 4 steps that can be done
-before or after Ivex leaves, and 1 step that
-must be done after he leaves.
+The easy solution is 3 steps that can be done before or after Ivex leaves,
+and 1 step done after he leaves.
 
 It's a simple sequence of choices and actions.
 The game strongly nudges the player in the right direction.
@@ -77,19 +76,21 @@ A player will probably find this on their 1st or 2nd playthrough.
 
 <details>
 
-- At the Ivex-gone restart point, Nero is bound to the cross, Ivex is gone,
-  the candle is lit.
-- 4 looks or 2 actions will take the candle to near-max.
-  At near-max, the next look or action will take candle to max,
-  which forces the final choice.
-- Most actions here are not useful. They're either teases, or they provide
+- At the Ivex-gone restart point, Nero is bound to the cross,
+  and the candle relights itself.
+- Most actions at this point are not useful.
+  They're either teases, or they provide
   hints for the next attempt at 1st Floor Hard.
+- 2 looks or 1 action will trigger `candleHorny`.
+- 4 looks or 2 actions will take the candle to near-max.
+- At near-max, the next look or action will take candle to max,
+  which forces the final choice.
 - These actions can be done earlier, or can be done here:
   - (1-A) Try casting any spell.
   - (2-A) Cast mage-sight.
   - (3-L) See the energy web of the crystals with mage-sight.
-    If candleHorny, looking at the mirror is enough.
-- (4-A) When the candle is at max, and Nero has seen the crystals'
+    If `candleHorny`, looking at the mirror is enough.
+- (4-A) When the candle is at max, and Nero has seen the crystal
   energy web with mage-sight, struggling will disrupt the grav crystals.
   - Anything other than struggling will fail.
   - This is basically be a 50/50 choice if the player misses the hints.
@@ -98,19 +99,21 @@ A player will probably find this on their 1st or 2nd playthrough.
     - Bad Ending: Tamed Harsh - resist
 - After disrupting the grav crystals, there's a choice between
   getting the letter opener first or snuffing the candle first.
-  Unlike Drekkar's story, both options succeed. There's no trap here.
-- Easy solution will break the mirror if it's tapped,
+  Both options succeed. There's no trap here.
+- If the mirror is tapped, it will get broken,
   making it unavailable on the 2nd Floor,
   and making the 2nd Floor Easy solution unavailable.
-- There are additional Bad Endings here:
+- There are two Bad Endings that can happen after the easy escape:
   - Bad Ending: Caged Mild - paw off before leaving.
-  - Bad Ending: Caged Harsh - paw off with wand before leaving. This is meant
-    to be a little hard to find. It requires asking Ivex about the wand,
-    which can be done when the Sprite wants touch or password.
+  - Bad Ending: Caged Harsh - use wand before leaving.
+    - This is meant to be a little hard to find.
+    - It requires asking Ivex about the wand,
+      which can be done when the Sprite wants touch or password.
+    - This might require restarting from the beginning.
 </details>
 
 ### 1st Floor Hard
-The hard solution has 9 steps that must be done before Ivex leaves.
+The hard solution is 11 steps that must be done before Ivex leaves.
 It's designed to be unlikely to be found on the
 1st playthrough, but not too hard to find after a few more playthroughs.
 
@@ -125,8 +128,8 @@ the 4th or 5th playthrough.
 <details>
 
 - (1-A) Try casting any non-attack spell
-  (attack closes some conversation paths, which means there isn't enough
-  time to do everything else).
+  - Attack closes some conversation paths, which means there isn't enough
+    time to do everything else.
 - (2-A) Cast mage-sight.
 - (3-A) Tap the mirror to get the Sprite.
   - This is the first step that isn't obvious, but it's unlikely to be missed.
@@ -178,8 +181,9 @@ the 4th or 5th playthrough.
 
 ### Challenge Ending: Broken
 This is the challenge ending on the first floor.
-There are clues to it, but it's meant to be
-hard to find.
+It's meant to be hard to find, but not impossible.
+It will probably require careful exploration and understanding of
+most of Nero's paths. There are also some oblique clues to it.
 <details>
 
 - You must have seen Mica already in other playthroughs.
@@ -187,8 +191,8 @@ hard to find.
 - Follow the dialog branches to becoming an apprentice.
 - When Ivex removes Nero's clothes, use the 3rd option,
   which is hidden but briefly shown.
-- Finish the hard escape.
 - Make sure to ask about the wand before Ivex leaves.
+- Finish the hard escape.
 - Use the wand.
 
 </details>
@@ -229,7 +233,6 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
 <details>
 
 - Nero escaped 1st floor but doesn't have the mirror.
-- This is a somewhat tricky timing puzzle.
 - Nero needs the gem in the blob.
   - Nero is not going to enter the blob without a way to escape, which is
     wearing the ring.
