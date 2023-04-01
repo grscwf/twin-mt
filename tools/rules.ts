@@ -1,6 +1,7 @@
 export type Rule = {
   target: string;
   dirs: string[];
+  omit?: string[] | null | undefined;
 };
 
 const common = [
@@ -18,5 +19,6 @@ export const rules: Rule[] = [
   {
     target: "nero.html",
     dirs: [...common, "tw-nero-*", "tw-nero-0"],
+    omit: ["tw-nero-wip"],
   },
 ];

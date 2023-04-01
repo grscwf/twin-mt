@@ -76,7 +76,11 @@ async function needsBuild(rule: Rule, force: boolean) {
 }
 
 async function buildRule(rule: Rule): Promise<void> {
-  const dirs = await fastGlob(rule.dirs, { onlyFiles: false });
+  let dirs = await fastGlob(rule.dirs, { onlyFiles: false });
+  if (rule.omit != null) {
+    const omit = await fastGlob(rule.omit, { onlyFiles: false });
+    dirs = dirs.filter(d => !omit.includes(d));
+  }
   const cmd = `tweego -o ${rule.target} ${dirs.join(" ")}`;
   log(cmd);
   await runP(cmd, { echo: true });
