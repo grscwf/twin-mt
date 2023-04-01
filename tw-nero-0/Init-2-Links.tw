@@ -1,4 +1,20 @@
 :: Init 2 Links [inclusion] {"position":"2450,600","size":"100,100"}
+<<append head>><style>
+.mtl-denied .mtl-action {
+  color: #999;
+  text-decoration: line-through;
+  text-decoration-color: #999;
+  text-decoration-thickness: 1px;
+}
+.mtl-denied .mtl-reason {
+  color: #999;
+  margin-left: 0.5em;
+  font-style: italic;
+}
+</style>
+<</append>>
+
+
 <<script>>
 
 /**
@@ -35,6 +51,24 @@ Macro.add("mtl", {
     const text = this.payload[0].contents;
     $("<li>").append(makeLink(link, code, text))
       .appendTo(this.output);
+  }
+});
+
+/**
+ * <<mtl-denied [$reason]>>
+ *   $text
+ * <</mtl-denied>>
+ */
+Macro.add("mtl-denied", {
+  tags: [],
+  handler: function() {
+    const [reason] = this.args;
+    const text = this.payload[0].contents.trim();
+    const li = $("<li class=mtl-denied>").appendTo(this.output);
+    $("<span class=mtl-action>").wiki(text).appendTo(li);
+    if (reason != null && reason !== "") {
+      $("<span class=mtl-reason>").text(reason).appendTo(li);
+    }
   }
 });
 
