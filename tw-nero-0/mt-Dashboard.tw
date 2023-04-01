@@ -49,7 +49,7 @@ const countable = new Set([
   "markF", "markD", "markP", "unmarked",
 ]);
 const incomplete = new Set([
-  "markD", "markP",
+  "markD", "markP", "markS",
 ]);
 
 function analyze(passages) {
@@ -80,7 +80,7 @@ function analyze(passages) {
     /* mt should probably be a separate kind */
     if (/^Init |^mt/.test(title)) return "init";
     if (/^Story/.test(title)) return "twine";
-    const m = /^\w\d+\w*[/]([DFPS])/.exec(title);
+    const m = /^\w\d+\w*[-/]([DFPS]) /.exec(title);
     if (m != null) return `mark${m[1]}`;
     return "unmarked";
   };
@@ -209,7 +209,8 @@ function showRandom(dest, info) {
   const head = $("<div class=dash-head>").appendTo(block);
   const body = $("<div class=dash-body>").appendTo(block);
   const toShow = Object.keys(info.kindOf)
-    .filter(t => info.todosIn[t] || incomplete.has(info.kindOf[t]))
+    .filter(t => info.todosIn[t] ||
+      (incomplete.has(info.kindOf[t]) && countable.has(info.kindOf[t])))
     .sort();
   const reroll = () => {
     body.empty();
