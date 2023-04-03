@@ -184,12 +184,6 @@ Nero.keywords = {
   },
 };
 
-function obscure(i, kw) {
-  return kw.title;
-  if (kw.reveal) return "";
-  return kw.title.replace(/[^A-Z ]/g, " . ");
-}
-
 Nero.kwCount = () => {
   const V = State.variables;
   let mkp = "<<nobr>>";
@@ -199,7 +193,7 @@ Nero.kwCount = () => {
     const vn = `n9_kw_${key}`;
     if (V[vn]) unlocked++;
   }
-  const reveal = V.n9_escaped || unlocked === keys.length;
+  const reveal = V.n0_leftWithMirror || unlocked === keys.length;
   const total = reveal ? keys.length : "?";
   mkp += `(${unlocked} of ${total})`;
   mkp += "<</nobr>>";
@@ -216,16 +210,20 @@ Nero.listKeywords = () => {
     const bt = Nero.keywords[b].title;
     return at < bt ? -1 : at > bt ? +1 : 0;
   });
+  let anyShown = false;
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     const kw = Nero.keywords[key];
     const vn = `n9_kw_${key}`;
-    if (!V.n9_escaped && !V[vn] && !T.lockpick) continue;
-    const hidden = obscure(i, kw);
+    if (!V.n0_leftWithMirror && !V[vn] && !T.lockpick) continue;
+    anyShown = true;
     mkp += `<<arc-ending $` + `n9_kw_${key}`;
     mkp += ` [\[${kw.title}|n0-F Nero Keyword]]`;
-    mkp += ` "${hidden}" "$t_keyword = '${key}'">>`;
+    mkp += ` "" "$t_keyword = '${key}'">>`;
     mkp += `<</arc-ending>>\n`;
+  }
+  if (!anyShown) {
+    mkp += `No keywords found yet.`;
   }
   mkp += "<</nobr>>";
   return mkp;
