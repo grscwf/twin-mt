@@ -423,7 +423,7 @@ ul.actions li::before {
 #debug-bar {
   max-width: calc(100% - 3em);
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.saves.id = 'sleth-mages-tower-2';
-Config.ui.stowBarInitially = !State.metadata.get("show-sidebar");
+Config.ui.stowBarInitially = !session.get("show-sidebar");
 
 // enable debug mode if URL has ?debug
 if (/[?&]debug\b/.test(location.search)) {
@@ -467,10 +467,10 @@ $(document).on(':passagestart', function (ev) {
   }
   $("#ui-bar-toggle").on("click", () => {
     setTimeout(() => {
-      State.metadata.set("show-sidebar", !UIBar.isStowed());
+      session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -6683,13 +6683,18 @@ MT.log = [];
 MT.displayedPassage = null;
 
 function saveLog() {
-  State.metadata.set(KEY, MT.log);
+  session.set(KEY, MT.log);
 }
+
+$(document).on(&quot;:enginerestart&quot;, () =&gt; {
+  MT.log = [];
+  session.delete(KEY);
+});
 
 function initLog() {
   if (!setup.tester) return;
 
-  MT.log = State.metadata.get(KEY) || [];
+  MT.log = session.get(KEY) || [];
 
   $(&quot;&lt;div id=log-button&gt;&quot;)
     .appendTo(&quot;#story&quot;)
@@ -8126,14 +8131,14 @@ function initVarInfo() {
       outer.prependTo(&quot;#story&quot;);
     }
 
-    let show = State.metadata.get(&quot;varInfoShow&quot;);
+    let show = session.get(&quot;var-info-show&quot;);
     outer.toggleClass(&quot;var-info-hidden&quot;, !show);
 
     $(&quot;&lt;label&gt;var-info&lt;/label&gt;&quot;)
       .appendTo(outer)
       .click(() =&gt; {
         show = !show;
-        State.metadata.set(&quot;varInfoShow&quot;, show);
+        session.set(&quot;var-info-show&quot;, show);
         outer.toggleClass(&quot;var-info-hidden&quot;, !show);
       });
 
@@ -9986,13 +9991,13 @@ Macro.add(&quot;n1-patience&quot;, {
     V.t_patienceReturn = 0;
 
     if (setup.debug) {
-      let debug = !!State.metadata.get(&quot;patienceDebug&quot;);
+      let debug = !!session.get(&quot;patience-debug&quot;);
       const outer = $(&quot;&lt;span class=patience-debug&gt;&quot;).appendTo(this.output)
         .toggleClass(&quot;patience-debug-show&quot;, debug);
       $(&quot;&lt;label&gt;&quot;).append(&quot; &amp;#x1f527;&quot;).appendTo(outer)
         .click(() =&gt; {
           debug = !debug;
-          State.metadata.set(&quot;patienceDebug&quot;, debug);
+          session.set(&quot;patience-debug&quot;, debug);
           outer.toggleClass(&quot;patience-debug-show&quot;, debug);
         });
       $(&quot;&lt;a&gt;&quot;).text(&quot;(reset)&quot;).appendTo(outer)
@@ -10786,13 +10791,13 @@ Macro.add(&quot;pw-suggest&quot;, {
     }
 
     if (setup.debug) {
-      let debug = !!State.metadata.get(&quot;pwDebug&quot;);
+      let debug = !!session.get(&quot;pw-debug&quot;);
       $(&quot;#passages&quot;).toggleClass(&quot;pw-debug-show&quot;, debug);
       const outer = $(&quot;&lt;span class=pw-debug&gt;&quot;).appendTo(this.output);
       $(&quot;&lt;label&gt;&quot;).append(&quot; &amp;#x1f527;&quot;).appendTo(outer)
         .click(() =&gt; {
           debug = !debug;
-          State.metadata.set(&quot;pwDebug&quot;, debug);
+          session.set(&quot;pw-debug&quot;, debug);
           $(&quot;#passages&quot;).toggleClass(&quot;pw-debug-show&quot;, debug);
         });
       if (!pwDebugAlready) {
@@ -11105,7 +11110,7 @@ function todoBlock(info, title) {
 
 function setWhich(which) {
   State.temporary.which = which;
-  State.metadata.set(&quot;dashWhich&quot;, which);
+  session.set(&quot;dash-which&quot;, which);
   $(&quot;.dash-passages&quot;)
     .toggleClass(&quot;dash-which-all&quot;, which === &quot;all&quot;)
     .toggleClass(&quot;dash-which-unfinished&quot;, which === &quot;unfinished&quot;);
@@ -11116,7 +11121,7 @@ function showPassages(dest, info) {
   const head = $(&quot;&lt;div class=dash-head&gt;&quot;).appendTo(block);
   const body = $(&quot;&lt;div class=dash-body&gt;&quot;).appendTo(block);
 
-  setWhich(State.metadata.get(&quot;dashWhich&quot;) || &quot;unfinished&quot;);
+  setWhich(session.get(&quot;dash-which&quot;) || &quot;unfinished&quot;);
   $(&quot;&lt;label class=dash-which&gt;&quot;).appendTo(head)
     .wiki(&quot;&lt;&lt;radiobutton &#39;_which&#39; all autocheck&gt;&gt; All&quot;)
     .on(&quot;change&quot;, () =&gt; setWhich(&quot;all&quot;));
@@ -11166,7 +11171,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   const PN = window.PassageNotes;
   const T = State.temporary;
   const V = State.variables;
-  const session = window.sessionStorage;
+  const noteStore = window.sessionStorage;
 
   T.savedVal = &quot;&quot;;
   T.editVal = &quot;&quot;;
@@ -11209,7 +11214,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 
   function restoreSession() {
     T.savedVal = PN.getOne(V.t_notesOrigin);
-    T.editVal = session.getItem(&quot;notes-single:&quot; + V.t_notesOrigin) ?? T.savedVal;
+    T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin) ?? T.savedVal;
     $(&quot;#NP-input&quot;).val(T.editVal);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
@@ -11230,9 +11235,9 @@ $(document).one(&quot;:passagedisplay&quot;, render);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
     const key = &quot;notes-single:&quot; + V.t_notesOrigin;
     if (T.hasConflict) {
-      session.setItem(key, val);
+      noteStore.setItem(key, val);
     } else {
-      session.removeItem(key);
+      noteStore.removeItem(key);
     }
     uiUpdate();
   }
@@ -11298,7 +11303,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   const PN = window.PassageNotes;
   const T = State.temporary;
   const V = State.variables;
-  const session = window.sessionStorage;
+  const noteStore = window.sessionStorage;
 
   T.savedVal = &quot;&quot;;
   T.editVal = &quot;&quot;;
@@ -11315,7 +11320,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 
   function restoreSession() {
     T.savedVal = PN.getOne(V.t_notesOrigin);
-    T.editVal = session.getItem(&quot;notes-single:&quot; + V.t_notesOrigin) ?? T.savedVal;
+    T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin) ?? T.savedVal;
     $(&quot;#notes-input&quot;).val(T.editVal);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
@@ -11344,9 +11349,9 @@ $(document).one(&quot;:passagedisplay&quot;, render);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
     const key = &quot;notes-single:&quot; + V.t_notesOrigin;
     if (T.hasConflict) {
-      session.setItem(key, val);
+      noteStore.setItem(key, val);
     } else {
-      session.removeItem(key);
+      noteStore.removeItem(key);
     }
     uiUpdate();
   }
@@ -11424,7 +11429,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   const PN = PassageNotes;
   const T = State.temporary;
   const V = State.variables;
-  const session = window.sessionStorage;
+  const noteStore = window.sessionStorage;
 
   T.savedVal = &quot;&quot;;
   T.editVal = &quot;&quot;;
@@ -11449,7 +11454,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 
   function restoreSession() {
   T.savedVal = PN.getFull();
-  T.editVal = session.getItem(&quot;notes-full&quot;) ?? T.savedVal;
+  T.editVal = noteStore.getItem(&quot;notes-full&quot;) ?? T.savedVal;
   $(&quot;#notes-input&quot;).val(T.editVal);
   T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
@@ -11483,9 +11488,9 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   }
   T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   if (T.hasConflict) {
-    session.setItem(&quot;notes-full&quot;, T.editVal);
+    noteStore.setItem(&quot;notes-full&quot;, T.editVal);
   } else {
-    session.removeItem(&quot;notes-full&quot;);
+    noteStore.removeItem(&quot;notes-full&quot;);
   }
   uiUpdate();
   }
@@ -34027,9 +34032,9 @@ as a reminder of what can happen if the wolf refuses.
   };
 
   T.toggle = which =&gt; {
-    const now = State.metadata.get(&quot;arc-open&quot;);
+    const now = session.get(&quot;arc-open&quot;);
     const next = now === which ? &quot;none&quot; : which;
-    State.metadata.set(&quot;arc-open&quot;, next);
+    session.set(&quot;arc-open&quot;, next);
     T.open(next);
   };
 
@@ -34042,12 +34047,12 @@ as a reminder of what can happen if the wolf refuses.
   };
 
   $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-    const now = State.metadata.get(&quot;arc-open&quot;);
+    const now = session.get(&quot;arc-open&quot;);
     T.open(now || &quot;intro&quot;);
   });
   
   function lockpickSetup() {
-    T.lockpick = setup.debug &amp;&amp; State.metadata.get(&quot;arc-lockpick&quot;);
+    T.lockpick = setup.debug &amp;&amp; session.get(&quot;arc-lockpick&quot;);
     if (!setup.tester) return;
     $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
       const el = $(&quot;#arc-lockpick&quot;);
@@ -34059,7 +34064,7 @@ as a reminder of what can happen if the wolf refuses.
   function lockpickUpdate() {
     const el = $(&quot;#arc-lockpick&quot;);
     const val = !!el.prop(&quot;checked&quot;);
-    State.metadata.set(&quot;arc-lockpick&quot;, val);
+    session.set(&quot;arc-lockpick&quot;, val);
     VarInfo.revisitHere();
   }
   
