@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       State.metadata.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -9422,6 +9422,7 @@ Nero.enumImplies = {
       n1_mageSight: true,
       n1_mirrorTapped: true,
       n1_naked: true,
+      n1_passIsKnown: true,
       n1_penguinAsked: true,
       n1_penguinCoinDropped: true,
       n2_free: true,
@@ -9430,7 +9431,6 @@ Nero.enumImplies = {
       n2_mirrorBroken: false,
       n2_mirrorWasTapped: false,
       n2_tooClever: true,
-      n2_mirrorBroken: false,
       n2_wandRanAway: false,
     },
     [MP_lockedOut]: {
@@ -9441,6 +9441,7 @@ Nero.enumImplies = {
       n2_free: false,
       n2_magicPhaseLost: false,
       n2_mirrorBroken: false,
+      n2_tooClever: false,
       n2_wandRanAway: false,
       n2_wandRefused: false,
       n2_wandUsed: false,
@@ -9530,15 +9531,19 @@ Nero.enumImplies = {
       n2_tooClever: false,
     },
     [MP_wantPass]: {
+      // escaped at wantPass, but pawed off, didn&#39;t try to rescue mirror,
+      // didn&#39;t get contact, mirror not broken.
       n1_bottleNameKnown: true,
       n1_bottleViewed: true,
       n1_mageSight: false,
       n1_mirrorTapped: false,
       n1_magicPhase: MP_tapLost,
       n1_naked: true,
+      n1_passIsKnown: false,
       n2_extraHorny: true,
       n2_free: true,
       n2_ivexGone: true,
+      n2_mirrorBroken: false,
       n2_mirrorWasTapped: true,
       n2_tooClever: false,
     },
@@ -9547,15 +9552,19 @@ Nero.enumImplies = {
       impossible: true,
     },
     [MP_contact]: {
+      // escaped at wantPass, didn&#39;t paw off, tried to rescue mirror,
+      // accidentally said password, got brief contact, mirror broken.
       n1_bottleNameKnown: true,
       n1_bottleViewed: true,
       n1_mageSight: false,
       n1_mirrorTapped: false,
       n1_magicPhase: MP_tapLost,
       n1_naked: true,
+      n1_passIsKnown: true,
       n2_extraHorny: true,
       n2_free: true,
       n2_ivexGone: true,
+      n2_mirrorBroken: true,
       n2_mirrorWasTapped: true,
       n2_tooClever: false,
     },
@@ -10182,7 +10191,7 @@ function master(p1, p2) {
 Template.add(&quot;master&quot;, () =&gt; master(&quot;.&quot;, &quot;!&quot;));
 Template.add(&quot;mastern&quot;, () =&gt; master(&quot;&quot;, &quot;&quot;));
 Template.add(&quot;masterq&quot;, () =&gt; master(&quot;?&quot;, &quot;!?&quot;));
-Template.add(&quot;masterx&quot;, () =&gt; master(&quot;!&quot;, &quot;!&quot;));
+Template.add(&quot;masterX&quot;, () =&gt; master(&quot;!&quot;, &quot;!&quot;));
 
 Template.add(&quot;spell&quot;, () =&gt; {
   const V = State.variables;
@@ -14725,7 +14734,6 @@ and exploit any flaws he can find.
 ?P
 [[Continue|n1cn-F Recruit 2]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="310" name="n1cn-F Recruit 2" tags="" position="4175,2300" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n1_coinThrown false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic`&gt;&gt;
 
@@ -14767,7 +14775,15 @@ and exploit any flaws he can find.
 The panther mage makes a gesture.
 
 ?P
-A small metallic object rises from a bookcase
+&lt;&lt;if $n1_coinThrown&gt;&gt;
+  /* currently not possible, but might become possible if
+     timing is adjusted so that coin-ask can happen earlier. */
+  Another coin rises from the stack in the bookcase
+&lt;&lt;elseif $n1_bookcasesViewed&gt;&gt;
+  A coin rises from the stack in the bookcase
+&lt;&lt;else&gt;&gt;
+  A small metallic object rises from a bookcase
+&lt;&lt;/if&gt;&gt;
 and flies rapidly across the room, hitting
 &lt;&lt;if $n1_naked&gt;&gt;
   Nero in the balls.
@@ -14783,9 +14799,16 @@ but the wolf twists his torso and grimaces
 &lt;&lt;/if&gt;&gt;
 
 ?P
-The object bounces off and falls to the floor
+The &lt;&lt;= $n1_coinThrown || $n1_bookcasesViewed ? &quot;coin&quot; : &quot;object&quot;&gt;&gt;
+bounces off and falls to the floor
 with a small clattering sound.
-It appears to be a coin with a hole in it.
+&lt;&lt;if $n1_coinThrown || $n1_coinViewed&gt;&gt;
+  /* nothing */
+&lt;&lt;elseif $n1_bookcasesViewed&gt;&gt;
+  It appears to have a hole in it.
+&lt;&lt;else&gt;&gt;
+  It appears to be a coin with a hole in it.
+&lt;&lt;/if&gt;&gt;
 
 ?P
 &lt;&lt;if $n1_ivexRanted&gt;&gt;
@@ -22092,7 +22115,7 @@ He _speaks to the Sprite, &quot;Please, Lance Rockhard.&quot;
 
 ?P
 The Sprite responds.
-&lt;span class=sprite-q&gt;&quot;Got it, ?master You&#39;re awesome! ?masterx
+&lt;span class=sprite-q&gt;&quot;Got it, ?master You&#39;re awesome! ?masterX
 Hang on a second, ?master&quot;&lt;/span&gt;
 
 ?P
@@ -23479,80 +23502,85 @@ Such as:
   const sawKnife = V.n1_deskViewed;
 
   if (V.n1_bottleNameKnown) {
-  q.push(`Why did Ivex give the name Lance &lt;em&gt;Rock&lt;/em&gt;-hard
-    to a giant &lt;em&gt;metal&lt;/em&gt; cock?`);
+    q.push(`Why did Ivex give the name Lance &lt;em&gt;Rock&lt;/em&gt;-hard`
+      + ` to a giant &lt;em&gt;metal&lt;/em&gt; cock?`);
   
-  if (MP_wantName === V.n1_magicPhase) {
-    const t = `Tell the Sprite, &quot;Please, Lance Rockhard.&quot;`;
-    Nero.actionsAdd(`[[${t}|n1s-F Say Lance]]`);
-  }
+    if (MP_wantName === V.n1_magicPhase) {
+      const t = `Tell the Sprite, &quot;Please, Lance Rockhard.&quot;`;
+      Nero.actionsAdd(`[[${t}|n1s-F Say Lance]]`);
+    }
   }
 
   if (!V.n1_bottleNackleKnown) {
-  q.push(`Why would a bottled metallic horse dildo have
-    [[magic glyphs|n1x-F Nackle Brief]] inscribed on it?`);
+    q.push(`Why would a bottled metallic horse dildo have`
+      + ` [[magic glyphs|n1x-F Nackle Brief]] inscribed on it?`);
 
   } else {
-  if (knowSprite) {
-    q.push(`Why did Ivex choose a bottled metallic horse cock as the anchor
-    for [[Nackle&#39;s Poltergeist Device|n1x-F Nackle Brief]]?`);
-  
-    if (MP_wantDevice === V.n1_magicPhase) {
-    q.push(`Is this a device that the Sprite can contact?`);
+    if (knowSprite) {
+      q.push(`Why did Ivex choose a bottled metallic horse cock as the anchor`
+        + ` for [[Nackle&#39;s Poltergeist Device|n1x-F Nackle Brief]]?`);
     
-    const please = V.n1_rememberPlease ? &quot;Please, &quot; : &quot;&quot;;
-    const t = `Tell the Sprite, &quot;${please}Nackle&#39;s Poltergeist Device.&quot;`;
-    Nero.actionsAdd(`[[${t}|n1s-F Say Device]]`);
-    
-    } else if (MP_wantDevice === V.n2_magicPhaseLost) {
-    q.push(`Was this a device that the Sprite could have contacted?`);
+      if (MP_wantDevice === V.n1_magicPhase) {
+        q.push(`Is this a device that the Sprite can contact?`);
+        
+        const please = V.n1_rememberPlease ? &quot;Please, &quot; : &quot;&quot;;
+        const t = `Tell the Sprite, &quot;${please}Nackle&#39;s Poltergeist Device.&quot;`;
+        Nero.actionsAdd(`[[${t}|n1s-F Say Device]]`);
+      
+      } else if (MP_wantDevice === V.n2_magicPhaseLost) {
+        q.push(`Was this a device that the Sprite could have contacted?`);
+      }
+      
+    } else {
+      q.push(`How does Ivex expect to use`
+        + ` [[Nackle&#39;s Poltergeist Device|n1x-F Nackle Brief]]`
+        + ` when it&#39;s anchored on a metallic horse cock`
+        + ` that can&#39;t be touched?`);
     }
     
-  } else {
-    q.push(`How does Ivex expect to use
-    [[Nackle&#39;s Poltergeist Device|n1x-F Nackle Brief]]
-    when it&#39;s anchored on a metallic horse cock that can&#39;t be touched?`);
-  }
-  
-  if (nameAsked) {
-    q.push(`Why does Ivex have more than one Nackle&#39;s device in this room?`);
+    if (nameAsked) {
+      q.push(`Why does Ivex have more than one Nackle&#39;s device in this room?`);
+      q.push(`Is there &lt;em&gt;another&lt;/em&gt; enormous bottled cock`
+        + `in a cabinet somewhere?`);
+    }
 
-    q.push(`Is there &lt;em&gt;another&lt;/em&gt; enormous bottled cock
-    in a cabinet somewhere?`);
-  }
+    if (V.n2_tooClever) {
+      /* nothing */
+    
+    } else if (V.n2_free) {
+      if (MP_contact === V.n2_magicPhaseLost) {
+        q.push(`Could Nero have used Nackle &lt;em&gt;before&lt;/em&gt;`
+          + ` breaking the mirror?`);
+      } else {
+        q.push(`Could Nero have used Nackle&#39;s device to escape more quickly?`);
+      }
 
-  if (V.n2_tooClever) {
-    /* nothing */
-  
-  } else if (V.n2_free) {
-    q.push(`Could Nero have used Nackle&#39;s device to escape more quickly?`);
+    } else if (knowSprite &amp;&amp; sawKnife) {
+      q.push(`And will Nero be able to use the device to grab the`
+        + ` &lt;&lt;n1-no-loop [[letter opener?|n1x-F Knife]]&gt;&gt;`);
 
-  } else if (knowSprite &amp;&amp; sawKnife) {
-    q.push(`And will Nero be able to use the device to grab the`
-    + ` &lt;&lt;n1-no-loop [[letter opener?|n1x-F Knife]]&gt;&gt;`);
+    } else if (sawKnife) {
+      q.push(`And is there some way to use the device to grab the`
+        + ` &lt;&lt;n1-no-loop [[letter opener?|n1x-F Knife]]&gt;&gt;`);
 
-  } else if (sawKnife) {
-    q.push(`And is there some way to use the device to grab the`
-    + ` &lt;&lt;n1-no-loop [[letter opener?|n1x-F Knife]]&gt;&gt;`);
-
-  } else {
-    q.push(`And is there some way Nero can use the device to escape?`);
-  }
+    } else {
+      q.push(`And is there some way Nero can use the device to escape?`);
+    }
   }
   
   /* add items to the front */
   if (q.length &lt; 4) {
-  q.unshift(`Is it appropriate to call something of such
-    enormous size a dildo?`);
+    q.unshift(`Is it appropriate to call something of such`
+      + ` enormous size a dildo?`);
   }
   if (q.length &lt; 5) {
-  q.unshift(`What magic was used to insert that extremely large item
-    through the bottle&#39;s narrow neck?`);
+    q.unshift(`What magic was used to insert that extremely large item`
+      + ` through the bottle&#39;s narrow neck?`);
   }
   if (maybeHole) {
-  q.unshift(`Is the bottle&#39;s opening the hole that the Sprite
-    &lt;&lt;= $n2_magicPhaseLost ? &quot;wanted&quot; : &quot;wants&quot;&gt;&gt;
-    him to touch?`);
+    q.unshift(`Is the bottle&#39;s opening the hole that the Sprite`
+      + ` &lt;&lt;= $n2_magicPhaseLost ? &quot;wanted&quot; : &quot;wants&quot;&gt;&gt;`
+      + ` him to touch?`);
   }
 
   $(output).wiki(`&lt;ul&gt;&lt;li&gt;${q.join(&quot;&lt;/li&gt;&lt;li&gt;&quot;)}&lt;/li&gt;&lt;/ul&gt;`);
@@ -24122,6 +24150,8 @@ a small stack of
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
+
+&lt;&lt;set $n1_coinViewed = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="476" name="n1x-F Cross Bound" tags="" position="6300,5225" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 The wolf cannot see much of the cross that&#39;s holding
@@ -26184,8 +26214,7 @@ the surface of a metallic horse cock trapped inside a bottle.
   It seems unlikely the horse cock itself is &lt;em&gt;necessary&lt;/em&gt; for the
   construction. The contact to Nackle provided by the Sprite is probably
   due to the energized liquid medium within the bottle.
-  In any case, the construction has
-  a certain crazy brilliance to it.
+  In any case, the construction has a certain crazy brilliance to it.
 
   ?P
   It&#39;s one of those ideas that seems
@@ -26643,7 +26672,7 @@ of that monstrous creature. Is that a bird of some sort?&quot;
   A moment later, the Sprite says in Nero&#39;s ear,
   &lt;span class=sprite-q&gt;&quot;Thank you for
   touching my hole, ?master
-  You&#39;re the best, ?masterx&quot;&lt;/span&gt;
+  You&#39;re the best, ?masterX&quot;&lt;/span&gt;
 
   ?P
   Oh. The hole isn&#39;t the &lt;em&gt;penguin&lt;/em&gt;, it&#39;s the
@@ -29387,7 +29416,7 @@ toward the floor, out of reach.
 &lt;&lt;if MP_wantPass === $n1_magicPhase&gt;&gt;
   The Sprite&#39;s voice returns and ?sprSpeaks one last thing in the wolf&#39;s ear,
   before the mirror&#39;s impact with the floor silences the Sprite forever.
-  &lt;span class=sprite-q&gt;&quot;Password is correct, ?masterx&quot;&lt;/span&gt;
+  &lt;span class=sprite-q&gt;&quot;Password is correct, ?masterX&quot;&lt;/span&gt;
   ?P
   The crash of the mirror is a distressing sound.
   Nero lies on the floor and sobs a moment, from the exertion.
