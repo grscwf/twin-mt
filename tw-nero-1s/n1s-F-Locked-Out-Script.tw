@@ -1,0 +1,54 @@
+:: n1s-F Locked Out Script [inclusion] {"position":"6250,3650","size":"100,100"}
+<<nobr>>
+
+<<set $n1_lockoutTime || ($n1_lockoutTime = 30)>>
+
+<style>
+  .pf-outer {
+    display: inline-flex;
+    position: relative;
+  }
+  .pf-longest {
+    visibility: hidden;
+  }
+  .pf-alt {
+    position: absolute;
+    left: 0;
+    transition: opacity 1s 0.5s ease-in;
+  }
+  .pf-hide {
+    opacity: 0;
+  }
+</style>
+
+<<script>>
+  const V = State.variables;
+  const turn = State.turns;
+
+  function update() {
+    if (turn !== State.turns) return;
+    V.n1_lockoutTime--;
+    if (V.n1_lockoutTime < 0) {
+      V.n1_lockoutTime += 4294967296;
+      $("#pf-before").addClass("pf-hide");
+      setTimeout(() => $("#pf-after").removeClass("pf-hide"), 500);
+    }
+    $("#lockout-time").text(V.n1_lockoutTime);
+    setTimeout(update, 1000);
+  }
+
+  function start() {
+    if (setup.tester) {
+      $("#lockout-time").css({ cursor: "pointer" }).on("click", () => {
+        V.n1_lockoutTime = 2;
+        $("#pf-before").removeClass("pf-hide");
+        $("#pf-after").addClass("pf-hide");
+      });
+    }
+    update();
+  }
+
+  setTimeout(start, 1000);
+<</script>>
+
+<</nobr>>\
