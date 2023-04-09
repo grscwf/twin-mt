@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="pw-misfire-start" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -9927,7 +9927,7 @@ const EM = ErrorMessage;
 Macro.add(&quot;n1-patience&quot;, {
   tags: [&quot;n1-remind&quot;, &quot;n1-repeat&quot;, &quot;n1-warn&quot;, &quot;n1-insist&quot;],
   handler: function() {
-    const [looks, actions] = this.args;
+    let [looks, actions] = this.args;
 
     let firstText, remindText, repeatText, warnText, insistText;
     for (const p of this.payload) {
@@ -9954,6 +9954,14 @@ Macro.add(&quot;n1-patience&quot;, {
     const T = State.temporary;
     const here = State.passage;
 
+    // accel before an action node loses some time
+    if (V.t_patienceAccel) {
+      // reducing to 2 makes sure the initial message is always shown
+      // can&#39;t reduce it to less than 2 without adjusting usages.
+      if (looks &gt; 2) looks = 2;
+      if (actions &gt; 2) actions = 2;
+    }
+
     if (V.t_patiencePassage !== here) {
       // This is our first visit here
       V.t_patienceLooks = looks;
@@ -9969,6 +9977,14 @@ Macro.add(&quot;n1-patience&quot;, {
       V.t_didSomeAction = true;
     }
     T.patienceAdvanced = V.t_patienceReturn &gt; 0;
+
+    // accel at an action node loses patience immediately
+    if (V.t_patienceAccel &amp;&amp; T.patienceAdvanced) {
+      V.t_patienceLooks = 0;
+      V.t_patienceActions = 0;
+    }
+    V.t_patienceAccel = false;
+
 
     T.patience = Math.min(V.t_patienceLooks, V.t_patienceActions);
 
@@ -10943,20 +10959,6 @@ function analyze(passages) {
   /* Map of title -&gt; n */
   const wordCount = {};
 
-  const addTodo = (key, title, snippet) =&gt; {
-    const list = todos[key] ??= [];
-    snippet = (snippet ?? &quot;&quot;).trim();
-    const p = list.findIndex(e =&gt; e.title === title);
-    if (snippet === &quot;&quot;) {
-      /* already have an entry, don&#39;t need another */
-      if (p &lt; 0) list.push({ title, snippet });
-    } else {
-      /* non-empty entry suppresses empty entry */
-      if (0 &lt;= p &amp;&amp; list[p].snippet === &quot;&quot;) list.splice(p, 1);
-      list.push({ title, snippet });
-    }
-  };
-
   const getKind = (title, tags) =&gt; {
     if (tags.includes(&quot;noreturn&quot;)) return &quot;noreturn&quot;;
     /* mt should probably be a separate kind */
@@ -10973,8 +10975,11 @@ function analyze(passages) {
 
     const todos = [];
     const add = (tag, snippet) =&gt; {
-      if (!todos.find(t =&gt; t.tag === tag &amp;&amp; t.snippet === snippet)) {
-        todos.push({ tag, snippet });
+      const p = todos.find(t =&gt; t.tag === tag &amp;&amp; t.snippet === snippet);
+      if (p != null) {
+        p.count++;
+      } else {
+        todos.push({ tag, snippet, count: 1 });
       }
     };
 
@@ -11111,9 +11116,11 @@ function todoBlock(info, title) {
   $(&quot;&lt;div class=dash-todo-title&gt;&quot;).wiki(`[\[${title}]]`).appendTo(block);
   const todos = info.todosIn[title] || [];
   todos.forEach(todo =&gt; {
+    let snippet = todo.snippet;
+    if (todo.count &gt; 1) snippet += ` [x${todo.count}]`;
     $(&quot;&lt;div class=dash-todo-item&gt;&quot;).appendTo(block).append(
       $(&quot;&lt;span class=dash-todo-tag&gt;&quot;).text(todo.tag),
-      $(&quot;&lt;span class=dash-todo-snippet&gt;&quot;).text(todo.snippet),
+      $(&quot;&lt;span class=dash-todo-snippet&gt;&quot;).text(snippet),
     );
   });
   return block;
@@ -13009,7 +13016,7 @@ MagesTower.walks = [
       { t: &quot;n1f-F Horny Clever 8&quot; },
       { t: &quot;n1f-F Horny Clever 9&quot; },
       { choice: &quot;alone&quot; },
-      { t: &quot;n1f-F Horny Clever Alone 1&quot; },
+      { t: &quot;n1f-D Horny Clever Alone 1&quot; },
     ]
   },
   {
@@ -13134,7 +13141,7 @@ MagesTower.walks = [
       { t: &quot;n1f-F Horny Clever 8&quot; },
       { t: &quot;n1f-F Horny Clever 9&quot; },
       { choice: &quot;alone&quot; },
-      { t: &quot;n1f-F Horny Clever Alone 1&quot; },
+      { t: &quot;n1f-D Horny Clever Alone 1&quot; },
     ]
   },
 
@@ -13415,7 +13422,8 @@ State.temporary.listWalks = () =&gt; {
         if (st.choice != null) addSeg(st.choice, &quot;disjoint&quot;, st.width);
       }
     }
-    mkp += `&lt;span class=walk-path-len&gt;[${path.length}]&lt;/span&gt;`;
+    const len = path.filter(st =&gt; st.t != null).length;
+    mkp += `&lt;span class=walk-path-len&gt;[${len}]&lt;/span&gt;`;
     mkp += `&lt;/div&gt;`;
   }
   mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
@@ -18969,11 +18977,8 @@ making the wolf&#39;s red cock twitch...
 ?P
 [[Continue|n1e-F Pull]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="380" name="n1f-D Clever Escape" tags="section-start" position="7100,7750" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 
-/* revise this if we can get here when !t_ivexReceptive */
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
-&lt;&lt;vi-always n1_candleLit false&gt;&gt;
 
 nero needs a password, and has asked ivex about the snow globe.
 nero is trying to get the place name,
@@ -18985,16 +18990,11 @@ ivex is amenable, starts to show off globe.
 ivex is hostile, wonders what&#39;s so fascinating about the globe.
 tease that nero will actually see the password.
 
-?P page break
-
 ?P
 ivex realizes what the player is trying to do.
-scolds nero.
-asks sprite to remind him to change pw.
-also tells sprite to disconnect from nero, but does it wrong.
-(player doesn&#39;t find out that ivex screwed up until later.)
+tells sprite to disconnect and remind him to change pw
 
-picks out another grav ball and attaches it to nero&#39;s balls.
+brings out grav, applies it, not explaining.
 
 ?P
 extremely painful.
@@ -19003,44 +19003,39 @@ extremely painful.
 &lt;&lt;/if&gt;&gt;
 
 ?P
-ivex amuses himself for a bit, extremely turned on.
+ivex brings out candle and mask.
+nero too distracted to pay much attention,
+breathing heavy, takes effect quickly.
 
 ?P
-ivex lights candle. nero is too distracted to pay much attention,
-but he&#39;s breathing heavily, it takes effect quickly.
-
-?P
-horny ask can converge here.
 candle effects and pain, ivex super nasty
 
 ?P
-ivex brings out orange gem, anticipation of adding it.
+ivex brings out dream crystal, anticipation of using it.
 gets alarm
 
 ?P
-leaves. maybe applies orange gem?
-
-?P
-state-save here, and restart point here. can reached caged and broken from here.
 &lt;&lt;set $n2_ivexGone = true&gt;&gt;
 
 ?P
 nero is desperate to dislodge the grav ball,
 can&#39;t stop twitching and making it worse.
 candle horny display too.
-maybe some placebo choices.
 
 ?P
 swinging of the grav ball brings it close enough
 to the other grav balls that it collapses the entire field.
-grav balls implode and become dust.
-cross also cracks.
+grav balls implode, takes out chunk of cross.
 whoosh of air puts out candle, clears head.
+cross falls backward
 ?P
-candle is relit. Nero hastily puts it out. no fire. mirror not broken.
+candle is relit?
+need to think a bit about what happens before nero looks at globe.
+say carpe dick.
 
-?P
-full view of snow globe. password trigger. now contacted.
+gain nackle. restart here.
+
+use nackle to escape cross, maybe put out fire.
 
 ?P
 take a moment to rest and hate ivex.
@@ -19052,7 +19047,45 @@ take a moment to rest and hate ivex.
 &lt;&lt;set $n2_tooClever = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
 
-[[n2f-F Free Action]]</tw-passagedata><tw-passagedata pid="381" name="n1f-F Horny Clever 1" tags="section-start" position="6800,7750" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[n2f-F Free Action]]</tw-passagedata><tw-passagedata pid="381" name="n1f-D Horny Clever Alone 1" tags="" position="6800,8550" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_abused&gt;&gt;
+&lt;&lt;vi-ignore n1_subby&gt;&gt;
+
+Ivex&#39;s exit by teleportation something something.
+
+grav crystal does not stop swinging.
+it&#39;s a continual shifting strain.
+nero uses it to count? sees it in the mirror and is unable to stop counting.
+
+tries to stop the swinging, fails.
+
+not horny here, he&#39;s able to think, he triggers calamity deliberately.
+really wary of the implosion.
+reasons that he can time it so that they implode behind him,
+and he can keep his tail out of the way.
+
+the way to trigger calamity is swinging side to side and struggling.
+hard to do without seeing the energy web.
+but he has a memory of it, and he reasons his way through it.
+
+implosion. falls backward.
+
+would be helpless, but implosion took out large chunk of the cross.
+
+makes it to the desk, gets the letter opener.
+
+takes a look at the globe while he&#39;s there, says carpe dick.
+
+gets nackle. this is probably a good restart point
+
+nackle makes it easy to escape, he doesn&#39;t need the letter opener.
+
+he has the power! escape, angry. connect to free.
+
+?P
+[[Continue|n1f-F Horny Clever Alone 2]]
+
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="382" name="n1f-F Horny Clever 1" tags="section-start" position="6800,7750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleLit true&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny true&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
@@ -19068,7 +19101,8 @@ He snuffs the candle, then &lt;em&gt;punches&lt;/em&gt; it off the desk.
 The mask comes off and disappears into a pocket.
 The expression revealed is fierce,
 and it grows fiercer as Ivex speaks.
-&quot;Please, disconnect any unauthorized users.&quot;
+&quot;Please, disconnect any unauthorized users,
+and remind me to change my password and your word of command.&quot;
 
 ?P
 Nero&#39;s mind slowly regains clarity when the Sprite speaks in his ear.
@@ -19105,7 +19139,7 @@ calm the panther.
 &lt;&lt;set $n1_candleLit = false&gt;&gt;
 &lt;&lt;set $n1_candleHorny = false&gt;&gt;
 &lt;&lt;set $n1_mageSight = false&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="382" name="n1f-F Horny Clever 2" tags="" position="6800,7850" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="383" name="n1f-F Horny Clever 2" tags="" position="6800,7850" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleLit false&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
@@ -19190,7 +19224,7 @@ Well, maybe not impossible, but clearly extremely unlikely.
 ?P
 [[Continue|n1f-F Horny Clever 3]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="383" name="n1f-F Horny Clever 3" tags="" position="6800,7950" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="384" name="n1f-F Horny Clever 3" tags="" position="6800,7950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
 
@@ -19245,7 +19279,7 @@ The objects in his hand are both crystals.
   $n1_penguinShrunk = true;
 }
 &gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="384" name="n1f-F Horny Clever 4" tags="" position="6800,8050" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="385" name="n1f-F Horny Clever 4" tags="" position="6800,8050" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
 
@@ -19309,7 +19343,7 @@ It&#39;s more a desire to scream.
 ?P
 [[Continue|n1f-F Horny Clever 5]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="385" name="n1f-F Horny Clever 5" tags="" position="6800,8150" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="386" name="n1f-F Horny Clever 5" tags="" position="6800,8150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
 
@@ -19340,7 +19374,7 @@ Ivex activates the Dream Crystal.
 ?P
 [[Continue|n1f-F Horny Clever 6]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="386" name="n1f-F Horny Clever 6" tags="" position="6800,8250" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="387" name="n1f-F Horny Clever 6" tags="" position="6800,8250" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
 
@@ -19396,7 +19430,7 @@ a comfortable ache that will let them recover.
 ?P
 [[Continue|n1f-F Horny Clever 7]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="387" name="n1f-F Horny Clever 7" tags="" position="6800,8350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="388" name="n1f-F Horny Clever 7" tags="" position="6800,8350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
 
@@ -19432,7 +19466,7 @@ as Ivex activates the Dream Crystal again.
 ?P
 [[Continue|n1f-F Horny Clever 8]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="388" name="n1f-F Horny Clever 8" tags="" position="6800,8450" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="389" name="n1f-F Horny Clever 8" tags="" position="6800,8450" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
 
@@ -19494,7 +19528,7 @@ is somewhere else, for the moment.
 ?P
 [[Continue|n1f-F Horny Clever 9]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="389" name="n1f-F Horny Clever 9" tags="" position="6800,8550" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="390" name="n1f-F Horny Clever 9" tags="" position="6800,8550" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused&gt;&gt;
 &lt;&lt;vi-ignore n1_subby&gt;&gt;
 
@@ -19529,17 +19563,7 @@ He pulls a red gem out from a pocket and disappears with a
 &lt;em&gt;fwoosh&lt;/em&gt;.
 
 ?P
-[[Continue|n1f-F Horny Clever Alone 1]]
-
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="390" name="n1f-F Horny Clever Alone 1" tags="" position="6800,8550" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-ignore n1_abused&gt;&gt;
-&lt;&lt;vi-ignore n1_subby&gt;&gt;
-
-Ivex&#39;s exit by teleportation 
-XXX
-
-?P
-[[Continue|n1f-F Horny Clever Alone 2]]
+[[Continue|n1f-D Horny Clever Alone 1]]
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="391" name="n1p-F Barbs Fast 1" tags="big-mood" position="5300,2625" size="100,100">&lt;&lt;nobr&gt;&gt;
 
@@ -19833,6 +19857,7 @@ $t_afterNaked
 
 &lt;&lt;set $n0_glitchViewed = true&gt;&gt;
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
+&lt;&lt;set $t_patienceAccel = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="401" name="n1p-F Barbs Skip" tags="" position="5150,2750" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 Nero&#39;s been in this type of situation before:
@@ -20286,7 +20311,7 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 
   &lt;&lt;set $t_barbsSlowExtraVisited = true&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="417" name="n1s-D On Hold" tags="inclusion" position="6450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="417" name="n1s-F On Hold" tags="inclusion" position="6450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;set _annoyance = () =&gt; {
   $t_spriteHold || ($t_spriteHold = 0);
@@ -21041,6 +21066,7 @@ $t_afterAttack
 &lt;&lt;set $n1_ivexRanted = true&gt;&gt;
 &lt;&lt;set $t_ivexNear = false&gt;&gt;
 &lt;&lt;set $t_returnAntiMagic = State.passage&gt;&gt;
+&lt;&lt;set $t_patienceAccel = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="434" name="n1s-F Cast Sight 1" tags="" position="5500,4075" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
@@ -22114,11 +22140,11 @@ $t_afterAction
   &lt;&lt;case `IC_comfortable`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit true&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_whoSentYou`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit true&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
@@ -22150,23 +22176,23 @@ $t_afterAction
   &lt;&lt;case `IC_explainTheft`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_lickPaw`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_begForMe`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_comfortable`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit true&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_whoSentYou`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit true&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
@@ -22195,27 +22221,27 @@ $t_afterAction
   &lt;&lt;case `IC_distant`&gt;&gt;
     &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_explainTheft`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_lickPaw`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_begForMe`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit false&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_comfortable`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit true&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;case `IC_whoSentYou`&gt;&gt;
     &lt;&lt;vi-always n1_candleLit true&gt;&gt;
     ?P
-    XXX
+    XXX ivex response
   &lt;&lt;default&gt;&gt;
     &lt;&lt;run throw new Error(`unhandled ivexContext ${$t_ivexContext}`)&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
@@ -23714,7 +23740,7 @@ that function entirely.
   &lt;&lt;set $t_magicAction = &quot;[[Guess a password.|n1s-F Guess Password]]&quot;&gt;&gt;
 
 &lt;&lt;case `MP_onHold`&gt;&gt;
-  &lt;&lt;include [[n1s-D On Hold]]&gt;&gt;
+  &lt;&lt;include [[n1s-F On Hold]]&gt;&gt;
 
 &lt;&lt;case `MP_contact`&gt;&gt;
   &lt;span class=sprite-q&gt;&quot;You can now use Lance Rockhard, ?master&quot;&lt;/span&gt;

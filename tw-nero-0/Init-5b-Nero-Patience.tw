@@ -47,7 +47,7 @@ const EM = ErrorMessage;
 Macro.add("n1-patience", {
   tags: ["n1-remind", "n1-repeat", "n1-warn", "n1-insist"],
   handler: function() {
-    const [looks, actions] = this.args;
+    let [looks, actions] = this.args;
 
     let firstText, remindText, repeatText, warnText, insistText;
     for (const p of this.payload) {
@@ -74,6 +74,14 @@ Macro.add("n1-patience", {
     const T = State.temporary;
     const here = State.passage;
 
+    // accel before an action node loses some time
+    if (V.t_patienceAccel) {
+      // reducing to 2 makes sure the initial message is always shown
+      // can't reduce it to less than 2 without adjusting usages.
+      if (looks > 2) looks = 2;
+      if (actions > 2) actions = 2;
+    }
+
     if (V.t_patiencePassage !== here) {
       // This is our first visit here
       V.t_patienceLooks = looks;
@@ -89,6 +97,14 @@ Macro.add("n1-patience", {
       V.t_didSomeAction = true;
     }
     T.patienceAdvanced = V.t_patienceReturn > 0;
+
+    // accel at an action node loses patience immediately
+    if (V.t_patienceAccel && T.patienceAdvanced) {
+      V.t_patienceLooks = 0;
+      V.t_patienceActions = 0;
+    }
+    V.t_patienceAccel = false;
+
 
     T.patience = Math.min(V.t_patienceLooks, V.t_patienceActions);
 

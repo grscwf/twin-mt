@@ -61,20 +61,6 @@ function analyze(passages) {
   /* Map of title -> n */
   const wordCount = {};
 
-  const addTodo = (key, title, snippet) => {
-    const list = todos[key] ??= [];
-    snippet = (snippet ?? "").trim();
-    const p = list.findIndex(e => e.title === title);
-    if (snippet === "") {
-      /* already have an entry, don't need another */
-      if (p < 0) list.push({ title, snippet });
-    } else {
-      /* non-empty entry suppresses empty entry */
-      if (0 <= p && list[p].snippet === "") list.splice(p, 1);
-      list.push({ title, snippet });
-    }
-  };
-
   const getKind = (title, tags) => {
     if (tags.includes("noreturn")) return "noreturn";
     /* mt should probably be a separate kind */
@@ -91,8 +77,11 @@ function analyze(passages) {
 
     const todos = [];
     const add = (tag, snippet) => {
-      if (!todos.find(t => t.tag === tag && t.snippet === snippet)) {
-        todos.push({ tag, snippet });
+      const p = todos.find(t => t.tag === tag && t.snippet === snippet);
+      if (p != null) {
+        p.count++;
+      } else {
+        todos.push({ tag, snippet, count: 1 });
       }
     };
 
@@ -229,9 +218,11 @@ function todoBlock(info, title) {
   $("<div class=dash-todo-title>").wiki(`[\[${title}]]`).appendTo(block);
   const todos = info.todosIn[title] || [];
   todos.forEach(todo => {
+    let snippet = todo.snippet;
+    if (todo.count > 1) snippet += ` [x${todo.count}]`;
     $("<div class=dash-todo-item>").appendTo(block).append(
       $("<span class=dash-todo-tag>").text(todo.tag),
-      $("<span class=dash-todo-snippet>").text(todo.snippet),
+      $("<span class=dash-todo-snippet>").text(snippet),
     );
   });
   return block;
