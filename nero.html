@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -10845,11 +10845,14 @@ Macro.add(&quot;pw-suggest&quot;, {
 });
 
 /**
- * &lt;&lt;pw-misfire $pw [obvious]&gt;&gt;
+ * &lt;&lt;pw-misfire $pw&gt;&gt;
+ *   $moreText
+ * &lt;&lt;/pw-misfire
  * Nero has said something that the Sprite misinterprets as a password.
- * This starts that process, and emits some text about it.
+ * This starts that process, emits text from the Sprite, and $moreText
  */
 Macro.add(&quot;pw-misfire&quot;, {
+  tags: [],
   handler: function() {
     const [pw, opt] = this.args;
     if (opt != null &amp;&amp; opt !== &quot;obvious&quot;) {
@@ -10858,6 +10861,7 @@ Macro.add(&quot;pw-misfire&quot;, {
     const V = State.variables;
     const U = VT.untracedVariables();
     if (U.n1_magicPhase !== MP_wantPass) return;
+
     V.n1_passTried.unshift(`#${pw}`);
     V.n1_magicPhase = MP_onHold;
     let mkp = `&lt;&lt;nobr&gt;&gt;`;
@@ -10866,13 +10870,8 @@ Macro.add(&quot;pw-misfire&quot;, {
     mkp += ` &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right`;
     mkp += ` either, ?master`;
     mkp += ` Please hold while I double-check it, ?master&quot;&lt;/span&gt;`;
-    mkp += ` ?P`;
-    mkp += ` Again, the Sprite has misinterpreted conversation as a password.`;
-    if (opt === &quot;obvious&quot;) {
-      mkp += ` Nero mentally kicks himself for forgetting.`;
-    } else {
-      mkp += ` Nero wonders what phrase it has picked up this time.`;
-    }
+    const moreText = this.payload[0].contents.strip();
+    mkp += moreText;
     mkp += ` &lt;&lt;/nobr&gt;&gt;`;
     $(this.output).wiki(mkp);
   }
@@ -15419,7 +15418,10 @@ and steps away with a laugh.
   but the wolf can&#39;t stall for much longer.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;pw-misfire &quot;The Guilds Name&quot; obvious&gt;&gt;
+&lt;&lt;pw-misfire &quot;The Guilds Name&quot;&gt;&gt;
+  ?P
+  The wolf mentally kicks himself for forgetting about the Sprite.
+&lt;&lt;/pw-misfire&gt;&gt;
 
 ?P
 Ivex snarls. &quot;You&#39;re quite the disappointment. I really need to find better
@@ -17882,6 +17884,10 @@ Ivex&#39;s voice is muffled and hollowed by the grinning mask.
 should be able to figure it out soon enough.&quot;
 
 &lt;&lt;pw-misfire _pw&gt;&gt;
+  ?P
+  The Sprite has again misinterpreted conversation as a password.
+  Nero wonders what phrase it has picked up this time.
+&lt;&lt;/pw-misfire&gt;&gt;
 
 ?P
 [[Continue|n1d-F Start Candle 2]]
