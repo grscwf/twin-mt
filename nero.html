@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -9829,18 +9829,78 @@ function glitchText(textNode, g, speed) {
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="248" name="Init 5b Nero Misfire" tags="inclusion" position="2625,1250" size="100,100">&lt;&lt;script&gt;&gt;
 const VT = VarTrace;
 
-Macro.add(&quot;misfire-please&quot;, {
-  tags: [],
+/**
+ * &lt;&lt;mf-please&gt;&gt;
+ *   $text
+ * &lt;&lt;mf-else&gt;&gt;
+ *   $otherText
+ * &lt;&lt;/mf-please&gt;&gt;
+ *
+ * Nero has said something with &quot;please&quot;, and the Sprite misinterprets
+ * it as a command. Emits $text.
+ * 
+ * If Sprite is inactive or waiting for a password, emits $otherText instead.
+ */
+Macro.add(&quot;mf-please&quot;, {
+  tags: [&quot;mf-else&quot;],
   handler: function() {
     const V = VT.untracedVariables();
-    if (V.n1_magicPhase &lt; MP_wantDevice) return;
-    if (V.n2_magicPhaseLost != null) return;
+    let ready = true;
+    ready = ready &amp;&amp; V.n1_magicPhase &gt;= MP_wantDevice;
+    ready = ready &amp;&amp; V.n1_magicPhase &lt; MP_drained;
+    ready = ready &amp;&amp; MP_wantPass !== V.n1_magicPhase;
+    if (ready) {
+      $(this.output).wiki(this.payload[0].contents);
+    } else {
+      const pl = this.payload[1];
+      if (pl != null &amp;&amp; pl.name === &quot;mf-else&quot;) {
+        $(this.output).wiki(pl.contents);
+      }
+    }
+  }
+});
 
-    // password misfires are independent of please misfires,
-    // since please is not necessarily the first thing Nero says.
-    if (MP_wantPass === V.n1_magicPhase) return;
+/**
+ * &lt;&lt;mf-pass $pw&gt;&gt;
+ *   $moreText
+ * &lt;&lt;mf-else&gt;&gt;
+ *   $otherText
+ * &lt;&lt;/mf-pass&gt;&gt;
+ *
+ * Nero has said something that the Sprite misinterprets as a password.
+ * This starts that process, emits text from the Sprite, and then $moreText.
+ * 
+ * If Sprite is not asking for a password, emits $otherText instead.
+ */
+Macro.add(&quot;mf-pass&quot;, {
+  tags: [&quot;mf-else&quot;],
+  handler: function() {
+    const [pw, opt] = this.args;
+    if (opt != null &amp;&amp; opt !== &quot;obvious&quot;) {
+      throw new Error(`mf-pass bad opt ${opt}`);
+    }
+    const V = State.variables;
+    if (V.n1_magicPhase !== MP_wantPass) {
+      const pl = this.payload[1];
+      if (pl != null &amp;&amp; pl.name === &quot;mf-else&quot;) {
+        $(this.output).wiki(pl.contents);
+      }
+      return;
+    }
 
-    $(this.output).wiki(this.payload[0].contents);
+    // usually already set, except when debugging
+    V.n1_passTried || (V.n1_passTried = []);
+    V.n1_passTried.unshift(`#${pw}`);
+    V.n1_magicPhase = MP_onHold;
+    let mkp = `&lt;&lt;nobr&gt;&gt;`;
+    mkp += ` ?P`;
+    mkp += ` The Sprite ?sprSpeaks in Nero&#39;s ear.`;
+    mkp += ` &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right`;
+    mkp += ` either, ?master`;
+    mkp += ` Please hold while I double-check it, ?master&quot;&lt;/span&gt;`;
+    mkp += this.payload[0].contents;
+    mkp += ` &lt;&lt;/nobr&gt;&gt;`;
+    $(this.output).wiki(mkp);
   }
 });
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="Init 5b Nero No Loop" tags="inclusion" position="2725,1250" size="100,100">&lt;&lt;script&gt;&gt;
@@ -10680,7 +10740,7 @@ const VT = window.VarTrace || (window.VarTrace = {});
 const sayPassword = &quot;[[n1s-F Say Password]]&quot;.slice(2, -2);
 
 /*
- * Passwords starting with &quot;#&quot; are from pw-misfire.
+ * Passwords starting with &quot;#&quot; are from mf-pass.
  * Everything else should either be in basicPasswords or otherPasswords.
  */
 
@@ -10722,7 +10782,7 @@ Nero.otherPasswords = {
 };
 
 Nero.oldPasswords = {
-
+  // XXX old passwords
 };
 
 let pwDebugAlready = false;
@@ -10844,38 +10904,6 @@ Macro.add(&quot;pw-suggest&quot;, {
   }
 });
 
-/**
- * &lt;&lt;pw-misfire $pw&gt;&gt;
- *   $moreText
- * &lt;&lt;/pw-misfire
- * Nero has said something that the Sprite misinterprets as a password.
- * This starts that process, emits text from the Sprite, and $moreText
- */
-Macro.add(&quot;pw-misfire&quot;, {
-  tags: [],
-  handler: function() {
-    const [pw, opt] = this.args;
-    if (opt != null &amp;&amp; opt !== &quot;obvious&quot;) {
-      throw new Error(`pw-misfire bad opt ${opt}`);
-    }
-    const V = State.variables;
-    const U = VT.untracedVariables();
-    if (U.n1_magicPhase !== MP_wantPass) return;
-
-    V.n1_passTried.unshift(`#${pw}`);
-    V.n1_magicPhase = MP_onHold;
-    let mkp = `&lt;&lt;nobr&gt;&gt;`;
-    mkp += ` ?P`;
-    mkp += ` The Sprite ?sprSpeaks in Nero&#39;s ear.`;
-    mkp += ` &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right`;
-    mkp += ` either, ?master`;
-    mkp += ` Please hold while I double-check it, ?master&quot;&lt;/span&gt;`;
-    const moreText = this.payload[0].contents.strip();
-    mkp += moreText;
-    mkp += ` &lt;&lt;/nobr&gt;&gt;`;
-    $(this.output).wiki(mkp);
-  }
-});
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="fade-in test" tags="" position="3750,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;fade-in 0s&gt;&gt;
 one
@@ -14065,7 +14093,7 @@ Ivex grins back. &quot;Now that you&#39;ve found me, what did you have in mind?&
   &quot;Please, let me explain!&quot; says Nero with some anxiety.
   He quickly tries to construct a story that might
   appease the abusive panther.
-  &lt;&lt;misfire-please&gt;&gt;
+  &lt;&lt;mf-please&gt;&gt;
     /* currently impossible */
     ?P
     The Sprite ?sprSpeaks in his ear,
@@ -14075,13 +14103,23 @@ Ivex grins back. &quot;Now that you&#39;ve found me, what did you have in mind?&
     ?P
     Nero is momentarily distracted by the Sprite&#39;s response,
     but then shakes his head and continues.
-  &lt;&lt;/misfire-please&gt;&gt;
+  &lt;&lt;/mf-please&gt;&gt;
+  &lt;&lt;set _pw = &quot;Please Let Me Explain&quot;&gt;&gt;
 &lt;&lt;elseif $n1_naked&gt;&gt;
   &quot;No, you misunderstand,&quot; says Nero with confidence.
   Nakedness is not helplessness.
+  &lt;&lt;set _pw = &quot;No You Misunderstand&quot;&gt;&gt;
 &lt;&lt;else&gt;&gt;
   &quot;Ah, I see the misunderstanding now,&quot; says Nero with a smile.
+  &lt;&lt;set _pw = &quot;Ah I See The Misunderstanding Now&quot;&gt;&gt;
 &lt;&lt;/if&gt;&gt;
+
+&lt;&lt;mf-pass _pw&gt;&gt;
+  /* currently impossible */
+  ?P
+  Nero is momentarily distracted by the Sprite&#39;s response,
+  but then shakes his head and continues.
+&lt;&lt;/mf-pass&gt;&gt;
 
 &quot;I wasn&#39;t &lt;em&gt;given&lt;/em&gt; your dossier. I &lt;em&gt;stole&lt;/em&gt; it,
 from a bounty hunter
@@ -14198,8 +14236,16 @@ and your first thought is that I might join you in a &lt;em&gt;business venture?
 &quot;Because I knew you would say that,&quot; Nero responds with confidence.
 His aim is to cultivate the panther&#39;s insecurities,
 while also suggesting the wolf has a solution to them.
-?P
-Nero gestures with his head. &quot;Your belt.&quot;
+
+&lt;&lt;mf-pass &quot;Because I Knew You Would Say That&quot;&gt;&gt;
+  ?P
+  Nero shakes his head, then gestures at Ivex.
+&lt;&lt;mf-else&gt;&gt;
+  ?P
+  Nero gestures with his head.
+&lt;&lt;/mf-pass&gt;&gt;
+&quot;Your belt.&quot;
+
 ?P
 Ivex looks confused. &quot;My belt? What do you mean?&quot;
 ?P
@@ -14304,7 +14350,7 @@ to release it or not. &quot;I&#39;m not so convinced that you&#39;re a thief.&qu
 ?P
 Nero interjects. &quot;Please. Call me an opportunist.&quot;
 
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSpeaks in Nero&#39;s ear,
   &lt;span class=sprite-q&gt;&quot;Okay! I will remember to call you
@@ -14315,7 +14361,7 @@ Nero interjects. &quot;Please. Call me an opportunist.&quot;
   &lt;&lt;set $n1_opportunist = true&gt;&gt;
   ?master&quot;&lt;/span&gt;
   Nero shakes his head at that nonsense.
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 
 ?P
 Ivex looks up at the wolf.
@@ -14342,12 +14388,12 @@ gives it a sudden squeeze. Pain fills the captive ball and
 radiates into Nero&#39;s groin.
 ?P
 The wolf stifles a yelp. &quot;Please! I can prove it!&quot;
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSpeaks in Nero&#39;s ear,
   &lt;span class=sprite-q&gt;&quot;You don&#39;t have to prove anything to me.
   I will always believe you, ?master&quot;&lt;/span&gt;
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 ?P
 Ivex chuckles. &quot;I&#39;m sure you can.&quot; He stands up with the help of his grasp
 on the wolf&#39;s ball, pulling the wolf&#39;s nutsack down painfully tight.
@@ -15222,10 +15268,20 @@ wolf&#39;s right arm. &quot;But perhaps you could give me... a little more than 
 
 &lt;&lt;if $n1_abused&gt;&gt;
   &quot;Of course not!&quot; says Nero. &quot;This isn&#39;t about me!&quot;
+  &lt;&lt;set _pw = &quot;Of Course Not&quot;&gt;&gt;
 &lt;&lt;else&gt;&gt;
   &quot;This isn&#39;t about me,&quot; says Nero.
+  &lt;&lt;set _pw = &quot;This Isn&#39;t About Me&quot;&gt;&gt;
 &lt;&lt;/if&gt;&gt;
-He pauses to give his next statement dramatic weight.
+
+&lt;&lt;mf-pass _pw&gt;&gt;
+  ?P
+  Nero is momentarily distracted by the Sprite, but he
+  turns the stumble into a dramatic pause.
+&lt;&lt;mf-else&gt;&gt;
+  ?P
+  He pauses to give his next statement dramatic weight.
+&lt;&lt;/mf-pass&gt;&gt;
 &quot;I&#39;m merely a messenger for a secret guild of mages that would be honored
 to have you join their &lt;em&gt;inner&lt;/em&gt; council.&quot;
 ?P
@@ -15276,7 +15332,13 @@ He pauses and makes his voice tentative.
 &quot;I&#39;m in a support group... for people like us,
 and I think you&#39;d enjoy meeting some of the others.&quot;
 
-?P
+&lt;&lt;mf-pass &quot;No That Isn&#39;t What I Meant&quot;&gt;&gt;
+  /* currently impossible */
+  ?P
+  The wolf ignores the Sprite.
+&lt;&lt;mf-else&gt;&gt;
+  ?P
+&lt;&lt;/mf-pass&gt;&gt;
 Ivex does not seem appeased. The panther snarls.
 &quot;What tedious nonsense. Stop trying to change the subject.
 Tell me who sent you.&quot;
@@ -15367,12 +15429,12 @@ I already &lt;em&gt;have&lt;/em&gt; 100% of what I want in my grasp!&quot;
 ?P
 Nero nods his head vigorously.
 
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSpeaks in Nero&#39;s ear,
   &lt;span class=sprite-q&gt;&quot;Got it. Increasing power flow to maximum,
   ?master&quot;&lt;/span&gt;
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 
 ?P
 The panther continues to punctuate his speech with additional taps
@@ -15418,10 +15480,10 @@ and steps away with a laugh.
   but the wolf can&#39;t stall for much longer.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;pw-misfire &quot;The Guilds Name&quot;&gt;&gt;
+&lt;&lt;mf-pass &quot;The Guilds Name&quot;&gt;&gt;
   ?P
   The wolf mentally kicks himself for forgetting about the Sprite.
-&lt;&lt;/pw-misfire&gt;&gt;
+&lt;&lt;/mf-pass&gt;&gt;
 
 ?P
 Ivex snarls. &quot;You&#39;re quite the disappointment. I really need to find better
@@ -16353,11 +16415,11 @@ The wolf&#39;s ears flatten in dismay.
   &quot;I did not mean it that way!&quot;
 &lt;&lt;else&gt;&gt;
   &quot;Please, pretend I did not ask that!&quot;
-  &lt;&lt;misfire-please&gt;&gt;
+  &lt;&lt;mf-please&gt;&gt;
     ?P
     The Sprite replies,
     &lt;span class=sprite-q&gt;&quot;What was it you wanted me to forget, ?master&quot;&lt;/span&gt;
-  &lt;&lt;/misfire-please&gt;&gt;
+  &lt;&lt;/mf-please&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -17327,12 +17389,12 @@ But the wolf&#39;s innards feel tied up in knots, and his balls
 are screaming their distress all the way up his body to his brain.
 He can&#39;t make himself say the words.
 
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;Sorry, your current access level does not
   allow me to grant that request, ?master&quot;&lt;/span&gt;
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 
 ?P
 Another two punches land. Nero lets the scream leave his mouth,
@@ -17345,11 +17407,11 @@ and the panther will not be satisfied until the wolf begs right.
 Nero forces his fear aside and shouts out,
 &quot;Please, punish me!&quot;
 
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;Or that, ?master&quot;&lt;/span&gt;
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 
 ?P
 Ivex snorts and lands two more punches.
@@ -17883,11 +17945,11 @@ Ivex&#39;s voice is muffled and hollowed by the grinning mask.
 &lt;&lt;/if&gt;&gt;
 should be able to figure it out soon enough.&quot;
 
-&lt;&lt;pw-misfire _pw&gt;&gt;
+&lt;&lt;mf-pass _pw&gt;&gt;
   ?P
   The Sprite has again misinterpreted conversation as a password.
   Nero wonders what phrase it has picked up this time.
-&lt;&lt;/pw-misfire&gt;&gt;
+&lt;&lt;/mf-pass&gt;&gt;
 
 ?P
 [[Continue|n1d-F Start Candle 2]]
@@ -20652,11 +20714,11 @@ Ivex &lt;&lt;= $n1_candleLit ? &quot;snorts through his mask.&quot; : &quot;snor
 &quot;Examining your equipment has already told me what sort
 of mage you are. But go ahead, show me what magic you can do.&quot;
 
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;Your spells are the best, ?master&quot;&lt;/span&gt;
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 
 ?P
 Nero closes his eyes. He visualizes the matrix of the spell that&#39;s
@@ -28651,11 +28713,11 @@ looks to be a squishy solid.
   &lt;&lt;if $n1_subby&gt;&gt;
     &quot;I just saw it again! Please believe me! I&#39;m completely at your mercy.
     I have no reason to lie!&quot;
-    &lt;&lt;misfire-please&gt;&gt;
+    &lt;&lt;mf-please&gt;&gt;
       ?P
       The Sprite ?sprSpeaks in Nero&#39;s ear,
       &lt;span class=sprite-q&gt;&quot;I will always believe you, ?master&quot;&lt;/span&gt;
-    &lt;&lt;/misfire-please&gt;&gt;
+    &lt;&lt;/mf-please&gt;&gt;
   &lt;&lt;elseif $n1_abused&gt;&gt;
     He quickly regains his composure and meets Ivex&#39;s stare with
     ears stiffly perked, but the wolf flicks his eyes at the window at irregular
@@ -29072,12 +29134,12 @@ say with all the muscles of his face.
 The panther releases his grasp of the wolf&#39;s balls.
 Ivex moves to the desk to pick up the snow globe.
 
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;There are approximately 3,000.1 matches for
   &lt;em&gt;that&lt;/em&gt; request, ?master&quot;&lt;/span&gt;
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 
 ?P
 [[Continue|n1f-F Horny Clever 1]]
@@ -29122,12 +29184,12 @@ but you&#39;re the first to fixate on
 He gives the wolf&#39;s balls a quick squeeze.
 &quot;Try to stay focused on the &lt;em&gt;important&lt;/em&gt; bits here.&quot;
 
-&lt;&lt;misfire-please&gt;&gt;
+&lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;There are approximately 9,000,002
   matches for your request, ?master&quot;&lt;/span&gt;
-&lt;&lt;/misfire-please&gt;&gt;
+&lt;&lt;/mf-please&gt;&gt;
 
 ?P
 Nero is devastated.

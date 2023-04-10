@@ -2,18 +2,78 @@
 <<script>>
 const VT = VarTrace;
 
-Macro.add("misfire-please", {
-  tags: [],
+/**
+ * <<mf-please>>
+ *   $text
+ * <<mf-else>>
+ *   $otherText
+ * <</mf-please>>
+ *
+ * Nero has said something with "please", and the Sprite misinterprets
+ * it as a command. Emits $text.
+ * 
+ * If Sprite is inactive or waiting for a password, emits $otherText instead.
+ */
+Macro.add("mf-please", {
+  tags: ["mf-else"],
   handler: function() {
     const V = VT.untracedVariables();
-    if (V.n1_magicPhase < MP_wantDevice) return;
-    if (V.n2_magicPhaseLost != null) return;
+    let ready = true;
+    ready = ready && V.n1_magicPhase >= MP_wantDevice;
+    ready = ready && V.n1_magicPhase < MP_drained;
+    ready = ready && MP_wantPass !== V.n1_magicPhase;
+    if (ready) {
+      $(this.output).wiki(this.payload[0].contents);
+    } else {
+      const pl = this.payload[1];
+      if (pl != null && pl.name === "mf-else") {
+        $(this.output).wiki(pl.contents);
+      }
+    }
+  }
+});
 
-    // password misfires are independent of please misfires,
-    // since please is not necessarily the first thing Nero says.
-    if (MP_wantPass === V.n1_magicPhase) return;
+/**
+ * <<mf-pass $pw>>
+ *   $moreText
+ * <<mf-else>>
+ *   $otherText
+ * <</mf-pass>>
+ *
+ * Nero has said something that the Sprite misinterprets as a password.
+ * This starts that process, emits text from the Sprite, and then $moreText.
+ * 
+ * If Sprite is not asking for a password, emits $otherText instead.
+ */
+Macro.add("mf-pass", {
+  tags: ["mf-else"],
+  handler: function() {
+    const [pw, opt] = this.args;
+    if (opt != null && opt !== "obvious") {
+      throw new Error(`mf-pass bad opt ${opt}`);
+    }
+    const V = State.variables;
+    if (V.n1_magicPhase !== MP_wantPass) {
+      const pl = this.payload[1];
+      if (pl != null && pl.name === "mf-else") {
+        $(this.output).wiki(pl.contents);
+      }
+      return;
+    }
 
-    $(this.output).wiki(this.payload[0].contents);
+    // usually already set, except when debugging
+    V.n1_passTried || (V.n1_passTried = []);
+    V.n1_passTried.unshift(`#${pw}`);
+    V.n1_magicPhase = MP_onHold;
+    let mkp = `<<nobr>>`;
+    mkp += ` ?P`;
+    mkp += ` The Sprite ?sprSpeaks in Nero's ear.`;
+    mkp += ` <span class=sprite-q>"Hm, that password doesn't sound right`;
+    mkp += ` either, ?master`;
+    mkp += ` Please hold while I double-check it, ?master"</span>`;
+    mkp += this.payload[0].contents;
+    mkp += ` <</nobr>>`;
+    $(this.output).wiki(mkp);
   }
 });
 <</script>>
