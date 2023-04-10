@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -8540,12 +8540,12 @@ V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
 EnumType.define(&quot;MagicPhase&quot;, [
   &quot;MP_beforeCast&quot;,
   &quot;MP_triedMagic&quot;,
-  &quot;MP_mageSight&quot;,
   &quot;MP_wantDevice&quot;,
   &quot;MP_wantName&quot;,
   &quot;MP_wantTouch&quot;,
   &quot;MP_wantPass&quot;,
   &quot;MP_onHold&quot;,
+  &quot;MP_exitingHold&quot;,
   &quot;MP_contact&quot;,
   &quot;MP_lockedOut&quot;,
   &quot;MP_drained&quot;, // had mageSight, but didn&#39;t connect to Sprite
@@ -9353,18 +9353,6 @@ Nero.enumImplies = {
       n2_wandRefused: false,
       n2_wandUsed: false,
     },
-    [MP_mageSight]: {
-      n1_mageSight: true,
-      n1_mirrorTapped: false,
-      n1_naked: true,
-      n1_wandAsked: false,
-      n2_free: false,
-      n2_magicPhaseLost: false,
-      n2_mirrorBroken: false,
-      n2_wandRanAway: false,
-      n2_wandRefused: false,
-      n2_wandUsed: false,
-    },
     [MP_wantDevice]: {
       n1_mageSight: true,
       n1_mirrorTapped: true,
@@ -9492,24 +9480,12 @@ Nero.enumImplies = {
       n2_mirrorWasTapped: false,
     },
     [MP_beforeCast]: {
-      // can&#39;t escape without mage-sight
+      // XXX possible
       impossible: true,
     },
     [MP_triedMagic]: {
-      // can&#39;t escape without mage-sight
+      // XXX possible
       impossible: true,
-    },
-    [MP_mageSight]: {
-      n1_mageSight: false,
-      n1_mirrorTapped: false,
-      n1_magicPhase: MP_drained,
-      n1_naked: true,
-      n2_extraHorny: true,
-      n2_free: true,
-      n2_ivexGone: true,
-      n2_mirrorBroken: false,
-      n2_mirrorWasTapped: false,
-      n2_tooClever: false,
     },
     [MP_wantDevice]: {
       n1_mageSight: false,
@@ -10344,11 +10320,7 @@ Template.add(&quot;sprHoldStop&quot;, () =&gt; {
     // cspell: disable-next-line
     mkp += ` &lt;span class=nobr&gt;remai&amp;mdash;&lt;/span&gt;`;
     mkp += ` Wait a minute, I dropped something, ?master`;
-    if (V.n1_passTried.length === 4) {
-      V.n1_magicPhase = MP_lockedOut;
-    } else {
-      V.n1_magicPhase = MP_wantPass;
-    }
+    V.n1_magicPhase = MP_exitingHold;
   }
   return mkp;
 });
@@ -13562,13 +13534,6 @@ MagesTower.walks = [
       { t: &quot;n1s-F Cast Endgame 2&quot; },
       { t: &quot;n1s-F Cast Endgame 3&quot; },
       { t: &quot;n1cs-F Ivex Dominant (4,2)&quot; },
-      { choice: &quot;sight&quot; },
-      { t: &quot;n1s-F Cast Sight 1&quot; },
-      { t: &quot;n1s-F Cast Sight 2&quot; },
-      { t: &quot;n1cs-F Ivex Dominant (4,2)&quot; },
-      { t: &quot;n1cs-F Licking Eager&quot; },
-      { t: &quot;n1cs-F Licking Continue&quot; },
-      { t: &quot;n1cs-F Ivex Cruel (4,2)&quot; },
       { choice: &quot;tap&quot; },
       { t: &quot;n1x-F Desk&quot; },
       { t: &quot;n1x-F Mirror&quot; },
@@ -13576,32 +13541,30 @@ MagesTower.walks = [
       { t: &quot;n1s-F Tap 2&quot; },
       { t: &quot;n1s-F Tap 3&quot; },
       { t: &quot;n1s-F Tap 4&quot; },
+      { t: &quot;n1cs-F Ivex Dominant (4,2)&quot; },
+      { t: &quot;n1cs-F Licking Eager&quot; },
+      { t: &quot;n1cs-F Licking Continue&quot; },
       { t: &quot;n1cs-F Ivex Cruel (4,2)&quot; },
       { choice: &quot;contact&quot; },
       { t: &quot;n1s-F Say Device&quot; },
+      { t: &quot;n1cs-F Ivex Cruel (4,2)&quot; },
+      { t: &quot;n1s-F Say Lance&quot; },
+      { t: &quot;n1cs-F Ivex Cruel (4,2)&quot; },
+      { choice: &quot;penguin&quot; },
+      { t: &quot;n1x-F Penguin&quot; },
+      { t: &quot;n1x-F Penguin Ask&quot; },
+      { t: &quot;n1s-F Password Intro&quot; },
       { t: &quot;n1cs-F Ivex Cruel (4,2)&quot; },
       { t: &quot;n1cs-F Plead Mercy&quot; },
       { t: &quot;n1cx-F Start Candle 1&quot; },
       { t: &quot;n1d-F Start Candle 2&quot; },
       { t: &quot;n1d-F Comfort Check (2,2)&quot; },
-      { t: &quot;n1s-F Say Lance&quot; },
+      { choice: &quot;guess&quot; },
+      { t: &quot;n1s-F Guess Password&quot; },
+      { t: &quot;n1s-F Say Password&quot;, code: &quot;$t_passToTry = &#39;Password&#39;&quot;, },
       { t: &quot;n1d-F Comfort Check (2,2)&quot; },
-      { choice: &quot;penguin&quot; },
-      { t: &quot;n1x-F Penguin&quot; },
-      { t: &quot;n1x-F Penguin Ask&quot; },
-      { t: &quot;n1s-F Password Intro&quot; },
-      { t: &quot;n1d-F Comfort Check (2,2)&quot; },
-      { choice: &quot;horny&quot; },
-      { t: &quot;n1d-F Naked Subby&quot; },
-      { t: &quot;n1d-F Cock Rise 1&quot; },
-      { t: &quot;n1d-F Cock Rise 2&quot; },
-      { t: &quot;n1d-F Candle Horny&quot; },
-      { t: &quot;n1e-F Light Squeeze (1,1)&quot; },
       { choice: &quot;globe&quot; },
-      { t: &quot;n1y-F Horny Cross&quot; },
-      { t: &quot;n1y-F Horny Mirror&quot; },
-      { t: &quot;n1y-F Horny Globe&quot; },
-      { t: &quot;n1y-F Horny Globe Ask&quot; },
+      { t: &quot;n1x-F Globe&quot; },
     ]
   },
 ];
@@ -14936,7 +14899,6 @@ Not that Nero would ever tell that to his
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 &lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
-&lt;&lt;em-assert $n1_magicPhase &lt;= MP_mageSight&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -15020,7 +14982,6 @@ I hope you make the right choice.&quot;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 &lt;&lt;em-assert !$n1_abused || !$n1_naked&gt;&gt;
-&lt;&lt;em-assert $n1_magicPhase &lt;= MP_mageSight&gt;&gt;
 
 &quot;There must be some mistake,&quot;
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -15047,7 +15008,6 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 &lt;&lt;em-assert !($n1_abused &amp;&amp; $n1_naked)&gt;&gt;
-&lt;&lt;em-assert $n1_magicPhase &lt;= MP_mageSight&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -16565,7 +16525,7 @@ so reversible repression is not often done.
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="333" name="n1cr-F Repression 2" tags="" position="4175,3225" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_abused n1_naked&gt;&gt;
-&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic` `MP_mageSight`&gt;&gt;
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic`&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -17204,7 +17164,7 @@ apprentice? Enough of these mind games...&quot;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="343" name="n1cs-F Ivex Cruel (4,2)" tags="" position="4350,4675" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
-&lt;&lt;n1-patience 4 2&gt;&gt;
+&lt;&lt;n1-patience 4 3&gt;&gt;
   /* using vi-always will complain about the t_ivexNear read below */
   &lt;&lt;em-assert $t_ivexNear&gt;&gt;
   Ivex removes his hand from the wolf&#39;s muzzle and uses his palm
@@ -17220,6 +17180,9 @@ apprentice? Enough of these mind games...&quot;
 &lt;&lt;n1-remind&gt;&gt;
   Ivex has said that Nero should either reveal his mission
   or beg for punishment.
+&lt;&lt;n1-repeat&gt;&gt;
+  &lt;&lt;em-assert $t_ivexNear&gt;&gt;
+  XXX repeat
 &lt;&lt;n1-warn&gt;&gt;
   &lt;&lt;if $t_ivexNear&gt;&gt;
     Ivex slaps Nero&#39;s balls again.
@@ -19716,8 +19679,8 @@ The panther is silent, still staring, still pacing.
   He suddenly looks up at the ceiling.
   &quot;I forgot about your spell.
   More sloppiness on my part.&quot;
-  The panther growls and reaches up with an arm
-  He makes a gesture with his hand
+  The panther growls and reaches up with an arm.
+  He makes a fist with his hand
   and a throwing motion with his arm.
   The penguin on the cabinet shrinks to the size of an
   &lt;&lt;if $n1_penguinCoinDropped&gt;&gt;
@@ -20377,7 +20340,7 @@ asks, what are you doing to me?
 [[Continue|n1p-F Barbs Glitch 5]]
 
 &lt;&lt;set $n1_mageSight = true&gt;&gt;
-&lt;&lt;set $n1_magicPhase = MP_mageSight&gt;&gt;
+&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="402" name="n1p-F Barbs Glitch 5" tags="" position="5375,2425" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 XXX
@@ -21022,16 +20985,14 @@ The best anti-magic fields from reputable mage agencies are quite thorough, but 
   &lt;&lt;set $t_magicAction = &quot;[[Cast Nero&#39;s Endgame.|n1s-F Cast Endgame 1]]&quot;&gt;&gt;
 
 &lt;&lt;elseif $t_ivexReceptive || $n1_ivexWasReceptive&gt;&gt;
-  &lt;!-- receptive before spell when not subby is always clothed --&gt;
-  &lt;&lt;vi-always n1_naked false&gt;&gt;
+  &lt;&lt;vi-ignore n1_naked&gt;&gt;
   Ivex seems interested enough in what the wolf is saying.
   Perhaps this is a good time for Nero to impress the panther
   with a difficult escape spell.
   &lt;&lt;set $t_magicAction = &quot;[[Cast an escape spell.|n1s-F Cast Younger 1]]&quot;&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
-  &lt;!-- naked happens: after spell cast, before subby, before candle horny --&gt;
-  &lt;&lt;vi-always n1_naked false&gt;&gt;
+  &lt;&lt;vi-ignore n1_naked&gt;&gt;
   Ivex is staring like a predator, so if Nero casts a spell,
   it should be a fast, disabling attack.
   &lt;&lt;if !$t_didSomeAction&gt;&gt;
@@ -21760,7 +21721,6 @@ of this energy he cannot use.
 ?P
 $t_afterAction
 
-&lt;&lt;set $n1_magicPhase = MP_mageSight&gt;&gt;
 &lt;&lt;set $n1_mageSight = true&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="438" name="n1s-F Cast Sight Horny" tags="" position="5600,3950" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -23104,16 +23064,26 @@ The best thing about the spell is that it appears to other mages that Nero has h
 --&gt;
 &lt;&lt;set $t_magicAction = null&gt;&gt;
 
+&lt;&lt;set if (MP_exitingHold === $n1_magicPhase) {
+  if ($n1_passTried.length === 4) {
+    $n1_magicPhase = MP_lockedOut;
+  } else {
+    $n1_magicPhase = MP_wantPass;
+  }
+}
+&gt;&gt;
+
 &lt;&lt;switch $n1_magicPhase&gt;&gt;
 &lt;&lt;case `MP_beforeCast`&gt;&gt;
   ?P
   &lt;&lt;include [[n1s-F Before Cast]]&gt;&gt;
 &lt;&lt;case `MP_triedMagic`&gt;&gt;
   ?P
-  &lt;&lt;include [[n1s-F Tried Magic]]&gt;&gt;
-&lt;&lt;case `MP_mageSight`&gt;&gt;
-  ?P
-  &lt;&lt;include [[n1s-F Mage Sight]]&gt;&gt;
+  &lt;&lt;if $n1_mageSight&gt;&gt;
+    &lt;&lt;include [[n1s-F Mage Sight]]&gt;&gt;
+  &lt;&lt;else&gt;&gt;
+    &lt;&lt;include [[n1s-F Tried Magic]]&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
 &lt;&lt;case `MP_tapLost` `MP_drained`&gt;&gt;
   &lt;!-- nothing --&gt;
 &lt;&lt;default&gt;&gt;
@@ -24878,7 +24848,7 @@ $t_afterAction
 &lt;&lt;set $n1_booksAsked = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="483" name="n1x-F Books" tags="maybe-password" position="7275,4900" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_mageSight` `MP_wantPass`&gt;&gt;
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_wantPass`&gt;&gt;
 
 The books in the bookcases
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -25110,7 +25080,7 @@ $t_afterAction
   `MP_beforeCast` `MP_wantDevice` `MP_wantName` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
 &lt;&lt;cv-try n2_magicPhaseLost
-  null `MP_mageSight` `MP_wantDevice` `MP_wantName`&gt;&gt;
+  null `MP_wantDevice` `MP_wantName`&gt;&gt;
   
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -25651,8 +25621,8 @@ $t_afterAction
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
 
 &lt;&lt;cv-try n1_magicPhase
-  `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+  `MP_beforeCast` `MP_wantTouch` `MP_contact` `MP_tapLost`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_wantTouch`&gt;&gt;
 
 &lt;&lt;cv-ignore n1_candleLit&gt;&gt; /* minor variation */
 &lt;&lt;cv-ignore n1_coinThrown n1_coinThrownAgain&gt;&gt; /* minor variation */
@@ -26756,7 +26726,7 @@ Unless the panther&#39;s energy source is enormous!
 &lt;&lt;em-assert !$n1_gravKnown || $n1_gravViewed&gt;&gt;
 
 &lt;&lt;cv-try n1_magicPhase
-  `MP_beforeCast` `MP_mageSight` `MP_contact` `MP_tapLost`&gt;&gt;
+  `MP_beforeCast` `MP_contact` `MP_tapLost`&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -27183,7 +27153,7 @@ was merely an actor hired by Rankine, with no magic ability of his own.
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
 
-&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_mageSight` `MP_contact` `MP_tapLost`&gt;&gt;
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast``MP_contact` `MP_tapLost`&gt;&gt;
 
 &lt;&lt;if $n2_free&gt;&gt;
   &lt;&lt;vi-always n1_candleLit false&gt;&gt;
@@ -27751,13 +27721,13 @@ at an angle that allows him to see
 &lt;&lt;/if&gt;&gt;
 behind the cross that he&#39;s bound to.
 
-&lt;&lt;if MP_mageSight &lt;= $n1_magicPhase&gt;&gt;
+&lt;&lt;if $n1_mageSight&gt;&gt;
   ?P
   The mirror also seems to be the only magic in the room
   with energy that Nero recognizes.
   Amid all the exotic energy,
   he sees an ordinary glow from the mirror&#39;s pyron node,
-  &lt;&lt;if $n1_magicPhase === MP_mageSight&gt;&gt;
+  &lt;&lt;if $n1_magicPhase &lt; MP_wantDevice&gt;&gt;
     which is a device that he is quite familiar with!
     &lt;&lt;actions-add [[&quot;Try to tap the mirror&#39;s pyron node.&quot;|n1s-F Tap 1]]&gt;&gt;
   &lt;&lt;else&gt;&gt;
@@ -27782,9 +27752,9 @@ behind the cross that he&#39;s bound to.
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
 
-&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_mageSight` `MP_wantDevice`
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_wantDevice`
   `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantDevice`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_wantDevice`&gt;&gt;
 
 /* trivial variations */
 &lt;&lt;cv-ignore n1_gravAsked n1_gravKnown n1_gravNoticed n1_gravViewed&gt;&gt;
@@ -27836,8 +27806,8 @@ the surface of a metallic horse cock trapped inside a bottle.
 
 ?P
 &lt;&lt;set _phase = $n2_magicPhaseLost || $n1_magicPhase&gt;&gt;
-&lt;&lt;if _phase &lt; MP_mageSight&gt;&gt;
-  &lt;&lt;vi-always n1_mageSight false&gt;&gt;
+&lt;&lt;if _phase &lt; MP_triedMagic&gt;&gt;
+  XXX need ViewedMageSight?
 
   The unusual substrate for the spell is perhaps just an
   unintelligible perversion from the depraved panther&#39;s mind.
@@ -27882,6 +27852,7 @@ the surface of a metallic horse cock trapped inside a bottle.
   &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
+  XXX this seems wrong, fix it
   &lt;&lt;vi-always n1_mageSight true&gt;&gt;
 
   It seems unlikely the horse cock itself is &lt;em&gt;necessary&lt;/em&gt; for the
@@ -28162,9 +28133,9 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
 &lt;&lt;cv-try n1_magicPhase
-  `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPass`
+  `MP_beforeCast` `MP_wantTouch` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_wantTouch`&gt;&gt;
 &lt;&lt;cv-try n1_passTried `[]` `[&quot;Ivy&quot;]`&gt;&gt;
 
 &lt;&lt;set _lusted = $n1_paintingViewedHorny&gt;&gt;
@@ -28253,7 +28224,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
   out the left side in a
   &lt;&lt;= _lusted ? &quot;disturbingly&quot; : &quot;&quot;&gt;&gt;
   suggestive manner.
-  
+
   &lt;&lt;if _lusted&gt;&gt;
     ?P
     Nero tries to banish the vivid memory of his candle-fueled lust for her.
@@ -28513,9 +28484,9 @@ of that monstrous creature. Is that a bird of some sort?&quot;
 --&gt;
 
 &lt;&lt;cv-try n1_magicPhase
-  `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPass`
+  `MP_beforeCast` `MP_wantTouch` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_wantTouch`&gt;&gt;
 &lt;&lt;cv-try n1_passTried `null` `[&quot;Hunter Too&quot;]`&gt;&gt; /* maybe also Please */
 
 Traditional mages often keep skeletal or taxidermied animals
@@ -29170,9 +29141,9 @@ looks to be a squishy solid.
 
 &lt;&lt;cv-ignore t_kwAnnounce&gt;&gt;
 &lt;&lt;cv-try n1_magicPhase
-  `MP_beforeCast` `MP_mageSight` `MP_wantTouch` `MP_wantPass`
+  `MP_beforeCast` `MP_wantTouch` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseLost null `MP_mageSight` `MP_wantTouch` `MP_wantPass`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost null `MP_wantTouch` `MP_wantPass`&gt;&gt;
 
 &lt;&lt;if $n2_wandRanAway&gt;&gt;
   &lt;&lt;include [[n2x-F Wand Ran Away]]&gt;&gt;
@@ -29344,7 +29315,7 @@ $t_afterAction
 &lt;&lt;vi-ignore n2_ivexGone t_ivexReceptive&gt;&gt;
 &lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_wantTouch`
   `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_mageSight` `MP_wantTouch`&gt;&gt;
+&lt;&lt;cv-try n2_magicPhaseLost `null` `MP_wantTouch`&gt;&gt;
 
 The room is amply lit
 &lt;&lt;if $n1_candleLit&gt;&gt;
@@ -31533,7 +31504,7 @@ $t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="582" name="n2b-F Struggle Normal 1" tags="" position="5325,6375" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
-&lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_mageSight`&gt;&gt;
+&lt;&lt;cv-try n1_magicPhase `MP_beforeCast`&gt;&gt;
 
 The wolf strains at his leather bonds.
 Now that Ivex is gone, Nero feels free to exert all his strength
@@ -31763,7 +31734,7 @@ His bones are rattled, and his aching limbs complain about
 new chafing from the leather straps.
 But he &lt;em&gt;does&lt;/em&gt; keep hold of the letter opener!
 
-&lt;&lt;if MP_mageSight === $n1_magicPhase&gt;&gt;
+&lt;&lt;if $n1_mageSight &amp;&amp; $n1_magicPhase &lt; MP_wantDevice&gt;&gt;
   ?P
   Nero&#39;s mage-sight fades as the last bit of his arcane energy is depleted.
   Perhaps there was some way he could have kept it longer.
@@ -31794,10 +31765,10 @@ and then he starts the work of setting himself free.
 
 &lt;&lt;set $n1_candleLit = false&gt;&gt;
 &lt;&lt;set $n2_deskBurned = true&gt;&gt;
-&lt;&lt;run if (MP_mageSight === $n1_magicPhase) {
+&lt;&lt;run if ($n1_mageSight &amp;&amp; $n1_magicPhase &lt; MP_wantDevice) {
   $n1_mageSight = false;
+  $n2_magicPhaseLost = $n1_magicPhase;
   $n1_magicPhase = MP_drained;
-  $n2_magicPhaseLost = MP_mageSight;
 }
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="587" name="n2b-F Use Knife 2" tags="" position="5225,7000" size="100,100">&lt;&lt;nobr&gt;&gt;

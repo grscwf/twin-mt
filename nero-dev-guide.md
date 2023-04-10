@@ -265,14 +265,11 @@
 - For testing `n1_magicPhase` variants, add a `<<cv-try>>` statement:
   - Include `MP_beforeCast` if it's possible.
   - Include any values tested in the passage.
-  - If the passage checks `n1_mageSight`,
-    include at least one value in the range
-    `[MP_mageSight, MP_contact]`.
   - If the passage checks `n2_free`,
-    include both `MP_contact` and `MP_tapLost`.
+    include `MP_contact`, `MP_drained`, and `MP_tapLost`.
 - For testing `n2_magicPhaseLost` variants:
-  - Include `null`, `MP_mageSight`, and any values tested in the passage.
-  - Note, these values are impossible: `MP_beforeCast`, `MP_triedMagic`,
+  - Include `null` and any values tested in the passage.
+  - Note, these values are impossible:
     `MP_onHold`, `MP_lockedOut`, `MP_tapLost`
 - TODO: these rules could be automatic.
 
