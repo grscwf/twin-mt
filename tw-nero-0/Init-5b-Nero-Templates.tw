@@ -21,6 +21,11 @@
 .nero-blank .glitch-c:not(#very#very#very#very) {
   color: rgba(0, 0, 0, 0);
 }
+.sprite-squish {
+  letter-spacing: -1px;
+  margin-right: .4em;
+  word-spacing: -2px;
+}
 
 </style>
 <</append>>
@@ -108,6 +113,55 @@ Template.add("sprSays", () => {
 Template.add("sprSpeaks", () => {
   const V = State.variables;
   return V.n1_spriteQuiet ? "whispers" : "speaks";
+});
+
+Template.add("sprHoldStop", () => {
+  const V = State.variables;
+  let mkp = `?master`;
+  if (MP_onHold === V.n1_magicPhase) {
+    mkp += ` Also, ?sprBadPass`;
+    // cspell: disable-next-line
+    mkp += ` <span class=nobr>remai&mdash;</span>`;
+    mkp += ` Wait a minute, I dropped something, ?master`;
+    if (V.n1_passTried.length === 4) {
+      V.n1_magicPhase = MP_lockedOut;
+    } else {
+      V.n1_magicPhase = MP_wantPass;
+    }
+  }
+  return mkp;
+});
+
+Template.add("sprBadPass", () => {
+  const V = State.variables;
+  const pw = V.n1_passTried[0].replace(/^#/, "");
+  let isWrong = "is not the correct password, ?master";
+  if (Nero.oldPasswords[pw]) {
+    isWrong = Nero.oldPasswords[pw];
+  }
+
+  let mkp = `<em>${pw}</em> ${isWrong}`;
+  switch (V.n1_passTried.length) {
+    case 1:
+      mkp += " You have two tries";
+      break;
+    case 2:
+      mkp += " You have only one"
+        + " <span class=sprite-squish>look up the singular form of the word"
+        + " and use it here also remind me to figure out how to bind the"
+        + " Sprite to my voice in case I ever capture a mage who knows how"
+        + " to activate it</span>";
+      break;
+    case 3:
+      mkp += " You have zero tries";
+      break;
+    case 4:
+      mkp += " You have no more tries";
+      break;
+    default:
+      throw new Error(`unexpected passTried ${V.n1_passTried.length}`);
+  }
+  return mkp;
 });
 
 Template.add("construction",

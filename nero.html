@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -10241,6 +10241,11 @@ function tameTextTo(list, node) {
 .nero-blank .glitch-c:not(#very#very#very#very) {
   color: rgba(0, 0, 0, 0);
 }
+.sprite-squish {
+  letter-spacing: -1px;
+  margin-right: .4em;
+  word-spacing: -2px;
+}
 
 &lt;/style&gt;
 &lt;&lt;/append&gt;&gt;
@@ -10328,6 +10333,55 @@ Template.add(&quot;sprSays&quot;, () =&gt; {
 Template.add(&quot;sprSpeaks&quot;, () =&gt; {
   const V = State.variables;
   return V.n1_spriteQuiet ? &quot;whispers&quot; : &quot;speaks&quot;;
+});
+
+Template.add(&quot;sprHoldStop&quot;, () =&gt; {
+  const V = State.variables;
+  let mkp = `?master`;
+  if (MP_onHold === V.n1_magicPhase) {
+    mkp += ` Also, ?sprBadPass`;
+    // cspell: disable-next-line
+    mkp += ` &lt;span class=nobr&gt;remai&amp;mdash;&lt;/span&gt;`;
+    mkp += ` Wait a minute, I dropped something, ?master`;
+    if (V.n1_passTried.length === 4) {
+      V.n1_magicPhase = MP_lockedOut;
+    } else {
+      V.n1_magicPhase = MP_wantPass;
+    }
+  }
+  return mkp;
+});
+
+Template.add(&quot;sprBadPass&quot;, () =&gt; {
+  const V = State.variables;
+  const pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
+  let isWrong = &quot;is not the correct password, ?master&quot;;
+  if (Nero.oldPasswords[pw]) {
+    isWrong = Nero.oldPasswords[pw];
+  }
+
+  let mkp = `&lt;em&gt;${pw}&lt;/em&gt; ${isWrong}`;
+  switch (V.n1_passTried.length) {
+    case 1:
+      mkp += &quot; You have two tries&quot;;
+      break;
+    case 2:
+      mkp += &quot; You have only one&quot;
+        + &quot; &lt;span class=sprite-squish&gt;look up the singular form of the word&quot;
+        + &quot; and use it here also remind me to figure out how to bind the&quot;
+        + &quot; Sprite to my voice in case I ever capture a mage who knows how&quot;
+        + &quot; to activate it&lt;/span&gt;&quot;;
+      break;
+    case 3:
+      mkp += &quot; You have zero tries&quot;;
+      break;
+    case 4:
+      mkp += &quot; You have no more tries&quot;;
+      break;
+    default:
+      throw new Error(`unexpected passTried ${V.n1_passTried.length}`);
+  }
+  return mkp;
 });
 
 Template.add(&quot;construction&quot;,
@@ -14117,7 +14171,7 @@ Ivex grins back. &quot;Now that you&#39;ve found me, what did you have in mind?&
     The Sprite ?sprSpeaks in his ear,
     &lt;span class=sprite-q&gt;&quot;I don&#39;t understand what
     &lt;em&gt;let me explain&lt;/em&gt; means.
-    You will have to explain it to me, ?master&quot;&lt;/span&gt;
+    You will have to explain it to me, ?sprHoldStop&quot;&lt;/span&gt;
     ?P
     Nero is momentarily distracted by the Sprite&#39;s response,
     but then shakes his head and continues.
@@ -14377,7 +14431,7 @@ Nero interjects. &quot;Please. Call me an opportunist.&quot;
   &lt;&lt;set $n1_opportunist = false&gt;&gt;
   instead of ?masterN,
   &lt;&lt;set $n1_opportunist = true&gt;&gt;
-  ?master&quot;&lt;/span&gt;
+  ?sprHoldStop&quot;&lt;/span&gt;
   Nero shakes his head at that nonsense.
 &lt;&lt;/mf-please&gt;&gt;
 
@@ -14410,7 +14464,7 @@ The wolf stifles a yelp. &quot;Please! I can prove it!&quot;
   ?P
   The Sprite ?sprSpeaks in Nero&#39;s ear,
   &lt;span class=sprite-q&gt;&quot;You don&#39;t have to prove anything to me, ?master
-  I will always believe you, ?master&quot;&lt;/span&gt;
+  I will always believe you, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 ?P
 Ivex chuckles. &quot;I&#39;m sure you can.&quot; He stands up with the help of his grasp
@@ -14569,7 +14623,7 @@ makes a fist with the other.
     ?P
     The Sprite ?says,
     &lt;span class=sprite-q&gt;&quot;I&#39;ve finished doing the nothing that
-    you asked me to do, ?master&quot;&lt;/span&gt;
+    you asked me to do, ?sprHoldStop&quot;&lt;/span&gt;
   &lt;&lt;/mf-please&gt;&gt;
 
   ?P
@@ -15469,7 +15523,7 @@ Nero nods his head vigorously.
   ?P
   The Sprite ?sprSpeaks in Nero&#39;s ear,
   &lt;span class=sprite-q&gt;&quot;Thank you, ?masterX
-  Increasing flux capacitance to maximum, ?master&quot;&lt;/span&gt;
+  Increasing flux capacitance to maximum, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 ?P
@@ -16482,7 +16536,7 @@ The wolf&#39;s ears flatten in dismay.
     ?P
     The Sprite replies,
     &lt;span class=sprite-q&gt;&quot;Of course, ?master
-    What was it you wanted me to forget, ?masterQ&quot;&lt;/span&gt;
+    But I don&#39;t remember what you want me to forget, ?sprHoldStop&quot;&lt;/span&gt;
   &lt;&lt;/mf-please&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -16703,7 +16757,7 @@ It&#39;s been a long time since he felt this foolish.
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;Of course, ?master
   &lt;em&gt;It&lt;/em&gt; is a pronoun used to indicate an object,
-  and sometimes also used to insult or degrade a person, ?master&quot;&lt;/span&gt;
+  and sometimes also used to insult or degrade a person, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 ?P
@@ -17439,7 +17493,7 @@ to do!&quot;
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;&lt;em&gt;The Right Thing To Do&lt;/em&gt;
   is a classic ballad written in the year 440 by a rabbit
-  named Crash Symbols, ?master&quot;&lt;/span&gt;
+  named Crash Symbols, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 ?P
@@ -17503,7 +17557,7 @@ He can&#39;t make himself say the words.
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;Sorry, your current access level does not
-  allow me to perform that request, ?master&quot;&lt;/span&gt;
+  allow me to perform that request, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 ?P
@@ -17635,7 +17689,7 @@ be a way to avoid it.
   &lt;&lt;mf-please&gt;&gt;
     ?P
     The Sprite ?sprSays,
-    &lt;span class=sprite-q&gt;&quot;You never have to beg for me, ?master&quot;&lt;/span&gt;
+    &lt;span class=sprite-q&gt;&quot;You never have to beg for me, ?sprHoldStop&quot;&lt;/span&gt;
   &lt;&lt;/mf-please&gt;&gt;
 
   ?P
@@ -17941,7 +17995,7 @@ And, truth be told, he&#39;s had similar thoughts himself.
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;I have more of the nothing that you requested, ?master
-  But I do not know what you want me to add it to, ?master&quot;&lt;/span&gt;
+  But I do not know what you want me to add it to, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 ?P
@@ -18530,7 +18584,7 @@ also increase the chance he makes a mistake.
     The Sprite ?sprSays,
     &lt;span class=sprite-q&gt;&quot;Ok, I will show you more of the
     nothing that you requested, ?master
-    Done, ?master&quot;&lt;/span&gt;
+    Done, ?sprHoldStop&quot;&lt;/span&gt;
   &lt;&lt;/mf-please&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -20884,7 +20938,7 @@ of mage you are. But go ahead, show me what magic you can do.&quot;
 &lt;&lt;mf-please&gt;&gt;
   ?P
   The Sprite ?sprSays,
-  &lt;span class=sprite-q&gt;&quot;Your spells are the best, ?master&quot;&lt;/span&gt;
+  &lt;span class=sprite-q&gt;&quot;Your spells are the best, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 ?P
@@ -22284,25 +22338,6 @@ $t_afterAction
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;em-assert !$n1_candleHorny || $t_ivexNear || $n2_ivexGone&gt;&gt;
 
-&lt;style&gt;
-  .impatient-overrun {
-    letter-spacing: -1px;
-    margin-right: .4em;
-    word-spacing: -2px;
-  }
-&lt;/style&gt;
-
-&lt;&lt;script&gt;&gt;
-  const V = State.variables;
-  const T = State.temporary;
-  V.n1_passTried || (V.n1_passTried = [&quot;placeholder for testing&quot;]);
-  T.pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
-  T.isWrong = &quot;is not the correct password, ?master&quot;;
-  if (Nero.oldPasswords[T.pw]) {
-    T.isWrong = Nero.oldPasswords[T.pw];
-  }
-&lt;&lt;/script&gt;&gt;
-
 &lt;&lt;switch $n1_passTried.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
   &lt;&lt;if $n1_candleHorny&gt;&gt;
@@ -22512,12 +22547,11 @@ $t_afterAction
   &lt;&lt;run throw new Error(`BUG: impatient passTried ${$n1_passTried.length}`)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
-&lt;span class=sprite-q&gt;&quot;&lt;em&gt;&lt;&lt;= _pw&gt;&gt;&lt;/em&gt; &lt;&lt;= _isWrong&gt;&gt;&lt;/span&gt;
+&lt;span class=sprite-q&gt;&quot;?sprBadPass remaining, ?master&quot;&lt;/span&gt;
 
 XXX horny.
 &lt;&lt;switch $n1_passTried.length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
-  &lt;span class=sprite-q&gt;You have two tries remaining, ?master&quot;&lt;/span&gt;
   &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 
   ?P
@@ -22531,15 +22565,6 @@ XXX horny.
   $t_afterAction
 
 &lt;&lt;case 2&gt;&gt;
-  &lt;span class=sprite-q&gt;You have only one
-    &lt;span class=impatient-overrun&gt;
-      look up the singular form of the word and use it here
-      also remind me to figure out how
-      to bind the Sprite to my voice
-      in case I ever capture a mage who knows how
-      to activate it
-    &lt;/span&gt;
-  remaining, ?master&quot;&lt;/span&gt;
   &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 
   ?P
@@ -22553,7 +22578,6 @@ XXX horny.
   $t_afterAction
 
 &lt;&lt;case 3&gt;&gt;
-  &lt;span class=sprite-q&gt;You have zero tries remaining, ?master&quot;&lt;/span&gt;
   &lt;&lt;set $n1_magicPhase = MP_wantPass&gt;&gt;
 
   ?P
@@ -22568,7 +22592,6 @@ XXX horny.
   [[Continue|n1s-F Zero Bound]]
 
 &lt;&lt;case 4&gt;&gt;
-  &lt;span class=sprite-q&gt;You have no more tries remaining, ?master&quot;&lt;/span&gt;
   &lt;&lt;set $n1_magicPhase = MP_lockedOut&gt;&gt;
 
   ?P
@@ -28917,7 +28940,7 @@ looks to be a squishy solid.
     &lt;&lt;mf-please&gt;&gt;
       ?P
       The Sprite ?sprSpeaks in Nero&#39;s ear,
-      &lt;span class=sprite-q&gt;&quot;I will always believe you, ?master&quot;&lt;/span&gt;
+      &lt;span class=sprite-q&gt;&quot;I will always believe you, ?sprHoldStop&quot;&lt;/span&gt;
     &lt;&lt;/mf-please&gt;&gt;
   &lt;&lt;elseif $n1_abused&gt;&gt;
     He quickly regains his composure and meets Ivex&#39;s stare with
@@ -29348,7 +29371,7 @@ Ivex moves to the desk to pick up the snow globe.
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;There are approximately 3,000.1 matches for
-  that request, ?master&quot;&lt;/span&gt;
+  that request, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 &lt;&lt;mf-pass &quot;Please Let Me See&quot;&gt;&gt;
@@ -29404,7 +29427,7 @@ He gives the wolf&#39;s balls a quick squeeze.
   ?P
   The Sprite ?sprSays,
   &lt;span class=sprite-q&gt;&quot;There are approximately 9,000,002
-  matches for your request, ?master&quot;&lt;/span&gt;
+  matches for your request, ?sprHoldStop&quot;&lt;/span&gt;
 &lt;&lt;/mf-please&gt;&gt;
 
 ?P
