@@ -191,19 +191,19 @@ function initRandomWalk() {
     let hasProblem = false;
     hasProblem = hasProblem || ErrorMessage.hasFails;
     hasProblem = hasProblem || ErrorMessage.hasWarnings;
-    hasProblem = hasProblem ||
-        /\bX[X]X\b|\bTO[D]O\b/.test($(".passage").text());
+
+    let hasTodo = /\bX[X]X\b|\bTO[D]O\b/.test($(".passage").text());
 
     const isDraft = /[-/][DPS] /.test(here);
     const done = tags().includes("done");
 
     if (seekMoved) {
-      if (!seekForce && hasProblem) {
+      if (hasProblem) {
         console.log('stopping on problem');
         return seekStop();
       }
-      if (!seekForce && isDraft && seekPath == null) {
-        console.log('stopping on draft');
+      if (!seekForce && (hasTodo || isDraft)) {
+        console.log('stopping on to-do');
         return seekStop();
       }
       if (done) {
@@ -214,7 +214,7 @@ function initRandomWalk() {
     }
 
     if (!seekMoved) {
-      if (hasProblem || isDraft) {
+      if (hasTodo || isDraft) {
         seekForce = true;
       }
       if (done) {
