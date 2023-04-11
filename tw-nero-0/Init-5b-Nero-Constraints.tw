@@ -190,7 +190,7 @@ Nero.flags = {
     },
     sections: {
       n0_meta: "",
-      n1a_intro: false,
+      n1a_intro: "notable",
       n1cn_neutral: "notable",
       n1cr_receptive: "notable",
       n1cs_subby: "notable",
@@ -969,8 +969,27 @@ Nero.enumImplies = {
 const EM = ErrorMessage;
 const VT = VarTrace;
 
-Nero.checkState = (state, used, interactive) => {
+Nero.checkState = (state, used, interactive, active) => {
+  const sect = Nero.getSection();
+
+  // Check flags
   for (const x of Object.keys(Nero.flags)) {
+
+    // Ignore flag if it's been deleted
+    if (active && !(x in active)) continue;
+
+    // Check flags that should be constant in this section
+    if (Nero.flags[x].sections != null) {
+      const sVal = Nero.flags[x].sections[sect];
+      if (sVal != null && sVal !== "" && sVal !== "notable") {
+        if (sVal !== !!state[x]) {
+          if (!interactive) return false;
+          EM.fail(`${x} should be ${sVal} in ${sect}; currently ${state[x]}`)
+        }
+      }
+    }
+
+    // Check implications for true flags
     if (!state[x]) continue;
     if (used && !used.has(x)) continue;
     for (const y of Object.keys(Nero.flags[x].implies)) {
@@ -985,6 +1004,8 @@ Nero.checkState = (state, used, interactive) => {
       }
     }
   }
+
+  // Check enum implications
   for (const x of Object.keys(Nero.enumImplies)) {
     const xVal = state[x] == null ? "null" : state[x];
     const rules = Nero.enumImplies[x][xVal];
@@ -1016,8 +1037,9 @@ Nero.checkConstraints = () => {
   const here = State.passage;
   if (!/^n/.test(here)) return true;
   return VT.ignore(() => {
-    /* note: current state, not active state */
-    return Nero.checkState(State.current.variables, VT.ctx.wasRead, true);
+    /* note: current (incoming) state, not active state */
+    return Nero.checkState(
+      State.current.variables, VT.ctx.wasRead, true, State.active.variables);
   });
 };
 
