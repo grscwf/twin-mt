@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -9888,7 +9888,7 @@ Macro.add(&quot;mf-pass&quot;, {
   handler: function() {
     const [pw] = this.args;
     const V = State.variables;
-    if (pw == null || pw === &quot;&quot; || V.n1_magicPhase !== MP_wantPass) {
+    if (pw == null || pw === &quot;&quot; || MP_wantPass !== V.n1_magicPhase) {
       const pl = this.payload[1];
       if (pl != null &amp;&amp; pl.name === &quot;mf-else&quot;) {
         $(this.output).wiki(pl.contents);
@@ -10962,6 +10962,24 @@ Macro.add(&quot;pw-suggest&quot;, {
     }
   }
 });
+
+/** True if Nero is waiting for another password attempt. */
+Nero.passAgainSoon = () =&gt; {
+  const V = State.variables;
+  const mp = V.n1_magicPhase;
+  if (MP_onHold === mp || MP_exitingHold === mp) {
+    return V.passTried.length !== 3;
+  }
+  return false;
+};
+
+/** True if Nero is looking for a password. */
+Nero.passWanted = () =&gt; {
+  const V = State.variables;
+  const mp = V.n1_magicPhase;
+  if (MP_wantPass === V.n1_magicPhase) return true;
+  return Nero.passAgainSoon();
+};
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="fade-in test" tags="" position="3750,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;fade-in 0s&gt;&gt;
@@ -25183,10 +25201,7 @@ a small and untidy stack of books that
     The yearbook might provide some useful clues about Ivex&#39;s earlier life.
     &lt;&lt;actions-add [[Search the books.|n2x-F Books Search 1]]&gt;&gt;
 
-  &lt;&lt;elseif MP_wantPass === $n1_magicPhase
-    || MP_onHold === $n1_magicPhase
-    || MP_exitingHold === $n1_magicPhase
-  &gt;&gt;
+  &lt;&lt;elseif Nero.passWanted()&gt;&gt;
     ?P
     &lt;&lt;if $n1_booksAsked&gt;&gt;
       It&#39;s possible the name of that earlier school is
@@ -25748,10 +25763,7 @@ Nero&#39;s getting distracted again. He shakes his head to focus.
   &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;if Nero.passWanted()&gt;&gt;
   ?P
   There are many things in the room that have a similar
   shade of red: bookcases and books, cabinets and their drawers,
@@ -26634,9 +26646,7 @@ such as the souvenirs that a person keeps in their residence.
       ask later.
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;/if&gt;&gt;
-&lt;&lt;elseif MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;elseif Nero.passAgainSoon()&gt;&gt;
   Nero will have to consider trying these when he
   has a chance to guess again.
 &lt;&lt;/if&gt;&gt;
@@ -26745,10 +26755,7 @@ Within the globe is a figurine of
   &lt;!-- not adding to pw-found until wantPass --&gt;
 
   ?P
-  &lt;&lt;if MP_wantPass === $n1_magicPhase
-    || MP_onHold === $n1_magicPhase
-    || MP_exitingHold === $n1_magicPhase
-  &gt;&gt;
+  &lt;&lt;if Nero.passWanted()&gt;&gt;
     &lt;&lt;include [[n1x-F Globe WantPass]]&gt;&gt;
   &lt;&lt;else&gt;&gt;
     The snow globe is another oddity to add to the catalog
@@ -27926,10 +27933,7 @@ The X is also on the Parce River, some distance upstream,
 northeast of Uramos. Nero believes there&#39;s a town at that location,
 but he does not remember its name.
 
-&lt;&lt;if MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;if Nero.passWanted()&gt;&gt;
   &lt;&lt;include [[n1x-F Map WantPass]]&gt;&gt;
 &lt;&lt;else&gt;&gt;
   ?P
@@ -28248,14 +28252,9 @@ With demonstrations.
 
 &lt;&lt;vi-always n1_paintingMomKnown false&gt;&gt;
 
-&lt;&lt;set _wantPass = MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;em-assert Nero.passWanted() || MP_wantTouch === $n1_magicPhase&gt;&gt;
 
-&lt;&lt;em-assert _wantPass || MP_wantTouch === $n1_magicPhase&gt;&gt;
-
-&lt;&lt;if _wantPass&gt;&gt;
+&lt;&lt;if Nero.passWanted()&gt;&gt;
   The simplest way to trick Ivex into revealing the pantheress&#39;s
   name is to invent a name for her that he will want to correct.
 &lt;&lt;else&gt;&gt;
@@ -28547,10 +28546,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
   || MP_wantTouch === $n2_magicPhaseLost&gt;&gt;
   &lt;&lt;include [[n1x-F Painting WantTouch]]&gt;&gt;
 
-&lt;&lt;elseif MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;elseif Nero.passWanted()&gt;&gt;
   &lt;&lt;include [[n1x-F Painting WantPass]]&gt;&gt;
 
 &lt;&lt;elseif $n2_extraHorny&gt;&gt;
@@ -28894,10 +28890,7 @@ Nero stares at the penguin in perplexity.
     &lt;&lt;actions-add [[Tell Ivex, &quot;Something just dropped from the beak...&quot;|n1x-F Penguin Ask]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;elseif Nero.passWanted()&gt;&gt;
   &lt;&lt;pw-suggest &quot;Hunter Too&quot;&gt;&gt;
     The names of pets and familiars are commonly used as passwords.
     Perhaps &quot;Hunter Too&quot; is Ivex&#39;s password?
@@ -29234,12 +29227,6 @@ $t_afterAction
 &lt;&lt;vi-always n2_wandRanAway false&gt;&gt;
 &lt;&lt;vi-always n2_wandUsed false&gt;&gt;
 
-&lt;&lt;set _wantPass =
-  MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
-
 The wand on the bookshelf is a little larger than
 &lt;&lt;if $n1_candleLit&gt;&gt;
   average, with ridges down its length like the
@@ -29275,7 +29262,7 @@ pinkish in color.
 &lt;&lt;/if&gt;&gt;
 
 Nero vividly remembers Ivex&#39;s explanation of
-&lt;&lt;= _wantPass ? &quot;his wand.&quot; : &quot;his... &lt;em&gt;Fuck Toy 9000&lt;/em&gt;.&quot;&gt;&gt;
+&lt;&lt;= Nero.passWanted() ? &quot;his wand.&quot; : &quot;his... &lt;em&gt;Fuck Toy 9000&lt;/em&gt;.&quot;&gt;&gt;
 The attachment is intended to surround an erect cock
 and stimulate it with great pleasure.
 But the panther also mentioned in sinister tone that
@@ -29331,7 +29318,7 @@ the wand has reduced adventurers to begging.
     &lt;&lt;actions-add [[&quot;Cautiously try Ivex&#39;s wand.&quot;|n2x-F Wand Cock 1]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif _wantPass&gt;&gt;
+&lt;&lt;elseif Nero.passWanted()&gt;&gt;
   &lt;&lt;pw-suggest &quot;Fuck Toy 9000&quot;&gt;&gt;
     Perhaps... Nero hesitates to even &lt;em&gt;think&lt;/em&gt; the name of the wand.
     Perhaps &quot;Fuck Toy 9000&quot; is Ivex&#39;s password?
@@ -29414,10 +29401,7 @@ looks to be a squishy solid.
     &lt;&lt;actions-add [[Ask Ivex about his wand.|n1x-F Wand Ask]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;elseif Nero.passWanted()&gt;&gt;
   Perhaps Ivex has given a name to his wand?
   It could be his password.
   &lt;&lt;if $n2_ivexGone&gt;&gt;
@@ -30055,10 +30039,7 @@ on the wall.
   could have found a comforting home, snug between her
   welcoming thighs.
 
-&lt;&lt;elseif MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+&lt;&lt;elseif Nero.passWanted()&gt;&gt;
   &lt;&lt;if $n1_globeAskedHorny&gt;&gt;
     But can love-filled lust ever truly be explained?
     All the wolf wants, all he needs, is to see her gaze upon him,
@@ -30384,13 +30365,12 @@ flirtatiously out the side of her mouth.
   The memory of &lt;em&gt;Ivex licking that tongue&lt;/em&gt;
   makes Nero cringe, but it somehow seems to inflame instead of
   dampen his desire.
+
 &lt;&lt;elseif MP_wantTouch === $n1_magicPhase&gt;&gt;
   Her mouth must be the hole that the Sprite wants him to touch!
   Nero strains at his bonds to try to reach it.
-&lt;&lt;elseif MP_wantPass === $n1_magicPhase
-  || MP_onHold === $n1_magicPhase
-  || MP_exitingHold === $n1_magicPhase
-&gt;&gt;
+
+&lt;&lt;elseif Nero.passWanted()&gt;&gt;
   &lt;&lt;if $n1_paintingMomKnown&gt;&gt;
     Nero whispers her name, &quot;Ivy&quot;, hoping that she will
     somehow hear it.
@@ -32918,7 +32898,7 @@ This one is pictures on every page, and very few words.
   No more distractions!
   ?P
   His cock suggests maybe another book in the stack &lt;em&gt;will&lt;/em&gt;
-  be useful. But Nero is pretty sure that all of them will be porn.
+  be useful. But Nero is pretty sure that all of them will be pornographic.
   So he steps away.
   
 &lt;&lt;else&gt;&gt;
@@ -32996,12 +32976,13 @@ of wood grain, with no apparent way of opening it.
   He forces himself to consider something else. The papers on the desk.
   &lt;&lt;if $n2_deskBurned&gt;&gt;
     There&#39;s one scrap that isn&#39;t entirely burnt.
-    On that scrap is a doodle of a stick figure, labeled Malc.
+    On that scrap is a doodle of a stick figure, labeled Cona.
     Nothing else is legible.
   &lt;&lt;else&gt;&gt;
     Most of them appear to be overdue library notices,
-    covered with crude stick figure doodles insulting the sexual appetites
-    of a librarian named Malc.
+    covered with crude stick figure doodles depicting
+    what look like crude sexual acts performed on
+    a figure labeled Cona the Librarian.
   &lt;&lt;/if&gt;&gt;
   There&#39;s nothing useful here.
   ?P

@@ -48,19 +48,24 @@ There are only a few paths that require specific moods.
     several other points.
   - Nero is always `naked` before Ivex leaves.
   - Becoming `naked` also asks barbs/smooth. There are 4 variants:
-    Mica, Pevhin, glitch, and a skip option if the player's already
+    Mica, Pevhin, and a skip option if the player's already
     already seen Mica or Pevhin's story in a previous playthrough.
 - (3) `abused` is triggered when Ivex punches Nero's balls.
   - `abused` is one of the initial options, and it can also happen at
     several other points.
   - `abused` can be false when Ivex leaves.
 - (4) `tough` is triggered by some choices after `abused`.
+  - Nero decides he's not going to cave in to abuse.
+  - This changes the text in several places, but doesn't change any paths.
 - (5) `subby` is triggered by particular dialog choices.
+  - Nero decides he wants to be, or pretend to be, an apprentice.
   - `subby` is needed for reaching one ending.
 - (6) `candleHorny` is triggered when the candle has been lit long enough,
-  and goes away when the candle is snuffed or disabled.
+  and it goes away when the candle is snuffed or disabled.
+  - Nero is not thinking clearly. Everything is affected.
 - (7) `extraHorny` is triggered when Nero escapes the cross on
     the easy path.
+  - Nero is continually distracted by his unnaturally erect cock.
   - `extraHorny` is normally false on the hard path, but there are
     optional actions that can trigger it anyway.
 </details>
@@ -69,7 +74,7 @@ There are only a few paths that require specific moods.
 The easy solution is 3 steps that can be done before or after Ivex leaves,
 and 1 step done after he leaves.
 
-It's a simple sequence of choices and actions.
+It's a simple set of choices and actions.
 The game strongly nudges the player in the right direction.
 
 A player will probably find this on their 1st or 2nd playthrough.
@@ -80,7 +85,7 @@ A player will probably find this on their 1st or 2nd playthrough.
   and the candle relights itself.
 - Most actions at this point are not useful.
   They're either teases, or they provide
-  hints for the next attempt at 1st Floor Hard.
+  hints for the next attempt at the 1st Floor Hard solution.
 - 2 looks or 1 action will trigger `candleHorny`.
 - 4 looks or 2 actions will take the candle to near-max.
 - At near-max, the next look or action will take candle to max,
@@ -89,7 +94,7 @@ A player will probably find this on their 1st or 2nd playthrough.
   - (1-A) Try casting any spell.
   - (2-A) Cast mage-sight.
   - (3-L) See the energy web of the crystals with mage-sight.
-    If `candleHorny`, looking at the mirror is enough.
+    - If `candleHorny`, looking at the mirror is enough.
 - (4-A) When the candle is at max, and Nero has seen the crystal
   energy web with mage-sight, struggling will disrupt the grav crystals.
   - Anything other than struggling will fail.
@@ -98,7 +103,7 @@ A player will probably find this on their 1st or 2nd playthrough.
     - Bad Ending: Tamed Mild - cooperate
     - Bad Ending: Tamed Harsh - resist
 - After disrupting the grav crystals, there's a choice between
-  getting the letter opener first or snuffing the candle first.
+  getting the letter opener or the candle.
   Both options succeed. There's no trap here.
 - If the mirror is tapped, it will get broken,
   making it unavailable on the 2nd Floor,
@@ -113,7 +118,7 @@ A player will probably find this on their 1st or 2nd playthrough.
 </details>
 
 ### 1st Floor Hard
-The hard solution is 11 steps that must be done before Ivex leaves.
+The hard solution is ~11 steps that must be done before Ivex leaves.
 It's designed to be unlikely to be found on the
 1st playthrough, but not too hard to find after a few more playthroughs.
 
@@ -169,8 +174,8 @@ the 4th or 5th playthrough.
     automatically tells the player the password.
 - Player will probably be here on 2nd - 5th playthrough.
 - The password is a big tease:
-  - There's a moment when it seems like it succeeds, and then it becomes
-    another failure.
+  - There's a moment when it seems like it might succeed,
+    and then it becomes a big failure.
   - Player goes through another section that feels like "crap, another
     obstacle, what else do I have to do to get past this."
   - But this turns out to actually work anyway. Nero is free.
@@ -189,10 +194,11 @@ most of Nero's paths. There are also some oblique clues to it.
 - You must have seen Mica already in other playthroughs.
 - Pick the neutral or abused start. (Do not cast Endgame).
 - Follow the dialog branches to becoming an apprentice.
-- When Ivex removes Nero's clothes, use the 3rd option,
-  which is hidden but briefly shown.
+- When Ivex removes Nero's clothes, use the 3rd option.
 - Make sure to ask about the wand before Ivex leaves.
-- Finish the hard escape.
+- Finish the hard escape *before* becoming horny.
+  - This is fairly tight timing, it might take a few tries
+    to find a path that works.
 - Use the wand.
 
 </details>
