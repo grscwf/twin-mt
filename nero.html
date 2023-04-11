@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -8849,7 +8849,7 @@ Nero.flags = {
       n1cx_transition: &quot;notable&quot;,
       n1d_candle: &quot;notable&quot;,
       n1e_horny: &quot;notable&quot;,
-      n1f_clever: true,
+      n1f_clever: &quot;&quot;,
       n1p_barbs: false,
       n1s_magic: &quot;&quot;,
       n1x_look: &quot;notable&quot;,
@@ -9633,11 +9633,14 @@ Nero.checkState = (state, used, interactive, active) =&gt; {
     // Check flags that should be constant in this section
     if (Nero.flags[x].sections != null) {
       const sVal = Nero.flags[x].sections[sect];
-      if (sVal != null &amp;&amp; sVal !== &quot;&quot; &amp;&amp; sVal !== &quot;notable&quot;) {
-        if (sVal !== !!state[x]) {
-          if (!interactive) return false;
-          EM.fail(`${x} should be ${sVal} in ${sect}; currently ${state[x]}`)
-        }
+      if (sVal != null
+        &amp;&amp; sVal !== &quot;&quot;
+        &amp;&amp; sVal !== &quot;notable&quot;
+        &amp;&amp; !(sVal instanceof RegExp)
+        &amp;&amp; sVal !== !!state[x]
+      ) {
+        if (!interactive) return false;
+        EM.fail(`${x} should be ${sVal} in ${sect}; currently ${state[x]}`)
       }
     }
 
@@ -10279,7 +10282,7 @@ function tameTextTo(list, node) {
 }
 .sprite-squish {
   letter-spacing: -1px;
-  margin-right: .4em;
+  margin-right: .1em;
   word-spacing: -2px;
 }
 
@@ -10386,14 +10389,20 @@ Template.add(&quot;sprHoldStop&quot;, () =&gt; {
 
 Template.add(&quot;sprBadPass&quot;, () =&gt; {
   const V = State.variables;
+
   const pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
-  let isWrong = &quot;is not the correct password, ?master&quot;;
-  if (Nero.oldPasswords[pw]) {
-    isWrong = Nero.oldPasswords[pw];
+  const tried = V.n1_passTried.length;
+
+  let mkp = `&lt;em&gt;${pw}&lt;/em&gt; `;
+
+  // oldPassword joke detracts from the tried joke
+  if (Nero.oldPasswords[pw] &amp;&amp; tried !== 2) {
+    mkp += Nero.oldPasswords[pw];
+  } else {
+    mkp += &quot;is not the correct password, ?master&quot;;
   }
 
-  let mkp = `&lt;em&gt;${pw}&lt;/em&gt; ${isWrong}`;
-  switch (V.n1_passTried.length) {
+  switch (tried) {
     case 1:
       mkp += &quot; You have two tries&quot;;
       break;
@@ -10865,7 +10874,11 @@ Nero.otherPasswords = {
 };
 
 Nero.oldPasswords = {
-  // XXX old passwords
+  &quot;Carpe Diem&quot;: &quot;is not your password yet, ?master&quot;,
+  &quot;Ivex The Magnificent&quot;: &quot;is obviously not your password, ?master&quot;,
+  &quot;Password&quot;: &quot;is your mother&#39;s maiden name, not your password, ?master&quot;,
+  &quot;I&#39;m Sorry To Interrupt&quot;: &quot;was last year&#39;s password, ?master&quot;,
+  &quot;I Have A Question For You&quot;: &quot;was last month&#39;s password, ?master&quot;,
 };
 
 let pwDebugAlready = false;
@@ -13436,6 +13449,7 @@ MagesTower.walks = [
       { t: &quot;n1p-F Barbs Glitch 3&quot;, code: &quot;//1&quot; },
       { t: &quot;n1p-F Barbs Glitch 4&quot; },
       { t: &quot;n1p-F Barbs Glitch 5&quot; },
+      { t: &quot;n1p-F Barbs Glitch 6&quot; },
       { t: &quot;n1a-F Endgame 4&quot; },
       { t: &quot;n1cn-F Ivex Intro 1&quot; },
       { t: &quot;n1cn-F Ivex Intro 2&quot; },
@@ -13515,6 +13529,7 @@ MagesTower.walks = [
       { t: &quot;n1p-F Barbs Glitch 3&quot;, code: &quot;//1&quot; },
       { t: &quot;n1p-F Barbs Glitch 4&quot; },
       { t: &quot;n1p-F Barbs Glitch 5&quot; },
+      { t: &quot;n1p-F Barbs Glitch 6&quot; },
       { t: &quot;n1a-F Endgame 4&quot; },
       { t: &quot;n1cn-F Ivex Intro 1&quot; },
       { t: &quot;n1cn-F Ivex Intro 2&quot; },
@@ -13547,7 +13562,8 @@ MagesTower.walks = [
       { choice: &quot;contact&quot; },
       { t: &quot;n1s-F Say Lance&quot; },
       { t: &quot;n1cn-F Ivex Offended (1,1)&quot; },
-      { t: &quot;n1cn-D Glitched Guild 1&quot; },
+      { t: &quot;n1cn-F Secret Guild&quot; },
+      { t: &quot;n1cn-F Glitched Guild 1&quot; },
       { t: &quot;n1cn-D Glitched Guild 2&quot; },
       { t: &quot;n1cx-F Start Candle 1&quot; },
       { t: &quot;n1d-F Start Candle 2&quot; },
@@ -13643,6 +13659,7 @@ MagesTower.walks = [
       { t: &quot;n1p-F Barbs Glitch 3&quot;, code: &quot;//1&quot; },
       { t: &quot;n1p-F Barbs Glitch 4&quot; },
       { t: &quot;n1p-F Barbs Glitch 5&quot; },
+      { t: &quot;n1p-F Barbs Glitch 6&quot; },
       { t: &quot;n1cs-F Subby Stripped&quot; },
       { t: &quot;n1cs-F Bonding&quot; },
       { t: &quot;n1cs-F Ivex Dominant (3,2)&quot; },
@@ -14364,41 +14381,7 @@ Nero considers how to respond.
   &lt;li&gt;[[Try to sweet talk his way through this.|n1a-F Hello 1]]&lt;/li&gt;
   &lt;li&gt;[[Activate his emergency protection spell.|n1a-F Endgame 1]]&lt;/li&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="290" name="n1cn-D Glitched Guild 1" tags="" position="4175,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
-&lt;&lt;vi-ignore n1_naked&gt;&gt;
-
-&lt;&lt;if $n1_abused&gt;&gt;
-  &quot;Of course not!&quot; says Nero. &quot;This isn&#39;t about me!&quot;
-  &lt;&lt;set _pw = &quot;Of Course Not&quot;&gt;&gt;
-&lt;&lt;else&gt;&gt;
-  &quot;This isn&#39;t about me,&quot; says Nero.
-  &lt;&lt;set _pw = &quot;This Isn&#39;t About Me&quot;&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
-&lt;&lt;mf-pass _pw&gt;&gt;
-  ?P
-  Nero is momentarily distracted by the Sprite, but he
-  turns the stumble into a dramatic pause.
-&lt;&lt;mf-else&gt;&gt;
-  ?P
-  He pauses to give his next statement dramatic weight.
-&lt;&lt;/mf-pass&gt;&gt;
-&quot;I&#39;m merely a messenger for a secret guild of mages that would be honored
-to have you join their &lt;em&gt;inner&lt;/em&gt; council.&quot;
-?P
-XXX
-&quot;A secret guild of mages. Interesting.&quot;
- Ivex speaks with curiosity.
-&quot;And does this... secret guild of mages have a name?&quot;
-
-similar banter about name.
-
-?P
-
-[[Continue|n1cn-D Glitched Guild 2]]
-&lt;&lt;set $n1_secretGuild = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="291" name="n1cn-D Glitched Guild 2" tags="" position="4175,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="290" name="n1cn-D Glitched Guild 2" tags="" position="4175,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
 
@@ -14410,7 +14393,7 @@ maybe adjust candle question
 
 [[Continue|n1cx-F Start Candle 1]]
 &lt;&lt;set $n1_secretGuild = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="292" name="n1cn-F Apprentice No" tags="inclusion" position="4225,3900" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="291" name="n1cn-F Apprentice No" tags="inclusion" position="4225,3900" size="100,100">&lt;&lt;nobr&gt;&gt;
 /* ranted happens after Itch or Younger; Younger is when receptive */
 &lt;&lt;vi-always n1_castItch true&gt;&gt;
 &lt;&lt;vi-always n1_ivexRanted true&gt;&gt;
@@ -14456,7 +14439,7 @@ Nero thinks quickly.
 [[Continue|n1cn-F Harmless]]
 
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="293" name="n1cn-F Apprentice Yes" tags="inclusion" position="4450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="292" name="n1cn-F Apprentice Yes" tags="inclusion" position="4450,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 Ivex looks startled by the suggestion.
 &lt;&lt;if $t_ivexNear&gt;&gt;
@@ -14484,7 +14467,7 @@ And you&#39;re the most handsome candidate so far...&quot;
 &lt;&lt;set $t_ivexReceptive = true&gt;&gt;
 &lt;&lt;set $n1_ivexWasReceptive = true&gt;&gt;
 &lt;&lt;set $n1_apprentice = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="294" name="n1cn-F Apprentice" tags="big-mood" position="4325,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="293" name="n1cn-F Apprentice" tags="big-mood" position="4325,3775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
@@ -14584,7 +14567,7 @@ And you&#39;re the most handsome candidate so far...&quot;
   &lt;&lt;include [[n1cn-F Apprentice Yes]]&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="295" name="n1cn-F Charm Fails" tags="inclusion" position="3800,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="294" name="n1cn-F Charm Fails" tags="inclusion" position="3800,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
 /* ranted happens after Itch or Younger; Younger is when receptive */
 &lt;&lt;vi-always n1_castItch true&gt;&gt;
 &lt;&lt;vi-always n1_ivexRanted true&gt;&gt;
@@ -14635,7 +14618,7 @@ your first action is a pitiful attack spell?&quot;
 [[Continue|n1cn-F Harmless]]
 
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="296" name="n1cn-F Charm Works" tags="inclusion" position="4225,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="295" name="n1cn-F Charm Works" tags="inclusion" position="4225,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &quot;Finally!&quot; says Ivex. &quot;...I mean, it&#39;s funny that all those idiot bounty hunters continue to fall into my traps. But I&#39;ve been trying to meet other types of people. You&#39;re not what I expected. Still, we all have to start somewhere, right?&quot;
 
@@ -14667,7 +14650,7 @@ Ivex grins back. &quot;Now that you&#39;ve found me, what did you have in mind?&
     &lt;li&gt;[[&#39;&quot;Perhaps we could collaborate...&quot;&#39;|n1cn-F Collab]]&lt;/li&gt;
   &lt;&lt;/if&gt;&gt;
 &lt;/ul&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="297" name="n1cn-F Charm" tags="" position="4100,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="296" name="n1cn-F Charm" tags="" position="4100,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
@@ -14750,7 +14733,7 @@ It&#39;s astonishing. When I read about your feats, I knew I had to meet you.&qu
 
 &lt;&lt;set $t_didSomeAction = true&gt;&gt;
 &lt;&lt;set $t_banter = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="298" name="n1cn-F Collab" tags="" position="4650,2725" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="297" name="n1cn-F Collab" tags="" position="4650,2725" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
 &lt;&lt;if $n1_abused&gt;&gt;
@@ -14814,7 +14797,7 @@ and your first thought is that I might join you in a &lt;em&gt;business venture?
 
 ?P
 [[Continue|n1cn-F Ivex Disdainful (1,1)]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="299" name="n1cn-F Con Game 1" tags="" position="3850,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="298" name="n1cn-F Con Game 1" tags="" position="3850,2650" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused false&gt;&gt;
 &lt;&lt;vi-ignore n1_naked&gt;&gt;
 &lt;&lt;vi-ignore-if n1_mageSight n1_naked&gt;&gt;
@@ -14853,7 +14836,7 @@ Ivex growls, &quot;This is no pretense!&quot;
 Hah, it clearly is. Steering the panther will be easy.
 ?P
 [[Continue|n1cn-F Con Game 2]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="300" name="n1cn-F Con Game 2" tags="" position="3850,2750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="299" name="n1cn-F Con Game 2" tags="" position="3850,2750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -14904,7 +14887,7 @@ The panther chuckles.
 &quot;You said it, not me.&quot; The trap is set. Will Ivex take the bait?
 ?P
 [[Continue|n1cn-F Con Game 3]]
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="301" name="n1cn-F Con Game 3" tags="" position="3850,2850" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="300" name="n1cn-F Con Game 3" tags="" position="3850,2850" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -14959,7 +14942,7 @@ Nero becomes worried.
 ?P
 [[Continue|n1cn-F Con Game 4]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="302" name="n1cn-F Con Game 4" tags="big-mood" position="3850,2950" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="301" name="n1cn-F Con Game 4" tags="big-mood" position="3850,2950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 
@@ -15017,7 +15000,7 @@ He shakes his head, nods, but then shakes his head again.
 &lt;&lt;set $n1_abused = true&gt;&gt;
 &lt;&lt;set $n1_thief = true&gt;&gt;
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="303" name="n1cn-F First Action (4,3)" tags="" position="4175,2050" size="200,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="302" name="n1cn-F First Action (4,3)" tags="" position="4175,2050" size="200,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n1_abused n1_naked&gt;&gt;
 
@@ -15071,6 +15054,44 @@ He shakes his head, nods, but then shakes his head again.
   &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-optional $t_magicAction&gt;&gt;
 &lt;/ul&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="303" name="n1cn-F Glitched Guild 1" tags="" position="4175,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n1_mageSight&gt;&gt;
+&lt;&lt;vi-ignore n1_naked&gt;&gt;
+
+Ivex smirks. &quot;Well, you&#39;re clearly a minion of some sort.&quot;
+
+?P
+&lt;&lt;if $n1_abused&gt;&gt;
+  Nero nods with a tinge of embarrassment.
+&lt;&lt;else&gt;&gt;
+  Nero feels slightly offended, but nods anyway.
+&lt;&lt;/if&gt;&gt;
+
+?P
+Ivex laughs. &quot;But I do not believe your tale of a secret guild of mages.
+There is &lt;em&gt;some&lt;/em&gt; secret power at work.
+I do not understand what it has done.
+But if you are happily talking to me about a secret guild of mages,
+it&#39;s certainly &lt;em&gt;not&lt;/em&gt; that.&quot;
+
+?P
+Nero is confused by the panther&#39;s logic, or lack thereof.
+&quot;I&#39;m a &lt;em&gt;trusted&lt;/em&gt; messenger,
+and they have told me to invite you into their secrets.&quot;
+
+?P
+&quot;Of course! Of course. And you keep many secrets, I&#39;m sure.
+But right now, I&#39;m most curious about a secret you have that
+I do not think you can tell me. It&#39;s an interesting puzzle.&quot;
+
+?P
+Nero smiles. This conversation is not going the way he expected,
+but it seems to be heading in a useful direction anyway.
+
+?P
+[[Continue|n1cn-D Glitched Guild 2]]
+
+&lt;&lt;set $n1_secretGuild = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="304" name="n1cn-F Harmless" tags="" position="3600,4500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_naked true&gt;&gt;
 &lt;&lt;vi-always n1_ivexRanted true&gt;&gt;
@@ -15467,20 +15488,17 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 ?P
 &lt;&lt;include [[n1x-F Actions]]&gt;&gt;
 
-&lt;&lt;set _guild = $n1_glitched ? &quot;[[n1cn-D Glitched Guild 1]]&quot;
-  : &quot;[[n1cn-F Secret Guild]]&quot;&gt;&gt;
-
 &lt;ul class=actions&gt;
   &lt;&lt;em-assert !$n1_subby &amp;&amp; !$n1_tough&gt;&gt;
   &lt;&lt;if $n1_abused&gt;&gt;
     &lt;&lt;mtl [[n1cn-F Support Group]]&gt;&gt;
       &quot;No, that isn&#39;t what I meant!&quot;
     &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;mtl _guild&gt;&gt;
+    &lt;&lt;mtl [[n1cn-F Secret Guild]]&gt;&gt;
       &quot;Of course not! This isn&#39;t about me!&quot;
     &lt;&lt;/mtl&gt;&gt;
   &lt;&lt;else&gt;&gt;
-    &lt;&lt;mtl _guild&gt;&gt;
+    &lt;&lt;mtl [[n1cn-F Secret Guild]]&gt;&gt;
       &quot;This isn&#39;t about me...&quot;
     &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;mtl [[n1cn-F Con Game 1]]&gt;&gt;
@@ -15886,19 +15904,30 @@ wolf&#39;s right arm. &quot;But perhaps you could give me... a little more than 
 &lt;&lt;/mf-pass&gt;&gt;
 &quot;I&#39;m merely a messenger for a secret guild of mages that would be honored
 to have you join their &lt;em&gt;inner&lt;/em&gt; council.&quot;
+
 ?P
-&quot;A secret guild of mages. Really.&quot; Ivex speaks with contempt.
-&quot;And does this... secret guild of mages have a name?&quot;
-?P
-Nero is
-&lt;&lt;= $n1_abused ? &quot;&quot; : &quot;a little&quot;&gt;&gt;
-dismayed. He had hoped that the idea of arcane mysteries
-would be attractive enough for Ivex to take the bait without much
-questioning of the premise. The wolf will need to make the lure better
-somehow.
-?P
+&quot;A secret guild of mages.
+&lt;&lt;if $n1_glitched&gt;&gt;
+  Interesting.&quot; Ivex speaks with curiosity.
+  &quot;And does this... secret guild of mages have a name?&quot;
+  ?P
+  Nero was not prepared for that question.
+
+&lt;&lt;else&gt;&gt;
+  Really.&quot; Ivex speaks with contempt.
+  &quot;And does this... secret guild of mages have a name?&quot;
+  ?P
+  Nero is
+  &lt;&lt;= $n1_abused ? &quot;&quot; : &quot;a little&quot;&gt;&gt;
+  dismayed. He had hoped that the idea of arcane mysteries
+  would be attractive enough for Ivex to take the bait without much
+  questioning of the premise. The wolf will need to make the lure better
+  somehow.
+  ?P
+&lt;&lt;/if&gt;&gt;
+
 He stalls for time to think about it.
-&quot;Yes... but... well... If you aren&#39;t interested,
+&quot;Yes... but... well...
 I shouldn&#39;t tell you the name,
 since it &lt;em&gt;is&lt;/em&gt; a secret guild.&quot;
 ?P
@@ -15919,11 +15948,18 @@ The panther breaks the silence first, with another laugh.
 His amusement hasn&#39;t diminished, but perhaps a note of doubt
 has crept into it...
 ?P
-[[Continue|n1cr-F Ivex Skeptical (4,3)]]
+&lt;&lt;if $n1_glitched&gt;&gt;
+  [[Continue|n1cn-F Glitched Guild 1]]
+&lt;&lt;else&gt;&gt;
+  [[Continue|n1cr-F Ivex Skeptical (4,3)]]
+&lt;&lt;/if&gt;&gt;
 
-&lt;&lt;set $t_ivexReceptive = true&gt;&gt;
-&lt;&lt;set $n1_ivexWasReceptive = true&gt;&gt;
 &lt;&lt;set $n1_secretGuild = true&gt;&gt;
+&lt;&lt;set if (!$n1_glitched) {
+  $t_ivexReceptive = true;
+  $n1_ivexWasReceptive = true;
+}
+&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="318" name="n1cn-F Support Group" tags="" position="3825,2475" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;vi-always n1_abused true&gt;&gt;
@@ -17945,6 +17981,7 @@ The wolf does not know what to do next.
 &lt;&lt;set $n1_tough = false&gt;&gt;
 &lt;&lt;set $t_ivexGrabbing = true&gt;&gt;
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
+&lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="354" name="n1cs-F Plead Mercy" tags="" position="4275,4800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused true&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
@@ -18026,6 +18063,7 @@ trying to answer them all at once.
 
 &lt;&lt;set $t_ivexGrabbing = true&gt;&gt;
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
+&lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="355" name="n1cs-F Plead Punishment" tags="" position="4400,4800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_abused false&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
@@ -18129,6 +18167,7 @@ Nero can&#39;t help cringing and shivering anyway.
 &lt;&lt;set $n1_abused = true&gt;&gt;
 &lt;&lt;set $t_ivexGrabbing = true&gt;&gt;
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
+&lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="356" name="n1cs-F Plead Reason" tags="" position="4525,4800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
 &lt;&lt;em-assert !$n1_abused || $n1_tough&gt;&gt;
@@ -18232,6 +18271,7 @@ be a way to avoid it.
 &lt;&lt;set $n1_abused = true&gt;&gt;
 &lt;&lt;set $t_ivexGrabbing = true&gt;&gt;
 &lt;&lt;set $t_ivexNear = true&gt;&gt;
+&lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="357" name="n1cs-F Room Flip 1" tags="" position="4650,4100" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;if $n1_mageSight&gt;&gt;
@@ -18663,7 +18703,6 @@ should be able to figure it out soon enough.&quot;
 
 &lt;&lt;set $n1_candleLit = true&gt;&gt;
 &lt;&lt;set $t_ivexGrabbing = false&gt;&gt;
-&lt;&lt;set $t_ivexReceptive = false&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="362" name="n1d-F Candle Horny" tags="big-mood" position="4475,5400" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_naked true&gt;&gt;
 &lt;&lt;vi-ignore n1_mageSight&gt;&gt;
