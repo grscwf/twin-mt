@@ -33,7 +33,9 @@
 <<case `MP_wantDevice`>>
   <span class=sprite-q>"Which device in this room do you wish
   to contact, ?masterQ"</span>
-  <<if $n1_bottleViewed>>
+  <<if _patience <= 0>>
+    /* nothing */
+  <<elseif $n1_bottleViewed>>
     <<if $n1_candleHorny>>
       The wolf only knows one device in this room. Nackle's device
       is somewhat of a bold choice for a new relationship,
@@ -65,7 +67,9 @@
 <<case `MP_wantName`>>
   <span class=sprite-q>"Which device in this room do you wish
   to contact, ?masterQ"</span>
-  <<if $n1_bottleNameKnown>>
+  <<if _patience <= 0>>
+    /* nothing */
+  <<elseif $n1_bottleNameKnown>>
     <<if $n1_candleHorny>>
       Its earlier rebuff of Nackle was disheartening.
       But perhaps it misunderstood which one the wolf wants to try.
@@ -105,7 +109,9 @@
 
 <<case `MP_wantTouch`>>
   <span class=sprite-q>"Please touch my hole, ?master"</span>
-  <<if !$n1_helpTouchAsked>>
+  <<if _patience <= 0>>
+    /* nothing */
+  <<elseif !$n1_helpTouchAsked>>
     <<if $n1_candleHorny>>
       The wolf is fascinated by thoughts of where this hole might be.
     <<else>>
@@ -122,7 +128,7 @@
     The Sprite's pestering is annoying.
   <<else>>
     There must be some way to trick Ivex into touching the right hole.
-    <<if $n1_windowAskRefused && !$n1_windowAskBlocked>>
+    <<if $n1_windowAskRefused && !$n1_windowAskBlocked && _patience > 0>>
       <<actions-add
         [[Try again to attract Ivex to the window.|n1x-F Window Ask 1]]
       >>
@@ -131,23 +137,25 @@
 
 <<case `MP_wantPass`>>
   <span class=sprite-q>"Please say your password, ?master"</span>
-  ?P
-  <<switch $n1_passTried.length>>
-  <<case 1>>
-    Nero has two guesses remaining.
-    Not as many as he'd like, but better than nothing.
-  <<case 2>>
-    Nero only has one guess remaining.
-    He'd better make it a good one.
-  <<case 3>>
-    Nero now has zero guesses remaining?
-    It probably means there is not actually
-    a limit to the number of guesses.
-  <<default>>
-    <<run throw new Error(`bug: passTried ${$n1_passTried.length}`)>>
-  <</switch>>
+  <<if _patience > 0>>
+    ?P
+    <<switch $n1_passTried.length>>
+    <<case 1>>
+      Nero has two guesses remaining.
+      Not as many as he'd like, but better than nothing.
+    <<case 2>>
+      Nero only has one guess remaining.
+      He'd better make it a good one.
+    <<case 3>>
+      Nero now has zero guesses remaining?
+      It probably means there is not actually
+      a limit to the number of guesses.
+    <<default>>
+      <<run throw new Error(`bug: passTried ${$n1_passTried.length}`)>>
+    <</switch>>
+    <<set $t_magicAction = "[[Guess a password.|n1s-F Guess Password]]">>
+  <</if>>
 
-  <<set $t_magicAction = "[[Guess a password.|n1s-F Guess Password]]">>
 
 <<case `MP_onHold`>>
   <<include [[n1s-F On Hold]]>>
