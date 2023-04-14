@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -6541,6 +6541,22 @@ Macro.add(&quot;mtl-if&quot;, {
       if (reason != null &amp;&amp; reason !== &quot;&quot;) {
         $(&quot;&lt;span class=mtl-reason&gt;&quot;).text(`(${reason})`).appendTo(li);
       }
+    }
+  }
+});
+
+/**
+ * &lt;&lt;mtl-denied $text [$reason]&gt;&gt;
+ *
+ * Show an unavailable action.
+ */
+Macro.add(&quot;mtl-denied&quot;, {
+  handler: function() {
+    const [text, reason] = this.args;
+    const li = $(&quot;&lt;li class=mtl-denied&gt;&quot;).appendTo(this.output);
+    $(&quot;&lt;span class=mtl-action&gt;&quot;).wiki(text.trim()).appendTo(li);
+    if (reason != null &amp;&amp; reason !== &quot;&quot;) {
+      $(&quot;&lt;span class=mtl-reason&gt;&quot;).text(`(${reason})`).appendTo(li);
     }
   }
 });
@@ -17793,11 +17809,11 @@ apprentice? Enough of these mind games...&quot;
 &lt;&lt;include [[n1x-F Actions]]&gt;&gt;
 
 &lt;ul class=actions&gt;
-  &lt;&lt;mtl-if $n1_abused||$n1_tough [[n1cs-F Plead Lies 1]] &quot;not scared&quot;&gt;&gt;
+  &lt;&lt;mtl-if $n1_abused||$n1_tough [[n1cs-F Plead Lies 1]] &quot;too sincere&quot;&gt;&gt;
     Avoid punishment with a lie.
   &lt;&lt;/mtl-if&gt;&gt;
 
-  &lt;&lt;mtl-if !$n1_abused&amp;&amp;!$n1_tough [[n1cs-F Plead Punishment]] &quot;too scared&quot;&gt;&gt;
+  &lt;&lt;mtl-if !$n1_abused&amp;&amp;!$n1_tough [[n1cs-F Plead Punishment]] &quot;too bullied&quot;&gt;&gt;
     Cautiously request punishment.
   &lt;&lt;/mtl-if&gt;&gt;
 
@@ -25952,7 +25968,6 @@ a small and untidy stack of books that
       The name of that earlier school might be the password
       that the Sprite wants.
       Perhaps Nero can coax Ivex into revealing the name.
-      &lt;&lt;actions-add [[Ask Ivex about his earlier school.|n1x-F Books Ask]]&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;else&gt;&gt;
@@ -25965,6 +25980,17 @@ a small and untidy stack of books that
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n2_free &amp;&amp; !$n1_booksAsked&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the books.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif Nero.passWanted()&gt;&gt;
+      &lt;&lt;mtl [[n1x-F Books Ask]]&gt;&gt;
+        Ask Ivex about his earlier school.
+      &lt;&lt;/mtl&gt;&gt;
+    &lt;&lt;else&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the books.&quot; &quot;not interested&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -26258,7 +26284,8 @@ Such as:
     Nero, against his better judgment,
     considers asking a question out loud.
   &lt;&lt;/if&gt;&gt;
-  &lt;&lt;actions-add [[Ask Ivex about the bottle.|n1x-F Bottle Ask Name]]&gt;&gt;
+  &lt;&lt;actions-add
+    [[Ask Ivex about the bottle, reluctantly.|n1x-F Bottle Ask Name]]&gt;&gt;
 
 &lt;&lt;elseif MP_wantTouch === $n1_magicPhase&gt;&gt;
   &lt;&lt;if $n1_bottleHoleAvoided&gt;&gt;
@@ -26300,6 +26327,19 @@ Such as:
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_bottleNameKnown&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the bottle.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif !$n1_bottleNackleKnown&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the bottle.&quot; &quot;no way&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;elseif !$n1_bottleHoleAvoided&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex again about the bottle.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex again about the bottle.&quot; &quot;never&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -26483,8 +26523,6 @@ Nero&#39;s getting distracted again. He shakes his head to focus.
     and the memory sends his mind into a
     confusion of emotions that makes him unable to phrase
     a coherent question about it.
-  &lt;&lt;else&gt;&gt;
-    &lt;&lt;actions-add [[&#39;Ask Ivex, &quot;About that candle...&quot;&#39;|n1x-F Candle Ask]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -26514,6 +26552,15 @@ Nero&#39;s getting distracted again. He shakes his head to focus.
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_candleAsked&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the candle.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;else&gt;&gt;
+      &lt;&lt;mtl [[n1x-F Candle Ask]]&gt;&gt;
+        Ask Ivex, &quot;About that candle...&quot;
+      &lt;&lt;/mtl&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -26789,6 +26836,13 @@ a small stack of
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_coinAsked&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the coins.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the coins.&quot; &quot;not interested&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -27543,6 +27597,15 @@ Within the globe is a figurine of
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n2_free&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the globe.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif !Nero.passWanted()&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the globe.&quot; &quot;not interested&quot;&gt;&gt;
+    &lt;&lt;elseif !_oneLeft&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the globe.&quot; &quot;reluctant&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -27746,7 +27809,9 @@ And to use &lt;em&gt;six&lt;/em&gt; of them when one would be enough?
 ?P
 &lt;&lt;if !$n2_ivexGone&gt;&gt;
   Nero wonders if he should probe Ivex about the crystals.
-  &lt;&lt;actions-add [[Ask Ivex about the Dream Crystals.|n1x-F Grav Ask 1]]&gt;&gt;
+  &lt;&lt;if MP_beforeCast !== $n1_magicPhase&gt;&gt;
+    &lt;&lt;actions-add [[Ask Ivex about the Dream Crystals.|n1x-F Grav Ask 1]]&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
 &lt;&lt;elseif !$n1_gravViewed&gt;&gt;
   Nero wishes he could probe Ivex about the crystals.
 &lt;&lt;else&gt;&gt;
@@ -27756,16 +27821,15 @@ Maybe the panther is unaware of the growing power requirements?
 But the increased energy drain should have been obvious within minutes...
 Unless the panther&#39;s energy source is enormous!
 
+?P
 &lt;&lt;if MP_beforeCast === $n1_magicPhase&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
-  ?P
   Well, this is all intellectually fascinating,
   but not particularly useful.
   Nero reminds himself that he really should focus on
   the magic he needs to escape.
 
 &lt;&lt;elseif $n2_ivexGone&gt;&gt;
-  ?P
   Still, any power source, no matter how enormous,
   will eventually fail to satisfy the growing hunger of the
   Dream Crystals. And the exponential progression will make
@@ -27777,6 +27841,10 @@ Unless the panther&#39;s energy source is enormous!
   And perhaps he can speed the
   process by increasing the strain on the crystals.
   &lt;&lt;set _struggle = true&gt;&gt;
+
+&lt;&lt;else&gt;&gt;
+  Learning more about Ivex&#39;s power might help find
+  ways to bypass his defenses.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="515" name="n1x-F Grav" tags="" position="6300,5425" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -27817,6 +27885,14 @@ floating behind the
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_gravKnown&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the Dream Crystals.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif MP_beforeCast === $n1_magicPhase&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the Dream Crystals.&quot;
+        &quot;doesn&#39;t seem important&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;if _struggle&gt;&gt;
     &lt;&lt;include [[n2b-F Struggle Action]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
@@ -28719,6 +28795,13 @@ but he does not remember its name.
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_mapAsked&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the map.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif !Nero.passWanted()&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the map.&quot; &quot;not interested&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -29330,6 +29413,13 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_paintingMomKnown&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the painting.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase &amp;&amp; !Nero.passWanted()&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the painting.&quot; &quot;not interested&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -29706,6 +29796,13 @@ Nero stares at the penguin in perplexity.
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_penguinAsked&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the penguin.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the penguin.&quot; &quot;not interested&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -30209,6 +30306,13 @@ looks to be a squishy solid.
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_wandAsked&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about his wand.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase &amp;&amp; !Nero.passWanted()&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about his wand.&quot; &quot;um, no&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -30436,6 +30540,13 @@ if there were anything to magnify other than the clear blue sky.
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_windowAsked&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the window.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the window.&quot; &quot;not interested&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -30494,12 +30605,17 @@ a wordless plea for a blessing, for a glimpse of
 any of its erotic secrets that might satisfy his own throbbing red cock
 and its aching desires.
 
-&lt;&lt;if !$n2_ivexGone &amp;&amp; !$n1_bottleAskedHorny&gt;&gt;
-  &lt;&lt;actions-add [[Gasp out, &quot;That bottle!&quot;|n1y-F Horny Bottle Ask]]&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_bottleAskedHorny&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the bottle.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;else&gt;&gt;
+      &lt;&lt;mtl [[n1y-F Horny Bottle Ask]]&gt;&gt;
+        Gasp out, &quot;That bottle!&quot;
+      &lt;&lt;/mtl&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -30568,9 +30684,6 @@ or accelerate it.
   but then finds himself caught by another flame,
   the glistening of light in
   &lt;&lt;n1-no-loop [[Ivex&#39;s eyes|n1y-F Horny Ivex]]&gt;&gt;.
-  &lt;&lt;if !$n1_candleAskedHorny&gt;&gt;
-    &lt;&lt;actions-add [[&#39;Ask Ivex, &quot;That candle...!&quot;&#39;|n1y-F Horny Candle Ask]]&gt;&gt;
-  &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if $n1_candleAsked || $n1_candleAskedHorny&gt;&gt;
@@ -30581,6 +30694,15 @@ or accelerate it.
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_candleAskedHorny&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the candle.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;else&gt;&gt;
+      &lt;&lt;mtl [[n1y-F Horny Candle Ask]]&gt;&gt;
+        Ask Ivex, &quot;That candle...!&quot;
+      &lt;&lt;/mtl&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -30795,9 +30917,9 @@ on the wall.
   this dragoness.
 &lt;&lt;/if&gt;&gt;
 
+?P
 &lt;&lt;if $n2_ivexGone&gt;&gt;
-  But he feels that she&#39;s a
-  &lt;&lt;= _snowGlobe ? &quot;symbol of&quot; : &quot;manifestation from&quot;&gt;&gt;
+  But he feels that she&#39;s a manifestation from
   the past, a custodian of regrets and roads not taken.
   He wants to meet her and return with her to a
   time when he could have felt her embrace,
@@ -30825,7 +30947,7 @@ on the wall.
   &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
-  But he feels that she&#39;s a messenger with an omen
+  But he feels that she&#39;s an intimidating messenger with an omen
   for him to decipher, with a promise that when he discovers
   the secret of it, she will welcome him with an embrace
   in her nurturing breasts. His cock oozes and twitches in anticipation
@@ -30834,6 +30956,13 @@ on the wall.
 
 ?P
 &lt;ul class=actions&gt;
+  &lt;&lt;if !$n1_globeAskedHorny&gt;&gt;
+    &lt;&lt;if $n2_ivexGone&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the dragon.&quot; &quot;Ivex is gone&quot;&gt;&gt;
+    &lt;&lt;elseif !Nero.passWanted()&gt;&gt;
+      &lt;&lt;mtl-denied &quot;Ask Ivex about the dragon.&quot; &quot;too shy&quot;&gt;&gt;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/if&gt;&gt;
   &lt;&lt;actions-get&gt;&gt;
   &lt;li&gt;$t_afterLook&lt;/li&gt;
 &lt;/ul&gt;
@@ -31521,19 +31650,21 @@ an endless now. The erotic torment lasts forever...
 &lt;&lt;cv-try n1_magicPhase `MP_beforeCast` `MP_triedMagic`&gt;&gt;
 
 The wolf&#39;s sore muscles are trembling endlessly in
-the firm grip of the leather holding him to the stern wooden cross.
+the firm grip of the leather that holds him
+back for the stern wooden cross.
 His mind is lost in a thick haze of unfocused desire
 that continually frustrates the
 urgent cravings of his throbbing red cock.
-He&#39;s unable to speak, unable to even
-&lt;em&gt;think&lt;/em&gt; about his extensive mastery of magic.
+?P
+He&#39;s unable to think clearly about his repertoire of magic,
+unable to even speak any of the spells that he knows.
 ?P
 &lt;&lt;if MP_beforeCast !== $n1_magicPhase&gt;&gt;
   And even if he &lt;em&gt;could&lt;/em&gt; speak, his magic energies are depleted.
   There&#39;s only one spell he has that he &lt;em&gt;can&lt;/em&gt; cast now.
 &lt;&lt;else&gt;&gt;
   But he remembers in his desperation that
-  he has one spell prepared for escape from desperate circumstances,
+  he has one spell created for desperate circumstances,
   a spell that does not need him to speak.
 &lt;&lt;/if&gt;&gt;
 ?P
@@ -32036,11 +32167,13 @@ There&#39;s only one sensible course of action now.
 
 &lt;&lt;if $n2_candleMax&gt;&gt;
   &lt;&lt;if $n1_gravNoticed &amp;&amp; $n1_mageSight&gt;&gt;
-    &lt;&lt;mtl-if _didCast [[n2b-F Struggle Succeed]] &quot;magic is stronger than muscles&quot;&gt;&gt;
+    &lt;&lt;mtl-if _didCast [[n2b-F Struggle Succeed]]
+      &quot;magic is stronger than muscle&quot;
+    &gt;&gt;
       Struggle desperately on the cross.
     &lt;&lt;/mtl-if&gt;&gt;
   &lt;&lt;else&gt;&gt;
-    &lt;&lt;mtl-if _didCast [[n2b-F Struggle Fail]] &quot;magic is stronger than muscles&quot;&gt;&gt;
+    &lt;&lt;mtl-if _didCast [[n2b-F Struggle Fail]] &quot;magic is stronger than muscle&quot;&gt;&gt;
       Struggle desperately on the cross.
     &lt;&lt;/mtl-if&gt;&gt;
   &lt;&lt;/if&gt;&gt;
