@@ -58,19 +58,29 @@ Macro.add("mtl", {
 });
 
 /**
- * <<mtl-denied [$reason]>>
+ * <<mtl-if $bool $link [$reason]>>
  *   $text
- * <</mtl-denied>>
+ * <</mtl>>
+ * 
+ * <<mtl>> but only if $bool.
+ * Otherwise, show it as unavailable, with $reason
  */
-Macro.add("mtl-denied", {
+Macro.add("mtl-if", {
   tags: [],
   handler: function() {
-    const [reason] = this.args;
-    const text = this.payload[0].contents.trim();
-    const li = $("<li class=mtl-denied>").appendTo(this.output);
-    $("<span class=mtl-action>").wiki(text).appendTo(li);
-    if (reason != null && reason !== "") {
-      $("<span class=mtl-reason>").text(reason).appendTo(li);
+    const [expr, link, reason] = this.args;
+    const text = this.payload[0].contents;
+    const bool = typeof expr === 'boolean' ? expr
+      : Scripting.evalTwineScript(expr);
+    if (bool) {
+      $("<li>").append(makeLink(link, null, text))
+        .appendTo(this.output);
+    } else {
+      const li = $("<li class=mtl-denied>").appendTo(this.output);
+      $("<span class=mtl-action>").wiki(text.trim()).appendTo(li);
+      if (reason != null && reason !== "") {
+        $("<span class=mtl-reason>").text(`(${reason})`).appendTo(li);
+      }
     }
   }
 });
