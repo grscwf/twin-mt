@@ -208,7 +208,12 @@ function initRandomWalk() {
       }
       if (done) {
         const steps = MagesTower.log.length;
+        const V = State.variables;
         console.log(`done after ${steps} steps at ${here}`);
+        const mp = EnumType.symbolic('MagicPhase', V.n1_magicPhase);
+        console.log(`n1_magicPhase = ${mp}`);
+        const mpl = EnumType.symbolic('MagicPhase', V.n2_magicPhaseLost);
+        console.log(`n2_magicPhaseLost = ${mpl}`);
         if (!seekLoop) return seekStop();
       }
     }
@@ -224,11 +229,20 @@ function initRandomWalk() {
 
     if (done) {
       seekLoop--;
-      if (seekLoop < 0) return seekStop();
-      MagesTower.forgetWalkHistory();
+      if (seekLoop < 0) {
+        console.log("stop at max loops");
+        return seekStop();
+      }
+      MT.forgetWalkHistory();
       Engine.play("Bound");
       seekForce = false;
-      MagesTower.seekStart(["n1a-F Nero Start"]);
+      const neroStart = [
+        { t: "Choose Character" },
+        { t: "n1a-F Nero Start" },
+      ];
+      MT.seekStart(neroStart, () => {
+        MT.seekStart();
+      });
       return;
     }
 
@@ -250,7 +264,7 @@ function initRandomWalk() {
       }
       if (seekPath.length === 0) {
         const steps = MagesTower.log.length;
-        console.log(`done after ${steps} steps at ${here}`);
+        console.log(`path end after ${steps} steps at ${here}`);
         if (seekDoneFn != null) setTimeout(seekDoneFn);
         seekStop();
         return;
