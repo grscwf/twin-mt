@@ -150,6 +150,7 @@ function initRandomWalk() {
 
   let seekForce = false;
   let seekLoop = 0;
+  let seekLooping = false;
   let seekMoved = false;
   let seekPath = null;
   let seekDoneFn = null;
@@ -211,10 +212,15 @@ function initRandomWalk() {
         const V = State.variables;
         console.log(`done after ${steps} steps at ${here}`);
         const mp = EnumType.symbolic('MagicPhase', V.n1_magicPhase);
-        console.log(`n1_magicPhase = ${mp}`);
         const mpl = EnumType.symbolic('MagicPhase', V.n2_magicPhaseLost);
-        console.log(`n2_magicPhaseLost = ${mpl}`);
-        if (!seekLoop) return seekStop();
+        console.log(`- magicPhase ${mp}, ${mpl}`);
+        if (seekLoop <= 0) {
+          if (seekLooping) {
+            seekLooping = false;
+            console.log("stop at max loops");
+          }
+          return seekStop();
+        }
       }
     }
 
@@ -224,12 +230,14 @@ function initRandomWalk() {
       }
       if (done) {
         seekLoop = maxLoop;
+        seekLooping = true;
       }
     }
 
     if (done) {
       seekLoop--;
-      if (seekLoop < 0) {
+      if (seekLoop <= 0) {
+        seekLooping = false;
         console.log("stop at max loops");
         return seekStop();
       }
