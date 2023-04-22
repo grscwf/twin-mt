@@ -98,7 +98,7 @@ A player will probably find this on their 1st or 2nd playthrough.
 - (4-A) When the candle is at max, and Nero has seen the crystal
   energy web with mage-sight, struggling will disrupt the grav crystals.
   - Anything other than struggling will fail.
-  - This is basically be a 50/50 choice if the player misses the hints.
+  - This is basically a 50/50 choice if the player misses the hints.
   - On failure, Nero is overwhelmed by lust, and Ivex returns.
     - Bad Ending: Tamed Mild - cooperate
     - Bad Ending: Tamed Harsh - resist
@@ -188,7 +188,9 @@ the 4th or 5th playthrough.
 This is the challenge ending on the first floor.
 It's meant to be hard to find, but not impossible.
 It will probably require careful exploration and understanding of
-most of Nero's paths. There are also some oblique clues to it.
+most of Nero's paths. There are subtle clues to it in various places,
+and the Archives will give subtle hints.
+
 <details>
 
 - You must have seen Mica already in other playthroughs.
@@ -204,7 +206,7 @@ most of Nero's paths. There are also some oblique clues to it.
 </details>
 
 ## 2nd Floor
-- Under construction. This is the plan, not implemented yet.
+- Under construction. This is the tentative plan, not implemented yet.
 - There are two solutions to the 2nd floor: Easy and Hard.
 
 ### 2nd Floor Easy
