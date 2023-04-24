@@ -5,18 +5,17 @@ I suggest you don't read this until you've played through
 at least three different Nero ending variations.
 
 <details>
-  <summary>
-    Spoilers
-  </summary>
+  <summary>Spoilers</summary>
 
 - [1st Floor](#1st-floor)
   - [1st Floor Moods](#1st-floor-moods)
-  - [1st Floor Easy](#1st-floor-easy)
-  - [1st Floor Hard](#1st-floor-hard)
-  - [Challenge Ending: Broken](#challenge-ending-broken)
+  - [1st Floor Easy Escape](#1st-floor-easy-escape)
+  - [1st Floor Bad Ending: Caged](#1st-floor-bad-ending-caged)
+  - [1st Floor Hard Escape](#1st-floor-hard-escape)
+  - [1st Floor Challenge Ending: Broken](#1st-floor-challenge-ending-broken)
 - [2nd Floor](#2nd-floor)
-  - [2nd Floor Easy](#2nd-floor-easy)
-  - [2nd Floor Hard](#2nd-floor-hard)
+  - [2nd Floor Easy Escape](#2nd-floor-easy-escape)
+  - [2nd Floor Hard Escape](#2nd-floor-hard-escape)
 
 Are you sure you want to see this?
 Nero's story has many hints for all the endings,
@@ -24,9 +23,7 @@ and this description reveals many things that are
 probably more fun to discover yourself.
 
 <details>
-  <summary>
-    Yes, spoil me
-  </summary>
+  <summary>Yes, spoil me</summary>
 
 ## 1st Floor
 - There are two solutions to the 1st floor: Easy and Hard.
@@ -39,6 +36,7 @@ after escaping the cross.
 The moods are mostly flavor, affecting many descriptions.
 There are only a few paths that require specific moods.
 <details>
+   <summary>Full description</summary>
 
 - Nero's initial choice is 3 options that converge on Ivex Intro, but each
   option gets there in a different mood/state: `normal`, `naked`, `abused`.
@@ -66,11 +64,12 @@ There are only a few paths that require specific moods.
 - (7) `extraHorny` is triggered when Nero escapes the cross on
     the easy path.
   - Nero is continually distracted by his unnaturally erect cock.
-  - `extraHorny` is normally false on the hard path, but there are
-    optional actions that can trigger it anyway.
+  - `extraHorny` is normally false after doing the hard escape,
+    but there are optional actions that can trigger it anyway.
+
 </details>
 
-### 1st Floor Easy
+### 1st Floor Easy Escape
 The easy solution is 3 steps that can be done before or after Ivex leaves,
 and 1 step done after he leaves.
 
@@ -80,6 +79,7 @@ The game strongly nudges the player in the right direction.
 A player will probably find this on their 1st or 2nd playthrough.
 
 <details>
+   <summary>Full description</summary>
 
 - At the Ivex-gone restart point, Nero is bound to the cross,
   and the candle relights itself.
@@ -108,16 +108,31 @@ A player will probably find this on their 1st or 2nd playthrough.
 - If the mirror is tapped, it will get broken,
   making it unavailable on the 2nd Floor,
   and making the 2nd Floor Easy solution unavailable.
-- There are two Bad Endings that can happen after the easy escape:
-  - Bad Ending: Caged Mild - paw off before leaving.
-  - Bad Ending: Caged Harsh - use wand before leaving.
-    - This is meant to be a little hard to find.
-    - It requires asking Ivex about the wand,
-      which can be done when the Sprite wants touch or password.
-    - This might require restarting from the beginning.
+
 </details>
 
-### 1st Floor Hard
+### 1st Floor Bad Ending: Caged
+There are two Caged endings, which can happen after Nero
+escapes the cross.
+
+Caged Mild is always reachable from
+the Ivex-gone restart point.
+
+Caged Harsh is meant to be a little tricky,
+and it might require restarting from the beginning.
+There's a hint about it in the Archives.
+
+<details>
+   <summary>Full description</summary>
+
+- Bad Ending: Caged Mild - paw off before leaving.
+- Bad Ending: Caged Harsh - use wand before leaving.
+  - This requires asking Ivex about the wand,
+    which can be done when the Sprite wants touch or password.
+
+</details>
+
+### 1st Floor Hard Escape
 The hard solution is ~11 steps that must be done before Ivex leaves.
 It's designed to be unlikely to be found on the
 1st playthrough, but not too hard to find after a few more playthroughs.
@@ -131,27 +146,33 @@ of the hard solution. They're likely to know the whole solution by
 the 4th or 5th playthrough.
 
 <details>
+   <summary>Full description</summary>
 
-- (1-A) Try casting any non-attack spell
+- (1) Try casting any non-attack spell
   - Attack closes some conversation paths, which means there isn't enough
     time to do everything else.
-- (2-A) Cast mage-sight.
-- (3-A) Tap the mirror to get the Sprite.
-  - This is the first step that isn't obvious, but it's unlikely to be missed.
+  - It might take a few playthroughs to understand the effects of attack,
+    but most players will probably avoid doing attack after it fails once.
+- (2) Cast mage-sight.
+- (3) Tap the mirror to get the Sprite.
+  - This step isn't obvious, but it's unlikely to be missed.
 - Player will probably be here on 1st - 2rd playthrough.
-- (4-L) Look at the bottle, examine the glyphs.
+- (4*) Look at the bottle, examine the glyphs.
   - This can be done earlier.
-- (5-A) Ask the Sprite to contact the bottle.
+  - This is the only step that's just a look, not an action.
+  - After a spell is cast, the player can also do (6) at the same time,
+    saving a look.
+- (5) Ask the Sprite to contact the bottle.
 - Sprite now asks for device name.
-- (6-A) Ask Ivex about the bottle to get the name.
-  - This can be done at the same time as (4-L), saving a look.
+- (6) Ask Ivex about the bottle to get the name.
+  - This can sometimes be done at the same time as (4-L*), saving a look.
   - If Ivex has left, this will need another playthrough.
     But if the player is here on the 2nd playthrough, they've probably looked
     at the bottle early enough to have time to ask Ivex. So this probably
     doesn't need another playthrough.
-- (7-A) Ask the Sprite to contact the bottle again.
+- (7) Ask the Sprite to contact the bottle again.
 - Sprite now asks Nero to touch its hole.
-- (8-A) Ask Ivex about the penguin, when he's receptive.
+- (8) Ask Ivex about the penguin, when he's receptive.
   - This is a little tricky. There are several red herrings. It's possible
     that Ivex will leave before the player finds this.
   - If Ivex leaves, the Easy escape gives the player plenty of time to find
@@ -162,16 +183,21 @@ the 4th or 5th playthrough.
 - Player will probably be here on 1st - 4th playthrough.
 - Sprite asks Nero for password, misinterprets something Nero said as the
   password, and puts Nero on hold.
-- (9-A) Tell Sprite quiet, to get out of hold.
-- (10-A) Guess any password.
-- (11-A) Ask Ivex about the snow globe.
-  - This is only available after asking one password, and it's no longer
-    available after asking two.
-  - This is very unlikely to happen on 1st playthrough. There's no hint
-    about this before all the other steps are fulfilled, and there are
-    many other possible passwords.
-  - If the player doesn't do this before Ivex leaves, the Easy escape
-    automatically tells the player the password.
+- (9) Tell Sprite quiet, to get out of hold.
+- (10) Guess any password.
+- (11) Ask Ivex about the snow globe.
+  - There are two varieties of this: `candleHorny` and not.
+  - When `candleHorny`, player has to ask about the snow globe twice.
+    - There's a small trick here. There are two look paths to the snow globe,
+      and after the first ask, the shorter path is unavailable.
+  - When not `candleHorny`, asking about the snow globe is only
+    available after asking one passwords (not counting the initial
+    automatic mistake), and it's no longer available after asking two.
+  - The player is very unlikely to get this step right on 1st playthrough.
+    There's no hint about this before all the other steps are fulfilled,
+    and there are many other possible passwords.
+  - If the player gets here, but doesn't succeed before Ivex leaves,
+    the Easy escape automatically tells the player the right password.
 - Player will probably be here on 2nd - 5th playthrough.
 - The password is a big tease:
   - There's a moment when it seems like it might succeed,
@@ -180,11 +206,10 @@ the 4th or 5th playthrough.
     obstacle, what else do I have to do to get past this."
   - But this turns out to actually work anyway. Nero is free.
 - The mirror is saved. It can be taken to the 2nd Floor and used there.
-- There's a Challenge Ending here that's meant to be hard to find.
 
 </details>
 
-### Challenge Ending: Broken
+### 1st Floor Challenge Ending: Broken
 This is the challenge ending on the first floor.
 It's meant to be hard to find, but not impossible.
 It will probably require careful exploration and understanding of
@@ -192,6 +217,7 @@ most of Nero's paths. There are subtle clues to it in various places,
 and the Archives will give subtle hints.
 
 <details>
+   <summary>Full description</summary>
 
 - You must have seen Mica already in other playthroughs.
 - Pick the neutral or abused start. (Do not cast Endgame).
@@ -206,15 +232,17 @@ and the Archives will give subtle hints.
 </details>
 
 ## 2nd Floor
-- Under construction. This is the tentative plan, not implemented yet.
-- There are two solutions to the 2nd floor: Easy and Hard.
+Under construction. This is the tentative plan, not implemented yet.
 
-### 2nd Floor Easy
-The easy solution requires doing the 1st Floor Hard solution.
+There are two solutions to the 2nd floor: Easy and Hard.
+
+### 2nd Floor Easy Escape
+The easy solution requires doing the 1st Floor Hard Escape.
 It has 4 steps, and it's very easy, basically a reward for
 finding 1st Floor Hard.
 
 <details>
+   <summary>Full description</summary>
 
 - Player has done 1st Floor Hard. Nero escaped 1st floor and has the mirror.
 - (1) Read spellbook to find out about gems and the teleport spell.
@@ -223,9 +251,10 @@ finding 1st Floor Hard.
 - (3) Get a blank gem from the lion room.
 - (4) Energize the gem with teleport.
 - (5) Teleport out.
+
 </details>
 
-### 2nd Floor Hard
+### 2nd Floor Hard Escape
 The hard solution has 14 steps.
 It's basically a clockwork timing puzzle.
 It's a little tricky, but there are several retryable loops,
@@ -239,6 +268,7 @@ The player will probably need a few playthroughs to get this right.
 The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
 
 <details>
+   <summary>Full description</summary>
 
 - Nero escaped 1st floor but doesn't have the mirror.
 - Nero needs the gem in the blob.
@@ -340,6 +370,9 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
 - So this is solvable on 1st - 4th playthrough (1st: fail 1F escape, 2nd: fail
   with ring, 3rd: fail with lion), but the timing puzzle may take several tries
   to get right.
+
 </details>
+
 </details>
+
 </details>
