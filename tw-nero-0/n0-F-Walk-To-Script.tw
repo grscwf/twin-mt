@@ -14,14 +14,17 @@ State.temporary.listWalks = () => {
       continue;
     }
 
-    const addSeg = (ch, type, width) => {
-      if (width != null) mkp += `<span class=walk-sp>`;
-      if (width != null) mkp += `<span class=walk-sp-w>> ${width}</span>`;
-      mkp += `<span class="walk-choice walk-choice-${type}">`;
+    const addSeg = (ch, type, opts) => {
+      const note = opts.note ? " walk-choice-note" : "";
+      if (opts.width != null) {
+        mkp += `<span class=walk-sp>`;
+        mkp += `<span class="walk-sp-w${note}">> ${opts.width}</span>`;
+      }
+      mkp += `<span class="walk-choice walk-choice-${type}${note}">`;
       mkp += `<<link "> ${ch}">>`;
       mkp += `<<run _doWalk(${i}, "${ch}")>>`;
       mkp += `<</link>>`;
-      if (width != null) mkp += `</span>`;
+      if (opts.width != null) mkp += `</span>`;
       mkp += `</span> `;
     };
 
@@ -32,7 +35,7 @@ State.temporary.listWalks = () => {
     if (pn === path.length) {
       /* all of path is in the past of current */
       for (const st of path) {
-        if (st.choice != null) addSeg(st.choice, "past", st.width);
+        if (st.choice != null) addSeg(st.choice, "past", st);
       }
     } else if (cn === current.length) {
       /* all of current is on path */
@@ -44,15 +47,15 @@ State.temporary.listWalks = () => {
       /* find finished choice in path */
       while (ppn > 1 && path[ppn].choice == null) ppn--;
       for (const st of path.slice(0, ppn)) {
-        if (st.choice != null) addSeg(st.choice, "past", st.width);
+        if (st.choice != null) addSeg(st.choice, "past", st);
       }
       for (const st of path.slice(ppn)) {
-        if (st.choice != null) addSeg(st.choice, "future", st.width);
+        if (st.choice != null) addSeg(st.choice, "future", st);
       }
     } else {
       /* path and current are disjoint */
       for (const st of path) {
-        if (st.choice != null) addSeg(st.choice, "disjoint", st.width);
+        if (st.choice != null) addSeg(st.choice, "disjoint", st);
       }
     }
     const len = path.filter(st => st.t != null).length;
