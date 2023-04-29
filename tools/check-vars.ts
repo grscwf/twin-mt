@@ -30,6 +30,8 @@ const MAX_CONTEXT = 60;
 
 type Declarations = {
   vars: Set<string>;
+  once: Set<string>;
+  twice: Set<string>;
 };
 
 type Location = {
@@ -52,10 +54,20 @@ async function main() {
 
 async function readDecls(fname: string) {
   const text = await fsp.readFile(fname, "utf8");
-  const decls: Declarations = { vars: new Set() };
-  const re = /^\s*((?:setup\.)?\w+)/gm;
-  for (const m of text.matchAll(re)) {
-    decls.vars.add(m![1]!);
+  const decls: Declarations = {
+    vars: new Set(),
+    once: new Set(),
+    twice: new Set(),
+  };
+  const re = /^\s*((?:setup\.)?\w+)/;
+  for (const line of text.split(/\r?\n/)) {
+    const m = re.exec(line);
+    if (m != null) {
+      const vName = m[1]!;
+      decls.vars.add(vName);
+      if (/@once/.test(line)) decls.once.add(vName);
+      if (/@twice/.test(line)) decls.twice.add(vName);
+    }
   }
   return decls;
 }
@@ -78,14 +90,14 @@ async function scanFile(fname: string, usages: Usages) {
   // might be faster to match whole text then find lno of matches,
   // but this is fast enough for the size of this project.
   lines.forEach((line, lno) => {
-    // quick hack to ignore varnames in comments
+    // quick hack to ignore varNames in comments
     if (/^\s*(?:\/[/*]|[*])/.test(line)) return;
 
     for (const re of varPatterns) {
       const stripped = line.replace(/\/[/*].*/, "");
       for (const m of stripped.matchAll(re)) {
-        const vnames = m[1]!.split(/\s+/);
-        for (const vn of vnames) {
+        const vNames = m[1]!.split(/\s+/);
+        for (const vn of vNames) {
           const context = getContext(line, m.index!);
           usages.locs[vn] ??= [];
           usages.locs[vn]!.push({ fname, passage, lno, context });
@@ -108,9 +120,16 @@ function report(decls: Declarations, usages: Usages) {
   const usedOnce = Object.keys(usages.locs).filter(
     (vn) => decls.vars.has(vn) && usages.locs[vn]!.length === 1
   );
-  if (usedOnce.length) {
-    console.log("Used once:");
-    showUsages(usedOnce, usages);
+  const unexpectedOnce = usedOnce.filter(vn => !decls.once.has(vn));
+  if (unexpectedOnce.length) {
+    console.log("\nUsed once, but not marked @once:");
+    showUsages(unexpectedOnce, usages);
+  }
+
+  usedOnce.forEach(vn => decls.once.delete(vn));
+  if (decls.once.size) {
+    console.log("\nMarked @once, but not used exactly once:");
+    showUsages(Array.from(decls.once), usages);
   }
 
   const undeclared = Object.keys(usages.locs).filter(
