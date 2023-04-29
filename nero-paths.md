@@ -48,7 +48,8 @@ There are only a few paths that require specific moods.
   - Becoming `naked` also asks barbs/smooth. There are 4 variants:
     Mica, Pevhin, and a skip option if the player's already
     already seen Mica or Pevhin's story in a previous playthrough.
-- (3) `abused` is triggered when Ivex punches Nero's balls.
+- (3) `abused` is triggered when Ivex punches Nero's balls
+  before the candle is lit.
   - `abused` is one of the initial options, and it can also happen at
     several other points.
   - `abused` can be false when Ivex leaves.

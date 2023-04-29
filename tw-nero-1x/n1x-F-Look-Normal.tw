@@ -8,7 +8,12 @@
 <<set _window = $n2_tooClever ? "broken window"
   : "prominent round window">>
 
-<<set _map = $n2_lancedMap ? "defaced map" : "large map">>
+<<set _map = $n2_lancedMap ? "defaced map" :
+  $n2_wandExploded ? "burning map" : "large map">>
+
+<<set _painting = $n2_burnedPaintingWhole ? "tattered painting"
+  : $n1_paintingMomKnown ? "painting of Ivex's mother"
+  : "painting of a pantheress">>
 
 <<set if ($n2_free || !$n1_abused) {
   _worried = false;
@@ -23,6 +28,7 @@
 
 <<if _neroAppraise != null>>
   _neroAppraise
+
 <<elseif !$n2_ivexGone && !$n2_free>>
   Nero
   <<= _worried ? MagesTower.pick([
@@ -48,18 +54,13 @@
 <</if>>
 
 <<if $n2_free>>
-  <<if $n2_knifeTaken || $n2_mirrorTaken>>
-    He's holding
-    <<if $n2_knifeTaken>>
-      a [[letter opener|n1x-F Knife]]
-      <<if $n2_mirrorTaken>>
-        and
-      <</if>>
-    <</if>>
-    <<if $n2_mirrorTaken>>
-      a [[magic mirror|n1x-F Mirror]]
-    <</if>>
-    while standing naked
+  <<if $n2_knifeTaken && $n2_mirrorTaken>>
+    He's holding a [[magic mirror|n1x-F Mirror]]
+    and a [[letter opener|n1x-F Knife]], while standing naked
+  <<elseif $n2_knifeTaken>>
+    He's holding a [[letter opener|n1x-F Knife]] while standing naked
+  <<elseif $n2_mirrorTaken>>
+    He's holding a [[magic mirror|n1x-F Mirror]] while standing naked
   <<else>>
     He's standing naked
   <</if>>
@@ -67,13 +68,13 @@
   <<if $n2_wandExploded>>
     a [[ruined study|n1x-F Study]].
   <<else>>
-    [[Ivex's study|n1x-F Study]]
+    [[Ivex's study|n1x-F Study]].
   <</if>>
 
   <<if $n2_wandExploded>>
     <<vi-always n1_mageSight true>>
-    A shaky web of exotic energy connects a few
-    magic axioms together.
+    A shaky web of exotic energy connects the few magic axioms
+    that remain in the room.
     ?P
   <<elseif $n1_mageSight>>
     A dense web of exotic energy fills the space,
@@ -81,24 +82,23 @@
     ?P
   <</if>>
 
-  /* XXX wandExploded */
-
-  <<if $n2_lancedCross>>
-    The splintered remains of the wooden cross are lying in a
+  <<if $n2_burnedCrossBeams>>
+    The [[broken wooden cross|n1x-F Cross]] is
+    slowly being consumed by fire.
+  <<elseif $n2_burnedCrossSplinters>>
+    The splintered remnants of the wooden cross is now
+    a cozy fire in a corner.
+  <<elseif $n2_lancedCross>>
+    The splintered remnants of the wooden cross are lying in a
     urine-soaked heap in a corner.
   <<else>>
     The [[wooden cross|n1x-F Cross]]
-    <<if $n2_tooClever>>
-      is broken and
-    <<else>>
-      has fallen over and is
-    <</if>>
+    <<= $n2_tooClever ? "is broken and" : "has fallen over and is">>
     lying on the floor.
   <</if>>
 
   <<if $n2_knifeOnFloor && $n2_mirrorBroken>>
-    Near that is
-    the [[letter opener|n1x-F Knife]]
+    Near that is the [[letter opener|n1x-F Knife]]
     and the [[broken mirror|n1x-F Mirror]].
   <<elseif $n2_knifeOnFloor>>
     Near that is the [[letter opener|n1x-F Knife]].
@@ -137,22 +137,12 @@
 <</if>>
 
 <<if $n1_studyViewed>>
-  The study is furnished with
-  <<if $n1_deskViewed>>
-    a desk,
-  <<else>>
-    a <<= _desk>>,
-  <</if>>
-  <<if $n1_cabinetViewed>>
-    several cabinets,
-  <<else>>
-    several [[wooden cabinets|n1x-F Cabinets]],
-  <</if>>
-  <<if $n1_bookcasesViewed>>
-    and many bookcases.
-  <<else>>
-    and many [[bookcases|n1x-F Bookcases]].
-  <</if>>
+  The only furniture is a
+  <<= $n1_deskViewed ? "desk" : "_desk">>,
+  several
+  <<= $n1_cabinetViewed ? "cabinets" : "[[wooden cabinets|n1x-F Cabinets]]">>,
+  and many
+  <<= $n1_bookcasesViewed ? "bookcases" : "[[bookcases|n1x-F Bookcases]]">>.
 <</if>>
 
 <<if $n2_lancedPainting>>
@@ -166,18 +156,14 @@
   a [[_window|n1x-F Window]] and
   a [[_map|n1x-F Map]].
   In the corner by the map, a shredded painting of
-  <<if $n1_paintingMomKnown>>
-    Ivex's mother
+  <<= $n1_paintingMomKnown ? "Ivex's mother" : "a pantheress">>
+  <<if $n2_burnedPaintingRuin>>
+    is burning in a heap.
+  <<elseif $n2_leftDesignNote>>
+    is an untidy heap,
+    with a "Bill for Interior Design Consulting Services" on top.
   <<else>>
-    an unknown pantheress
-  <</if>>
-  is lying in an untidy
-  <<if $n2_leftDesignNote>>
-    heap, with a
-    "Bill for Interior Design Consulting Services"
-    on top.
-  <<else>>
-    heap.
+    is lying in a heap.
   <</if>>
 
 <<elseif $n1_wallViewed>>
@@ -188,15 +174,11 @@
   <</if>>
   has a [[_window|n1x-F Window]],
   a [[_map|n1x-F Map]], and a
-  <<if $n1_paintingMomKnown>>
-    [[painting of Ivex's mother|n1x-F Painting]].
-  <<else>>
-    [[painting of a pantheress|n1x-F Painting]].
-  <</if>>
+  [[_painting|n1x-F Painting]].
 
 <<else>>
-  <<= $n2_free ? "One wall" : "The far wall">> has
-  a [[_window|n1x-F Window]]
+  <<= $n2_free ? "One wall" : "The far wall">>
+  has a [[_window|n1x-F Window]]
   and [[some decorations|n1x-F Wall]] adorning it.
 <</if>>
 
@@ -215,16 +197,40 @@
   ?P
 <</if>>
 
-<<if $n2_lancedDesk>>
+<<if $n2_wandExploded>>
   The [[desk|n1x-F Desk]] is
+  <<if $n2_replacedGlobePart>>
+    bare except for the scorched
+    <span class=nobr>"CARPE DI"</span>
+    <span class=nobr>and "CK"</span>
+    pillar fragments from the snow globe.
+    The other clutter
+  <<else>>
+    bare. The clutter
+  <</if>>
+
+  <<if $n2_lancedGlobe>>
+    from the desk
+  <<else>>
+    from the desk, including a [[smashed snow globe|n1x-F Globe]],
+  <</if>>
+
+  <<if $n2_burnedDeskPapers>>
+    has been blasted off and scattered on the floor.
+  <<else>>
+    is now a smoldering pile of clutter in
+    <<= $n2_lancedPainting ? "another" : "a">> corner.
+  <</if>>
+
+<<elseif $n2_lancedDesk>>
   <<if $n2_lancedGlobe>>
     bare except for the pink
     <span class=nobr>"CARPE DI"</span>
     <span class=nobr>and "CK"</span>
     pillar fragments from the snow globe.
-    The other clutter from the desk has become clutter in
-    <<= $n2_lancedPainting ? "another" : "a">>
-    corner.
+    The other clutter from the desk
+    has become clutter in
+    <<= $n2_lancedPainting ? "another" : "a">> corner.
     ?P
   <<else>>
     bare, and the [[snow globe|n1x-F Globe]] is in the corner of
@@ -293,7 +299,9 @@
     one [[cabinet|n1x-F Cabinets]] is
   <</if>>
 
-  <<if $n1_bottleViewed>>
+  <<if $n2_wandExploded>>
+    a [[cracked bottle|n1x-F Bottle]]
+  <<elseif $n1_bottleViewed>>
     a [[bottled horse cock|n1x-F Bottle]]
   <<else>>
     a [[large glass bottle|n1x-F Bottle]]
@@ -301,6 +309,10 @@
 
   <<if $n2_lancedPenguinNo>>
     and the absence of a stuffed penguin.
+  <<elseif $n2_wandExploded && $n2_lancedPenguinYes>>
+    and a [[burning, wing-less penguin|n1x-F Penguin]].
+  <<elseif $n2_wandExploded>>
+    and a [[burning penguin|n1x-F Penguin]].
   <<elseif $n2_lancedPenguinYes>>
     and a [[wing-less penguin|n1x-F Penguin]].
   <<else>>
@@ -323,7 +335,11 @@
     The [[bookcases|n1x-F Bookcases]] still have
   <<else>>
     The [[bookcases|n1x-F Bookcases]] have
-    <<set _objs.push("numerous [[books|n1x-F Books]]")>>
+    <<if $n2_wandExploded>>
+      <<set _objs.push("numerous [[charred books|n1x-F Books]]")>>
+    <<else>>
+      <<set _objs.push("numerous [[books|n1x-F Books]]")>>
+    <</if>>
   <</if>>
 
   <<if $n2_lancedPorn>>
@@ -334,20 +350,26 @@
     <<set _objs.push("a [[stack of coins|n1x-F Coins]]")>>
   <</if>>
 
-  <<if !$n2_wandRanAway && !$n2_wandUsed>>
+  <<if !$n2_wandRanAway && !$n2_wandUsed && !$n2_wandExploded>>
     <<set _objs.push("a [[magic wand|n1x-F Wand]]")>>
   <</if>>
 
   <<if $n2_lancedBookcases || $n2_lancedBooks
     || $n2_lancedCoinsInBook || $n2_lancedCoinsInPorn
   >>
-    <<set _objs.push("many [[books|n1x-F Books]]")>>
+    <<if $n2_wandExploded>>
+      <<set _objs.push("many [[books|n1x-F Books]]")>>
+    <<else>>
+      <<set _objs.push("many [[charred books|n1x-F Books]]")>>
+    <</if>>
   <</if>>
   
   <<if $n2_lancedBookcases || $n2_lancedBooks>>
     <<set _tail = ", but the books from several shelves have been "
       + ($n2_lancedBooks ? "shredded" : "thrown")
-      + " into a chaotic heap on the floor.">>
+      + " into a"
+      + ($n2_wandExploded ? " burning" : " chaotic")
+      + " heap on the floor.">>
   <</if>>
 
   <<if $n2_lancedCoinsInBook || $n2_lancedCoinsInPorn>>
