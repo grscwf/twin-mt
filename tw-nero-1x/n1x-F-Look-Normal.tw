@@ -4,7 +4,7 @@
 <<set _desk =
   $n2_deskCleared ? "[[sturdy desk|n1x-F Desk]]"
   : $n2_deskBurned ? "[[slightly-charred desk|n1x-F Desk]]"
-  : "[[cluttered desk|n1x-F Desk]]">>
+  : "[[imposing desk|n1x-F Desk]]">>
   
 <<set _window =
   $n2_windowBroken ? "broken window"
@@ -236,6 +236,7 @@
   <<if $n2_clutterBlownOff>>
     has been blasted off and scattered on the floor.
   <<else>>
+    <<vi-always n2_clutterBurned true>>
     <<vi-always n2_clutterInCorner true>>
     is now a charred mess of clutter in
     <<= $n2_paintingLanced ? "another" : "a">> corner.
@@ -243,6 +244,8 @@
   ?P
 
 <<elseif $n2_deskCleared>>
+  <<vi-always n2_clutterInCorner true>>
+  <<vi-always n2_clutterBurned false>>
   The _desk is
   <<if $n2_globeLanced>>
     bare except for the _pillar.
@@ -295,10 +298,7 @@
         }
       }
       if (V.n2_globeLanced) {
-        desc += `, and a clear area in the middle of the desk has pink`
-          + ` <span class=nobr>"CARPE DI"</span>`
-          + ` <span class=nobr>and "CK".</span>`
-          + ` pillar fragments from the snow globe`;
+        desc += `, and a clear area in the middle has _pillar`;
       }
       desc += '.';
       if (V.n2_globeLanced) desc += " ?P ";
@@ -318,7 +318,7 @@
   <</if>>
 
   <<if $n2_wandExploded>>
-    a [[cracked bottle|n1x-F Bottle]]
+    a [[large cracked bottle|n1x-F Bottle]]
   <<elseif $n1_bottleViewed>>
     a [[bottled horse cock|n1x-F Bottle]]
   <<else>>
@@ -347,9 +347,10 @@
   <<set _objs = []>>
   <<set _tail = ".">>
 
-  <<if $n2_bookcasesLanced || $n2_booksLanced
-    || $n2_coinsInBook || $n2_coinsInPorn
-  >>
+  <<set _booksLast = $n2_bookcasesLanced || $n2_booksLanced
+    || $n2_coinsInBook>>
+
+  <<if _booksLast>>
     The [[bookcases|n1x-F Bookcases]] still have
   <<else>>
     The [[bookcases|n1x-F Bookcases]] have
@@ -360,40 +361,53 @@
     <</if>>
   <</if>>
 
-  <<if $n2_pornLanced>>
-    <<set _objs.push("a pile of sabotaged porn")>>
-  <</if>>
-
   <<if !$n2_coinsLanced>>
     <<set _objs.push("a [[stack of coins|n1x-F Coins]]")>>
   <</if>>
 
-  <<if !$n2_wandRanAway && !$n2_wandUsed && !$n2_wandExploded>>
+  <<set _wandOnShelf = !$n2_wandRanAWay
+    && (!$n2_wandUsed || $n2_wandTubeShot)
+    && !$n2_wandExploded
+    && !$n2_wandLost
+  >>
+
+  <<if _wandOnShelf>>
     <<set _objs.push("a [[magic wand|n1x-F Wand]]")>>
   <</if>>
 
-  <<if $n2_bookcasesLanced || $n2_booksLanced
-    || $n2_coinsInBook || $n2_coinsInPorn
-  >>
-    <<if $n2_wandExploded>>
-      <<set _objs.push("many [[books|n1x-F Books]]")>>
-    <<else>>
-      <<set _objs.push("many [[scorched books|n1x-F Books]]")>>
-    <</if>>
-  <</if>>
-  
-  <<if $n2_bookcasesLanced || $n2_booksLanced>>
-    XXX
-    <<set _tail = ", but the books from several shelves have been "
-      + ($n2_booksLanced ? "shredded" : "thrown")
-      + " into a"
-      + ($n2_wandExploded ? " smoldering" : " chaotic")
-      + " heap on the floor.">>
+  <<if $n2_pornLanced>>
+    <<set _coinsInPorn = $n2_coinsInPorn
+    ? " with an orgy of mangled coins hidden inside"
+    : "">>
+    <<set _objs.push("a pile of sabotaged porn<<= _coinsInPorn>>")>>
   <</if>>
 
-  <<if $n2_coinsInBook || $n2_coinsInPorn>>
-    <<set _tail = ", one of which has an orgy of mangled coins"
-      + " hidden inside it" + _tail>>
+  <<if _booksLast>>
+    <<set _coinsInBook = $n2_coinsInBook
+      ? ", one of which has an orgy of mangled coins hidden inside"
+      : "">>
+
+    <<if $n2_wandExploded>>
+      <<set _objs.push("many [[scorched books|n1x-F Books]]_coinsInBook")>>
+    <<else>>
+      <<set _objs.push("many [[books|n1x-F Books]]_coinsInBook")>>
+    <</if>>
+  <</if>>
+
+  <<if $n2_bookPileBurned>>
+    <<set _tail = ", but the books from several shelves have"
+      + " been thrown into a smoldering heap on the floor.">>
+  <<elseif $n2_bookShredsBurned>>
+    <<set _tail = ", but the books from several shelves have"
+      + " been shredded into in a smoldering heap on the floor.">>
+  <<elseif $n2_bookcasesLanced || $n2_booksLanced>>
+    <<set _tail = ", but the books from several shelves have been "
+      + ($n2_booksLanced ? "shredded" : "thrown")
+      + " into a "
+      + ($n2_bookPileBurned ? "smoldering heap"
+        : $n2_bookShredsBurned ? "smoking heap of ashy remnants"
+        : "chaotic heap")
+      + " on the floor.">>
   <</if>>
 
   <<= _objs.length === 1 ? `${_objs[0]} in them${_tail}`
@@ -407,6 +421,9 @@
   <<elseif $n2_wandUsed && !$n2_wandTubeShot>>
     The [[distressing magic wand|n1x-F Wand]]
     is on the floor, far away from the bookcase it came from.
+  <<elseif $n2_wandLost>>
+    Ivex's absurd magic wand is outside, perhaps still falling
+    to the ground below.
   <</if>>
 <</if>>
 
