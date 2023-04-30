@@ -2,7 +2,7 @@
 <<nobr>>
 
 <<set _desk =
-  $n2_deskCleared ? "[[desk|n1x-F Desk]]"
+  $n2_deskCleared ? "[[sturdy desk|n1x-F Desk]]"
   : $n2_deskBurned ? "[[slightly-charred desk|n1x-F Desk]]"
   : "[[cluttered desk|n1x-F Desk]]">>
   
@@ -10,11 +10,14 @@
   $n2_windowBroken ? "broken window"
   : "prominent round window">>
 
-<<set _map = $n2_mapLanced ? "defaced map" :
-  $n2_wandExploded ? "burning map" : "large map">>
+<<set _map =
+  $n2_mapDefaced ? "defaced map"
+  : $n2_wandExploded ? "burning map"
+  : "large map">>
 
-<<set _painting = $n2_paintingBlasted ? "tattered painting"
-  : $n1_paintingMomKnown ? "painting of Ivex's mother"
+<<set _painting =
+  $n2_paintingBlasted ? "tattered painting"
+  : $n1_paintingKnown ? "painting of Ivex's mother"
   : "painting of a pantheress">>
 
 <<set if ($n2_free || !$n1_abused) {
@@ -88,11 +91,11 @@
     The [[broken wooden cross|n1x-F Cross]] is
     slowly being consumed by fire.
   <<elseif $n2_crossSplintersBurned>>
-    The splintered remnants of the wooden cross is now
-    a cozy fire in a corner.
+    The wooden cross is now a cozy fire of splintered remnants
+    in a corner.
   <<elseif $n2_crossLanced>>
-    The splintered remnants of the wooden cross are lying in a
-    urine-soaked heap in a corner.
+    The wooden cross is now a piss-stained heap of
+    splintered remnants in a corner.
   <<else>>
     The [[wooden cross|n1x-F Cross]]
     <<= $n2_tooClever ? "is broken and" : "has fallen over and is">>
@@ -142,7 +145,7 @@
   The only furniture is a
   <<= $n1_deskViewed ? "desk" : "_desk">>,
   several
-  <<= $n1_cabinetsViewed ? "cabinets" : "[[wooden cabinets|n1x-F Cabinets]]">>,
+  <<= $n1_cabinetsViewed ? "cabinets" : "[[cabinets|n1x-F Cabinets]]">>,
   and many
   <<= $n1_bookcasesViewed ? "bookcases" : "[[bookcases|n1x-F Bookcases]]">>.
 <</if>>
@@ -154,14 +157,19 @@
   <<else>>
     [[door|n2f-F Door]].
   <</if>>
-  The opposite [[wall|n1x-F Wall]] has
+  The [[opposite wall|n1x-F Wall]] has
   a [[_window|n1x-F Window]] and
   a [[_map|n1x-F Map]].
   In the corner by the map, a shredded painting of
-  <<= $n1_paintingMomKnown ? "Ivex's mother" : "a pantheress">>
+  <<= $n1_paintingKnown ? "Ivex's mother" : "a pantheress">>
   <<if $n2_paintingBurned>>
     is a smoking heap.
-  <<elseif $n2_paintingDesignNote>>
+    <<if $n2_paintingBillGone && !$n2_deskHasBill>>
+      The "Bill for Interior Design Consulting Services" has
+      been destroyed by the blast.
+      <<actions-add [[Replace the "Bill for Interior Design Consulting Services".|n2x-F Replace Bill]]>>
+    <</if>>
+  <<elseif $n2_paintingHasBill>>
     is an untidy heap,
     with a "Bill for Interior Design Consulting Services" on top.
   <<else>>
@@ -199,39 +207,46 @@
   ?P
 <</if>>
 
+<<set _deskBill = 'piss-soaked "Bill For Home Renovation:'
+  + ' 899 Silvers, Due Yesterday"'>>
+<<set _pillar = 'pink <span class=nobr>"CARPE DI"</span>'
+  + ' <span class=nobr>and "CK"</span> pillar fragments'
+  + ' from the snow globe'>>
+
 <<if $n2_wandExploded>>
-  The [[desk|n1x-F Desk]] is
-  <<if $n2_globePartReplaced>>
-    bare except for the scorched
-    <span class=nobr>"CARPE DI"</span>
-    <span class=nobr>and "CK"</span>
-    pillar fragments from the snow globe.
-    The other clutter
+  The _desk is
+  <<if $n2_deskHasBill && $n2_deskHasPillar>>
+    bare except for the _pillar,
+    sitting on top of a _deskBill.
+  <<elseif $n2_deskHasBill>>
+    bare except for a _deskBill.
+  <<elseif $n2_deskHasPillar>>
+    bare except for the _pillar.
   <<else>>
-    bare. The clutter
+    bare.
   <</if>>
 
+  The clutter that used to be on the
   <<if $n2_globeLanced>>
-    from the desk
+    desk
   <<else>>
-    from the desk, including a [[smashed snow globe|n1x-F Globe]],
+    desk, including a [[smashed snow globe|n1x-F Globe]],
   <</if>>
 
   <<if $n2_clutterBlownOff>>
     has been blasted off and scattered on the floor.
   <<else>>
+    <<vi-always n2_clutterInCorner true>>
     is now a charred mess of clutter in
     <<= $n2_paintingLanced ? "another" : "a">> corner.
   <</if>>
+  ?P
 
 <<elseif $n2_deskCleared>>
-  The [[desk|n1x-F Desk]] is
+  The _desk is
   <<if $n2_globeLanced>>
-    bare except for the pink
-    <span class=nobr>"CARPE DI"</span>
-    <span class=nobr>and "CK"</span>
-    pillar fragments from the snow globe.
-    The other clutter from the desk
+    bare except for the _pillar.
+    The clutter that used to be on the desk
     has become clutter in
     <<= $n2_paintingLanced ? "another" : "a">> corner.
     ?P
