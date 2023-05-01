@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5238,7 +5238,7 @@ VT.start = () =&gt; {
 
 /** Stop tracing. */
 VT.stop = () =&gt; {
-  if ((State.active.variables._varTrace ?? myBrand) !== myBrand) {
+  if ((State.active.variables._varTrace || myBrand) !== myBrand) {
     throw new Error(&quot;Multiple instances of Var Trace in conflict.&quot;);
   }
   if (VT._unproxied != null) {
@@ -5249,21 +5249,21 @@ VT.stop = () =&gt; {
 
 /** Get vname&#39;s value without tracing it. */
 VT.untracedGet = vname =&gt; {
-  return (VT._unproxied ?? State.active.variables)[vname];
+  return (VT._unproxied || State.active.variables)[vname];
 }
 
 /** Set vname&#39;s value without tracing it. */
 VT.untracedSet = (vname, value) =&gt; {
-  (VT._unproxied ?? State.active.variables)[vname] = value;
+  (VT._unproxied || State.active.variables)[vname] = value;
 };
 
 /** Delete vname&#39;s value without tracing it. */
 VT.untracedDelete = vname =&gt; {
-  delete (VT._unproxied ?? State.active.variables)[vname];
+  delete (VT._unproxied || State.active.variables)[vname];
 };
 
 VT.untracedVariables = () =&gt; {
-  return VT._unproxied ?? State.active.variables;
+  return VT._unproxied || State.active.variables;
 }
 
 /** Run fn without tracing any variables during its execution. */
@@ -5639,7 +5639,7 @@ Macro.add(&quot;arousalbar&quot;, {
   handler: function() {
     const Cur = this.args[0];
     const Max = this.args[1];
-    const From = this.args[2] ?? Cur;
+    const From = this.args[2] || Cur;
     const hp0 = Math.floor(100 * (From / Max)).clamp(0, 100);
     const hp1 = Math.floor(100 * (Cur / Max)).clamp(0, 100);
     $(this.output).append(`
@@ -5869,7 +5869,7 @@ CV.render = function() {
     const dom = output[0];
     const html = dom.innerHTML;
     const text = dom.innerText;
-    renders[html] ??= { dom, text, states: [] };
+    renders[html] || (renders[html] = { dom, text, states: [] });
     renders[html].states.push(objSelect(state, usedThisTime));
   };
 
@@ -5912,7 +5912,7 @@ CV.render = function() {
           } else if (val === true) {
             $(`&lt;span class=&quot;cv-var cv-true&quot;&gt;`).text(vn).appendTo(inner);
           } else if (ET.vars[vn] != null) {
-            const sym = ET.enums[ET.vars[vn]][val] ?? `${vn}=${val}`;
+            const sym = ET.enums[ET.vars[vn]][val] || `${vn}=${val}`;
             $(`&lt;span class=&quot;cv-var cv-enum&quot;&gt;`).text(sym).appendTo(inner);
           } else {
             const str = JSON._real_stringify(val);
@@ -5952,7 +5952,7 @@ CV.render = function() {
 
 function objSelect(obj, keys) {
   const result = {};
-  keys.forEach(k =&gt; result[k] = obj[k] ?? false);
+  keys.forEach(k =&gt; result[k] = obj[k] || false);
   return result;
 }
 
@@ -8319,12 +8319,12 @@ PN.selectedText = &quot;&quot;;
 
 PN.getFull = () =&gt; {
   if (!PN.isUsable) return &quot;&quot;;
-  return persist.getItem(KEY) ?? &quot;&quot;;
+  return persist.getItem(KEY) || &quot;&quot;;
 };
 
 PN.tryReplaceFull = (old, val) =&gt; {
   if (!PN.isUsable) throw new Error(&quot;PassageNotes can&#39;t save data.&quot;);
-  const cur = (persist.getItem(KEY) ?? &quot;&quot;).trimEnd();
+  const cur = (persist.getItem(KEY) || &quot;&quot;).trimEnd();
   if (old.trimEnd() !== cur) return cur;
   val = val.trimEnd();
   persist.setItem(KEY, val);
@@ -11313,7 +11313,7 @@ function analyze(passages) {
 function summarizeTo(dest, info, label) {
   const count = Object.values(info.kindOf)
     .reduce((obj, k) =&gt; {
-      obj[k] = 1 + (obj[k] ?? 0);
+      obj[k] = 1 + (obj[k] || 0);
       return obj;
     }, {});
 
@@ -11524,7 +11524,8 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 
   function restoreSession() {
     T.savedVal = PN.getOne(V.t_notesOrigin);
-    T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin) ?? T.savedVal;
+    T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin)
+      || T.savedVal;
     $(&quot;#NP-input&quot;).val(T.editVal);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
@@ -11630,7 +11631,8 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 
   function restoreSession() {
     T.savedVal = PN.getOne(V.t_notesOrigin);
-    T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin) ?? T.savedVal;
+    T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin)
+      || T.savedVal;
     $(&quot;#notes-input&quot;).val(T.editVal);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
@@ -11764,7 +11766,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 
   function restoreSession() {
   T.savedVal = PN.getFull();
-  T.editVal = noteStore.getItem(&quot;notes-full&quot;) ?? T.savedVal;
+  T.editVal = noteStore.getItem(&quot;notes-full&quot;) || T.savedVal;
   $(&quot;#notes-input&quot;).val(T.editVal);
   T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
