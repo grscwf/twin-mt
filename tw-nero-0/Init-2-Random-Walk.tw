@@ -51,6 +51,8 @@ const MT = window.MagesTower || (window.MagesTower = {});
 const visited = new Set();
 let lastPick = {};
 
+let ignoreFuture = false;
+
 MT.seeking = false;
 
 MT.forgetWalkHistory = () => {
@@ -68,9 +70,19 @@ function initRandomWalk() {
     return `${title}/${mtaCode}`;
   };
 
+  function updateLabel() {
+    const el = $("#rw-forw");
+    if (State.length === State.size || ignoreFuture) {
+      el.text("rand");
+    } else {
+      el.text("forw");
+    }
+  }
+
   const goRandom = () => {
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
+      ignoreFuture = false;
       chosen.click();
       return true;
     }
@@ -115,17 +127,21 @@ function initRandomWalk() {
   const goBack = () => {
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length > 0) {
+      ignoreFuture = true;
       chosen.removeClass("random-walk-chosen");
+      updateLabel();
     } else {
+      ignoreFuture = false;
       Engine.backward();
     }
   };
 
   const goForward = () => {
-    if (State.length === State.size) {
+    if (State.length === State.size || ignoreFuture) {
       goRandom();
       return;
     }
+    ignoreFuture = false;
 
     const next = State.history[State.length].title;
     const chosen = $("#passages .random-walk-chosen");
@@ -323,17 +339,13 @@ function initRandomWalk() {
         .text("seek")
         .click(seekToggle)
         .appendTo(outer);
-      $("<a>")
-        .attr("title", "<ctrl-slash> random")
-        .text("rand")
-        .click(goRandom)
-        .appendTo(outer);
     }
-    $("<a>")
-      .attr("title", "<ctrl-period> forward")
+    $("<a id=rw-forw>")
+      .attr("title", "<ctrl-period> forward or random")
       .text("forw")
       .click(goForward)
       .appendTo(outer);
+    updateLabel();
   });
 
   // ctrl-comma doesn't generate keypress events
@@ -344,15 +356,22 @@ function initRandomWalk() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === ",") return goBack();
     if (ev.key === ".") return goForward();
-    if (ev.key === "/") return goRandom();
     if (ev.key === "\\") return seekToggle();
   });
 
   $(document).on("click", ev => {
     if (!MT.seeking && ev.target && ev.target.tagName !== "A") {
       const chosen = $("#passages .random-walk-chosen");
-      chosen.removeClass("random-walk-chosen");
+      if (chosen.length) {
+        chosen.removeClass("random-walk-chosen");
+        ignoreFuture = true;
+        updateLabel();
+      }
     }
+  });
+
+  $(document).on(":passagestart", () => {
+    updateLabel();
   });
 }
 

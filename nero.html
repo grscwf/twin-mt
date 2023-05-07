@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -7003,6 +7003,8 @@ const MT = window.MagesTower || (window.MagesTower = {});
 const visited = new Set();
 let lastPick = {};
 
+let ignoreFuture = false;
+
 MT.seeking = false;
 
 MT.forgetWalkHistory = () =&gt; {
@@ -7020,9 +7022,19 @@ function initRandomWalk() {
     return `${title}/${mtaCode}`;
   };
 
+  function updateLabel() {
+    const el = $(&quot;#rw-forw&quot;);
+    if (State.length === State.size || ignoreFuture) {
+      el.text(&quot;rand&quot;);
+    } else {
+      el.text(&quot;forw&quot;);
+    }
+  }
+
   const goRandom = () =&gt; {
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length === 1) {
+      ignoreFuture = false;
       chosen.click();
       return true;
     }
@@ -7067,17 +7079,21 @@ function initRandomWalk() {
   const goBack = () =&gt; {
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length &gt; 0) {
+      ignoreFuture = true;
       chosen.removeClass(&quot;random-walk-chosen&quot;);
+      updateLabel();
     } else {
+      ignoreFuture = false;
       Engine.backward();
     }
   };
 
   const goForward = () =&gt; {
-    if (State.length === State.size) {
+    if (State.length === State.size || ignoreFuture) {
       goRandom();
       return;
     }
+    ignoreFuture = false;
 
     const next = State.history[State.length].title;
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
@@ -7275,17 +7291,13 @@ function initRandomWalk() {
         .text(&quot;seek&quot;)
         .click(seekToggle)
         .appendTo(outer);
-      $(&quot;&lt;a&gt;&quot;)
-        .attr(&quot;title&quot;, &quot;&lt;ctrl-slash&gt; random&quot;)
-        .text(&quot;rand&quot;)
-        .click(goRandom)
-        .appendTo(outer);
     }
-    $(&quot;&lt;a&gt;&quot;)
-      .attr(&quot;title&quot;, &quot;&lt;ctrl-period&gt; forward&quot;)
+    $(&quot;&lt;a id=rw-forw&gt;&quot;)
+      .attr(&quot;title&quot;, &quot;&lt;ctrl-period&gt; forward or random&quot;)
       .text(&quot;forw&quot;)
       .click(goForward)
       .appendTo(outer);
+    updateLabel();
   });
 
   // ctrl-comma doesn&#39;t generate keypress events
@@ -7296,15 +7308,22 @@ function initRandomWalk() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === &quot;,&quot;) return goBack();
     if (ev.key === &quot;.&quot;) return goForward();
-    if (ev.key === &quot;/&quot;) return goRandom();
     if (ev.key === &quot;\\&quot;) return seekToggle();
   });
 
   $(document).on(&quot;click&quot;, ev =&gt; {
     if (!MT.seeking &amp;&amp; ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
       const chosen = $(&quot;#passages .random-walk-chosen&quot;);
-      chosen.removeClass(&quot;random-walk-chosen&quot;);
+      if (chosen.length) {
+        chosen.removeClass(&quot;random-walk-chosen&quot;);
+        ignoreFuture = true;
+        updateLabel();
+      }
     }
+  });
+
+  $(document).on(&quot;:passagestart&quot;, () =&gt; {
+    updateLabel();
   });
 }
 
@@ -24646,7 +24665,7 @@ will learn it early in their education.
 Casting it on a person (or on oneself) makes the subject&#39;s skin and fur
 (or scales) nearly frictionless,
 making the subject difficult to hold with snares or ropes,
-or anything else that uses simple constriction
+or anything else that uses constriction
 to restrain a body part in some way.
 It&#39;s one of the best spells for escape, for those that need spells of escape,
 despite the mild inconvenience of it.
@@ -34374,7 +34393,7 @@ As the wolf grabs the mirror,
 &lt;&lt;/if&gt;&gt;
 
 ?P
-Nero is incredulous. He says the phrase out loud. &quot;Carpe Dick?&quot;
+Nero is incredulous. He says the phrase out loud. &quot;Carpe dick?&quot;
 
 ?P
 The frame of the mirror is hot from the fire.
