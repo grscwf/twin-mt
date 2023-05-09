@@ -151,7 +151,12 @@ function report(decls: Declarations, usages: Usages) {
 
 function showUsages(vnames: string[], usages: Usages) {
   for (const vn of Array.from(vnames).sort()) {
-    showLocs(vn, usages.locs[vn]!);
+    const locs = usages.locs[vn];
+    if (locs == null) {
+      console.log(`  ${vn} (no usages)`);
+    } else {
+      showLocs(vn, locs);
+    }
   }
 }
 
