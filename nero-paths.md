@@ -211,10 +211,11 @@ the 4th or 5th playthrough.
 </details>
 
 ### 1st Floor Challenge Ending: Broken
-This is the challenge ending on the first floor.
-It's meant to be hard to find, but not impossible.
-It will probably require careful exploration and understanding of
-most of Nero's paths. There are subtle clues to it in various places,
+The challenge ending on the first floor is meant to be hard to reach,
+but not impossible.
+It requires understanding a few subtle things about Nero's paths
+in order to do everything necessary within a limited amount of time.
+There are clues to it in various places in Nero's story,
 and the Archives will give subtle hints.
 
 <details>
@@ -246,8 +247,6 @@ and the Archives will give subtle hints.
 - Demonstrate Nero's best spell.
 - Make sure to ask about the wand before Ivex leaves.
 - Finish the hard escape *before* becoming horny.
-  - This is tight timing. It might take a few tries
-    to find a path that works.
 - Use the wand.
 
 </details>
