@@ -9,7 +9,7 @@ at least three different Nero ending variations.
 
 - [1st Floor](#1st-floor)
   - [1st Floor Moods](#1st-floor-moods)
-  - [1st Floor Easy Escape](#1st-floor-easy-escape)
+  - [1st Floor Easy Escape and Bad Ending: Tamed](#1st-floor-easy-escape-and-bad-ending-tamed)
   - [1st Floor Bad Ending: Caged](#1st-floor-bad-ending-caged)
   - [1st Floor Hard Escape](#1st-floor-hard-escape)
   - [1st Floor Challenge Ending: Broken](#1st-floor-challenge-ending-broken)
@@ -70,7 +70,7 @@ There are only a few paths that require specific moods.
 
 </details>
 
-### 1st Floor Easy Escape
+### 1st Floor Easy Escape and Bad Ending: Tamed
 The easy solution is 3 steps that can be done before or after Ivex leaves,
 and 1 step done after he leaves.
 
@@ -218,15 +218,35 @@ most of Nero's paths. There are subtle clues to it in various places,
 and the Archives will give subtle hints.
 
 <details>
+  <summary>All the hints in the Archives</summary>
+
+- If the player has not yet unlocked a Tamed ending:
+  - "Another hint will appear after Nero has a disturbing dream..."
+- If the player has not yet unlocked the Caged Mild ending:
+  - "Another hint will appear after Nero gets stuck in a red glow..."
+- If the player has not yet escaped with the mirror:
+  - "Another hint will appear after Nero stops saying please..."
+- If the player has not yet noticed what Ivex forgot:
+  - "Does Nero know a spell that can escape Ivex's wand?"
+- If the player has not yet noticed the glitch:
+  - "Barbs or smooth... Is there a third choice?"
+- Final hint:
+  - "You know all the pieces of the puzzle.
+    Can Nero use his spell to escape Ivex's wand?"
+
+</details>
+
+<details>
    <summary>Full description</summary>
 
 - You must have seen Mica already in other playthroughs.
 - Pick the neutral or abused start. (Do not cast Endgame).
 - Follow the dialog branches to becoming an apprentice.
 - When Ivex removes Nero's clothes, use the 3rd option.
+- Demonstrate Nero's best spell.
 - Make sure to ask about the wand before Ivex leaves.
 - Finish the hard escape *before* becoming horny.
-  - This is fairly tight timing, it might take a few tries
+  - This is tight timing. It might take a few tries
     to find a path that works.
 - Use the wand.
 
