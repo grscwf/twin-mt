@@ -383,7 +383,7 @@ The choices are pretty narrow, so it's probably easier than 1st Floor Hard.
   - Lose ring while hunted:
     - Bad Ending: Hunted Mild - cooperate.
     - Bad Ending: Hunted Harsh - resist.
-  - Nene of these failures has much warning before it happens,
+  - None of these failures has much warning before it happens,
     but once the player knows they can happen, they're easy to avoid:
     - Take off the ring as soon as it's yellow.
     - Don't activate lion hunting until everything is ready.
