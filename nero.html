@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5237,7 +5237,7 @@ declareVarEnum(&quot;t_ivexContext&quot;, &quot;IvexContext&quot;);
 // This should run before any other Nero :passagestart
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
   // Initialize enums that are generally expected to be non-null
-  VarTrace.ignore(() =&gt; {
+  MT.untraced(() =&gt; {
     const V = State.variables;
     V.n1_magicPhase != null || (V.n1_magicPhase = 0);
     V.t_ivexContext != null || (V.t_ivexContext = 0);
@@ -5292,7 +5292,7 @@ const setTemporary = temp =&gt; {
  * evaluate script, then render passage to dest.
  */
 MT.arcInclude = (dest, passage, script) =&gt; {
-  VT.ignore(() =&gt; {
+  MT.untraced(() =&gt; {
     const text = Story.get(passage).text;
     const saveVars = State.active.variables;
     const saveTemp = clone(State.temporary);
@@ -5714,7 +5714,7 @@ MT.computeVariants = function() {
 
   const done = [];
 
-  const usedSet = new Set(VT.ctx.wasRead);
+  const usedSet = new Set(MT.trace.wasRead);
 
   ignore.forEach(vn =&gt; usedSet.delete(vn));
 
@@ -5797,11 +5797,11 @@ MT.computeVariants = function() {
     tried++;
 
     const output = $(&quot;&lt;div class=passage&gt;&quot;);
-    VT.start();
+    MT.traceStart();
     const ok = MT.runsWithoutFail(() =&gt; output.wiki(passageText));
-    VT.stop();
+    MT.traceStop();
 
-    VT.ctx.wasRead.forEach(vn =&gt; {
+    MT.trace.wasRead.forEach(vn =&gt; {
       if (usedSet.has(vn)) return;
       if (ignore.has(vn)) return;
       if (usedSet.size &gt;= 15) {
@@ -5825,7 +5825,7 @@ MT.computeVariants = function() {
 
     if (!ok) return;
 
-    const usedThisTime = [...VT.ctx.wasRead].filter(vn =&gt; !ignore.has(vn)).sort();
+    const usedThisTime = [...MT.trace.wasRead].filter(vn =&gt; !ignore.has(vn)).sort();
     const dom = output[0];
     const html = dom.innerHTML;
     const text = dom.innerText;
@@ -6201,7 +6201,7 @@ MT.assert = (val, str, context) =&gt; {
 Macro.add(&quot;em-assert&quot;, {
   skipArgs: true,
   handler: function() {
-    const val = VT.ignore(() =&gt; eval(this.args.full));
+    const val = MT.untraced(() =&gt; eval(this.args.full));
     MT.assert(val, `expected: ${this.args.raw}`, this);
   }
 });
@@ -6892,9 +6892,9 @@ const VT = window.VarTrace || (window.VarTrace = {});
 function announceBarbs(dest) {
   const V = State.variables;
   V.t_announceBarbsSoon = false;
-  const barbs = VT.untracedGet(&quot;n1_glitched&quot;)
+  const barbs = MT.untracedGet(&quot;n1_glitched&quot;)
     ? &quot;Barbs?&quot;
-    : VT.untracedGet(&quot;n1_barbs&quot;)
+    : MT.untracedGet(&quot;n1_barbs&quot;)
     ? &quot;Barbs&quot; : &quot;Smooth&quot;;
   $(dest).wiki(`&lt;meta-text&gt;Story Variant: ${barbs}&lt;/meta-text&gt;?P`);
 }
@@ -8113,10 +8113,10 @@ Nero.checkConstraints = () =&gt; {
   const here = State.passage;
   if (State.current.variables.t_restarting) return true;
   if (!/^n/.test(here)) return true;
-  return VT.ignore(() =&gt; {
+  return MT.untraced(() =&gt; {
     /* note: current (incoming) state, not active state */
     return Nero.checkState(
-      State.current.variables, VT.ctx.wasRead, true, State.active.variables);
+      State.current.variables, MT.trace.wasRead, true, State.active.variables);
   });
 };
 
@@ -8704,7 +8704,7 @@ const VT = window.VarTrace || (window.VarTrace = {});
 Macro.add(&quot;mf-please&quot;, {
   tags: [&quot;mf-else&quot;],
   handler: function() {
-    const V = VT.untracedVariables();
+    const V = MT.untracedVars();
     let ready = true;
     ready = ready &amp;&amp; V.n1_magicPhase &gt;= MP_wantDevice;
     ready = ready &amp;&amp; V.n1_magicPhase &lt; MP_drained;
@@ -8789,7 +8789,7 @@ Macro.add(&quot;n1-no-loop&quot;, {
 });
 
 function recentlyViewed(name) {
-  const limit = VarTrace.untracedGet(&quot;t_patiencePassage&quot;);
+  const limit = MT.untracedGet(&quot;t_patiencePassage&quot;);
   const max = 10;
   for (let i = 1; i &lt; max; i++) {
     const past = State.peek(-i);
@@ -8809,7 +8809,6 @@ span.debug:has(&gt; .pw-debug) + wbr + span.debug &gt; .pw-debug &gt; label {
 
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 &lt;&lt;script&gt;&gt;
-const VT = window.VarTrace || (window.VarTrace = {});
 const sayPassword = &quot;[[n1s-F Say Password]]&quot;.slice(2, -2);
 
 window.PW_621 = &quot;621&quot;;
@@ -9424,7 +9423,7 @@ Template.add(&quot;spell&quot;, () =&gt; {
 
 Template.add(&quot;crystals&quot;, () =&gt; {
   const V = State.variables;
-  const U = VarTrace.untracedVariables();
+  const U = MT.untracedVars();
   if (V.n1_gravKnown) {
     return &quot;Gravity Crystals&quot;;
   } else if (V.n1_gravViewed) {
@@ -10494,7 +10493,7 @@ Macro.add(&quot;state-save&quot;, {
       if (key === dest) continue;
       for (const p of prefixes) {
         if (key.startsWith(p)) {
-          save[key] = VT.untracedGet(key);
+          save[key] = MT.untracedGet(key);
           break;
         }
       }
@@ -10822,7 +10821,7 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
 });
 
 MT.revisitHere = fn =&gt; {
-  VT.stop();
+  MT.traceStop();
   revisitTop = $(&quot;html&quot;).prop(&quot;scrollTop&quot;);
   const active = State.active.variables;
   State.active.variables = clone(State.current.variables);
@@ -10870,7 +10869,7 @@ Macro.add(&quot;vi-always&quot;, {
     if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
       MT.warn(`vi-always ${vname} is unnecessary`);
     }
-    const actual = VT.untracedGet(vname);
+    const actual = MT.untracedGet(vname);
     if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
       // force a traced read, so it can be toggled
       const read = State.variables[vname];
@@ -10890,8 +10889,8 @@ Macro.add(&quot;vi-always-if&quot;, {
     if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
-    if (VT.untracedGet(cond)) {
-      const actual = VT.untracedGet(vname);
+    if (MT.untracedGet(cond)) {
+      const actual = MT.untracedGet(vname);
       if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
         // force a traced read, so it can be toggled
         const read = State.variables[vname];
@@ -10931,7 +10930,7 @@ Macro.add(&quot;vi-ignore-if&quot;, {
       if (Nero.varIsConstant(cvar)) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
-      if (VT.untracedGet(cvar)) {
+      if (MT.untracedGet(cvar)) {
         this.args.slice(p + 1).forEach(vn =&gt; ignoreVars.add(vn));
       }
     }
@@ -10941,21 +10940,21 @@ Macro.add(&quot;vi-ignore-if&quot;, {
 const str = val =&gt; val == null ? String(val) : JSON.stringify(val);
 
 function varButton(vname) {
-  const V = VT.untracedVariables();
+  const V = MT.untracedVars();
   const v0 = State.current.variables;
 
   const outer = $(&quot;&lt;span class=var-info-button-outer&gt;&quot;);
   let tags = &quot;&quot;;
 
-  if (VT.ctx.wasDeleted.has(vname)) {
+  if (MT.trace.wasDeleted.has(vname)) {
     tags += &quot;[was-deleted]\n&quot;;
     outer.addClass(&quot;var-info-was-deleted&quot;);
   }
-  if (VT.ctx.wasRead.has(vname)) {
+  if (MT.trace.wasRead.has(vname)) {
     tags += &quot;[was-read]\n&quot;;
     outer.addClass(&quot;var-info-was-read&quot;);
   }
-  if (VT.ctx.wasSet.has(vname)) {
+  if (MT.trace.wasSet.has(vname)) {
     tags += &quot;[was-set]\n&quot;;
     outer.addClass(&quot;var-info-was-written&quot;);
   }
@@ -10969,7 +10968,7 @@ function varButton(vname) {
     } else if (alwaysVars.has(vname)) {
       tags += `[vi-always ${str(alwaysVars.get(vname))}]\n`;
       outer.addClass(&quot;var-info-always&quot;);
-    } else if (!VT.ctx.wasRead.has(vname)) {
+    } else if (!MT.trace.wasRead.has(vname)) {
       tags += &quot;[to-do]\n&quot;;
       outer.addClass(&quot;var-info-to-do&quot;);
     }
@@ -10982,7 +10981,7 @@ function varButton(vname) {
   const label = $(&quot;&lt;span class=var-info-button-label&gt;&quot;).appendTo(outer);
 
   const jval = str(V[vname]);
-  if (VT.ctx.wasSet.has(vname)) {
+  if (MT.trace.wasSet.has(vname)) {
     const jval0 = str(v0[vname]);
     outer.attr(&quot;title&quot;, `${tags}${vname}=${jval0} -&gt;\n${vname}=${jval}`);
   } else {
@@ -10999,7 +10998,7 @@ function varButton(vname) {
     const sameType = Object.values(MT.enumVars).filter(t =&gt; t === vtype).length;
     label.text(sym != null ? sym : vname + &quot;=&quot; + jval);
     const n = enumList.length;
-    if (VT.ctx.wasRead.has(vname)) {
+    if (MT.trace.wasRead.has(vname)) {
       const val0 = v0[vname] || 0;
       if (0 &lt; val0) {
         $(&quot;&lt;span&gt;&quot;)
@@ -11027,7 +11026,7 @@ function varButton(vname) {
     $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
     label.append(&quot;=&quot;);
     $(&quot;&lt;span class=var-info-value&gt;&quot;).text(jval).appendTo(label);
-    if (VT.ctx.wasRead.has(vname)) {
+    if (MT.trace.wasRead.has(vname)) {
       const val0 = v0[vname] || 0;
       $(&quot;&lt;span&gt;&quot;)
         .addClass(&quot;var-info-button-left var-info-can-change&quot;)
@@ -11048,7 +11047,7 @@ function varButton(vname) {
   if (vtype === &quot;boolean&quot;) {
     outer.addClass(&quot;var-info-boolean-&quot; + (V[vname] ? &quot;true&quot; : &quot;false&quot;));
     label.text(vname);
-    if (VT.ctx.wasRead.has(vname)) {
+    if (MT.trace.wasRead.has(vname)) {
       outer.addClass(&quot;var-info-can-change&quot;);
       outer.on(&quot;click&quot;, () =&gt; {
         let val = !v0[vname];
@@ -11071,13 +11070,13 @@ function initVarInfo() {
   if (!setup.tester) return;
 
   $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    VT.start();
+    MT.traceStart();
   });
 
   $(document).on(&quot;:passageend&quot;, () =&gt; {
-    VT.stop();
+    MT.traceStop();
 
-    VT.ctx.wasTopRead.forEach(vn =&gt; {
+    MT.trace.wasTopRead.forEach(vn =&gt; {
       if (alwaysVars.has(vn) &amp;&amp; !alwaysConditional.has(vn)) {
         const c = alwaysVars.get(vn);
         MT.warn(`vi-always ${vn} ${c}, but var was read`);
@@ -11090,7 +11089,7 @@ function initVarInfo() {
 
     const notable = Nero.getNotable();
     const to_do = notable.filter(
-      vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !VT.ctx.wasRead.has(vn));
+      vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !MT.trace.wasRead.has(vn));
     if (to_do.length &amp;&amp; /[-/][F] /.test(State.passage)) {
       MT.warn(`-F passage has unused notable vars: ${to_do}`);
     }
@@ -11098,9 +11097,9 @@ function initVarInfo() {
     if (!setup.debug) return;
 
     const touched = new Set();
-    VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
-    VT.ctx.wasSet.forEach(v =&gt; touched.add(v));
-    VT.ctx.wasDeleted.forEach(v =&gt; touched.add(v));
+    MT.trace.wasRead.forEach(v =&gt; touched.add(v));
+    MT.trace.wasSet.forEach(v =&gt; touched.add(v));
+    MT.trace.wasDeleted.forEach(v =&gt; touched.add(v));
     notable.forEach(f =&gt; touched.add(f));
 
     $(&quot;.var-info&quot;).remove();
@@ -11146,9 +11145,9 @@ initVarInfo();
 window.VarTrace || (window.VarTrace = {});
 const VT = window.VarTrace;
 
-VT.ctx = newContext();
+MT.trace = newContext();
 
-VT._unproxied = null;
+let _unproxied = null;
 const myBrand = Symbol(&quot;VarTraceBrand&quot;);
 
 function newContext() {
@@ -11165,7 +11164,7 @@ Macro.add(&quot;var-trace-ignore&quot;, {
   tags: [],
   handler: function() {
     const body = this.payload[0].contents;
-    VT.ignore(() =&gt; $(this.output).wiki(body));
+    MT.untraced(() =&gt; $(this.output).wiki(body));
   }
 });
 
@@ -11173,80 +11172,71 @@ const origInclude = Macro.get(&quot;include&quot;);
 Macro.delete(&quot;include&quot;);
 Macro.add(&quot;include&quot;, {
   handler: function() {
-    const save = VT.ctx.withinInclude;
-    VT.ctx.withinInclude = true;
+    const save = MT.trace.withinInclude;
+    MT.trace.withinInclude = true;
     try {
       origInclude.handler.call(this);
     } finally {
-      VT.ctx.withinInclude = save;
+      MT.trace.withinInclude = save;
     }
   }
 });
 
 /** Start tracing. */
-VT.start = () =&gt; {
-  VT.stop();
-  VT.ctx = newContext();
-  VT._unproxied = State.active.variables;
-  State.active.variables = new Proxy(VT._unproxied, {
+MT.traceStart = () =&gt; {
+  MT.traceStop();
+  MT.trace = newContext();
+  _unproxied = State.active.variables;
+  State.active.variables = new Proxy(_unproxied, {
     defineProperty(o, prop) {
-      if (typeof prop === &quot;string&quot;) VT.ctx.wasSet.add(prop);
+      if (typeof prop === &quot;string&quot;) MT.trace.wasSet.add(prop);
       return Reflect.defineProperty(...arguments);
     },
     deleteProperty(o, prop) {
-      if (typeof prop === &quot;string&quot;) VT.ctx.wasDeleted.add(prop);
+      if (typeof prop === &quot;string&quot;) MT.trace.wasDeleted.add(prop);
       return Reflect.deleteProperty(...arguments);
     },
     get(o, prop) {
       if (prop === &quot;_varTrace&quot;) return myBrand;
       if (typeof prop === &quot;string&quot;) {
-        VT.ctx.wasRead.add(prop);
-        if (!VT.ctx.withinInclude) VT.ctx.wasTopRead.add(prop);
+        MT.trace.wasRead.add(prop);
+        if (!MT.trace.withinInclude) MT.trace.wasTopRead.add(prop);
       }
       return Reflect.get(...arguments);
     },
     set(o, prop) {
-      if (typeof prop === &quot;string&quot;) VT.ctx.wasSet.add(prop);
+      if (typeof prop === &quot;string&quot;) MT.trace.wasSet.add(prop);
       return Reflect.set(...arguments);
     },
   });
 };
 
 /** Stop tracing. */
-VT.stop = () =&gt; {
+MT.traceStop = () =&gt; {
   if ((State.active.variables._varTrace || myBrand) !== myBrand) {
     throw new Error(&quot;Multiple instances of Var Trace in conflict.&quot;);
   }
-  if (VT._unproxied != null) {
-    State.active.variables = VT._unproxied;
-    VT._unproxied = null;
+  if (_unproxied != null) {
+    State.active.variables = _unproxied;
+    _unproxied = null;
   }
 };
 
 /** Get vname&#39;s value without tracing it. */
-VT.untracedGet = vname =&gt; {
-  return (VT._unproxied || State.active.variables)[vname];
+MT.untracedGet = vname =&gt; {
+  return (_unproxied || State.active.variables)[vname];
 }
 
-/** Set vname&#39;s value without tracing it. */
-VT.untracedSet = (vname, value) =&gt; {
-  (VT._unproxied || State.active.variables)[vname] = value;
-};
-
-/** Delete vname&#39;s value without tracing it. */
-VT.untracedDelete = vname =&gt; {
-  delete (VT._unproxied || State.active.variables)[vname];
-};
-
-VT.untracedVariables = () =&gt; {
-  return VT._unproxied || State.active.variables;
+/** Returns all state vars, without tracing. */
+MT.untracedVars = () =&gt; {
+  return _unproxied || State.active.variables;
 }
 
 /** Run fn without tracing any variables during its execution. */
-VT.ignore = fn =&gt; {
-  if (VT._unproxied == null) return fn();
+MT.untraced = fn =&gt; {
+  if (_unproxied == null) return fn();
   const proxy = State.active.variables;
-  State.active.variables = VT._unproxied;
+  State.active.variables = _unproxied;
   try {
     return fn();
   } finally {
@@ -11681,7 +11671,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   }
 
   T.addCurrentState = () =&gt; {
-    const wasRead = [...window.VarTrace.ctx.wasRead].sort();
+    const wasRead = [...window.MT.trace.wasRead].sort();
     const obj = {};
     for (const vn of wasRead) {
       const val = State.current.variables[vn];

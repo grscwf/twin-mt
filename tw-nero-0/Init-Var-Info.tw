@@ -190,7 +190,7 @@ $(document).on(":passagestart", () => {
 });
 
 MT.revisitHere = fn => {
-  VT.stop();
+  MT.traceStop();
   revisitTop = $("html").prop("scrollTop");
   const active = State.active.variables;
   State.active.variables = clone(State.current.variables);
@@ -238,7 +238,7 @@ Macro.add("vi-always", {
     if (Nero.varIsConstant(vname) && !withinInclude(this)) {
       MT.warn(`vi-always ${vname} is unnecessary`);
     }
-    const actual = VT.untracedGet(vname);
+    const actual = MT.untracedGet(vname);
     if (exp !== actual && !(exp === false && actual == null)) {
       // force a traced read, so it can be toggled
       const read = State.variables[vname];
@@ -258,8 +258,8 @@ Macro.add("vi-always-if", {
     if (Nero.varIsConstant(vname) && !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
-    if (VT.untracedGet(cond)) {
-      const actual = VT.untracedGet(vname);
+    if (MT.untracedGet(cond)) {
+      const actual = MT.untracedGet(vname);
       if (exp !== actual && !(exp === false && actual == null)) {
         // force a traced read, so it can be toggled
         const read = State.variables[vname];
@@ -299,7 +299,7 @@ Macro.add("vi-ignore-if", {
       if (Nero.varIsConstant(cvar)) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
-      if (VT.untracedGet(cvar)) {
+      if (MT.untracedGet(cvar)) {
         this.args.slice(p + 1).forEach(vn => ignoreVars.add(vn));
       }
     }
@@ -309,21 +309,21 @@ Macro.add("vi-ignore-if", {
 const str = val => val == null ? String(val) : JSON.stringify(val);
 
 function varButton(vname) {
-  const V = VT.untracedVariables();
+  const V = MT.untracedVars();
   const v0 = State.current.variables;
 
   const outer = $("<span class=var-info-button-outer>");
   let tags = "";
 
-  if (VT.ctx.wasDeleted.has(vname)) {
+  if (MT.trace.wasDeleted.has(vname)) {
     tags += "[was-deleted]\n";
     outer.addClass("var-info-was-deleted");
   }
-  if (VT.ctx.wasRead.has(vname)) {
+  if (MT.trace.wasRead.has(vname)) {
     tags += "[was-read]\n";
     outer.addClass("var-info-was-read");
   }
-  if (VT.ctx.wasSet.has(vname)) {
+  if (MT.trace.wasSet.has(vname)) {
     tags += "[was-set]\n";
     outer.addClass("var-info-was-written");
   }
@@ -337,7 +337,7 @@ function varButton(vname) {
     } else if (alwaysVars.has(vname)) {
       tags += `[vi-always ${str(alwaysVars.get(vname))}]\n`;
       outer.addClass("var-info-always");
-    } else if (!VT.ctx.wasRead.has(vname)) {
+    } else if (!MT.trace.wasRead.has(vname)) {
       tags += "[to-do]\n";
       outer.addClass("var-info-to-do");
     }
@@ -350,7 +350,7 @@ function varButton(vname) {
   const label = $("<span class=var-info-button-label>").appendTo(outer);
 
   const jval = str(V[vname]);
-  if (VT.ctx.wasSet.has(vname)) {
+  if (MT.trace.wasSet.has(vname)) {
     const jval0 = str(v0[vname]);
     outer.attr("title", `${tags}${vname}=${jval0} ->\n${vname}=${jval}`);
   } else {
@@ -367,7 +367,7 @@ function varButton(vname) {
     const sameType = Object.values(MT.enumVars).filter(t => t === vtype).length;
     label.text(sym != null ? sym : vname + "=" + jval);
     const n = enumList.length;
-    if (VT.ctx.wasRead.has(vname)) {
+    if (MT.trace.wasRead.has(vname)) {
       const val0 = v0[vname] || 0;
       if (0 < val0) {
         $("<span>")
@@ -395,7 +395,7 @@ function varButton(vname) {
     $("<span class=var-info-vname>").text(vname).appendTo(label);
     label.append("=");
     $("<span class=var-info-value>").text(jval).appendTo(label);
-    if (VT.ctx.wasRead.has(vname)) {
+    if (MT.trace.wasRead.has(vname)) {
       const val0 = v0[vname] || 0;
       $("<span>")
         .addClass("var-info-button-left var-info-can-change")
@@ -416,7 +416,7 @@ function varButton(vname) {
   if (vtype === "boolean") {
     outer.addClass("var-info-boolean-" + (V[vname] ? "true" : "false"));
     label.text(vname);
-    if (VT.ctx.wasRead.has(vname)) {
+    if (MT.trace.wasRead.has(vname)) {
       outer.addClass("var-info-can-change");
       outer.on("click", () => {
         let val = !v0[vname];
@@ -439,13 +439,13 @@ function initVarInfo() {
   if (!setup.tester) return;
 
   $(document).on(":passagestart", () => {
-    VT.start();
+    MT.traceStart();
   });
 
   $(document).on(":passageend", () => {
-    VT.stop();
+    MT.traceStop();
 
-    VT.ctx.wasTopRead.forEach(vn => {
+    MT.trace.wasTopRead.forEach(vn => {
       if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
         const c = alwaysVars.get(vn);
         MT.warn(`vi-always ${vn} ${c}, but var was read`);
@@ -458,7 +458,7 @@ function initVarInfo() {
 
     const notable = Nero.getNotable();
     const to_do = notable.filter(
-      vn => !ignoreVars.has(vn) && !alwaysVars.has(vn) && !VT.ctx.wasRead.has(vn));
+      vn => !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn));
     if (to_do.length && /[-/][F] /.test(State.passage)) {
       MT.warn(`-F passage has unused notable vars: ${to_do}`);
     }
@@ -466,9 +466,9 @@ function initVarInfo() {
     if (!setup.debug) return;
 
     const touched = new Set();
-    VT.ctx.wasRead.forEach(v => touched.add(v));
-    VT.ctx.wasSet.forEach(v => touched.add(v));
-    VT.ctx.wasDeleted.forEach(v => touched.add(v));
+    MT.trace.wasRead.forEach(v => touched.add(v));
+    MT.trace.wasSet.forEach(v => touched.add(v));
+    MT.trace.wasDeleted.forEach(v => touched.add(v));
     notable.forEach(f => touched.add(f));
 
     $(".var-info").remove();
