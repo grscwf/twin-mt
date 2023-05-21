@@ -1,0 +1,185 @@
+:: Init Error Message [inclusion] {"position":"3050,500","size":"100,100"}
+<<append head>><style>
+  #EM-outer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    line-height: 1.5;
+    text-align: center;
+    margin: 12px 0;
+    pointer-events: none;
+    width: 100%;
+    z-index: 99991;
+  }
+  #EM-inner {
+    display: inline-block;
+    margin: 0 12px;
+    pointer-events: auto;
+  }
+  .EM-note {
+    background-color: #cc4;
+    border-radius: 4px;
+    color: #000;
+    font-size: 12px;
+    margin-bottom: 8px;
+    padding: 8px 8px 4px 8px;
+    text-align: left;
+  }
+  a.EM-button {
+    color: #55f;
+    float: right;
+    font-weight: bold;
+    margin-top: -2px;
+    padding-left: 8px;
+  }
+  a.EM-button:hover {
+    color: #c55;
+  }
+  .EM-fail {
+    color: #f33;
+    font-weight: bold;
+  }
+  .EM-trace {
+    color: #000;
+    font-weight: normal;
+    margin-left: 1.5em;
+    white-space: pre-line;
+  }
+</style><</append>>
+
+<<script>>
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+
+EM.debugStop = false;
+EM.hasFails = false;
+EM.hasWarnings = false;
+EM.noMessage = false;
+EM.messages = [];
+
+$(document).on(":passagestart", () => {
+  $("#EM-outer").remove();
+  EM.hasFails = false;
+  EM.hasWarnings = false;
+  EM.messages = [];
+});
+
+EM.runsWithoutFail = (fn) => {
+  const save = { hf: EM.hasFails, nm: EM.noMessage };
+  try {
+    EM.hasFails = false;
+    EM.noMessage = true;
+    fn();
+    return !EM.hasFails;
+  } catch (e) {
+    return false;
+  } finally {
+    EM.hasFails = save.hf;
+    EM.noMessage = save.nm;
+  }
+};
+
+/** Add str as a new error-message note. */
+EM.note = (str, header) => {
+  if (EM.noMessage) return;
+  EM.messages.push(header == null ? str : `${header}: ${str}`);
+  const note = $(`
+    <div class=EM-note>
+      <a class="EM-close EM-button">[close]</a>
+    </div>
+  `).appendTo(getInner());
+  if (header != null && header !== "") {
+    note.append(document.createTextNode(header));
+    note.append(document.createElement("br"));
+  }
+  note.append(document.createTextNode(str));
+  note.find(".EM-close").click(() => note.remove());
+  return note;
+};
+
+/** Add str as a warning. */
+EM.warn = (str) => {
+  EM.hasWarnings = true;
+  EM.note(str, "Warning");
+};
+
+/** Add str as a new error-message assertion failure. */
+EM.fail = (str, context) => {
+  EM.hasFails = true;
+  EM.message("fail", str, context);
+};
+
+EM.message = (type, str, context) => {
+  if (EM.noMessage) return;
+  if (EM.debugStop) {
+    debugger;
+    EM.debugStop = false;
+  }
+  EM.messages.push(`${type}: ${str}`)
+  const fails = $(`<div class=EM-${type}>`).text(str)
+    .appendTo(getFails());
+  const trace = backtrace(context);
+  if (trace != null && trace !== "") {
+    EM.messages.push(trace);
+    $("<div class=EM-trace>").text(trace)
+      .appendTo(fails);
+  }
+  return fails;
+};
+
+EM.assert = (val, str, context) => {
+  if (val) return;
+  EM.fail(str, context);
+}
+Macro.add("em-assert", {
+  skipArgs: true,
+  handler: function() {
+    const val = VT.ignore(() => eval(this.args.full));
+    EM.assert(val, `expected: ${this.args.raw}`, this);
+  }
+});
+
+function backtrace(ctx) {
+  let trace = "";
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === "include") {
+      trace += ctx.source + "\n";
+    }
+  }
+  return trace;
+}
+
+function getInner() {
+  let inner = $("#EM-inner");
+  if (inner.length === 1) return inner;
+  inner.remove();
+  $("#EM-outer").remove();
+  const outer = $(`
+    <div id=EM-outer>
+      <div id=EM-inner></div>
+    </div>
+  `).appendTo("#story");
+  inner = outer.find("#EM-inner");
+  return inner;
+}
+
+function getFails() {
+  let fails = $("#EM-fails");
+  if (fails.length === 1) return fails;
+  fails.remove();
+  fails = EM.note("");
+  fails.attr("id", "EM-fails");
+  fails.append(`
+    <a id=EM-debug class=EM-button>[debug]</a>
+    <div class=EM-fail-intro>
+      Assertions failed.
+      Passage may be nonsensical.
+    </div>
+  `);
+  fails.find("#EM-debug").click(() => {
+    EM.debugStop = true;
+    Engine.play(State.passage, true);
+  });
+  return fails;
+}
+<</script>>

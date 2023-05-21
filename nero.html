@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5235,119 +5235,7 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
   });
 });
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="217" name="Init Var Trace" tags="inclusion" position="2450,375" size="100,100">&lt;&lt;script&gt;&gt;
-window.VarTrace || (window.VarTrace = {});
-const VT = window.VarTrace;
-
-VT.ctx = newContext();
-
-VT._unproxied = null;
-const myBrand = Symbol(&quot;VarTraceBrand&quot;);
-
-function newContext() {
-  return {
-    withinInclude: false,
-    wasDeleted: new Set(),
-    wasRead: new Set(),
-    wasSet: new Set(),
-    wasTopRead: new Set(),
-  };
-}
-
-Macro.add(&quot;var-trace-ignore&quot;, {
-  tags: [],
-  handler: function() {
-    const body = this.payload[0].contents;
-    VT.ignore(() =&gt; $(this.output).wiki(body));
-  }
-});
-
-const origInclude = Macro.get(&quot;include&quot;);
-Macro.delete(&quot;include&quot;);
-Macro.add(&quot;include&quot;, {
-  handler: function() {
-    const save = VT.ctx.withinInclude;
-    VT.ctx.withinInclude = true;
-    try {
-      origInclude.handler.call(this);
-    } finally {
-      VT.ctx.withinInclude = save;
-    }
-  }
-});
-
-/** Start tracing. */
-VT.start = () =&gt; {
-  VT.stop();
-  VT.ctx = newContext();
-  VT._unproxied = State.active.variables;
-  State.active.variables = new Proxy(VT._unproxied, {
-    defineProperty(o, prop) {
-      if (typeof prop === &quot;string&quot;) VT.ctx.wasSet.add(prop);
-      return Reflect.defineProperty(...arguments);
-    },
-    deleteProperty(o, prop) {
-      if (typeof prop === &quot;string&quot;) VT.ctx.wasDeleted.add(prop);
-      return Reflect.deleteProperty(...arguments);
-    },
-    get(o, prop) {
-      if (prop === &quot;_varTrace&quot;) return myBrand;
-      if (typeof prop === &quot;string&quot;) {
-        VT.ctx.wasRead.add(prop);
-        if (!VT.ctx.withinInclude) VT.ctx.wasTopRead.add(prop);
-      }
-      return Reflect.get(...arguments);
-    },
-    set(o, prop) {
-      if (typeof prop === &quot;string&quot;) VT.ctx.wasSet.add(prop);
-      return Reflect.set(...arguments);
-    },
-  });
-};
-
-/** Stop tracing. */
-VT.stop = () =&gt; {
-  if ((State.active.variables._varTrace || myBrand) !== myBrand) {
-    throw new Error(&quot;Multiple instances of Var Trace in conflict.&quot;);
-  }
-  if (VT._unproxied != null) {
-    State.active.variables = VT._unproxied;
-    VT._unproxied = null;
-  }
-};
-
-/** Get vname&#39;s value without tracing it. */
-VT.untracedGet = vname =&gt; {
-  return (VT._unproxied || State.active.variables)[vname];
-}
-
-/** Set vname&#39;s value without tracing it. */
-VT.untracedSet = (vname, value) =&gt; {
-  (VT._unproxied || State.active.variables)[vname] = value;
-};
-
-/** Delete vname&#39;s value without tracing it. */
-VT.untracedDelete = vname =&gt; {
-  delete (VT._unproxied || State.active.variables)[vname];
-};
-
-VT.untracedVariables = () =&gt; {
-  return VT._unproxied || State.active.variables;
-}
-
-/** Run fn without tracing any variables during its execution. */
-VT.ignore = fn =&gt; {
-  if (VT._unproxied == null) return fn();
-  const proxy = State.active.variables;
-  State.active.variables = VT._unproxied;
-  try {
-    return fn();
-  } finally {
-    State.active.variables = proxy;
-  }
-};
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="218" name="Init Archive" tags="inclusion" position="2450,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="217" name="Init Archive" tags="inclusion" position="2450,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   .arc-disabled {
     opacity: 0.4;
     pointer-events: none;
@@ -5614,7 +5502,7 @@ Macro.add(&quot;arc-set-barbs&quot;, {
   }
 });
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="219" name="Init Arousal Bar" tags="inclusion" position="2550,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="218" name="Init Arousal Bar" tags="inclusion" position="2550,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   .hzbarbkg {
       position: relative;
       height: 15px;
@@ -5720,7 +5608,7 @@ Macro.add(&quot;arousalbar&quot;, {
     setTimeout(() =&gt; bar.css({ width: hp1 + &quot;%&quot;}), 200);
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="220" name="Init 2 Compute Variants" tags="inclusion" position="2650,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="219" name="Init Compute Variants" tags="inclusion" position="2650,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .cv-state {
   color: #39f;
@@ -6061,9 +5949,11 @@ function mark(node, c) {
     $(node).addClass(c === 1 ? &quot;cv-diff-a&quot; : &quot;cv-diff-b&quot;);
   }
 }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="221" name="Init 2 Count Words" tags="inclusion" position="2750,500" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="220" name="Init Count Words" tags="inclusion" position="2750,500" size="100,100">&lt;&lt;script&gt;&gt;
 
-MagesTower.countWords = function(text) {
+const MT = window.MagesTower || (window.MagesTower = {});
+
+MT.countWords = function(text) {
   const tokens = text.split(/(&lt;[&lt;].*?&gt;&gt;|&lt;.*&gt;)/);
   let n = 0;
   const skipTo = (p, re) =&gt; {
@@ -6089,7 +5979,7 @@ MagesTower.countWords = function(text) {
   }
   return n;
 }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="222" name="Init 2 Draft Sign" tags="inclusion" position="2850,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="221" name="Init Draft Sign" tags="inclusion" position="2850,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #draft-sign {
     font-size: 120px;
     pointer-events: none;
@@ -6150,7 +6040,34 @@ $(document).on(&quot;:passageend&quot;, () =&gt; {
     $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;draft-sign&quot;).addClass(`draft-${tag}`).appendTo(&quot;body&quot;);
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="223" name="Init 2 Error Message" tags="inclusion" position="3050,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="222" name="Init Drekkar" tags="inclusion" position="2450,850" size="100,100">&lt;&lt;script&gt;&gt;
+const V = variables();
+V.name = &quot;Drekkar&quot;;
+V.class = &quot;warrior&quot;;
+V.warrior = true;
+V.mage = false;
+
+V.rough_awakening = true;
+V.FurtherDefiance = false;
+
+V.CurArousal = 10;
+V.MaxArousal = 100;
+
+V.candleTimer = &quot;2s&quot;;
+V.window = false;
+V.office = false;
+V.door = false;
+
+V.lionwatch1 = 40;
+V.lionwatch2 = 20;
+V.lionwatch3 = 20;
+V.lionwatch4 = 40;
+V.lionwatch5 = 50;
+V.lionwatch6 = 60;
+V.lionwatch7 = 90;
+V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
+  V.lionwatch4 + V.lionwatch5 + V.lionwatch6 + V.lionwatch7;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="223" name="Init Error Message" tags="inclusion" position="3050,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #EM-outer {
     position: fixed;
     bottom: 0;
@@ -6333,7 +6250,7 @@ function getFails() {
   });
   return fails;
 }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="224" name="Init 2 Fade-In" tags="inclusion" position="3150,500" size="100,100">&lt;!--
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="224" name="Init Fade-In" tags="inclusion" position="3150,500" size="100,100">&lt;!--
 /*
  * This description assumes you&#39;re using the default style.
  * &lt;&lt;fade-in 1.5s [no-pulse]&gt;&gt;
@@ -6503,7 +6420,7 @@ Macro.add(&quot;fade-in&quot;, {
     setTimeout(next);
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="225" name="Init 2 Links" tags="inclusion" position="2450,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="225" name="Init Links" tags="inclusion" position="2450,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 .mtl-denied::before {
   filter: grayscale();
 }
@@ -6628,15 +6545,17 @@ function linkTitle(link) {
   return m == null ? str : m[1];
 }
 
+const MT = window.MagesTower || (window.MagesTower = {});
+
 /** Returns the mta code for the link to here, or null. */
-MagesTower.mtaCode = (here) =&gt; {
+MT.mtaCode = (here) =&gt; {
   here ||= State.passage;
   const p = State.variables.mtaPayload;
   if (p == null || p[0] !== here) return null;
   return p[1];
 };
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="226" name="Init 2 Log" tags="inclusion" position="2550,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="226" name="Init Log" tags="inclusion" position="2550,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 #log-button {
     background-color: #fff;
@@ -6933,1717 +6852,7 @@ function openLog() {
 }
 
 initLog();
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="227" name="Init 2 Random Once" tags="inclusion" position="2850,600" size="100,100">&lt;&lt;script&gt;&gt;
-const EM = window.ErrorMessage || (window.ErrorMessage = {});
-const VI = window.VarInfo || (window.VarInfo = {});
-
-/**
- * &lt;&lt;random-once seenVar&gt;&gt;
- * &lt;&lt;ro-choice&gt;&gt;
- *     text
- * &lt;&lt;ro-choice $condition&gt;&gt;
- *     text
- * &lt;&lt;ro-choice false&gt;&gt;
- *     placeholder for deleted choice, to avoid breaking saved games
- * &lt;&lt;/random-once&gt;&gt;
- */
-Macro.delete(&quot;random-once&quot;);
-Macro.add(&quot;random-once&quot;, {
-  tags: [&quot;ro-choice&quot;],
-  handler: function() {
-    const shown = this.args[0];
-    const valid = new Set();
-    for (let i = 1; i &lt; this.payload.length; i++) {
-      const cond = this.payload[i].args.full;
-      if (cond === &quot;&quot; || eval(cond)) {
-        valid.add(i);
-      }
-    }
-
-    if (valid.size === 0) {
-      EM.fail(`random-once should have valid choices`);
-      return;
-    }
-
-    const V = State.variables;
-    V[shown] || (V[shown] = []);
-
-    let avail = new Set(valid);
-    V[shown].forEach(i =&gt; avail.delete(i));
-
-    if (avail.size === 0) {
-      avail = new Set(valid);
-      if (avail.size &gt; 1 &amp;&amp; V[shown].length &gt; 0) {
-        avail.delete(V[shown][V[shown].length - 1]);
-      }
-      V[shown] = [];
-    }
-
-    const choice = MagesTower.pick(avail);
-    V[shown].push(choice);
-
-    $(this.output).wiki(this.payload[choice].contents);
-
-    if (setup.debug &amp;&amp; valid.size &gt; 1) {
-      const outer = $(&quot;&lt;span class=ro-debug&gt;&quot;).appendTo(this.output);
-      const val = V[shown];
-      outer.append(&quot;&amp;#x1f527;&quot;);
-      $(&quot;&lt;a&gt;&quot;).html(&quot;&amp;#x1f3b2;&quot;)
-        .appendTo(outer)
-        .click(() =&gt; VI.revisitHere(() =&gt; {
-          State.variables[shown] = val;
-        }));
-    }
-  }
-});
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="228" name="Init 2 Random Walk" tags="inclusion" position="2950,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-  #random-walk {
-    top: max(5rem, 50vh - 5rem);
-    display: flex;
-    flex-direction: column;
-    font-size: 18px;
-    gap: 20px;
-    position: fixed;
-    right: 4px;
-    z-index: 20;
-  }
-
-  #random-walk a {
-    background-color: #fff;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    color: #000;
-    cursor: pointer;
-    opacity: 0.1;
-    padding: 2px 4px;
-    text-align: center;
-    user-select: none;
-  }
-
-  #random-walk a:hover {
-    background-color: #333;
-    border-color: #eee;
-    color: #eee;
-    opacity: 1;
-  }
-
-  .random-walk-chosen {
-    outline: 1px solid #9cc;
-  }
-
-  #rw-seek.rw-seeking {
-    background-color: #161;
-    color: #7f7;
-    opacity: 1;
-  }
-  #rw-seek.rw-seeking:hover {
-    background-color: #191;
-    color: #111;
-  }
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-const MT = window.MagesTower || (window.MagesTower = {});
-
-const visited = new Set();
-let lastPick = {};
-
-let ignoreFuture = false;
-
-MT.seeking = false;
-
-MT.forgetWalkHistory = () =&gt; {
-  visited.clear();
-  lastPick = {};
-};
-
-/** Random walk */
-function initRandomWalk() {
-  if (!setup.tester) return;
-
-  const idOf = el =&gt; {
-    const title = $(el).attr(&quot;data-passage&quot;);
-    const mtaCode = $(el).attr(&quot;data-mta-code&quot;);
-    return `${title}/${mtaCode}`;
-  };
-
-  function updateLabel() {
-    const el = $(&quot;#rw-forw&quot;);
-    if (State.length === State.size || ignoreFuture) {
-      el.text(&quot;rand&quot;);
-    } else {
-      el.text(&quot;forw&quot;);
-    }
-  }
-
-  const goRandom = () =&gt; {
-    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
-    if (chosen.length === 1) {
-      ignoreFuture = false;
-      chosen.click();
-      return true;
-    }
-    chosen.removeClass(&quot;random-walk-chosen&quot;);
-
-    const here = State.passage;
-    const all = $(&quot;#passages a[data-passage]&quot;);
-    if (all.length === 0) return false;
-
-    let avail = all.filter((i, el) =&gt; !visited.has(idOf(el)));
-    let pick = null;
-    while (pick == null) {
-      if (avail.length === 0) {
-        all.each((i, el) =&gt; visited.delete(idOf(el)));
-        avail = all;
-        if (avail.length &gt; 1) {
-          // avoid picking the link we just picked
-          avail = avail.filter((i, el) =&gt; idOf(el) !== lastPick[here]);
-          if (avail.length === 0) avail = all;
-        }
-      }
-
-      // Should not use State.random()
-      const i = Math.floor(avail.length * Math.random());
-      pick = avail[i];
-      const code = $(pick).attr(&quot;data-mta-code&quot;);
-      const avoid = code != null &amp;&amp; code.includes(&quot;//avoid&quot;);
-      if (avoid &amp;&amp; Math.random() &lt; .9) {
-        const title = $(pick).attr(&quot;data-passage&quot;);
-        console.log(`avoiding ${title}`);
-        pick = null;
-        avail.splice(i, 1);
-      }
-    }
-    $(pick).addClass(&quot;random-walk-chosen&quot;);
-    pick.scrollIntoView(false);
-    lastPick[here] = idOf(pick);
-    visited.add(lastPick[here]);
-    return true;
-  };
-
-  const goBack = () =&gt; {
-    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
-    if (chosen.length &gt; 0) {
-      ignoreFuture = true;
-      chosen.removeClass(&quot;random-walk-chosen&quot;);
-      updateLabel();
-    } else {
-      ignoreFuture = false;
-      Engine.backward();
-    }
-  };
-
-  const goForward = () =&gt; {
-    if (State.length === State.size || ignoreFuture) {
-      goRandom();
-      return;
-    }
-    ignoreFuture = false;
-
-    const next = State.history[State.length].title;
-    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
-    if (chosen.length === 1) {
-      if (chosen.attr(&quot;data-passage&quot;) === next) {
-        Engine.forward();
-      } else {
-        goRandom();
-      }
-      return;
-    }
-    chosen.removeClass(&quot;random-walk-chosen&quot;);
-    const links = $(&quot;#passages a[data-passage]&quot;)
-      .filter((i, el) =&gt; $(el).attr(&quot;data-passage&quot;) === next);
-    if (links.length === 1) {
-      links.addClass(&quot;random-walk-chosen&quot;);
-      links[0].scrollIntoView(false);
-    } else {
-      Engine.forward();
-    }
-  };
-
-  let seekForce = false;
-  let seekLoop = 0;
-  let seekLooping = false;
-  let seekMoved = false;
-  let seekPath = null;
-  let seekDoneFn = null;
-
-  const seekDelay = 50;
-  const maxLoop = 5;
-
-  const seekToggle = () =&gt; {
-    if (MT.seeking) {
-      seekStop();
-    } else {
-      seekStart();
-    }
-  };
-
-  const seekStart = MagesTower.seekStart = (path, doneFn, force) =&gt; {
-    $(&quot;#rw-seek&quot;).addClass(&quot;rw-seeking&quot;);
-    MT.seeking = true;
-    seekForce = force;
-    seekMoved = false;
-    seekPath = path;
-    seekDoneFn = doneFn;
-    setTimeout(seekNext, seekDelay);
-  };
-
-  const seekStop = () =&gt; {
-    MT.seeking = false;
-    seekPath = null;
-    seekDoneFn = null;
-    $(&quot;#rw-seek&quot;).removeClass(&quot;rw-seeking&quot;);
-  };
-
-  const seekNext = () =&gt; {
-    const here = State.passage;
-
-    if (!MT.seeking) return seekStop();
-    if (seekMoved &amp;&amp; here === Config.passages.start) return seekStop();
-
-    let hasProblem = false;
-    hasProblem = hasProblem || ErrorMessage.hasFails;
-    hasProblem = hasProblem || ErrorMessage.hasWarnings;
-
-    let hasTodo = /\bX[X]X\b|\bTO[D]O\b/.test($(&quot;.passage&quot;).text());
-
-    const isDraft = /[-/][DPS] /.test(here);
-    const done = tags().includes(&quot;done&quot;);
-
-    if (seekMoved) {
-      if (hasProblem) {
-        console.log(&#39;stopping on problem&#39;);
-        return seekStop();
-      }
-      if (!seekForce &amp;&amp; (hasTodo || isDraft)) {
-        console.log(&#39;stopping on to-do&#39;);
-        return seekStop();
-      }
-      if (done) {
-        const steps = MagesTower.log.length;
-        const V = State.variables;
-        console.log(`done after ${steps} steps at ${here}`);
-        const mp = EnumType.symbolic(&#39;MagicPhase&#39;, V.n1_magicPhase);
-        const mpl = EnumType.symbolic(&#39;MagicPhase&#39;, V.n2_magicPhaseLost);
-        console.log(`- magicPhase ${mp}, ${mpl}`);
-        if (seekLoop &lt;= 0) {
-          if (seekLooping) {
-            seekLooping = false;
-            console.log(&quot;stop at max loops&quot;);
-          }
-          return seekStop();
-        }
-      }
-    }
-
-    if (!seekMoved) {
-      if (hasTodo || isDraft) {
-        seekForce = true;
-      }
-      if (done) {
-        seekLoop = maxLoop;
-        seekLooping = true;
-      }
-    }
-
-    if (done) {
-      seekLoop--;
-      if (seekLoop &lt;= 0) {
-        seekLooping = false;
-        console.log(&quot;stop at max loops&quot;);
-        return seekStop();
-      }
-      MT.forgetWalkHistory();
-      Engine.play(&quot;Bound&quot;);
-      seekForce = false;
-      const neroStart = [
-        { t: &quot;Choose Character&quot; },
-        { t: &quot;n1a-F Nero Start&quot; },
-      ];
-      MT.seekStart(neroStart, () =&gt; {
-        MT.seekStart();
-      });
-      return;
-    }
-
-    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
-    if (chosen.length === 1) {
-      seekMoved = true;
-      chosen[0].click();
-      setTimeout(seekNext, seekDelay);
-      return;
-    }
-
-    if (seekLoop &amp;&amp; seekPath != null &amp;&amp; seekPath.length === 0) {
-      seekPath = null;
-    }
-
-    if (seekPath != null) {
-      while (seekPath.length &amp;&amp; seekPath[0].t == null) {
-        seekPath.shift();
-      }
-      if (seekPath.length === 0) {
-        const steps = MagesTower.log.length;
-        console.log(`path end after ${steps} steps at ${here}`);
-        if (seekDoneFn != null) setTimeout(seekDoneFn);
-        seekStop();
-        return;
-      }
-      const next = seekPath[0];
-      const links = $(&quot;#story a[data-passage]&quot;);
-      const isStep = (el, step) =&gt; {
-        const title = el.getAttribute(&quot;data-passage&quot;);
-        const code = el.getAttribute(&quot;data-mta-code&quot;) || null;
-        return title === step.t &amp;&amp; code === (step.code || null);
-      };
-      for (const link of links) {
-        if (isStep(link, next)) {
-          seekPath.shift();
-          $(link).addClass(&quot;random-walk-chosen&quot;);
-          setTimeout(seekNext, 100);
-          return;
-        }
-      }
-
-      let msg = `Broken path: ${JSON.stringify(next)}`;
-      ErrorMessage.warn(msg);
-      return seekStop();
-    }
-
-    if (goRandom()) {
-      setTimeout(seekNext, seekDelay);
-      return;
-    }
-    
-    seekStop();
-  };
-
-  $(() =&gt; {
-    $(&quot;#random-walk&quot;).remove();
-    const outer = $(&quot;&lt;div&gt;&quot;)
-      .attr(&quot;id&quot;, &quot;random-walk&quot;)
-      .appendTo(&quot;#story&quot;);
-    $(&quot;&lt;a&gt;&quot;)
-      .attr(&quot;title&quot;, &quot;&lt;ctrl-comma&gt; backward&quot;)
-      .text(&quot;back&quot;)
-      .click(goBack)
-      .appendTo(outer);
-    if (setup.debug) {
-      $(&quot;&lt;a id=rw-seek&gt;&quot;)
-        .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; seek&quot;)
-        .toggleClass(&quot;rw-seeking&quot;, MT.seeking)
-        .text(&quot;seek&quot;)
-        .click(seekToggle)
-        .appendTo(outer);
-    }
-    $(&quot;&lt;a id=rw-forw&gt;&quot;)
-      .attr(&quot;title&quot;, &quot;&lt;ctrl-period&gt; forward or random&quot;)
-      .text(&quot;forw&quot;)
-      .click(goForward)
-      .appendTo(outer);
-    updateLabel();
-  });
-
-  // ctrl-comma doesn&#39;t generate keypress events
-  $(document).on(&quot;keydown&quot;, ev =&gt; {
-    if (!ev.ctrlKey) return;
-    const focus = document.activeElement;
-    const tag = focus != null ? focus.tagName : &quot;&quot;;
-    if (/^(textarea|input|select)$/i.test(tag)) return;
-    if (ev.key === &quot;,&quot;) return goBack();
-    if (ev.key === &quot;.&quot;) return goForward();
-    if (ev.key === &quot;\\&quot;) return seekToggle();
-  });
-
-  $(document).on(&quot;click&quot;, ev =&gt; {
-    if (!MT.seeking &amp;&amp; ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
-      const chosen = $(&quot;#passages .random-walk-chosen&quot;);
-      if (chosen.length) {
-        chosen.removeClass(&quot;random-walk-chosen&quot;);
-        ignoreFuture = true;
-        updateLabel();
-      }
-    }
-  });
-
-  $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    updateLabel();
-  });
-}
-
-initRandomWalk();
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="229" name="Init 2 Randomness" tags="inclusion" position="3050,600" size="100,100">&lt;&lt;script&gt;&gt;
-const MT = window.MagesTower || (window.MagesTower = {});
-
-/**
- * Pick arbitrary item from list or Set, based on State.random()
- * SugarCube&#39;s Array.random(), either(), etc, use Math.random().
- */
-MT.pick = list =&gt; {
-  if (list instanceof Set) list = Array.from(list);
-  const n = Math.floor(list.length * State.random());
-  return list[n];
-};
-
-function getSeed() {
-  const m = /[?&amp;]seed=(\d+)/.exec(location.search);
-  if (m != null) return m[1];
-  return String(Math.random()).slice(2);
-}
-
-function initRandom() {
-  const seed = getSeed();
-  State.prng.init(seed);
-  const state = session.get(&quot;state&quot;);
-}
-
-// initRandom();
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="230" name="Init 2 Return Sticky" tags="inclusion" position="3150,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-#return-head,
-#return-tail {
-  background-color: #111;
-  line-height: 1.75;
-  position: sticky;
-  z-index: 10;
-}
-
-#return-head {
-  margin-top: -1em;
-  padding-top: 1em;
-  top: 0;
-}
-
-#return-tail {
-  padding-bottom: 1em;
-  bottom: 0;
-}
-
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-function addReturn(where, contents) {
-  ErrorMessage.assert(
-    tags().includes(&quot;noreturn&quot;),
-    &quot;tags should have noreturn&quot;);
-
-  $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-    MagesTower.autoStow();
-    $(`#return-${where}`).remove();
-    const div = $(`&lt;div id=return-${where}&gt;`)
-      .wiki(`&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;`)
-      .wiki(contents);
-    if (where === &quot;head&quot;) {
-      div.append(&quot;&lt;hr&gt;&quot;);
-      $(&quot;#passages&quot;).prepend(div, &quot;&lt;br&gt;&quot;);
-    } else {
-      div.prepend(&quot;&lt;hr&gt;&quot;);
-      $(&quot;#passages&quot;).append(&quot;&lt;br&gt;&quot;, div);
-    }
-  });
-}
-
-Macro.add(&quot;return-head&quot;, {
-  handler: function() {
-    addReturn(&quot;head&quot;, &quot;&quot;);
-  }
-});
-
-Macro.add(&quot;return-tail&quot;, {
-  handler: function() {
-    addReturn(&quot;tail&quot;, &quot;&quot;);
-  }
-});
-
-Macro.add(&quot;return-block&quot;, {
-  tags: [],
-  handler: function() {
-    addReturn(&quot;head&quot;, this.payload[0].contents);
-  }
-});
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="231" name="Init 2 Saves" tags="inclusion" position="2450,700" size="100,100">&lt;&lt;script&gt;&gt;
-
-/** Fix up the in-browser savegame title. */
-Config.passages.descriptions = function() {
-  let excerpt = this._excerpt || Passage.getExcerptFromText(this.text);
-
-  // remove noise
-  excerpt = excerpt.replace(/^Return to the game /, &#39;&#39;);
-
-  // add unlock count
-  const [unlocked, total] = countUnlocks();
-  if (unlocked === total) {
-    excerpt = `all\uD83D\uDD13 ${excerpt}`;
-  } else if (unlocked &gt; 0) {
-    // not reporting total, it&#39;s kind of a spoiler
-    excerpt = `${unlocked}\uD83D\uDD13 ${excerpt}`;
-  }
-
-  return excerpt;
-};
-
-/** Intercept file save and fix filename */
-{
-  // sugarcube&#39;s default save UI doesn&#39;t provide any way to change the
-  // savefile name, and all its methods are readonly. but it uses a saveAs()
-  // function that can be hooked. (the alternative is to re-implement or
-  // copy the entire save UI just to tweak the savefile name.)
-
-  const origSaveAs = saveAs;
-  saveAs = (blob, name, opt) =&gt; {
-
-    // add unlock count to name
-    const [unlocked, total] = countUnlocks();
-    if (unlocked === total) {
-      name = name.replace(/^nero-/, &quot;nero-all-&quot;);
-    } else if (unlocked &gt; 0) {
-      // not adding total, it&#39;s kind of a spoiler
-      name = name.replace(/^nero-/, `nero-${unlocked}u-`);
-    }
-
-    console.log(`saveAs ${name}`);
-    return origSaveAs(blob, name, opt);
-  };
-}
-
-const unlockVars = [
-  // drekkar 1f
-  &#39;interrogationEndingFreeze&#39;,
-  &#39;interrogationEndingShock&#39;,
-  &#39;interrogationEndingMild&#39;,
-  &#39;interrogationEndingRough&#39;,
-
-  // drekkar 2f
-  &#39;enthrallmentEnding&#39;,
-  &#39;enthrallmentLion&#39;,
-  &#39;extractionGentleEnd&#39;,
-  &#39;extractionForcefulEnd&#39;,
-
-  // drekkar escape
-  &#39;enthralmentIvexEnding&#39;,
-  &#39;extractionIvexEnding&#39;,
-  &#39;personalEnding&#39;,
-
-  // nero 1f
-  &#39;n9_brokenHarshBarbs&#39;,
-  &#39;n9_brokenHarshSmooth&#39;,
-  &#39;n9_brokenMildBarbs&#39;,
-  &#39;n9_brokenMildSmooth&#39;,
-  &#39;n9_cagedHarshBarbs&#39;,
-  &#39;n9_cagedHarshSmooth&#39;,
-  &#39;n9_cagedMildBarbs&#39;,
-  &#39;n9_cagedMildSmooth&#39;,
-  &#39;n9_tamedHarshBarbs&#39;,
-  &#39;n9_tamedHarshSmooth&#39;,
-  &#39;n9_tamedMildBarbs&#39;,
-  &#39;n9_tamedMildSmooth&#39;,
-
-  // nero 2f
-  &#39;n9_huntedHarshBarbs&#39;,
-  &#39;n9_huntedHarshSmooth&#39;,
-  &#39;n9_huntedMildBarbs&#39;,
-  &#39;n9_huntedMildSmooth&#39;,
-  &#39;n9_overwhelmedHarshBarbs&#39;,
-  &#39;n9_overwhelmedHarshSmooth&#39;,
-  &#39;n9_overwhelmedMildBarbs&#39;,
-  &#39;n9_overwhelmedMildSmooth&#39;,
-  &#39;n9_wreckedHarshBarbs&#39;,
-  &#39;n9_wreckedHarshSmooth&#39;,
-  &#39;n9_wreckedMildBarbs&#39;,
-  &#39;n9_wreckedMildSmooth&#39;,
-
-  // nero escape
-  // TBD
-];
-
-function countUnlocks() {
-  const n = unlockVars.filter(vn =&gt; State.variables[vn]).length;
-  return [n, unlockVars.length];
-}
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="232" name="Init 2 Sidebar" tags="inclusion" position="2550,700" size="100,100">&lt;&lt;script&gt;&gt;
-
-MagesTower.autoStow = () =&gt; {
-  if (document.body.offsetWidth &lt;= 768) {
-    UIBar.stow();
-  }
-};
-
-Macro.add(&quot;auto-stow&quot;, {
-  handler: MagesTower.autoStow,
-});
-
-&lt;&lt;/script&gt;&gt;
-
-&lt;&lt;nobr&gt;&gt;
-&lt;&lt;append &quot;#ui-bar-body&quot;&gt;&gt;
-  &lt;div id=ui-bar-footer&gt;
-    &lt;span&gt;
-      &lt;a class=footer-element target=&quot;_blank&quot;
-        href=&quot;https://www.patreon.com/sleth&quot;
-        &gt;&lt;img alt=&quot;Patreon&quot; src=&quot;images/pa_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
-
-      &lt;a class=footer-element target=&quot;_blank&quot;
-        href=&quot;https://twitter.com/slethwulf&quot;
-        &gt;&lt;img alt=&quot;Twitter&quot; src=&quot;images/tw_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
-
-      &lt;a class=footer-element target=&quot;_blank&quot;
-        href=&quot;https://www.furaffinity.net/user/sleth/&quot;
-        &gt;&lt;img alt=&quot;FurAffinity&quot; src=&quot;images/fa_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
-
-      &lt;a class=footer-element target=&quot;_blank&quot;
-        href=&quot;https://sleth.sofurry.com/&quot;
-        &gt;&lt;img alt=&quot;SoFurry&quot; src=&quot;images/sf_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
-    &lt;/span&gt;
-  &lt;/div&gt;
-&lt;&lt;/append&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="233" name="Init 2 State" tags="inclusion" position="2650,700" size="100,100">&lt;&lt;script&gt;&gt;
-const VT = window.VarTrace;
-
-/**
- * &lt;&lt;state-delete prefix1 ...&gt;&gt;
- * Deletes all state vars whose names start with any of the prefixes.
- */
-Macro.add(&quot;state-delete&quot;, {
-  handler: function() {
-    const prefixes = this.args;
-    const V = State.variables;
-    for (const key of Object.keys(V)) {
-      for (const p of prefixes) {
-        if (key.startsWith(p)) {
-          delete V[key];
-          break;
-        }
-      }
-    }
-  }
-});
-
-/**
- * &lt;&lt;state-save varName prefix1 ...&gt;&gt;
- * Saves into varName all state vars whose names start with any prefix.
- */
-Macro.add(&quot;state-save&quot;, {
-  handler: function() {
-    const dest = this.args[0];
-    const prefixes = this.args.slice(1);
-    const V = State.variables;
-    const save = {};
-    for (const key of Object.keys(V)) {
-      if (key === dest) continue;
-      for (const p of prefixes) {
-        if (key.startsWith(p)) {
-          save[key] = VT.untracedGet(key);
-          break;
-        }
-      }
-    }
-    V[dest] = save;
-  }
-});
-
-/**
- * &lt;&lt;state-load varName&gt;&gt;
- * Restore state vars from varName.
- */
-Macro.add(&quot;state-load&quot;, {
-  handler: function() {
-    const src = this.args[0];
-    const V = State.variables;
-    const saved = V[src];
-    if (saved == null || typeof saved !== &quot;object&quot;) {
-      console.warn(`no saved state named ${src}`);
-      return;
-    }
-    for (const key of Object.keys(saved)) {
-      V[key] = saved[key];
-    }
-  }
-});
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="234" name="Init 2 Templates" tags="inclusion" position="2750,700" size="100,100">&lt;&lt;script&gt;&gt;
-Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
-
-Template.add(&quot;cssArchive&quot;, `&lt;&lt;nobr&gt;&gt;
-  &lt;style&gt;
-    body, .var-info, #return-head, #return-tail {
-      /* meh, doesn&#39;t look that great without rebalancing all the colors */
-      /* background-color: #113; */
-    }
-    body {
-      /* color: #ddc; */
-    }
-  &lt;/style&gt;
-&lt;&lt;/nobr&gt;&gt;`);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="235" name="Init 2 Text Style" tags="inclusion" position="2850,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-em {
-  margin-right: 0.05em;
-}
-
-em em {
-  font-weight: bold;
-  margin-right: 0;
-  text-decoration: underline;
-}
-
-.sprite-q {
-  color: #6d6;
-}
-
-meta-text {
-  background-color: transparent;
-  color: #eaf54c;
-  display: inline;
-  font-style: italic;
-}
-meta-ending-bad {
-  color: #f44;
-  font-style: italic;
-  font-weight: bold;
-}
-meta-ending-good {
-  color: #6e6;
-  font-style: italic;
-  font-weight: bold;
-}
-
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-const MT = window.MagesTower || (window.MagesTower = {});
-
-function announceEnding(dest, type, vname, text) {
-  const V = State.variables;
-  if (!V[vname]) {
-    $(dest).append(
-      `&lt;meta-text&gt;${text} is now unlocked in the Archive.&lt;/meta-text&gt;`);
-    V[vname] = true;
-  } else {
-    $(dest).append(`&lt;meta-ending-${type}&gt;${text}&lt;/meta-ending-${type}&gt;`);
-  }
-}
-
-/**
- * &lt;&lt;meta-ending [good|bad] varname1 text1&gt;&gt;
- * Announce an ending. If it&#39;s locked, unlock it, and announce the unlocking.
- */
-Macro.add(&quot;meta-ending&quot;, {
-  handler: function() {
-    const [type, vn1, text1] = this.args;
-    const V = State.variables;
-    announceEnding(this.output, type, vn1, text1);
-  }
-});
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="236" name="Init 2 UI Style" tags="inclusion" position="2950,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-#debug-bar-hint {
-  display: none;
-}
-
-#passages hr {
-  border: 0;
-  border-top: 1px solid #555;
-  height: 1px;
-}
-#passages hr.archive-sep {
-  margin-left: 10%;
-  width: 80%;
-}
-#passages .ui-links-sep {
-  border-left: 2px solid #333;
-  margin: 0 .5em 0 .4em;
-  width: 0;
-}
-#passages .ui-title {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-#passages span.ui-title {
-  display: inline-block;
-}
-#passages .ui-title-more {
-  font-size: 0.8em;
-  margin-left: 0.5em;
-}
-#passages .ui-subtitle {
-  font-size: 1.1em;
-  font-weight: bold;
-  margin: 0.5em 0 0.5em 0;
-}
-
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;</tw-passagedata><tw-passagedata pid="237" name="Init 2 Var Info" tags="inclusion" position="3050,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-.revisit-here,
-.revisit-here * {
-  transition: none !important;
-}
-
-.var-info {
-  background-color: #111;
-  color: #999;
-  cursor: default;
-  font-size: 12px;
-  line-height: 14px;
-  margin-bottom: 14px;
-  margin-top: -54px;
-  padding: 12px 0;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-
-#return-head .var-info {
-  margin-bottom: 0;
-  position: static;
-}
-#return-head:has(.var-info) {
-  top: 36px;
-}
-
-.var-info &gt; label,
-.var-info-button-outer {
-  border: 1px solid transparent;
-  border-radius: 4px;
-  display: inline-block;
-  margin-bottom: 2px;
-  padding: 2px 4px;
-  text-align: center;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.var-info &gt; label {
-  color: #666;
-  cursor: pointer;
-  margin-left: -4px;
-  margin-right: 8px;
-}
-.var-info &gt; label:hover {
-  background-color: #222;
-}
-
-.var-info-hidden &gt; span:not(.var-info-passage) {
-  display: none;
-}
-.var-info-hidden:not(.var-info-to-do) &gt; label::after {
-  content: &quot;\2713&quot;; /* checkmark */
-  margin-left: .5em;
-}
-.var-info-hidden.var-info-to-do &gt; label::after {
-  content: &quot;\1f6a7&quot;; /* construction */
-}
-
-.var-info-separator {
-  margin: 0 16px;
-}
-
-.var-info-compute {
-  margin-right: 1em;
-}
-.var-info-compute:hover {
-  background-color: #333;
-}
-
-.var-info-button-outer {
-  min-width: 4em;
-  position: relative;
-}
-
-.var-info-passage {
-  user-select: all;
-  white-space: nowrap;
-}
-
-.var-info-notable {
-  font-weight: bold;
-}
-.var-info-ignored {
-  border: 1px dashed #882;
-  font-style: italic;
-  font-weight: normal;
-}
-.var-info-always {
-  font-weight: normal;
-  opacity: 0.6;
-}
-
-.var-info-to-do::after {
-  content: &quot;\1f6a7&quot;; /* construction */
-}
-.var-info-was-written::before {
-  content: &quot;\2191&quot;; /* up arrow */
-  padding-right: 1px;
-}
-.var-info-was-read::after {
-  content: &quot;\2193&quot;; /* down arrow */
-  padding-left: 1px;
-}
-.var-info-was-read.var-info-to-do::after {
-  content: &quot;\2193\1f6a7&quot;; /* down arrow, construction */
-  padding-left: 1px;
-}
-
-.var-info-was-deleted:not(.var-info-was-written) {
-  opacity: 0.5;
-  text-decoration: line-through;
-}
-
-.var-info-can-change {
-  border-color: #666;
-  cursor: pointer;
-}
-.var-info-can-change:hover {
-  border-color: #ccc;
-}
-
-.var-info-can-change.var-info-notable {
-  border-color: #996;
-}
-.var-info-can-change.var-info-notable:hover {
-  border-color: #ddc;
-}
-
-.var-info-boolean-false {
-  color: #c88;
-}
-.var-info-boolean-true {
-  color: #6a6;
-}
-
-.var-info-enum {
-  color: #88c;
-}
-.var-info-number .var-info-button-label,
-.var-info-enum .var-info-button-label {
-  pointer-events: none;
-}
-.var-info-button-left,
-.var-info-button-right {
-  border: 1px solid #666;
-  border-radius: 4px;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  width: 50%;
-}
-.var-info-button-left:hover,
-.var-info-button-right:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-.var-info-button-left {
-  border-right: 0;
-  left: 0;
-}
-.var-info-button-right {
-  border-left: 0;
-  right: 0;
-}
-
-.var-info-value {
-  background-color: #033;
-  display: inline-block;
-  max-width: 3em;
-  overflow-x: clip;
-}
-
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-const CV = window.ComputeVariants || (window.ComputeVariants = {});
-const EM = window.ErrorMessage || (window.ErrorMessage = {});
-const ET = window.EnumType || (window.EnumType = {});
-const Nero = window.Nero || (window.Nero = {});
-const VI = window.VarInfo || (window.VarInfo = {});
-const VT = window.VarTrace || (window.VarTrace = {});
-
-const alwaysConditional = new Set();
-const alwaysVars = new Map();
-const ignoreVars = new Set();
-let revisitTop = null;
-
-$(document).on(&quot;:passagestart&quot;, () =&gt; {
-  alwaysConditional.clear();
-  alwaysVars.clear();
-  ignoreVars.clear();
-});
-
-VI.revisitHere = fn =&gt; {
-  VT.stop();
-  revisitTop = $(&quot;html&quot;).prop(&quot;scrollTop&quot;);
-  const active = State.active.variables;
-  State.active.variables = clone(State.current.variables);
-  fn &amp;&amp; fn(active);
-  Engine.play(State.passage);
-  $(&quot;html&quot;).addClass(&quot;revisit-here&quot;);
-};
-Macro.add(&quot;revisit-here&quot;, {
-  handler: () =&gt; {
-    setTimeout(VI.revisitHere);
-  }
-});
-
-$(document).on(&quot;:passagestart&quot;, () =&gt; {
-  State.temporary.revisiting = revisitTop != null;
-});
-
-$(document).on(&quot;:passageend&quot;, () =&gt; {
-  $(&quot;html&quot;).removeClass(&quot;revisit-here&quot;);
-  if (revisitTop != null) {
-    $(&quot;html&quot;)[0].scroll(0, revisitTop);
-    revisitTop = null;
-  }
-});
-
-function withinInclude(ctx) {
-  for (; ctx != null; ctx = ctx.parent) {
-    if (ctx.displayName === &quot;include&quot;) return true;
-  }
-  return false;
-}
-
-function withinCondition(ctx) {
-  for (; ctx != null; ctx = ctx.parent) {
-    if (ctx.displayName === &quot;if&quot;) return true;
-    if (ctx.displayName === &quot;switch&quot;) return true;
-  }
-  return false;
-}
-
-/** &lt;&lt;vi-always varname value [reason]&gt;&gt; */
-Macro.add(&quot;vi-always&quot;, {
-  handler: function() {
-    const [vname, exp] = this.args;
-    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
-      EM.warn(`vi-always ${vname} is unnecessary`);
-    }
-    const actual = VT.untracedGet(vname);
-    if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
-      // force a traced read, so it can be toggled
-      const read = State.variables[vname];
-      EM.fail(`vi-always ${vname} ${exp}, but actual value is ${read}`);
-    }
-    alwaysVars.set(vname, exp);
-    if (withinCondition(this)) {
-      alwaysConditional.add(vname);
-    }
-  }
-});
-
-/** &lt;&lt;vi-always-if cond-var varname value [reason]&gt;&gt; */
-Macro.add(&quot;vi-always-if&quot;, {
-  handler: function() {
-    const [cond, vname, exp] = this.args;
-    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
-      EM.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
-    }
-    if (VT.untracedGet(cond)) {
-      const actual = VT.untracedGet(vname);
-      if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
-        // force a traced read, so it can be toggled
-        const read = State.variables[vname];
-        EM.fail(
-          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`);
-      }
-      alwaysVars.set(vname, exp);
-      if (withinCondition(this)) {
-        alwaysConditional.add(vname);
-      }
-    }
-  }
-});
-
-/** &lt;&lt;vi-ignore var1 ...&gt;&gt; */
-Macro.add(&quot;vi-ignore&quot;, {
-  handler: function() {
-    for (const vn of this.args) {
-      if (Nero.varIsConstant(vn)) {
-        EM.warn(`vi-ignore ${vn} is unnecessary`);
-      }
-      ignoreVars.add(vn);
-    }
-  }
-});
-
-/**
-  * &lt;&lt;vi-ignore-if var1 var2 ...&gt;&gt;
-  * If var1 is true, ignore remaining vars.
-  * If var2 is true, ignore remaining vars.
-  * etc.
-  */
-Macro.add(&quot;vi-ignore-if&quot;, {
-  handler: function() {
-    for (let p = 0; p &lt; this.args.length - 1; p++) {
-      const cvar = this.args[p];
-      if (Nero.varIsConstant(cvar)) {
-        EM.warn(`vi-ignore-if ${cvar} is unnecessary`);
-      }
-      if (VT.untracedGet(cvar)) {
-        this.args.slice(p + 1).forEach(vn =&gt; ignoreVars.add(vn));
-      }
-    }
-  }
-});
-
-const str = val =&gt; val == null ? String(val) : JSON.stringify(val);
-
-function varButton(vname) {
-  const V = VT.untracedVariables();
-  const v0 = State.current.variables;
-
-  const outer = $(&quot;&lt;span class=var-info-button-outer&gt;&quot;);
-  let tags = &quot;&quot;;
-
-  if (VT.ctx.wasDeleted.has(vname)) {
-    tags += &quot;[was-deleted]\n&quot;;
-    outer.addClass(&quot;var-info-was-deleted&quot;);
-  }
-  if (VT.ctx.wasRead.has(vname)) {
-    tags += &quot;[was-read]\n&quot;;
-    outer.addClass(&quot;var-info-was-read&quot;);
-  }
-  if (VT.ctx.wasSet.has(vname)) {
-    tags += &quot;[was-set]\n&quot;;
-    outer.addClass(&quot;var-info-was-written&quot;);
-  }
-
-  if (Nero.varIsNotable(vname)) {
-    tags += &quot;[section-notable]\n&quot;;
-    outer.addClass(&quot;var-info-notable&quot;);
-    if (ignoreVars.has(vname)) {
-      tags += &quot;[vi-ignore]\n&quot;;
-      outer.addClass(&quot;var-info-ignored&quot;);
-    } else if (alwaysVars.has(vname)) {
-      tags += `[vi-always ${str(alwaysVars.get(vname))}]\n`;
-      outer.addClass(&quot;var-info-always&quot;);
-    } else if (!VT.ctx.wasRead.has(vname)) {
-      tags += &quot;[to-do]\n&quot;;
-      outer.addClass(&quot;var-info-to-do&quot;);
-    }
-  } else if (Nero.varIsConstant(vname)) {
-    const exp = Nero.getVarConstant(vname);
-    tags += `[section-always ${str(exp)}]\n`;
-    outer.addClass(&quot;var-info-always&quot;);
-  }
-
-  const label = $(&quot;&lt;span class=var-info-button-label&gt;&quot;).appendTo(outer);
-
-  const jval = str(V[vname]);
-  if (VT.ctx.wasSet.has(vname)) {
-    const jval0 = str(v0[vname]);
-    outer.attr(&quot;title&quot;, `${tags}${vname}=${jval0} -&gt;\n${vname}=${jval}`);
-  } else {
-    outer.attr(&quot;title&quot;, `${tags}${vname}=${jval}`);
-  }
-
-  // assume undeclared is boolean
-  const vtype = ET.vars[vname] || (vname in V ? typeof V[vname] : &quot;boolean&quot;);
-
-  const enumList = ET.enums[vtype];
-  if (enumList != null) {
-    outer.addClass(&quot;var-info-enum&quot;);
-    const sym = enumList[V[vname] || 0];
-    const sameType = Object.values(ET.vars).filter(t =&gt; t === vtype).length;
-    label.text(sym != null ? sym : vname + &quot;=&quot; + jval);
-    const n = enumList.length;
-    if (VT.ctx.wasRead.has(vname)) {
-      const val0 = v0[vname] || 0;
-      if (0 &lt; val0) {
-        $(&quot;&lt;span&gt;&quot;)
-          .addClass(&quot;var-info-button-left var-info-can-change&quot;)
-          .appendTo(outer)
-          .on(&quot;click&quot;, () =&gt; {
-            VI.revisitHere(() =&gt; State.variables[vname] = val0 - 1);
-          });
-      }
-      if (val0 &lt; n - 1) {
-        $(&quot;&lt;span&gt;&quot;)
-          .addClass(&quot;var-info-button-right var-info-can-change&quot;)
-          .appendTo(outer)
-          .on(&quot;click&quot;, () =&gt; {
-            VI.revisitHere(() =&gt; State.variables[vname] = val0 + 1);
-          });
-      }
-    }
-    return outer;
-  }
-
-  // This doesn&#39;t work well with patience, need to fix something
-  if (false &amp;&amp; vtype === &quot;number&quot;) {
-    outer.addClass(&quot;var-info-number&quot;);
-    $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
-    label.append(&quot;=&quot;);
-    $(&quot;&lt;span class=var-info-value&gt;&quot;).text(jval).appendTo(label);
-    if (VT.ctx.wasRead.has(vname)) {
-      const val0 = v0[vname] || 0;
-      $(&quot;&lt;span&gt;&quot;)
-        .addClass(&quot;var-info-button-left var-info-can-change&quot;)
-        .appendTo(outer)
-        .on(&quot;click&quot;, () =&gt; {
-          VI.revisitHere(() =&gt; State.variables[vname] = val0 - 1);
-        });
-      $(&quot;&lt;span&gt;&quot;)
-        .addClass(&quot;var-info-button-right var-info-can-change&quot;)
-        .appendTo(outer)
-        .on(&quot;click&quot;, () =&gt; {
-          VI.revisitHere(() =&gt; State.variables[vname] = val0 + 1);
-        });
-    }
-    return outer;
-  }
-
-  if (vtype === &quot;boolean&quot;) {
-    outer.addClass(&quot;var-info-boolean-&quot; + (V[vname] ? &quot;true&quot; : &quot;false&quot;));
-    label.text(vname);
-    if (VT.ctx.wasRead.has(vname)) {
-      outer.addClass(&quot;var-info-can-change&quot;);
-      outer.on(&quot;click&quot;, () =&gt; {
-        let val = !v0[vname];
-        VI.revisitHere(() =&gt; {
-          State.variables[vname] = val;
-        });
-      });
-    }
-    return outer;
-  }
-
-  $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
-  label.append(&quot;=&quot;);
-  $(&quot;&lt;span class=var-info-value&gt;&quot;).text(jval).appendTo(label);
-  outer.addClass(&quot;var-info-misc&quot;);
-  return outer;
-}
-
-function initVarInfo() {
-  if (!setup.tester) return;
-
-  $(document).on(&quot;:passagestart&quot;, () =&gt; {
-    VT.start();
-  });
-
-  $(document).on(&quot;:passageend&quot;, () =&gt; {
-    VT.stop();
-
-    VT.ctx.wasTopRead.forEach(vn =&gt; {
-      if (alwaysVars.has(vn) &amp;&amp; !alwaysConditional.has(vn)) {
-        const c = alwaysVars.get(vn);
-        EM.warn(`vi-always ${vn} ${c}, but var was read`);
-      }
-      if (Nero.varIsConstant(vn)) {
-        const c = Nero.getVarConstant(vn);
-        EM.warn(`${vn} always ${c} in this section, but var was read`);
-      }
-    });
-
-    const notable = Nero.getNotable();
-    const to_do = notable.filter(
-      vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !VT.ctx.wasRead.has(vn));
-    if (to_do.length &amp;&amp; /[-/][F] /.test(State.passage)) {
-      EM.warn(`-F passage has unused notable vars: ${to_do}`);
-    }
-    
-    if (!setup.debug) return;
-
-    const touched = new Set();
-    VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
-    VT.ctx.wasSet.forEach(v =&gt; touched.add(v));
-    VT.ctx.wasDeleted.forEach(v =&gt; touched.add(v));
-    notable.forEach(f =&gt; touched.add(f));
-
-    $(&quot;.var-info&quot;).remove();
-    const outer = $(&quot;&lt;div class=var-info&gt;&quot;);
-
-    if ($(&quot;#return-head&quot;).length) {
-      outer.prependTo(&quot;#return-head&quot;);
-    } else {
-      outer.prependTo(&quot;#story&quot;);
-    }
-
-    let show = session.get(&quot;var-info-show&quot;);
-    outer.toggleClass(&quot;var-info-hidden&quot;, !show);
-
-    $(&quot;&lt;label&gt;var-info&lt;/label&gt;&quot;)
-      .appendTo(outer)
-      .click(() =&gt; {
-        show = !show;
-        session.set(&quot;var-info-show&quot;, show);
-        outer.toggleClass(&quot;var-info-hidden&quot;, !show);
-      });
-
-    $(&quot;&lt;span class=var-info-compute&gt;[compute variants]&lt;/span&gt;&quot;)
-      .appendTo(outer)
-      .click(() =&gt; CV.render());
-
-
-    if (touched.size) {
-      const el = $(&quot;&lt;span class=var-info-touched&gt;&quot;).appendTo(outer);
-      [...touched].sort().forEach(v =&gt; varButton(v).appendTo(el));
-    }
-
-    $(&quot;&lt;span class=var-info-separator&gt;&quot;).text(&quot;||&quot;).appendTo(outer);
-    $(&quot;&lt;span class=var-info-passage&gt;&quot;).text(State.passage).appendTo(outer);
-
-    if (to_do.length) outer.addClass(&quot;var-info-to-do&quot;);
-  });
-}
-
-initVarInfo();
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="238" name="Init 3 Passage Notes" tags="inclusion" position="2000,800" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-  #notes-button {
-    background-color: rgb(255, 255, 255, 0.2);
-    border: 1px solid transparent;
-    border-radius: 4px;
-    color: #000;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    gap: 4px;
-    opacity: 0.5;
-    padding: 2px 4px;
-    position: fixed;
-    right: 4px;
-    text-align: right;
-    top: 20px;
-    z-index: 20;
-  }
-  #notes-line-1 {
-    font-size: 18px;
-  }
-  #notes-button.notes-non-zero {
-    border-color: rgb(255, 255, 255, 0.4);
-  }
-  #notes-button.notes-non-zero #notes-count {
-    color: rgb(255, 255, 255, 0.8);
-    font-weight: bold;
-  }
-  #notes-button:hover {
-    background-color: #333;
-    border-color: #eee;
-    color: #eee;
-    opacity: 1;
-  }
-  #notes-line-2::before {
-    content: &quot;\e801\0020&quot;;
-    font-family: tme-fa-icons;
-  }
-  #notes-button.notes-non-zero #notes-line-2::before {
-    color: rgb(255, 255, 255, 0.8);
-  }
-  #notes-button.notes-has-note #notes-line-2::before {
-    content: &quot;\e800\0020&quot;;
-  }
-  #notes-button.notes-has-note:hover #notes-line-2::before {
-    color: #cc0;
-  }
-  .notes-buttons button {
-    background-color: #000;
-    border-color: #840;
-    border-radius: 8px;
-    color: #ffa000;
-    margin: .2rem .2rem .5rem 0;
-    padding: .3rem .4rem;
-  }
-  .notes-buttons button:disabled {
-    border-color: #444;
-    color: #444;
-  }
-  .notes-buttons button:hover:not(:disabled) {
-    background-color: #c67100;
-    color: #fff;
-  }
-  #notes-input,
-  #notes-conflict textarea {
-    border-radius: 8px;
-    height: 9em;
-    line-height: 1.4;
-    max-width: 100%;
-    min-width: 5em;
-    width: min(90%, 30em);
-  }
-  #notes-conflict {
-    display: none;
-  }
-  #notes-conflict.notes-has-conflict {
-    display: block;
-  }
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-const PN = window.PassageNotes || (window.PassageNotes = {});
-
-const persist = window.localStorage;
-const KEY = &quot;passage-notes-1&quot;;
-
-PN.isUsable = checkUsable();
-
-PN.selectedText = &quot;&quot;;
-
-PN.getFull = () =&gt; {
-  if (!PN.isUsable) return &quot;&quot;;
-  return persist.getItem(KEY) || &quot;&quot;;
-};
-
-PN.tryReplaceFull = (old, val) =&gt; {
-  if (!PN.isUsable) throw new Error(&quot;PassageNotes can&#39;t save data.&quot;);
-  const cur = (persist.getItem(KEY) || &quot;&quot;).trimEnd();
-  if (old.trimEnd() !== cur) return cur;
-  val = val.trimEnd();
-  persist.setItem(KEY, val);
-  updateStatus();
-  return val;
-};
-
-PN.cleanup = (text) =&gt; {
-  text = &quot;\n&quot; + text + &quot;\n&quot;;
-  const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
-  const before = parts.shift().trimEnd().slice(1);
-  const keep = [];
-  for (let i = 0; i &lt; parts.length; i += 2) {
-    const passage = parts[i].trim();
-    const body = parts[i+1].trimEnd();
-    if (body === &quot;&quot;) continue;
-    keep.push([passage, body]);
-  }
-  keep.sort((a, b) =&gt; a[0] &lt; b[0] ? -1 : a[0] &gt; b[0] ? +1 : 0);
-  let result = &quot;&quot;;
-  if (before !== &quot;&quot;) result += before + &quot;\n&quot;;
-  for (const [passage, body] of keep) {
-    result += `[passage ${passage}]\n${body}\n\n`;
-  }
-  return result;
-};
-
-function splitAt(passage, text) {
-  let nText = &quot;\n&quot; + text;
-  if (nText.slice(-1) !== &quot;\n&quot;) nText += &quot;\n&quot;;
-  const nHeader = `\n[passage ${passage}]\n`;
-  let pos = 0;
-  while ((pos = nText.indexOf(nHeader, pos)) &gt;= 0) {
-    let end = nText.indexOf(&quot;\n[passage &quot;, pos + 1);
-    if (end &lt; 0) end = nText.length;
-    return {
-      before: nText.slice(1, pos + 1),
-      header: nText.slice(pos + 1, pos + nHeader.length),
-      body: nText.slice(pos + nHeader.length, end + 1).trimEnd(),
-      after: nText.slice(end + 1).trimEnd(),
-    };
-  }
-  return {
-    before: nText.slice(1),
-    header: nHeader.slice(1),
-    body: &quot;&quot;,
-    after: &quot;&quot;,
-  };
-}
-
-PN.getOne = (passage) =&gt; {
-  if (!PN.isUsable) return &quot;&quot;;
-  const full = persist.getItem(KEY) || &quot;&quot;;
-  const split = splitAt(passage, full);
-  return split.body;
-};
-
-/** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
-PN.tryReplaceOne = (passage, old, val) =&gt; {
-  if (!PN.isUsable) throw new Error(&quot;PassageNotes can&#39;t save data&quot;);
-  const full = persist.getItem(KEY) || &quot;&quot;;
-  const sp = splitAt(passage, full);
-  if (sp.body !== old.trimEnd()) return sp.body;
-  const replace = /\S/.test(val) ? sp.header + val.trimEnd() +&quot;\n\n&quot; : &quot;&quot;;
-  const next = sp.before + replace + sp.after;
-  persist.setItem(KEY, next);
-  updateStatus();
-  return val.trimEnd();
-};
-
-// capture selection before click deselects it
-function pointerDown() {
-  PN.selectedText = getSelection().toString().trim();
-}
-
-function openPopup() {
-  const V = State.variables;
-  const T = State.temporary;
-  V.t_notesOrigin = State.passage;
-  if (T.notesVariant != null) {
-    V.t_notesOrigin += &quot; - &quot; + T.notesVariant;
-  }
-  const popupTitle = &quot;[[mt Passage Notes Popup]]&quot;.slice(2, -2);
-  const popupText = Story.get(popupTitle).text;
-  Dialog.setup(&quot;&quot;);
-  Dialog.wiki(popupText);
-  Dialog.open();
-}
-
-function renderButton() {
-  $(&quot;#notes-button&quot;).remove();
-  const outer = $(&quot;&lt;div&gt;&quot;)
-    .attr(&quot;id&quot;, &quot;notes-button&quot;)
-    .on(&quot;pointerdown&quot;, pointerDown)
-    .on(&quot;click&quot;, openPopup)
-    .appendTo(&quot;#story&quot;);
-  $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-1&quot;).text(&quot;notes&quot;).appendTo(outer);
-  const line2 = $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-2&quot;).appendTo(outer);
-  $(&quot;&lt;span&gt;&quot;).attr(&quot;id&quot;, &quot;notes-count&quot;).appendTo(line2);
-  updateStatus();
-}
-
-function getStats(passage) {
-  let count = 0;
-  let hasNoteHere = false;
-  if (!PN.isUsable) return { count, hasNoteHere };
-  const nFull = &quot;\n&quot; + (persist.getItem(KEY) || &quot;&quot;);
-  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
-    count += 1;
-    if (m[1] === passage) hasNoteHere = true;
-  }
-  return { count, hasNoteHere };
-}
-
-function updateStatus() {
-  const st = getStats(State.passage);
-  $(&quot;#notes-button&quot;).toggleClass(&quot;notes-has-note&quot;, st.hasNoteHere);
-  $(&quot;#notes-button&quot;).toggleClass(&quot;notes-non-zero&quot;, st.count &gt; 0);
-  $(&quot;#notes-count&quot;).text(`${st.count}`);
-}
-
-function checkUsable() {
-  try {
-    const r0 = String(Math.random());
-    const key = &quot;passage-notes-test&quot;;
-    persist.setItem(key, r0);
-    const r1 = persist.getItem(key);
-    persist.removeItem(key);
-    if (r0 === r1) return true;
-    console.error(&quot;PassageNotes not usable: roundtrip failed&quot;, [r0, r1]);
-  } catch (e) {
-    console.error(&quot;PassageNotes not usable: localStorage threw error&quot;, e);
-  }
-  return false;
-}
-
-$(document).on(&quot;:passagedisplay&quot;, renderButton);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="239" name="Init 3 Visited Passages" tags="inclusion" position="2175,800" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-@media(hover: none) {
-  a.vp-link-visited,
-  a.vp-link-visited:hover {
-    opacity: 0.8;
-    text-decoration: line-through;
-  }
-}
-@media(hover: hover) {
-  #passages:hover a.vp-link-visited {
-    opacity: 0.8;
-    text-decoration: line-through;
-  }
-}
-
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-&lt;&lt;script&gt;&gt;
-
-const VP = window.VisitedPassages || (window.VisitedPassages = {});
-const LZ = LZString;
-
-const persist = window.localStorage;
-const KEY = &quot;vp-1&quot;;
-const FLAG = &quot;vp-marks-enabled&quot;;
-
-let visited = new Set();
-let marksEnabled = false;
-
-VP.getMarksEnabled = () =&gt; marksEnabled;
-VP.setMarksEnabled = val =&gt; {
-  marksEnabled = val;
-  persist.setItem(FLAG, JSON.stringify(val));
-}
-
-VP.has = title =&gt; visited.has(title);
-
-VP.clear = () =&gt; {
-  visited = new Set();
-  persist.removeItem(KEY);
-};
-
-VP.add = title =&gt; {
-  visited.add(title);
-  save();
-};
-
-VP.remove = title =&gt; {
-  visited.delete(title);
-  save();
-};
-
-function load() {
-  visited = new Set();
-  const str = persist.getItem(KEY);
-  if (str != null) {
-    const json = LZ.decompressFromBase64(str);
-    if (json != null &amp;&amp; json !== &quot;&quot;) {
-      const list = JSON.parse(json);
-      visited = new Set(list);
-    }
-  }
-}
-
-function save() {
-  const list = Array.from(visited).sort();
-  const json = JSON.stringify(list);
-  const str = LZ.compressToBase64(json);
-  persist.setItem(KEY, str);
-}
-
-function initVisited() {
-  if (!setup.debug) return;
-  load();
-  marksEnabled = !!JSON.parse(persist.getItem(FLAG) || &quot;false&quot;);
-  $(document).on(&quot;:passageend&quot;, () =&gt; {
-    if (/^n/.test(State.passage)) VP.add(State.passage);
-    if (marksEnabled) {
-      $(&quot;#passages a[data-passage]&quot;).each((i, el) =&gt; {
-        const title = $(el).attr(&quot;data-passage&quot;);
-        if (/^n/.test(title) &amp;&amp; VP.has(title)) {
-          $(el).addClass(&quot;vp-link-visited&quot;);
-        }
-      });
-    }
-  });
-}
-
-initVisited();
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="Init 4 Drekkar" tags="inclusion" position="2450,850" size="100,100">&lt;&lt;script&gt;&gt;
-const V = variables();
-V.name = &quot;Drekkar&quot;;
-V.class = &quot;warrior&quot;;
-V.warrior = true;
-V.mage = false;
-
-V.rough_awakening = true;
-V.FurtherDefiance = false;
-
-V.CurArousal = 10;
-V.MaxArousal = 100;
-
-V.candleTimer = &quot;2s&quot;;
-V.window = false;
-V.office = false;
-V.door = false;
-
-V.lionwatch1 = 40;
-V.lionwatch2 = 20;
-V.lionwatch3 = 20;
-V.lionwatch4 = 40;
-V.lionwatch5 = 50;
-V.lionwatch6 = 60;
-V.lionwatch7 = 90;
-V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
-  V.lionwatch4 + V.lionwatch5 + V.lionwatch6 + V.lionwatch7;
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="241" name="Init 5b Nero Actions" tags="inclusion" position="2625,1150" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="227" name="Init Nero Actions" tags="inclusion" position="2625,1150" size="100,100">&lt;&lt;script&gt;&gt;
 const Nero = window.Nero || (window.Nero = {});
 const actionList = [];
 
@@ -8683,7 +6892,7 @@ Macro.add(&quot;actions-optional&quot;, {
   }
 });
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="242" name="Init 5b Nero Barbs" tags="inclusion" position="2725,1150" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="228" name="Init Nero Barbs" tags="inclusion" position="2725,1150" size="100,100">&lt;&lt;script&gt;&gt;
 const VT = window.VarTrace || (window.VarTrace = {});
 
 function announceBarbs(dest) {
@@ -8715,7 +6924,7 @@ Macro.add(&quot;barbs-announce&quot;, {
     }
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="243" name="Init 5b Nero Constraints" tags="inclusion" position="2825,1150" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="229" name="Init Nero Constraints" tags="inclusion" position="2825,1150" size="100,100">&lt;&lt;script&gt;&gt;
 const ET = window.EnumType || (window.EnumType = {});
 
 // - Passages are grouped into story sections by a prefix in their title.
@@ -9920,7 +8129,100 @@ Nero.checkConstraints = () =&gt; {
 };
 
 $(document).on(&quot;:passageend&quot;, Nero.checkConstraints);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="Init 5b Nero Glitch" tags="inclusion" position="2925,1150" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="230" name="Init Nero Ending" tags="inclusion" position="3250,1975" size="100,100">&lt;&lt;script&gt;&gt;
+
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+
+Nero.endings = {
+  broken: {
+    title: &quot;Challenge Ending: Broken&quot;,
+    wip: true,
+    passages: [
+      &quot;[[n0-F Broken WIP]]&quot;,
+    ]
+  },
+  caged_harsh: {
+    title: &quot;Bad Ending: Caged (Harsh)&quot;,
+    wip: true,
+    passages: [
+      &quot;[[n0-F Caged Harsh WIP]]&quot;
+    ]
+  },
+  caged_mild: {
+    title: &quot;Bad Ending: Caged (Mild)&quot;,
+    wip: true,
+    passages: [
+      &quot;[[n0-F Caged Mild WIP]]&quot;,
+    ]
+  },
+  tamed_harsh: {
+    title: &quot;Bad Ending: Tamed (Harsh)&quot;,
+    passages: [
+      &quot;[[n9a-F Tamed]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 1]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 2]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 3]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 4]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 5]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 6]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 7]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 8]]&quot;,
+      &quot;[[n9a-F Tamed Harsh 9]]&quot;,
+      &quot;[[n9a-F Tamed End 1]]&quot;,
+      &quot;[[n9a-F Tamed End 2]]&quot;,
+    ]
+  },
+  tamed_mild: {
+    title: &quot;Bad Ending: Tamed (Mild)&quot;,
+    passages: [
+      &quot;[[n9a-F Tamed]]&quot;,
+      &quot;[[n9a-F Tamed Mild 1]]&quot;,
+      &quot;[[n9a-F Tamed Mild 2]]&quot;,
+      &quot;[[n9a-F Tamed Mild 3]]&quot;,
+      &quot;[[n9a-F Tamed Mild 4]]&quot;,
+      &quot;[[n9a-F Tamed Mild 5]]&quot;,
+      &quot;[[n9a-F Tamed Mild 6]]&quot;,
+      &quot;[[n9a-F Tamed Mild 7]]&quot;,
+      &quot;[[n9a-F Tamed Mild 8]]&quot;,
+      &quot;[[n9a-F Tamed Mild 9]]&quot;,
+      &quot;[[n9a-F Tamed End 1]]&quot;,
+      &quot;[[n9a-F Tamed End 2]]&quot;,
+    ]
+  },
+};
+
+Nero.showEnding = info =&gt; {
+  const [name, barbOption, variant] = info;
+
+  const key = name + (variant == null ? &quot;&quot; : `_${variant}`);
+  State.temporary.notesVariant = key;
+
+  const V = State.variables;
+  const blank = V.n1_castEndgame;
+
+  const end = Nero.endings[key];
+  if (end == null) return `Unknown ending ${key}`;
+
+  const barbs = barbOption === &quot;barbs&quot;;
+  const barbsText = end.wip ? &quot;&quot;: barbs ? &quot; (Barbs)&quot; : &quot; (Smooth)&quot;;
+
+  // combine &quot;(a) (b)&quot; =&gt; &quot;(a, b)&quot;
+  const title = `${end.title}${barbsText}`.replace(/\)\s*\(/g, &quot;, &quot;);
+
+  let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
+  mkp += `&lt;div class=ui-title&gt;${title}&lt;/div&gt;\n`;
+  mkp += `&lt;hr class=archives-head&gt;\n`;
+  for (let i = 0; i &lt; end.passages.length; i++) {
+    if (i !== 0) mkp += &quot;&lt;hr class=archive-sep&gt;\n&quot;;
+    let vars = `$n1_barbs = ${barbs};`;
+    vars += `$n1_castEndgame = ${blank};`;
+    mkp += `&lt;&lt;arc-include ${end.passages[i]} &quot;${vars}&quot;&gt;&gt;\n`;
+  }
+  mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
+  return mkp;
+};
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="231" name="Init Nero Glitch" tags="inclusion" position="2925,1150" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 #glitch-1 {
   white-space: nowrap;
@@ -10086,668 +8388,7 @@ function glitchText(textNode, g, speed) {
   return g;
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="245" name="Init 5b Nero Misfire" tags="inclusion" position="2625,1250" size="100,100">&lt;&lt;script&gt;&gt;
-const VT = window.VarTrace || (window.VarTrace = {});
-
-/**
- * &lt;&lt;mf-please&gt;&gt;
- *   $text
- * &lt;&lt;mf-else&gt;&gt;
- *   $otherText
- * &lt;&lt;/mf-please&gt;&gt;
- *
- * Nero has said something with &quot;please&quot;, and the Sprite misinterprets
- * it as a command. Emits $text.
- * 
- * If Sprite is inactive or waiting for a password, emits $otherText instead.
- */
-Macro.add(&quot;mf-please&quot;, {
-  tags: [&quot;mf-else&quot;],
-  handler: function() {
-    const V = VT.untracedVariables();
-    let ready = true;
-    ready = ready &amp;&amp; V.n1_magicPhase &gt;= MP_wantDevice;
-    ready = ready &amp;&amp; V.n1_magicPhase &lt; MP_drained;
-    ready = ready &amp;&amp; MP_wantPass !== V.n1_magicPhase;
-    if (ready) {
-      $(this.output).wiki(this.payload[0].contents);
-    } else {
-      const pl = this.payload[1];
-      if (pl != null &amp;&amp; pl.name === &quot;mf-else&quot;) {
-        $(this.output).wiki(pl.contents);
-      }
-    }
-  }
-});
-
-/**
- * &lt;&lt;mf-pass $pw&gt;&gt;
- *   $moreText
- * &lt;&lt;mf-else&gt;&gt;
- *   $otherText
- * &lt;&lt;/mf-pass&gt;&gt;
- *
- * Nero has said something that the Sprite misinterprets as a password.
- * This starts that process, emits text from the Sprite, and then $moreText.
- * 
- * If Sprite is not asking for a password, emits $otherText instead.
- */
-Macro.add(&quot;mf-pass&quot;, {
-  tags: [&quot;mf-else&quot;],
-  handler: function() {
-    const [pw] = this.args;
-    const V = State.variables;
-    if (pw == null || pw === &quot;&quot; || MP_wantPass !== V.n1_magicPhase) {
-      const pl = this.payload[1];
-      if (pl != null &amp;&amp; pl.name === &quot;mf-else&quot;) {
-        $(this.output).wiki(pl.contents);
-      }
-      return;
-    }
-
-    // usually already set, except when debugging
-    V.n1_passTried || (V.n1_passTried = []);
-    V.n1_passTried.unshift(`#${pw}`);
-    V.n1_magicPhase = MP_onHold;
-    let mkp = `&lt;&lt;nobr&gt;&gt;`;
-    mkp += ` ?P`;
-    mkp += ` The Sprite ?sprSpeaks in Nero&#39;s ear.`;
-    mkp += ` &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right`;
-    mkp += ` either, ?master`;
-    mkp += ` Please hold while I double-check it, ?master&quot;&lt;/span&gt;`;
-    mkp += this.payload[0].contents;
-    mkp += ` &lt;&lt;/nobr&gt;&gt;`;
-    $(this.output).wiki(mkp);
-    // for gathering stats in random-walks
-    console.log(`mf-pass ${pw}`);
-  }
-});
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="246" name="Init 5b Nero No Loop" tags="inclusion" position="2725,1250" size="100,100">&lt;&lt;script&gt;&gt;
-/**
- * &lt;&lt;n1-no-loop link&gt;&gt;
- * 
- * For a link to a look passage, allow the link if it hasn&#39;t been
- * seen recently. Otherwise just show the text.
- * 
- * Seen recently is:
- * - within the last 10 passages,
- * - since the latest n1-patience passage.
- * 
- * Note, text gets re-substituted, unlike normal [[]] links.
- */
-Macro.add(&quot;n1-no-loop&quot;, {
-  handler: function() {
-    const link = this.args[0];
-    if (!link.isLink) throw new Error(&quot;Expected arg to be a link&quot;);
-    if (recentlyViewed(link.link)) {
-      $(this.output).wiki(link.text);
-    } else {
-      State.temporary.noLoopLink = link;
-      $(this.output).wiki(&quot;&lt;&lt;link _noLoopLink.text _noLoopLink.link&gt;&gt;&lt;&lt;/link&gt;&gt;&quot;);
-    }
-  }
-});
-
-function recentlyViewed(name) {
-  const limit = VarTrace.untracedGet(&quot;t_patiencePassage&quot;);
-  const max = 10;
-  for (let i = 1; i &lt; max; i++) {
-    const past = State.peek(-i);
-    if (past == null) return false;
-    if (past.title === limit) return false;
-    if (past.title === name) return true;
-  }
-  return false;
-}
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="247" name="Init 5b Nero Patience" tags="inclusion" position="2825,1250" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-.patience-debug:not(.patience-debug-show) &gt; :not(label) {
-  display: none;
-}
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-const VI = window.VarInfo || (window.VarInfo = {});
-const EM = window.ErrorMessage || (window.ErrorMessage = {});
-
-/**
- * &lt;&lt;n1-patience $looks $actions&gt;&gt;
- *     $firstText
- * &lt;&lt;n1-remind&gt;&gt;
- *     $remindText
- * &lt;&lt;n1-repeat&gt;&gt;
- *     $repeatText
- * &lt;&lt;n1-warn&gt;&gt;
- *     $warnText
- * &lt;&lt;n1-insist&gt;&gt;
- *     $insistText
- * &lt;&lt;/n1-patience&gt;&gt;
- *
- * Basically, player can do $looks-1 or $actions-1 before getting $warnText.
- * Once you see $warnText, the next look or action will get $insistText.
- *
- * Max looks/actions before warn is
- *    1 + ($looks - 2 + $actions - 2) === $looks + $actions - 3
- * Plus warn and insist, max times player is at node is
- *    $looks + $actions - 1
- *
- * If visiting this node for the first time
- *   - set look count and action count
- *   - emit $firstText
- * If returning from look or action, and either count is 0
- *   - emit $insistText
- *   - suppress looks and actions
- * If returning from look or action, and either count is now 1,
- *   - set both counts to 1
- *   - emit $warnText
- * If returning from look
- *   - emit $remindText
- * If returning from action
- *   - emit $repeatText
- */
-Macro.add(&quot;n1-patience&quot;, {
-  tags: [&quot;n1-remind&quot;, &quot;n1-repeat&quot;, &quot;n1-warn&quot;, &quot;n1-insist&quot;],
-  handler: function() {
-    let [looks, actions] = this.args;
-
-    let firstText, remindText, repeatText, warnText, insistText;
-    for (const p of this.payload) {
-      switch (p.name) {
-        case &quot;n1-patience&quot;: firstText = p.contents; break;
-        case &quot;n1-remind&quot;: remindText = p.contents; break;
-        case &quot;n1-repeat&quot;: repeatText = p.contents; break;
-        case &quot;n1-warn&quot;: warnText = p.contents; break;
-        case &quot;n1-insist&quot;: insistText = p.contents; break;
-        default: throw new Error(`bug n1-patience ${p.name}`);
-      }
-    }
-    if (looks &gt; 2) EM.assert(remindText != null, &quot;should have n1-remind&quot;);
-    if (looks &lt;= 2) EM.assert(remindText == null, &quot;should NOT have n1-remind&quot;);
-    if (actions &gt; 2) EM.assert(repeatText != null, &quot;should have n1-repeat&quot;);
-    if (actions &lt;= 2) EM.assert(repeatText == null, &quot;should NOT have n1-repeat&quot;);
-    if (actions === 1) EM.assert(looks === 1, &quot;actions === 1 should have looks === 1&quot;);
-    if (looks === 1) EM.assert(actions === 1, &quot;looks === 1 should have actions === 1&quot;);
-    if (actions === 1) EM.assert(firstText.trim() === &quot;&quot;, &quot;should have empty initial text&quot;);
-    EM.assert(warnText != null, &quot;should have n1-warn&quot;);
-    EM.assert(insistText != null, &quot;should have n1-insist&quot;);
-
-    const V = State.variables;
-    const T = State.temporary;
-    const here = State.passage;
-
-    if (V.t_patiencePassage !== here) {
-      // This is our first visit here
-      V.t_patienceLooks = looks;
-      V.t_patienceActions = actions;
-      V.t_patiencePassage = here;
-      V.t_patienceReturn = 0;
-    } else if (V.t_patienceReturn === 1) {
-      // Return from look
-      V.t_patienceLooks--;
-    } else if (V.t_patienceReturn === 2) {
-      // Return from action
-      V.t_patienceActions--;
-      V.t_didSomeAction = true;
-    }
-    T.patienceAdvanced = V.t_patienceReturn &gt; 0;
-
-    // lose patience immediately
-    if (V.t_patienceAccel &amp;&amp; T.patienceAdvanced) {
-      V.t_patienceLooks = 0;
-      V.t_patienceActions = 0;
-    }
-    V.t_patienceAccel = false;
-
-
-    T.patience = Math.min(V.t_patienceLooks, V.t_patienceActions);
-
-    // At warn state, only allow 1 more look or action.
-    if (T.patience === 1) {
-      V.t_patienceLooks = 1;
-      V.t_patienceActions = 1;
-    }
-
-    // set return links
-    V.t_afterLook = `[\[Do something else.|${here}][$t_patienceReturn = 1]]`;
-    V.t_afterLookContinue = `[\[Continue|${here}][$t_patienceReturn = 1]]`;
-    // V.t_afterActionAbort = `[\[Do something else.|${here}][$t_patienceReturn = 2]]`;
-    V.t_afterAction = `[\[Continue|${here}][$t_patienceReturn = 2]]`;
-    V.t_afterAttack = V.t_afterAction;
-
-    // Patience text
-    if (T.patience &lt;= 0) {
-      $(this.output).wiki(insistText);
-    } else if (T.patience === 1) {
-      $(this.output).wiki(warnText);
-    } else {
-      switch (V.t_patienceReturn) {
-        case 0: $(this.output).wiki(firstText); break;
-        case 1: $(this.output).wiki(remindText); break;
-        case 2: $(this.output).wiki(repeatText); break;
-        default: throw new Error(`bug: patienceReturn ${V.t_patienceReturn}`);
-      }
-    }
-    V.t_patienceReturn = 0;
-
-    if (setup.debug) {
-      let debug = !!session.get(&quot;patience-debug&quot;);
-      const outer = $(&quot;&lt;span class=patience-debug&gt;&quot;).appendTo(this.output)
-        .toggleClass(&quot;patience-debug-show&quot;, debug);
-      $(&quot;&lt;label&gt;&quot;).append(&quot; &amp;#x1f527;&quot;).appendTo(outer)
-        .click(() =&gt; {
-          debug = !debug;
-          session.set(&quot;patience-debug&quot;, debug);
-          outer.toggleClass(&quot;patience-debug-show&quot;, debug);
-        });
-      $(&quot;&lt;a&gt;&quot;).text(&quot;(reset)&quot;).appendTo(outer)
-        .click(() =&gt; VI.revisitHere(() =&gt; {
-          const V = State.variables;
-          V.t_patiencePassage = null;
-          V.n2_lustTextPos = null;
-        }));
-      if (looks &gt; 2) {
-        $(&quot;&lt;a&gt;&quot;).text(&quot; (remind)&quot;).appendTo(outer)
-          .click(() =&gt; VI.revisitHere(v0 =&gt; {
-            const V = State.variables;
-            V.t_patiencePassage = here;
-            V.t_patienceActions = Math.max(2, v0.t_patienceActions);
-            V.t_patienceLooks = Math.max(2, v0.t_patienceLooks);
-            V.t_patienceReturn = 1;
-            V.n2_lustTextPos = Math.min(v0.n2_lustTextPos || 0, 4);
-          }));
-      }
-      if (actions &gt; 2) {
-        $(&quot;&lt;a&gt;&quot;).text(&quot; (repeat)&quot;).appendTo(outer)
-          .click(() =&gt; VI.revisitHere(v0 =&gt; {
-            const V = State.variables;
-            V.t_patiencePassage = here;
-            V.t_patienceActions = Math.max(2, v0.t_patienceActions);
-            V.t_patienceLooks = Math.max(2, v0.t_patienceLooks);
-            V.t_patienceReturn = 2;
-            V.n2_lustTextPos = Math.min(v0.n2_lustTextPos || 0, 4);
-          }));
-      }
-      if (looks &gt; 1 &amp;&amp; actions &gt; 1) {
-        $(&quot;&lt;a&gt;&quot;).text(&quot; (warn)&quot;).appendTo(outer)
-          .click(() =&gt; VI.revisitHere(() =&gt; {
-            const V = State.variables;
-            V.t_patiencePassage = here;
-            V.t_patienceActions = 1;
-            V.t_patienceLooks = 1;
-            V.t_patienceReturn = -1;
-          }));
-      }
-      $(&quot;&lt;a&gt;&quot;).text(&quot; (insist)&quot;).appendTo(outer)
-        .click(() =&gt; VI.revisitHere(() =&gt; {
-          const V = State.variables;
-          V.t_patiencePassage = here;
-          V.t_patienceActions = 0;
-          V.t_patienceLooks = 0;
-          V.t_patienceReturn = -1;
-        }));
-    }
-  }
-});
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="248" name="Init 5b Nero Taming" tags="inclusion" position="2925,1250" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-.tame-word {
-  transition: all 2s ease-in;
-  background-color: #111;
-  color: #eee;
-}
-
-.tame-fade .tame-word,
-.tame-gone {
-  color: #888;
-  background-color: #888;
-}
-
-.tame-hide {
-  opacity: 0;
-  transition: all .5s ease-in;
-}
-
-.tame-unhide {
-  opacity: 1;
-}
-
-&lt;/style&gt;
-&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-
-// Note, &quot;resist&quot; words are allowed.
-const tameWords = [
-  &quot;attack&quot;,
-  &quot;defense&quot;,
-  &quot;defensive&quot;,
-  &quot;destroy&quot;,
-  &quot;escape&quot;,
-  &quot;escaping&quot;,
-  &quot;fight&quot;,
-  &quot;inhibit&quot;,
-  &quot;inhibiting&quot;,
-  &quot;inhibition&quot;,
-  &quot;pretend&quot;,
-  &quot;repressing&quot;,
-  &quot;repression&quot;,
-  &quot;win&quot;,
-];
-
-const tameRE = new RegExp(&quot;\\b(&quot; + tameWords.join(&quot;|&quot;) + &quot;)\\b&quot;, &quot;gi&quot;);
-
-Nero.startTaming = () =&gt; {
-  const passage = $(&quot;.passage&quot;);
-  tame(passage[0]);
-  setTimeout(() =&gt; passage.addClass(&quot;tame-fade&quot;), 200);
-};
-
-function tame(el) {
-  const oldKids = el.childNodes;
-  const newKids = [];
-  let replace = false;
-  for (const node of oldKids) {
-    if (node.nodeType === 1) {
-      tame(node);
-      newKids.push(node);
-    } else if (node.nodeType === 3) {
-      tameTextTo(newKids, node);
-      replace = true;
-    } else {
-      newKids.push(node);
-    }
-  }
-  if (replace) {
-    el.innerHTML = &quot;&quot;;
-    for (const kid of newKids) {
-      el.appendChild(kid);
-    }
-  }
-}
-
-function tameTextTo(list, node) {
-  const text = node.textContent;
-  const pieces = text.split(tameRE);
-  for (let i = 0; i &lt; pieces.length; i++) {
-    const piece = document.createTextNode(pieces[i]);
-    if (i % 2 === 0) {
-      list.push(piece);
-    } else {
-      const span = document.createElement(&quot;span&quot;);
-      span.className = &quot;tame-word&quot;;
-      span.appendChild(piece);
-      list.push(span);
-    }
-  }
-}
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="Init 5b Nero Templates" tags="inclusion" position="3025,1250" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-.master-quiet {
-  font-size: 18px;
-  font-weight: bold;
-  position: relative;
-  text-transform: uppercase;
-  top: 1px;
-}
-.nero-blank {
-  color: rgba(0, 0, 0, 0);
-  font-family: monospace;
-  user-select: none;
-}
-.nero-blank-c {
-  background-color: #333;
-  letter-spacing: 1px;
-  margin-right: 1px;
-}
-.nero-blank .glitch-c:not(#very#very#very#very) {
-  color: rgba(0, 0, 0, 0);
-}
-.sprite-squish {
-  letter-spacing: -1px;
-  margin-right: .1em;
-  word-spacing: -2px;
-}
-
-&lt;/style&gt;
-&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-
-Template.add(&quot;barbed&quot;, () =&gt; {
-  const V = State.variables;
-  return V.n1_glitched ? Nero.barbGlitch[0] :
-    V.n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;;
-});
-
-Template.add(&quot;blank&quot;,
-  &quot;&lt;span class=nero-blank&gt;&quot; +
-    &quot;&lt;span class=nero-blank-c&gt;&quot; +
-      &quot;Blank&quot;.split(&quot;&quot;).join(&quot;&lt;/span&gt;&lt;span class=nero-blank-c&gt;&quot;) +
-    &quot;&lt;/span&gt;&quot; +
-  &quot;&lt;/span&gt;&quot;);
-
-function master(p1, p2) {
-  const V = State.variables;
-  const name = V.n1_opportunist ? &quot;An Opportunist&quot; : &quot;Master&quot;;
-  if (V.n1_spriteQuiet) {
-    return `&lt;span class=master-quiet&gt;${name}${p2}&lt;/span&gt;`;
-  } else {
-    return `${name}${p1}`;
-  }
-}
-Template.add(&quot;master&quot;, () =&gt; master(&quot;.&quot;, &quot;!&quot;));
-Template.add(&quot;masterN&quot;, () =&gt; master(&quot;&quot;, &quot;&quot;));
-Template.add(&quot;masterQ&quot;, () =&gt; master(&quot;?&quot;, &quot;!?&quot;));
-Template.add(&quot;masterX&quot;, () =&gt; master(&quot;!&quot;, &quot;!&quot;));
-
-Template.add(&quot;spell&quot;, () =&gt; {
-  const V = State.variables;
-  if (V.n1_castEndgame) {
-    return &quot;his Endgame spell&quot;;
-  } else if (V.n1_castItch) {
-    return &quot;his Superb Itch&quot;;
-  } else if (V.n1_castOil) {
-    return &quot;his Oil of Dragons spell&quot;;
-  } else if (V.n1_castYounger) {
-    return &quot;Younger&#39;s Escape&quot;;
-  } else {
-    throw new Error(&quot;bug: cast an unknown spell?&quot;);
-  }
-});
-
-Template.add(&quot;crystals&quot;, () =&gt; {
-  const V = State.variables;
-  const U = VarTrace.untracedVariables();
-  if (V.n1_gravKnown) {
-    return &quot;Gravity Crystals&quot;;
-  } else if (V.n1_gravViewed) {
-    if (V.n2_struggleKnown || U.n2_free) {
-      return &quot;mysterious crystals&quot;;
-    } else {
-      return &quot;Dream Crystals&quot;;
-    }
-  } else {
-    return &quot;glowing crystals&quot;;
-  }
-});
-
-Template.add(&quot;globe&quot;, () =&gt; {
-  const V = state.variables;
-  return V.n1_globeViewed || V.n1_globeAskedHorny
-    ? &quot;snow globe&quot; : &quot;arcane globe&quot;;
-});
-
-Template.add(&quot;mirror&quot;, () =&gt; {
-  const V = State.variables;
-  if (V.n2_mirrorBroken) {
-    return &quot;broken mirror&quot;;
-  } else if (V.n1_mirrorMagicKnown) {
-    return &quot;magic mirror&quot;;
-  } else {
-    return &quot;hand mirror&quot;;
-  }
-});
-
-Template.add(&quot;sprSays&quot;, () =&gt; {
-  const V = State.variables;
-  return V.n1_spriteQuiet ? &quot;whispers&quot; : &quot;says&quot;;
-});
-Template.add(&quot;sprSpeaks&quot;, () =&gt; {
-  const V = State.variables;
-  return V.n1_spriteQuiet ? &quot;whispers&quot; : &quot;speaks&quot;;
-});
-
-Template.add(&quot;sprHoldStop&quot;, () =&gt; {
-  const V = State.variables;
-  let mkp = `?master`;
-  if (MP_onHold === V.n1_magicPhase) {
-    mkp += ` Also, ?sprBadPass`;
-    // cspell: disable-next-line
-    mkp += ` &lt;span class=nobr&gt;remai&amp;mdash;&lt;/span&gt;`;
-    mkp += ` Wait a minute, I dropped something, ?master`;
-    V.n1_magicPhase = MP_exitingHold;
-  }
-  return mkp;
-});
-
-Template.add(&quot;sprBadPass&quot;, () =&gt; {
-  const V = State.variables;
-
-  const pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
-  const tried = V.n1_passTried.length;
-
-  let mkp = `&lt;em&gt;${pw}&lt;/em&gt; `;
-  if (Nero.passSprite[pw] != null) {
-    mkp = `&lt;em&gt;${Nero.passSprite[pw]}&lt;/em&gt; `;
-  }
-
-  // oldPassword joke detracts from the tried joke
-  if (Nero.oldPasswords[pw] &amp;&amp; tried !== 2) {
-    mkp += Nero.oldPasswords[pw];
-  } else {
-    mkp += &quot;is not the correct password, ?master&quot;;
-  }
-
-  switch (tried) {
-    case 1:
-      mkp += &quot; You have two tries&quot;;
-      break;
-    case 2:
-      mkp += &quot; You have only one&quot;
-        + &quot; &lt;span class=sprite-squish&gt;look up the singular form of the word&quot;
-        + &quot; and use it here also remind me to figure out how to bind the&quot;
-        + &quot; Sprite to my voice in case I ever capture a mage who knows how&quot;
-        + &quot; to activate it&lt;/span&gt;&quot;;
-      break;
-    case 3:
-      mkp += &quot; You have zero tries&quot;;
-      break;
-    case 4:
-      mkp += &quot; You have no more tries&quot;;
-      break;
-    default:
-      throw new Error(`unexpected passTried ${V.n1_passTried.length}`);
-  }
-  return mkp;
-});
-
-Template.add(&quot;construction&quot;,
-  `&lt;h1&gt;&amp;#x1f6a7;Under Construction&amp;#x1f6a7;&lt;/h1&gt;`)
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="250" name="Init 5c Nero Ending" tags="inclusion" position="3250,1975" size="100,100">&lt;&lt;script&gt;&gt;
-
-const EM = window.ErrorMessage || (window.ErrorMessage = {});
-
-Nero.endings = {
-  broken: {
-    title: &quot;Challenge Ending: Broken&quot;,
-    wip: true,
-    passages: [
-      &quot;[[n0-F Broken WIP]]&quot;,
-    ]
-  },
-  caged_harsh: {
-    title: &quot;Bad Ending: Caged (Harsh)&quot;,
-    wip: true,
-    passages: [
-      &quot;[[n0-F Caged Harsh WIP]]&quot;
-    ]
-  },
-  caged_mild: {
-    title: &quot;Bad Ending: Caged (Mild)&quot;,
-    wip: true,
-    passages: [
-      &quot;[[n0-F Caged Mild WIP]]&quot;,
-    ]
-  },
-  tamed_harsh: {
-    title: &quot;Bad Ending: Tamed (Harsh)&quot;,
-    passages: [
-      &quot;[[n9a-F Tamed]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 1]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 2]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 3]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 4]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 5]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 6]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 7]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 8]]&quot;,
-      &quot;[[n9a-F Tamed Harsh 9]]&quot;,
-      &quot;[[n9a-F Tamed End 1]]&quot;,
-      &quot;[[n9a-F Tamed End 2]]&quot;,
-    ]
-  },
-  tamed_mild: {
-    title: &quot;Bad Ending: Tamed (Mild)&quot;,
-    passages: [
-      &quot;[[n9a-F Tamed]]&quot;,
-      &quot;[[n9a-F Tamed Mild 1]]&quot;,
-      &quot;[[n9a-F Tamed Mild 2]]&quot;,
-      &quot;[[n9a-F Tamed Mild 3]]&quot;,
-      &quot;[[n9a-F Tamed Mild 4]]&quot;,
-      &quot;[[n9a-F Tamed Mild 5]]&quot;,
-      &quot;[[n9a-F Tamed Mild 6]]&quot;,
-      &quot;[[n9a-F Tamed Mild 7]]&quot;,
-      &quot;[[n9a-F Tamed Mild 8]]&quot;,
-      &quot;[[n9a-F Tamed Mild 9]]&quot;,
-      &quot;[[n9a-F Tamed End 1]]&quot;,
-      &quot;[[n9a-F Tamed End 2]]&quot;,
-    ]
-  },
-};
-
-Nero.showEnding = info =&gt; {
-  const [name, barbOption, variant] = info;
-
-  const key = name + (variant == null ? &quot;&quot; : `_${variant}`);
-  State.temporary.notesVariant = key;
-
-  const V = State.variables;
-  const blank = V.n1_castEndgame;
-
-  const end = Nero.endings[key];
-  if (end == null) return `Unknown ending ${key}`;
-
-  const barbs = barbOption === &quot;barbs&quot;;
-  const barbsText = end.wip ? &quot;&quot;: barbs ? &quot; (Barbs)&quot; : &quot; (Smooth)&quot;;
-
-  // combine &quot;(a) (b)&quot; =&gt; &quot;(a, b)&quot;
-  const title = `${end.title}${barbsText}`.replace(/\)\s*\(/g, &quot;, &quot;);
-
-  let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
-  mkp += `&lt;div class=ui-title&gt;${title}&lt;/div&gt;\n`;
-  mkp += `&lt;hr class=archives-head&gt;\n`;
-  for (let i = 0; i &lt; end.passages.length; i++) {
-    if (i !== 0) mkp += &quot;&lt;hr class=archive-sep&gt;\n&quot;;
-    let vars = `$n1_barbs = ${barbs};`;
-    vars += `$n1_castEndgame = ${blank};`;
-    mkp += `&lt;&lt;arc-include ${end.passages[i]} &quot;${vars}&quot;&gt;&gt;\n`;
-  }
-  mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
-  return mkp;
-};
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="251" name="Init 5c Nero Keyword" tags="inclusion" position="3300,1200" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="232" name="Init Nero Keyword" tags="inclusion" position="3300,1200" size="100,100">&lt;&lt;script&gt;&gt;
 const EM = window.ErrorMessage || (window.ErrorMessage = {});
 
 Nero.keywords = {
@@ -11049,7 +8690,120 @@ $(document).on(&quot;:passageend&quot;, () =&gt; {
   }
 });
 
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="252" name="Init 5c Nero Password" tags="inclusion" position="3450,1000" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="233" name="Init Nero Misfire" tags="inclusion" position="2625,1250" size="100,100">&lt;&lt;script&gt;&gt;
+const VT = window.VarTrace || (window.VarTrace = {});
+
+/**
+ * &lt;&lt;mf-please&gt;&gt;
+ *   $text
+ * &lt;&lt;mf-else&gt;&gt;
+ *   $otherText
+ * &lt;&lt;/mf-please&gt;&gt;
+ *
+ * Nero has said something with &quot;please&quot;, and the Sprite misinterprets
+ * it as a command. Emits $text.
+ * 
+ * If Sprite is inactive or waiting for a password, emits $otherText instead.
+ */
+Macro.add(&quot;mf-please&quot;, {
+  tags: [&quot;mf-else&quot;],
+  handler: function() {
+    const V = VT.untracedVariables();
+    let ready = true;
+    ready = ready &amp;&amp; V.n1_magicPhase &gt;= MP_wantDevice;
+    ready = ready &amp;&amp; V.n1_magicPhase &lt; MP_drained;
+    ready = ready &amp;&amp; MP_wantPass !== V.n1_magicPhase;
+    if (ready) {
+      $(this.output).wiki(this.payload[0].contents);
+    } else {
+      const pl = this.payload[1];
+      if (pl != null &amp;&amp; pl.name === &quot;mf-else&quot;) {
+        $(this.output).wiki(pl.contents);
+      }
+    }
+  }
+});
+
+/**
+ * &lt;&lt;mf-pass $pw&gt;&gt;
+ *   $moreText
+ * &lt;&lt;mf-else&gt;&gt;
+ *   $otherText
+ * &lt;&lt;/mf-pass&gt;&gt;
+ *
+ * Nero has said something that the Sprite misinterprets as a password.
+ * This starts that process, emits text from the Sprite, and then $moreText.
+ * 
+ * If Sprite is not asking for a password, emits $otherText instead.
+ */
+Macro.add(&quot;mf-pass&quot;, {
+  tags: [&quot;mf-else&quot;],
+  handler: function() {
+    const [pw] = this.args;
+    const V = State.variables;
+    if (pw == null || pw === &quot;&quot; || MP_wantPass !== V.n1_magicPhase) {
+      const pl = this.payload[1];
+      if (pl != null &amp;&amp; pl.name === &quot;mf-else&quot;) {
+        $(this.output).wiki(pl.contents);
+      }
+      return;
+    }
+
+    // usually already set, except when debugging
+    V.n1_passTried || (V.n1_passTried = []);
+    V.n1_passTried.unshift(`#${pw}`);
+    V.n1_magicPhase = MP_onHold;
+    let mkp = `&lt;&lt;nobr&gt;&gt;`;
+    mkp += ` ?P`;
+    mkp += ` The Sprite ?sprSpeaks in Nero&#39;s ear.`;
+    mkp += ` &lt;span class=sprite-q&gt;&quot;Hm, that password doesn&#39;t sound right`;
+    mkp += ` either, ?master`;
+    mkp += ` Please hold while I double-check it, ?master&quot;&lt;/span&gt;`;
+    mkp += this.payload[0].contents;
+    mkp += ` &lt;&lt;/nobr&gt;&gt;`;
+    $(this.output).wiki(mkp);
+    // for gathering stats in random-walks
+    console.log(`mf-pass ${pw}`);
+  }
+});
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="234" name="Init Nero No Loop" tags="inclusion" position="2725,1250" size="100,100">&lt;&lt;script&gt;&gt;
+/**
+ * &lt;&lt;n1-no-loop link&gt;&gt;
+ * 
+ * For a link to a look passage, allow the link if it hasn&#39;t been
+ * seen recently. Otherwise just show the text.
+ * 
+ * Seen recently is:
+ * - within the last 10 passages,
+ * - since the latest n1-patience passage.
+ * 
+ * Note, text gets re-substituted, unlike normal [[]] links.
+ */
+Macro.add(&quot;n1-no-loop&quot;, {
+  handler: function() {
+    const link = this.args[0];
+    if (!link.isLink) throw new Error(&quot;Expected arg to be a link&quot;);
+    if (recentlyViewed(link.link)) {
+      $(this.output).wiki(link.text);
+    } else {
+      State.temporary.noLoopLink = link;
+      $(this.output).wiki(&quot;&lt;&lt;link _noLoopLink.text _noLoopLink.link&gt;&gt;&lt;&lt;/link&gt;&gt;&quot;);
+    }
+  }
+});
+
+function recentlyViewed(name) {
+  const limit = VarTrace.untracedGet(&quot;t_patiencePassage&quot;);
+  const max = 10;
+  for (let i = 1; i &lt; max; i++) {
+    const past = State.peek(-i);
+    if (past == null) return false;
+    if (past.title === limit) return false;
+    if (past.title === name) return true;
+  }
+  return false;
+}
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="235" name="Init Nero Password" tags="inclusion" position="3450,1000" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 #passages:not(.pw-debug-show) .pw-debug &gt; :not(label) {
   display: none;
 }
@@ -11283,6 +9037,2257 @@ Nero.passWanted = () =&gt; {
   if (MP_wantPass === V.n1_magicPhase) return true;
   return Nero.passAgainSoon();
 };
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="236" name="Init Nero Patience" tags="inclusion" position="2825,1250" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+.patience-debug:not(.patience-debug-show) &gt; :not(label) {
+  display: none;
+}
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+const VI = window.VarInfo || (window.VarInfo = {});
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+
+/**
+ * &lt;&lt;n1-patience $looks $actions&gt;&gt;
+ *     $firstText
+ * &lt;&lt;n1-remind&gt;&gt;
+ *     $remindText
+ * &lt;&lt;n1-repeat&gt;&gt;
+ *     $repeatText
+ * &lt;&lt;n1-warn&gt;&gt;
+ *     $warnText
+ * &lt;&lt;n1-insist&gt;&gt;
+ *     $insistText
+ * &lt;&lt;/n1-patience&gt;&gt;
+ *
+ * Basically, player can do $looks-1 or $actions-1 before getting $warnText.
+ * Once you see $warnText, the next look or action will get $insistText.
+ *
+ * Max looks/actions before warn is
+ *    1 + ($looks - 2 + $actions - 2) === $looks + $actions - 3
+ * Plus warn and insist, max times player is at node is
+ *    $looks + $actions - 1
+ *
+ * If visiting this node for the first time
+ *   - set look count and action count
+ *   - emit $firstText
+ * If returning from look or action, and either count is 0
+ *   - emit $insistText
+ *   - suppress looks and actions
+ * If returning from look or action, and either count is now 1,
+ *   - set both counts to 1
+ *   - emit $warnText
+ * If returning from look
+ *   - emit $remindText
+ * If returning from action
+ *   - emit $repeatText
+ */
+Macro.add(&quot;n1-patience&quot;, {
+  tags: [&quot;n1-remind&quot;, &quot;n1-repeat&quot;, &quot;n1-warn&quot;, &quot;n1-insist&quot;],
+  handler: function() {
+    let [looks, actions] = this.args;
+
+    let firstText, remindText, repeatText, warnText, insistText;
+    for (const p of this.payload) {
+      switch (p.name) {
+        case &quot;n1-patience&quot;: firstText = p.contents; break;
+        case &quot;n1-remind&quot;: remindText = p.contents; break;
+        case &quot;n1-repeat&quot;: repeatText = p.contents; break;
+        case &quot;n1-warn&quot;: warnText = p.contents; break;
+        case &quot;n1-insist&quot;: insistText = p.contents; break;
+        default: throw new Error(`bug n1-patience ${p.name}`);
+      }
+    }
+    if (looks &gt; 2) EM.assert(remindText != null, &quot;should have n1-remind&quot;);
+    if (looks &lt;= 2) EM.assert(remindText == null, &quot;should NOT have n1-remind&quot;);
+    if (actions &gt; 2) EM.assert(repeatText != null, &quot;should have n1-repeat&quot;);
+    if (actions &lt;= 2) EM.assert(repeatText == null, &quot;should NOT have n1-repeat&quot;);
+    if (actions === 1) EM.assert(looks === 1, &quot;actions === 1 should have looks === 1&quot;);
+    if (looks === 1) EM.assert(actions === 1, &quot;looks === 1 should have actions === 1&quot;);
+    if (actions === 1) EM.assert(firstText.trim() === &quot;&quot;, &quot;should have empty initial text&quot;);
+    EM.assert(warnText != null, &quot;should have n1-warn&quot;);
+    EM.assert(insistText != null, &quot;should have n1-insist&quot;);
+
+    const V = State.variables;
+    const T = State.temporary;
+    const here = State.passage;
+
+    if (V.t_patiencePassage !== here) {
+      // This is our first visit here
+      V.t_patienceLooks = looks;
+      V.t_patienceActions = actions;
+      V.t_patiencePassage = here;
+      V.t_patienceReturn = 0;
+    } else if (V.t_patienceReturn === 1) {
+      // Return from look
+      V.t_patienceLooks--;
+    } else if (V.t_patienceReturn === 2) {
+      // Return from action
+      V.t_patienceActions--;
+      V.t_didSomeAction = true;
+    }
+    T.patienceAdvanced = V.t_patienceReturn &gt; 0;
+
+    // lose patience immediately
+    if (V.t_patienceAccel &amp;&amp; T.patienceAdvanced) {
+      V.t_patienceLooks = 0;
+      V.t_patienceActions = 0;
+    }
+    V.t_patienceAccel = false;
+
+
+    T.patience = Math.min(V.t_patienceLooks, V.t_patienceActions);
+
+    // At warn state, only allow 1 more look or action.
+    if (T.patience === 1) {
+      V.t_patienceLooks = 1;
+      V.t_patienceActions = 1;
+    }
+
+    // set return links
+    V.t_afterLook = `[\[Do something else.|${here}][$t_patienceReturn = 1]]`;
+    V.t_afterLookContinue = `[\[Continue|${here}][$t_patienceReturn = 1]]`;
+    // V.t_afterActionAbort = `[\[Do something else.|${here}][$t_patienceReturn = 2]]`;
+    V.t_afterAction = `[\[Continue|${here}][$t_patienceReturn = 2]]`;
+    V.t_afterAttack = V.t_afterAction;
+
+    // Patience text
+    if (T.patience &lt;= 0) {
+      $(this.output).wiki(insistText);
+    } else if (T.patience === 1) {
+      $(this.output).wiki(warnText);
+    } else {
+      switch (V.t_patienceReturn) {
+        case 0: $(this.output).wiki(firstText); break;
+        case 1: $(this.output).wiki(remindText); break;
+        case 2: $(this.output).wiki(repeatText); break;
+        default: throw new Error(`bug: patienceReturn ${V.t_patienceReturn}`);
+      }
+    }
+    V.t_patienceReturn = 0;
+
+    if (setup.debug) {
+      let debug = !!session.get(&quot;patience-debug&quot;);
+      const outer = $(&quot;&lt;span class=patience-debug&gt;&quot;).appendTo(this.output)
+        .toggleClass(&quot;patience-debug-show&quot;, debug);
+      $(&quot;&lt;label&gt;&quot;).append(&quot; &amp;#x1f527;&quot;).appendTo(outer)
+        .click(() =&gt; {
+          debug = !debug;
+          session.set(&quot;patience-debug&quot;, debug);
+          outer.toggleClass(&quot;patience-debug-show&quot;, debug);
+        });
+      $(&quot;&lt;a&gt;&quot;).text(&quot;(reset)&quot;).appendTo(outer)
+        .click(() =&gt; VI.revisitHere(() =&gt; {
+          const V = State.variables;
+          V.t_patiencePassage = null;
+          V.n2_lustTextPos = null;
+        }));
+      if (looks &gt; 2) {
+        $(&quot;&lt;a&gt;&quot;).text(&quot; (remind)&quot;).appendTo(outer)
+          .click(() =&gt; VI.revisitHere(v0 =&gt; {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = Math.max(2, v0.t_patienceActions);
+            V.t_patienceLooks = Math.max(2, v0.t_patienceLooks);
+            V.t_patienceReturn = 1;
+            V.n2_lustTextPos = Math.min(v0.n2_lustTextPos || 0, 4);
+          }));
+      }
+      if (actions &gt; 2) {
+        $(&quot;&lt;a&gt;&quot;).text(&quot; (repeat)&quot;).appendTo(outer)
+          .click(() =&gt; VI.revisitHere(v0 =&gt; {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = Math.max(2, v0.t_patienceActions);
+            V.t_patienceLooks = Math.max(2, v0.t_patienceLooks);
+            V.t_patienceReturn = 2;
+            V.n2_lustTextPos = Math.min(v0.n2_lustTextPos || 0, 4);
+          }));
+      }
+      if (looks &gt; 1 &amp;&amp; actions &gt; 1) {
+        $(&quot;&lt;a&gt;&quot;).text(&quot; (warn)&quot;).appendTo(outer)
+          .click(() =&gt; VI.revisitHere(() =&gt; {
+            const V = State.variables;
+            V.t_patiencePassage = here;
+            V.t_patienceActions = 1;
+            V.t_patienceLooks = 1;
+            V.t_patienceReturn = -1;
+          }));
+      }
+      $(&quot;&lt;a&gt;&quot;).text(&quot; (insist)&quot;).appendTo(outer)
+        .click(() =&gt; VI.revisitHere(() =&gt; {
+          const V = State.variables;
+          V.t_patiencePassage = here;
+          V.t_patienceActions = 0;
+          V.t_patienceLooks = 0;
+          V.t_patienceReturn = -1;
+        }));
+    }
+  }
+});
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="237" name="Init Nero Taming" tags="inclusion" position="2925,1250" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+.tame-word {
+  transition: all 2s ease-in;
+  background-color: #111;
+  color: #eee;
+}
+
+.tame-fade .tame-word,
+.tame-gone {
+  color: #888;
+  background-color: #888;
+}
+
+.tame-hide {
+  opacity: 0;
+  transition: all .5s ease-in;
+}
+
+.tame-unhide {
+  opacity: 1;
+}
+
+&lt;/style&gt;
+&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+
+// Note, &quot;resist&quot; words are allowed.
+const tameWords = [
+  &quot;attack&quot;,
+  &quot;defense&quot;,
+  &quot;defensive&quot;,
+  &quot;destroy&quot;,
+  &quot;escape&quot;,
+  &quot;escaping&quot;,
+  &quot;fight&quot;,
+  &quot;inhibit&quot;,
+  &quot;inhibiting&quot;,
+  &quot;inhibition&quot;,
+  &quot;pretend&quot;,
+  &quot;repressing&quot;,
+  &quot;repression&quot;,
+  &quot;win&quot;,
+];
+
+const tameRE = new RegExp(&quot;\\b(&quot; + tameWords.join(&quot;|&quot;) + &quot;)\\b&quot;, &quot;gi&quot;);
+
+Nero.startTaming = () =&gt; {
+  const passage = $(&quot;.passage&quot;);
+  tame(passage[0]);
+  setTimeout(() =&gt; passage.addClass(&quot;tame-fade&quot;), 200);
+};
+
+function tame(el) {
+  const oldKids = el.childNodes;
+  const newKids = [];
+  let replace = false;
+  for (const node of oldKids) {
+    if (node.nodeType === 1) {
+      tame(node);
+      newKids.push(node);
+    } else if (node.nodeType === 3) {
+      tameTextTo(newKids, node);
+      replace = true;
+    } else {
+      newKids.push(node);
+    }
+  }
+  if (replace) {
+    el.innerHTML = &quot;&quot;;
+    for (const kid of newKids) {
+      el.appendChild(kid);
+    }
+  }
+}
+
+function tameTextTo(list, node) {
+  const text = node.textContent;
+  const pieces = text.split(tameRE);
+  for (let i = 0; i &lt; pieces.length; i++) {
+    const piece = document.createTextNode(pieces[i]);
+    if (i % 2 === 0) {
+      list.push(piece);
+    } else {
+      const span = document.createElement(&quot;span&quot;);
+      span.className = &quot;tame-word&quot;;
+      span.appendChild(piece);
+      list.push(span);
+    }
+  }
+}
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="238" name="Init Nero Templates" tags="inclusion" position="3025,1250" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+.master-quiet {
+  font-size: 18px;
+  font-weight: bold;
+  position: relative;
+  text-transform: uppercase;
+  top: 1px;
+}
+.nero-blank {
+  color: rgba(0, 0, 0, 0);
+  font-family: monospace;
+  user-select: none;
+}
+.nero-blank-c {
+  background-color: #333;
+  letter-spacing: 1px;
+  margin-right: 1px;
+}
+.nero-blank .glitch-c:not(#very#very#very#very) {
+  color: rgba(0, 0, 0, 0);
+}
+.sprite-squish {
+  letter-spacing: -1px;
+  margin-right: .1em;
+  word-spacing: -2px;
+}
+
+&lt;/style&gt;
+&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+
+Template.add(&quot;barbed&quot;, () =&gt; {
+  const V = State.variables;
+  return V.n1_glitched ? Nero.barbGlitch[0] :
+    V.n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;;
+});
+
+Template.add(&quot;blank&quot;,
+  &quot;&lt;span class=nero-blank&gt;&quot; +
+    &quot;&lt;span class=nero-blank-c&gt;&quot; +
+      &quot;Blank&quot;.split(&quot;&quot;).join(&quot;&lt;/span&gt;&lt;span class=nero-blank-c&gt;&quot;) +
+    &quot;&lt;/span&gt;&quot; +
+  &quot;&lt;/span&gt;&quot;);
+
+function master(p1, p2) {
+  const V = State.variables;
+  const name = V.n1_opportunist ? &quot;An Opportunist&quot; : &quot;Master&quot;;
+  if (V.n1_spriteQuiet) {
+    return `&lt;span class=master-quiet&gt;${name}${p2}&lt;/span&gt;`;
+  } else {
+    return `${name}${p1}`;
+  }
+}
+Template.add(&quot;master&quot;, () =&gt; master(&quot;.&quot;, &quot;!&quot;));
+Template.add(&quot;masterN&quot;, () =&gt; master(&quot;&quot;, &quot;&quot;));
+Template.add(&quot;masterQ&quot;, () =&gt; master(&quot;?&quot;, &quot;!?&quot;));
+Template.add(&quot;masterX&quot;, () =&gt; master(&quot;!&quot;, &quot;!&quot;));
+
+Template.add(&quot;spell&quot;, () =&gt; {
+  const V = State.variables;
+  if (V.n1_castEndgame) {
+    return &quot;his Endgame spell&quot;;
+  } else if (V.n1_castItch) {
+    return &quot;his Superb Itch&quot;;
+  } else if (V.n1_castOil) {
+    return &quot;his Oil of Dragons spell&quot;;
+  } else if (V.n1_castYounger) {
+    return &quot;Younger&#39;s Escape&quot;;
+  } else {
+    throw new Error(&quot;bug: cast an unknown spell?&quot;);
+  }
+});
+
+Template.add(&quot;crystals&quot;, () =&gt; {
+  const V = State.variables;
+  const U = VarTrace.untracedVariables();
+  if (V.n1_gravKnown) {
+    return &quot;Gravity Crystals&quot;;
+  } else if (V.n1_gravViewed) {
+    if (V.n2_struggleKnown || U.n2_free) {
+      return &quot;mysterious crystals&quot;;
+    } else {
+      return &quot;Dream Crystals&quot;;
+    }
+  } else {
+    return &quot;glowing crystals&quot;;
+  }
+});
+
+Template.add(&quot;globe&quot;, () =&gt; {
+  const V = state.variables;
+  return V.n1_globeViewed || V.n1_globeAskedHorny
+    ? &quot;snow globe&quot; : &quot;arcane globe&quot;;
+});
+
+Template.add(&quot;mirror&quot;, () =&gt; {
+  const V = State.variables;
+  if (V.n2_mirrorBroken) {
+    return &quot;broken mirror&quot;;
+  } else if (V.n1_mirrorMagicKnown) {
+    return &quot;magic mirror&quot;;
+  } else {
+    return &quot;hand mirror&quot;;
+  }
+});
+
+Template.add(&quot;sprSays&quot;, () =&gt; {
+  const V = State.variables;
+  return V.n1_spriteQuiet ? &quot;whispers&quot; : &quot;says&quot;;
+});
+Template.add(&quot;sprSpeaks&quot;, () =&gt; {
+  const V = State.variables;
+  return V.n1_spriteQuiet ? &quot;whispers&quot; : &quot;speaks&quot;;
+});
+
+Template.add(&quot;sprHoldStop&quot;, () =&gt; {
+  const V = State.variables;
+  let mkp = `?master`;
+  if (MP_onHold === V.n1_magicPhase) {
+    mkp += ` Also, ?sprBadPass`;
+    // cspell: disable-next-line
+    mkp += ` &lt;span class=nobr&gt;remai&amp;mdash;&lt;/span&gt;`;
+    mkp += ` Wait a minute, I dropped something, ?master`;
+    V.n1_magicPhase = MP_exitingHold;
+  }
+  return mkp;
+});
+
+Template.add(&quot;sprBadPass&quot;, () =&gt; {
+  const V = State.variables;
+
+  const pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
+  const tried = V.n1_passTried.length;
+
+  let mkp = `&lt;em&gt;${pw}&lt;/em&gt; `;
+  if (Nero.passSprite[pw] != null) {
+    mkp = `&lt;em&gt;${Nero.passSprite[pw]}&lt;/em&gt; `;
+  }
+
+  // oldPassword joke detracts from the tried joke
+  if (Nero.oldPasswords[pw] &amp;&amp; tried !== 2) {
+    mkp += Nero.oldPasswords[pw];
+  } else {
+    mkp += &quot;is not the correct password, ?master&quot;;
+  }
+
+  switch (tried) {
+    case 1:
+      mkp += &quot; You have two tries&quot;;
+      break;
+    case 2:
+      mkp += &quot; You have only one&quot;
+        + &quot; &lt;span class=sprite-squish&gt;look up the singular form of the word&quot;
+        + &quot; and use it here also remind me to figure out how to bind the&quot;
+        + &quot; Sprite to my voice in case I ever capture a mage who knows how&quot;
+        + &quot; to activate it&lt;/span&gt;&quot;;
+      break;
+    case 3:
+      mkp += &quot; You have zero tries&quot;;
+      break;
+    case 4:
+      mkp += &quot; You have no more tries&quot;;
+      break;
+    default:
+      throw new Error(`unexpected passTried ${V.n1_passTried.length}`);
+  }
+  return mkp;
+});
+
+Template.add(&quot;construction&quot;,
+  `&lt;h1&gt;&amp;#x1f6a7;Under Construction&amp;#x1f6a7;&lt;/h1&gt;`)
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="239" name="Init Passage Notes" tags="inclusion" position="2000,800" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+  #notes-button {
+    background-color: rgb(255, 255, 255, 0.2);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    gap: 4px;
+    opacity: 0.5;
+    padding: 2px 4px;
+    position: fixed;
+    right: 4px;
+    text-align: right;
+    top: 20px;
+    z-index: 20;
+  }
+  #notes-line-1 {
+    font-size: 18px;
+  }
+  #notes-button.notes-non-zero {
+    border-color: rgb(255, 255, 255, 0.4);
+  }
+  #notes-button.notes-non-zero #notes-count {
+    color: rgb(255, 255, 255, 0.8);
+    font-weight: bold;
+  }
+  #notes-button:hover {
+    background-color: #333;
+    border-color: #eee;
+    color: #eee;
+    opacity: 1;
+  }
+  #notes-line-2::before {
+    content: &quot;\e801\0020&quot;;
+    font-family: tme-fa-icons;
+  }
+  #notes-button.notes-non-zero #notes-line-2::before {
+    color: rgb(255, 255, 255, 0.8);
+  }
+  #notes-button.notes-has-note #notes-line-2::before {
+    content: &quot;\e800\0020&quot;;
+  }
+  #notes-button.notes-has-note:hover #notes-line-2::before {
+    color: #cc0;
+  }
+  .notes-buttons button {
+    background-color: #000;
+    border-color: #840;
+    border-radius: 8px;
+    color: #ffa000;
+    margin: .2rem .2rem .5rem 0;
+    padding: .3rem .4rem;
+  }
+  .notes-buttons button:disabled {
+    border-color: #444;
+    color: #444;
+  }
+  .notes-buttons button:hover:not(:disabled) {
+    background-color: #c67100;
+    color: #fff;
+  }
+  #notes-input,
+  #notes-conflict textarea {
+    border-radius: 8px;
+    height: 9em;
+    line-height: 1.4;
+    max-width: 100%;
+    min-width: 5em;
+    width: min(90%, 30em);
+  }
+  #notes-conflict {
+    display: none;
+  }
+  #notes-conflict.notes-has-conflict {
+    display: block;
+  }
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+const PN = window.PassageNotes || (window.PassageNotes = {});
+
+const persist = window.localStorage;
+const KEY = &quot;passage-notes-1&quot;;
+
+PN.isUsable = checkUsable();
+
+PN.selectedText = &quot;&quot;;
+
+PN.getFull = () =&gt; {
+  if (!PN.isUsable) return &quot;&quot;;
+  return persist.getItem(KEY) || &quot;&quot;;
+};
+
+PN.tryReplaceFull = (old, val) =&gt; {
+  if (!PN.isUsable) throw new Error(&quot;PassageNotes can&#39;t save data.&quot;);
+  const cur = (persist.getItem(KEY) || &quot;&quot;).trimEnd();
+  if (old.trimEnd() !== cur) return cur;
+  val = val.trimEnd();
+  persist.setItem(KEY, val);
+  updateStatus();
+  return val;
+};
+
+PN.cleanup = (text) =&gt; {
+  text = &quot;\n&quot; + text + &quot;\n&quot;;
+  const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
+  const before = parts.shift().trimEnd().slice(1);
+  const keep = [];
+  for (let i = 0; i &lt; parts.length; i += 2) {
+    const passage = parts[i].trim();
+    const body = parts[i+1].trimEnd();
+    if (body === &quot;&quot;) continue;
+    keep.push([passage, body]);
+  }
+  keep.sort((a, b) =&gt; a[0] &lt; b[0] ? -1 : a[0] &gt; b[0] ? +1 : 0);
+  let result = &quot;&quot;;
+  if (before !== &quot;&quot;) result += before + &quot;\n&quot;;
+  for (const [passage, body] of keep) {
+    result += `[passage ${passage}]\n${body}\n\n`;
+  }
+  return result;
+};
+
+function splitAt(passage, text) {
+  let nText = &quot;\n&quot; + text;
+  if (nText.slice(-1) !== &quot;\n&quot;) nText += &quot;\n&quot;;
+  const nHeader = `\n[passage ${passage}]\n`;
+  let pos = 0;
+  while ((pos = nText.indexOf(nHeader, pos)) &gt;= 0) {
+    let end = nText.indexOf(&quot;\n[passage &quot;, pos + 1);
+    if (end &lt; 0) end = nText.length;
+    return {
+      before: nText.slice(1, pos + 1),
+      header: nText.slice(pos + 1, pos + nHeader.length),
+      body: nText.slice(pos + nHeader.length, end + 1).trimEnd(),
+      after: nText.slice(end + 1).trimEnd(),
+    };
+  }
+  return {
+    before: nText.slice(1),
+    header: nHeader.slice(1),
+    body: &quot;&quot;,
+    after: &quot;&quot;,
+  };
+}
+
+PN.getOne = (passage) =&gt; {
+  if (!PN.isUsable) return &quot;&quot;;
+  const full = persist.getItem(KEY) || &quot;&quot;;
+  const split = splitAt(passage, full);
+  return split.body;
+};
+
+/** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
+PN.tryReplaceOne = (passage, old, val) =&gt; {
+  if (!PN.isUsable) throw new Error(&quot;PassageNotes can&#39;t save data&quot;);
+  const full = persist.getItem(KEY) || &quot;&quot;;
+  const sp = splitAt(passage, full);
+  if (sp.body !== old.trimEnd()) return sp.body;
+  const replace = /\S/.test(val) ? sp.header + val.trimEnd() +&quot;\n\n&quot; : &quot;&quot;;
+  const next = sp.before + replace + sp.after;
+  persist.setItem(KEY, next);
+  updateStatus();
+  return val.trimEnd();
+};
+
+// capture selection before click deselects it
+function pointerDown() {
+  PN.selectedText = getSelection().toString().trim();
+}
+
+function openPopup() {
+  const V = State.variables;
+  const T = State.temporary;
+  V.t_notesOrigin = State.passage;
+  if (T.notesVariant != null) {
+    V.t_notesOrigin += &quot; - &quot; + T.notesVariant;
+  }
+  const popupTitle = &quot;[[mt Passage Notes Popup]]&quot;.slice(2, -2);
+  const popupText = Story.get(popupTitle).text;
+  Dialog.setup(&quot;&quot;);
+  Dialog.wiki(popupText);
+  Dialog.open();
+}
+
+function renderButton() {
+  $(&quot;#notes-button&quot;).remove();
+  const outer = $(&quot;&lt;div&gt;&quot;)
+    .attr(&quot;id&quot;, &quot;notes-button&quot;)
+    .on(&quot;pointerdown&quot;, pointerDown)
+    .on(&quot;click&quot;, openPopup)
+    .appendTo(&quot;#story&quot;);
+  $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-1&quot;).text(&quot;notes&quot;).appendTo(outer);
+  const line2 = $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;notes-line-2&quot;).appendTo(outer);
+  $(&quot;&lt;span&gt;&quot;).attr(&quot;id&quot;, &quot;notes-count&quot;).appendTo(line2);
+  updateStatus();
+}
+
+function getStats(passage) {
+  let count = 0;
+  let hasNoteHere = false;
+  if (!PN.isUsable) return { count, hasNoteHere };
+  const nFull = &quot;\n&quot; + (persist.getItem(KEY) || &quot;&quot;);
+  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
+    count += 1;
+    if (m[1] === passage) hasNoteHere = true;
+  }
+  return { count, hasNoteHere };
+}
+
+function updateStatus() {
+  const st = getStats(State.passage);
+  $(&quot;#notes-button&quot;).toggleClass(&quot;notes-has-note&quot;, st.hasNoteHere);
+  $(&quot;#notes-button&quot;).toggleClass(&quot;notes-non-zero&quot;, st.count &gt; 0);
+  $(&quot;#notes-count&quot;).text(`${st.count}`);
+}
+
+function checkUsable() {
+  try {
+    const r0 = String(Math.random());
+    const key = &quot;passage-notes-test&quot;;
+    persist.setItem(key, r0);
+    const r1 = persist.getItem(key);
+    persist.removeItem(key);
+    if (r0 === r1) return true;
+    console.error(&quot;PassageNotes not usable: roundtrip failed&quot;, [r0, r1]);
+  } catch (e) {
+    console.error(&quot;PassageNotes not usable: localStorage threw error&quot;, e);
+  }
+  return false;
+}
+
+$(document).on(&quot;:passagedisplay&quot;, renderButton);
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="Init Random Once" tags="inclusion" position="2850,600" size="100,100">&lt;&lt;script&gt;&gt;
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const VI = window.VarInfo || (window.VarInfo = {});
+
+/**
+ * &lt;&lt;random-once seenVar&gt;&gt;
+ * &lt;&lt;ro-choice&gt;&gt;
+ *     text
+ * &lt;&lt;ro-choice $condition&gt;&gt;
+ *     text
+ * &lt;&lt;ro-choice false&gt;&gt;
+ *     placeholder for deleted choice, to avoid breaking saved games
+ * &lt;&lt;/random-once&gt;&gt;
+ */
+Macro.delete(&quot;random-once&quot;);
+Macro.add(&quot;random-once&quot;, {
+  tags: [&quot;ro-choice&quot;],
+  handler: function() {
+    const shown = this.args[0];
+    const valid = new Set();
+    for (let i = 1; i &lt; this.payload.length; i++) {
+      const cond = this.payload[i].args.full;
+      if (cond === &quot;&quot; || eval(cond)) {
+        valid.add(i);
+      }
+    }
+
+    if (valid.size === 0) {
+      EM.fail(`random-once should have valid choices`);
+      return;
+    }
+
+    const V = State.variables;
+    V[shown] || (V[shown] = []);
+
+    let avail = new Set(valid);
+    V[shown].forEach(i =&gt; avail.delete(i));
+
+    if (avail.size === 0) {
+      avail = new Set(valid);
+      if (avail.size &gt; 1 &amp;&amp; V[shown].length &gt; 0) {
+        avail.delete(V[shown][V[shown].length - 1]);
+      }
+      V[shown] = [];
+    }
+
+    const choice = MagesTower.pick(avail);
+    V[shown].push(choice);
+
+    $(this.output).wiki(this.payload[choice].contents);
+
+    if (setup.debug &amp;&amp; valid.size &gt; 1) {
+      const outer = $(&quot;&lt;span class=ro-debug&gt;&quot;).appendTo(this.output);
+      const val = V[shown];
+      outer.append(&quot;&amp;#x1f527;&quot;);
+      $(&quot;&lt;a&gt;&quot;).html(&quot;&amp;#x1f3b2;&quot;)
+        .appendTo(outer)
+        .click(() =&gt; VI.revisitHere(() =&gt; {
+          State.variables[shown] = val;
+        }));
+    }
+  }
+});
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="241" name="Init Random Walk" tags="inclusion" position="2950,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+  #random-walk {
+    top: max(5rem, 50vh - 5rem);
+    display: flex;
+    flex-direction: column;
+    font-size: 18px;
+    gap: 20px;
+    position: fixed;
+    right: 4px;
+    z-index: 20;
+  }
+
+  #random-walk a {
+    background-color: #fff;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    cursor: pointer;
+    opacity: 0.1;
+    padding: 2px 4px;
+    text-align: center;
+    user-select: none;
+  }
+
+  #random-walk a:hover {
+    background-color: #333;
+    border-color: #eee;
+    color: #eee;
+    opacity: 1;
+  }
+
+  .random-walk-chosen {
+    outline: 1px solid #9cc;
+  }
+
+  #rw-seek.rw-seeking {
+    background-color: #161;
+    color: #7f7;
+    opacity: 1;
+  }
+  #rw-seek.rw-seeking:hover {
+    background-color: #191;
+    color: #111;
+  }
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+const MT = window.MagesTower || (window.MagesTower = {});
+
+const visited = new Set();
+let lastPick = {};
+
+let ignoreFuture = false;
+
+MT.seeking = false;
+
+MT.forgetWalkHistory = () =&gt; {
+  visited.clear();
+  lastPick = {};
+};
+
+/** Random walk */
+function initRandomWalk() {
+  if (!setup.tester) return;
+
+  const idOf = el =&gt; {
+    const title = $(el).attr(&quot;data-passage&quot;);
+    const mtaCode = $(el).attr(&quot;data-mta-code&quot;);
+    return `${title}/${mtaCode}`;
+  };
+
+  function updateLabel() {
+    const el = $(&quot;#rw-forw&quot;);
+    if (State.length === State.size || ignoreFuture) {
+      el.text(&quot;rand&quot;);
+    } else {
+      el.text(&quot;forw&quot;);
+    }
+  }
+
+  const goRandom = () =&gt; {
+    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+    if (chosen.length === 1) {
+      ignoreFuture = false;
+      chosen.click();
+      return true;
+    }
+    chosen.removeClass(&quot;random-walk-chosen&quot;);
+
+    const here = State.passage;
+    const all = $(&quot;#passages a[data-passage]&quot;);
+    if (all.length === 0) return false;
+
+    let avail = all.filter((i, el) =&gt; !visited.has(idOf(el)));
+    let pick = null;
+    while (pick == null) {
+      if (avail.length === 0) {
+        all.each((i, el) =&gt; visited.delete(idOf(el)));
+        avail = all;
+        if (avail.length &gt; 1) {
+          // avoid picking the link we just picked
+          avail = avail.filter((i, el) =&gt; idOf(el) !== lastPick[here]);
+          if (avail.length === 0) avail = all;
+        }
+      }
+
+      // Should not use State.random()
+      const i = Math.floor(avail.length * Math.random());
+      pick = avail[i];
+      const code = $(pick).attr(&quot;data-mta-code&quot;);
+      const avoid = code != null &amp;&amp; code.includes(&quot;//avoid&quot;);
+      if (avoid &amp;&amp; Math.random() &lt; .9) {
+        const title = $(pick).attr(&quot;data-passage&quot;);
+        console.log(`avoiding ${title}`);
+        pick = null;
+        avail.splice(i, 1);
+      }
+    }
+    $(pick).addClass(&quot;random-walk-chosen&quot;);
+    pick.scrollIntoView(false);
+    lastPick[here] = idOf(pick);
+    visited.add(lastPick[here]);
+    return true;
+  };
+
+  const goBack = () =&gt; {
+    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+    if (chosen.length &gt; 0) {
+      ignoreFuture = true;
+      chosen.removeClass(&quot;random-walk-chosen&quot;);
+      updateLabel();
+    } else {
+      ignoreFuture = false;
+      Engine.backward();
+    }
+  };
+
+  const goForward = () =&gt; {
+    if (State.length === State.size || ignoreFuture) {
+      goRandom();
+      return;
+    }
+    ignoreFuture = false;
+
+    const next = State.history[State.length].title;
+    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+    if (chosen.length === 1) {
+      if (chosen.attr(&quot;data-passage&quot;) === next) {
+        Engine.forward();
+      } else {
+        goRandom();
+      }
+      return;
+    }
+    chosen.removeClass(&quot;random-walk-chosen&quot;);
+    const links = $(&quot;#passages a[data-passage]&quot;)
+      .filter((i, el) =&gt; $(el).attr(&quot;data-passage&quot;) === next);
+    if (links.length === 1) {
+      links.addClass(&quot;random-walk-chosen&quot;);
+      links[0].scrollIntoView(false);
+    } else {
+      Engine.forward();
+    }
+  };
+
+  let seekForce = false;
+  let seekLoop = 0;
+  let seekLooping = false;
+  let seekMoved = false;
+  let seekPath = null;
+  let seekDoneFn = null;
+
+  const seekDelay = 50;
+  const maxLoop = 5;
+
+  const seekToggle = () =&gt; {
+    if (MT.seeking) {
+      seekStop();
+    } else {
+      seekStart();
+    }
+  };
+
+  const seekStart = MagesTower.seekStart = (path, doneFn, force) =&gt; {
+    $(&quot;#rw-seek&quot;).addClass(&quot;rw-seeking&quot;);
+    MT.seeking = true;
+    seekForce = force;
+    seekMoved = false;
+    seekPath = path;
+    seekDoneFn = doneFn;
+    setTimeout(seekNext, seekDelay);
+  };
+
+  const seekStop = () =&gt; {
+    MT.seeking = false;
+    seekPath = null;
+    seekDoneFn = null;
+    $(&quot;#rw-seek&quot;).removeClass(&quot;rw-seeking&quot;);
+  };
+
+  const seekNext = () =&gt; {
+    const here = State.passage;
+
+    if (!MT.seeking) return seekStop();
+    if (seekMoved &amp;&amp; here === Config.passages.start) return seekStop();
+
+    let hasProblem = false;
+    hasProblem = hasProblem || ErrorMessage.hasFails;
+    hasProblem = hasProblem || ErrorMessage.hasWarnings;
+
+    let hasTodo = /\bX[X]X\b|\bTO[D]O\b/.test($(&quot;.passage&quot;).text());
+
+    const isDraft = /[-/][DPS] /.test(here);
+    const done = tags().includes(&quot;done&quot;);
+
+    if (seekMoved) {
+      if (hasProblem) {
+        console.log(&#39;stopping on problem&#39;);
+        return seekStop();
+      }
+      if (!seekForce &amp;&amp; (hasTodo || isDraft)) {
+        console.log(&#39;stopping on to-do&#39;);
+        return seekStop();
+      }
+      if (done) {
+        const steps = MagesTower.log.length;
+        const V = State.variables;
+        console.log(`done after ${steps} steps at ${here}`);
+        const mp = EnumType.symbolic(&#39;MagicPhase&#39;, V.n1_magicPhase);
+        const mpl = EnumType.symbolic(&#39;MagicPhase&#39;, V.n2_magicPhaseLost);
+        console.log(`- magicPhase ${mp}, ${mpl}`);
+        if (seekLoop &lt;= 0) {
+          if (seekLooping) {
+            seekLooping = false;
+            console.log(&quot;stop at max loops&quot;);
+          }
+          return seekStop();
+        }
+      }
+    }
+
+    if (!seekMoved) {
+      if (hasTodo || isDraft) {
+        seekForce = true;
+      }
+      if (done) {
+        seekLoop = maxLoop;
+        seekLooping = true;
+      }
+    }
+
+    if (done) {
+      seekLoop--;
+      if (seekLoop &lt;= 0) {
+        seekLooping = false;
+        console.log(&quot;stop at max loops&quot;);
+        return seekStop();
+      }
+      MT.forgetWalkHistory();
+      Engine.play(&quot;Bound&quot;);
+      seekForce = false;
+      const neroStart = [
+        { t: &quot;Choose Character&quot; },
+        { t: &quot;n1a-F Nero Start&quot; },
+      ];
+      MT.seekStart(neroStart, () =&gt; {
+        MT.seekStart();
+      });
+      return;
+    }
+
+    const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+    if (chosen.length === 1) {
+      seekMoved = true;
+      chosen[0].click();
+      setTimeout(seekNext, seekDelay);
+      return;
+    }
+
+    if (seekLoop &amp;&amp; seekPath != null &amp;&amp; seekPath.length === 0) {
+      seekPath = null;
+    }
+
+    if (seekPath != null) {
+      while (seekPath.length &amp;&amp; seekPath[0].t == null) {
+        seekPath.shift();
+      }
+      if (seekPath.length === 0) {
+        const steps = MagesTower.log.length;
+        console.log(`path end after ${steps} steps at ${here}`);
+        if (seekDoneFn != null) setTimeout(seekDoneFn);
+        seekStop();
+        return;
+      }
+      const next = seekPath[0];
+      const links = $(&quot;#story a[data-passage]&quot;);
+      const isStep = (el, step) =&gt; {
+        const title = el.getAttribute(&quot;data-passage&quot;);
+        const code = el.getAttribute(&quot;data-mta-code&quot;) || null;
+        return title === step.t &amp;&amp; code === (step.code || null);
+      };
+      for (const link of links) {
+        if (isStep(link, next)) {
+          seekPath.shift();
+          $(link).addClass(&quot;random-walk-chosen&quot;);
+          setTimeout(seekNext, 100);
+          return;
+        }
+      }
+
+      let msg = `Broken path: ${JSON.stringify(next)}`;
+      ErrorMessage.warn(msg);
+      return seekStop();
+    }
+
+    if (goRandom()) {
+      setTimeout(seekNext, seekDelay);
+      return;
+    }
+    
+    seekStop();
+  };
+
+  $(() =&gt; {
+    $(&quot;#random-walk&quot;).remove();
+    const outer = $(&quot;&lt;div&gt;&quot;)
+      .attr(&quot;id&quot;, &quot;random-walk&quot;)
+      .appendTo(&quot;#story&quot;);
+    $(&quot;&lt;a&gt;&quot;)
+      .attr(&quot;title&quot;, &quot;&lt;ctrl-comma&gt; backward&quot;)
+      .text(&quot;back&quot;)
+      .click(goBack)
+      .appendTo(outer);
+    if (setup.debug) {
+      $(&quot;&lt;a id=rw-seek&gt;&quot;)
+        .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; seek&quot;)
+        .toggleClass(&quot;rw-seeking&quot;, MT.seeking)
+        .text(&quot;seek&quot;)
+        .click(seekToggle)
+        .appendTo(outer);
+    }
+    $(&quot;&lt;a id=rw-forw&gt;&quot;)
+      .attr(&quot;title&quot;, &quot;&lt;ctrl-period&gt; forward or random&quot;)
+      .text(&quot;forw&quot;)
+      .click(goForward)
+      .appendTo(outer);
+    updateLabel();
+  });
+
+  // ctrl-comma doesn&#39;t generate keypress events
+  $(document).on(&quot;keydown&quot;, ev =&gt; {
+    if (!ev.ctrlKey) return;
+    const focus = document.activeElement;
+    const tag = focus != null ? focus.tagName : &quot;&quot;;
+    if (/^(textarea|input|select)$/i.test(tag)) return;
+    if (ev.key === &quot;,&quot;) return goBack();
+    if (ev.key === &quot;.&quot;) return goForward();
+    if (ev.key === &quot;\\&quot;) return seekToggle();
+  });
+
+  $(document).on(&quot;click&quot;, ev =&gt; {
+    if (!MT.seeking &amp;&amp; ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
+      const chosen = $(&quot;#passages .random-walk-chosen&quot;);
+      if (chosen.length) {
+        chosen.removeClass(&quot;random-walk-chosen&quot;);
+        ignoreFuture = true;
+        updateLabel();
+      }
+    }
+  });
+
+  $(document).on(&quot;:passagestart&quot;, () =&gt; {
+    updateLabel();
+  });
+}
+
+initRandomWalk();
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="242" name="Init Randomness" tags="inclusion" position="3050,600" size="100,100">&lt;&lt;script&gt;&gt;
+const MT = window.MagesTower || (window.MagesTower = {});
+
+/**
+ * Pick arbitrary item from list or Set, based on State.random()
+ * SugarCube&#39;s Array.random(), either(), etc, use Math.random().
+ */
+MT.pick = list =&gt; {
+  if (list instanceof Set) list = Array.from(list);
+  const n = Math.floor(list.length * State.random());
+  return list[n];
+};
+
+function getSeed() {
+  const m = /[?&amp;]seed=(\d+)/.exec(location.search);
+  if (m != null) return m[1];
+  return String(Math.random()).slice(2);
+}
+
+function initRandom() {
+  const seed = getSeed();
+  State.prng.init(seed);
+  const state = session.get(&quot;state&quot;);
+}
+
+// initRandom();
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="243" name="Init Return Sticky" tags="inclusion" position="3150,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+#return-head,
+#return-tail {
+  background-color: #111;
+  line-height: 1.75;
+  position: sticky;
+  z-index: 10;
+}
+
+#return-head {
+  margin-top: -1em;
+  padding-top: 1em;
+  top: 0;
+}
+
+#return-tail {
+  padding-bottom: 1em;
+  bottom: 0;
+}
+
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+function addReturn(where, contents) {
+  ErrorMessage.assert(
+    tags().includes(&quot;noreturn&quot;),
+    &quot;tags should have noreturn&quot;);
+
+  $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
+    MagesTower.autoStow();
+    $(`#return-${where}`).remove();
+    const div = $(`&lt;div id=return-${where}&gt;`)
+      .wiki(`&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;`)
+      .wiki(contents);
+    if (where === &quot;head&quot;) {
+      div.append(&quot;&lt;hr&gt;&quot;);
+      $(&quot;#passages&quot;).prepend(div, &quot;&lt;br&gt;&quot;);
+    } else {
+      div.prepend(&quot;&lt;hr&gt;&quot;);
+      $(&quot;#passages&quot;).append(&quot;&lt;br&gt;&quot;, div);
+    }
+  });
+}
+
+Macro.add(&quot;return-head&quot;, {
+  handler: function() {
+    addReturn(&quot;head&quot;, &quot;&quot;);
+  }
+});
+
+Macro.add(&quot;return-tail&quot;, {
+  handler: function() {
+    addReturn(&quot;tail&quot;, &quot;&quot;);
+  }
+});
+
+Macro.add(&quot;return-block&quot;, {
+  tags: [],
+  handler: function() {
+    addReturn(&quot;head&quot;, this.payload[0].contents);
+  }
+});
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="Init Saves" tags="inclusion" position="2450,700" size="100,100">&lt;&lt;script&gt;&gt;
+
+/** Fix up the in-browser savegame title. */
+Config.passages.descriptions = function() {
+  let excerpt = this._excerpt || Passage.getExcerptFromText(this.text);
+
+  // remove noise
+  excerpt = excerpt.replace(/^Return to the game /, &#39;&#39;);
+
+  // add unlock count
+  const [unlocked, total] = countUnlocks();
+  if (unlocked === total) {
+    excerpt = `all\uD83D\uDD13 ${excerpt}`;
+  } else if (unlocked &gt; 0) {
+    // not reporting total, it&#39;s kind of a spoiler
+    excerpt = `${unlocked}\uD83D\uDD13 ${excerpt}`;
+  }
+
+  return excerpt;
+};
+
+/** Intercept file save and fix filename */
+{
+  // sugarcube&#39;s default save UI doesn&#39;t provide any way to change the
+  // savefile name, and all its methods are readonly. but it uses a saveAs()
+  // function that can be hooked. (the alternative is to re-implement or
+  // copy the entire save UI just to tweak the savefile name.)
+
+  const origSaveAs = saveAs;
+  saveAs = (blob, name, opt) =&gt; {
+
+    // add unlock count to name
+    const [unlocked, total] = countUnlocks();
+    if (unlocked === total) {
+      name = name.replace(/^nero-/, &quot;nero-all-&quot;);
+    } else if (unlocked &gt; 0) {
+      // not adding total, it&#39;s kind of a spoiler
+      name = name.replace(/^nero-/, `nero-${unlocked}u-`);
+    }
+
+    console.log(`saveAs ${name}`);
+    return origSaveAs(blob, name, opt);
+  };
+}
+
+const unlockVars = [
+  // drekkar 1f
+  &#39;interrogationEndingFreeze&#39;,
+  &#39;interrogationEndingShock&#39;,
+  &#39;interrogationEndingMild&#39;,
+  &#39;interrogationEndingRough&#39;,
+
+  // drekkar 2f
+  &#39;enthrallmentEnding&#39;,
+  &#39;enthrallmentLion&#39;,
+  &#39;extractionGentleEnd&#39;,
+  &#39;extractionForcefulEnd&#39;,
+
+  // drekkar escape
+  &#39;enthralmentIvexEnding&#39;,
+  &#39;extractionIvexEnding&#39;,
+  &#39;personalEnding&#39;,
+
+  // nero 1f
+  &#39;n9_brokenHarshBarbs&#39;,
+  &#39;n9_brokenHarshSmooth&#39;,
+  &#39;n9_brokenMildBarbs&#39;,
+  &#39;n9_brokenMildSmooth&#39;,
+  &#39;n9_cagedHarshBarbs&#39;,
+  &#39;n9_cagedHarshSmooth&#39;,
+  &#39;n9_cagedMildBarbs&#39;,
+  &#39;n9_cagedMildSmooth&#39;,
+  &#39;n9_tamedHarshBarbs&#39;,
+  &#39;n9_tamedHarshSmooth&#39;,
+  &#39;n9_tamedMildBarbs&#39;,
+  &#39;n9_tamedMildSmooth&#39;,
+
+  // nero 2f
+  &#39;n9_huntedHarshBarbs&#39;,
+  &#39;n9_huntedHarshSmooth&#39;,
+  &#39;n9_huntedMildBarbs&#39;,
+  &#39;n9_huntedMildSmooth&#39;,
+  &#39;n9_overwhelmedHarshBarbs&#39;,
+  &#39;n9_overwhelmedHarshSmooth&#39;,
+  &#39;n9_overwhelmedMildBarbs&#39;,
+  &#39;n9_overwhelmedMildSmooth&#39;,
+  &#39;n9_wreckedHarshBarbs&#39;,
+  &#39;n9_wreckedHarshSmooth&#39;,
+  &#39;n9_wreckedMildBarbs&#39;,
+  &#39;n9_wreckedMildSmooth&#39;,
+
+  // nero escape
+  // TBD
+];
+
+function countUnlocks() {
+  const n = unlockVars.filter(vn =&gt; State.variables[vn]).length;
+  return [n, unlockVars.length];
+}
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="245" name="Init Sidebar" tags="inclusion" position="2550,700" size="100,100">&lt;&lt;script&gt;&gt;
+const MT = window.MagesTower || (window.MagesTower = {});
+
+MT.autoStow = () =&gt; {
+  if (document.body.offsetWidth &lt;= 768) {
+    UIBar.stow();
+  }
+};
+
+Macro.add(&quot;auto-stow&quot;, {
+  handler: MagesTower.autoStow,
+});
+
+&lt;&lt;/script&gt;&gt;
+
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;append &quot;#ui-bar-body&quot;&gt;&gt;
+  &lt;div id=ui-bar-footer&gt;
+    &lt;span&gt;
+      &lt;a class=footer-element target=&quot;_blank&quot;
+        href=&quot;https://www.patreon.com/sleth&quot;
+        &gt;&lt;img alt=&quot;Patreon&quot; src=&quot;images/pa_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
+
+      &lt;a class=footer-element target=&quot;_blank&quot;
+        href=&quot;https://twitter.com/slethwulf&quot;
+        &gt;&lt;img alt=&quot;Twitter&quot; src=&quot;images/tw_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
+
+      &lt;a class=footer-element target=&quot;_blank&quot;
+        href=&quot;https://www.furaffinity.net/user/sleth/&quot;
+        &gt;&lt;img alt=&quot;FurAffinity&quot; src=&quot;images/fa_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
+
+      &lt;a class=footer-element target=&quot;_blank&quot;
+        href=&quot;https://sleth.sofurry.com/&quot;
+        &gt;&lt;img alt=&quot;SoFurry&quot; src=&quot;images/sf_logo.png&quot; height=&quot;30&quot;&gt;&lt;/a&gt;
+    &lt;/span&gt;
+  &lt;/div&gt;
+&lt;&lt;/append&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="246" name="Init State" tags="inclusion" position="2650,700" size="100,100">&lt;&lt;script&gt;&gt;
+const VT = window.VarTrace;
+
+/**
+ * &lt;&lt;state-delete prefix1 ...&gt;&gt;
+ * Deletes all state vars whose names start with any of the prefixes.
+ */
+Macro.add(&quot;state-delete&quot;, {
+  handler: function() {
+    const prefixes = this.args;
+    const V = State.variables;
+    for (const key of Object.keys(V)) {
+      for (const p of prefixes) {
+        if (key.startsWith(p)) {
+          delete V[key];
+          break;
+        }
+      }
+    }
+  }
+});
+
+/**
+ * &lt;&lt;state-save varName prefix1 ...&gt;&gt;
+ * Saves into varName all state vars whose names start with any prefix.
+ */
+Macro.add(&quot;state-save&quot;, {
+  handler: function() {
+    const dest = this.args[0];
+    const prefixes = this.args.slice(1);
+    const V = State.variables;
+    const save = {};
+    for (const key of Object.keys(V)) {
+      if (key === dest) continue;
+      for (const p of prefixes) {
+        if (key.startsWith(p)) {
+          save[key] = VT.untracedGet(key);
+          break;
+        }
+      }
+    }
+    V[dest] = save;
+  }
+});
+
+/**
+ * &lt;&lt;state-load varName&gt;&gt;
+ * Restore state vars from varName.
+ */
+Macro.add(&quot;state-load&quot;, {
+  handler: function() {
+    const src = this.args[0];
+    const V = State.variables;
+    const saved = V[src];
+    if (saved == null || typeof saved !== &quot;object&quot;) {
+      console.warn(`no saved state named ${src}`);
+      return;
+    }
+    for (const key of Object.keys(saved)) {
+      V[key] = saved[key];
+    }
+  }
+});
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="247" name="Init Templates" tags="inclusion" position="2750,700" size="100,100">&lt;&lt;script&gt;&gt;
+Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
+
+Template.add(&quot;cssArchive&quot;, `&lt;&lt;nobr&gt;&gt;
+  &lt;style&gt;
+    body, .var-info, #return-head, #return-tail {
+      /* meh, doesn&#39;t look that great without rebalancing all the colors */
+      /* background-color: #113; */
+    }
+    body {
+      /* color: #ddc; */
+    }
+  &lt;/style&gt;
+&lt;&lt;/nobr&gt;&gt;`);
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="248" name="Init Text Style" tags="inclusion" position="2850,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+em {
+  margin-right: 0.05em;
+}
+
+em em {
+  font-weight: bold;
+  margin-right: 0;
+  text-decoration: underline;
+}
+
+.sprite-q {
+  color: #6d6;
+}
+
+meta-text {
+  background-color: transparent;
+  color: #eaf54c;
+  display: inline;
+  font-style: italic;
+}
+meta-ending-bad {
+  color: #f44;
+  font-style: italic;
+  font-weight: bold;
+}
+meta-ending-good {
+  color: #6e6;
+  font-style: italic;
+  font-weight: bold;
+}
+
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+const MT = window.MagesTower || (window.MagesTower = {});
+
+function announceEnding(dest, type, vname, text) {
+  const V = State.variables;
+  if (!V[vname]) {
+    $(dest).append(
+      `&lt;meta-text&gt;${text} is now unlocked in the Archive.&lt;/meta-text&gt;`);
+    V[vname] = true;
+  } else {
+    $(dest).append(`&lt;meta-ending-${type}&gt;${text}&lt;/meta-ending-${type}&gt;`);
+  }
+}
+
+/**
+ * &lt;&lt;meta-ending [good|bad] varname1 text1&gt;&gt;
+ * Announce an ending. If it&#39;s locked, unlock it, and announce the unlocking.
+ */
+Macro.add(&quot;meta-ending&quot;, {
+  handler: function() {
+    const [type, vn1, text1] = this.args;
+    const V = State.variables;
+    announceEnding(this.output, type, vn1, text1);
+  }
+});
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="Init UI Style" tags="inclusion" position="2950,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+#debug-bar-hint {
+  display: none;
+}
+
+#passages hr {
+  border: 0;
+  border-top: 1px solid #555;
+  height: 1px;
+}
+#passages hr.archive-sep {
+  margin-left: 10%;
+  width: 80%;
+}
+#passages .ui-links-sep {
+  border-left: 2px solid #333;
+  margin: 0 .5em 0 .4em;
+  width: 0;
+}
+#passages .ui-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+#passages span.ui-title {
+  display: inline-block;
+}
+#passages .ui-title-more {
+  font-size: 0.8em;
+  margin-left: 0.5em;
+}
+#passages .ui-subtitle {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 0.5em 0 0.5em 0;
+}
+
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;</tw-passagedata><tw-passagedata pid="250" name="Init Var Info" tags="inclusion" position="3050,700" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+.revisit-here,
+.revisit-here * {
+  transition: none !important;
+}
+
+.var-info {
+  background-color: #111;
+  color: #999;
+  cursor: default;
+  font-size: 12px;
+  line-height: 14px;
+  margin-bottom: 14px;
+  margin-top: -54px;
+  padding: 12px 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+#return-head .var-info {
+  margin-bottom: 0;
+  position: static;
+}
+#return-head:has(.var-info) {
+  top: 36px;
+}
+
+.var-info &gt; label,
+.var-info-button-outer {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  text-align: center;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.var-info &gt; label {
+  color: #666;
+  cursor: pointer;
+  margin-left: -4px;
+  margin-right: 8px;
+}
+.var-info &gt; label:hover {
+  background-color: #222;
+}
+
+.var-info-hidden &gt; span:not(.var-info-passage) {
+  display: none;
+}
+.var-info-hidden:not(.var-info-to-do) &gt; label::after {
+  content: &quot;\2713&quot;; /* checkmark */
+  margin-left: .5em;
+}
+.var-info-hidden.var-info-to-do &gt; label::after {
+  content: &quot;\1f6a7&quot;; /* construction */
+}
+
+.var-info-separator {
+  margin: 0 16px;
+}
+
+.var-info-compute {
+  margin-right: 1em;
+}
+.var-info-compute:hover {
+  background-color: #333;
+}
+
+.var-info-button-outer {
+  min-width: 4em;
+  position: relative;
+}
+
+.var-info-passage {
+  user-select: all;
+  white-space: nowrap;
+}
+
+.var-info-notable {
+  font-weight: bold;
+}
+.var-info-ignored {
+  border: 1px dashed #882;
+  font-style: italic;
+  font-weight: normal;
+}
+.var-info-always {
+  font-weight: normal;
+  opacity: 0.6;
+}
+
+.var-info-to-do::after {
+  content: &quot;\1f6a7&quot;; /* construction */
+}
+.var-info-was-written::before {
+  content: &quot;\2191&quot;; /* up arrow */
+  padding-right: 1px;
+}
+.var-info-was-read::after {
+  content: &quot;\2193&quot;; /* down arrow */
+  padding-left: 1px;
+}
+.var-info-was-read.var-info-to-do::after {
+  content: &quot;\2193\1f6a7&quot;; /* down arrow, construction */
+  padding-left: 1px;
+}
+
+.var-info-was-deleted:not(.var-info-was-written) {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.var-info-can-change {
+  border-color: #666;
+  cursor: pointer;
+}
+.var-info-can-change:hover {
+  border-color: #ccc;
+}
+
+.var-info-can-change.var-info-notable {
+  border-color: #996;
+}
+.var-info-can-change.var-info-notable:hover {
+  border-color: #ddc;
+}
+
+.var-info-boolean-false {
+  color: #c88;
+}
+.var-info-boolean-true {
+  color: #6a6;
+}
+
+.var-info-enum {
+  color: #88c;
+}
+.var-info-number .var-info-button-label,
+.var-info-enum .var-info-button-label {
+  pointer-events: none;
+}
+.var-info-button-left,
+.var-info-button-right {
+  border: 1px solid #666;
+  border-radius: 4px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  width: 50%;
+}
+.var-info-button-left:hover,
+.var-info-button-right:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.var-info-button-left {
+  border-right: 0;
+  left: 0;
+}
+.var-info-button-right {
+  border-left: 0;
+  right: 0;
+}
+
+.var-info-value {
+  background-color: #033;
+  display: inline-block;
+  max-width: 3em;
+  overflow-x: clip;
+}
+
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+const CV = window.ComputeVariants || (window.ComputeVariants = {});
+const EM = window.ErrorMessage || (window.ErrorMessage = {});
+const ET = window.EnumType || (window.EnumType = {});
+const Nero = window.Nero || (window.Nero = {});
+const VI = window.VarInfo || (window.VarInfo = {});
+const VT = window.VarTrace || (window.VarTrace = {});
+
+const alwaysConditional = new Set();
+const alwaysVars = new Map();
+const ignoreVars = new Set();
+let revisitTop = null;
+
+$(document).on(&quot;:passagestart&quot;, () =&gt; {
+  alwaysConditional.clear();
+  alwaysVars.clear();
+  ignoreVars.clear();
+});
+
+VI.revisitHere = fn =&gt; {
+  VT.stop();
+  revisitTop = $(&quot;html&quot;).prop(&quot;scrollTop&quot;);
+  const active = State.active.variables;
+  State.active.variables = clone(State.current.variables);
+  fn &amp;&amp; fn(active);
+  Engine.play(State.passage);
+  $(&quot;html&quot;).addClass(&quot;revisit-here&quot;);
+};
+Macro.add(&quot;revisit-here&quot;, {
+  handler: () =&gt; {
+    setTimeout(VI.revisitHere);
+  }
+});
+
+$(document).on(&quot;:passagestart&quot;, () =&gt; {
+  State.temporary.revisiting = revisitTop != null;
+});
+
+$(document).on(&quot;:passageend&quot;, () =&gt; {
+  $(&quot;html&quot;).removeClass(&quot;revisit-here&quot;);
+  if (revisitTop != null) {
+    $(&quot;html&quot;)[0].scroll(0, revisitTop);
+    revisitTop = null;
+  }
+});
+
+function withinInclude(ctx) {
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === &quot;include&quot;) return true;
+  }
+  return false;
+}
+
+function withinCondition(ctx) {
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === &quot;if&quot;) return true;
+    if (ctx.displayName === &quot;switch&quot;) return true;
+  }
+  return false;
+}
+
+/** &lt;&lt;vi-always varname value [reason]&gt;&gt; */
+Macro.add(&quot;vi-always&quot;, {
+  handler: function() {
+    const [vname, exp] = this.args;
+    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+      EM.warn(`vi-always ${vname} is unnecessary`);
+    }
+    const actual = VT.untracedGet(vname);
+    if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
+      // force a traced read, so it can be toggled
+      const read = State.variables[vname];
+      EM.fail(`vi-always ${vname} ${exp}, but actual value is ${read}`);
+    }
+    alwaysVars.set(vname, exp);
+    if (withinCondition(this)) {
+      alwaysConditional.add(vname);
+    }
+  }
+});
+
+/** &lt;&lt;vi-always-if cond-var varname value [reason]&gt;&gt; */
+Macro.add(&quot;vi-always-if&quot;, {
+  handler: function() {
+    const [cond, vname, exp] = this.args;
+    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+      EM.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
+    }
+    if (VT.untracedGet(cond)) {
+      const actual = VT.untracedGet(vname);
+      if (exp !== actual &amp;&amp; !(exp === false &amp;&amp; actual == null)) {
+        // force a traced read, so it can be toggled
+        const read = State.variables[vname];
+        EM.fail(
+          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`);
+      }
+      alwaysVars.set(vname, exp);
+      if (withinCondition(this)) {
+        alwaysConditional.add(vname);
+      }
+    }
+  }
+});
+
+/** &lt;&lt;vi-ignore var1 ...&gt;&gt; */
+Macro.add(&quot;vi-ignore&quot;, {
+  handler: function() {
+    for (const vn of this.args) {
+      if (Nero.varIsConstant(vn)) {
+        EM.warn(`vi-ignore ${vn} is unnecessary`);
+      }
+      ignoreVars.add(vn);
+    }
+  }
+});
+
+/**
+  * &lt;&lt;vi-ignore-if var1 var2 ...&gt;&gt;
+  * If var1 is true, ignore remaining vars.
+  * If var2 is true, ignore remaining vars.
+  * etc.
+  */
+Macro.add(&quot;vi-ignore-if&quot;, {
+  handler: function() {
+    for (let p = 0; p &lt; this.args.length - 1; p++) {
+      const cvar = this.args[p];
+      if (Nero.varIsConstant(cvar)) {
+        EM.warn(`vi-ignore-if ${cvar} is unnecessary`);
+      }
+      if (VT.untracedGet(cvar)) {
+        this.args.slice(p + 1).forEach(vn =&gt; ignoreVars.add(vn));
+      }
+    }
+  }
+});
+
+const str = val =&gt; val == null ? String(val) : JSON.stringify(val);
+
+function varButton(vname) {
+  const V = VT.untracedVariables();
+  const v0 = State.current.variables;
+
+  const outer = $(&quot;&lt;span class=var-info-button-outer&gt;&quot;);
+  let tags = &quot;&quot;;
+
+  if (VT.ctx.wasDeleted.has(vname)) {
+    tags += &quot;[was-deleted]\n&quot;;
+    outer.addClass(&quot;var-info-was-deleted&quot;);
+  }
+  if (VT.ctx.wasRead.has(vname)) {
+    tags += &quot;[was-read]\n&quot;;
+    outer.addClass(&quot;var-info-was-read&quot;);
+  }
+  if (VT.ctx.wasSet.has(vname)) {
+    tags += &quot;[was-set]\n&quot;;
+    outer.addClass(&quot;var-info-was-written&quot;);
+  }
+
+  if (Nero.varIsNotable(vname)) {
+    tags += &quot;[section-notable]\n&quot;;
+    outer.addClass(&quot;var-info-notable&quot;);
+    if (ignoreVars.has(vname)) {
+      tags += &quot;[vi-ignore]\n&quot;;
+      outer.addClass(&quot;var-info-ignored&quot;);
+    } else if (alwaysVars.has(vname)) {
+      tags += `[vi-always ${str(alwaysVars.get(vname))}]\n`;
+      outer.addClass(&quot;var-info-always&quot;);
+    } else if (!VT.ctx.wasRead.has(vname)) {
+      tags += &quot;[to-do]\n&quot;;
+      outer.addClass(&quot;var-info-to-do&quot;);
+    }
+  } else if (Nero.varIsConstant(vname)) {
+    const exp = Nero.getVarConstant(vname);
+    tags += `[section-always ${str(exp)}]\n`;
+    outer.addClass(&quot;var-info-always&quot;);
+  }
+
+  const label = $(&quot;&lt;span class=var-info-button-label&gt;&quot;).appendTo(outer);
+
+  const jval = str(V[vname]);
+  if (VT.ctx.wasSet.has(vname)) {
+    const jval0 = str(v0[vname]);
+    outer.attr(&quot;title&quot;, `${tags}${vname}=${jval0} -&gt;\n${vname}=${jval}`);
+  } else {
+    outer.attr(&quot;title&quot;, `${tags}${vname}=${jval}`);
+  }
+
+  // assume undeclared is boolean
+  const vtype = ET.vars[vname] || (vname in V ? typeof V[vname] : &quot;boolean&quot;);
+
+  const enumList = ET.enums[vtype];
+  if (enumList != null) {
+    outer.addClass(&quot;var-info-enum&quot;);
+    const sym = enumList[V[vname] || 0];
+    const sameType = Object.values(ET.vars).filter(t =&gt; t === vtype).length;
+    label.text(sym != null ? sym : vname + &quot;=&quot; + jval);
+    const n = enumList.length;
+    if (VT.ctx.wasRead.has(vname)) {
+      const val0 = v0[vname] || 0;
+      if (0 &lt; val0) {
+        $(&quot;&lt;span&gt;&quot;)
+          .addClass(&quot;var-info-button-left var-info-can-change&quot;)
+          .appendTo(outer)
+          .on(&quot;click&quot;, () =&gt; {
+            VI.revisitHere(() =&gt; State.variables[vname] = val0 - 1);
+          });
+      }
+      if (val0 &lt; n - 1) {
+        $(&quot;&lt;span&gt;&quot;)
+          .addClass(&quot;var-info-button-right var-info-can-change&quot;)
+          .appendTo(outer)
+          .on(&quot;click&quot;, () =&gt; {
+            VI.revisitHere(() =&gt; State.variables[vname] = val0 + 1);
+          });
+      }
+    }
+    return outer;
+  }
+
+  // This doesn&#39;t work well with patience, need to fix something
+  if (false &amp;&amp; vtype === &quot;number&quot;) {
+    outer.addClass(&quot;var-info-number&quot;);
+    $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
+    label.append(&quot;=&quot;);
+    $(&quot;&lt;span class=var-info-value&gt;&quot;).text(jval).appendTo(label);
+    if (VT.ctx.wasRead.has(vname)) {
+      const val0 = v0[vname] || 0;
+      $(&quot;&lt;span&gt;&quot;)
+        .addClass(&quot;var-info-button-left var-info-can-change&quot;)
+        .appendTo(outer)
+        .on(&quot;click&quot;, () =&gt; {
+          VI.revisitHere(() =&gt; State.variables[vname] = val0 - 1);
+        });
+      $(&quot;&lt;span&gt;&quot;)
+        .addClass(&quot;var-info-button-right var-info-can-change&quot;)
+        .appendTo(outer)
+        .on(&quot;click&quot;, () =&gt; {
+          VI.revisitHere(() =&gt; State.variables[vname] = val0 + 1);
+        });
+    }
+    return outer;
+  }
+
+  if (vtype === &quot;boolean&quot;) {
+    outer.addClass(&quot;var-info-boolean-&quot; + (V[vname] ? &quot;true&quot; : &quot;false&quot;));
+    label.text(vname);
+    if (VT.ctx.wasRead.has(vname)) {
+      outer.addClass(&quot;var-info-can-change&quot;);
+      outer.on(&quot;click&quot;, () =&gt; {
+        let val = !v0[vname];
+        VI.revisitHere(() =&gt; {
+          State.variables[vname] = val;
+        });
+      });
+    }
+    return outer;
+  }
+
+  $(&quot;&lt;span class=var-info-vname&gt;&quot;).text(vname).appendTo(label);
+  label.append(&quot;=&quot;);
+  $(&quot;&lt;span class=var-info-value&gt;&quot;).text(jval).appendTo(label);
+  outer.addClass(&quot;var-info-misc&quot;);
+  return outer;
+}
+
+function initVarInfo() {
+  if (!setup.tester) return;
+
+  $(document).on(&quot;:passagestart&quot;, () =&gt; {
+    VT.start();
+  });
+
+  $(document).on(&quot;:passageend&quot;, () =&gt; {
+    VT.stop();
+
+    VT.ctx.wasTopRead.forEach(vn =&gt; {
+      if (alwaysVars.has(vn) &amp;&amp; !alwaysConditional.has(vn)) {
+        const c = alwaysVars.get(vn);
+        EM.warn(`vi-always ${vn} ${c}, but var was read`);
+      }
+      if (Nero.varIsConstant(vn)) {
+        const c = Nero.getVarConstant(vn);
+        EM.warn(`${vn} always ${c} in this section, but var was read`);
+      }
+    });
+
+    const notable = Nero.getNotable();
+    const to_do = notable.filter(
+      vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !VT.ctx.wasRead.has(vn));
+    if (to_do.length &amp;&amp; /[-/][F] /.test(State.passage)) {
+      EM.warn(`-F passage has unused notable vars: ${to_do}`);
+    }
+    
+    if (!setup.debug) return;
+
+    const touched = new Set();
+    VT.ctx.wasRead.forEach(v =&gt; touched.add(v));
+    VT.ctx.wasSet.forEach(v =&gt; touched.add(v));
+    VT.ctx.wasDeleted.forEach(v =&gt; touched.add(v));
+    notable.forEach(f =&gt; touched.add(f));
+
+    $(&quot;.var-info&quot;).remove();
+    const outer = $(&quot;&lt;div class=var-info&gt;&quot;);
+
+    if ($(&quot;#return-head&quot;).length) {
+      outer.prependTo(&quot;#return-head&quot;);
+    } else {
+      outer.prependTo(&quot;#story&quot;);
+    }
+
+    let show = session.get(&quot;var-info-show&quot;);
+    outer.toggleClass(&quot;var-info-hidden&quot;, !show);
+
+    $(&quot;&lt;label&gt;var-info&lt;/label&gt;&quot;)
+      .appendTo(outer)
+      .click(() =&gt; {
+        show = !show;
+        session.set(&quot;var-info-show&quot;, show);
+        outer.toggleClass(&quot;var-info-hidden&quot;, !show);
+      });
+
+    $(&quot;&lt;span class=var-info-compute&gt;[compute variants]&lt;/span&gt;&quot;)
+      .appendTo(outer)
+      .click(() =&gt; CV.render());
+
+
+    if (touched.size) {
+      const el = $(&quot;&lt;span class=var-info-touched&gt;&quot;).appendTo(outer);
+      [...touched].sort().forEach(v =&gt; varButton(v).appendTo(el));
+    }
+
+    $(&quot;&lt;span class=var-info-separator&gt;&quot;).text(&quot;||&quot;).appendTo(outer);
+    $(&quot;&lt;span class=var-info-passage&gt;&quot;).text(State.passage).appendTo(outer);
+
+    if (to_do.length) outer.addClass(&quot;var-info-to-do&quot;);
+  });
+}
+
+initVarInfo();
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="251" name="Init Var Trace" tags="inclusion" position="2450,375" size="100,100">&lt;&lt;script&gt;&gt;
+window.VarTrace || (window.VarTrace = {});
+const VT = window.VarTrace;
+
+VT.ctx = newContext();
+
+VT._unproxied = null;
+const myBrand = Symbol(&quot;VarTraceBrand&quot;);
+
+function newContext() {
+  return {
+    withinInclude: false,
+    wasDeleted: new Set(),
+    wasRead: new Set(),
+    wasSet: new Set(),
+    wasTopRead: new Set(),
+  };
+}
+
+Macro.add(&quot;var-trace-ignore&quot;, {
+  tags: [],
+  handler: function() {
+    const body = this.payload[0].contents;
+    VT.ignore(() =&gt; $(this.output).wiki(body));
+  }
+});
+
+const origInclude = Macro.get(&quot;include&quot;);
+Macro.delete(&quot;include&quot;);
+Macro.add(&quot;include&quot;, {
+  handler: function() {
+    const save = VT.ctx.withinInclude;
+    VT.ctx.withinInclude = true;
+    try {
+      origInclude.handler.call(this);
+    } finally {
+      VT.ctx.withinInclude = save;
+    }
+  }
+});
+
+/** Start tracing. */
+VT.start = () =&gt; {
+  VT.stop();
+  VT.ctx = newContext();
+  VT._unproxied = State.active.variables;
+  State.active.variables = new Proxy(VT._unproxied, {
+    defineProperty(o, prop) {
+      if (typeof prop === &quot;string&quot;) VT.ctx.wasSet.add(prop);
+      return Reflect.defineProperty(...arguments);
+    },
+    deleteProperty(o, prop) {
+      if (typeof prop === &quot;string&quot;) VT.ctx.wasDeleted.add(prop);
+      return Reflect.deleteProperty(...arguments);
+    },
+    get(o, prop) {
+      if (prop === &quot;_varTrace&quot;) return myBrand;
+      if (typeof prop === &quot;string&quot;) {
+        VT.ctx.wasRead.add(prop);
+        if (!VT.ctx.withinInclude) VT.ctx.wasTopRead.add(prop);
+      }
+      return Reflect.get(...arguments);
+    },
+    set(o, prop) {
+      if (typeof prop === &quot;string&quot;) VT.ctx.wasSet.add(prop);
+      return Reflect.set(...arguments);
+    },
+  });
+};
+
+/** Stop tracing. */
+VT.stop = () =&gt; {
+  if ((State.active.variables._varTrace || myBrand) !== myBrand) {
+    throw new Error(&quot;Multiple instances of Var Trace in conflict.&quot;);
+  }
+  if (VT._unproxied != null) {
+    State.active.variables = VT._unproxied;
+    VT._unproxied = null;
+  }
+};
+
+/** Get vname&#39;s value without tracing it. */
+VT.untracedGet = vname =&gt; {
+  return (VT._unproxied || State.active.variables)[vname];
+}
+
+/** Set vname&#39;s value without tracing it. */
+VT.untracedSet = (vname, value) =&gt; {
+  (VT._unproxied || State.active.variables)[vname] = value;
+};
+
+/** Delete vname&#39;s value without tracing it. */
+VT.untracedDelete = vname =&gt; {
+  delete (VT._unproxied || State.active.variables)[vname];
+};
+
+VT.untracedVariables = () =&gt; {
+  return VT._unproxied || State.active.variables;
+}
+
+/** Run fn without tracing any variables during its execution. */
+VT.ignore = fn =&gt; {
+  if (VT._unproxied == null) return fn();
+  const proxy = State.active.variables;
+  State.active.variables = VT._unproxied;
+  try {
+    return fn();
+  } finally {
+    State.active.variables = proxy;
+  }
+};
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="252" name="Init Visited Passages" tags="inclusion" position="2175,800" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+@media(hover: none) {
+  a.vp-link-visited,
+  a.vp-link-visited:hover {
+    opacity: 0.8;
+    text-decoration: line-through;
+  }
+}
+@media(hover: hover) {
+  #passages:hover a.vp-link-visited {
+    opacity: 0.8;
+    text-decoration: line-through;
+  }
+}
+
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+&lt;&lt;script&gt;&gt;
+
+const VP = window.VisitedPassages || (window.VisitedPassages = {});
+const LZ = LZString;
+
+const persist = window.localStorage;
+const KEY = &quot;vp-1&quot;;
+const FLAG = &quot;vp-marks-enabled&quot;;
+
+let visited = new Set();
+let marksEnabled = false;
+
+VP.getMarksEnabled = () =&gt; marksEnabled;
+VP.setMarksEnabled = val =&gt; {
+  marksEnabled = val;
+  persist.setItem(FLAG, JSON.stringify(val));
+}
+
+VP.has = title =&gt; visited.has(title);
+
+VP.clear = () =&gt; {
+  visited = new Set();
+  persist.removeItem(KEY);
+};
+
+VP.add = title =&gt; {
+  visited.add(title);
+  save();
+};
+
+VP.remove = title =&gt; {
+  visited.delete(title);
+  save();
+};
+
+function load() {
+  visited = new Set();
+  const str = persist.getItem(KEY);
+  if (str != null) {
+    const json = LZ.decompressFromBase64(str);
+    if (json != null &amp;&amp; json !== &quot;&quot;) {
+      const list = JSON.parse(json);
+      visited = new Set(list);
+    }
+  }
+}
+
+function save() {
+  const list = Array.from(visited).sort();
+  const json = JSON.stringify(list);
+  const str = LZ.compressToBase64(json);
+  persist.setItem(KEY, str);
+}
+
+function initVisited() {
+  if (!setup.debug) return;
+  load();
+  marksEnabled = !!JSON.parse(persist.getItem(FLAG) || &quot;false&quot;);
+  $(document).on(&quot;:passageend&quot;, () =&gt; {
+    if (/^n/.test(State.passage)) VP.add(State.passage);
+    if (marksEnabled) {
+      $(&quot;#passages a[data-passage]&quot;).each((i, el) =&gt; {
+        const title = $(el).attr(&quot;data-passage&quot;);
+        if (/^n/.test(title) &amp;&amp; VP.has(title)) {
+          $(el).addClass(&quot;vp-link-visited&quot;);
+        }
+      });
+    }
+  });
+}
+
+initVisited();
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="253" name="fade-in test" tags="" position="3750,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;fade-in 0s&gt;&gt;
@@ -12548,7 +12553,9 @@ Thanks for playing so far!
   &lt;li&gt;[[Try again from the beginning.|Title Screen]]&lt;/li&gt;
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="268" name="n0-F Walk To Paths" tags="inclusion" position="3200,1450" size="100,100">&lt;&lt;script&gt;&gt;
-MagesTower.walks = [
+const MT = window.MagesTower || (window.MagesTower = {});
+
+MT.walks = [
   &quot;&lt;hr&gt;&lt;span class=walk-sec-title&gt;Easy Escapes&lt;/span&gt;&quot;,
 
   &quot;cast &gt; mica &gt; rebuff &gt; alone &gt; mirror &gt; free&quot;,
@@ -41277,26 +41284,22 @@ by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;
   v2.20220929.0
 &lt;/div&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="724" name="StoryDisplayTitle" tags="" position="1825,575" size="100,100">The Mage&#39;s Tower (Nero)</tw-passagedata><tw-passagedata pid="725" name="StoryInit" tags="inclusion" position="2150,575" size="100,100">&lt;&lt;script&gt;&gt;
-  // global modules
-  // window.ErrorMessage || (window.ErrorMessage = {});
-  // window.EnumType || (window.EnumType = {});
-  // window.MagesTower || (window.MagesTower = {});
-  // window.Nero || (window.Nero = {});
-  // window.PassageNotes || (window.PassageNotes = {});
-  // window.VarTrace || (window.VarTrace = {});
-  // window.VarInfo || (window.VarInfo = {});
-  // window.VisitedPassages || (window.VisitedPassages = {});
 
-  function runInit(regex) {
-    const inits = Story.lookupWith(p =&gt; regex.test(p.title));
-    inits.forEach(p =&gt; {
-      console.log(`loading ${p.title}`);
+function runInit(regex) {
+  const inits = Story.lookupWith(p =&gt; regex.test(p.title));
+  inits.forEach(p =&gt; {
+    try {
       $.wiki(p.text);
-    });
-  }
+    } catch (e) {
+      e.message = `[${p.title}]: ${e.message}`;
+      throw e;
+    }
+  });
+}
 
-  runInit(/^Init-0 /);
-  runInit(/^Init /);
+runInit(/^Init-0 /);
+runInit(/^Init /);
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="726" name="StoryMenu" tags="inclusion" position="2525,1875" size="100,100">[[Archives]]
 [[Credits]]
 &lt;&lt;if setup.tester&gt;&gt;

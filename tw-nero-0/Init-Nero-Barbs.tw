@@ -1,0 +1,34 @@
+:: Init Nero Barbs [inclusion] {"position":"2725,1150","size":"100,100"}
+<<script>>
+const VT = window.VarTrace || (window.VarTrace = {});
+
+function announceBarbs(dest) {
+  const V = State.variables;
+  V.t_announceBarbsSoon = false;
+  const barbs = VT.untracedGet("n1_glitched")
+    ? "Barbs?"
+    : VT.untracedGet("n1_barbs")
+    ? "Barbs" : "Smooth";
+  $(dest).wiki(`<meta-text>Story Variant: ${barbs}</meta-text>?P`);
+}
+
+Macro.add("barbs-announce", {
+  handler: function() {
+    if (this.args.length !== 1) throw new Error("expected 1 arg");
+    const V = State.variables;
+    switch (this.args[0]) {
+    case "now":
+      announceBarbs(this.output);
+      break;
+    case "soon":
+      V.t_announceBarbsSoon = true;
+      return;
+    case "maybe":
+      if (V.t_announceBarbsSoon) announceBarbs(this.output);
+      break;
+    default:
+      throw new Error(`Unexpected arg ${this.args[0]}`);
+    }
+  }
+});
+<</script>>

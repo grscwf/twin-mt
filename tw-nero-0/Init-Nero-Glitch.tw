@@ -1,0 +1,168 @@
+:: Init Nero Glitch [inclusion] {"position":"2925,1150","size":"100,100"}
+<<append head>><style>
+
+#glitch-1 {
+  white-space: nowrap;
+}
+#glitch-1 a {
+  background-color: rgb(0, 0, 0, 0.6);
+  display: inline-block;
+  height: 20px;
+  left: -20px;
+  position: relative;
+  top: 6px;
+  transform: rotate(2deg);
+  width: 30px;
+}
+#glitch-2 {
+  user-select: none;
+  transition: opacity 0.5s ease-in;
+}
+.glitch-hidden {
+  display: none;
+}
+.glitch-fading-in {
+  opacity: 0;
+}
+
+.glitch-fading-out .glitch-v {
+  background-color: #222;
+  transition: color 2s ease-out, background-color 2s ease-out;
+}
+.glitch-fading-out .glitch-c {
+  transition: color 5s ease-out, background-color 5s ease-out;
+}
+
+.glitch-fading-out .glitch-word-0 .glitch-v {
+  color: rgb(200, 200, 200, .2);
+}
+.glitch-fading-out .glitch-word-0 .glitch-c {
+  color: rgb(200, 200, 200, .9);
+}
+
+.glitch-fading-out .glitch-word-1 .glitch-v {
+  color: rgb(200, 200, 200, .1);
+}
+.glitch-fading-out .glitch-word-1 .glitch-c {
+  color: rgb(200, 200, 200, .8);
+}
+
+.glitch-fading-out .glitch-word-2 .glitch-v {
+  color: rgb(200, 200, 200, 0);
+}
+.glitch-fading-out .glitch-word-2 .glitch-c {
+  color: rgb(200, 200, 200, .6);
+}
+
+.glitch-fading-out .glitch-word-3 .glitch-v {
+  color: rgb(200, 200, 200, 0);
+}
+.glitch-fading-out .glitch-word-3 .glitch-c {
+  color: rgb(200, 200, 200, .4);
+}
+
+.glitch-fading-out .glitch-word-4 .glitch-v {
+  color: rgb(200, 200, 200, .0);
+}
+.glitch-fading-out .glitch-word-4 .glitch-c {
+  color: rgb(200, 200, 200, .2);
+}
+
+.glitch-fading-out a .glitch-v:not(#increase#specificity) {
+  background-color: #321;
+}
+.glitch-fading-out a .glitch-c:not(#increase#specificity) {
+  color: rgb(255, 160, 0, .2);
+}
+
+.glitch-fading-out a:hover {
+  opacity: 0.8;
+}
+
+.glitch-switch {
+  display: inline-grid;
+}
+.glitch-switch > div {
+  grid-column: 1/1;
+  grid-row: 1/1;
+}
+.glitch-switch-1 {
+  animation: glitch-blink 1.5s linear alternate infinite;
+}
+.glitch-switch-2 {
+  animation: glitch-blink 1.5s linear alternate-reverse infinite;
+}
+@keyframes glitch-blink {
+  0% {
+    opacity: .4;
+  }
+  100% {
+    opacity: .6;
+  }
+}
+
+</style><</append>>
+
+<<script>>
+
+Nero.barbGlitch = [
+  `<span class=glitch-switch>\
+    <div class=glitch-switch-1>barbed</div>\
+    <div class=glitch-switch-2>smooth</div>\
+  </span>`,
+  `<span class=glitch-switch>\
+    <div class=glitch-switch-1>smooth</div>\
+    <div class=glitch-switch-2>barbed</div>\
+  </span>`,
+];
+
+Macro.delete("glitch-text");
+Macro.add("glitch-text", {
+  tags: [],
+  handler: function() {
+    const speed = parseInt(this.args[0] || "15", 10);
+    const outer = $("<span id=glitch-2 class=glitch-hidden>")
+      .wiki(this.payload[0].contents)
+      .appendTo(this.output);
+    glitchWithin(outer, 0, speed);
+  }
+});
+function glitchWithin(jq, g, speed) {
+  for (const child of jq.contents()) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      g = glitchText(child, g, speed);
+    } else {
+      g = glitchWithin($(child), g, speed);
+    }
+  }
+  return g;
+}
+// cspell: disable-next-line
+const vowels = "áaeiouyAEIOUY";
+function glitchText(textNode, g, speed) {
+  const outer = $("<span class=glitch-text>");
+  textNode.parentNode.replaceChild(outer[0], textNode);
+  const words = textNode.nodeValue.split(/(\s+)/);
+  for (const word of words) {
+    if (/\s/.test(word)) {
+     outer.append(word);
+    } else if (word === "##barbed-1##") {
+      $(Nero.barbGlitch[0]).appendTo(outer);
+    } else if (word === "##barbed-2##") {
+      $(Nero.barbGlitch[1]).appendTo(outer);
+    } else {
+      const gf = Math.min(Math.floor(g/speed), 4);
+      g++;
+      const inner = $(`<span class=glitch-word-${gf}>`)
+        .appendTo(outer);
+      for (const letter of word.split("")) {
+        const isV = vowels.includes(letter);
+        const c = isV ? "v" : "c";
+        $(`<span class="glitch-${c}">`).text(letter).appendTo(inner);
+      }
+    }
+  }
+  return g;
+}
+
+<</script>>

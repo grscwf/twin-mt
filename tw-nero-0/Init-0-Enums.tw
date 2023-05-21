@@ -1,0 +1,71 @@
+:: Init-0 Enums [inclusion] {"position":"2950,500","size":"100,100"}
+<<script>>
+const ET = window.EnumType || (window.EnumType = {});
+
+ET.enums = {};
+ET.vars = {};
+
+/**
+ * Define an enum. Value names are added as window globals,
+ * so that typo-ing an enum value will throw an error.
+ */
+ET.define = (enumName, valueNames) => {
+  ET.enums[enumName] = valueNames;
+  valueNames.forEach((n, i) => window[n] = i);
+};
+
+ET.declareVar = (varName, enumName) => {
+  if (!ET.enums[enumName]) throw new Error(`No enum named ${enumName}`);
+  ET.vars[varName] = enumName;
+};
+
+ET.symbolic = (name, value) => {
+  const en = ET.enums[ET.vars[name] || name];
+  return en == null ? value : (en[value] || value);
+};
+
+/* Nero magic phase. */
+ET.define("MagicPhase", [
+  "MP_beforeCast",
+  "MP_triedMagic",
+  "MP_wantDevice",
+  "MP_wantName",
+  "MP_wantTouch",
+  "MP_wantPass",
+  "MP_onHold",
+  "MP_exitingHold",
+  "MP_contact",
+  "MP_lockedOut",
+  "MP_drained", // had mageSight, but didn't connect to Sprite
+  "MP_tapLost",  // did connect to Sprite
+]);
+ET.declareVar("n1_magicPhase", "MagicPhase");
+ET.declareVar("n2_magicPhaseLost", "MagicPhase");
+
+/*
+ * Places where Ivex has asked a question, and may be near enough to hear
+ * Nero trying to talk to the Sprite.
+ */
+ET.define("IvexContext", [
+  "IC_unknown",
+  "IC_gone",
+  "IC_distant",
+  "IC_explainTheft", // recruit > Ivex Trap
+  "IC_lickPaw", // subby > Ivex Dominant
+  "IC_begForMe", // subby > Ivex Cruel
+  "IC_comfortable", // candle lit > Comfort Check
+  "IC_whoSentYou", // candle horny > Light Squeeze, Heavy Squeeze
+]);
+ET.declareVar("t_ivexContext", "IvexContext");
+
+// This should run before any other Nero :passagestart
+$(document).on(":passagestart", () => {
+  // Initialize enums that are generally expected to be non-null
+  VarTrace.ignore(() => {
+    const V = State.variables;
+    V.n1_magicPhase != null || (V.n1_magicPhase = 0);
+    V.t_ivexContext != null || (V.t_ivexContext = 0);
+  });
+});
+
+<</script>>

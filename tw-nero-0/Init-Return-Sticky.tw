@@ -1,0 +1,65 @@
+:: Init Return Sticky [inclusion] {"position":"3150,600","size":"100,100"}
+<<append head>><style>
+
+#return-head,
+#return-tail {
+  background-color: #111;
+  line-height: 1.75;
+  position: sticky;
+  z-index: 10;
+}
+
+#return-head {
+  margin-top: -1em;
+  padding-top: 1em;
+  top: 0;
+}
+
+#return-tail {
+  padding-bottom: 1em;
+  bottom: 0;
+}
+
+</style><</append>>
+
+<<script>>
+function addReturn(where, contents) {
+  ErrorMessage.assert(
+    tags().includes("noreturn"),
+    "tags should have noreturn");
+
+  $(document).one(":passagedisplay", () => {
+    MagesTower.autoStow();
+    $(`#return-${where}`).remove();
+    const div = $(`<div id=return-${where}>`)
+      .wiki(`<<link "Return to the game" $return>><</link>>`)
+      .wiki(contents);
+    if (where === "head") {
+      div.append("<hr>");
+      $("#passages").prepend(div, "<br>");
+    } else {
+      div.prepend("<hr>");
+      $("#passages").append("<br>", div);
+    }
+  });
+}
+
+Macro.add("return-head", {
+  handler: function() {
+    addReturn("head", "");
+  }
+});
+
+Macro.add("return-tail", {
+  handler: function() {
+    addReturn("tail", "");
+  }
+});
+
+Macro.add("return-block", {
+  tags: [],
+  handler: function() {
+    addReturn("head", this.payload[0].contents);
+  }
+});
+<</script>>

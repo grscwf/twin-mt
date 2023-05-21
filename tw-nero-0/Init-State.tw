@@ -1,0 +1,65 @@
+:: Init State [inclusion] {"position":"2650,700","size":"100,100"}
+<<script>>
+const VT = window.VarTrace;
+
+/**
+ * <<state-delete prefix1 ...>>
+ * Deletes all state vars whose names start with any of the prefixes.
+ */
+Macro.add("state-delete", {
+  handler: function() {
+    const prefixes = this.args;
+    const V = State.variables;
+    for (const key of Object.keys(V)) {
+      for (const p of prefixes) {
+        if (key.startsWith(p)) {
+          delete V[key];
+          break;
+        }
+      }
+    }
+  }
+});
+
+/**
+ * <<state-save varName prefix1 ...>>
+ * Saves into varName all state vars whose names start with any prefix.
+ */
+Macro.add("state-save", {
+  handler: function() {
+    const dest = this.args[0];
+    const prefixes = this.args.slice(1);
+    const V = State.variables;
+    const save = {};
+    for (const key of Object.keys(V)) {
+      if (key === dest) continue;
+      for (const p of prefixes) {
+        if (key.startsWith(p)) {
+          save[key] = VT.untracedGet(key);
+          break;
+        }
+      }
+    }
+    V[dest] = save;
+  }
+});
+
+/**
+ * <<state-load varName>>
+ * Restore state vars from varName.
+ */
+Macro.add("state-load", {
+  handler: function() {
+    const src = this.args[0];
+    const V = State.variables;
+    const saved = V[src];
+    if (saved == null || typeof saved !== "object") {
+      console.warn(`no saved state named ${src}`);
+      return;
+    }
+    for (const key of Object.keys(saved)) {
+      V[key] = saved[key];
+    }
+  }
+});
+<</script>>
