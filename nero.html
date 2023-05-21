@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5719,9 +5719,9 @@ MT.computeVariants = function() {
   ignore.forEach(vn =&gt; usedSet.delete(vn));
 
   // if flag has an expectation for this section, limit to that value
-  const sect = Nero.getSection();
+  const sect = MT.getSection();
   usedSet.forEach(vn =&gt; {
-    const [_, isConst, val] = Nero.getVarExpectation(vn, sect);
+    const [_, isConst, val] = MT.getVarExpectation(vn, sect);
     if (isConst) {
       tryVars[vn] = [val];
     }
@@ -5781,7 +5781,7 @@ MT.computeVariants = function() {
       const state = todo.pop();
       done.push(state);
       checked++;
-      const ok = Nero.checkState(state, usedSet, false);
+      const ok = MT.checkState(state, usedSet, false);
       if (ok) return state;
     }
     return null;
@@ -5811,7 +5811,7 @@ MT.computeVariants = function() {
       }
       usedSet.add(vn);
       if (state[vn] == null || typeof state[vn] === &quot;boolean&quot;) {
-        const [_, isConst] = Nero.getVarExpectation(vn, sect);
+        const [_, isConst] = MT.getVarExpectation(vn, sect);
         if (!isConst) {
           // add the inverse value to the todo list
           [...done, ...todo].forEach(st1 =&gt; {
@@ -6976,7 +6976,7 @@ function checkSections() {
 
 checkSections();
 
-Nero.getSection = (here) =&gt; {
+MT.getSection = (here) =&gt; {
   here || (here = State.passage);
   for (const [s, re] of Object.entries(Nero.sections)) {
     if (re.test(here)) return s;
@@ -7716,10 +7716,10 @@ function checkFlags() {
 
 checkFlags();
 
-Nero.getVarExpectation = (vname, sect) =&gt; {
+MT.getVarExpectation = (vname, sect) =&gt; {
   const f = flags[vname];
   if (f == null || f.sections == null) return [false, false];
-  sect = sect || Nero.getSection();
+  sect = sect || MT.getSection();
   const exp = f.sections[sect];
   if (exp == null || exp === &quot;&quot;) {
     return [false, false];
@@ -7734,21 +7734,21 @@ Nero.getVarExpectation = (vname, sect) =&gt; {
   }
 };
 Nero.getVarConstant = vn =&gt; {
-  const [_, isConst, val] = Nero.getVarExpectation(vn);
+  const [_, isConst, val] = MT.getVarExpectation(vn);
   if (!isConst) throw new Error(`${vn} is not constant`);
   return val;
 };
 Nero.varIsConstant = vn =&gt; {
-  const [_, isConst] = Nero.getVarExpectation(vn);
+  const [_, isConst] = MT.getVarExpectation(vn);
   return isConst;
 };
 Nero.varIsNotable = vn =&gt; {
-  const [isNotable] = Nero.getVarExpectation(vn);
+  const [isNotable] = MT.getVarExpectation(vn);
   return isNotable;
 };
 
 Nero.getNotable = (here) =&gt; {
-  const s = Nero.getSection(here);
+  const s = MT.getSection(here);
   return Object.keys(flags).filter(f =&gt; Nero.varIsNotable(f));
 };
 
@@ -8042,8 +8042,8 @@ Nero.enumImplies = {
 
 const VT = window.VarTrace || (window.VarTrace = {});
 
-Nero.checkState = (state, used, interactive, active) =&gt; {
-  const sect = Nero.getSection();
+MT.checkState = (state, used, interactive, active) =&gt; {
+  const sect = MT.getSection();
 
   // Check flags
   for (const x of Object.keys(flags)) {
@@ -8115,7 +8115,7 @@ Nero.checkConstraints = () =&gt; {
   if (!/^n/.test(here)) return true;
   return MT.untraced(() =&gt; {
     /* note: current (incoming) state, not active state */
-    return Nero.checkState(
+    return MT.checkState(
       State.current.variables, MT.trace.wasRead, true, State.active.variables);
   });
 };
@@ -8832,17 +8832,17 @@ window.PW_uramos = &quot;Uramos&quot;;
  * Everything else should either be in basicPasswords or otherPasswords.
  */
 
-Nero.basicPasswords = {};
+MT.basicPasswords = {};
 {
-  const bp = Nero.basicPasswords;
+  const bp = MT.basicPasswords;
   bp[PW_ivex] = &quot;the egotistical choice&quot;;
   bp[PW_ransamaran] = &quot;the mage school that Ivex attended&quot;;
   bp[PW_password] = &quot;a common password&quot;;
 }
 
-Nero.otherPasswords = {};
+MT.otherPasswords = {};
 {
-  const op = Nero.otherPasswords;
+  const op = MT.otherPasswords;
   /* books */
   op[PW_621] = &quot;the year that Ivex graduated from high school&quot;;
   // never succeed at getting high school name
@@ -8875,18 +8875,18 @@ Nero.otherPasswords = {};
 };
 
 /* Sprite responses spell out numbers and letters. */
-Nero.passSprite = {};
+const passSprite = {};
 {
-  const ps = Nero.passSprite;
+  const ps = passSprite;
   ps[PW_621] = &quot;Six Twenty One&quot;;
   ps[PW_fuckToy] = &quot;Fuck Toy Nine Thousand&quot;;
   ps[PW_too] = &quot;Tee Oh Oh&quot;;
 }
 
 /* Sprite has a few special wrong-password messages */
-Nero.oldPasswords = {};
+const oldPasswords = {};
 {
-  const op = Nero.oldPasswords;
+  const op = oldPasswords;
   op[PW_carpe] = &quot;is not your password yet, ?master&quot;;
   op[PW_ivex] = &quot;is obviously not your password, ?master&quot;;
   op[PW_password] = &quot;is your mother&#39;s maiden name, not your password, ?master&quot;;
@@ -8907,7 +8907,7 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
 Macro.add(&quot;pw-found&quot;, {
   handler: function() {
     const [pw] = this.args;
-    if (Nero.otherPasswords[pw] == null) {
+    if (MT.otherPasswords[pw] == null) {
       throw new Error(`pw-found ${pw} undeclared password`);
     }
     const V = State.variables;
@@ -8946,7 +8946,7 @@ Macro.add(&quot;pw-suggest&quot;, {
     for (const p of this.payload) {
       if (p.name === &quot;pw-fail&quot;) continue;
       const [pw] = p.args;
-      if (Nero.otherPasswords[pw] == null) {
+      if (MT.otherPasswords[pw] == null) {
         throw new Error(`${payload.name} ${pw} undeclared password`);
       }
     }
@@ -9015,7 +9015,7 @@ Macro.add(&quot;pw-suggest&quot;, {
 });
 
 /** True if Nero is waiting for another password attempt. */
-Nero.passAgainSoon = () =&gt; {
+MT.passAgainSoon = () =&gt; {
   const V = State.variables;
   const mp = V.n1_magicPhase;
   if (MP_onHold === mp || MP_exitingHold === mp) {
@@ -9025,11 +9025,11 @@ Nero.passAgainSoon = () =&gt; {
 };
 
 /** True if Nero is looking for a password. */
-Nero.passWanted = () =&gt; {
+MT.passWanted = () =&gt; {
   const V = State.variables;
   const mp = V.n1_magicPhase;
   if (MP_wantPass === V.n1_magicPhase) return true;
-  return Nero.passAgainSoon();
+  return MT.passAgainSoon();
 };
 
 Template.add(&quot;sprBadPass&quot;, () =&gt; {
@@ -9039,13 +9039,13 @@ Template.add(&quot;sprBadPass&quot;, () =&gt; {
   const tried = V.n1_passTried.length;
 
   let mkp = `&lt;em&gt;${pw}&lt;/em&gt; `;
-  if (Nero.passSprite[pw] != null) {
-    mkp = `&lt;em&gt;${Nero.passSprite[pw]}&lt;/em&gt; `;
+  if (passSprite[pw] != null) {
+    mkp = `&lt;em&gt;${passSprite[pw]}&lt;/em&gt; `;
   }
 
   // oldPassword joke detracts from the tried joke
-  if (Nero.oldPasswords[pw] &amp;&amp; tried !== 2) {
-    mkp += Nero.oldPasswords[pw];
+  if (oldPasswords[pw] &amp;&amp; tried !== 2) {
+    mkp += oldPasswords[pw];
   } else {
     mkp += &quot;is not the correct password, ?master&quot;;
   }
@@ -23931,10 +23931,10 @@ T.describe = pw =&gt; {
     return `&quot;${pw}&quot; (${another(&quot;a mistake&quot;)})`;
   } else if (/^#/.test(pw)) {
     return `&quot;${pw.slice(1)}&quot; (${another(&quot;a mistake&quot;)})`;
-  } else if (Nero.basicPasswords[pw] != null) {
-    return `&quot;${pw}&quot; (${another(Nero.basicPasswords[pw])})`;
-  } else if (Nero.otherPasswords[pw] != null) {
-    return `&quot;${pw}&quot; (${another(Nero.otherPasswords[pw])})`;
+  } else if (MT.basicPasswords[pw] != null) {
+    return `&quot;${pw}&quot; (${another(MT.basicPasswords[pw])})`;
+  } else if (MT.otherPasswords[pw] != null) {
+    return `&quot;${pw}&quot; (${another(MT.otherPasswords[pw])})`;
   } else {
     return `&quot;${pw}&quot; (BUG: no source)`;
   }
@@ -23960,7 +23960,7 @@ T.listFailed = () =&gt; {
 
 T.toTry = [];
 T.hasBasics = false;
-for (const pw of Object.keys(Nero.basicPasswords)) {
+for (const pw of Object.keys(MT.basicPasswords)) {
   if (!V.n1_passTried.includes(pw)) {
     T.toTry.push(pw);
     T.hasBasics = true;
@@ -27011,7 +27011,7 @@ a shelf near the desk has
     The yearbook might provide some useful clues about Ivex&#39;s earlier life.
     &lt;&lt;actions-add [[Search the books.|n2x-F Books Search 1]]&gt;&gt;
 
-  &lt;&lt;elseif Nero.passWanted()&gt;&gt;
+  &lt;&lt;elseif MT.passWanted()&gt;&gt;
     ?P
     &lt;&lt;if $n1_booksAsked&gt;&gt;
       It&#39;s possible the name of that earlier school is
@@ -27052,7 +27052,7 @@ a shelf near the desk has
   &lt;&lt;if !$n2_free &amp;&amp; !$n1_booksAsked&gt;&gt;
     &lt;&lt;if $n2_ivexGone&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the books.&quot; &quot;Ivex is gone&quot;&gt;&gt;
-    &lt;&lt;elseif Nero.passWanted()&gt;&gt;
+    &lt;&lt;elseif MT.passWanted()&gt;&gt;
       &lt;&lt;mtl [[n1x-F Books Ask]]&gt;&gt;
         Ask Ivex about his earlier school.
       &lt;&lt;/mtl&gt;&gt;
@@ -27714,7 +27714,7 @@ Nero&#39;s getting distracted again. He shakes his head to focus.
   &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if Nero.passWanted()&gt;&gt;
+&lt;&lt;if MT.passWanted()&gt;&gt;
   ?P
   There are many things in the room that have a similar
   shade of red: bookcases and books, cabinets and their drawers,
@@ -28793,7 +28793,7 @@ such as the souvenirs that a person keeps in their residence.
       ask later.
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;/if&gt;&gt;
-&lt;&lt;elseif Nero.passAgainSoon()&gt;&gt;
+&lt;&lt;elseif MT.passAgainSoon()&gt;&gt;
   Nero will have to consider trying these when he
   has a chance to guess again.
 &lt;&lt;/if&gt;&gt;
@@ -28920,7 +28920,7 @@ such as the souvenirs that a person keeps in their residence.
   &lt;!-- not adding to pw-found until wantPass --&gt;
 
   ?P
-  &lt;&lt;if Nero.passWanted()&gt;&gt;
+  &lt;&lt;if MT.passWanted()&gt;&gt;
     &lt;&lt;include [[n1x-F Globe WantPass]]&gt;&gt;
   &lt;&lt;else&gt;&gt;
     The snow globe is another oddity to add to the catalog
@@ -28936,7 +28936,7 @@ such as the souvenirs that a person keeps in their residence.
   &lt;&lt;if !$n2_free&gt;&gt;
     &lt;&lt;if $n2_ivexGone&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the globe.&quot; &quot;Ivex is gone&quot;&gt;&gt;
-    &lt;&lt;elseif !Nero.passWanted()&gt;&gt;
+    &lt;&lt;elseif !MT.passWanted()&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the globe.&quot; &quot;not interested&quot;&gt;&gt;
     &lt;&lt;elseif !_oneLeft&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the globe.&quot; &quot;reluctant&quot;&gt;&gt;
@@ -30382,7 +30382,7 @@ The map is quite large, perhaps two meters wide.
   but he does not remember its name.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if Nero.passWanted()&gt;&gt;
+&lt;&lt;if MT.passWanted()&gt;&gt;
   &lt;&lt;include [[n1x-F Map WantPass]]&gt;&gt;
 &lt;&lt;elseif !$n2_mapDefaced&gt;&gt;
   ?P
@@ -30396,7 +30396,7 @@ The map is quite large, perhaps two meters wide.
   &lt;&lt;if !$n1_mapAsked&gt;&gt;
     &lt;&lt;if $n2_ivexGone&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the map.&quot; &quot;Ivex is gone&quot;&gt;&gt;
-    &lt;&lt;elseif !Nero.passWanted()&gt;&gt;
+    &lt;&lt;elseif !MT.passWanted()&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the map.&quot; &quot;not interested&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;/if&gt;&gt;
@@ -30703,9 +30703,9 @@ With demonstrations.
 
 &lt;&lt;vi-always n1_paintingKnown false&gt;&gt;
 
-&lt;&lt;em-assert Nero.passWanted() || MP_wantTouch === $n1_magicPhase&gt;&gt;
+&lt;&lt;em-assert MT.passWanted() || MP_wantTouch === $n1_magicPhase&gt;&gt;
 
-&lt;&lt;if Nero.passWanted()&gt;&gt;
+&lt;&lt;if MT.passWanted()&gt;&gt;
   The simplest way to trick Ivex into revealing the pantheress&#39;s
   name is to invent a name for her that he will want to correct.
 &lt;&lt;else&gt;&gt;
@@ -31017,7 +31017,7 @@ The large painting beside the _window
   || MP_wantTouch === $n2_magicPhaseLost&gt;&gt;
   &lt;&lt;include [[n1x-F Painting WantTouch]]&gt;&gt;
 
-&lt;&lt;elseif Nero.passWanted()&gt;&gt;
+&lt;&lt;elseif MT.passWanted()&gt;&gt;
   &lt;&lt;include [[n1x-F Painting WantPass]]&gt;&gt;
 
 &lt;&lt;elseif $n2_extraHorny&gt;&gt;
@@ -31039,7 +31039,7 @@ The large painting beside the _window
   &lt;&lt;if !$n1_paintingKnown&gt;&gt;
     &lt;&lt;if $n2_ivexGone&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the painting.&quot; &quot;Ivex is gone&quot;&gt;&gt;
-    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase &amp;&amp; !Nero.passWanted()&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase &amp;&amp; !MT.passWanted()&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the painting.&quot; &quot;not interested&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;/if&gt;&gt;
@@ -31414,7 +31414,7 @@ Nero stares at the penguin
     &lt;&lt;actions-add [[Tell Ivex, &quot;Something just dropped from the beak...&quot;|n1x-F Penguin Ask]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif Nero.passWanted()&gt;&gt;
+&lt;&lt;elseif MT.passWanted()&gt;&gt;
   &lt;&lt;pw-suggest `PW_hunter`&gt;&gt;
     The names of pets and familiars are commonly used as passwords.
     Perhaps &quot;Hunter Too&quot; is Ivex&#39;s password?
@@ -31853,7 +31853,7 @@ pinkish in color.
 &lt;&lt;/if&gt;&gt;
 
 Nero vividly remembers Ivex&#39;s explanation of
-&lt;&lt;= Nero.passWanted() ? &quot;his wand.&quot; : &quot;his... &lt;em&gt;Fuck Toy 9000&lt;/em&gt;.&quot;&gt;&gt;
+&lt;&lt;= MT.passWanted() ? &quot;his wand.&quot; : &quot;his... &lt;em&gt;Fuck Toy 9000&lt;/em&gt;.&quot;&gt;&gt;
 The attachment is intended to surround an erect cock
 and stimulate it with great pleasure.
 But the panther also mentioned with a sinister tone that
@@ -31909,7 +31909,7 @@ the wand has reduced adventurers to begging.
     &lt;&lt;actions-add [[&quot;Cautiously try Ivex&#39;s wand.&quot;|n2x-F Wand Cock 1]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif Nero.passWanted()&gt;&gt;
+&lt;&lt;elseif MT.passWanted()&gt;&gt;
   &lt;&lt;pw-suggest `PW_fuckToy`&gt;&gt;
     Perhaps... Nero hesitates to even &lt;em&gt;think&lt;/em&gt; the name of the wand.
     Perhaps &quot;Fuck Toy 9000&quot; is Ivex&#39;s password?
@@ -31992,7 +31992,7 @@ looks to be a squishy solid.
     &lt;&lt;actions-add [[Ask Ivex about his... wand.|n1x-F Wand Ask]]&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;elseif Nero.passWanted()&gt;&gt;
+&lt;&lt;elseif MT.passWanted()&gt;&gt;
   Perhaps Ivex has given a name to his wand?
   It could be his password.
   &lt;&lt;if $n2_ivexGone&gt;&gt;
@@ -32039,7 +32039,7 @@ looks to be a squishy solid.
   &lt;&lt;if !$n1_wandAsked&gt;&gt;
     &lt;&lt;if $n2_ivexGone&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about his... wand.&quot; &quot;Ivex is gone&quot;&gt;&gt;
-    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase &amp;&amp; !Nero.passWanted()&gt;&gt;
+    &lt;&lt;elseif MP_wantTouch !== $n1_magicPhase &amp;&amp; !MT.passWanted()&gt;&gt;
       &lt;&lt;if $n1_abused || $n1_naked&gt;&gt;
         &lt;&lt;mtl-denied &quot;Ask Ivex about his... wand.&quot; &quot;um, no&quot;&gt;&gt;
       &lt;&lt;else&gt;&gt;
@@ -32691,7 +32691,7 @@ on the wall.
   could have found a comforting home, snug between her
   welcoming thighs.
 
-&lt;&lt;elseif Nero.passWanted()&gt;&gt;
+&lt;&lt;elseif MT.passWanted()&gt;&gt;
   &lt;&lt;if $n1_globeAskedHorny&gt;&gt;
     But can love-filled lust ever truly be explained?
     All the wolf wants, all he needs, is to see her gaze upon him,
@@ -32723,7 +32723,7 @@ on the wall.
   &lt;&lt;if !$n1_globeAskedHorny&gt;&gt;
     &lt;&lt;if $n2_ivexGone&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the dragon.&quot; &quot;Ivex is gone&quot;&gt;&gt;
-    &lt;&lt;elseif !Nero.passWanted()&gt;&gt;
+    &lt;&lt;elseif !MT.passWanted()&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the dragon.&quot; &quot;too shy&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;/if&gt;&gt;
@@ -33048,7 +33048,7 @@ flirtatiously out the side of her mouth.
   Her mouth must be the hole that the Sprite wants him to touch!
   Nero strains at his bonds to try to reach it.
 
-&lt;&lt;elseif Nero.passWanted()&gt;&gt;
+&lt;&lt;elseif MT.passWanted()&gt;&gt;
   &lt;&lt;if $n1_paintingKnown&gt;&gt;
     Nero whispers her name, &quot;Ivy&quot;, hoping that she will
     somehow hear it.

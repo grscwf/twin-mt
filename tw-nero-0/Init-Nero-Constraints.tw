@@ -57,7 +57,7 @@ function checkSections() {
 
 checkSections();
 
-Nero.getSection = (here) => {
+MT.getSection = (here) => {
   here || (here = State.passage);
   for (const [s, re] of Object.entries(Nero.sections)) {
     if (re.test(here)) return s;
@@ -797,10 +797,10 @@ function checkFlags() {
 
 checkFlags();
 
-Nero.getVarExpectation = (vname, sect) => {
+MT.getVarExpectation = (vname, sect) => {
   const f = flags[vname];
   if (f == null || f.sections == null) return [false, false];
-  sect = sect || Nero.getSection();
+  sect = sect || MT.getSection();
   const exp = f.sections[sect];
   if (exp == null || exp === "") {
     return [false, false];
@@ -815,21 +815,21 @@ Nero.getVarExpectation = (vname, sect) => {
   }
 };
 Nero.getVarConstant = vn => {
-  const [_, isConst, val] = Nero.getVarExpectation(vn);
+  const [_, isConst, val] = MT.getVarExpectation(vn);
   if (!isConst) throw new Error(`${vn} is not constant`);
   return val;
 };
 Nero.varIsConstant = vn => {
-  const [_, isConst] = Nero.getVarExpectation(vn);
+  const [_, isConst] = MT.getVarExpectation(vn);
   return isConst;
 };
 Nero.varIsNotable = vn => {
-  const [isNotable] = Nero.getVarExpectation(vn);
+  const [isNotable] = MT.getVarExpectation(vn);
   return isNotable;
 };
 
 Nero.getNotable = (here) => {
-  const s = Nero.getSection(here);
+  const s = MT.getSection(here);
   return Object.keys(flags).filter(f => Nero.varIsNotable(f));
 };
 
@@ -1123,8 +1123,8 @@ Nero.enumImplies = {
 
 const VT = window.VarTrace || (window.VarTrace = {});
 
-Nero.checkState = (state, used, interactive, active) => {
-  const sect = Nero.getSection();
+MT.checkState = (state, used, interactive, active) => {
+  const sect = MT.getSection();
 
   // Check flags
   for (const x of Object.keys(flags)) {
@@ -1196,7 +1196,7 @@ Nero.checkConstraints = () => {
   if (!/^n/.test(here)) return true;
   return MT.untraced(() => {
     /* note: current (incoming) state, not active state */
-    return Nero.checkState(
+    return MT.checkState(
       State.current.variables, MT.trace.wasRead, true, State.active.variables);
   });
 };
