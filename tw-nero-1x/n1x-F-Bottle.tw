@@ -10,8 +10,6 @@
 <<cv-try n1_magicPhase
   `MP_beforeCast` `MP_wantDevice` `MP_wantName` `MP_wantPass`
   `MP_contact` `MP_tapLost`>>
-<<cv-try n2_magicPhaseLost
-  null `MP_wantDevice` `MP_wantName`>>
   
 <<nero-kw-announce>>
 
@@ -67,12 +65,6 @@ Such as:
   const V = State.variables;
   const q = [];
   
-  const phase = V.n2_magicPhaseLost || V.n1_magicPhase;
-  const maybeHole = MP_wantTouch === phase;
-  const knowSprite = MP_wantDevice <= phase;
-  const nameAsked = MP_wantName <= phase;
-  const sawKnife = V.n1_deskViewed;
-
   if (V.n1_bottleNameKnown) {
     q.push(`Why did Ivex give the name Lance <em>Rock</em>-hard`
       + ` to a giant <em>metal</em> cock?`);
@@ -88,7 +80,7 @@ Such as:
       + ` [[magic glyphs|n1x-F Nackle Brief]] inscribed on it?`);
 
   } else {
-    if (knowSprite) {
+    if (MP_wantDevice <= $n1_magicPhaseReached) {
       q.push(`Why did Ivex choose a bottled metallic horse cock as the anchor`
         + ` for [[Nackle's Poltergeist Device|n1x-F Nackle Brief]]?`);
     
@@ -104,7 +96,7 @@ Such as:
         const t = `Tell the Sprite, "${please}Nackle's Poltergeist Device."`;
         MT.actionsAdd(`[[${t}|n1s-F Say Device]]`);
       
-      } else if (MP_wantDevice === V.n2_magicPhaseLost) {
+      } else if (MP_wantDevice === V.n1_magicPhaseReached) {
         q.push(`Was this a device that the Sprite could have contacted?`);
       }
       
@@ -115,7 +107,7 @@ Such as:
         + ` that can't be touched?`);
     }
     
-    if (nameAsked) {
+    if (MP_wantName <= $n1_magicPhaseReached) {
       q.push(`Why does Ivex have more than one Nackle's device in this room?`);
       q.push(`Is there <em>another</em> enormous bottled cock`
         + ` in a cabinet somewhere?`);
@@ -125,7 +117,7 @@ Such as:
       /* nothing */
     
     } else if (V.n2_free) {
-      if (MP_contact === V.n2_magicPhaseLost) {
+      if (MP_contact === V.n1_magicPhaseReached) {
         q.push(`Could Nero have used Nackle to grab the letter opener`
           + ` <em>before</em> breaking the mirror?`);
       } else {
@@ -135,11 +127,11 @@ Such as:
     } else if (MP_beforeCast === V.n1_magicPhase) {
       /* nothing */
 
-    } else if (knowSprite && sawKnife) {
+    } else if (V.n1_deskViewed && MP_wantDevice <= $n1_magicPhaseReached) {
       q.push(`And will the wolf be able to use the device to grab the`
         + ` <<n1-no-loop [[letter opener|n1x-F Knife]]>>?`);
 
-    } else if (sawKnife) {
+    } else if (V.n1_deskViewed) {
       q.push(`And is there some way the wolf can use use the device`
         + ` to grab the <<n1-no-loop [[letter opener|n1x-F Knife]]>>?`);
 
@@ -158,10 +150,10 @@ Such as:
     q.unshift(`What magic was used to insert that extremely large item`
       + ` through the bottle's narrow neck?`);
   }
-  if (maybeHole) {
+  if (MP_wantTouch === $n1_magicPhaseReached) {
+    const wants = MP_wantTouch === $n1_magicPhase ? "wants" : "wanted";
     q.unshift(`Is the bottle's opening the hole that the Sprite`
-      + ` <<= $n2_magicPhaseLost ? "wanted" : "wants">>`
-      + ` him to touch?`);
+      + ` ${wants} him to touch?`);
   }
 
   $(output).wiki(`<ul><li>${q.join("</li><li>")}</li></ul>`);

@@ -267,10 +267,9 @@
   - Include any values tested in the passage.
   - If the passage checks `n2_free`,
     include `MP_contact`, `MP_drained`, and `MP_tapLost`.
-- For testing `n2_magicPhaseLost` variants:
-  - Include `null` and any values tested in the passage.
-  - Note, these values are impossible:
-    `MP_onHold`, `MP_exitingHold`, `MP_lockedOut`, `MP_tapLost`
+- If a passage reads `n1_magicPhaseReached`, it should have most of the
+  same values as `n1_magicPhase`.
+  - Exclude: `MP_onHold`, `MP_exitingHold`, `MP_lockedOut`, `MP_tapLost`
 - TODO: these rules could be automatic.
 
 ## Story structure - Passages
