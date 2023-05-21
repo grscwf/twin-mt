@@ -83,24 +83,33 @@
 <<script>>
 const PN = window.PassageNotes || (window.PassageNotes = {});
 
-const persist = window.localStorage;
-const KEY = "passage-notes-1";
-
-PN.isUsable = checkUsable();
-
 PN.selectedText = "";
 
-PN.getFull = () => {
-  if (!PN.isUsable) return "";
-  return persist.getItem(KEY) || "";
-};
+// State.metadata.get always deserializes from localStorage, but:
+// - it's just a JSON'ed string value, which is pretty cheap to deserialize.
+// - we almost always want the localStorage value that might be modified
+//   by another tab.
+// - we don't call get often enough to make it worth caching.
+
+PN.getFull = () => State.metadata.get("notes") || "";
+PN.setFull = val => State.metadata.set("notes", val);
+
+function getStats(passage) {
+  let count = 0;
+  let hasNoteHere = false;
+  const nFull = "\n" + PN.getFull();
+  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
+    count += 1;
+    if (m[1] === passage) hasNoteHere = true;
+  }
+  return { count, hasNoteHere };
+}
 
 PN.tryReplaceFull = (old, val) => {
-  if (!PN.isUsable) throw new Error("PassageNotes can't save data.");
-  const cur = (persist.getItem(KEY) || "").trimEnd();
+  const cur = PN.getFull().trimEnd();
   if (old.trimEnd() !== cur) return cur;
   val = val.trimEnd();
-  persist.setItem(KEY, val);
+  PN.setFull(val);
   updateStatus();
   return val;
 };
@@ -149,21 +158,19 @@ function splitAt(passage, text) {
 }
 
 PN.getOne = (passage) => {
-  if (!PN.isUsable) return "";
-  const full = persist.getItem(KEY) || "";
+  const full = PN.getFull();
   const split = splitAt(passage, full);
   return split.body;
 };
 
 /** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
 PN.tryReplaceOne = (passage, old, val) => {
-  if (!PN.isUsable) throw new Error("PassageNotes can't save data");
-  const full = persist.getItem(KEY) || "";
+  const full = PN.getFull();
   const sp = splitAt(passage, full);
   if (sp.body !== old.trimEnd()) return sp.body;
   const replace = /\S/.test(val) ? sp.header + val.trimEnd() +"\n\n" : "";
   const next = sp.before + replace + sp.after;
-  persist.setItem(KEY, next);
+  PN.setFull(next);
   updateStatus();
   return val.trimEnd();
 };
@@ -200,18 +207,6 @@ function renderButton() {
   updateStatus();
 }
 
-function getStats(passage) {
-  let count = 0;
-  let hasNoteHere = false;
-  if (!PN.isUsable) return { count, hasNoteHere };
-  const nFull = "\n" + (persist.getItem(KEY) || "");
-  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
-    count += 1;
-    if (m[1] === passage) hasNoteHere = true;
-  }
-  return { count, hasNoteHere };
-}
-
 function updateStatus() {
   const st = getStats(State.passage);
   $("#notes-button").toggleClass("notes-has-note", st.hasNoteHere);
@@ -219,20 +214,17 @@ function updateStatus() {
   $("#notes-count").text(`${st.count}`);
 }
 
-function checkUsable() {
-  try {
-    const r0 = String(Math.random());
-    const key = "passage-notes-test";
-    persist.setItem(key, r0);
-    const r1 = persist.getItem(key);
-    persist.removeItem(key);
-    if (r0 === r1) return true;
-    console.error("PassageNotes not usable: roundtrip failed", [r0, r1]);
-  } catch (e) {
-    console.error("PassageNotes not usable: localStorage threw error", e);
+function initNotes() {
+  if (!setup.tester) return;
+  $(document).on(":passagedisplay", renderButton);
+
+  // migration
+  const old = localStorage.getItem("passage-notes-1");
+  if (old != null) {
+    localStorage.removeItem("passage-notes-1");
+    PN.setFull(old);
   }
-  return false;
 }
 
-$(document).on(":passagedisplay", renderButton);
+initNotes();
 <</script>>

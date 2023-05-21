@@ -18,63 +18,42 @@
 </style><</append>>
 <<script>>
 
-const LZ = LZString;
-
-const persist = window.localStorage;
-const KEY = "vp-1";
-const FLAG = "vp-marks-enabled";
+MT.visitedMarksEnabled = () => State.metadata.get("mark-visited");
+MT.visitedEnableMarks = val => State.metadata.set("mark-visited", val);
 
 let visited = new Set();
-
-let marksEnabled = false;
-
-MT.visitedMarksEnabled = () => marksEnabled;
-MT.visitedEnableMarks = val => {
-  marksEnabled = val;
-  persist.setItem(FLAG, JSON.stringify(val));
-}
 
 MT.visitedHas = title => visited.has(title);
 
 MT.visitedClear = () => {
   visited = new Set();
-  persist.removeItem(KEY);
+  State.metadata.delete("visited");
 };
 
 function add(title) {
   visited.add(title);
-  save();
+  State.metadata.set("visited", visited);
 };
 
-function load() {
-  visited = new Set();
-  const str = persist.getItem(KEY);
-  if (str != null) {
-    const json = LZ.decompressFromBase64(str);
-    if (json != null && json !== "") {
-      const list = JSON.parse(json);
-      visited = new Set(list);
-    }
-  }
-}
-
-function save() {
-  const list = Array.from(visited).sort();
-  const json = JSON.stringify(list);
-  const str = LZ.compressToBase64(json);
-  persist.setItem(KEY, str);
-}
-
 function initVisited() {
+  // remove legacy state
+  localStorage.removeItem("vp-1");
+  localStorage.removeItem("vp-marks-enabled");
+
   if (!setup.debug) return;
-  load();
-  marksEnabled = !!JSON.parse(persist.getItem(FLAG) || "false");
+
+  const v = State.metadata.get("visited");
+  if (v instanceof Set) {
+    visited = v;
+  }
+
   $(document).on(":passageend", () => {
+    console.log("aa");
     if (/^n/.test(State.passage)) add(State.passage);
-    if (marksEnabled) {
+    if (MT.visitedMarksEnabled()) {
       $("#passages a[data-passage]").each((i, el) => {
         const title = $(el).attr("data-passage");
-        if (/^n/.test(title) && visited.has(title)) {
+        if (/^n/.test(title) && MT.visitedHas(title)) {
           $(el).addClass("vp-link-visited");
         }
       });

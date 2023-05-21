@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -9563,24 +9563,33 @@ Template.add(&quot;construction&quot;,
 &lt;&lt;script&gt;&gt;
 const PN = window.PassageNotes || (window.PassageNotes = {});
 
-const persist = window.localStorage;
-const KEY = &quot;passage-notes-1&quot;;
-
-PN.isUsable = checkUsable();
-
 PN.selectedText = &quot;&quot;;
 
-PN.getFull = () =&gt; {
-  if (!PN.isUsable) return &quot;&quot;;
-  return persist.getItem(KEY) || &quot;&quot;;
-};
+// State.metadata.get always deserializes from localStorage, but:
+// - it&#39;s just a JSON&#39;ed string value, which is pretty cheap to deserialize.
+// - we almost always want the localStorage value that might be modified
+//   by another tab.
+// - we don&#39;t call get often enough to make it worth caching.
+
+PN.getFull = () =&gt; State.metadata.get(&quot;notes&quot;) || &quot;&quot;;
+PN.setFull = val =&gt; State.metadata.set(&quot;notes&quot;, val);
+
+function getStats(passage) {
+  let count = 0;
+  let hasNoteHere = false;
+  const nFull = &quot;\n&quot; + PN.getFull();
+  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
+    count += 1;
+    if (m[1] === passage) hasNoteHere = true;
+  }
+  return { count, hasNoteHere };
+}
 
 PN.tryReplaceFull = (old, val) =&gt; {
-  if (!PN.isUsable) throw new Error(&quot;PassageNotes can&#39;t save data.&quot;);
-  const cur = (persist.getItem(KEY) || &quot;&quot;).trimEnd();
+  const cur = PN.getFull().trimEnd();
   if (old.trimEnd() !== cur) return cur;
   val = val.trimEnd();
-  persist.setItem(KEY, val);
+  PN.setFull(val);
   updateStatus();
   return val;
 };
@@ -9629,21 +9638,19 @@ function splitAt(passage, text) {
 }
 
 PN.getOne = (passage) =&gt; {
-  if (!PN.isUsable) return &quot;&quot;;
-  const full = persist.getItem(KEY) || &quot;&quot;;
+  const full = PN.getFull();
   const split = splitAt(passage, full);
   return split.body;
 };
 
 /** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
 PN.tryReplaceOne = (passage, old, val) =&gt; {
-  if (!PN.isUsable) throw new Error(&quot;PassageNotes can&#39;t save data&quot;);
-  const full = persist.getItem(KEY) || &quot;&quot;;
+  const full = PN.getFull();
   const sp = splitAt(passage, full);
   if (sp.body !== old.trimEnd()) return sp.body;
   const replace = /\S/.test(val) ? sp.header + val.trimEnd() +&quot;\n\n&quot; : &quot;&quot;;
   const next = sp.before + replace + sp.after;
-  persist.setItem(KEY, next);
+  PN.setFull(next);
   updateStatus();
   return val.trimEnd();
 };
@@ -9680,18 +9687,6 @@ function renderButton() {
   updateStatus();
 }
 
-function getStats(passage) {
-  let count = 0;
-  let hasNoteHere = false;
-  if (!PN.isUsable) return { count, hasNoteHere };
-  const nFull = &quot;\n&quot; + (persist.getItem(KEY) || &quot;&quot;);
-  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
-    count += 1;
-    if (m[1] === passage) hasNoteHere = true;
-  }
-  return { count, hasNoteHere };
-}
-
 function updateStatus() {
   const st = getStats(State.passage);
   $(&quot;#notes-button&quot;).toggleClass(&quot;notes-has-note&quot;, st.hasNoteHere);
@@ -9699,22 +9694,19 @@ function updateStatus() {
   $(&quot;#notes-count&quot;).text(`${st.count}`);
 }
 
-function checkUsable() {
-  try {
-    const r0 = String(Math.random());
-    const key = &quot;passage-notes-test&quot;;
-    persist.setItem(key, r0);
-    const r1 = persist.getItem(key);
-    persist.removeItem(key);
-    if (r0 === r1) return true;
-    console.error(&quot;PassageNotes not usable: roundtrip failed&quot;, [r0, r1]);
-  } catch (e) {
-    console.error(&quot;PassageNotes not usable: localStorage threw error&quot;, e);
+function initNotes() {
+  if (!setup.tester) return;
+  $(document).on(&quot;:passagedisplay&quot;, renderButton);
+
+  // migration
+  const old = localStorage.getItem(&quot;passage-notes-1&quot;);
+  if (old != null) {
+    localStorage.removeItem(&quot;passage-notes-1&quot;);
+    PN.setFull(old);
   }
-  return false;
 }
 
-$(document).on(&quot;:passagedisplay&quot;, renderButton);
+initNotes();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="Init Paths" tags="inclusion" position="2750,600" size="100,100">&lt;&lt;script&gt;&gt;
 /*
  * This module is about traversable paths.
@@ -11282,63 +11274,42 @@ VT.ignore = fn =&gt; {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 &lt;&lt;script&gt;&gt;
 
-const LZ = LZString;
-
-const persist = window.localStorage;
-const KEY = &quot;vp-1&quot;;
-const FLAG = &quot;vp-marks-enabled&quot;;
+MT.visitedMarksEnabled = () =&gt; State.metadata.get(&quot;mark-visited&quot;);
+MT.visitedEnableMarks = val =&gt; State.metadata.set(&quot;mark-visited&quot;, val);
 
 let visited = new Set();
-
-let marksEnabled = false;
-
-MT.visitedMarksEnabled = () =&gt; marksEnabled;
-MT.visitedEnableMarks = val =&gt; {
-  marksEnabled = val;
-  persist.setItem(FLAG, JSON.stringify(val));
-}
 
 MT.visitedHas = title =&gt; visited.has(title);
 
 MT.visitedClear = () =&gt; {
   visited = new Set();
-  persist.removeItem(KEY);
+  State.metadata.delete(&quot;visited&quot;);
 };
 
 function add(title) {
   visited.add(title);
-  save();
+  State.metadata.set(&quot;visited&quot;, visited);
 };
 
-function load() {
-  visited = new Set();
-  const str = persist.getItem(KEY);
-  if (str != null) {
-    const json = LZ.decompressFromBase64(str);
-    if (json != null &amp;&amp; json !== &quot;&quot;) {
-      const list = JSON.parse(json);
-      visited = new Set(list);
-    }
-  }
-}
-
-function save() {
-  const list = Array.from(visited).sort();
-  const json = JSON.stringify(list);
-  const str = LZ.compressToBase64(json);
-  persist.setItem(KEY, str);
-}
-
 function initVisited() {
+  // remove legacy state
+  localStorage.removeItem(&quot;vp-1&quot;);
+  localStorage.removeItem(&quot;vp-marks-enabled&quot;);
+
   if (!setup.debug) return;
-  load();
-  marksEnabled = !!JSON.parse(persist.getItem(FLAG) || &quot;false&quot;);
+
+  const v = State.metadata.get(&quot;visited&quot;);
+  if (v instanceof Set) {
+    visited = v;
+  }
+
   $(document).on(&quot;:passageend&quot;, () =&gt; {
+    console.log(&quot;aa&quot;);
     if (/^n/.test(State.passage)) add(State.passage);
-    if (marksEnabled) {
+    if (MT.visitedMarksEnabled()) {
       $(&quot;#passages a[data-passage]&quot;).each((i, el) =&gt; {
         const title = $(el).attr(&quot;data-passage&quot;);
-        if (/^n/.test(title) &amp;&amp; visited.has(title)) {
+        if (/^n/.test(title) &amp;&amp; MT.visitedHas(title)) {
           $(el).addClass(&quot;vp-link-visited&quot;);
         }
       });
