@@ -72,7 +72,7 @@ Nero.getSection = (here) => {
 // - "sections" are constraints for the flag within a section.
 //   - "" means the flag can be any value and isn't important in the section.
 //   - "notable" means the flag's value should have an effect in the section.
-Nero.flags = {
+const flags = {
   // true if Ivex has smashed Nero's balls
   n1_abused: {
     implies: {
@@ -769,24 +769,24 @@ Nero.flags = {
 function checkFlags() {
   if (!setup.tester) return;
   const sections = new Set(Object.keys(Nero.sections));
-  Object.keys(Nero.flags).forEach(x => {
+  Object.keys(flags).forEach(x => {
     // check sections
-    if (Nero.flags[x].sections != null) {
+    if (flags[x].sections != null) {
       sections.forEach(s => {
-        if (!(s in Nero.flags[x].sections)) {
+        if (!(s in flags[x].sections)) {
           console.error(`flag ${x} is missing section ${s}`);
         }
       });
-      Object.keys(Nero.flags[x].sections).forEach(s => {
+      Object.keys(flags[x].sections).forEach(s => {
         if (!sections.has(s)) {
           console.error(`flag ${x} has unknown section ${s}`);
         }
       });
     }
     // check contrapositive
-    Object.keys(Nero.flags[x].implies).forEach(y => {
-      if (Nero.flags[x].implies[y] === false) {
-        const yf = Nero.flags[y];
+    Object.keys(flags[x].implies).forEach(y => {
+      if (flags[x].implies[y] === false) {
+        const yf = flags[y];
         if (yf == null || yf.implies == null || yf.implies[x] !== false) {
           console.error(`flag ${x} implies !${y} is missing contrapositive`);
         }
@@ -798,7 +798,7 @@ function checkFlags() {
 checkFlags();
 
 Nero.getVarExpectation = (vname, sect) => {
-  const f = Nero.flags[vname];
+  const f = flags[vname];
   if (f == null || f.sections == null) return [false, false];
   sect = sect || Nero.getSection();
   const exp = f.sections[sect];
@@ -830,7 +830,7 @@ Nero.varIsNotable = vn => {
 
 Nero.getNotable = (here) => {
   const s = Nero.getSection(here);
-  return Object.keys(Nero.flags).filter(f => Nero.varIsNotable(f));
+  return Object.keys(flags).filter(f => Nero.varIsNotable(f));
 };
 
 Nero.enumImplies = {
@@ -1127,14 +1127,14 @@ Nero.checkState = (state, used, interactive, active) => {
   const sect = Nero.getSection();
 
   // Check flags
-  for (const x of Object.keys(Nero.flags)) {
+  for (const x of Object.keys(flags)) {
 
     // Ignore flag if it's been deleted
     if (active && !(x in active)) continue;
 
     // Check flags that should be constant in this section
-    if (Nero.flags[x].sections != null) {
-      const sVal = Nero.flags[x].sections[sect];
+    if (flags[x].sections != null) {
+      const sVal = flags[x].sections[sect];
       if (sVal != null
         && sVal !== ""
         && sVal !== "notable"
@@ -1149,10 +1149,10 @@ Nero.checkState = (state, used, interactive, active) => {
     // Check implications for true flags
     if (!state[x]) continue;
     if (used && !used.has(x)) continue;
-    for (const y of Object.keys(Nero.flags[x].implies)) {
+    for (const y of Object.keys(flags[x].implies)) {
       if (used && !used.has(y)) continue;
       const val = state[y] == null ? false : state[y];
-      const exp = Nero.flags[x].implies[y];
+      const exp = flags[x].implies[y];
       if (val !== exp) {
         if (!interactive) return false;
         const expStr = typeof exp !== "boolean" ? `${y} === ${exp}` : exp ? y : `!${y}`;

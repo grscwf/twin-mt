@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -6991,7 +6991,7 @@ Nero.getSection = (here) =&gt; {
 // - &quot;sections&quot; are constraints for the flag within a section.
 //   - &quot;&quot; means the flag can be any value and isn&#39;t important in the section.
 //   - &quot;notable&quot; means the flag&#39;s value should have an effect in the section.
-Nero.flags = {
+const flags = {
   // true if Ivex has smashed Nero&#39;s balls
   n1_abused: {
     implies: {
@@ -7688,24 +7688,24 @@ Nero.flags = {
 function checkFlags() {
   if (!setup.tester) return;
   const sections = new Set(Object.keys(Nero.sections));
-  Object.keys(Nero.flags).forEach(x =&gt; {
+  Object.keys(flags).forEach(x =&gt; {
     // check sections
-    if (Nero.flags[x].sections != null) {
+    if (flags[x].sections != null) {
       sections.forEach(s =&gt; {
-        if (!(s in Nero.flags[x].sections)) {
+        if (!(s in flags[x].sections)) {
           console.error(`flag ${x} is missing section ${s}`);
         }
       });
-      Object.keys(Nero.flags[x].sections).forEach(s =&gt; {
+      Object.keys(flags[x].sections).forEach(s =&gt; {
         if (!sections.has(s)) {
           console.error(`flag ${x} has unknown section ${s}`);
         }
       });
     }
     // check contrapositive
-    Object.keys(Nero.flags[x].implies).forEach(y =&gt; {
-      if (Nero.flags[x].implies[y] === false) {
-        const yf = Nero.flags[y];
+    Object.keys(flags[x].implies).forEach(y =&gt; {
+      if (flags[x].implies[y] === false) {
+        const yf = flags[y];
         if (yf == null || yf.implies == null || yf.implies[x] !== false) {
           console.error(`flag ${x} implies !${y} is missing contrapositive`);
         }
@@ -7717,7 +7717,7 @@ function checkFlags() {
 checkFlags();
 
 Nero.getVarExpectation = (vname, sect) =&gt; {
-  const f = Nero.flags[vname];
+  const f = flags[vname];
   if (f == null || f.sections == null) return [false, false];
   sect = sect || Nero.getSection();
   const exp = f.sections[sect];
@@ -7749,7 +7749,7 @@ Nero.varIsNotable = vn =&gt; {
 
 Nero.getNotable = (here) =&gt; {
   const s = Nero.getSection(here);
-  return Object.keys(Nero.flags).filter(f =&gt; Nero.varIsNotable(f));
+  return Object.keys(flags).filter(f =&gt; Nero.varIsNotable(f));
 };
 
 Nero.enumImplies = {
@@ -8046,14 +8046,14 @@ Nero.checkState = (state, used, interactive, active) =&gt; {
   const sect = Nero.getSection();
 
   // Check flags
-  for (const x of Object.keys(Nero.flags)) {
+  for (const x of Object.keys(flags)) {
 
     // Ignore flag if it&#39;s been deleted
     if (active &amp;&amp; !(x in active)) continue;
 
     // Check flags that should be constant in this section
-    if (Nero.flags[x].sections != null) {
-      const sVal = Nero.flags[x].sections[sect];
+    if (flags[x].sections != null) {
+      const sVal = flags[x].sections[sect];
       if (sVal != null
         &amp;&amp; sVal !== &quot;&quot;
         &amp;&amp; sVal !== &quot;notable&quot;
@@ -8068,10 +8068,10 @@ Nero.checkState = (state, used, interactive, active) =&gt; {
     // Check implications for true flags
     if (!state[x]) continue;
     if (used &amp;&amp; !used.has(x)) continue;
-    for (const y of Object.keys(Nero.flags[x].implies)) {
+    for (const y of Object.keys(flags[x].implies)) {
       if (used &amp;&amp; !used.has(y)) continue;
       const val = state[y] == null ? false : state[y];
-      const exp = Nero.flags[x].implies[y];
+      const exp = flags[x].implies[y];
       if (val !== exp) {
         if (!interactive) return false;
         const expStr = typeof exp !== &quot;boolean&quot; ? `${y} === ${exp}` : exp ? y : `!${y}`;
@@ -9033,6 +9033,47 @@ Nero.passWanted = () =&gt; {
   return Nero.passAgainSoon();
 };
 
+Template.add(&quot;sprBadPass&quot;, () =&gt; {
+  const V = State.variables;
+
+  const pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
+  const tried = V.n1_passTried.length;
+
+  let mkp = `&lt;em&gt;${pw}&lt;/em&gt; `;
+  if (Nero.passSprite[pw] != null) {
+    mkp = `&lt;em&gt;${Nero.passSprite[pw]}&lt;/em&gt; `;
+  }
+
+  // oldPassword joke detracts from the tried joke
+  if (Nero.oldPasswords[pw] &amp;&amp; tried !== 2) {
+    mkp += Nero.oldPasswords[pw];
+  } else {
+    mkp += &quot;is not the correct password, ?master&quot;;
+  }
+
+  switch (tried) {
+    case 1:
+      mkp += &quot; You have two tries&quot;;
+      break;
+    case 2:
+      mkp += &quot; You have only one&quot;
+        + &quot; &lt;span class=sprite-squish&gt;look up the singular form of the word&quot;
+        + &quot; and use it here also remind me to figure out how to bind the&quot;
+        + &quot; Sprite to my voice in case I ever capture a mage who knows how&quot;
+        + &quot; to activate it&lt;/span&gt;&quot;;
+      break;
+    case 3:
+      mkp += &quot; You have zero tries&quot;;
+      break;
+    case 4:
+      mkp += &quot; You have no more tries&quot;;
+      break;
+    default:
+      throw new Error(`unexpected passTried ${V.n1_passTried.length}`);
+  }
+  return mkp;
+});
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="236" name="Init Nero Patience" tags="inclusion" position="2825,1250" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 .patience-debug:not(.patience-debug-show) &gt; :not(label) {
   display: none;
@@ -9267,7 +9308,7 @@ const tameWords = [
 
 const tameRE = new RegExp(&quot;\\b(&quot; + tameWords.join(&quot;|&quot;) + &quot;)\\b&quot;, &quot;gi&quot;);
 
-Nero.startTaming = () =&gt; {
+MT.startTaming = () =&gt; {
   const passage = $(&quot;.passage&quot;);
   tame(passage[0]);
   setTimeout(() =&gt; passage.addClass(&quot;tame-fade&quot;), 200);
@@ -9432,47 +9473,6 @@ Template.add(&quot;sprHoldStop&quot;, () =&gt; {
     mkp += ` &lt;span class=nobr&gt;remai&amp;mdash;&lt;/span&gt;`;
     mkp += ` Wait a minute, I dropped something, ?master`;
     V.n1_magicPhase = MP_exitingHold;
-  }
-  return mkp;
-});
-
-Template.add(&quot;sprBadPass&quot;, () =&gt; {
-  const V = State.variables;
-
-  const pw = V.n1_passTried[0].replace(/^#/, &quot;&quot;);
-  const tried = V.n1_passTried.length;
-
-  let mkp = `&lt;em&gt;${pw}&lt;/em&gt; `;
-  if (Nero.passSprite[pw] != null) {
-    mkp = `&lt;em&gt;${Nero.passSprite[pw]}&lt;/em&gt; `;
-  }
-
-  // oldPassword joke detracts from the tried joke
-  if (Nero.oldPasswords[pw] &amp;&amp; tried !== 2) {
-    mkp += Nero.oldPasswords[pw];
-  } else {
-    mkp += &quot;is not the correct password, ?master&quot;;
-  }
-
-  switch (tried) {
-    case 1:
-      mkp += &quot; You have two tries&quot;;
-      break;
-    case 2:
-      mkp += &quot; You have only one&quot;
-        + &quot; &lt;span class=sprite-squish&gt;look up the singular form of the word&quot;
-        + &quot; and use it here also remind me to figure out how to bind the&quot;
-        + &quot; Sprite to my voice in case I ever capture a mage who knows how&quot;
-        + &quot; to activate it&lt;/span&gt;&quot;;
-      break;
-    case 3:
-      mkp += &quot; You have zero tries&quot;;
-      break;
-    case 4:
-      mkp += &quot; You have no more tries&quot;;
-      break;
-    default:
-      throw new Error(`unexpected passTried ${V.n1_passTried.length}`);
   }
   return mkp;
 });
@@ -39810,11 +39810,11 @@ my alternative to enthrallment. I call it,
 `&gt;&gt;
 
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;span id=tame-1&gt;
+  &lt;span id=&quot;tame-1&quot;&gt;
   &lt;&lt;link Continue&gt;&gt;
     &lt;&lt;script&gt;&gt;
-      Nero.startTaming();
-      /* removing the a will mess with scroll position */
+      MT.startTaming();
+      /* removing the &lt;a&gt; will mess with scroll position */
       $(&quot;#tame-2&quot;).append(&quot;&lt;br&gt;&lt;br&gt;&quot;);
       $(&quot;#tame-1 a&quot;).remove();
       setTimeout(() =&gt; $(&quot;#tame-2&quot;).addClass(&quot;tame-unhide&quot;), 200);
@@ -40393,10 +40393,10 @@ my alternative to enthrallment. I call it,
 `&gt;&gt;
 
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;span id=tame-1&gt;
+  &lt;span id=&quot;tame-1&quot;&gt;
   &lt;&lt;link Continue&gt;&gt;
     &lt;&lt;script&gt;&gt;
-      Nero.startTaming();
+      MT.startTaming();
       /* removing the &lt;a&gt; will mess with scroll position */
       $(&quot;#tame-2&quot;).append(&quot;&lt;br&gt;&lt;br class=log-remove&gt;&quot;);
       $(&quot;#tame-1 a&quot;).remove();
