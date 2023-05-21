@@ -235,7 +235,7 @@ function withinCondition(ctx) {
 Macro.add("vi-always", {
   handler: function() {
     const [vname, exp] = this.args;
-    if (Nero.varIsConstant(vname) && !withinInclude(this)) {
+    if (MT.varIsConstant(vname) && !withinInclude(this)) {
       MT.warn(`vi-always ${vname} is unnecessary`);
     }
     const actual = MT.untracedGet(vname);
@@ -255,7 +255,7 @@ Macro.add("vi-always", {
 Macro.add("vi-always-if", {
   handler: function() {
     const [cond, vname, exp] = this.args;
-    if (Nero.varIsConstant(vname) && !withinInclude(this)) {
+    if (MT.varIsConstant(vname) && !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
     if (MT.untracedGet(cond)) {
@@ -278,7 +278,7 @@ Macro.add("vi-always-if", {
 Macro.add("vi-ignore", {
   handler: function() {
     for (const vn of this.args) {
-      if (Nero.varIsConstant(vn)) {
+      if (MT.varIsConstant(vn)) {
         MT.warn(`vi-ignore ${vn} is unnecessary`);
       }
       ignoreVars.add(vn);
@@ -296,7 +296,7 @@ Macro.add("vi-ignore-if", {
   handler: function() {
     for (let p = 0; p < this.args.length - 1; p++) {
       const cvar = this.args[p];
-      if (Nero.varIsConstant(cvar)) {
+      if (MT.varIsConstant(cvar)) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
       if (MT.untracedGet(cvar)) {
@@ -328,7 +328,7 @@ function varButton(vname) {
     outer.addClass("var-info-was-written");
   }
 
-  if (Nero.varIsNotable(vname)) {
+  if (MT.varIsNotable(vname)) {
     tags += "[section-notable]\n";
     outer.addClass("var-info-notable");
     if (ignoreVars.has(vname)) {
@@ -341,8 +341,8 @@ function varButton(vname) {
       tags += "[to-do]\n";
       outer.addClass("var-info-to-do");
     }
-  } else if (Nero.varIsConstant(vname)) {
-    const exp = Nero.getVarConstant(vname);
+  } else if (MT.varIsConstant(vname)) {
+    const exp = MT.getVarConstant(vname);
     tags += `[section-always ${str(exp)}]\n`;
     outer.addClass("var-info-always");
   }
@@ -450,13 +450,13 @@ function initVarInfo() {
         const c = alwaysVars.get(vn);
         MT.warn(`vi-always ${vn} ${c}, but var was read`);
       }
-      if (Nero.varIsConstant(vn)) {
-        const c = Nero.getVarConstant(vn);
+      if (MT.varIsConstant(vn)) {
+        const c = MT.getVarConstant(vn);
         MT.warn(`${vn} always ${c} in this section, but var was read`);
       }
     });
 
-    const notable = Nero.getNotable();
+    const notable = MT.getNotable();
     const to_do = notable.filter(
       vn => !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn));
     if (to_do.length && /[-/][F] /.test(State.passage)) {

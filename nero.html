@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -6922,7 +6922,7 @@ Macro.add(&quot;barbs-announce&quot;, {
 
 // - Passages are grouped into story sections by a prefix in their title.
 // - Every passage must be in exactly one section.
-Nero.sections = {
+const sectionPatterns = {
   // n0 - passages that aren&#39;t part of the story
   n0_meta: /^n0/,
 
@@ -6964,7 +6964,7 @@ Nero.sections = {
 function checkSections() {
   if (!setup.tester) return;
   Story.lookup().forEach(({ title }) =&gt; {
-    const matches = Object.entries(Nero.sections)
+    const matches = Object.entries(sectionPatterns)
       .flatMap(([s, re]) =&gt; re.test(title) ? [s] : []);
     if (matches.length === 0) {
       console.error(`[\[${title}]] does not match any section`);
@@ -6978,7 +6978,7 @@ checkSections();
 
 MT.getSection = (here) =&gt; {
   here || (here = State.passage);
-  for (const [s, re] of Object.entries(Nero.sections)) {
+  for (const [s, re] of Object.entries(sectionPatterns)) {
     if (re.test(here)) return s;
   }
   console.error(`[\[${here}]] does not match any section`);
@@ -7687,17 +7687,17 @@ const flags = {
 
 function checkFlags() {
   if (!setup.tester) return;
-  const sections = new Set(Object.keys(Nero.sections));
+  const sectNames = new Set(Object.keys(sectionPatterns));
   Object.keys(flags).forEach(x =&gt; {
     // check sections
     if (flags[x].sections != null) {
-      sections.forEach(s =&gt; {
+      sectNames.forEach(s =&gt; {
         if (!(s in flags[x].sections)) {
           console.error(`flag ${x} is missing section ${s}`);
         }
       });
       Object.keys(flags[x].sections).forEach(s =&gt; {
-        if (!sections.has(s)) {
+        if (!sectNames.has(s)) {
           console.error(`flag ${x} has unknown section ${s}`);
         }
       });
@@ -7733,26 +7733,26 @@ MT.getVarExpectation = (vname, sect) =&gt; {
     return [false, true, exp];
   }
 };
-Nero.getVarConstant = vn =&gt; {
+MT.getVarConstant = vn =&gt; {
   const [_, isConst, val] = MT.getVarExpectation(vn);
   if (!isConst) throw new Error(`${vn} is not constant`);
   return val;
 };
-Nero.varIsConstant = vn =&gt; {
+MT.varIsConstant = vn =&gt; {
   const [_, isConst] = MT.getVarExpectation(vn);
   return isConst;
 };
-Nero.varIsNotable = vn =&gt; {
+MT.varIsNotable = vn =&gt; {
   const [isNotable] = MT.getVarExpectation(vn);
   return isNotable;
 };
 
-Nero.getNotable = (here) =&gt; {
+MT.getNotable = (here) =&gt; {
   const s = MT.getSection(here);
-  return Object.keys(flags).filter(f =&gt; Nero.varIsNotable(f));
+  return Object.keys(flags).filter(f =&gt; MT.varIsNotable(f));
 };
 
-Nero.enumImplies = {
+const enumImplies = {
   n1_magicPhase: {
     [MP_beforeCast]: {
       n1_booksAsked: false,
@@ -8082,9 +8082,9 @@ MT.checkState = (state, used, interactive, active) =&gt; {
   }
 
   // Check enum implications
-  for (const x of Object.keys(Nero.enumImplies)) {
+  for (const x of Object.keys(enumImplies)) {
     const xVal = state[x] == null ? &quot;null&quot; : state[x];
-    const rules = Nero.enumImplies[x][xVal];
+    const rules = enumImplies[x][xVal];
     if (rules == null) continue;
     if (rules.impossible) {
       if (!interactive) return false;
@@ -8109,7 +8109,7 @@ MT.checkState = (state, used, interactive, active) =&gt; {
   return true;
 };
 
-Nero.checkConstraints = () =&gt; {
+const checkConstraints = () =&gt; {
   const here = State.passage;
   if (State.current.variables.t_restarting) return true;
   if (!/^n/.test(here)) return true;
@@ -8120,7 +8120,7 @@ Nero.checkConstraints = () =&gt; {
   });
 };
 
-$(document).on(&quot;:passageend&quot;, Nero.checkConstraints);
+$(document).on(&quot;:passageend&quot;, checkConstraints);
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="230" name="Init Nero Ending" tags="inclusion" position="3250,1975" size="100,100">&lt;&lt;script&gt;&gt;
 
 const endings = {
@@ -10866,7 +10866,7 @@ function withinCondition(ctx) {
 Macro.add(&quot;vi-always&quot;, {
   handler: function() {
     const [vname, exp] = this.args;
-    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+    if (MT.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
       MT.warn(`vi-always ${vname} is unnecessary`);
     }
     const actual = MT.untracedGet(vname);
@@ -10886,7 +10886,7 @@ Macro.add(&quot;vi-always&quot;, {
 Macro.add(&quot;vi-always-if&quot;, {
   handler: function() {
     const [cond, vname, exp] = this.args;
-    if (Nero.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+    if (MT.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
     if (MT.untracedGet(cond)) {
@@ -10909,7 +10909,7 @@ Macro.add(&quot;vi-always-if&quot;, {
 Macro.add(&quot;vi-ignore&quot;, {
   handler: function() {
     for (const vn of this.args) {
-      if (Nero.varIsConstant(vn)) {
+      if (MT.varIsConstant(vn)) {
         MT.warn(`vi-ignore ${vn} is unnecessary`);
       }
       ignoreVars.add(vn);
@@ -10927,7 +10927,7 @@ Macro.add(&quot;vi-ignore-if&quot;, {
   handler: function() {
     for (let p = 0; p &lt; this.args.length - 1; p++) {
       const cvar = this.args[p];
-      if (Nero.varIsConstant(cvar)) {
+      if (MT.varIsConstant(cvar)) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
       if (MT.untracedGet(cvar)) {
@@ -10959,7 +10959,7 @@ function varButton(vname) {
     outer.addClass(&quot;var-info-was-written&quot;);
   }
 
-  if (Nero.varIsNotable(vname)) {
+  if (MT.varIsNotable(vname)) {
     tags += &quot;[section-notable]\n&quot;;
     outer.addClass(&quot;var-info-notable&quot;);
     if (ignoreVars.has(vname)) {
@@ -10972,8 +10972,8 @@ function varButton(vname) {
       tags += &quot;[to-do]\n&quot;;
       outer.addClass(&quot;var-info-to-do&quot;);
     }
-  } else if (Nero.varIsConstant(vname)) {
-    const exp = Nero.getVarConstant(vname);
+  } else if (MT.varIsConstant(vname)) {
+    const exp = MT.getVarConstant(vname);
     tags += `[section-always ${str(exp)}]\n`;
     outer.addClass(&quot;var-info-always&quot;);
   }
@@ -11081,13 +11081,13 @@ function initVarInfo() {
         const c = alwaysVars.get(vn);
         MT.warn(`vi-always ${vn} ${c}, but var was read`);
       }
-      if (Nero.varIsConstant(vn)) {
-        const c = Nero.getVarConstant(vn);
+      if (MT.varIsConstant(vn)) {
+        const c = MT.getVarConstant(vn);
         MT.warn(`${vn} always ${c} in this section, but var was read`);
       }
     });
 
-    const notable = Nero.getNotable();
+    const notable = MT.getNotable();
     const to_do = notable.filter(
       vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !MT.trace.wasRead.has(vn));
     if (to_do.length &amp;&amp; /[-/][F] /.test(State.passage)) {

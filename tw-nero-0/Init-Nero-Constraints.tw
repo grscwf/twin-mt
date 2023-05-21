@@ -3,7 +3,7 @@
 
 // - Passages are grouped into story sections by a prefix in their title.
 // - Every passage must be in exactly one section.
-Nero.sections = {
+const sectionPatterns = {
   // n0 - passages that aren't part of the story
   n0_meta: /^n0/,
 
@@ -45,7 +45,7 @@ Nero.sections = {
 function checkSections() {
   if (!setup.tester) return;
   Story.lookup().forEach(({ title }) => {
-    const matches = Object.entries(Nero.sections)
+    const matches = Object.entries(sectionPatterns)
       .flatMap(([s, re]) => re.test(title) ? [s] : []);
     if (matches.length === 0) {
       console.error(`[\[${title}]] does not match any section`);
@@ -59,7 +59,7 @@ checkSections();
 
 MT.getSection = (here) => {
   here || (here = State.passage);
-  for (const [s, re] of Object.entries(Nero.sections)) {
+  for (const [s, re] of Object.entries(sectionPatterns)) {
     if (re.test(here)) return s;
   }
   console.error(`[\[${here}]] does not match any section`);
@@ -768,17 +768,17 @@ const flags = {
 
 function checkFlags() {
   if (!setup.tester) return;
-  const sections = new Set(Object.keys(Nero.sections));
+  const sectNames = new Set(Object.keys(sectionPatterns));
   Object.keys(flags).forEach(x => {
     // check sections
     if (flags[x].sections != null) {
-      sections.forEach(s => {
+      sectNames.forEach(s => {
         if (!(s in flags[x].sections)) {
           console.error(`flag ${x} is missing section ${s}`);
         }
       });
       Object.keys(flags[x].sections).forEach(s => {
-        if (!sections.has(s)) {
+        if (!sectNames.has(s)) {
           console.error(`flag ${x} has unknown section ${s}`);
         }
       });
@@ -814,26 +814,26 @@ MT.getVarExpectation = (vname, sect) => {
     return [false, true, exp];
   }
 };
-Nero.getVarConstant = vn => {
+MT.getVarConstant = vn => {
   const [_, isConst, val] = MT.getVarExpectation(vn);
   if (!isConst) throw new Error(`${vn} is not constant`);
   return val;
 };
-Nero.varIsConstant = vn => {
+MT.varIsConstant = vn => {
   const [_, isConst] = MT.getVarExpectation(vn);
   return isConst;
 };
-Nero.varIsNotable = vn => {
+MT.varIsNotable = vn => {
   const [isNotable] = MT.getVarExpectation(vn);
   return isNotable;
 };
 
-Nero.getNotable = (here) => {
+MT.getNotable = (here) => {
   const s = MT.getSection(here);
-  return Object.keys(flags).filter(f => Nero.varIsNotable(f));
+  return Object.keys(flags).filter(f => MT.varIsNotable(f));
 };
 
-Nero.enumImplies = {
+const enumImplies = {
   n1_magicPhase: {
     [MP_beforeCast]: {
       n1_booksAsked: false,
@@ -1163,9 +1163,9 @@ MT.checkState = (state, used, interactive, active) => {
   }
 
   // Check enum implications
-  for (const x of Object.keys(Nero.enumImplies)) {
+  for (const x of Object.keys(enumImplies)) {
     const xVal = state[x] == null ? "null" : state[x];
-    const rules = Nero.enumImplies[x][xVal];
+    const rules = enumImplies[x][xVal];
     if (rules == null) continue;
     if (rules.impossible) {
       if (!interactive) return false;
@@ -1190,7 +1190,7 @@ MT.checkState = (state, used, interactive, active) => {
   return true;
 };
 
-Nero.checkConstraints = () => {
+const checkConstraints = () => {
   const here = State.passage;
   if (State.current.variables.t_restarting) return true;
   if (!/^n/.test(here)) return true;
@@ -1201,5 +1201,5 @@ Nero.checkConstraints = () => {
   });
 };
 
-$(document).on(":passageend", Nero.checkConstraints);
+$(document).on(":passageend", checkConstraints);
 <</script>>
