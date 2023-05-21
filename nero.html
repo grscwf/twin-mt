@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -6848,23 +6848,22 @@ function openLog() {
 
 initLog();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="227" name="Init Nero Actions" tags="inclusion" position="2625,1150" size="100,100">&lt;&lt;script&gt;&gt;
-const Nero = window.Nero || (window.Nero = {});
 const actionList = [];
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
   actionList.length = 0;
 });
 
-Nero.actionsAdd = action =&gt; {
+MT.actionsAdd = action =&gt; {
   actionList.push(action);
 };
 
-Nero.actionsSize = () =&gt; actionList.length;
+MT.actionsSize = () =&gt; actionList.length;
 
 Macro.add(&quot;actions-add&quot;, {
   skipArgs: true,
   handler: function() {
-    Nero.actionsAdd(this.args.raw);
+    MT.actionsAdd(this.args.raw);
   }
 });
 
@@ -8124,7 +8123,7 @@ Nero.checkConstraints = () =&gt; {
 $(document).on(&quot;:passageend&quot;, Nero.checkConstraints);
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="230" name="Init Nero Ending" tags="inclusion" position="3250,1975" size="100,100">&lt;&lt;script&gt;&gt;
 
-Nero.endings = {
+const endings = {
   broken: {
     title: &quot;Challenge Ending: Broken&quot;,
     wip: true,
@@ -8182,7 +8181,7 @@ Nero.endings = {
   },
 };
 
-Nero.showEnding = info =&gt; {
+MT.showEnding = info =&gt; {
   const [name, barbOption, variant] = info;
 
   const key = name + (variant == null ? &quot;&quot; : `_${variant}`);
@@ -8191,7 +8190,7 @@ Nero.showEnding = info =&gt; {
   const V = State.variables;
   const blank = V.n1_castEndgame;
 
-  const end = Nero.endings[key];
+  const end = endings[key];
   if (end == null) return `Unknown ending ${key}`;
 
   const barbs = barbOption === &quot;barbs&quot;;
@@ -8319,7 +8318,7 @@ Nero.showEnding = info =&gt; {
 
 &lt;&lt;script&gt;&gt;
 
-Nero.barbGlitch = [
+const barbGlitch = [
   `&lt;span class=glitch-switch&gt;\
     &lt;div class=glitch-switch-1&gt;barbed&lt;/div&gt;\
     &lt;div class=glitch-switch-2&gt;smooth&lt;/div&gt;\
@@ -8329,6 +8328,13 @@ Nero.barbGlitch = [
     &lt;div class=glitch-switch-2&gt;barbed&lt;/div&gt;\
   &lt;/span&gt;`,
 ];
+
+Template.add(&quot;barbed&quot;, () =&gt; {
+  const V = State.variables;
+  return V.n1_glitched ? barbGlitch[0] :
+    V.n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;;
+});
+
 
 Macro.delete(&quot;glitch-text&quot;);
 Macro.add(&quot;glitch-text&quot;, {
@@ -8361,9 +8367,9 @@ function glitchText(textNode, g, speed) {
     if (/\s/.test(word)) {
      outer.append(word);
     } else if (word === &quot;##barbed-1##&quot;) {
-      $(Nero.barbGlitch[0]).appendTo(outer);
+      $(barbGlitch[0]).appendTo(outer);
     } else if (word === &quot;##barbed-2##&quot;) {
-      $(Nero.barbGlitch[1]).appendTo(outer);
+      $(barbGlitch[1]).appendTo(outer);
     } else {
       const gf = Math.min(Math.floor(g/speed), 4);
       g++;
@@ -8381,7 +8387,7 @@ function glitchText(textNode, g, speed) {
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="232" name="Init Nero Keyword" tags="inclusion" position="3300,1200" size="100,100">&lt;&lt;script&gt;&gt;
 
-Nero.keywords = {
+const keywords = {
   antimagic: {
     title: &quot;Anti-Magic Fields&quot;,
     passages: [
@@ -8563,11 +8569,11 @@ Nero.keywords = {
   },
 };
 
-Nero.kwCount = () =&gt; {
+MT.kwCount = () =&gt; {
   const V = State.variables;
   let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
   let unlocked = 0;
-  const keys = Object.keys(Nero.keywords);
+  const keys = Object.keys(keywords);
   for (const key of keys) {
     const vn = `n9_kw_${key}`;
     if (V[vn]) unlocked++;
@@ -8579,20 +8585,20 @@ Nero.kwCount = () =&gt; {
   return mkp;
 };
 
-Nero.listKeywords = () =&gt; {
+MT.listKeywords = () =&gt; {
   const V = State.variables;
   const T = State.temporary;
   let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
-  const keys = Object.keys(Nero.keywords);
+  const keys = Object.keys(keywords);
   keys.sort((a, b) =&gt; {
-    const at = Nero.keywords[a].title;
-    const bt = Nero.keywords[b].title;
+    const at = keywords[a].title;
+    const bt = keywords[b].title;
     return at &lt; bt ? -1 : at &gt; bt ? +1 : 0;
   });
   let anyShown = false;
   for (let i = 0; i &lt; keys.length; i++) {
     const key = keys[i];
-    const kw = Nero.keywords[key];
+    const kw = keywords[key];
     const vn = `n9_kw_${key}`;
     if (!V.n0_playerLeftStudyWithMirror &amp;&amp; !V[vn] &amp;&amp; !T.lockpick) continue;
     anyShown = true;
@@ -8608,9 +8614,9 @@ Nero.listKeywords = () =&gt; {
   return mkp;
 };
 
-Nero.showKeyword = key =&gt; {
+MT.showKeyword = key =&gt; {
   State.temporary.notesVariant = key;
-  const kw = Nero.keywords[key];
+  const kw = keywords[key];
   if (kw == null) return `Unknown keyword ${key}`;
   
   let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
@@ -8631,7 +8637,7 @@ Nero.showKeyword = key =&gt; {
 Macro.add(&quot;nero-kw&quot;, {
   handler: function() {
     const [key] = this.args;
-    const kw = Nero.keywords[key];
+    const kw = keywords[key];
     if (kw == null) throw new Error(`nero-kw ${key} not found`);
     
     const V = State.variables;
@@ -8657,7 +8663,7 @@ Macro.add(&quot;nero-kw-announce&quot;, {
     if (key == null) return;
     
     delete V.t_kwAnnounce;
-    const kw = Nero.keywords[key];
+    const kw = keywords[key];
     if (kw == null) throw new Error(`nero-kw-announce ${key} not found`);
 
     const vn = `n9_kw_${key}`;
@@ -8803,7 +8809,6 @@ span.debug:has(&gt; .pw-debug) + wbr + span.debug &gt; .pw-debug &gt; label {
 
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 &lt;&lt;script&gt;&gt;
-const Nero = window.Nero || (window.Nero = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 const sayPassword = &quot;[[n1s-F Say Password]]&quot;.slice(2, -2);
 
@@ -8962,7 +8967,7 @@ Macro.add(&quot;pw-suggest&quot;, {
       if (wantPass) {
         const text =`Tell the Sprite, &quot;${pw}&quot;.`;
         const code = `$t_passToTry = &quot;${pw}&quot;`;
-        Nero.actionsAdd(&quot;[&quot; + `[\`${text}\`|${sayPassword}][${code}]]`);
+        MT.actionsAdd(&quot;[&quot; + `[\`${text}\`|${sayPassword}][${code}]]`);
       } else {
         $(this.output).append(
           `Nero will have to remember to try it when the
@@ -9339,12 +9344,6 @@ function tameTextTo(list, node) {
 &lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-
-Template.add(&quot;barbed&quot;, () =&gt; {
-  const V = State.variables;
-  return V.n1_glitched ? Nero.barbGlitch[0] :
-    V.n1_barbs ? &quot;barbed&quot; : &quot;smooth&quot;;
-});
 
 Template.add(&quot;blank&quot;,
   &quot;&lt;span class=nero-blank&gt;&quot; +
@@ -10818,7 +10817,6 @@ Macro.add(&quot;meta-ending&quot;, {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-const Nero = window.Nero || (window.Nero = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
 const alwaysConditional = new Set();
@@ -12509,17 +12507,17 @@ The story of this failure will be in the public release.
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="263" name="n0-F Nero Ending" tags="noreturn" position="3325,2225" size="100,100">&lt;&lt;nobr&gt;&gt;
 ?cssArchive
 
-&lt;&lt;= Nero.showEnding($t_choice)&gt;&gt;
+&lt;&lt;= MT.showEnding($t_choice)&gt;&gt;
 &lt;hr&gt;
 [[Return to the Archives|Archives]]
 &lt;br&gt;
 &lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="264" name="n0-F Nero Keyword Index" tags="inclusion" position="3225,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;= Nero.listKeywords()&gt;&gt;
+&lt;&lt;= MT.listKeywords()&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="265" name="n0-F Nero Keyword" tags="noreturn" position="3325,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
 ?cssArchive
 
-&lt;&lt;= Nero.showKeyword($t_choice)&gt;&gt;
+&lt;&lt;= MT.showKeyword($t_choice)&gt;&gt;
 &lt;hr&gt;
 [[Return to the Archives|Archives]]
 &lt;br&gt;
@@ -27314,7 +27312,7 @@ Such as:
   
     if (MP_wantName === V.n1_magicPhase) {
       const t = `Tell the Sprite, &quot;Please, Lance Rockhard.&quot;`;
-      Nero.actionsAdd(`[[${t}|n1s-F Say Lance]]`);
+      MT.actionsAdd(`[[${t}|n1s-F Say Lance]]`);
     }
   }
 
@@ -27337,7 +27335,7 @@ Such as:
         
         const please = V.n1_rememberPlease ? &quot;Please, &quot; : &quot;&quot;;
         const t = `Tell the Sprite, &quot;${please}Nackle&#39;s Poltergeist Device.&quot;`;
-        Nero.actionsAdd(`[[${t}|n1s-F Say Device]]`);
+        MT.actionsAdd(`[[${t}|n1s-F Say Device]]`);
       
       } else if (MP_wantDevice === V.n2_magicPhaseLost) {
         q.push(`Was this a device that the Sprite could have contacted?`);
@@ -33140,7 +33138,7 @@ giving him a moment of mental clarity about the absurdity of his attraction.
 &lt;/em&gt;
 But his quivering cock disagrees.
 
-&lt;&lt;if !Nero.actionsSize()&gt;&gt;
+&lt;&lt;if !MT.actionsSize()&gt;&gt;
   ?P
   Nero wrests his attention away from the pantheress
   and searches the room for something completely asexual
@@ -40752,7 +40750,7 @@ as a reminder of what can happen if the wolf refuses.
 
 &lt;hr&gt;
 &lt;div class=ui-subtitle&gt;
-    Nero Keywords &lt;&lt;= Nero.kwCount()&gt;&gt;
+    Nero Keywords &lt;&lt;= MT.kwCount()&gt;&gt;
     &lt;&lt;= _switch(&quot;nero-kw&quot;)&gt;&gt;
 &lt;/div&gt;
 &lt;div class=&quot;arc-body arc-closable arc-closable-nero-kw&quot;&gt;
@@ -41230,6 +41228,9 @@ by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;
 
 /** globals for Mage&#39;s Tower */
 window.MT = {};
+
+// TODO: delete this
+window.Nero = {};
 
 /** Evaluate all passages that match regex. */
 function runInit(regex) {

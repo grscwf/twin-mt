@@ -239,7 +239,7 @@
 - Trying a state has two phases:
   - First, a fast consistency check rejects any states that
     should be impossible (eg, free and !naked).
-    - This is the function `Nero.checkState` in the
+    - This is the function `checkState` in the
       `Nero Constraints` init passage.
     - This check is approximate.
       It doesn't reject all illegal states,
