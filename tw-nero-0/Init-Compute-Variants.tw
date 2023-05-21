@@ -38,14 +38,13 @@
 </style><</append>>
 
 <<script>>
-const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
-CV.ignore = new Set();
-CV.tryVars = {};
+let ignore = new Set();
+let tryVars = {};
 
 // vars that are definitely not boolean (but might be null)
-CV.nonbooleans = new Set([
+const nonbooleans = new Set([
   "n1_passFound",
   "n1_passTried",
   "t_upset",
@@ -55,7 +54,7 @@ Macro.add("cv-ignore", {
   handler: function() {
     for (let vn of this.args) {
       vn = vn.replace(/^\$/, '');
-      CV.ignore.add(vn);
+      ignore.add(vn);
     }
   }
 });
@@ -63,16 +62,16 @@ Macro.add("cv-ignore", {
 Macro.add("cv-try", {
   handler: function() {
     const [vn] = this.args;
-    CV.tryVars[vn] = this.args.slice(1);
+    tryVars[vn] = this.args.slice(1);
   }
 })
 
 $(document).on(":passagestart", () => {
-  CV.ignore = new Set();
-  CV.tryVars = {};
+  ignore = new Set();
+  tryVars = {};
 });
 
-CV.render = function() {
+MT.computeVariants = function() {
   const statEl = $(".var-info-compute");
   statEl.addClass("cv-busy");
 
@@ -83,32 +82,32 @@ CV.render = function() {
   // ignore vars that weren't boolean-ish
   for (const k of Object.keys(beginState)) {
     if (beginState[k] != null && typeof beginState[k] !== "boolean") {
-      CV.ignore.add(k);
+      ignore.add(k);
     }
   }
   // ignore vars that aren't currently boolean-ish
   for (const k of Object.keys(nowState)) {
     if (nowState[k] != null && typeof nowState[k] !== "boolean") {
-      CV.ignore.add(k);
+      ignore.add(k);
     }
   }
   // ignore vars that can be null but are not boolean
-  CV.nonbooleans.forEach(vn => CV.ignore.add(vn));
+  nonbooleans.forEach(vn => ignore.add(vn));
   // ignore vars that can be null but are enums
-  Object.keys(MT.enumVars).forEach(vn => CV.ignore.add(vn));
+  Object.keys(MT.enumVars).forEach(vn => ignore.add(vn));
 
   const done = [];
 
   const usedSet = new Set(VT.ctx.wasRead);
 
-  CV.ignore.forEach(vn => usedSet.delete(vn));
+  ignore.forEach(vn => usedSet.delete(vn));
 
   // if flag has an expectation for this section, limit to that value
   const sect = Nero.getSection();
   usedSet.forEach(vn => {
     const [_, isConst, val] = Nero.getVarExpectation(vn, sect);
     if (isConst) {
-      CV.tryVars[vn] = [val];
+      tryVars[vn] = [val];
     }
   });
 
@@ -129,10 +128,10 @@ CV.render = function() {
   addRecursive(beginState, 0);
 
   // for every var with explicit values to try, add states for them all
-  Object.keys(CV.tryVars).forEach(vn => {
-    const [first, ...rest] = CV.tryVars[vn];
+  Object.keys(tryVars).forEach(vn => {
+    const [first, ...rest] = tryVars[vn];
     if (!usedSet.has(vn)) usedSet.add(vn);
-    CV.ignore.delete(vn);
+    ignore.delete(vn);
     todo.forEach(t => {
       t[vn] = first;
     });
@@ -188,10 +187,10 @@ CV.render = function() {
 
     VT.ctx.wasRead.forEach(vn => {
       if (usedSet.has(vn)) return;
-      if (CV.ignore.has(vn)) return;
+      if (ignore.has(vn)) return;
       if (usedSet.size >= 15) {
         messages.push(`ignoring var ${vn} (max 15)`);
-        CV.ignore.add(vn);
+        ignore.add(vn);
         return;
       }
       usedSet.add(vn);
@@ -210,7 +209,7 @@ CV.render = function() {
 
     if (!ok) return;
 
-    const usedThisTime = [...VT.ctx.wasRead].filter(vn => !CV.ignore.has(vn)).sort();
+    const usedThisTime = [...VT.ctx.wasRead].filter(vn => !ignore.has(vn)).sort();
     const dom = output[0];
     const html = dom.innerHTML;
     const text = dom.innerText;

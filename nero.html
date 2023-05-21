@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5654,14 +5654,13 @@ Macro.add(&quot;arousalbar&quot;, {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
-CV.ignore = new Set();
-CV.tryVars = {};
+let ignore = new Set();
+let tryVars = {};
 
 // vars that are definitely not boolean (but might be null)
-CV.nonbooleans = new Set([
+const nonbooleans = new Set([
   &quot;n1_passFound&quot;,
   &quot;n1_passTried&quot;,
   &quot;t_upset&quot;,
@@ -5671,7 +5670,7 @@ Macro.add(&quot;cv-ignore&quot;, {
   handler: function() {
     for (let vn of this.args) {
       vn = vn.replace(/^\$/, &#39;&#39;);
-      CV.ignore.add(vn);
+      ignore.add(vn);
     }
   }
 });
@@ -5679,16 +5678,16 @@ Macro.add(&quot;cv-ignore&quot;, {
 Macro.add(&quot;cv-try&quot;, {
   handler: function() {
     const [vn] = this.args;
-    CV.tryVars[vn] = this.args.slice(1);
+    tryVars[vn] = this.args.slice(1);
   }
 })
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
-  CV.ignore = new Set();
-  CV.tryVars = {};
+  ignore = new Set();
+  tryVars = {};
 });
 
-CV.render = function() {
+MT.computeVariants = function() {
   const statEl = $(&quot;.var-info-compute&quot;);
   statEl.addClass(&quot;cv-busy&quot;);
 
@@ -5699,32 +5698,32 @@ CV.render = function() {
   // ignore vars that weren&#39;t boolean-ish
   for (const k of Object.keys(beginState)) {
     if (beginState[k] != null &amp;&amp; typeof beginState[k] !== &quot;boolean&quot;) {
-      CV.ignore.add(k);
+      ignore.add(k);
     }
   }
   // ignore vars that aren&#39;t currently boolean-ish
   for (const k of Object.keys(nowState)) {
     if (nowState[k] != null &amp;&amp; typeof nowState[k] !== &quot;boolean&quot;) {
-      CV.ignore.add(k);
+      ignore.add(k);
     }
   }
   // ignore vars that can be null but are not boolean
-  CV.nonbooleans.forEach(vn =&gt; CV.ignore.add(vn));
+  nonbooleans.forEach(vn =&gt; ignore.add(vn));
   // ignore vars that can be null but are enums
-  Object.keys(MT.enumVars).forEach(vn =&gt; CV.ignore.add(vn));
+  Object.keys(MT.enumVars).forEach(vn =&gt; ignore.add(vn));
 
   const done = [];
 
   const usedSet = new Set(VT.ctx.wasRead);
 
-  CV.ignore.forEach(vn =&gt; usedSet.delete(vn));
+  ignore.forEach(vn =&gt; usedSet.delete(vn));
 
   // if flag has an expectation for this section, limit to that value
   const sect = Nero.getSection();
   usedSet.forEach(vn =&gt; {
     const [_, isConst, val] = Nero.getVarExpectation(vn, sect);
     if (isConst) {
-      CV.tryVars[vn] = [val];
+      tryVars[vn] = [val];
     }
   });
 
@@ -5745,10 +5744,10 @@ CV.render = function() {
   addRecursive(beginState, 0);
 
   // for every var with explicit values to try, add states for them all
-  Object.keys(CV.tryVars).forEach(vn =&gt; {
-    const [first, ...rest] = CV.tryVars[vn];
+  Object.keys(tryVars).forEach(vn =&gt; {
+    const [first, ...rest] = tryVars[vn];
     if (!usedSet.has(vn)) usedSet.add(vn);
-    CV.ignore.delete(vn);
+    ignore.delete(vn);
     todo.forEach(t =&gt; {
       t[vn] = first;
     });
@@ -5804,10 +5803,10 @@ CV.render = function() {
 
     VT.ctx.wasRead.forEach(vn =&gt; {
       if (usedSet.has(vn)) return;
-      if (CV.ignore.has(vn)) return;
+      if (ignore.has(vn)) return;
       if (usedSet.size &gt;= 15) {
         messages.push(`ignoring var ${vn} (max 15)`);
-        CV.ignore.add(vn);
+        ignore.add(vn);
         return;
       }
       usedSet.add(vn);
@@ -5826,7 +5825,7 @@ CV.render = function() {
 
     if (!ok) return;
 
-    const usedThisTime = [...VT.ctx.wasRead].filter(vn =&gt; !CV.ignore.has(vn)).sort();
+    const usedThisTime = [...VT.ctx.wasRead].filter(vn =&gt; !ignore.has(vn)).sort();
     const dom = output[0];
     const html = dom.innerHTML;
     const text = dom.innerText;
@@ -10820,7 +10819,6 @@ Macro.add(&quot;meta-ending&quot;, {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-const CV = window.ComputeVariants || (window.ComputeVariants = {});
 const Nero = window.Nero || (window.Nero = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
@@ -11139,7 +11137,7 @@ function initVarInfo() {
 
     $(&quot;&lt;span class=var-info-compute&gt;[compute variants]&lt;/span&gt;&quot;)
       .appendTo(outer)
-      .click(() =&gt; CV.render());
+      .click(() =&gt; MT.computeVariants());
 
 
     if (touched.size) {
