@@ -1,31 +1,38 @@
 :: Init-0 Enums [inclusion] {"position":"2950,500","size":"100,100"}
 <<script>>
-const ET = window.EnumType || (window.EnumType = {});
 
-ET.enums = {};
-ET.vars = {};
+/** Map of enumType: string => enumValueNames: string[] */
+MT.enums = {};
+
+/** Map of varName: string => enumType: string */
+MT.enumVars = {};
 
 /**
  * Define an enum. Value names are added as window globals,
  * so that typo-ing an enum value will throw an error.
  */
-ET.define = (enumName, valueNames) => {
-  ET.enums[enumName] = valueNames;
+function defineEnum(enumType, valueNames) {
+  MT.enums[enumType] = valueNames;
   valueNames.forEach((n, i) => window[n] = i);
 };
 
-ET.declareVar = (varName, enumName) => {
-  if (!ET.enums[enumName]) throw new Error(`No enum named ${enumName}`);
-  ET.vars[varName] = enumName;
+/** Declare `varName` to be an enum of `enumType` */
+function declareVarEnum(varName, enumType) {
+  if (!MT.enums[enumType]) throw new Error(`No enum named ${enumType}`);
+  MT.enumVars[varName] = enumType;
 };
 
-ET.symbolic = (name, value) => {
-  const en = ET.enums[ET.vars[name] || name];
+/**
+ * Returns the symbolic name of `value`` for an enum.
+ * `name` is either a var name or an enum type.
+ */
+MT.enumSymbol = (name, value) => {
+  const en = MT.enums[MT.enumVars[name] || name];
   return en == null ? value : (en[value] || value);
 };
 
 /* Nero magic phase. */
-ET.define("MagicPhase", [
+defineEnum("MagicPhase", [
   "MP_beforeCast",
   "MP_triedMagic",
   "MP_wantDevice",
@@ -39,14 +46,15 @@ ET.define("MagicPhase", [
   "MP_drained", // had mageSight, but didn't connect to Sprite
   "MP_tapLost",  // did connect to Sprite
 ]);
-ET.declareVar("n1_magicPhase", "MagicPhase");
-ET.declareVar("n2_magicPhaseLost", "MagicPhase");
+
+declareVarEnum("n1_magicPhase", "MagicPhase");
+declareVarEnum("n2_magicPhaseLost", "MagicPhase");
 
 /*
  * Places where Ivex has asked a question, and may be near enough to hear
  * Nero trying to talk to the Sprite.
  */
-ET.define("IvexContext", [
+defineEnum("IvexContext", [
   "IC_unknown",
   "IC_gone",
   "IC_distant",
@@ -56,7 +64,8 @@ ET.define("IvexContext", [
   "IC_comfortable", // candle lit > Comfort Check
   "IC_whoSentYou", // candle horny > Light Squeeze, Heavy Squeeze
 ]);
-ET.declareVar("t_ivexContext", "IvexContext");
+
+declareVarEnum("t_ivexContext", "IvexContext");
 
 // This should run before any other Nero :passagestart
 $(document).on(":passagestart", () => {

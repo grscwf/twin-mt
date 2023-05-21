@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -5167,32 +5167,39 @@ The panther is not his first bounty, so within a few minutes, the unconscious fe
 As he shoves each of the many colored gems back into the small sack, he can&#39;t help but be curious. According to Ivex&#39;s notes, he stores the spells from his spellbook into these things so that he can cast them at will. His magical ability seems to be pretty limited to that method, at least outside of the damned tower. Glancing at the unconscious panther, the wolf picks a light blue gemstone up and looks it over.
 
 [[Continue|Gemstones]]</tw-passagedata><tw-passagedata pid="216" name="Init-0 Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
-const ET = window.EnumType || (window.EnumType = {});
 
-ET.enums = {};
-ET.vars = {};
+/** Map of enumType: string =&gt; enumValueNames: string[] */
+MT.enums = {};
+
+/** Map of varName: string =&gt; enumType: string */
+MT.enumVars = {};
 
 /**
  * Define an enum. Value names are added as window globals,
  * so that typo-ing an enum value will throw an error.
  */
-ET.define = (enumName, valueNames) =&gt; {
-  ET.enums[enumName] = valueNames;
+function defineEnum(enumType, valueNames) {
+  MT.enums[enumType] = valueNames;
   valueNames.forEach((n, i) =&gt; window[n] = i);
 };
 
-ET.declareVar = (varName, enumName) =&gt; {
-  if (!ET.enums[enumName]) throw new Error(`No enum named ${enumName}`);
-  ET.vars[varName] = enumName;
+/** Declare `varName` to be an enum of `enumType` */
+function declareVarEnum(varName, enumType) {
+  if (!MT.enums[enumType]) throw new Error(`No enum named ${enumType}`);
+  MT.enumVars[varName] = enumType;
 };
 
-ET.symbolic = (name, value) =&gt; {
-  const en = ET.enums[ET.vars[name] || name];
+/**
+ * Returns the symbolic name of `value`` for an enum.
+ * `name` is either a var name or an enum type.
+ */
+MT.enumSymbol = (name, value) =&gt; {
+  const en = MT.enums[MT.enumVars[name] || name];
   return en == null ? value : (en[value] || value);
 };
 
 /* Nero magic phase. */
-ET.define(&quot;MagicPhase&quot;, [
+defineEnum(&quot;MagicPhase&quot;, [
   &quot;MP_beforeCast&quot;,
   &quot;MP_triedMagic&quot;,
   &quot;MP_wantDevice&quot;,
@@ -5206,14 +5213,15 @@ ET.define(&quot;MagicPhase&quot;, [
   &quot;MP_drained&quot;, // had mageSight, but didn&#39;t connect to Sprite
   &quot;MP_tapLost&quot;,  // did connect to Sprite
 ]);
-ET.declareVar(&quot;n1_magicPhase&quot;, &quot;MagicPhase&quot;);
-ET.declareVar(&quot;n2_magicPhaseLost&quot;, &quot;MagicPhase&quot;);
+
+declareVarEnum(&quot;n1_magicPhase&quot;, &quot;MagicPhase&quot;);
+declareVarEnum(&quot;n2_magicPhaseLost&quot;, &quot;MagicPhase&quot;);
 
 /*
  * Places where Ivex has asked a question, and may be near enough to hear
  * Nero trying to talk to the Sprite.
  */
-ET.define(&quot;IvexContext&quot;, [
+defineEnum(&quot;IvexContext&quot;, [
   &quot;IC_unknown&quot;,
   &quot;IC_gone&quot;,
   &quot;IC_distant&quot;,
@@ -5223,7 +5231,8 @@ ET.define(&quot;IvexContext&quot;, [
   &quot;IC_comfortable&quot;, // candle lit &gt; Comfort Check
   &quot;IC_whoSentYou&quot;, // candle horny &gt; Light Squeeze, Heavy Squeeze
 ]);
-ET.declareVar(&quot;t_ivexContext&quot;, &quot;IvexContext&quot;);
+
+declareVarEnum(&quot;t_ivexContext&quot;, &quot;IvexContext&quot;);
 
 // This should run before any other Nero :passagestart
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
@@ -5705,7 +5714,7 @@ CV.render = function() {
   // ignore vars that can be null but are not boolean
   CV.nonbooleans.forEach(vn =&gt; CV.ignore.add(vn));
   // ignore vars that can be null but are enums
-  Object.keys(ET.vars).forEach(vn =&gt; CV.ignore.add(vn));
+  Object.keys(MT.enumVars).forEach(vn =&gt; CV.ignore.add(vn));
 
   const done = [];
 
@@ -5866,8 +5875,8 @@ CV.render = function() {
             $(`&lt;span class=&quot;cv-var cv-false&quot;&gt;`).text(vn).appendTo(inner);
           } else if (val === true) {
             $(`&lt;span class=&quot;cv-var cv-true&quot;&gt;`).text(vn).appendTo(inner);
-          } else if (ET.vars[vn] != null) {
-            const sym = ET.enums[ET.vars[vn]][val] || `${vn}=${val}`;
+          } else if (MT.enumVars[vn] != null) {
+            const sym = MT.enums[MT.enumVars[vn]][val] || `${vn}=${val}`;
             $(`&lt;span class=&quot;cv-var cv-enum&quot;&gt;`).text(sym).appendTo(inner);
           } else {
             const str = JSON._real_stringify(val);
@@ -8088,7 +8097,7 @@ Nero.checkState = (state, used, interactive, active) =&gt; {
     if (rules == null) continue;
     if (rules.impossible) {
       if (!interactive) return false;
-      const sVal = ET.symbolic(x, state[x]);
+      const sVal = MT.enumSymbol(x, state[x]);
       EM.fail(`${x} === ${sVal} should be impossible`);
       continue;
     }
@@ -8100,7 +8109,7 @@ Nero.checkState = (state, used, interactive, active) =&gt; {
       if (val !== exp) {
         if (!interactive) return false;
         const expStr = typeof exp !== &quot;boolean&quot; ? `$[y} === ${exp}` : exp ? y : `!${y}`;
-        const sVal = ET.symbolic(x, state[x]);
+        const sVal = MT.enumSymbol(x, state[x]);
         EM.fail(
           `${x} === ${sVal} should imply ${expStr}; currently, ${y} === ${state[y]}`);
       }
@@ -10103,8 +10112,8 @@ function initRandomWalk() {
         const steps = MT.log.length;
         const V = State.variables;
         console.log(`done after ${steps} steps at ${here}`);
-        const mp = EnumType.symbolic(&#39;MagicPhase&#39;, V.n1_magicPhase);
-        const mpl = EnumType.symbolic(&#39;MagicPhase&#39;, V.n2_magicPhaseLost);
+        const mp = MT.enumSymbol(&#39;MagicPhase&#39;, V.n1_magicPhase);
+        const mpl = MT.enumSymbol(&#39;MagicPhase&#39;, V.n2_magicPhaseLost);
         console.log(`- magicPhase ${mp}, ${mpl}`);
         if (seekLoop &lt;= 0) {
           if (seekLooping) {
@@ -11012,13 +11021,13 @@ function varButton(vname) {
   }
 
   // assume undeclared is boolean
-  const vtype = ET.vars[vname] || (vname in V ? typeof V[vname] : &quot;boolean&quot;);
+  const vtype = MT.enumVars[vname] || (vname in V ? typeof V[vname] : &quot;boolean&quot;);
 
-  const enumList = ET.enums[vtype];
+  const enumList = MT.enums[vtype];
   if (enumList != null) {
     outer.addClass(&quot;var-info-enum&quot;);
     const sym = enumList[V[vname] || 0];
-    const sameType = Object.values(ET.vars).filter(t =&gt; t === vtype).length;
+    const sameType = Object.values(MT.enumVars).filter(t =&gt; t === vtype).length;
     label.text(sym != null ? sym : vname + &quot;=&quot; + jval);
     const n = enumList.length;
     if (VT.ctx.wasRead.has(vname)) {
@@ -41247,9 +41256,10 @@ by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;
 &lt;/div&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="724" name="StoryDisplayTitle" tags="" position="1825,575" size="100,100">The Mage&#39;s Tower (Nero)</tw-passagedata><tw-passagedata pid="725" name="StoryInit" tags="inclusion" position="2150,575" size="100,100">&lt;&lt;script&gt;&gt;
 
-// globals for Mage&#39;s Tower
+/** globals for Mage&#39;s Tower */
 window.MT = {};
 
+/** Evaluate all passages that match regex. */
 function runInit(regex) {
   const inits = Story.lookupWith(p =&gt; regex.test(p.title));
   inits.forEach(p =&gt; {
