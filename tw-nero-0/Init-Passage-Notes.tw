@@ -81,23 +81,22 @@
 </style><</append>>
 
 <<script>>
-const PN = window.PassageNotes || (window.PassageNotes = {});
 
-PN.selectedText = "";
+MT.selectedText = "";
 
 // State.metadata.get always deflates and deserializes from localStorage, but:
 // - we almost always want the localStorage value that might be modified
 //   by another tab.
-// - the cacheable calls to getFull don't happen often enough to make it
+// - the cacheable calls to getAll don't happen often enough to make it
 //   worth caching.
 
-PN.getFull = () => State.metadata.get("notes") || "";
-PN.setFull = val => State.metadata.set("notes", val);
+MT.notesGetAll = () => State.metadata.get("notes") || "";
+const setAll = val => State.metadata.set("notes", val);
 
 function getStats(passage) {
   let count = 0;
   let hasNoteHere = false;
-  const nFull = "\n" + PN.getFull();
+  const nFull = "\n" + MT.notesGetAll();
   for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
     count += 1;
     if (m[1] === passage) hasNoteHere = true;
@@ -105,16 +104,16 @@ function getStats(passage) {
   return { count, hasNoteHere };
 }
 
-PN.tryReplaceFull = (old, val) => {
-  const cur = PN.getFull().trimEnd();
+MT.notesTryReplaceAll = (old, val) => {
+  const cur = MT.notesGetAll().trimEnd();
   if (old.trimEnd() !== cur) return cur;
   val = val.trimEnd();
-  PN.setFull(val);
+  setAll(val);
   updateStatus();
   return val;
 };
 
-PN.cleanup = (text) => {
+MT.notesCleanup = (text) => {
   text = "\n" + text + "\n";
   const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
   const before = parts.shift().trimEnd().slice(1);
@@ -157,27 +156,27 @@ function splitAt(passage, text) {
   };
 }
 
-PN.getOne = (passage) => {
-  const full = PN.getFull();
+MT.notesGet = (passage) => {
+  const full = MT.notesGetAll();
   const split = splitAt(passage, full);
   return split.body;
 };
 
 /** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
-PN.tryReplaceOne = (passage, old, val) => {
-  const full = PN.getFull();
+MT.notesTryReplace = (passage, old, val) => {
+  const full = MT.notesGetAll();
   const sp = splitAt(passage, full);
   if (sp.body !== old.trimEnd()) return sp.body;
   const replace = /\S/.test(val) ? sp.header + val.trimEnd() +"\n\n" : "";
   const next = sp.before + replace + sp.after;
-  PN.setFull(next);
+  setAll(next);
   updateStatus();
   return val.trimEnd();
 };
 
 // capture selection before click deselects it
 function pointerDown() {
-  PN.selectedText = getSelection().toString().trim();
+  MT.selectedText = getSelection().toString().trim();
 }
 
 function openPopup() {
@@ -222,7 +221,7 @@ function initNotes() {
   const old = localStorage.getItem("passage-notes-1");
   if (old != null) {
     localStorage.removeItem("passage-notes-1");
-    PN.setFull(old);
+    setAll(old);
   }
 }
 

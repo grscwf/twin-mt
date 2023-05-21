@@ -4,18 +4,17 @@
 
 <style>
   #notes-load-file {
-  height: 1px;
-  left: 0;
-  position: absolute;
-  pointer-events: none;
-  top: 0;
-  width: 1px;
-  visibility: hidden;
+    height: 1px;
+    left: 0;
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    width: 1px;
+    visibility: hidden;
   }
 </style>
 
 <<script>>
-  const PN = window.PassageNotes || (window.PassageNotes = {});
   const T = State.temporary;
   const V = State.variables;
   const noteStore = window.sessionStorage;
@@ -24,162 +23,159 @@
   T.editVal = "";
   T.hasConflict = false;
 
-  T.canShare = navigator.canShare && navigator.canShare({ title: "1", text: "2" });
+  T.canShare = navigator.canShare
+    && navigator.canShare({ title: "1", text: "2" });
 
   $(document).one(":passagedisplay", () => {
-  $("#notes-input").on("input", onInput);
-  $("#notes-copy").click(copyToClipboard);
-  $("#notes-clean").click(confirmClean);
-  $("#notes-delete").click(confirmDelete);
-  $("#notes-lose").click(confirmLose);
-  $("#notes-overwrite").click(confirmOverwrite);
-  $("#notes-save").click(saveToFile);
-  $("#notes-load").click(loadFromFile);
-  $("#notes-load-file").on("change", loadFilePicked);
-  $("#notes-share").prop("disabled", T.canShare).click(doShare);
-  restoreSession();
-  uiUpdate();
+    $("#notes-input").on("input", onInput);
+    $("#notes-copy").click(copyToClipboard);
+    $("#notes-clean").click(confirmClean);
+    $("#notes-delete").click(confirmDelete);
+    $("#notes-lose").click(confirmLose);
+    $("#notes-overwrite").click(confirmOverwrite);
+    $("#notes-save").click(saveToFile);
+    $("#notes-load").click(loadFromFile);
+    $("#notes-load-file").on("change", loadFilePicked);
+    $("#notes-share").prop("disabled", T.canShare).click(doShare);
+    restoreSession();
+    uiUpdate();
   });
 
   function restoreSession() {
-  T.savedVal = PN.getFull();
-  T.editVal = noteStore.getItem("notes-full") || T.savedVal;
-  $("#notes-input").val(T.editVal);
-  T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    T.savedVal = MT.notesGetAll();
+    T.editVal = noteStore.getItem("notes-full") || T.savedVal;
+    $("#notes-input").val(T.editVal);
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
 
   function uiUpdate() {
-  $("#notes-conflict").toggleClass("notes-has-conflict", T.hasConflict);
-  if (T.hasConflict) $("#notes-conflict textarea").val(T.savedVal);
-  const hasEdit = T.editVal.trimEnd() !== "";
-  const hasData = T.savedVal.trimEnd() !== "" || hasEdit;
-  $("#notes-delete").prop("disabled", !hasData || T.hasConflict);
-  $("#notes-clean").prop("disabled", !hasEdit);
-  $("#notes-copy").prop("disabled", !hasEdit);
-  $("#notes-save").prop("disabled", !hasEdit);
-  $("#notes-load").prop("disabled", T.hasConflict);
-  $("#notes-share").prop("disabled", !hasEdit);
+    $("#notes-conflict").toggleClass("notes-has-conflict", T.hasConflict);
+    if (T.hasConflict) $("#notes-conflict textarea").val(T.savedVal);
+    const hasEdit = T.editVal.trimEnd() !== "";
+    const hasData = T.savedVal.trimEnd() !== "" || hasEdit;
+    $("#notes-delete").prop("disabled", !hasData || T.hasConflict);
+    $("#notes-clean").prop("disabled", !hasEdit);
+    $("#notes-copy").prop("disabled", !hasEdit);
+    $("#notes-save").prop("disabled", !hasEdit);
+    $("#notes-load").prop("disabled", T.hasConflict);
+    $("#notes-share").prop("disabled", !hasEdit);
   }
 
   function onInput() {
-  saveValue($("#notes-input").val(), false);
+    saveValue($("#notes-input").val(), false);
   }
 
   function overwriteValue(val) {
-  $("#notes-input").val(val);
-  saveValue(val, true);
+    $("#notes-input").val(val);
+    saveValue(val, true);
   }
 
   function saveValue(val, overwrite) {
-  T.editVal = val;
-  if (overwrite || !T.hasConflict) {
-    T.savedVal = PN.tryReplaceFull(T.savedVal, T.editVal);
-  }
-  T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-  if (T.hasConflict) {
-    noteStore.setItem("notes-full", T.editVal);
-  } else {
-    noteStore.removeItem("notes-full");
-  }
-  uiUpdate();
-  }
-
-  function cleanNotes() {
-
+    T.editVal = val;
+    if (overwrite || !T.hasConflict) {
+      T.savedVal = MT.notesTryReplaceAll(T.savedVal, T.editVal);
+    }
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    if (T.hasConflict) {
+      noteStore.setItem("notes-full", T.editVal);
+    } else {
+      noteStore.removeItem("notes-full");
+    }
+    uiUpdate();
   }
 
   T.doClean = () => {
-  saveValue(PN.cleanup(T.editVal), false);
-  $("#notes-input").val(T.editVal);
+    saveValue(MT.notesCleanup(T.editVal), false);
+    $("#notes-input").val(T.editVal);
   };
   function confirmClean() {
-  Dialog.setup("Confirm Clean Up");
-  Dialog.wiki(`
-    Clean-up will remove empty notes and sort the remaining notes
-    by passage name.
-    ?P
-    <<button "Clean up">><<run Dialog.close(); _doClean()>><</button>>
-  `);
+    Dialog.setup("Confirm Clean Up");
+    Dialog.wiki(`
+      Clean-up will remove empty notes and sort the remaining notes
+      by passage name.
+      ?P
+      <<button "Clean up">><<run Dialog.close(); _doClean()>><</button>>
+    `);
   Dialog.open();
   }
 
   T.doDelete = () => overwriteValue("");
   function confirmDelete() {
-  Dialog.setup("Confirm Delete All");
-  Dialog.wiki(`
-    Are you sure you want to delete ALL notes?
-    ?P
-    <<button "Delete all">><<run Dialog.close(); _doDelete()>><</button>>
-  `);
-  Dialog.open();
+    Dialog.setup("Confirm Delete All");
+    Dialog.wiki(`
+      Are you sure you want to delete ALL notes?
+      ?P
+      <<button "Delete all">><<run Dialog.close(); _doDelete()>><</button>>
+    `);
+    Dialog.open();
   }
 
   T.doLose = () => overwriteValue(T.savedVal);
   function confirmLose() {
-  Dialog.setup("Confirm Lose Edits");
-  Dialog.wiki(`
-    Are you sure you want to lose your edits and revert to the conflicting value?
-    ?P
-    <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
-  `);
-  Dialog.open();
+    Dialog.setup("Confirm Lose Edits");
+    Dialog.wiki(`
+      Are you sure you want to lose your edits and revert to the conflicting value?
+      ?P
+      <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
+    `);
+    Dialog.open();
   }
 
   T.doOverwrite = () => overwriteValue(T.editVal);
   function confirmOverwrite() {
-  Dialog.setup("Confirm Overwrite Conflict");
-  Dialog.wiki(`
-    Are you sure you want to overwrite the conflicting value with your edits?
-    ?P
-    <<button "Overwrite conflict">><<run Dialog.close(); _doOverwrite()>><</button>>
-  `);
-  Dialog.open();
+    Dialog.setup("Confirm Overwrite Conflict");
+    Dialog.wiki(`
+      Are you sure you want to overwrite the conflicting value with your edits?
+      ?P
+      <<button "Overwrite conflict">><<run Dialog.close(); _doOverwrite()>><</button>>
+    `);
+    Dialog.open();
   }
 
   function copyToClipboard() {
-  let text = T.editVal;
-  if (text.slice(-1) !== "\n") text += "\n";
-  navigator.clipboard.writeText(text);
-  Dialog.setup();
-  Dialog.wiki("All notes copied to clipboard");
-  Dialog.open();
+    let text = T.editVal;
+    if (text.slice(-1) !== "\n") text += "\n";
+    navigator.clipboard.writeText(text);
+    Dialog.setup();
+    Dialog.wiki("All notes copied to clipboard");
+    Dialog.open();
   }
 
   function makeTitle() {
-  const now = new Date();
-  const yyyy = String(now.getFullYear());
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const HH = String(now.getHours()).padStart(2, "0");
-  const MM = String(now.getMinutes()).padStart(2, "0");
-  const SS = String(now.getSeconds()).padStart(2, "0");
-  const title = `MagesTowerNotes-${yyyy}-${mm}-${dd}-${HH}${MM}${SS}.txt`;
-  return title;
+    const now = new Date();
+    const yyyy = String(now.getFullYear());
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const HH = String(now.getHours()).padStart(2, "0");
+    const MM = String(now.getMinutes()).padStart(2, "0");
+    const SS = String(now.getSeconds()).padStart(2, "0");
+    const title = `MagesTowerNotes-${yyyy}-${mm}-${dd}-${HH}${MM}${SS}.txt`;
+    return title;
   }
 
   function saveToFile() {
-  const fname = makeTitle();
-  const blob = new Blob([T.editVal], { type: 'text/plain;charset=UTF-8' });
-  /* saveAs is from filesaver.js, bundled with sugarcube-2 */
-  saveAs(blob, fname);
+    const fname = makeTitle();
+    const blob = new Blob([T.editVal], { type: 'text/plain;charset=UTF-8' });
+    /* saveAs is from filesaver.js, bundled with sugarcube-2 */
+    saveAs(blob, fname);
   }
 
   function loadFromFile() {
-  $("#notes-load-file").click();
+    $("#notes-load-file").click();
   }
   function loadFilePicked(ev) {
-  const reader = new FileReader();
-  $(reader).one("loadend", () => {
-    if (reader.error) throw reader.error;
-    overwriteValue(reader.result);
-  });
-  const file = ev.target.files[0];
-  reader.readAsText(file);
+    const reader = new FileReader();
+    $(reader).one("loadend", () => {
+      if (reader.error) throw reader.error;
+      overwriteValue(reader.result);
+    });
+    const file = ev.target.files[0];
+    reader.readAsText(file);
   }
 
   function doShare() {
-  const title = makeTitle();
-  navigator.share({ title, text: T.editVal });
+    const title = makeTitle();
+    navigator.share({ title, text: T.editVal });
   }
 <</script>>
 
@@ -208,23 +204,23 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 <</linkreplace>>
 
 <hr>
-<div id=notes-full>
-  <div class=ui-subtitle>All Notes</div>
-  <textarea id=notes-input></textarea>
+<div id="notes-full">
+  <div class="ui-subtitle">All Notes</div>
+  <textarea id="notes-input"></textarea>
   <div class=notes-buttons>
-    <button id=notes-delete>Delete all</button>
-    <button id=notes-clean>Cleanup notes</button>
-    <button id=notes-copy>Copy to clipboard</button>
-    <button id=notes-save>Save to file</button>
-    <button id=notes-load>Load from file</button>
-    <button id=notes-share>Share via...</button>
-    <input type="file" id=notes-load-file>
+    <button id="notes-delete">Delete all</button>
+    <button id="notes-clean">Cleanup notes</button>
+    <button id="notes-copy">Copy to clipboard</button>
+    <button id="notes-save">Save to file</button>
+    <button id="notes-load">Load from file</button>
+    <button id="notes-share">Share via...</button>
+    <input type="file" id="notes-load-file">
   </div>
 </div>
-<div id=notes-conflict>
+<div id="notes-conflict">
   <div class=notes-buttons>
-    <button id=notes-lose>&#x21d1; Lose edits</button>
-    <button id=notes-overwrite>&#x21d3; Overwrite conflict</button>
+    <button id="notes-lose">&#x21d1; Lose edits</button>
+    <button id="notes-overwrite">&#x21d3; Overwrite conflict</button>
   </div>
   <div class=ui-subtitle>Conflicting update</div>
   <textarea disabled></textarea>

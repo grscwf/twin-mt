@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -9561,23 +9561,22 @@ Template.add(&quot;construction&quot;,
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-const PN = window.PassageNotes || (window.PassageNotes = {});
 
-PN.selectedText = &quot;&quot;;
+MT.selectedText = &quot;&quot;;
 
 // State.metadata.get always deflates and deserializes from localStorage, but:
 // - we almost always want the localStorage value that might be modified
 //   by another tab.
-// - the cacheable calls to getFull don&#39;t happen often enough to make it
+// - the cacheable calls to getAll don&#39;t happen often enough to make it
 //   worth caching.
 
-PN.getFull = () =&gt; State.metadata.get(&quot;notes&quot;) || &quot;&quot;;
-PN.setFull = val =&gt; State.metadata.set(&quot;notes&quot;, val);
+MT.notesGetAll = () =&gt; State.metadata.get(&quot;notes&quot;) || &quot;&quot;;
+const setAll = val =&gt; State.metadata.set(&quot;notes&quot;, val);
 
 function getStats(passage) {
   let count = 0;
   let hasNoteHere = false;
-  const nFull = &quot;\n&quot; + PN.getFull();
+  const nFull = &quot;\n&quot; + MT.notesGetAll();
   for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
     count += 1;
     if (m[1] === passage) hasNoteHere = true;
@@ -9585,16 +9584,16 @@ function getStats(passage) {
   return { count, hasNoteHere };
 }
 
-PN.tryReplaceFull = (old, val) =&gt; {
-  const cur = PN.getFull().trimEnd();
+MT.notesTryReplaceAll = (old, val) =&gt; {
+  const cur = MT.notesGetAll().trimEnd();
   if (old.trimEnd() !== cur) return cur;
   val = val.trimEnd();
-  PN.setFull(val);
+  setAll(val);
   updateStatus();
   return val;
 };
 
-PN.cleanup = (text) =&gt; {
+MT.notesCleanup = (text) =&gt; {
   text = &quot;\n&quot; + text + &quot;\n&quot;;
   const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
   const before = parts.shift().trimEnd().slice(1);
@@ -9637,27 +9636,27 @@ function splitAt(passage, text) {
   };
 }
 
-PN.getOne = (passage) =&gt; {
-  const full = PN.getFull();
+MT.notesGet = (passage) =&gt; {
+  const full = MT.notesGetAll();
   const split = splitAt(passage, full);
   return split.body;
 };
 
 /** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
-PN.tryReplaceOne = (passage, old, val) =&gt; {
-  const full = PN.getFull();
+MT.notesTryReplace = (passage, old, val) =&gt; {
+  const full = MT.notesGetAll();
   const sp = splitAt(passage, full);
   if (sp.body !== old.trimEnd()) return sp.body;
   const replace = /\S/.test(val) ? sp.header + val.trimEnd() +&quot;\n\n&quot; : &quot;&quot;;
   const next = sp.before + replace + sp.after;
-  PN.setFull(next);
+  setAll(next);
   updateStatus();
   return val.trimEnd();
 };
 
 // capture selection before click deselects it
 function pointerDown() {
-  PN.selectedText = getSelection().toString().trim();
+  MT.selectedText = getSelection().toString().trim();
 }
 
 function openPopup() {
@@ -9702,7 +9701,7 @@ function initNotes() {
   const old = localStorage.getItem(&quot;passage-notes-1&quot;);
   if (old != null) {
     localStorage.removeItem(&quot;passage-notes-1&quot;);
-    PN.setFull(old);
+    setAll(old);
   }
 }
 
@@ -11607,7 +11606,6 @@ function render() {
 $(document).one(&quot;:passagedisplay&quot;, render);
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="255" name="mt Passage Notes Popup" tags="inclusion" position="2025,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
-  const PN = window.PassageNotes;
   const T = State.temporary;
   const V = State.variables;
   const noteStore = window.sessionStorage;
@@ -11642,8 +11640,8 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   }
 
   function appendSelected() {
-    if (PN.selectedText == null || PN.selectedText === &quot;&quot;) return;
-    appendQuoted(PN.selectedText);
+    if (MT.selectedText == null || MT.selectedText === &quot;&quot;) return;
+    appendQuoted(MT.selectedText);
   }
   function appendMessages() {
     if (MT.messages != null &amp;&amp; MT.messages.length) {
@@ -11652,7 +11650,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   }
 
   function restoreSession() {
-    T.savedVal = PN.getOne(V.t_notesOrigin);
+    T.savedVal = MT.notesGet(V.t_notesOrigin);
     T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin)
       || T.savedVal;
     $(&quot;#NP-input&quot;).val(T.editVal);
@@ -11670,7 +11668,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   function saveValue(val, overwrite) {
     T.editVal = val;
     if (overwrite || !T.hasConflict) {
-      T.savedVal = PN.tryReplaceOne(V.t_notesOrigin, T.savedVal, T.editVal);
+      T.savedVal = MT.notesTryReplace(V.t_notesOrigin, T.savedVal, T.editVal);
     }
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
     const key = &quot;notes-single:&quot; + V.t_notesOrigin;
@@ -11740,7 +11738,6 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 &lt;&lt;return-head&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-  const PN = window.PassageNotes;
   const T = State.temporary;
   const V = State.variables;
   const noteStore = window.sessionStorage;
@@ -11759,7 +11756,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   });
 
   function restoreSession() {
-    T.savedVal = PN.getOne(V.t_notesOrigin);
+    T.savedVal = MT.notesGet(V.t_notesOrigin);
     T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.t_notesOrigin)
       || T.savedVal;
     $(&quot;#notes-input&quot;).val(T.editVal);
@@ -11785,7 +11782,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   function saveValue(val, overwrite) {
     T.editVal = val;
     if (overwrite || !T.hasConflict) {
-      T.savedVal = PN.tryReplaceOne(V.t_notesOrigin, T.savedVal, T.editVal);
+      T.savedVal = MT.notesTryReplace(V.t_notesOrigin, T.savedVal, T.editVal);
     }
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
     const key = &quot;notes-single:&quot; + V.t_notesOrigin;
@@ -11856,18 +11853,17 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 
 &lt;style&gt;
   #notes-load-file {
-  height: 1px;
-  left: 0;
-  position: absolute;
-  pointer-events: none;
-  top: 0;
-  width: 1px;
-  visibility: hidden;
+    height: 1px;
+    left: 0;
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    width: 1px;
+    visibility: hidden;
   }
 &lt;/style&gt;
 
 &lt;&lt;script&gt;&gt;
-  const PN = window.PassageNotes || (window.PassageNotes = {});
   const T = State.temporary;
   const V = State.variables;
   const noteStore = window.sessionStorage;
@@ -11876,162 +11872,159 @@ $(document).one(&quot;:passagedisplay&quot;, render);
   T.editVal = &quot;&quot;;
   T.hasConflict = false;
 
-  T.canShare = navigator.canShare &amp;&amp; navigator.canShare({ title: &quot;1&quot;, text: &quot;2&quot; });
+  T.canShare = navigator.canShare
+    &amp;&amp; navigator.canShare({ title: &quot;1&quot;, text: &quot;2&quot; });
 
   $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-  $(&quot;#notes-input&quot;).on(&quot;input&quot;, onInput);
-  $(&quot;#notes-copy&quot;).click(copyToClipboard);
-  $(&quot;#notes-clean&quot;).click(confirmClean);
-  $(&quot;#notes-delete&quot;).click(confirmDelete);
-  $(&quot;#notes-lose&quot;).click(confirmLose);
-  $(&quot;#notes-overwrite&quot;).click(confirmOverwrite);
-  $(&quot;#notes-save&quot;).click(saveToFile);
-  $(&quot;#notes-load&quot;).click(loadFromFile);
-  $(&quot;#notes-load-file&quot;).on(&quot;change&quot;, loadFilePicked);
-  $(&quot;#notes-share&quot;).prop(&quot;disabled&quot;, T.canShare).click(doShare);
-  restoreSession();
-  uiUpdate();
+    $(&quot;#notes-input&quot;).on(&quot;input&quot;, onInput);
+    $(&quot;#notes-copy&quot;).click(copyToClipboard);
+    $(&quot;#notes-clean&quot;).click(confirmClean);
+    $(&quot;#notes-delete&quot;).click(confirmDelete);
+    $(&quot;#notes-lose&quot;).click(confirmLose);
+    $(&quot;#notes-overwrite&quot;).click(confirmOverwrite);
+    $(&quot;#notes-save&quot;).click(saveToFile);
+    $(&quot;#notes-load&quot;).click(loadFromFile);
+    $(&quot;#notes-load-file&quot;).on(&quot;change&quot;, loadFilePicked);
+    $(&quot;#notes-share&quot;).prop(&quot;disabled&quot;, T.canShare).click(doShare);
+    restoreSession();
+    uiUpdate();
   });
 
   function restoreSession() {
-  T.savedVal = PN.getFull();
-  T.editVal = noteStore.getItem(&quot;notes-full&quot;) || T.savedVal;
-  $(&quot;#notes-input&quot;).val(T.editVal);
-  T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    T.savedVal = MT.notesGetAll();
+    T.editVal = noteStore.getItem(&quot;notes-full&quot;) || T.savedVal;
+    $(&quot;#notes-input&quot;).val(T.editVal);
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
   }
 
   function uiUpdate() {
-  $(&quot;#notes-conflict&quot;).toggleClass(&quot;notes-has-conflict&quot;, T.hasConflict);
-  if (T.hasConflict) $(&quot;#notes-conflict textarea&quot;).val(T.savedVal);
-  const hasEdit = T.editVal.trimEnd() !== &quot;&quot;;
-  const hasData = T.savedVal.trimEnd() !== &quot;&quot; || hasEdit;
-  $(&quot;#notes-delete&quot;).prop(&quot;disabled&quot;, !hasData || T.hasConflict);
-  $(&quot;#notes-clean&quot;).prop(&quot;disabled&quot;, !hasEdit);
-  $(&quot;#notes-copy&quot;).prop(&quot;disabled&quot;, !hasEdit);
-  $(&quot;#notes-save&quot;).prop(&quot;disabled&quot;, !hasEdit);
-  $(&quot;#notes-load&quot;).prop(&quot;disabled&quot;, T.hasConflict);
-  $(&quot;#notes-share&quot;).prop(&quot;disabled&quot;, !hasEdit);
+    $(&quot;#notes-conflict&quot;).toggleClass(&quot;notes-has-conflict&quot;, T.hasConflict);
+    if (T.hasConflict) $(&quot;#notes-conflict textarea&quot;).val(T.savedVal);
+    const hasEdit = T.editVal.trimEnd() !== &quot;&quot;;
+    const hasData = T.savedVal.trimEnd() !== &quot;&quot; || hasEdit;
+    $(&quot;#notes-delete&quot;).prop(&quot;disabled&quot;, !hasData || T.hasConflict);
+    $(&quot;#notes-clean&quot;).prop(&quot;disabled&quot;, !hasEdit);
+    $(&quot;#notes-copy&quot;).prop(&quot;disabled&quot;, !hasEdit);
+    $(&quot;#notes-save&quot;).prop(&quot;disabled&quot;, !hasEdit);
+    $(&quot;#notes-load&quot;).prop(&quot;disabled&quot;, T.hasConflict);
+    $(&quot;#notes-share&quot;).prop(&quot;disabled&quot;, !hasEdit);
   }
 
   function onInput() {
-  saveValue($(&quot;#notes-input&quot;).val(), false);
+    saveValue($(&quot;#notes-input&quot;).val(), false);
   }
 
   function overwriteValue(val) {
-  $(&quot;#notes-input&quot;).val(val);
-  saveValue(val, true);
+    $(&quot;#notes-input&quot;).val(val);
+    saveValue(val, true);
   }
 
   function saveValue(val, overwrite) {
-  T.editVal = val;
-  if (overwrite || !T.hasConflict) {
-    T.savedVal = PN.tryReplaceFull(T.savedVal, T.editVal);
-  }
-  T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-  if (T.hasConflict) {
-    noteStore.setItem(&quot;notes-full&quot;, T.editVal);
-  } else {
-    noteStore.removeItem(&quot;notes-full&quot;);
-  }
-  uiUpdate();
-  }
-
-  function cleanNotes() {
-
+    T.editVal = val;
+    if (overwrite || !T.hasConflict) {
+      T.savedVal = MT.notesTryReplaceAll(T.savedVal, T.editVal);
+    }
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    if (T.hasConflict) {
+      noteStore.setItem(&quot;notes-full&quot;, T.editVal);
+    } else {
+      noteStore.removeItem(&quot;notes-full&quot;);
+    }
+    uiUpdate();
   }
 
   T.doClean = () =&gt; {
-  saveValue(PN.cleanup(T.editVal), false);
-  $(&quot;#notes-input&quot;).val(T.editVal);
+    saveValue(MT.notesCleanup(T.editVal), false);
+    $(&quot;#notes-input&quot;).val(T.editVal);
   };
   function confirmClean() {
-  Dialog.setup(&quot;Confirm Clean Up&quot;);
-  Dialog.wiki(`
-    Clean-up will remove empty notes and sort the remaining notes
-    by passage name.
-    ?P
-    &lt;&lt;button &quot;Clean up&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doClean()&gt;&gt;&lt;&lt;/button&gt;&gt;
-  `);
+    Dialog.setup(&quot;Confirm Clean Up&quot;);
+    Dialog.wiki(`
+      Clean-up will remove empty notes and sort the remaining notes
+      by passage name.
+      ?P
+      &lt;&lt;button &quot;Clean up&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doClean()&gt;&gt;&lt;&lt;/button&gt;&gt;
+    `);
   Dialog.open();
   }
 
   T.doDelete = () =&gt; overwriteValue(&quot;&quot;);
   function confirmDelete() {
-  Dialog.setup(&quot;Confirm Delete All&quot;);
-  Dialog.wiki(`
-    Are you sure you want to delete ALL notes?
-    ?P
-    &lt;&lt;button &quot;Delete all&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doDelete()&gt;&gt;&lt;&lt;/button&gt;&gt;
-  `);
-  Dialog.open();
+    Dialog.setup(&quot;Confirm Delete All&quot;);
+    Dialog.wiki(`
+      Are you sure you want to delete ALL notes?
+      ?P
+      &lt;&lt;button &quot;Delete all&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doDelete()&gt;&gt;&lt;&lt;/button&gt;&gt;
+    `);
+    Dialog.open();
   }
 
   T.doLose = () =&gt; overwriteValue(T.savedVal);
   function confirmLose() {
-  Dialog.setup(&quot;Confirm Lose Edits&quot;);
-  Dialog.wiki(`
-    Are you sure you want to lose your edits and revert to the conflicting value?
-    ?P
-    &lt;&lt;button &quot;Lose edits&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doLose()&gt;&gt;&lt;&lt;/button&gt;&gt;
-  `);
-  Dialog.open();
+    Dialog.setup(&quot;Confirm Lose Edits&quot;);
+    Dialog.wiki(`
+      Are you sure you want to lose your edits and revert to the conflicting value?
+      ?P
+      &lt;&lt;button &quot;Lose edits&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doLose()&gt;&gt;&lt;&lt;/button&gt;&gt;
+    `);
+    Dialog.open();
   }
 
   T.doOverwrite = () =&gt; overwriteValue(T.editVal);
   function confirmOverwrite() {
-  Dialog.setup(&quot;Confirm Overwrite Conflict&quot;);
-  Dialog.wiki(`
-    Are you sure you want to overwrite the conflicting value with your edits?
-    ?P
-    &lt;&lt;button &quot;Overwrite conflict&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doOverwrite()&gt;&gt;&lt;&lt;/button&gt;&gt;
-  `);
-  Dialog.open();
+    Dialog.setup(&quot;Confirm Overwrite Conflict&quot;);
+    Dialog.wiki(`
+      Are you sure you want to overwrite the conflicting value with your edits?
+      ?P
+      &lt;&lt;button &quot;Overwrite conflict&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doOverwrite()&gt;&gt;&lt;&lt;/button&gt;&gt;
+    `);
+    Dialog.open();
   }
 
   function copyToClipboard() {
-  let text = T.editVal;
-  if (text.slice(-1) !== &quot;\n&quot;) text += &quot;\n&quot;;
-  navigator.clipboard.writeText(text);
-  Dialog.setup();
-  Dialog.wiki(&quot;All notes copied to clipboard&quot;);
-  Dialog.open();
+    let text = T.editVal;
+    if (text.slice(-1) !== &quot;\n&quot;) text += &quot;\n&quot;;
+    navigator.clipboard.writeText(text);
+    Dialog.setup();
+    Dialog.wiki(&quot;All notes copied to clipboard&quot;);
+    Dialog.open();
   }
 
   function makeTitle() {
-  const now = new Date();
-  const yyyy = String(now.getFullYear());
-  const mm = String(now.getMonth() + 1).padStart(2, &quot;0&quot;);
-  const dd = String(now.getDate()).padStart(2, &quot;0&quot;);
-  const HH = String(now.getHours()).padStart(2, &quot;0&quot;);
-  const MM = String(now.getMinutes()).padStart(2, &quot;0&quot;);
-  const SS = String(now.getSeconds()).padStart(2, &quot;0&quot;);
-  const title = `MagesTowerNotes-${yyyy}-${mm}-${dd}-${HH}${MM}${SS}.txt`;
-  return title;
+    const now = new Date();
+    const yyyy = String(now.getFullYear());
+    const mm = String(now.getMonth() + 1).padStart(2, &quot;0&quot;);
+    const dd = String(now.getDate()).padStart(2, &quot;0&quot;);
+    const HH = String(now.getHours()).padStart(2, &quot;0&quot;);
+    const MM = String(now.getMinutes()).padStart(2, &quot;0&quot;);
+    const SS = String(now.getSeconds()).padStart(2, &quot;0&quot;);
+    const title = `MagesTowerNotes-${yyyy}-${mm}-${dd}-${HH}${MM}${SS}.txt`;
+    return title;
   }
 
   function saveToFile() {
-  const fname = makeTitle();
-  const blob = new Blob([T.editVal], { type: &#39;text/plain;charset=UTF-8&#39; });
-  /* saveAs is from filesaver.js, bundled with sugarcube-2 */
-  saveAs(blob, fname);
+    const fname = makeTitle();
+    const blob = new Blob([T.editVal], { type: &#39;text/plain;charset=UTF-8&#39; });
+    /* saveAs is from filesaver.js, bundled with sugarcube-2 */
+    saveAs(blob, fname);
   }
 
   function loadFromFile() {
-  $(&quot;#notes-load-file&quot;).click();
+    $(&quot;#notes-load-file&quot;).click();
   }
   function loadFilePicked(ev) {
-  const reader = new FileReader();
-  $(reader).one(&quot;loadend&quot;, () =&gt; {
-    if (reader.error) throw reader.error;
-    overwriteValue(reader.result);
-  });
-  const file = ev.target.files[0];
-  reader.readAsText(file);
+    const reader = new FileReader();
+    $(reader).one(&quot;loadend&quot;, () =&gt; {
+      if (reader.error) throw reader.error;
+      overwriteValue(reader.result);
+    });
+    const file = ev.target.files[0];
+    reader.readAsText(file);
   }
 
   function doShare() {
-  const title = makeTitle();
-  navigator.share({ title, text: T.editVal });
+    const title = makeTitle();
+    navigator.share({ title, text: T.editVal });
   }
 &lt;&lt;/script&gt;&gt;
 
@@ -12060,23 +12053,23 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 &lt;&lt;/linkreplace&gt;&gt;
 
 &lt;hr&gt;
-&lt;div id=notes-full&gt;
-  &lt;div class=ui-subtitle&gt;All Notes&lt;/div&gt;
-  &lt;textarea id=notes-input&gt;&lt;/textarea&gt;
+&lt;div id=&quot;notes-full&quot;&gt;
+  &lt;div class=&quot;ui-subtitle&quot;&gt;All Notes&lt;/div&gt;
+  &lt;textarea id=&quot;notes-input&quot;&gt;&lt;/textarea&gt;
   &lt;div class=notes-buttons&gt;
-    &lt;button id=notes-delete&gt;Delete all&lt;/button&gt;
-    &lt;button id=notes-clean&gt;Cleanup notes&lt;/button&gt;
-    &lt;button id=notes-copy&gt;Copy to clipboard&lt;/button&gt;
-    &lt;button id=notes-save&gt;Save to file&lt;/button&gt;
-    &lt;button id=notes-load&gt;Load from file&lt;/button&gt;
-    &lt;button id=notes-share&gt;Share via...&lt;/button&gt;
-    &lt;input type=&quot;file&quot; id=notes-load-file&gt;
+    &lt;button id=&quot;notes-delete&quot;&gt;Delete all&lt;/button&gt;
+    &lt;button id=&quot;notes-clean&quot;&gt;Cleanup notes&lt;/button&gt;
+    &lt;button id=&quot;notes-copy&quot;&gt;Copy to clipboard&lt;/button&gt;
+    &lt;button id=&quot;notes-save&quot;&gt;Save to file&lt;/button&gt;
+    &lt;button id=&quot;notes-load&quot;&gt;Load from file&lt;/button&gt;
+    &lt;button id=&quot;notes-share&quot;&gt;Share via...&lt;/button&gt;
+    &lt;input type=&quot;file&quot; id=&quot;notes-load-file&quot;&gt;
   &lt;/div&gt;
 &lt;/div&gt;
-&lt;div id=notes-conflict&gt;
+&lt;div id=&quot;notes-conflict&quot;&gt;
   &lt;div class=notes-buttons&gt;
-    &lt;button id=notes-lose&gt;&amp;#x21d1; Lose edits&lt;/button&gt;
-    &lt;button id=notes-overwrite&gt;&amp;#x21d3; Overwrite conflict&lt;/button&gt;
+    &lt;button id=&quot;notes-lose&quot;&gt;&amp;#x21d1; Lose edits&lt;/button&gt;
+    &lt;button id=&quot;notes-overwrite&quot;&gt;&amp;#x21d3; Overwrite conflict&lt;/button&gt;
   &lt;/div&gt;
   &lt;div class=ui-subtitle&gt;Conflicting update&lt;/div&gt;
   &lt;textarea disabled&gt;&lt;/textarea&gt;
