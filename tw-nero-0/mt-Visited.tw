@@ -48,10 +48,8 @@
 </style>
 
 <<script>>
-const VP = window.VisitedPassages || (window.VisitedPassages = {});
-
 function clear() {
-  VP.clear();
+  MT.visitedClear();
   render();
 }
 
@@ -71,8 +69,8 @@ function render() {
   $("#vp-clear").on("click", clear);
 
   $("#vp-mark")
-    .prop("checked", VP.getMarksEnabled())
-    .on("change", ev => VP.setMarksEnabled(ev.target.checked));
+    .prop("checked", MT.visitedMarksEnabled)
+    .on("change", ev => MT.visitedEnableMarks(ev.target.checked));
 
   const canHover = window.matchMedia && matchMedia("(hover: hover)").matches;
   $("#vp-on-hover").toggleClass("vp-no-hover", !canHover);
@@ -84,7 +82,7 @@ function render() {
   const titles = relevant.map(p => p.title).sort();
 
   const nt = titles.length;
-  const nv = titles.filter(t => VP.has(t)).length;
+  const nv = titles.filter(t => MT.visitedHas(t)).length;
   $(".vp-stats").remove();
   $("<div class=vp-stats>").appendTo(head2).append([
   `${nt} passages`,
@@ -102,7 +100,7 @@ function render() {
   }
   curSection = section;
 
-  const visited = VP.has(title);
+  const visited = MT.visitedHas(title);
   const outer = $("<div class=vp-item>")
     .addClass(visited ? "vp-visited" : "vp-unvisited")
     .appendTo(out);

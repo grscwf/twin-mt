@@ -48,41 +48,41 @@
 </style><</append>>
 
 <<script>>
-const EM = window.ErrorMessage || (window.ErrorMessage = {});
 const VT = window.VarTrace || (window.VarTrace = {});
 
-EM.debugStop = false;
-EM.hasFails = false;
-EM.hasWarnings = false;
-EM.noMessage = false;
-EM.messages = [];
+MT.hasFails = false;
+MT.hasWarnings = false;
+MT.messages = [];
+
+let debugStop = false;
+let suppress = false;
 
 $(document).on(":passagestart", () => {
   $("#EM-outer").remove();
-  EM.hasFails = false;
-  EM.hasWarnings = false;
-  EM.messages = [];
+  MT.hasFails = false;
+  MT.hasWarnings = false;
+  MT.messages = [];
 });
 
-EM.runsWithoutFail = (fn) => {
-  const save = { hf: EM.hasFails, nm: EM.noMessage };
+MT.runsWithoutFail = (fn) => {
+  const save = { hf: MT.hasFails, sup: suppress };
   try {
-    EM.hasFails = false;
-    EM.noMessage = true;
+    MT.hasFails = false;
+    suppress = true;
     fn();
-    return !EM.hasFails;
+    return !MT.hasFails;
   } catch (e) {
     return false;
   } finally {
-    EM.hasFails = save.hf;
-    EM.noMessage = save.nm;
+    MT.hasFails = save.hf;
+    suppress = save.sup;
   }
 };
 
 /** Add str as a new error-message note. */
-EM.note = (str, header) => {
-  if (EM.noMessage) return;
-  EM.messages.push(header == null ? str : `${header}: ${str}`);
+function note(str, header) {
+  if (suppress) return;
+  MT.messages.push(header == null ? str : `${header}: ${str}`);
   const note = $(`
     <div class=EM-note>
       <a class="EM-close EM-button">[close]</a>
@@ -98,44 +98,44 @@ EM.note = (str, header) => {
 };
 
 /** Add str as a warning. */
-EM.warn = (str) => {
-  EM.hasWarnings = true;
-  EM.note(str, "Warning");
+MT.warn = (str) => {
+  MT.hasWarnings = true;
+  note(str, "Warning");
 };
 
 /** Add str as a new error-message assertion failure. */
-EM.fail = (str, context) => {
-  EM.hasFails = true;
-  EM.message("fail", str, context);
+MT.fail = (str, context) => {
+  MT.hasFails = true;
+  message("fail", str, context);
 };
 
-EM.message = (type, str, context) => {
-  if (EM.noMessage) return;
-  if (EM.debugStop) {
+function message(type, str, context) {
+  if (suppress) return;
+  if (debugStop) {
     debugger;
-    EM.debugStop = false;
+    debugStop = false;
   }
-  EM.messages.push(`${type}: ${str}`)
+  MT.messages.push(`${type}: ${str}`)
   const fails = $(`<div class=EM-${type}>`).text(str)
     .appendTo(getFails());
   const trace = backtrace(context);
   if (trace != null && trace !== "") {
-    EM.messages.push(trace);
+    MT.messages.push(trace);
     $("<div class=EM-trace>").text(trace)
       .appendTo(fails);
   }
   return fails;
 };
 
-EM.assert = (val, str, context) => {
+MT.assert = (val, str, context) => {
   if (val) return;
-  EM.fail(str, context);
+  MT.fail(str, context);
 }
 Macro.add("em-assert", {
   skipArgs: true,
   handler: function() {
     const val = VT.ignore(() => eval(this.args.full));
-    EM.assert(val, `expected: ${this.args.raw}`, this);
+    MT.assert(val, `expected: ${this.args.raw}`, this);
   }
 });
 
@@ -167,7 +167,7 @@ function getFails() {
   let fails = $("#EM-fails");
   if (fails.length === 1) return fails;
   fails.remove();
-  fails = EM.note("");
+  fails = note("");
   fails.attr("id", "EM-fails");
   fails.append(`
     <a id=EM-debug class=EM-button>[debug]</a>
@@ -177,7 +177,7 @@ function getFails() {
     </div>
   `);
   fails.find("#EM-debug").click(() => {
-    EM.debugStop = true;
+    debugStop = true;
     Engine.play(State.passage, true);
   });
   return fails;
