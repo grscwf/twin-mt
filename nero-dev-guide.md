@@ -1,17 +1,20 @@
 # Dev guide for Nero <!-- omit in toc -->
 
-- [About Twine and Twee](#about-twine-and-twee)
+- [Twine and Twee](#twine-and-twee)
 - [Working with Twee](#working-with-twee)
 - [Working with Twine](#working-with-twine)
 - [Debug controls](#debug-controls)
   - [Right side buttons](#right-side-buttons)
   - [Var info](#var-info)
   - [Compute variants](#compute-variants)
-- [Story structure - Passages](#story-structure---passages)
-- [Story structure - State](#story-structure---state)
+- [Story structure](#story-structure)
+  - [Passages](#passages)
+  - [State](#state)
 - [Rationales](#rationales)
+  - [State.random](#staterandom)
+  - [nobr](#nobr)
 
-## About Twine and Twee
+## Twine and Twee
 
 - There are two source formats for the story: Twine and Twee.
   - In general, creating paths is easier in Twine,
@@ -272,7 +275,9 @@
   - Exclude: `MP_onHold`, `MP_exitingHold`, `MP_lockedOut`, `MP_tapLost`
 - TODO: these rules could be automatic.
 
-## Story structure - Passages
+## Story structure
+
+### Passages
 
 - All of Nero's passages start with a codeword like `n1a/F`.
   - The lowercase `n` indicates it's a Nero passage.
@@ -311,7 +316,7 @@
   - It also seems like editing "Story Javascript" has a much higher risk of
     triggering the overlapping-save bug.
 
-## Story structure - State
+### State
 
 - All Nero state vars start with a prefix like `n1_` or `t_`.
   - The `n` is for persistent Nero variables.
@@ -343,17 +348,31 @@
 
 ## Rationales
 
-- State.random. SugarCube has an option to seed a deterministic rng,
+### State.random
+- SugarCube has an option to seed a deterministic rng,
   which in theory might be helpful for reproducing sessions.
-  - The problem is that savestates with seeded random are incompatible with
-    states without seeded random.
-  - Conversion is possible, but there's no way to make the seed-added
-    state reproducible.
-  - In general, savestates are not necessarily reproducible anyway,
-    since they can be created from multiple versions of the storygraph.
-  - Approximate reproducible is still useful, but breaking old saves is
-    makes it not worth it.
-  - For any useful reproducible, stub out random with a fixed constant.
-  - Also, if deterministic rng is enabled, SugarCube's structure makes it
-    awkward to render a passage independent of history, as used by archives.
-    (It's not impossible, but has some awkward caveats.)
+- Savestates with seeded random are incompatible with
+  savestates without seeded random.
+- Deterministic rng makes it awkward to render a passage
+  independent of history, as used by archives.
+
+### nobr
+- SugarCube's default line-breaking behavior is pretty awkward.
+  - Passages with a lot of `<<if>>` and other macros need a lot of
+    backslashes or `<<nobr>>`
+  - When paragraphs must be a single line, diffs become really
+    awkward to read.
+- Most passages will have `<<nobr>>` around the whole passage.
+  - `?P` is used to separate paragraphs.
+  - `?P` is `<br><br>` instead of `<p>` because `<p>` has
+    unintuitive behavior in html/css (`<p>` cannot contain any
+    block elements.)
+- A passage included be others should end with `<<nobr>>\`,
+  because the inclusion does not inherit the parent's nobr,
+  and the trailing newline will become a `<br>`.
+- Any type of `nobr` breaks `//` comments in JS, because 
+  `nobr` works by replacing newlines with spaces before parsing.
+  - This is why we don't use `Config.passages.nobr`. Setting that
+    makes it super awkward to write JS in the Init passages.
+- Using the `nobr` tag instead of explicit `<<nobr>>` is maybe ok?
+  But it feels better to make it explicit in the text.
