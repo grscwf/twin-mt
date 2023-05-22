@@ -46,6 +46,30 @@
 </style><</append>>
 
 <<script>>
+
+const milestones = new Set([
+  "n1p-F Barbs Fast 1",
+  "n1p-F Barbs Slow 1",
+  "n1p-F Barbs Slow 2a1",
+  "n1p-F Barbs Slow 2n1",
+  "n1p-F Barbs Slow 2s1",
+  "n1p-F Barbs Skip",
+  "n1s-F Cast Alone 1",
+  "n1s-F Cast Endgame 1",
+  "n1s-F Cast Horny 1",
+  "n1s-F Cast Itch 2",
+  "n1s-F Cast Sight 1",
+  "n1s-F Cast Sight Horny",
+  "n1s-F Cast Younger 1",
+  "n1s-F Guess Password",
+  "n1s-F Impatient",
+  "n1s-F Say Device",
+  "n1s-F Say Lance",
+  "n1s-F Say Password",
+  "n1s-F Tap 1",
+  "n1s-F Zero Bound",
+]);
+
 const visited = new Set();
 let lastPick = {};
 
@@ -78,6 +102,8 @@ function initRandomWalk() {
   }
 
   const goRandom = () => {
+    const V = State.variables;
+
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
       ignoreFuture = false;
@@ -90,7 +116,43 @@ function initRandomWalk() {
     const all = $("#passages a[data-passage]");
     if (all.length === 0) return false;
 
-    let avail = all.filter((i, el) => !visited.has(idOf(el)));
+    let avail = all;
+
+    // bias toward climbing the ladder of magic.
+    let important = "[data-mta-code*='//prefer']";
+    switch (V.n1_magicPhase) {
+      case MP_beforeCast:
+        important += ", [data-passage*=Cast]:not([data-passage*=Itch])";
+        break;
+      case MP_triedMagic:
+        if (!V.n1_mageSight) {
+          important += ", [data-passage*=Sight]";
+        } else {
+          important += ", [data-passage*=Mirror], [data-passage*=Tap]";
+        }
+        break;
+      case MP_wantDevice:
+        important += ", [data-passage*=Say]";
+        break;
+      case MP_wantName:
+        important += ", [data-passage*=Say], [data-passage*=Ask]";
+        important += ", [data-passage*=Bottle]";
+        break;
+      case MP_wantTouch:
+        important += ", [data-passage*=Ask], [data-passage*=Penguin]";
+        break;
+      case MP_wantPass:
+        important += ", [data-passage*=Say], [data-passage*=Ask]";
+        break;
+    }
+    const prefer = all.filter(important);
+    if (prefer.length && Math.random() > .4) {
+      const names = prefer.map((i, el) => $(el).attr("data-passage"));
+      console.log(`prefer [${[...names].join(",")}]`);
+      avail = prefer;
+    } else {
+      avail = avail.filter((i, el) => !visited.has(idOf(el)));
+    }
     let pick = null;
     while (pick == null) {
       if (avail.length === 0) {
@@ -311,6 +373,10 @@ function initRandomWalk() {
       let msg = `Broken path: ${JSON.stringify(next)}`;
       MT.warn(msg);
       return seekStop();
+    }
+
+    if (milestones.has(here)) {
+      console.log(`milestone ${here}`);
     }
 
     if (goRandom()) {

@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Alarm" tags="" position="1400,2500" size="100,100">Thankfully, the panther then lets go of the wolf entirely. Before turning towards the door, $name can see that Ivex is frowning.
 
 &quot;How unfortunate,&quot; the mage finally says. &quot;An interruption. Right when things were about to get interesting! What a busy day...&quot;
@@ -9856,6 +9856,30 @@ Macro.add(&quot;random-once&quot;, {
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
+
+const milestones = new Set([
+  &quot;n1p-F Barbs Fast 1&quot;,
+  &quot;n1p-F Barbs Slow 1&quot;,
+  &quot;n1p-F Barbs Slow 2a1&quot;,
+  &quot;n1p-F Barbs Slow 2n1&quot;,
+  &quot;n1p-F Barbs Slow 2s1&quot;,
+  &quot;n1p-F Barbs Skip&quot;,
+  &quot;n1s-F Cast Alone 1&quot;,
+  &quot;n1s-F Cast Endgame 1&quot;,
+  &quot;n1s-F Cast Horny 1&quot;,
+  &quot;n1s-F Cast Itch 2&quot;,
+  &quot;n1s-F Cast Sight 1&quot;,
+  &quot;n1s-F Cast Sight Horny&quot;,
+  &quot;n1s-F Cast Younger 1&quot;,
+  &quot;n1s-F Guess Password&quot;,
+  &quot;n1s-F Impatient&quot;,
+  &quot;n1s-F Say Device&quot;,
+  &quot;n1s-F Say Lance&quot;,
+  &quot;n1s-F Say Password&quot;,
+  &quot;n1s-F Tap 1&quot;,
+  &quot;n1s-F Zero Bound&quot;,
+]);
+
 const visited = new Set();
 let lastPick = {};
 
@@ -9888,6 +9912,8 @@ function initRandomWalk() {
   }
 
   const goRandom = () =&gt; {
+    const V = State.variables;
+
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length === 1) {
       ignoreFuture = false;
@@ -9900,7 +9926,43 @@ function initRandomWalk() {
     const all = $(&quot;#passages a[data-passage]&quot;);
     if (all.length === 0) return false;
 
-    let avail = all.filter((i, el) =&gt; !visited.has(idOf(el)));
+    let avail = all;
+
+    // bias toward climbing the ladder of magic.
+    let important = &quot;[data-mta-code*=&#39;//prefer&#39;]&quot;;
+    switch (V.n1_magicPhase) {
+      case MP_beforeCast:
+        important += &quot;, [data-passage*=Cast]:not([data-passage*=Itch])&quot;;
+        break;
+      case MP_triedMagic:
+        if (!V.n1_mageSight) {
+          important += &quot;, [data-passage*=Sight]&quot;;
+        } else {
+          important += &quot;, [data-passage*=Mirror], [data-passage*=Tap]&quot;;
+        }
+        break;
+      case MP_wantDevice:
+        important += &quot;, [data-passage*=Say]&quot;;
+        break;
+      case MP_wantName:
+        important += &quot;, [data-passage*=Say], [data-passage*=Ask]&quot;;
+        important += &quot;, [data-passage*=Bottle]&quot;;
+        break;
+      case MP_wantTouch:
+        important += &quot;, [data-passage*=Ask], [data-passage*=Penguin]&quot;;
+        break;
+      case MP_wantPass:
+        important += &quot;, [data-passage*=Say], [data-passage*=Ask]&quot;;
+        break;
+    }
+    const prefer = all.filter(important);
+    if (prefer.length &amp;&amp; Math.random() &gt; .4) {
+      const names = prefer.map((i, el) =&gt; $(el).attr(&quot;data-passage&quot;));
+      console.log(`prefer [${[...names].join(&quot;,&quot;)}]`);
+      avail = prefer;
+    } else {
+      avail = avail.filter((i, el) =&gt; !visited.has(idOf(el)));
+    }
     let pick = null;
     while (pick == null) {
       if (avail.length === 0) {
@@ -10121,6 +10183,10 @@ function initRandomWalk() {
       let msg = `Broken path: ${JSON.stringify(next)}`;
       MT.warn(msg);
       return seekStop();
+    }
+
+    if (milestones.has(here)) {
+      console.log(`milestone ${here}`);
     }
 
     if (goRandom()) {
@@ -15478,7 +15544,7 @@ He shakes his head, nods, but then shakes his head again.
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;/mtl&gt;&gt;
 
-  &lt;&lt;mtl [[n1cn-F Rebuff]]&gt;&gt;
+  &lt;&lt;mtl [[n1cn-F Rebuff]] &quot;//avoid&quot;&gt;&gt;
     &lt;&lt;if $n1_abused&gt;&gt;
       Growl softly at Ivex.
     &lt;&lt;elseif $n1_naked&gt;&gt;
@@ -32282,6 +32348,7 @@ $t_afterAction
 &lt;&lt;set $n1_bottleAskedHorny = true&gt;&gt;
 &lt;&lt;set $n1_bottleNameKnown = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="558" name="n1y-F Horny Bottle" tags="" position="6575,6875" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
 The large bottle sitting on a cabinet, near the 
 &lt;&lt;n1-no-loop [[angry penguin|n1y-F Horny Penguin]]&gt;&gt;,
