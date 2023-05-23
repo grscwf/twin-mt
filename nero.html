@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Early Init Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Map of enumType: string =&gt; enumValueNames: string[] */
@@ -5746,10 +5746,23 @@ function countUnlocks() {
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="32" name="Init Sections" tags="inclusion" position="2825,1150" size="100,100">&lt;&lt;script&gt;&gt;
 
+const Use = Symbol(&quot;Use&quot;);
+
 // Passages are grouped into sections by a prefix in their title.
 // - Prefix should start with a lowercase letter.
 // - Prefix can contain lowercase letters and numbers.
 // - Prefix should end with `-` or space.
+
+// Each section can have `vars` for state meaningful in that section.
+// - The value `Use` means the passage should vary on that state var.
+// - A regex value means, if the passage source matches the regex,
+//   the passage should vary on that state var.
+// - `false` means the state var can be undefined, null, or false.
+// - Any other value means the state var should be exactly that value.
+// - Usually don&#39;t need to specify a var is false in sections before
+//   it gets set.
+// - Probably want to specify a var is false if it can become false,
+//   to verify that all paths into the section do set it false.
 
 const sectionDefs = {
 
@@ -5760,61 +5773,203 @@ const sectionDefs = {
   n0: {},
 
   // Nero 1F intro
-  n1a: {},
+  n1a: {
+    vars: {
+      n1_mageSight: Use,
+    }
+  },
 
   // Nero convo, neutral mood
-  n1cn: {},
+  n1cn: {
+    vars: {
+      n1_abused: Use,
+      n1_mageSight: Use,
+      n1_naked: Use,
+    }
+  },
 
   // Nero convo, Ivex receptive
-  n1cr: {},
+  n1cr: {
+    vars: {
+      n1_abused: Use,
+      n1_mageSight: Use,
+      n1_naked: Use,
+      t_ivexReceptive: true,
+    }
+  },
 
   // Nero convo, subby mood
-  n1cs: {},
+  n1cs: {
+    vars: {
+      // n1_abused: subby usually dominates
+      n1_mageSight: Use,
+      n1_naked: true,
+      n1_subby: true,
+      t_ivexReceptive: true,
+    }
+  },
 
   // Nero convo, transition to candle
-  n1cx: {},
+  n1cx: {
+    vars: {
+      n1_abused: Use,
+      n1_mageSight: Use,
+      n1_naked: Use,
+      n1_subby: Use,
+      n1_tough: Use,
+      t_ivexReceptive: false,
+    }
+  },
 
   // Nero candle lit
-  n1d: {},
+  n1d: {
+    vars: {
+      n1_abused: Use,
+      n1_candleLit: true,
+      n1_mageSight: Use,
+      n1_naked: Use,
+      n1_subby: Use,
+      n1_tough: Use,
+      t_ivexReceptive: false,
+    }
+  },
   
   // Nero candle horny
-  n1e: {},
+  n1e: {
+    vars: {
+      n1_abused: Use,
+      n1_candleHorny: true,
+      n1_candleLit: true,
+      n1_mageSight: Use,
+      n1_naked: true,
+      n1_subby: Use,
+      n1_tough: Use,
+      t_ivexReceptive: false,
+    }
+  },
 
-  // Nero clever
-  n1f: {},
+  // Nero being clever
+  n1f: {
+    vars: {
+      n1_naked: true,
+    }
+  },
 
   // Nero barbs choice
-  n1p: {},
+  n1p: {
+    vars: {
+      n1_candleHorny: false,
+      n1_mageSight: false,
+    }
+  },
 
   // Nero magic/sprite
-  n1s: {},
+  n1s: {
+    vars: {
+      // make sure Ivex is wearing mask when candle lit
+      n1_candleLit: /ivex/im,
+      n2_free: false,
+      n2_ivexGone: Use,
+    }
+  },
 
   // Nero looking
-  n1x: {},
+  n1x: {
+    vars: {
+      n1_candleHorny: false,
+      // make sure Ivex is wearing mask when candle lit
+      n1_candleLit: /ivex/im,
+      n1_mageSight: Use,
+      n2_free: Use,
+      n2_ivexGone: Use,
+    }
+  },
 
   // Nero horny looking
-  n1y: {},
+  n1y: {
+    vars: {
+      n1_candleHorny: true,
+      n1_candleLit: true,
+      n1_mageSight: Use,
+      n1_naked: true,
+      n2_ivexGone: Use,
+    }
+  },
 
   // Nero 1F alone intro
-  n2a: {},
+  n2a: {
+    vars: {
+      n1_candleHorny: false,
+      n1_candleLit: false,
+      n1_mageSight: Use,
+      n1_naked: true,
+      n2_ivexGone: true,
+      t_ivexReceptive: false,
+    }
+  },
 
   // Nero alone with candle
-  n2b: {},
+  n2b: {
+    vars: {
+      n1_candleLit: true,
+      n1_mageSight: Use,
+      n1_naked: true,
+      n2_ivexGone: true,
+      t_ivexReceptive: false,
+    }
+  },
 
   // Nero escaping cross
-  n2c: {},
+  n2c: {
+    vars: {
+      n1_mageSight: Use,
+      n1_naked: true,
+      n2_ivexGone: true,
+      t_ivexReceptive: false,
+    }
+  },
 
   // Nero free on 1F
-  n2f: {},
+  n2f: {
+    vars: {
+      n1_mageSight: Use,
+      n1_naked: true,
+      n2_extraHorny: Use,
+      n2_ivexGone: true,
+      n2_tooClever: Use,
+      t_ivexReceptive: false,
+    }
+  },
 
   // Nero looking while free
-  n2x: {},
+  n2x: {
+    vars: {
+      n1_mageSight: Use,
+      n1_naked: true,
+      n2_extraHorny: Use,
+      n2_ivexGone: true,
+      n2_tooClever: Use,
+      t_ivexReceptive: false,
+    }
+  },
 
   // Nero 2F sketch
-  n3a: {},
+  n3a: {
+    vars: {
+      n1_mageSight: Use,
+      n1_naked: true,
+      n2_extraHorny: Use,
+      n2_ivexGone: true,
+      t_ivexReceptive: false,
+    }
+  },
 
   // Nero 1F endings
-  n9a: {},
+  n9a: {
+    vars: {
+      n1_naked: true,
+    }
+  },
 
   // Nero 2F endings
   n9e: {},
@@ -5822,10 +5977,9 @@ const sectionDefs = {
   // Nero escaped endings
   n9x: {},
 
-  // Anything else
+  // Passages without a section tag
   other: {},
 };
-
 
 /** Returns section name of passageTitle. */
 MT.sectionOf = (passageTitle) =&gt; {
