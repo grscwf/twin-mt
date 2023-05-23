@@ -263,6 +263,34 @@ function checkSections() {
   });
 }
 
+/** Verifies current state is correct for this section. */
+function checkSectionState(quietly) {
+  // Note: incoming state, not active state
+  const _s0 = State.current.variables;
+
+  // TODO: remove this temp hack when restart is fixed
+  if (_s0.t_restarting) return true;
+
+  const sect = MT.sectionHere();
+  const vars = sectionDefs[sect].vars;
+  if (!vars) return true;
+
+  let allOk = true;
+  for (const vn of Object.keys(vars)) {
+    const val = vars[vn];
+    if (val === Use || val instanceof RegExp) continue;
+
+    const ok = _s0[vn] === val || (val === false && _s0[vn] == null);
+    if (!ok) {
+      if (quietly) return false;
+      allOk = false;
+      MT.fail(`${vn} should be ${val} in ${sect}; currently ${_s0[vn]}`);
+    }
+  }
+  return allOk;
+}
+
 checkSections();
+$(document).on(":passageend", () => checkSectionState());
 
 <</script>>
