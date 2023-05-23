@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Early Init Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Map of enumType: string =&gt; enumValueNames: string[] */
@@ -5651,7 +5651,6 @@ MT.sectionHere = () =&gt; MT.sectionOf(State.passage);
 /** Verifies sections are defined. */
 function checkSections() {
   if (!setup.debug) return;
-
   const reported = new Set();
   Story.lookup().forEach(p =&gt; {
     const sect = MT.sectionOf(p.title);
@@ -5662,35 +5661,36 @@ function checkSections() {
   });
 }
 
-/** Verifies current state is correct for this section. */
-function checkSectionState(quietly) {
-  // Note: incoming state, not active state
-  const _s0 = State.current.variables;
-
-  // TODO: remove this temp hack when restart is fixed
-  if (_s0.t_restarting) return true;
-
-  const sect = MT.sectionHere();
-  const vars = sectionDefs[sect].vars;
+/** Verifies stateObj is correct for sectName. */
+function checkSectionState(stateObj, sectName, quietly) {
+  const vars = sectionDefs[sectName].vars;
   if (!vars) return true;
-
   let allOk = true;
   for (const vn of Object.keys(vars)) {
     const val = vars[vn];
     if (val === Use || val instanceof RegExp) continue;
-
-    const ok = _s0[vn] === val || (val === false &amp;&amp; _s0[vn] == null);
+    const ok = stateObj[vn] === val || (val === false &amp;&amp; stateObj[vn] == null);
     if (!ok) {
       if (quietly) return false;
       allOk = false;
-      MT.fail(`${vn} should be ${val} in ${sect}; currently ${_s0[vn]}`);
+      MT.fail(`${vn} should be ${val} in ${sectName}, not ${stateObj[vn]}`);
     }
   }
   return allOk;
 }
 
+/** Verifies current state is correct at current location. */
+function checkSectionStateHere() {
+  // Note, incoming state, not modified state.
+  const s0 = State.current.variables;
+  const sect = MT.sectionHere();
+  // TODO: remove this temp hack when restart is fixed
+  if (s0.t_restarting) return;
+  checkSectionState(s0, sect, false);
+}
+
 checkSections();
-$(document).on(&quot;:passageend&quot;, () =&gt; checkSectionState());
+$(document).on(&quot;:passageend&quot;, checkSectionStateHere);
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="33" name="Init Sidebar" tags="inclusion" position="2550,700" size="100,100">&lt;&lt;script&gt;&gt;
 MT.autoStow = () =&gt; {

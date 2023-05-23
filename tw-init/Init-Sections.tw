@@ -252,7 +252,6 @@ MT.sectionHere = () => MT.sectionOf(State.passage);
 /** Verifies sections are defined. */
 function checkSections() {
   if (!setup.debug) return;
-
   const reported = new Set();
   Story.lookup().forEach(p => {
     const sect = MT.sectionOf(p.title);
@@ -263,34 +262,35 @@ function checkSections() {
   });
 }
 
-/** Verifies current state is correct for this section. */
-function checkSectionState(quietly) {
-  // Note: incoming state, not active state
-  const _s0 = State.current.variables;
-
-  // TODO: remove this temp hack when restart is fixed
-  if (_s0.t_restarting) return true;
-
-  const sect = MT.sectionHere();
-  const vars = sectionDefs[sect].vars;
+/** Verifies stateObj is correct for sectName. */
+function checkSectionState(stateObj, sectName, quietly) {
+  const vars = sectionDefs[sectName].vars;
   if (!vars) return true;
-
   let allOk = true;
   for (const vn of Object.keys(vars)) {
     const val = vars[vn];
     if (val === Use || val instanceof RegExp) continue;
-
-    const ok = _s0[vn] === val || (val === false && _s0[vn] == null);
+    const ok = stateObj[vn] === val || (val === false && stateObj[vn] == null);
     if (!ok) {
       if (quietly) return false;
       allOk = false;
-      MT.fail(`${vn} should be ${val} in ${sect}; currently ${_s0[vn]}`);
+      MT.fail(`${vn} should be ${val} in ${sectName}, not ${stateObj[vn]}`);
     }
   }
   return allOk;
 }
 
+/** Verifies current state is correct at current location. */
+function checkSectionStateHere() {
+  // Note, incoming state, not modified state.
+  const s0 = State.current.variables;
+  const sect = MT.sectionHere();
+  // TODO: remove this temp hack when restart is fixed
+  if (s0.t_restarting) return;
+  checkSectionState(s0, sect, false);
+}
+
 checkSections();
-$(document).on(":passageend", () => checkSectionState());
+$(document).on(":passageend", checkSectionStateHere);
 
 <</script>>
