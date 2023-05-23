@@ -7,14 +7,18 @@ window.MT = {};
 /** Evaluate all passages that match regex. */
 function runInit(regex) {
   const inits = Story.lookupWith(p => regex.test(p.title));
+  const errors = [];
   inits.forEach(p => {
     try {
       $.wiki(p.text);
     } catch (e) {
       e.message = `[${p.title}]: ${e.message}`;
-      throw e;
+      errors.push(e);
     }
   });
+  if (errors.length) {
+    throw errors[0];
+  }
 }
 
 runInit(/^Early Init /);
