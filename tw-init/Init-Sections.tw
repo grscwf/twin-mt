@@ -277,6 +277,9 @@ MT.sectionOf = (passageTitle) => {
 /** Returns section name of current passage. */
 MT.sectionHere = () => MT.sectionOf(State.passage);
 
+/** Returns expected state in sect. */
+MT.sectionExpect = (sect) => sectionDefs[sect].expect;
+
 /** Validates sectionDefs and passage titles. */
 function checkSections() {
   if (!setup.debug) return;
@@ -309,11 +312,12 @@ function checkSections() {
 }
 
 /** Verifies stateObj is correct for sectName. */
-function checkSectionState(stateObj, sectName, quietly) {
+MT.checkSectionState = (stateObj, sectName, quietly, onlySet) => {
   const expect = sectionDefs[sectName].expect;
   if (!expect) return true;
   let allOk = true;
   for (const [vn, val] of Object.entries(expect)) {
+    if (onlySet && !onlySet.has(vn)) continue;
     const ok = stateObj[vn] === val || (val === false && stateObj[vn] == null);
     if (!ok) {
       if (quietly) return false;
@@ -331,7 +335,7 @@ function checkSectionStateHere() {
   const sect = MT.sectionHere();
   // TODO: remove this temp hack when restart is fixed
   if (s0.t_restarting) return;
-  checkSectionState(s0, sect, false);
+  MT.checkSectionState(s0, sect, false);
 }
 
 checkSections();

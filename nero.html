@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Early Init Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Map of enumType: string =&gt; enumValueNames: string[] */
@@ -637,9 +637,9 @@ Macro.add(&quot;arc-skip&quot;, {
   tags: [],
   handler: function() {
     const V = State.variables;
-    if (!V.t_isArchive) {
-      $(this.output).wiki(this.payload[0].contents);
-    }
+    const mkp = V.t_isArchive ? &quot;&quot; : this.payload[0].contents;
+    // this will add debug markers around the output
+    $(this.output).wiki(mkp);
   }
 });
 
@@ -963,7 +963,8 @@ Macro.add(&quot;arousalbar&quot;, {
 let ignore = new Set();
 let tryVars = {};
 
-// vars that are definitely not boolean (but might be null)
+// We assume a null var is a boolean and try `true` is a value.
+// These vars might be null, but `true` is not valid.
 const nonbooleans = new Set([
   &quot;n1_passFound&quot;,
   &quot;n1_passTried&quot;,
@@ -1022,13 +1023,11 @@ MT.computeVariants = function() {
 
   ignore.forEach(vn =&gt; usedSet.delete(vn));
 
-  // if flag has an expectation for this section, limit to that value
-  const sect = MT.getSection();
+  // if a flag has an expectation for this section, limit to that value
+  const sect = MT.sectionHere();
+  const expect = MT.sectionExpect(sect);
   usedSet.forEach(vn =&gt; {
-    const [_, isConst, val] = MT.getVarExpectation(vn, sect);
-    if (isConst) {
-      tryVars[vn] = [val];
-    }
+    if (vn in expect) tryVars[vn] = [expect[vn]];
   });
 
   const todo = [beginState];
@@ -1085,7 +1084,9 @@ MT.computeVariants = function() {
       const state = todo.pop();
       done.push(state);
       checked++;
-      const ok = MT.checkState(state, usedSet, false);
+      let ok = true;
+      ok = ok &amp;&amp; MT.checkSectionState(state, sect, true, usedSet);
+      ok = ok &amp;&amp; MT.checkState(state, usedSet, false);
       if (ok) return state;
     }
     return null;
@@ -1115,8 +1116,7 @@ MT.computeVariants = function() {
       }
       usedSet.add(vn);
       if (state[vn] == null || typeof state[vn] === &quot;boolean&quot;) {
-        const [_, isConst] = MT.getVarExpectation(vn, sect);
-        if (!isConst) {
+        if (!(vn in expect)) {
           // add the inverse value to the todo list
           [...done, ...todo].forEach(st1 =&gt; {
             const st2 = clone(st1);
@@ -5676,6 +5676,9 @@ MT.sectionOf = (passageTitle) =&gt; {
 /** Returns section name of current passage. */
 MT.sectionHere = () =&gt; MT.sectionOf(State.passage);
 
+/** Returns expected state in sect. */
+MT.sectionExpect = (sect) =&gt; sectionDefs[sect].expect;
+
 /** Validates sectionDefs and passage titles. */
 function checkSections() {
   if (!setup.debug) return;
@@ -5708,11 +5711,12 @@ function checkSections() {
 }
 
 /** Verifies stateObj is correct for sectName. */
-function checkSectionState(stateObj, sectName, quietly) {
+MT.checkSectionState = (stateObj, sectName, quietly, onlySet) =&gt; {
   const expect = sectionDefs[sectName].expect;
   if (!expect) return true;
   let allOk = true;
   for (const [vn, val] of Object.entries(expect)) {
+    if (onlySet &amp;&amp; !onlySet.has(vn)) continue;
     const ok = stateObj[vn] === val || (val === false &amp;&amp; stateObj[vn] == null);
     if (!ok) {
       if (quietly) return false;
@@ -5730,7 +5734,7 @@ function checkSectionStateHere() {
   const sect = MT.sectionHere();
   // TODO: remove this temp hack when restart is fixed
   if (s0.t_restarting) return;
-  checkSectionState(s0, sect, false);
+  MT.checkSectionState(s0, sect, false);
 }
 
 checkSections();

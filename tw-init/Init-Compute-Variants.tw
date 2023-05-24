@@ -42,7 +42,8 @@
 let ignore = new Set();
 let tryVars = {};
 
-// vars that are definitely not boolean (but might be null)
+// We assume a null var is a boolean and try `true` is a value.
+// These vars might be null, but `true` is not valid.
 const nonbooleans = new Set([
   "n1_passFound",
   "n1_passTried",
@@ -101,13 +102,11 @@ MT.computeVariants = function() {
 
   ignore.forEach(vn => usedSet.delete(vn));
 
-  // if flag has an expectation for this section, limit to that value
-  const sect = MT.getSection();
+  // if a flag has an expectation for this section, limit to that value
+  const sect = MT.sectionHere();
+  const expect = MT.sectionExpect(sect);
   usedSet.forEach(vn => {
-    const [_, isConst, val] = MT.getVarExpectation(vn, sect);
-    if (isConst) {
-      tryVars[vn] = [val];
-    }
+    if (vn in expect) tryVars[vn] = [expect[vn]];
   });
 
   const todo = [beginState];
@@ -164,7 +163,9 @@ MT.computeVariants = function() {
       const state = todo.pop();
       done.push(state);
       checked++;
-      const ok = MT.checkState(state, usedSet, false);
+      let ok = true;
+      ok = ok && MT.checkSectionState(state, sect, true, usedSet);
+      ok = ok && MT.checkState(state, usedSet, false);
       if (ok) return state;
     }
     return null;
@@ -194,8 +195,7 @@ MT.computeVariants = function() {
       }
       usedSet.add(vn);
       if (state[vn] == null || typeof state[vn] === "boolean") {
-        const [_, isConst] = MT.getVarExpectation(vn, sect);
-        if (!isConst) {
+        if (!(vn in expect)) {
           // add the inverse value to the todo list
           [...done, ...todo].forEach(st1 => {
             const st2 = clone(st1);
