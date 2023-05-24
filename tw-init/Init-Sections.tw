@@ -268,17 +268,23 @@ const sectionDefs = {
 };
 
 /** Returns section name of passageTitle. */
-MT.sectionOf = (passageTitle) => {
+const sectOf = (passageTitle) => {
   const re = /^([a-z][a-z0-9]+)[- ]/;
   const m = re.exec(passageTitle);
   return m ? m[1] : "other";
 };
 
 /** Returns section name of current passage. */
-MT.sectionHere = () => MT.sectionOf(State.passage);
+MT.sectHere = () => sectOf(State.passage);
 
 /** Returns expected state in sect. */
-MT.sectionExpect = (sect) => sectionDefs[sect].expect;
+MT.sectExpect = (sect) => sectionDefs[sect].expect;
+
+MT.varExpect = (vname) => {
+  const sect = MT.sectHere();
+  const expect = sectionDefs[sect].expect || {};
+  return expect[vname];
+};
 
 /** Validates sectionDefs and passage titles. */
 function checkSections() {
@@ -287,7 +293,7 @@ function checkSections() {
   // Verify every passage title has a valid section tag.
   const sectsUsed = new Set();
   for (const p of Story.lookup()) {
-    const sect = MT.sectionOf(p.title);
+    const sect = sectOf(p.title);
     if (!sectionDefs[sect] && !sectsUsed.has(sect)) {
       console.error(`[\[${p.title}]] section ${sect} not defined`);
     }
@@ -332,7 +338,7 @@ MT.checkSectionState = (stateObj, sectName, quietly, onlySet) => {
 function checkSectionStateHere() {
   // Note, incoming state, not modified state.
   const s0 = State.current.variables;
-  const sect = MT.sectionHere();
+  const sect = MT.sectHere();
   // TODO: remove this temp hack when restart is fixed
   if (s0.t_restarting) return;
   MT.checkSectionState(s0, sect, false);

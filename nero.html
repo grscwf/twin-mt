@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Early Init Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Map of enumType: string =&gt; enumValueNames: string[] */
@@ -1024,8 +1024,8 @@ MT.computeVariants = function() {
   ignore.forEach(vn =&gt; usedSet.delete(vn));
 
   // if a flag has an expectation for this section, limit to that value
-  const sect = MT.sectionHere();
-  const expect = MT.sectionExpect(sect);
+  const sect = MT.sectHere();
+  const expect = MT.sectExpect(sect);
   usedSet.forEach(vn =&gt; {
     if (vn in expect) tryVars[vn] = [expect[vn]];
   });
@@ -1084,9 +1084,8 @@ MT.computeVariants = function() {
       const state = todo.pop();
       done.push(state);
       checked++;
-      let ok = true;
-      ok = ok &amp;&amp; MT.checkSectionState(state, sect, true, usedSet);
-      ok = ok &amp;&amp; MT.checkState(state, usedSet, false);
+      const ok = MT.checkSectionState(state, sect, true, usedSet)
+        &amp;&amp; MT.checkState(state, usedSet, false);
       if (ok) return state;
     }
     return null;
@@ -2697,15 +2696,6 @@ MT.getVarExpectation = (vname, sect) =&gt; {
   } else {
     return [false, true, exp];
   }
-};
-MT.getVarConstant = vn =&gt; {
-  const [_, isConst, val] = MT.getVarExpectation(vn);
-  if (!isConst) throw new Error(`${vn} is not constant`);
-  return val;
-};
-MT.varIsConstant = vn =&gt; {
-  const [_, isConst] = MT.getVarExpectation(vn);
-  return isConst;
 };
 MT.varIsNotable = vn =&gt; {
   const [isNotable] = MT.getVarExpectation(vn);
@@ -5667,17 +5657,23 @@ const sectionDefs = {
 };
 
 /** Returns section name of passageTitle. */
-MT.sectionOf = (passageTitle) =&gt; {
+const sectOf = (passageTitle) =&gt; {
   const re = /^([a-z][a-z0-9]+)[- ]/;
   const m = re.exec(passageTitle);
   return m ? m[1] : &quot;other&quot;;
 };
 
 /** Returns section name of current passage. */
-MT.sectionHere = () =&gt; MT.sectionOf(State.passage);
+MT.sectHere = () =&gt; sectOf(State.passage);
 
 /** Returns expected state in sect. */
-MT.sectionExpect = (sect) =&gt; sectionDefs[sect].expect;
+MT.sectExpect = (sect) =&gt; sectionDefs[sect].expect;
+
+MT.varExpect = (vname) =&gt; {
+  const sect = MT.sectHere();
+  const expect = sectionDefs[sect].expect || {};
+  return expect[vname];
+};
 
 /** Validates sectionDefs and passage titles. */
 function checkSections() {
@@ -5686,7 +5682,7 @@ function checkSections() {
   // Verify every passage title has a valid section tag.
   const sectsUsed = new Set();
   for (const p of Story.lookup()) {
-    const sect = MT.sectionOf(p.title);
+    const sect = sectOf(p.title);
     if (!sectionDefs[sect] &amp;&amp; !sectsUsed.has(sect)) {
       console.error(`[\[${p.title}]] section ${sect} not defined`);
     }
@@ -5731,7 +5727,7 @@ MT.checkSectionState = (stateObj, sectName, quietly, onlySet) =&gt; {
 function checkSectionStateHere() {
   // Note, incoming state, not modified state.
   const s0 = State.current.variables;
-  const sect = MT.sectionHere();
+  const sect = MT.sectHere();
   // TODO: remove this temp hack when restart is fixed
   if (s0.t_restarting) return;
   MT.checkSectionState(s0, sect, false);
@@ -6182,7 +6178,7 @@ function withinCondition(ctx) {
 Macro.add(&quot;vi-always&quot;, {
   handler: function() {
     const [vname, exp] = this.args;
-    if (MT.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+    if (MT.varExpect(vname) != null &amp;&amp; !withinInclude(this)) {
       MT.warn(`vi-always ${vname} is unnecessary`);
     }
     const actual = MT.untracedGet(vname);
@@ -6202,7 +6198,8 @@ Macro.add(&quot;vi-always&quot;, {
 Macro.add(&quot;vi-always-if&quot;, {
   handler: function() {
     const [cond, vname, exp] = this.args;
-    if (MT.varIsConstant(vname) &amp;&amp; !withinInclude(this)) {
+    const sect = MT.sectHere();
+    if (MT.varExpect(vname) != null &amp;&amp; !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
     if (MT.untracedGet(cond)) {
@@ -6225,7 +6222,7 @@ Macro.add(&quot;vi-always-if&quot;, {
 Macro.add(&quot;vi-ignore&quot;, {
   handler: function() {
     for (const vn of this.args) {
-      if (MT.varIsConstant(vn)) {
+      if (MT.varExpect(vn) != null) {
         MT.warn(`vi-ignore ${vn} is unnecessary`);
       }
       ignoreVars.add(vn);
@@ -6243,7 +6240,7 @@ Macro.add(&quot;vi-ignore-if&quot;, {
   handler: function() {
     for (let p = 0; p &lt; this.args.length - 1; p++) {
       const cvar = this.args[p];
-      if (MT.varIsConstant(cvar)) {
+      if (MT.varExpect(cvar) != null) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
       if (MT.untracedGet(cvar)) {
@@ -6275,6 +6272,9 @@ function varButton(vname) {
     outer.addClass(&quot;var-info-was-written&quot;);
   }
 
+  const sect = MT.sectHere();
+  const exp = MT.varExpect(vname);
+
   if (MT.varIsNotable(vname)) {
     tags += &quot;[section-notable]\n&quot;;
     outer.addClass(&quot;var-info-notable&quot;);
@@ -6288,8 +6288,7 @@ function varButton(vname) {
       tags += &quot;[to-do]\n&quot;;
       outer.addClass(&quot;var-info-to-do&quot;);
     }
-  } else if (MT.varIsConstant(vname)) {
-    const exp = MT.getVarConstant(vname);
+  } else if (exp != null) {
     tags += `[section-always ${str(exp)}]\n`;
     outer.addClass(&quot;var-info-always&quot;);
   }
@@ -6397,9 +6396,9 @@ function initVarInfo() {
         const c = alwaysVars.get(vn);
         MT.warn(`vi-always ${vn} ${c}, but var was read`);
       }
-      if (MT.varIsConstant(vn)) {
-        const c = MT.getVarConstant(vn);
-        MT.warn(`${vn} always ${c} in this section, but var was read`);
+      const exp = MT.varExpect(vn);
+      if (exp != null) {
+        MT.warn(`${vn} always ${exp} in this section, but var was read`);
       }
     });
 

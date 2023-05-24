@@ -234,7 +234,7 @@ function withinCondition(ctx) {
 Macro.add("vi-always", {
   handler: function() {
     const [vname, exp] = this.args;
-    if (MT.varIsConstant(vname) && !withinInclude(this)) {
+    if (MT.varExpect(vname) != null && !withinInclude(this)) {
       MT.warn(`vi-always ${vname} is unnecessary`);
     }
     const actual = MT.untracedGet(vname);
@@ -254,7 +254,8 @@ Macro.add("vi-always", {
 Macro.add("vi-always-if", {
   handler: function() {
     const [cond, vname, exp] = this.args;
-    if (MT.varIsConstant(vname) && !withinInclude(this)) {
+    const sect = MT.sectHere();
+    if (MT.varExpect(vname) != null && !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
     if (MT.untracedGet(cond)) {
@@ -277,7 +278,7 @@ Macro.add("vi-always-if", {
 Macro.add("vi-ignore", {
   handler: function() {
     for (const vn of this.args) {
-      if (MT.varIsConstant(vn)) {
+      if (MT.varExpect(vn) != null) {
         MT.warn(`vi-ignore ${vn} is unnecessary`);
       }
       ignoreVars.add(vn);
@@ -295,7 +296,7 @@ Macro.add("vi-ignore-if", {
   handler: function() {
     for (let p = 0; p < this.args.length - 1; p++) {
       const cvar = this.args[p];
-      if (MT.varIsConstant(cvar)) {
+      if (MT.varExpect(cvar) != null) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
       if (MT.untracedGet(cvar)) {
@@ -327,6 +328,9 @@ function varButton(vname) {
     outer.addClass("var-info-was-written");
   }
 
+  const sect = MT.sectHere();
+  const exp = MT.varExpect(vname);
+
   if (MT.varIsNotable(vname)) {
     tags += "[section-notable]\n";
     outer.addClass("var-info-notable");
@@ -340,8 +344,7 @@ function varButton(vname) {
       tags += "[to-do]\n";
       outer.addClass("var-info-to-do");
     }
-  } else if (MT.varIsConstant(vname)) {
-    const exp = MT.getVarConstant(vname);
+  } else if (exp != null) {
     tags += `[section-always ${str(exp)}]\n`;
     outer.addClass("var-info-always");
   }
@@ -449,9 +452,9 @@ function initVarInfo() {
         const c = alwaysVars.get(vn);
         MT.warn(`vi-always ${vn} ${c}, but var was read`);
       }
-      if (MT.varIsConstant(vn)) {
-        const c = MT.getVarConstant(vn);
-        MT.warn(`${vn} always ${c} in this section, but var was read`);
+      const exp = MT.varExpect(vn);
+      if (exp != null) {
+        MT.warn(`${vn} always ${exp} in this section, but var was read`);
       }
     });
 
