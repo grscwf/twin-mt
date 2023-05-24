@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Early Init Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Map of enumType: string =&gt; enumValueNames: string[] */
@@ -2679,33 +2679,6 @@ function checkFlags() {
 }
 
 checkFlags();
-
-MT.getVarExpectation = (vname, sect) =&gt; {
-  const f = flags[vname];
-  if (f == null || f.sections == null) return [false, false];
-  sect = sect || MT.getSection();
-  const exp = f.sections[sect];
-  if (exp == null || exp === &quot;&quot;) {
-    return [false, false];
-  } else if (exp === &quot;notable&quot;) {
-    return [true, false];
-  } else if (exp instanceof RegExp) {
-    const passage = Story.get(State.passage);
-    const notable = exp.test(passage.text);
-    return [notable, false];
-  } else {
-    return [false, true, exp];
-  }
-};
-MT.varIsNotable = vn =&gt; {
-  const [isNotable] = MT.getVarExpectation(vn);
-  return isNotable;
-};
-
-MT.getNotable = (here) =&gt; {
-  const s = MT.getSection(here);
-  return Object.keys(flags).filter(f =&gt; MT.varIsNotable(f));
-};
 
 const enumImplies = {
   n1_magicPhase: {
@@ -5675,6 +5648,34 @@ MT.varExpect = (vname) =&gt; {
   return expect[vname];
 };
 
+MT.isNotable = (sect, vname) =&gt; {
+  const use = sectionDefs[sect].use;
+  if (!use) return false;
+  const exp = use[vname];
+  if (exp instanceof RegExp) {
+    const text = Story.get(State.passage);
+    return use[vname].test(text);
+  }
+  return exp;
+};
+
+MT.allNotable = () =&gt; {
+  const sect = MT.sectHere();
+  const use = sectionDefs[sect].use;
+  if (!use) return [];
+  const result = [];
+  let text = null;
+  for (const [vn, exp] of Object.entries(use)) {
+    if (exp instanceof RegExp) {
+      if (text == null) text = Story.get(State.passage);
+      if (exp.test(text)) result.push(vn);
+    } else if (exp) {
+      result.push(vn);
+    }
+  }
+  return result;
+};
+
 /** Validates sectionDefs and passage titles. */
 function checkSections() {
   if (!setup.debug) return;
@@ -6275,7 +6276,7 @@ function varButton(vname) {
   const sect = MT.sectHere();
   const exp = MT.varExpect(vname);
 
-  if (MT.varIsNotable(vname)) {
+  if (MT.isNotable(sect, vname)) {
     tags += &quot;[section-notable]\n&quot;;
     outer.addClass(&quot;var-info-notable&quot;);
     if (ignoreVars.has(vname)) {
@@ -6402,7 +6403,7 @@ function initVarInfo() {
       }
     });
 
-    const notable = MT.getNotable();
+    const notable = MT.allNotable();
     const to_do = notable.filter(
       vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !MT.trace.wasRead.has(vn));
     if (to_do.length &amp;&amp; /[-/][F] /.test(State.passage)) {
@@ -22552,7 +22553,6 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="433" name="n1s-F Anti-magic 1" tags="" position="5150,3100" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit n2_ivexGone t_ivexReceptive&gt;&gt;
   &lt;&lt;em-assert $n1_magicPhase === MP_triedMagic&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -22577,7 +22577,6 @@ So in the abstract, theoretical world, selective anti-magic is a pointless endea
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="434" name="n1s-F Anti-magic 2" tags="" position="5150,3200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit n2_ivexGone t_ivexReceptive&gt;&gt;
   &lt;&lt;em-assert $n1_magicPhase === MP_triedMagic&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -22660,7 +22659,6 @@ newly developed attacks.
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="436" name="n1s-F Cast Alone 1" tags="" position="6025,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n1_candleLit true&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone true&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
@@ -22694,7 +22692,6 @@ that every lapine mage knows...
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="437" name="n1s-F Cast Alone 2" tags="" position="6125,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n1_candleLit true&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone true&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
@@ -22768,7 +22765,6 @@ $t_afterAction
 &lt;&lt;vi-always n1_naked true&gt;&gt;
 &lt;&lt;vi-always n1_subby true&gt;&gt;
 &lt;&lt;vi-always n1_thief false&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 
@@ -22819,7 +22815,6 @@ He calls out, &quot;Behold!&quot; and &lt;em&gt;twists&lt;/em&gt; the matrix...
 
 &lt;&lt;set $t_returnEndgame = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="440" name="n1s-F Cast Endgame 2" tags="" position="6900,2900" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 
@@ -22853,7 +22848,6 @@ tightly shut. He blinks until he can see again.
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;set $n1_magicPhaseReached = MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="441" name="n1s-F Cast Endgame 3" tags="" position="7000,2900" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
@@ -22895,7 +22889,6 @@ $t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="442" name="n1s-F Cast Horny 1" tags="" position="5900,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -22923,7 +22916,6 @@ every rabbit mage knows...
 &lt;&lt;set $t_returnOil = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="443" name="n1s-F Cast Horny 2" tags="" position="5900,3250" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_naked true&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore-if n2_ivexGone n1_candleLit&gt;&gt;
 &lt;&lt;cv-try t_ivexNear true&gt;&gt;
 
@@ -22993,7 +22985,6 @@ $t_afterAction
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;set $n1_magicPhaseReached = MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="444" name="n1s-F Cast Itch 1" tags="" position="5700,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 
@@ -23026,7 +23017,6 @@ The lupine mage pronounces the final syllable of the spell...
 [[Continue|n1s-F Cast Itch 2]]
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="445" name="n1s-F Cast Itch 2" tags="" position="5600,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
 Nero feels the familiar mental jolt that happens whenever
@@ -23090,7 +23080,6 @@ then throws it...
 &lt;&lt;set $n1_magicPhase = MP_triedMagic&gt;&gt;
 &lt;&lt;set $n1_magicPhaseReached = MP_triedMagic&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="446" name="n1s-F Cast Itch 3" tags="" position="5500,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
 &lt;!-- naked: after spell cast, right before subby, right before candle horny --&gt;
@@ -23135,7 +23124,6 @@ He raises an arm and snaps his fingers...
 &lt;&lt;set $t_afterNaked = &quot;[[Continue|n1s-F Cast Itch 4]]&quot;&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="447" name="n1s-F Cast Itch 4" tags="" position="5400,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 &lt;&lt;vi-always t_ivexNear true&gt;&gt;
 
@@ -23171,7 +23159,6 @@ in long, slow strokes.
 ?P
 [[Continue|n1s-F Cast Itch 5]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="448" name="n1s-F Cast Itch 5" tags="" position="5300,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
@@ -23270,7 +23257,6 @@ $t_afterAttack
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="449" name="n1s-F Cast Sight 1" tags="" position="5500,4075" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
 Nero will need mage-sight to understand Ivex&#39;s anti-magic field.
@@ -23315,7 +23301,6 @@ intonation of the most basic mage-sight spell...
 ?P
 [[Continue|n1s-F Cast Sight 2]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="450" name="n1s-F Cast Sight 2" tags="" position="5625,4075" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 
 &lt;&lt;if !$n2_ivexGone&gt;&gt;
@@ -23426,7 +23411,6 @@ $t_afterAction
 &lt;&lt;set $n1_mageSight = true&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="451" name="n1s-F Cast Sight Horny" tags="" position="5600,3950" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n1_candleLit true&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny true&gt;&gt;
 
@@ -23453,7 +23437,6 @@ and then intones a basic mage-sight spell...
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n1_thief false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 
@@ -23492,7 +23475,6 @@ Nero smiles, and speaks it...
 &lt;&lt;set $t_returnYounger = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="453" name="n1s-F Cast Younger 2" tags="" position="5675,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
 Nero feels the familiar physical chill that happens whenever
@@ -23569,7 +23551,6 @@ He raises an arm and snaps his fingers...
 &lt;&lt;set $n1_penguinCoinDropped = true&gt;&gt;
 &lt;&lt;set $t_afterNaked = &quot;[[Continue|n1s-F Cast Younger 3]]&quot;&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="454" name="n1s-F Cast Younger 3" tags="" position="5575,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 &lt;&lt;vi-always t_ivexNear true&gt;&gt;
 
@@ -23611,7 +23592,6 @@ up and down its length in slow, gentle strokes.
 [[Continue|n1s-F Cast Younger 4]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="455" name="n1s-F Cast Younger 4" tags="" position="5475,3350" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_candleLit false&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
@@ -23696,7 +23676,6 @@ $t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="456" name="n1s-F Endgame Info 1" tags="" position="4000,1475" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
-  &lt;&lt;vi-ignore n2_free&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 
@@ -23738,7 +23717,6 @@ Provided of course he survived the situation...
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="457" name="n1s-F Endgame Info 2" tags="" position="4000,1375" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
-  &lt;&lt;vi-ignore n2_free&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 
@@ -23790,7 +23768,6 @@ fully charged. And maybe another second if his bladder is full.
   &lt;&lt;set $n1_taraIntroduced = true&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="458" name="n1s-F Guess Password" tags="" position="3900,1000" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
@@ -23989,7 +23966,6 @@ if (T.toTry.length === 0) {
 }
 T.toTry.sort();
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="460" name="n1s-F Help Device" tags="" position="6125,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
@@ -24116,7 +24092,6 @@ $t_afterAction
 &lt;&lt;set $n1_rememberPlease = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="461" name="n1s-F Help Touch" tags="" position="6250,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_rememberPlease true&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
@@ -24235,7 +24210,6 @@ help topics, ?master&quot;&lt;/span&gt;
 $t_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="462" name="n1s-F Impatient" tags="" position="6600,3725" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_magicPhase `MP_onHold`&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;em-assert !$n1_candleHorny || $t_ivexNear || $n2_ivexGone&gt;&gt;
 
@@ -24559,7 +24533,6 @@ $t_afterAction
 &lt;&lt;set $n1_holdPhase++&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="463" name="n1s-F Itch 1" tags="" position="5700,3625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -24588,7 +24561,6 @@ Amid numerous giggles, the two wolves took turns trying to make the counter-rebo
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="464" name="n1s-F Itch 2" tags="" position="5600,3625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -24613,7 +24585,6 @@ For seven minutes.
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="465" name="n1s-F Itch 3" tags="" position="5500,3625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -24792,7 +24763,6 @@ The best thing about the spell is that it appears to other mages that Nero has h
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="470" name="n1s-F Oil Info" tags="" position="6075,3200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -24951,7 +24921,6 @@ while I check your password, ?master&quot;&lt;/span&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="472" name="n1s-F Pass Failed" tags="" position="6525,3575" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_magicPhase `MP_lockedOut`&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;em-assert !$n1_candleHorny || $t_ivexNear || $n2_ivexGone&gt;&gt;
@@ -24999,7 +24968,6 @@ while I check your password, ?master&quot;&lt;/span&gt;
 $t_afterAction
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="473" name="n1s-F Password Intro" tags="" position="7400,4300" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n2_ivexGone false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 
@@ -25109,7 +25077,6 @@ $t_afterAction
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;em-assert !$n1_candleHorny&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 
@@ -25188,7 +25155,6 @@ Usually the images chosen are pornographic.
   [[Return|n1s-F Tap 1]]
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="475" name="n1s-F Say Device" tags="" position="6375,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
@@ -25312,7 +25278,6 @@ $t_afterAction
 &lt;&lt;set $n1_magicPhaseReached = MP_wantName&gt;&gt;
 &lt;&lt;set $n1_rememberPlease = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="476" name="n1s-F Say Lance" tags="" position="6500,3975" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;em-assert $n2_ivexGone || $t_ivexNear || !$n1_candleHorny&gt;&gt;
 
@@ -25432,7 +25397,6 @@ $t_afterAction
 &lt;&lt;set $n1_magicPhase = MP_wantTouch&gt;&gt;
 &lt;&lt;set $n1_magicPhaseReached = MP_wantTouch&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="477" name="n1s-F Say Password" tags="" position="3600,1100" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;em-assert $n1_passTried.length &gt;= 1&gt;&gt;
 &lt;&lt;em-assert $n1_passTried.length &lt;= 3&gt;&gt;
@@ -25651,7 +25615,6 @@ $t_afterAction
 &lt;&lt;set $n1_magicPhase = MP_onHold&gt;&gt;
 &lt;&lt;set $n1_passTried.unshift($t_passToTry)&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="478" name="n1s-F Scan Horny" tags="" position="5875,4125" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n1_candleLit true&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny true&gt;&gt;
 
@@ -25704,7 +25667,6 @@ $t_afterAction
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n1_mageSight true&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 
 &lt;&lt;if !$n1_scanned&gt;&gt;
   Nero scans the magic of the room.
@@ -25804,7 +25766,6 @@ $t_afterAction
 &lt;&lt;set $n1_scanned &amp;&amp; ($n1_scannedAgain = true)&gt;&gt;
 &lt;&lt;set $n1_scanned = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="480" name="n1s-F Sprite Dots" tags="inclusion" position="6200,4100" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 
 &lt;&lt;if $n1_spriteDotsHeard&gt;&gt;
@@ -25859,7 +25820,6 @@ $t_afterAction
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 
 Pyron nodes are versatile substrates for magic,
@@ -25928,7 +25888,6 @@ something that they will not say by accident.
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 
 Sprites are also able to answer simple questions and engage in
@@ -26189,7 +26148,6 @@ that function entirely.
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
@@ -26226,7 +26184,6 @@ The lupine mage cautiously extends a spectral arc toward the node...
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="485" name="n1s-F Tap 2" tags="" position="6925,5975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 
 Nero quickly finds the right harmonics for this node.
@@ -26276,7 +26233,6 @@ careless with his security...
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;em-assert !$n1_opportunist&gt;&gt;
 &lt;&lt;em-assert !$n1_spriteQuiet&gt;&gt;
@@ -26335,7 +26291,6 @@ that I&#39;m unlikely to say to any of my subjects, ?master&quot;&lt;/span&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="487" name="n1s-F Tap 4" tags="" position="6925,6175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore t_ivexReceptive&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-always n1_candleHorny false&gt;&gt;
 &lt;&lt;em-assert !$n1_opportunist&gt;&gt;
 &lt;&lt;em-assert !$n1_spriteQuiet&gt;&gt;
@@ -26443,7 +26398,6 @@ $t_afterAction
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="489" name="n1s-F Younger Info 1" tags="" position="5775,3225" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -26502,7 +26456,6 @@ The result is not exactly &lt;em&gt;stable&lt;/em&gt;, but it&#39;s stable
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="490" name="n1s-F Younger Info 2" tags="" position="5775,3125" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -26565,7 +26518,6 @@ the mage thinks for a moment, then says,
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="491" name="n1s-F Younger Info 3" tags="" position="5775,3025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;vi-always n2_free false&gt;&gt;
   &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
   &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -26609,7 +26561,6 @@ still call it Kelvin&#39;s Escape, with a laugh.
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="492" name="n1s-F Zero Bound" tags="" position="6750,3725" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_magicPhase `MP_wantPass`&gt;&gt;
-&lt;&lt;vi-always n2_free false&gt;&gt;
 &lt;&lt;vi-ignore n1_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n2_ivexGone&gt;&gt;
 &lt;&lt;em-assert !$n1_candleHorny || $t_ivexNear || $n2_ivexGone&gt;&gt;

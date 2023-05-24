@@ -286,6 +286,34 @@ MT.varExpect = (vname) => {
   return expect[vname];
 };
 
+MT.isNotable = (sect, vname) => {
+  const use = sectionDefs[sect].use;
+  if (!use) return false;
+  const exp = use[vname];
+  if (exp instanceof RegExp) {
+    const text = Story.get(State.passage);
+    return use[vname].test(text);
+  }
+  return exp;
+};
+
+MT.allNotable = () => {
+  const sect = MT.sectHere();
+  const use = sectionDefs[sect].use;
+  if (!use) return [];
+  const result = [];
+  let text = null;
+  for (const [vn, exp] of Object.entries(use)) {
+    if (exp instanceof RegExp) {
+      if (text == null) text = Story.get(State.passage);
+      if (exp.test(text)) result.push(vn);
+    } else if (exp) {
+      result.push(vn);
+    }
+  }
+  return result;
+};
+
 /** Validates sectionDefs and passage titles. */
 function checkSections() {
   if (!setup.debug) return;
