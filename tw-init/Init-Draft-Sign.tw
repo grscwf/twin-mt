@@ -1,60 +1,76 @@
 :: Init Draft Sign [inclusion] {"position":"2850,500","size":"100,100"}
 <<append head>><style>
-  #draft-sign {
-    font-size: 120px;
-    pointer-events: none;
-    position: fixed;
-    right: 50px;
-    bottom: 10px;
-    z-index: 10;
-  }
-  .draft-D::before {
-    color: rgba(70, 200, 255, 0.2);
-    content: "draft";
-  }
-  .draft-P::before {
-    color: rgba(200, 70, 200, 0.2);
-    content: "plan";
-  }
-  .draft-S::before {
-    color: rgba(200, 200, 200, 0.2);
-    content: "sketch";
-  }
-  a[data-passage*="/D "],
-  a[data-passage*="-D "] {
-    color: #7bd;
-  }
-  a[data-passage*="/D "]:hover,
-  a[data-passage*="-D "]:hover {
-    color: #48e;
-  }
-  a[data-passage*="/P "],
-  a[data-passage*="-P "] {
-    color: #c7c;
-  }
-  a[data-passage*="/P "]:hover,
-  a[data-passage*="-P "]:hover {
-    color: #969;
-  }
-  a[data-passage*="/S "],
-  a[data-passage*="-S "] {
-    color: #ffe000;
-  }
-  a[data-passage*="/S "]:hover,
-  a[data-passage*="-S "]:hover {
-    color: #dd9900;
-  }
+
+#draft-sign {
+  font-size: 120px;
+  pointer-events: none;
+  position: fixed;
+  right: 50px;
+  bottom: 10px;
+  z-index: 10;
+}
+
+#draft-sign.mt-draft::before {
+  color: rgba(70, 200, 255, 0.2);
+  content: "draft";
+}
+
+#draft-sign.mt-sketch::before {
+  color: rgba(200, 70, 200, 0.2);
+  content: "sketch";
+}
+
+#passages a[data-passage].mt-draft {
+  color: #7bd;
+}
+#passages a[data-passage].mt-draft:hover {
+  color: #48e;
+}
+
+#passages a[data-passage].mt-sketch {
+  color: #c7c;
+}
+#passages a[data-passage].mt-sketch:hover{
+  color: #969;
+}
+
 </style><</append>>
 
 <<script>>
-$(document).on(":passageend", () => {
-  $("#draft-sign").remove();
-  const m = /[-/]([A-Z]) /.exec(State.passage);
-  if (m == null) return;
-  const tag = m[1];
-  MT.assert(/[FDPS]/.test(tag), `Passage tag -${tag} should be -F -D -P or -S`);
-  if (tag !== "F") {
-    $("<div>").attr("id", "draft-sign").addClass(`draft-${tag}`).appendTo("body");
+
+const validTags = ["mt-ready", "mt-draft", "mt-sketch"];
+
+const signOf = (passageTitle) => {
+  const tags = Story.get(passageTitle || State.passage).tags;
+  for (const tag of validTags) {
+    if (tags.includes(tag)) return tag;
   }
-});
+  return null;
+};
+
+MT.isDraft = (passageTitle) => {
+  const sign = signOf(passageTitle);
+  return sign === "mt-draft" || sign === "mt-sketch";
+};
+
+function signPassage() {
+  // add sign to current passage
+  $("#draft-sign").remove();
+  const sign = signOf(State.passage);
+  if (sign) {
+    $("<div>").attr("id", "draft-sign").addClass(sign).appendTo("body");
+  }
+
+  // add signs to links to other passages
+  $("#passages a[data-passage]").each((i, el) => {
+    const title = $(el).attr("data-passage");
+    const tag = signOf(title);
+    if (tag != null) {
+      $(el).addClass(tag);
+    }
+  });
+}
+
+$(document).on(":passagedisplay", signPassage);
+
 <</script>>

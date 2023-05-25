@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="done" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Early Init Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Map of enumType: string =&gt; enumValueNames: string[] */
@@ -1285,63 +1285,79 @@ MT.countWords = function(text) {
   return n;
 }
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="Init Draft Sign" tags="inclusion" position="2850,500" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-  #draft-sign {
-    font-size: 120px;
-    pointer-events: none;
-    position: fixed;
-    right: 50px;
-    bottom: 10px;
-    z-index: 10;
-  }
-  .draft-D::before {
-    color: rgba(70, 200, 255, 0.2);
-    content: &quot;draft&quot;;
-  }
-  .draft-P::before {
-    color: rgba(200, 70, 200, 0.2);
-    content: &quot;plan&quot;;
-  }
-  .draft-S::before {
-    color: rgba(200, 200, 200, 0.2);
-    content: &quot;sketch&quot;;
-  }
-  a[data-passage*=&quot;/D &quot;],
-  a[data-passage*=&quot;-D &quot;] {
-    color: #7bd;
-  }
-  a[data-passage*=&quot;/D &quot;]:hover,
-  a[data-passage*=&quot;-D &quot;]:hover {
-    color: #48e;
-  }
-  a[data-passage*=&quot;/P &quot;],
-  a[data-passage*=&quot;-P &quot;] {
-    color: #c7c;
-  }
-  a[data-passage*=&quot;/P &quot;]:hover,
-  a[data-passage*=&quot;-P &quot;]:hover {
-    color: #969;
-  }
-  a[data-passage*=&quot;/S &quot;],
-  a[data-passage*=&quot;-S &quot;] {
-    color: #ffe000;
-  }
-  a[data-passage*=&quot;/S &quot;]:hover,
-  a[data-passage*=&quot;-S &quot;]:hover {
-    color: #dd9900;
-  }
+
+#draft-sign {
+  font-size: 120px;
+  pointer-events: none;
+  position: fixed;
+  right: 50px;
+  bottom: 10px;
+  z-index: 10;
+}
+
+#draft-sign.mt-draft::before {
+  color: rgba(70, 200, 255, 0.2);
+  content: &quot;draft&quot;;
+}
+
+#draft-sign.mt-sketch::before {
+  color: rgba(200, 70, 200, 0.2);
+  content: &quot;sketch&quot;;
+}
+
+#passages a[data-passage].mt-draft {
+  color: #7bd;
+}
+#passages a[data-passage].mt-draft:hover {
+  color: #48e;
+}
+
+#passages a[data-passage].mt-sketch {
+  color: #c7c;
+}
+#passages a[data-passage].mt-sketch:hover{
+  color: #969;
+}
+
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-$(document).on(&quot;:passageend&quot;, () =&gt; {
-  $(&quot;#draft-sign&quot;).remove();
-  const m = /[-/]([A-Z]) /.exec(State.passage);
-  if (m == null) return;
-  const tag = m[1];
-  MT.assert(/[FDPS]/.test(tag), `Passage tag -${tag} should be -F -D -P or -S`);
-  if (tag !== &quot;F&quot;) {
-    $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;draft-sign&quot;).addClass(`draft-${tag}`).appendTo(&quot;body&quot;);
+
+const validTags = [&quot;mt-ready&quot;, &quot;mt-draft&quot;, &quot;mt-sketch&quot;];
+
+const signOf = (passageTitle) =&gt; {
+  const tags = Story.get(passageTitle || State.passage).tags;
+  for (const tag of validTags) {
+    if (tags.includes(tag)) return tag;
   }
-});
+  return null;
+};
+
+MT.isDraft = (passageTitle) =&gt; {
+  const sign = signOf(passageTitle);
+  return sign === &quot;mt-draft&quot; || sign === &quot;mt-sketch&quot;;
+};
+
+function signPassage() {
+  // add sign to current passage
+  $(&quot;#draft-sign&quot;).remove();
+  const sign = signOf(State.passage);
+  if (sign) {
+    $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;draft-sign&quot;).addClass(sign).appendTo(&quot;body&quot;);
+  }
+
+  // add signs to links to other passages
+  $(&quot;#passages a[data-passage]&quot;).each((i, el) =&gt; {
+    const title = $(el).attr(&quot;data-passage&quot;);
+    const tag = signOf(title);
+    if (tag != null) {
+      $(el).addClass(tag);
+    }
+  });
+}
+
+$(document).on(&quot;:passagedisplay&quot;, signPassage);
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="8" name="Init Drekkar" tags="inclusion" position="2450,850" size="100,100">&lt;&lt;script&gt;&gt;
 const V = variables();
 V.name = &quot;Drekkar&quot;;
@@ -5004,7 +5020,7 @@ function initRandomWalk() {
 
     let hasTodo = /\bX[X]X\b|\bTO[D]O\b/.test($(&quot;.passage&quot;).text());
 
-    const isDraft = /[-/][DPS] /.test(here);
+    const isDraft = MT.isDraft(here);
     const done = tags().includes(&quot;done&quot;);
 
     if (seekMoved) {
@@ -6406,8 +6422,8 @@ function initVarInfo() {
     const notable = MT.allNotable();
     const to_do = notable.filter(
       vn =&gt; !ignoreVars.has(vn) &amp;&amp; !alwaysVars.has(vn) &amp;&amp; !MT.trace.wasRead.has(vn));
-    if (to_do.length &amp;&amp; /[-/][F] /.test(State.passage)) {
-      MT.warn(`-F passage has unused notable vars: ${to_do}`);
+    if (to_do.length &amp;&amp; !MT.isDraft()) {
+      MT.warn(`non-draft passage has unused notable vars: ${to_do}`);
     }
     
     if (!setup.debug) return;
@@ -14681,7 +14697,7 @@ Threat. Yes. That is definitely a threat.
 ?P
 [[Continue|n1cn-F Ivex Intro 1]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="279" name="n1a-F Feign Sleep 1" tags="" position="3500,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="279" name="n1a-F Feign Sleep 1" tags="mt-ready" position="3500,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
 
 Best to play it safe and gather more information before acting.
@@ -14698,7 +14714,7 @@ Nero ventures to open one eyelid slightly to peer through the slit...
 ?P
 [[Continue|n1a-F Feign Sleep 2]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="280" name="n1a-F Feign Sleep 2" tags="" position="3600,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="280" name="n1a-F Feign Sleep 2" tags="mt-draft" position="3600,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
 
 Suddenly, a hand grabs Nero&#39;s robe at his crotch and firmly grips his private parts through the cloth of the robe and the underwear beneath. The fingers dig in and curl around one of the wolf&#39;s testicles. And then the fingers squeeze. Hard.
@@ -14865,7 +14881,7 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 ?P
 [[Continue|n1cn-F Ivex Intro 1]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="288" name="n1a-F Nero Start" tags="section-start" position="3375,1725" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="288" name="n1a-F Nero Start" tags="mt-draft section-start" position="3375,1725" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
