@@ -46,10 +46,10 @@
 <<script>>
 
 const countable = new Set([
-  "markF", "markD", "markP", "unmarked",
+  "mt-ready", "mt-draft", "untagged",
 ]);
 const incomplete = new Set([
-  "markD", "markP", "markS",
+  "mt-draft", "mt-sketch",
 ]);
 
 function analyze(passages) {
@@ -66,9 +66,7 @@ function analyze(passages) {
     /* mt should probably be a separate kind */
     if (/^Init |^mt/.test(title)) return "init";
     if (/^Story/.test(title)) return "twine";
-    const m = /^\w\d+\w*[-/]([DFPS]) /.exec(title);
-    if (m != null) return `mark${m[1]}`;
-    return "unmarked";
+    return MT.signOf(title) || "untagged";
   };
 
   passages.forEach(p => {
@@ -94,7 +92,7 @@ function analyze(passages) {
       add("X\XX", m[1]);
     }
 
-    if (["markF", "unmarked"].includes(kind)) {
+    if (["mt-ready", "unmarked"].includes(kind)) {
       if (todos.find(e => e.todo === "X\XX")) {
         warnings.push(`${p.title} - ${kind} should not have X\XX`);
       }
@@ -147,45 +145,27 @@ function summarizeTo(dest, info, label) {
   $("<span>").appendTo(outer)
     .text(`${(words / 1000).toFixed(1)}K words`);
 
-  if (count.unmarked > 0) {
-    outer.append(sep);
-    $("<span>").appendTo(outer)
-      .text(`${pct(count.unmarked)} unflagged ${count.unmarked}`).appendTo(outer);
-  }
+  const addStat = (n, name) => {
+    if (n > 0) {
+      outer.append(sep);
+      $("<span>").text(`${pct(n)} ${name} ${n}`).appendTo(outer);
+    }
+  };
 
-  const hasTodo = title => info.todosIn[title] != null;
+  const countTodo = (kind) =>
+    Object.keys(info.todosIn)
+      .filter(title => info.kindOf[title] === kind)
+      .length;
 
-  const ut = Object.keys(info.todosIn)
-    .filter(title => info.kindOf[title] === "unmarked" && hasTodo(title))
-    .length;
-  if (ut > 0) {
-    outer.append(sep);
-    $("<span>").appendTo(outer)
-      .text(`${pct(ut)} unflagged* ${ut}`);
-  }
-  if (count.markF > 0) {
-    outer.append(sep);
-    $("<span>").appendTo(outer)
-      .text(`${pct(count.markF)} F ${count.markF}`).appendTo(outer);
-  }
-  const ft = Object.keys(info.todosIn)
-    .filter(title => info.kindOf[title] === "markF" && hasTodo(title))
-    .length;
-  if (ft > 0) {
-    outer.append(sep);
-    $("<span>").appendTo(outer)
-      .text(`${pct(ft)} F* ${ft}`);
-  }
-  if (count.markD > 0) {
-    outer.append(sep);
-    $("<span>").appendTo(outer)
-      .text(`${pct(count.markD)} D ${count.markD}`);
-  }
-  if (count.markP > 0) {
-    outer.append(sep);
-    $("<span>").appendTo(outer)
-      .text(`${pct(count.markP)} P ${count.markP}`);
-  }
+  addStat(count.untagged, "untagged");
+  addStat(countTodo("untagged", "untagged*"));
+
+  addStat(count["mt-ready"], "ready");
+  addStat(countTodo("mt-ready"), "ready*");
+
+  addStat(count["mt-draft"], "draft");
+  addStat(count["mt-sketch"], "sketch");
+
   uncounted.sort().forEach((kind, i) => {
     outer.append(i === 0 ? `${sep}uncounted: ` : ", ");
     $("<span>").appendTo(outer)

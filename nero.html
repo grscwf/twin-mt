@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="done" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryBanner" tags="" position="1950,575" size="100,100">&lt;img src=&quot;images/logo_tr.png&quot; width=&quot;220&quot;&gt;\
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="Early Init Enums" tags="inclusion" position="2950,500" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Map of enumType: string =&gt; enumValueNames: string[] */
@@ -1323,25 +1323,25 @@ MT.countWords = function(text) {
 
 &lt;&lt;script&gt;&gt;
 
-const validTags = [&quot;mt-ready&quot;, &quot;mt-draft&quot;, &quot;mt-sketch&quot;];
+const validSigns = [&quot;mt-ready&quot;, &quot;mt-draft&quot;, &quot;mt-sketch&quot;];
 
-const signOf = (passageTitle) =&gt; {
+MT.signOf = (passageTitle) =&gt; {
   const tags = Story.get(passageTitle || State.passage).tags;
-  for (const tag of validTags) {
-    if (tags.includes(tag)) return tag;
+  for (const sign of validSigns) {
+    if (tags.includes(sign)) return sign;
   }
   return null;
 };
 
 MT.isDraft = (passageTitle) =&gt; {
-  const sign = signOf(passageTitle);
+  const sign = MT.signOf(passageTitle);
   return sign === &quot;mt-draft&quot; || sign === &quot;mt-sketch&quot;;
 };
 
 function signPassage() {
   // add sign to current passage
   $(&quot;#draft-sign&quot;).remove();
-  const sign = signOf(State.passage);
+  const sign = MT.signOf(State.passage);
   if (sign) {
     $(&quot;&lt;div&gt;&quot;).attr(&quot;id&quot;, &quot;draft-sign&quot;).addClass(sign).appendTo(&quot;body&quot;);
   }
@@ -1349,9 +1349,9 @@ function signPassage() {
   // add signs to links to other passages
   $(&quot;#passages a[data-passage]&quot;).each((i, el) =&gt; {
     const title = $(el).attr(&quot;data-passage&quot;);
-    const tag = signOf(title);
-    if (tag != null) {
-      $(el).addClass(tag);
+    const sign = MT.signOf(title);
+    if (sign != null) {
+      $(el).addClass(sign);
     }
   });
 }
@@ -6684,10 +6684,10 @@ initVisited();
 &lt;&lt;script&gt;&gt;
 
 const countable = new Set([
-  &quot;markF&quot;, &quot;markD&quot;, &quot;markP&quot;, &quot;unmarked&quot;,
+  &quot;mt-ready&quot;, &quot;mt-draft&quot;, &quot;untagged&quot;,
 ]);
 const incomplete = new Set([
-  &quot;markD&quot;, &quot;markP&quot;, &quot;markS&quot;,
+  &quot;mt-draft&quot;, &quot;mt-sketch&quot;,
 ]);
 
 function analyze(passages) {
@@ -6704,9 +6704,7 @@ function analyze(passages) {
     /* mt should probably be a separate kind */
     if (/^Init |^mt/.test(title)) return &quot;init&quot;;
     if (/^Story/.test(title)) return &quot;twine&quot;;
-    const m = /^\w\d+\w*[-/]([DFPS]) /.exec(title);
-    if (m != null) return `mark${m[1]}`;
-    return &quot;unmarked&quot;;
+    return MT.signOf(title) || &quot;untagged&quot;;
   };
 
   passages.forEach(p =&gt; {
@@ -6732,7 +6730,7 @@ function analyze(passages) {
       add(&quot;X\XX&quot;, m[1]);
     }
 
-    if ([&quot;markF&quot;, &quot;unmarked&quot;].includes(kind)) {
+    if ([&quot;mt-ready&quot;, &quot;unmarked&quot;].includes(kind)) {
       if (todos.find(e =&gt; e.todo === &quot;X\XX&quot;)) {
         warnings.push(`${p.title} - ${kind} should not have X\XX`);
       }
@@ -6785,45 +6783,27 @@ function summarizeTo(dest, info, label) {
   $(&quot;&lt;span&gt;&quot;).appendTo(outer)
     .text(`${(words / 1000).toFixed(1)}K words`);
 
-  if (count.unmarked &gt; 0) {
-    outer.append(sep);
-    $(&quot;&lt;span&gt;&quot;).appendTo(outer)
-      .text(`${pct(count.unmarked)} unflagged ${count.unmarked}`).appendTo(outer);
-  }
+  const addStat = (n, name) =&gt; {
+    if (n &gt; 0) {
+      outer.append(sep);
+      $(&quot;&lt;span&gt;&quot;).text(`${pct(n)} ${name} ${n}`).appendTo(outer);
+    }
+  };
 
-  const hasTodo = title =&gt; info.todosIn[title] != null;
+  const countTodo = (kind) =&gt;
+    Object.keys(info.todosIn)
+      .filter(title =&gt; info.kindOf[title] === kind)
+      .length;
 
-  const ut = Object.keys(info.todosIn)
-    .filter(title =&gt; info.kindOf[title] === &quot;unmarked&quot; &amp;&amp; hasTodo(title))
-    .length;
-  if (ut &gt; 0) {
-    outer.append(sep);
-    $(&quot;&lt;span&gt;&quot;).appendTo(outer)
-      .text(`${pct(ut)} unflagged* ${ut}`);
-  }
-  if (count.markF &gt; 0) {
-    outer.append(sep);
-    $(&quot;&lt;span&gt;&quot;).appendTo(outer)
-      .text(`${pct(count.markF)} F ${count.markF}`).appendTo(outer);
-  }
-  const ft = Object.keys(info.todosIn)
-    .filter(title =&gt; info.kindOf[title] === &quot;markF&quot; &amp;&amp; hasTodo(title))
-    .length;
-  if (ft &gt; 0) {
-    outer.append(sep);
-    $(&quot;&lt;span&gt;&quot;).appendTo(outer)
-      .text(`${pct(ft)} F* ${ft}`);
-  }
-  if (count.markD &gt; 0) {
-    outer.append(sep);
-    $(&quot;&lt;span&gt;&quot;).appendTo(outer)
-      .text(`${pct(count.markD)} D ${count.markD}`);
-  }
-  if (count.markP &gt; 0) {
-    outer.append(sep);
-    $(&quot;&lt;span&gt;&quot;).appendTo(outer)
-      .text(`${pct(count.markP)} P ${count.markP}`);
-  }
+  addStat(count.untagged, &quot;untagged&quot;);
+  addStat(countTodo(&quot;untagged&quot;, &quot;untagged*&quot;));
+
+  addStat(count[&quot;mt-ready&quot;], &quot;ready&quot;);
+  addStat(countTodo(&quot;mt-ready&quot;), &quot;ready*&quot;);
+
+  addStat(count[&quot;mt-draft&quot;], &quot;draft&quot;);
+  addStat(count[&quot;mt-sketch&quot;], &quot;sketch&quot;);
+
   uncounted.sort().forEach((kind, i) =&gt; {
     outer.append(i === 0 ? `${sep}uncounted: ` : &quot;, &quot;);
     $(&quot;&lt;span&gt;&quot;).appendTo(outer)
@@ -14697,7 +14677,7 @@ Threat. Yes. That is definitely a threat.
 ?P
 [[Continue|n1cn-F Ivex Intro 1]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="279" name="n1a-F Feign Sleep 1" tags="mt-ready" position="3500,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="279" name="n1a-F Feign Sleep 1" tags="" position="3500,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
 
 Best to play it safe and gather more information before acting.
@@ -14714,7 +14694,7 @@ Nero ventures to open one eyelid slightly to peer through the slit...
 ?P
 [[Continue|n1a-F Feign Sleep 2]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="280" name="n1a-F Feign Sleep 2" tags="mt-draft" position="3600,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="280" name="n1a-F Feign Sleep 2" tags="" position="3600,1750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n1_mageSight false&gt;&gt;
 
 Suddenly, a hand grabs Nero&#39;s robe at his crotch and firmly grips his private parts through the cloth of the robe and the underwear beneath. The fingers dig in and curl around one of the wolf&#39;s testicles. And then the fingers squeeze. Hard.
@@ -14881,7 +14861,7 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 ?P
 [[Continue|n1cn-F Ivex Intro 1]]
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="288" name="n1a-F Nero Start" tags="mt-draft section-start" position="3375,1725" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="288" name="n1a-F Nero Start" tags="section-start" position="3375,1725" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;nero-kw-announce&gt;&gt;
 &lt;&lt;state-delete n1_ n2_ t_&gt;&gt;
