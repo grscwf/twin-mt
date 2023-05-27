@@ -1,7 +1,7 @@
 :: Init Saves [inclusion] {"position":"2450,700","size":"100,100"}
 <<script>>
 
-/** Fix up the in-browser savegame title. */
+/** Fix up the in-browser saveGame title. */
 Config.passages.descriptions = function() {
   let excerpt = this._excerpt || Passage.getExcerptFromText(this.text);
 
@@ -10,9 +10,7 @@ Config.passages.descriptions = function() {
 
   // add unlock count
   const [unlocked, total] = countUnlocks();
-  if (unlocked === total) {
-    excerpt = `all\uD83D\uDD13 ${excerpt}`;
-  } else if (unlocked > 0) {
+  if (unlocked > 0) {
     // not reporting total, it's kind of a spoiler
     excerpt = `${unlocked}\uD83D\uDD13 ${excerpt}`;
   }
@@ -29,17 +27,12 @@ Config.passages.descriptions = function() {
 
   const origSaveAs = saveAs;
   saveAs = (blob, name, opt) => {
-
     // add unlock count to name
     const [unlocked, total] = countUnlocks();
-    if (unlocked === total) {
-      name = name.replace(/^nero-/, "nero-all-");
-    } else if (unlocked > 0) {
+    if (unlocked > 0) {
       // not adding total, it's kind of a spoiler
       name = name.replace(/^nero-/, `nero-${unlocked}u-`);
     }
-
-    console.log(`saveAs ${name}`);
     return origSaveAs(blob, name, opt);
   };
 }
@@ -98,5 +91,26 @@ function countUnlocks() {
   const n = unlockVars.filter(vn => State.variables[vn]).length;
   return [n, unlockVars.length];
 }
+
+/** Migrate an old saveObj to current game. */
+function migrate(saveObj) {
+  // Nothing necessary yet. In the future:
+  // - Rename passages in saveObj.state.expired[]
+  // - Rename passages in saveObj.state.history[].title
+  // - Rename variables in saveObj.state.history[].variables
+}
+
+function loadUnlocks(saveObj) {
+  // XXX read unlocks from saveObj.metadata
+}
+
+function saveUnlocks(saveObj) {
+  // XXX write unlocks to saveObj.metadata
+}
+
+
+Save.onLoad.add(saveObj => () => migrate(saveObj));
+Save.onLoad.add(saveObj => () => loadUnlocks(saveObj));
+Save.onSave.add(saveObj => () => saveUnlocks(saveObj));
 
 <</script>>
