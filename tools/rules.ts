@@ -12,14 +12,13 @@ export const rules: Rule[] = [
     target: "nero.html",
     dirs: [
       "tw-twine",
-      "tw-init",
-      "tw-mt",
+      "tw-game-*",
       "tw-drekkar-*",
       "tw-nero-*",
 
       // this is where untwine will add new passages
       // TODO: should be a separate property
-      "tw-nero-0",
+      "tw-uncategorized",
     ],
 
     // Omit wip for release builds
