@@ -11,7 +11,7 @@ export const rules: Rule[] = [
   {
     target: "nero.html",
     dirs: [
-      "tw-common",
+      "tw-twine",
       "tw-init",
       "tw-mt",
       "tw-drekkar-*",
