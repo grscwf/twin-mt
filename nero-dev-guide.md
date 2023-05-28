@@ -22,7 +22,7 @@
 - Twine's source format is a playable `.html` file, with all the
   story data in a `<tw-storydata>` section.
   - Twine keeps its `.html` storyfiles in `Documents/Twine/Stories`.
-  - Export/publish from Twine will save a copy of the storyfile
+  - Export or publish from Twine will save a copy of the storyfile
     wherever you want.
   - Import into Twine will create or overwrite an existing storyfile.
 - Twee is a plaintext format, files with a `.tw` suffix.
@@ -61,7 +61,8 @@
 - Committing changes:
   - Run `npm run check` and fix any undeclared/unused vars it reports.
   - If you aren't using `watch`, run `npm run to-html`
-  - Run `git add . && git commit -am "some description"`
+  - Run `git add .`
+  - Run `git commit -am "some description"`
   - Run `git push`
 - npm scripts:
   - `npm run check` will check the `.tw` files for undeclared and unused
@@ -99,7 +100,7 @@
     - This can be skipped if `nero.html` was not changed outside Twine.
   - In your browser, open `Documents/Twine/Stories/nero.html?debug`
   - Navigate in the story to an area of interest.
-    - Use "WALK TO" in the sidebar to go to a particular section.
+    - Use "GO TO" in the sidebar to go to a particular section.
   - Make edits in Twine.
   - Reload the page in your browser to test the edits.
 - Committing changes:
@@ -136,7 +137,7 @@
 - `?debug` mode turns on several features:
   - The top has a "var-info" display.
   - The right side has several buttons.
-  - The left menu has some utilties, marked with a wrench icon.
+  - The left menu has some utilities, marked with a wrench icon.
   - A few macros show a wrench icon within a passage,
     for local control of the macro.
   - The bottom right is SugarCube's debug panel, which is somewhat redundant,
@@ -152,36 +153,56 @@
   of this feature.
 - "log" opens a transcript of the current story session.
   This is helpful when using "seek".
-- "back", "forw", "rand", "seek" will navigate history
+- "back", "forw/rand", "seek" will navigate history
   and do a random walk.
-  - Pressing "rand" will highlight a random link in the current passage.
-  - Pressing "rand" again will visit that link.
-  - "back" deselects a highlighted link, or goes back to the previous passage.
-  - "forw" goes forward in history, or does "rand" at the end of history.
-  - "rand" tries to do shuffle, not uniform random, so repeated rand/back can
-    potentially do an entire depth-first traversal of the story.
+  - The "forw/rand" button has two states.
+    - "forw":
+      - "forw" only shows when you're in the past of your current session.
+      - Pressing "forw" will highlight the next link you visited.
+      - Pressing "forw" again will move forward in history.
+      - Note, moving forward in history is not exactly the same as
+        visiting the link, because it restores the saved history state
+        instead of computing a new state. In particular, any code changes
+        you've just made will not take effect with "forw". You have to
+        manually traverse forward yourself, which will delete your future
+        history. ("Go To" has a "re-walk current path" that might be useful.)
+      - You can cancel the "forw" selection by pressing "back" or any neutral
+        text. Canceling also turns "forw" into "rand".
+    - "rand":
+      - Pressing "rand" will highlight a random link in the
+        current passage.
+      - Pressing "rand" again will visit that link.
+      - If you don't like the selection, you can cancel it by pressing "back"
+        or on any neutral text, then press "rand" to choose a different link.
+      - "rand" tries to do shuffle, not uniform random, so repeated rand/back
+        can potentially do an entire depth-first traversal of the story.
+      - There are a few story points where "rand" is biased toward useful
+        options, or away from bad options. See "Randomizer bias" below.
   - "seek" will repeat "rand" until it reaches a passage that's either
     "draft", contains a todo mark, or throws an error.
     - If you start seek from a "draft" passage, seek will not stop until it
-      reaches a passage tagged "done".
-    - If you start seek from a "done" passage, seek will loop Nero until
+      reaches a passage tagged "end".
+    - If you start seek from a "end" passage, seek will loop Nero until
       it encounters an error or a non-draft todo.
     - Seek can be interrupted by pressing the button again.
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
-  - <kbd>ctrl-period</kbd> is a shortcut for "forw".
-  - <kbd>ctrl-slash</kbd> is a shortcut for "rand".
+  - <kbd>ctrl-period</kbd> is a shortcut for "forw/rand".
   - <kbd>ctrl-backslash</kbd> is a shortcut for "seek".
-  - The randomness can be controlled slightly by marking some links.
-    - Add the comment `//avoid` to the code argument of
-      an `<<mtl>>` or `<<mta>>` link.
-    - If the randomizer chooses an `//avoid` link,
-      90% of the time it will reject it and try again.
+  - Randomizer bias:
+    - The randomizer can be controlled slightly by marking some links.
+    - Add `//prefer` or `//avoid` to the code argument of an
+      `<<mtl>>` or `<<mta>>` link.
+    - If the randomizer sees any `//prefer` link
+      - 80% of the time it will choose one of those instead of any other.
+    - If the randomizer choose an `//avoid` link
+      - 90% of the time it will reject it and try again.
 
 ### Var info
 
 - At the top, "var-info" is a compact display of state variables.
   - Pressing "var-info" will show or hide the variables.
-  - var-info only shows variables that are read or set by the current passage.
+  - var-info only shows a variable if it's read or set by the current passage,
+    or if the variable is marked as notable in the current section.
   - Hover over a variable will show verbose detail.
   - An up-arrow on the left of a varname means the var was set in this passage.
   - A down-arrow on the right of a varname means the var was read in this passage.
@@ -191,9 +212,11 @@
 - var-info lets you change some flags.
   - If a boolean or enum is read by the passage, var-info will show it as
     a button.
-  - Pressing the button will change the value that the var had before rendering the current passage, then redisplay the passage.
+  - Pressing the button will change the value that the var had *before*
+    rendering the current passage, then redisplay the passage.
   - Enum flags are two buttons: left decreases, right increases.
-  - Changing a flag adds another state to the history, and going back will revert the change.
+  - Changing a flag adds another state to the history,
+    and going back will revert the change.
 - var-info highlights "notable" flags.
   - Notable flags are flags like `n1_naked` that are expected to have visible
     effects in the current passage.
@@ -242,25 +265,25 @@
 - Trying a state has two phases:
   - First, a fast consistency check rejects any states that
     should be impossible (eg, free and !naked).
-    - This is the function `checkState` in the
-      `Nero Constraints` init passage.
+    - This uses the functions `checkState` from `Init Nero Constraints`
+      and `checkSectionState` from `Init Sections`
     - This check is approximate.
       It doesn't reject all illegal states,
       and sometimes it accepts some illegal states.
       But it's good enough to significantly reduce the number of
-      states that reach the slow second phase.
+      states that reach the second phase, which is much slower.
   - Second, the state is used to render the passage into a scratch dom node.
     - If the rendering fails an assertion or throws an error,
       the state is rejected.
-    - This does not trigger any of the passage events, and does
-      not wait for any timers, so it might
-      not have exactly the same behavior as normal gameplay.
-      But most of the time this is fine.
+    - This does not trigger any of the passage events,
+      and it does not wait for any timers,
+      so it might not have exactly the same behavior as normal gameplay.
+      Most of the time, it should be fine.
 - The states tested and rejected are somewhat sensitive to the order that
   flags are used in the passage (which affects what flags are discovered
-  to be read, and considered relevant by the constraint tests).
+  and considered relevant by the constraint tests).
   - It's sometimes useful to write conditions specifically for
-    helping compute-variants, and maybe check flags redundantly.
+    helping compute-variants, including redundant flag checks.
 - If a passage has constraints that only apply to some conditions,
   eg, an assertion on `t_ivexNear` only if `!$n2_ivexGone`,
   then you probably need to add `cv-try` for the asserted variables,
@@ -279,12 +302,12 @@
 
 ### Passages
 
-- All of Nero's passages start with a codeword like `n1a/F`.
+- All of Nero's passages start with a codeword like `n1a`.
   - The lowercase `n` indicates it's a Nero passage.
   - The digit is story chapter, divided by restart points.
     - `n0` is for meta passages, not directly in the story.
-    - `n1` is from start of story to Ivex leaving.
-    - `n2` is from Ivex leaving (restartable) to exiting the first floor.
+    - `n1` is from the start, up to Ivex leaving.
+    - `n2` is from Ivex leaving (restartable), up to exiting the first floor.
     - `n3` (todo) is the second floor (restartable).
     - `n4` (todo) is after escaping (restartable).
     - `n9` is Nero's endings.
@@ -294,14 +317,6 @@
     - Most sections are segments of a chapter that have distinct "notable"
       variables. Eg, `n1d` is the section where `n1_candleLit` is true
       but `n2_ivexGone` is false.
-  - The `/F` indicates draft status of the passage.
-    - `/F` is "finished" - passage is complete and fully written.
-    - `/D` is "draft" - passage has all major logic, but placeholder text.
-    - `/P` is "plan" - passage has an outline of logic.
-    - `/S` is "sketch" - passage is a vague sketch.
-    - Doing this in the passage title (instead of passage tags) lets us
-      easily color the links to draft passages.
-      TODO: use in-passage decl instead; renaming is annoying in twee.
 - If a script or style is only used by a single passage, it's usually inlined
   in the passage.
 - Large scripts used by a single passage are usually extracted to a
@@ -315,6 +330,15 @@
   - It's also helpful to bundle related javascript and stylesheets together.
   - It also seems like editing "Story Javascript" has a much higher risk of
     triggering the overlapping-save bug.
+- Special passage tags:
+  - `mt-sketch` - Passage is a vague sketch.
+  - `mt-draft` - Passage is an incomplete draft.
+  - `mt-ready` - Passage is fully written.
+  - `inclusion` - Passage is included by another passage.
+  - `noreturn` - Passage does not set `$return`.
+    `$return` is the current passage in the story.
+    `noreturn` is for meta passages like the Archives.
+    The meta passages will usually have a `Return` link that goes to `$return`.
 
 ### State
 
