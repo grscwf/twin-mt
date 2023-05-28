@@ -4,21 +4,25 @@ export type Rule = {
   omit?: string[] | null | undefined;
 };
 
-const common = [
-  "tw-common",
-  // Note: fast-glob has a bug with "tw-drekkar-?"
-  "tw-drekkar-*",
-];
+// Note: fast-glob has a bug with "a-?", so use "a-*" instead
 
 // Note: pathnames are relative to cwd
 export const rules: Rule[] = [
   {
-    target: "index.html",
-    dirs: [...common, "tw-only-drekkar"],
-  },
-  {
     target: "nero.html",
-    dirs: [...common, "tw-init", "tw-mt", "tw-nero-*", "tw-nero-0"],
+    dirs: [
+      "tw-common",
+      "tw-init",
+      "tw-mt",
+      "tw-drekkar-*",
+      "tw-nero-*",
+
+      // this is where untwine will add new passages
+      // TODO: should be a separate property
+      "tw-nero-0",
+    ],
+
+    // Omit wip for release builds
     // omit: ["tw-nero-3", "tw-nero-wip"],
   },
 ];
