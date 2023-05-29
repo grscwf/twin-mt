@@ -152,8 +152,8 @@
   the current passage. "Notes" in the left sidebar has more explanation
   of this feature.
 - "log" opens a transcript of the current story session.
-  This is helpful when using "seek".
-- "back", "forw/rand", "seek" will navigate history
+  This is helpful when using "roam".
+- "back", "forw/rand", "roam" will navigate history
   and do a random walk.
   - The "forw/rand" button has two states.
     - "forw":
@@ -178,16 +178,16 @@
         can potentially do an entire depth-first traversal of the story.
       - There are a few story points where "rand" is biased toward useful
         options, or away from bad options. See "Randomizer bias" below.
-  - "seek" will repeat "rand" until it reaches a passage that's either
+  - "roam" will repeat "rand" until it reaches a passage that's either
     "draft", contains a todo mark, or throws an error.
-    - If you start seek from a "draft" passage, seek will not stop until it
+    - If you start roam from a "draft" passage, roam will not stop until it
       reaches a passage tagged "end".
-    - If you start seek from a "end" passage, seek will loop Nero until
+    - If you start roam from a "end" passage, roam will loop Nero until
       it encounters an error or a non-draft todo.
-    - Seek can be interrupted by pressing the button again.
+    - roam can be interrupted by pressing the button again.
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
   - <kbd>ctrl-period</kbd> is a shortcut for "forw/rand".
-  - <kbd>ctrl-backslash</kbd> is a shortcut for "seek".
+  - <kbd>ctrl-slash</kbd> is a shortcut for "roam".
   - Randomizer bias:
     - The randomizer can be controlled slightly by marking some links.
     - Add `//prefer` or `//avoid` to the code argument of an

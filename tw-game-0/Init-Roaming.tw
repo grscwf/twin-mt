@@ -1,4 +1,4 @@
-:: Init Random Walk [inclusion] {"position":"2950,600","size":"100,100"}
+:: Init Roaming [inclusion] {"position":"2950,600","size":"100,100"}
 <<append head>><style>
   #random-walk {
     top: max(5rem, 50vh - 5rem);
@@ -34,12 +34,12 @@
     outline: 1px solid #9cc;
   }
 
-  #rw-seek.rw-seeking {
+  #rw-roam.rw-roaming {
     background-color: #161;
     color: #7f7;
     opacity: 1;
   }
-  #rw-seek.rw-seeking:hover {
+  #rw-roam.rw-roaming:hover {
     background-color: #191;
     color: #111;
   }
@@ -75,7 +75,7 @@ let lastPick = {};
 
 let ignoreFuture = false;
 
-MT.seeking = false;
+MT.roaming = false;
 
 MT.forgetWalkHistory = () => {
   visited.clear();
@@ -224,46 +224,46 @@ function initRandomWalk() {
     }
   };
 
-  let seekForce = false;
-  let seekLoop = 0;
-  let seekLooping = false;
-  let seekMoved = false;
-  let seekPath = null;
-  let seekDoneFn = null;
+  let roamForce = false;
+  let roamLoop = 0;
+  let roamLooping = false;
+  let roamMoved = false;
+  let roamPath = null;
+  let roamDoneFn = null;
 
-  const seekDelay = 50;
+  const roamDelay = 50;
   const maxLoop = 5;
 
-  const seekToggle = () => {
-    if (MT.seeking) {
-      seekStop();
+  const roamToggle = () => {
+    if (MT.roaming) {
+      roamStop();
     } else {
-      seekStart();
+      roamStart();
     }
   };
 
-  const seekStart = MT.seekStart = (path, doneFn, force) => {
-    $("#rw-seek").addClass("rw-seeking");
-    MT.seeking = true;
-    seekForce = force;
-    seekMoved = false;
-    seekPath = path;
-    seekDoneFn = doneFn;
-    setTimeout(seekNext, seekDelay);
+  const roamStart = MT.roamStart = (path, doneFn, force) => {
+    $("#rw-roam").addClass("rw-roaming");
+    MT.roaming = true;
+    roamForce = force;
+    roamMoved = false;
+    roamPath = path;
+    roamDoneFn = doneFn;
+    setTimeout(roamNext, roamDelay);
   };
 
-  const seekStop = () => {
-    MT.seeking = false;
-    seekPath = null;
-    seekDoneFn = null;
-    $("#rw-seek").removeClass("rw-seeking");
+  const roamStop = () => {
+    MT.roaming = false;
+    roamPath = null;
+    roamDoneFn = null;
+    $("#rw-roam").removeClass("rw-roaming");
   };
 
-  const seekNext = () => {
+  const roamNext = () => {
     const here = State.passage;
 
-    if (!MT.seeking) return seekStop();
-    if (seekMoved && here === Config.passages.start) return seekStop();
+    if (!MT.roaming) return roamStop();
+    if (roamMoved && here === Config.passages.start) return roamStop();
 
     let hasProblem = false;
     hasProblem = hasProblem || MT.hasFails;
@@ -275,14 +275,14 @@ function initRandomWalk() {
     const isDraft = MT.isDraft(here);
     const stop = tags().includes("roam-stop");
 
-    if (seekMoved) {
+    if (roamMoved) {
       if (hasProblem) {
         console.log('stopping on problem');
-        return seekStop();
+        return roamStop();
       }
-      if (!seekForce && (hasTodo || isDraft)) {
+      if (!roamForce && (hasTodo || isDraft)) {
         console.log('stopping on to-do');
-        return seekStop();
+        return roamStop();
       }
       if (stop) {
         const steps = MT.log.length;
@@ -291,70 +291,70 @@ function initRandomWalk() {
         const mp = MT.enumSymbol('MagicPhase', V.n1_magicPhase);
         const mpr = MT.enumSymbol('MagicPhase', V.n1_magicPhaseReached);
         console.log(`- magicPhase ${mp}, ${mpr}`);
-        if (seekLoop <= 0) {
-          if (seekLooping) {
-            seekLooping = false;
+        if (roamLoop <= 0) {
+          if (roamLooping) {
+            roamLooping = false;
             console.log("stop at max loops");
           }
-          return seekStop();
+          return roamStop();
         }
       }
     }
 
-    if (!seekMoved) {
+    if (!roamMoved) {
       if (hasTodo || isDraft) {
-        seekForce = true;
+        roamForce = true;
       }
       if (stop) {
-        seekLoop = maxLoop;
-        seekLooping = true;
+        roamLoop = maxLoop;
+        roamLooping = true;
       }
     }
 
     if (stop) {
-      seekLoop--;
-      if (seekLoop <= 0) {
-        seekLooping = false;
+      roamLoop--;
+      if (roamLoop <= 0) {
+        roamLooping = false;
         console.log("stop at max loops");
-        return seekStop();
+        return roamStop();
       }
       MT.forgetWalkHistory();
       Engine.play("Bound");
-      seekForce = false;
+      roamForce = false;
       const neroStart = [
         { t: "Choose Character" },
         { t: "n1a Nero Start" },
       ];
-      MT.seekStart(neroStart, () => {
-        MT.seekStart();
+      MT.roamStart(neroStart, () => {
+        MT.roamStart();
       });
       return;
     }
 
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
-      seekMoved = true;
+      roamMoved = true;
       chosen[0].click();
-      setTimeout(seekNext, seekDelay);
+      setTimeout(roamNext, roamDelay);
       return;
     }
 
-    if (seekLoop && seekPath != null && seekPath.length === 0) {
-      seekPath = null;
+    if (roamLoop && roamPath != null && roamPath.length === 0) {
+      roamPath = null;
     }
 
-    if (seekPath != null) {
-      while (seekPath.length && seekPath[0].t == null) {
-        seekPath.shift();
+    if (roamPath != null) {
+      while (roamPath.length && roamPath[0].t == null) {
+        roamPath.shift();
       }
-      if (seekPath.length === 0) {
+      if (roamPath.length === 0) {
         const steps = MT.log.length;
         console.log(`path end after ${steps} steps at ${here}`);
-        if (seekDoneFn != null) setTimeout(seekDoneFn);
-        seekStop();
+        if (roamDoneFn != null) setTimeout(roamDoneFn);
+        roamStop();
         return;
       }
-      const next = seekPath[0];
+      const next = roamPath[0];
       const links = $("#story a[data-passage]");
       const isStep = (el, step) => {
         const title = el.getAttribute("data-passage");
@@ -363,16 +363,16 @@ function initRandomWalk() {
       };
       for (const link of links) {
         if (isStep(link, next)) {
-          seekPath.shift();
+          roamPath.shift();
           $(link).addClass("random-walk-chosen");
-          setTimeout(seekNext, 100);
+          setTimeout(roamNext, 100);
           return;
         }
       }
 
       let msg = `Broken path: ${JSON.stringify(next)}`;
       MT.warn(msg);
-      return seekStop();
+      return roamStop();
     }
 
     if (milestones.has(here)) {
@@ -380,11 +380,11 @@ function initRandomWalk() {
     }
 
     if (goRandom()) {
-      setTimeout(seekNext, seekDelay);
+      setTimeout(roamNext, roamDelay);
       return;
     }
     
-    seekStop();
+    roamStop();
   };
 
   $(() => {
@@ -398,11 +398,11 @@ function initRandomWalk() {
       .click(goBack)
       .appendTo(outer);
     if (setup.debug) {
-      $("<a id=rw-seek>")
-        .attr("title", "<ctrl-backslash> seek")
-        .toggleClass("rw-seeking", MT.seeking)
-        .text("seek")
-        .click(seekToggle)
+      $("<a id=rw-roam>")
+        .attr("title", "<ctrl-backslash> roam")
+        .toggleClass("rw-roaming", MT.roaming)
+        .text("roam")
+        .click(roamToggle)
         .appendTo(outer);
     }
     $("<a id=rw-forw>")
@@ -421,11 +421,11 @@ function initRandomWalk() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === ",") return goBack();
     if (ev.key === ".") return goForward();
-    if (ev.key === "\\") return seekToggle();
+    if (ev.key === "/") return roamToggle();
   });
 
   $(document).on("click", ev => {
-    if (!MT.seeking && ev.target && ev.target.tagName !== "A") {
+    if (!MT.roaming && ev.target && ev.target.tagName !== "A") {
       const chosen = $("#passages .random-walk-chosen");
       if (chosen.length) {
         chosen.removeClass("random-walk-chosen");

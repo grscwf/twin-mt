@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="1700,575" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -6701,7 +6701,7 @@ Macro.add(&quot;fade-in&quot;, {
       const noPulse = section.args[1] === &quot;no-pulse&quot;;
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
-      if (MT.seeking) delay = 0;
+      if (MT.roaming) delay = 0;
       const span = $(&quot;&lt;span&gt;&quot;)
         .addClass(&quot;fade-in fade-in-hidden&quot;)
         .toggleClass(&quot;fade-in-no-pulse&quot;, noPulse)
@@ -9694,7 +9694,95 @@ Macro.add(&quot;random-once&quot;, {
     }
   }
 });
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="258" name="Init Random Walk" tags="inclusion" position="2950,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="258" name="Init Randomness" tags="inclusion" position="3050,600" size="100,100">&lt;&lt;script&gt;&gt;
+/**
+ * Pick arbitrary item from list or Set, based on State.random()
+ * SugarCube&#39;s Array.random(), either(), etc, use Math.random().
+ */
+MT.pick = list =&gt; {
+  if (list instanceof Set) list = Array.from(list);
+  const n = Math.floor(list.length * State.random());
+  return list[n];
+};
+
+function getSeed() {
+  const m = /[?&amp;]seed=(\d+)/.exec(location.search);
+  if (m != null) return m[1];
+  return String(Math.random()).slice(2);
+}
+
+function initRandom() {
+  const seed = getSeed();
+  State.prng.init(seed);
+  const state = session.get(&quot;state&quot;);
+}
+
+// initRandom();
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="259" name="Init Return Sticky" tags="inclusion" position="3150,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+#return-head,
+#return-tail {
+  background-color: #111;
+  line-height: 1.75;
+  position: sticky;
+  z-index: 10;
+}
+
+#return-head {
+  margin-top: -1em;
+  padding-top: 1em;
+  top: 0;
+}
+
+#return-tail {
+  padding-bottom: 1em;
+  bottom: 0;
+}
+
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+function addReturn(where, contents) {
+  MT.assert(
+    tags().includes(&quot;noreturn&quot;),
+    &quot;tags should have noreturn&quot;);
+
+  $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
+    MT.autoStow();
+    $(`#return-${where}`).remove();
+    const div = $(`&lt;div id=return-${where}&gt;`)
+      .wiki(`&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;`)
+      .wiki(contents);
+    if (where === &quot;head&quot;) {
+      div.append(&quot;&lt;hr&gt;&quot;);
+      $(&quot;#passages&quot;).prepend(div, &quot;&lt;br&gt;&quot;);
+    } else {
+      div.prepend(&quot;&lt;hr&gt;&quot;);
+      $(&quot;#passages&quot;).append(&quot;&lt;br&gt;&quot;, div);
+    }
+  });
+}
+
+Macro.add(&quot;return-head&quot;, {
+  handler: function() {
+    addReturn(&quot;head&quot;, &quot;&quot;);
+  }
+});
+
+Macro.add(&quot;return-tail&quot;, {
+  handler: function() {
+    addReturn(&quot;tail&quot;, &quot;&quot;);
+  }
+});
+
+Macro.add(&quot;return-block&quot;, {
+  tags: [],
+  handler: function() {
+    addReturn(&quot;head&quot;, this.payload[0].contents);
+  }
+});
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="260" name="Init Roaming" tags="inclusion" position="2950,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #random-walk {
     top: max(5rem, 50vh - 5rem);
     display: flex;
@@ -9729,12 +9817,12 @@ Macro.add(&quot;random-once&quot;, {
     outline: 1px solid #9cc;
   }
 
-  #rw-seek.rw-seeking {
+  #rw-roam.rw-roaming {
     background-color: #161;
     color: #7f7;
     opacity: 1;
   }
-  #rw-seek.rw-seeking:hover {
+  #rw-roam.rw-roaming:hover {
     background-color: #191;
     color: #111;
   }
@@ -9770,7 +9858,7 @@ let lastPick = {};
 
 let ignoreFuture = false;
 
-MT.seeking = false;
+MT.roaming = false;
 
 MT.forgetWalkHistory = () =&gt; {
   visited.clear();
@@ -9919,46 +10007,46 @@ function initRandomWalk() {
     }
   };
 
-  let seekForce = false;
-  let seekLoop = 0;
-  let seekLooping = false;
-  let seekMoved = false;
-  let seekPath = null;
-  let seekDoneFn = null;
+  let roamForce = false;
+  let roamLoop = 0;
+  let roamLooping = false;
+  let roamMoved = false;
+  let roamPath = null;
+  let roamDoneFn = null;
 
-  const seekDelay = 50;
+  const roamDelay = 50;
   const maxLoop = 5;
 
-  const seekToggle = () =&gt; {
-    if (MT.seeking) {
-      seekStop();
+  const roamToggle = () =&gt; {
+    if (MT.roaming) {
+      roamStop();
     } else {
-      seekStart();
+      roamStart();
     }
   };
 
-  const seekStart = MT.seekStart = (path, doneFn, force) =&gt; {
-    $(&quot;#rw-seek&quot;).addClass(&quot;rw-seeking&quot;);
-    MT.seeking = true;
-    seekForce = force;
-    seekMoved = false;
-    seekPath = path;
-    seekDoneFn = doneFn;
-    setTimeout(seekNext, seekDelay);
+  const roamStart = MT.roamStart = (path, doneFn, force) =&gt; {
+    $(&quot;#rw-roam&quot;).addClass(&quot;rw-roaming&quot;);
+    MT.roaming = true;
+    roamForce = force;
+    roamMoved = false;
+    roamPath = path;
+    roamDoneFn = doneFn;
+    setTimeout(roamNext, roamDelay);
   };
 
-  const seekStop = () =&gt; {
-    MT.seeking = false;
-    seekPath = null;
-    seekDoneFn = null;
-    $(&quot;#rw-seek&quot;).removeClass(&quot;rw-seeking&quot;);
+  const roamStop = () =&gt; {
+    MT.roaming = false;
+    roamPath = null;
+    roamDoneFn = null;
+    $(&quot;#rw-roam&quot;).removeClass(&quot;rw-roaming&quot;);
   };
 
-  const seekNext = () =&gt; {
+  const roamNext = () =&gt; {
     const here = State.passage;
 
-    if (!MT.seeking) return seekStop();
-    if (seekMoved &amp;&amp; here === Config.passages.start) return seekStop();
+    if (!MT.roaming) return roamStop();
+    if (roamMoved &amp;&amp; here === Config.passages.start) return roamStop();
 
     let hasProblem = false;
     hasProblem = hasProblem || MT.hasFails;
@@ -9970,14 +10058,14 @@ function initRandomWalk() {
     const isDraft = MT.isDraft(here);
     const stop = tags().includes(&quot;roam-stop&quot;);
 
-    if (seekMoved) {
+    if (roamMoved) {
       if (hasProblem) {
         console.log(&#39;stopping on problem&#39;);
-        return seekStop();
+        return roamStop();
       }
-      if (!seekForce &amp;&amp; (hasTodo || isDraft)) {
+      if (!roamForce &amp;&amp; (hasTodo || isDraft)) {
         console.log(&#39;stopping on to-do&#39;);
-        return seekStop();
+        return roamStop();
       }
       if (stop) {
         const steps = MT.log.length;
@@ -9986,70 +10074,70 @@ function initRandomWalk() {
         const mp = MT.enumSymbol(&#39;MagicPhase&#39;, V.n1_magicPhase);
         const mpr = MT.enumSymbol(&#39;MagicPhase&#39;, V.n1_magicPhaseReached);
         console.log(`- magicPhase ${mp}, ${mpr}`);
-        if (seekLoop &lt;= 0) {
-          if (seekLooping) {
-            seekLooping = false;
+        if (roamLoop &lt;= 0) {
+          if (roamLooping) {
+            roamLooping = false;
             console.log(&quot;stop at max loops&quot;);
           }
-          return seekStop();
+          return roamStop();
         }
       }
     }
 
-    if (!seekMoved) {
+    if (!roamMoved) {
       if (hasTodo || isDraft) {
-        seekForce = true;
+        roamForce = true;
       }
       if (stop) {
-        seekLoop = maxLoop;
-        seekLooping = true;
+        roamLoop = maxLoop;
+        roamLooping = true;
       }
     }
 
     if (stop) {
-      seekLoop--;
-      if (seekLoop &lt;= 0) {
-        seekLooping = false;
+      roamLoop--;
+      if (roamLoop &lt;= 0) {
+        roamLooping = false;
         console.log(&quot;stop at max loops&quot;);
-        return seekStop();
+        return roamStop();
       }
       MT.forgetWalkHistory();
       Engine.play(&quot;Bound&quot;);
-      seekForce = false;
+      roamForce = false;
       const neroStart = [
         { t: &quot;Choose Character&quot; },
         { t: &quot;n1a Nero Start&quot; },
       ];
-      MT.seekStart(neroStart, () =&gt; {
-        MT.seekStart();
+      MT.roamStart(neroStart, () =&gt; {
+        MT.roamStart();
       });
       return;
     }
 
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length === 1) {
-      seekMoved = true;
+      roamMoved = true;
       chosen[0].click();
-      setTimeout(seekNext, seekDelay);
+      setTimeout(roamNext, roamDelay);
       return;
     }
 
-    if (seekLoop &amp;&amp; seekPath != null &amp;&amp; seekPath.length === 0) {
-      seekPath = null;
+    if (roamLoop &amp;&amp; roamPath != null &amp;&amp; roamPath.length === 0) {
+      roamPath = null;
     }
 
-    if (seekPath != null) {
-      while (seekPath.length &amp;&amp; seekPath[0].t == null) {
-        seekPath.shift();
+    if (roamPath != null) {
+      while (roamPath.length &amp;&amp; roamPath[0].t == null) {
+        roamPath.shift();
       }
-      if (seekPath.length === 0) {
+      if (roamPath.length === 0) {
         const steps = MT.log.length;
         console.log(`path end after ${steps} steps at ${here}`);
-        if (seekDoneFn != null) setTimeout(seekDoneFn);
-        seekStop();
+        if (roamDoneFn != null) setTimeout(roamDoneFn);
+        roamStop();
         return;
       }
-      const next = seekPath[0];
+      const next = roamPath[0];
       const links = $(&quot;#story a[data-passage]&quot;);
       const isStep = (el, step) =&gt; {
         const title = el.getAttribute(&quot;data-passage&quot;);
@@ -10058,16 +10146,16 @@ function initRandomWalk() {
       };
       for (const link of links) {
         if (isStep(link, next)) {
-          seekPath.shift();
+          roamPath.shift();
           $(link).addClass(&quot;random-walk-chosen&quot;);
-          setTimeout(seekNext, 100);
+          setTimeout(roamNext, 100);
           return;
         }
       }
 
       let msg = `Broken path: ${JSON.stringify(next)}`;
       MT.warn(msg);
-      return seekStop();
+      return roamStop();
     }
 
     if (milestones.has(here)) {
@@ -10075,11 +10163,11 @@ function initRandomWalk() {
     }
 
     if (goRandom()) {
-      setTimeout(seekNext, seekDelay);
+      setTimeout(roamNext, roamDelay);
       return;
     }
     
-    seekStop();
+    roamStop();
   };
 
   $(() =&gt; {
@@ -10093,11 +10181,11 @@ function initRandomWalk() {
       .click(goBack)
       .appendTo(outer);
     if (setup.debug) {
-      $(&quot;&lt;a id=rw-seek&gt;&quot;)
-        .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; seek&quot;)
-        .toggleClass(&quot;rw-seeking&quot;, MT.seeking)
-        .text(&quot;seek&quot;)
-        .click(seekToggle)
+      $(&quot;&lt;a id=rw-roam&gt;&quot;)
+        .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; roam&quot;)
+        .toggleClass(&quot;rw-roaming&quot;, MT.roaming)
+        .text(&quot;roam&quot;)
+        .click(roamToggle)
         .appendTo(outer);
     }
     $(&quot;&lt;a id=rw-forw&gt;&quot;)
@@ -10116,11 +10204,11 @@ function initRandomWalk() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === &quot;,&quot;) return goBack();
     if (ev.key === &quot;.&quot;) return goForward();
-    if (ev.key === &quot;\\&quot;) return seekToggle();
+    if (ev.key === &quot;/&quot;) return roamToggle();
   });
 
   $(document).on(&quot;click&quot;, ev =&gt; {
-    if (!MT.seeking &amp;&amp; ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
+    if (!MT.roaming &amp;&amp; ev.target &amp;&amp; ev.target.tagName !== &quot;A&quot;) {
       const chosen = $(&quot;#passages .random-walk-chosen&quot;);
       if (chosen.length) {
         chosen.removeClass(&quot;random-walk-chosen&quot;);
@@ -10136,94 +10224,6 @@ function initRandomWalk() {
 }
 
 initRandomWalk();
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="259" name="Init Randomness" tags="inclusion" position="3050,600" size="100,100">&lt;&lt;script&gt;&gt;
-/**
- * Pick arbitrary item from list or Set, based on State.random()
- * SugarCube&#39;s Array.random(), either(), etc, use Math.random().
- */
-MT.pick = list =&gt; {
-  if (list instanceof Set) list = Array.from(list);
-  const n = Math.floor(list.length * State.random());
-  return list[n];
-};
-
-function getSeed() {
-  const m = /[?&amp;]seed=(\d+)/.exec(location.search);
-  if (m != null) return m[1];
-  return String(Math.random()).slice(2);
-}
-
-function initRandom() {
-  const seed = getSeed();
-  State.prng.init(seed);
-  const state = session.get(&quot;state&quot;);
-}
-
-// initRandom();
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="260" name="Init Return Sticky" tags="inclusion" position="3150,600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-#return-head,
-#return-tail {
-  background-color: #111;
-  line-height: 1.75;
-  position: sticky;
-  z-index: 10;
-}
-
-#return-head {
-  margin-top: -1em;
-  padding-top: 1em;
-  top: 0;
-}
-
-#return-tail {
-  padding-bottom: 1em;
-  bottom: 0;
-}
-
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-function addReturn(where, contents) {
-  MT.assert(
-    tags().includes(&quot;noreturn&quot;),
-    &quot;tags should have noreturn&quot;);
-
-  $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-    MT.autoStow();
-    $(`#return-${where}`).remove();
-    const div = $(`&lt;div id=return-${where}&gt;`)
-      .wiki(`&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;`)
-      .wiki(contents);
-    if (where === &quot;head&quot;) {
-      div.append(&quot;&lt;hr&gt;&quot;);
-      $(&quot;#passages&quot;).prepend(div, &quot;&lt;br&gt;&quot;);
-    } else {
-      div.prepend(&quot;&lt;hr&gt;&quot;);
-      $(&quot;#passages&quot;).append(&quot;&lt;br&gt;&quot;, div);
-    }
-  });
-}
-
-Macro.add(&quot;return-head&quot;, {
-  handler: function() {
-    addReturn(&quot;head&quot;, &quot;&quot;);
-  }
-});
-
-Macro.add(&quot;return-tail&quot;, {
-  handler: function() {
-    addReturn(&quot;tail&quot;, &quot;&quot;);
-  }
-});
-
-Macro.add(&quot;return-block&quot;, {
-  tags: [],
-  handler: function() {
-    addReturn(&quot;head&quot;, this.payload[0].contents);
-  }
-});
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="261" name="Init Saves" tags="inclusion" position="2450,700" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Fix up the in-browser saveGame title. */
@@ -15095,7 +15095,7 @@ State.temporary.doWalk = (i, ch) =&gt; {
   const path = getPathChoice(walk.path, ch);
   Engine.play(&quot;Bound&quot;);
   setVars(walk.vars);
-  MT.seekStart(path, null, force);
+  MT.roamStart(path, null, force);
 };
 
 State.temporary.reWalk = () =&gt; {
@@ -15103,7 +15103,7 @@ State.temporary.reWalk = () =&gt; {
   const force = !!$(&quot;#walk-force&quot;).prop(&quot;checked&quot;);
   MT.forgetWalkHistory();
   Engine.play(&quot;Bound&quot;);
-  MT.seekStart(path, null, force);
+  MT.roamStart(path, null, force);
 };
 
 State.temporary.showCurrentPath = () =&gt; {
@@ -15126,7 +15126,7 @@ State.temporary.walkAll = () =&gt; {
     console.log(`Starting ${MT.pathName(walk.path)}`);
     Engine.play(&quot;Bound&quot;);
     setVars(walk.vars);
-    MT.seekStart(walk.path, next, force);
+    MT.roamStart(walk.path, next, force);
   };
   next();
 }
