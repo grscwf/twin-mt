@@ -1,0 +1,184 @@
+:: g0init Error Message [inclusion] {"position":"3050,500","size":"100,100"}
+<<append head>><style>
+  #EM-outer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    line-height: 1.5;
+    text-align: center;
+    margin: 12px 0;
+    pointer-events: none;
+    width: 100%;
+    z-index: 99991;
+  }
+  #EM-inner {
+    display: inline-block;
+    margin: 0 12px;
+    pointer-events: auto;
+  }
+  .EM-note {
+    background-color: #cc4;
+    border-radius: 4px;
+    color: #000;
+    font-size: 12px;
+    margin-bottom: 8px;
+    padding: 8px 8px 4px 8px;
+    text-align: left;
+  }
+  a.EM-button {
+    color: #55f;
+    float: right;
+    font-weight: bold;
+    margin-top: -2px;
+    padding-left: 8px;
+  }
+  a.EM-button:hover {
+    color: #c55;
+  }
+  .EM-fail {
+    color: #f33;
+    font-weight: bold;
+  }
+  .EM-trace {
+    color: #000;
+    font-weight: normal;
+    margin-left: 1.5em;
+    white-space: pre-line;
+  }
+</style><</append>>
+
+<<script>>
+
+MT.hasFails = false;
+MT.hasWarnings = false;
+MT.messages = [];
+
+let debugStop = false;
+let suppress = false;
+
+$(document).on(":passagestart", () => {
+  $("#EM-outer").remove();
+  MT.hasFails = false;
+  MT.hasWarnings = false;
+  MT.messages = [];
+});
+
+MT.runsWithoutFail = (fn) => {
+  const save = { hf: MT.hasFails, sup: suppress };
+  try {
+    MT.hasFails = false;
+    suppress = true;
+    fn();
+    return !MT.hasFails;
+  } catch (e) {
+    return false;
+  } finally {
+    MT.hasFails = save.hf;
+    suppress = save.sup;
+  }
+};
+
+/** Add str as a new error-message note. */
+function note(str, header) {
+  if (suppress) return;
+  MT.messages.push(header == null ? str : `${header}: ${str}`);
+  const note = $(`
+    <div class=EM-note>
+      <a class="EM-close EM-button">[close]</a>
+    </div>
+  `).appendTo(getInner());
+  if (header != null && header !== "") {
+    note.append(document.createTextNode(header));
+    note.append(document.createElement("br"));
+  }
+  note.append(document.createTextNode(str));
+  note.find(".EM-close").click(() => note.remove());
+  return note;
+};
+
+/** Add str as a warning. */
+MT.warn = (str) => {
+  MT.hasWarnings = true;
+  note(str, "Warning");
+};
+
+/** Add str as a new error-message assertion failure. */
+MT.fail = (str, context) => {
+  MT.hasFails = true;
+  message("fail", str, context);
+};
+
+function message(type, str, context) {
+  if (suppress) return;
+  if (debugStop) {
+    debugger;
+    debugStop = false;
+  }
+  MT.messages.push(`${type}: ${str}`)
+  const fails = $(`<div class=EM-${type}>`).text(str)
+    .appendTo(getFails());
+  const trace = backtrace(context);
+  if (trace != null && trace !== "") {
+    MT.messages.push(trace);
+    $("<div class=EM-trace>").text(trace)
+      .appendTo(fails);
+  }
+  return fails;
+};
+
+MT.assert = (val, str, context) => {
+  if (val) return;
+  MT.fail(str, context);
+}
+Macro.add("em-assert", {
+  skipArgs: true,
+  handler: function() {
+    const val = MT.untraced(() => eval(this.args.full));
+    MT.assert(val, `expected: ${this.args.raw}`, this);
+  }
+});
+
+function backtrace(ctx) {
+  let trace = "";
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === "include") {
+      trace += ctx.source + "\n";
+    }
+  }
+  return trace;
+}
+
+function getInner() {
+  let inner = $("#EM-inner");
+  if (inner.length === 1) return inner;
+  inner.remove();
+  $("#EM-outer").remove();
+  const outer = $(`
+    <div id=EM-outer>
+      <div id=EM-inner></div>
+    </div>
+  `).appendTo("#story");
+  inner = outer.find("#EM-inner");
+  return inner;
+}
+
+function getFails() {
+  let fails = $("#EM-fails");
+  if (fails.length === 1) return fails;
+  fails.remove();
+  fails = note("");
+  fails.attr("id", "EM-fails");
+  fails.append(`
+    <a id=EM-debug class=EM-button>[debug]</a>
+    <div class=EM-fail-intro>
+      Assertions failed.
+      Passage may be nonsensical.
+    </div>
+  `);
+  fails.find("#EM-debug").click(() => {
+    debugStop = true;
+    Engine.play(State.passage, true);
+  });
+  return fails;
+}
+<</script>>

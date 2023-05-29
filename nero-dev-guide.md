@@ -302,34 +302,35 @@
 
 ### Passages
 
-- All of Nero's passages start with a codeword like `n1a`.
-  - The lowercase `n` indicates it's a Nero passage.
-  - The digit is story chapter, divided by restart points.
-    - `n0` is for meta passages, not directly in the story.
-    - `n1` is from the start, up to Ivex leaving.
-    - `n2` is from Ivex leaving (restartable), up to exiting the first floor.
-    - `n3` (todo) is the second floor (restartable).
-    - `n4` (todo) is after escaping (restartable).
-    - `n9` is Nero's endings.
-  - The lowercase letters after the digit indicate a section within the chapter.
-    - Some sections are "modules" that are used by multiple passages.
-      Eg, `n1s` is the Spell/Sprite module used by all action passages.
-    - Most sections are segments of a chapter that have distinct "notable"
-      variables. Eg, `n1d` is the section where `n1_candleLit` is true
-      but `n2_ivexGone` is false.
+- Almost all passages start with a code like `n1a`.
+  - The code helps cluster related passages together in an alphabetical list.
+  - The code also helps identify passage names uniquely, for easy search.
+  - The first char can be
+    - `d` for Drekkar's story
+    - `n` for Nero's story
+    - `g` for generic game passages not specific to either character.
+  - The number is "chapter".
+    - This is generally everything from one checkpoint to the next.
+    - Note, `n2` is *not* the 2nd floor, it's the 2nd half of the 1st floor.
+  - The trailing letters identify a section within the chapter.
+    - This is partly for organization, but it's also for asserting state
+      within a section. For example, within `n1d`,
+      no matter where we are or how we got there, `n1_naked` should be true.
 - If a script or style is only used by a single passage, it's usually inlined
   in the passage.
 - Large scripts used by a single passage are usually extracted to a
   a side passage with a direct `<<include>>`
-- Scripts and styles used by multiple passages are in `Init` sections at
-  the top of the story-graph.
-  - These unfortunately do not get syntax-highlighting in Twine.
+- Scripts and styles used by multiple passages are in `g0boot` or `g0init`
+  passages that are at the top left of the story-graph.
+  - At StoryInit, all `g0boot` passages are loaded in arbitrary order,
+    then all `g0init` passages are loaded in arbitrary order.
+  - These passages unfortunately do not get syntax-highlighting in Twine.
     (It's fine in vscode with T3LT.)
   - The main reason these are split out is because it's awkward to work with
     very large passages in Twine.
   - It's also helpful to bundle related javascript and stylesheets together.
   - It also seems like editing "Story Javascript" has a much higher risk of
-    triggering the overlapping-save bug.
+    triggering the overlapping-save bug in Twine.
 - Special passage tags:
   - `mt-sketch` - Passage is a vague sketch.
   - `mt-draft` - Passage is an incomplete draft.

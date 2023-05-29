@@ -1,0 +1,93 @@
+:: g0init Nero Ending [inclusion] {"position":"3250,1975","size":"100,100"}
+<<script>>
+
+const endings = {
+  broken: {
+    title: "Challenge Ending: Broken",
+    wip: true,
+    passages: [
+      "[[n0a Broken WIP]]",
+    ]
+  },
+  caged_harsh: {
+    title: "Bad Ending: Caged (Harsh)",
+    wip: true,
+    passages: [
+      "[[n0a Caged Harsh WIP]]"
+    ]
+  },
+  caged_mild: {
+    title: "Bad Ending: Caged (Mild)",
+    wip: true,
+    passages: [
+      "[[n0a Caged Mild WIP]]",
+    ]
+  },
+  tamed_harsh: {
+    title: "Bad Ending: Tamed (Harsh)",
+    passages: [
+      "[[n9a Tamed]]",
+      "[[n9a Tamed Harsh 1]]",
+      "[[n9a Tamed Harsh 2]]",
+      "[[n9a Tamed Harsh 3]]",
+      "[[n9a Tamed Harsh 4]]",
+      "[[n9a Tamed Harsh 5]]",
+      "[[n9a Tamed Harsh 6]]",
+      "[[n9a Tamed Harsh 7]]",
+      "[[n9a Tamed Harsh 8]]",
+      "[[n9a Tamed Harsh 9]]",
+      "[[n9a Tamed End 1]]",
+      "[[n9a Tamed End 2]]",
+    ]
+  },
+  tamed_mild: {
+    title: "Bad Ending: Tamed (Mild)",
+    passages: [
+      "[[n9a Tamed]]",
+      "[[n9a Tamed Mild 1]]",
+      "[[n9a Tamed Mild 2]]",
+      "[[n9a Tamed Mild 3]]",
+      "[[n9a Tamed Mild 4]]",
+      "[[n9a Tamed Mild 5]]",
+      "[[n9a Tamed Mild 6]]",
+      "[[n9a Tamed Mild 7]]",
+      "[[n9a Tamed Mild 8]]",
+      "[[n9a Tamed Mild 9]]",
+      "[[n9a Tamed End 1]]",
+      "[[n9a Tamed End 2]]",
+    ]
+  },
+};
+
+MT.showEnding = info => {
+  const [name, barbOption, variant] = info;
+
+  const key = name + (variant == null ? "" : `_${variant}`);
+  State.temporary.notesVariant = key;
+
+  const V = State.variables;
+  const blank = V.n1_castEndgame;
+
+  const end = endings[key];
+  if (end == null) return `Unknown ending ${key}`;
+
+  const barbs = barbOption === "barbs";
+  const barbsText = end.wip ? "": barbs ? " (Barbs)" : " (Smooth)";
+
+  // combine "(a) (b)" => "(a, b)"
+  const title = `${end.title}${barbsText}`.replace(/\)\s*\(/g, ", ");
+
+  let mkp = "<<nobr>>";
+  mkp += `<div class=ui-title>${title}</div>\n`;
+  mkp += `<hr class=archives-head>\n`;
+  for (let i = 0; i < end.passages.length; i++) {
+    if (i !== 0) mkp += "<hr class=archive-sep>\n";
+    let vars = `$n1_barbs = ${barbs};`;
+    vars += `$n1_castEndgame = ${blank};`;
+    mkp += `<<arc-include ${end.passages[i]} "${vars}">>\n`;
+  }
+  mkp += "<</nobr>>";
+  return mkp;
+};
+
+<</script>>

@@ -1,0 +1,116 @@
+:: g0init Saves [inclusion] {"position":"2450,700","size":"100,100"}
+<<script>>
+
+/** Fix up the in-browser saveGame title. */
+Config.passages.descriptions = function() {
+  let excerpt = this._excerpt || Passage.getExcerptFromText(this.text);
+
+  // remove noise
+  excerpt = excerpt.replace(/^Return to the game /, '');
+
+  // add unlock count
+  const [unlocked, total] = countUnlocks();
+  if (unlocked > 0) {
+    // not reporting total, it's kind of a spoiler
+    excerpt = `${unlocked}\uD83D\uDD13 ${excerpt}`;
+  }
+
+  return excerpt;
+};
+
+/** Intercept file save and fix filename */
+{
+  // sugarcube's default save UI doesn't provide any way to change the
+  // savefile name, and all its methods are readonly. but it uses a saveAs()
+  // function that can be hooked. (the alternative is to re-implement or
+  // copy the entire save UI just to tweak the savefile name.)
+
+  const origSaveAs = saveAs;
+  saveAs = (blob, name, opt) => {
+    // add unlock count to name
+    const [unlocked, total] = countUnlocks();
+    if (unlocked > 0) {
+      // not adding total, it's kind of a spoiler
+      name = name.replace(/^nero-/, `nero-${unlocked}u-`);
+    }
+    return origSaveAs(blob, name, opt);
+  };
+}
+
+const unlockVars = [
+  // drekkar 1f
+  'interrogationEndingFreeze',
+  'interrogationEndingShock',
+  'interrogationEndingMild',
+  'interrogationEndingRough',
+
+  // drekkar 2f
+  'enthrallmentEnding',
+  'enthrallmentLion',
+  'extractionGentleEnd',
+  'extractionForcefulEnd',
+
+  // drekkar escape
+  'enthralmentIvexEnding',
+  'extractionIvexEnding',
+  'personalEnding',
+
+  // nero 1f
+  'n9_brokenHarshBarbs',
+  'n9_brokenHarshSmooth',
+  'n9_brokenMildBarbs',
+  'n9_brokenMildSmooth',
+  'n9_cagedHarshBarbs',
+  'n9_cagedHarshSmooth',
+  'n9_cagedMildBarbs',
+  'n9_cagedMildSmooth',
+  'n9_tamedHarshBarbs',
+  'n9_tamedHarshSmooth',
+  'n9_tamedMildBarbs',
+  'n9_tamedMildSmooth',
+
+  // nero 2f
+  'n9_huntedHarshBarbs',
+  'n9_huntedHarshSmooth',
+  'n9_huntedMildBarbs',
+  'n9_huntedMildSmooth',
+  'n9_overwhelmedHarshBarbs',
+  'n9_overwhelmedHarshSmooth',
+  'n9_overwhelmedMildBarbs',
+  'n9_overwhelmedMildSmooth',
+  'n9_wreckedHarshBarbs',
+  'n9_wreckedHarshSmooth',
+  'n9_wreckedMildBarbs',
+  'n9_wreckedMildSmooth',
+
+  // nero escape
+  // TBD
+];
+
+function countUnlocks() {
+  const n = unlockVars.filter(vn => State.variables[vn]).length;
+  return [n, unlockVars.length];
+}
+
+/** Migrate an old saveObj to current game. */
+function migrate(saveObj) {
+  // Nothing necessary yet. In the future:
+  // - Rename passages in saveObj.state.expired[]
+  // - Rename passages in saveObj.state.history[].title
+  // - Rename variables in saveObj.state.history[].variables
+}
+
+function loadUnlocks(saveObj) {
+  // XXX read unlocks from saveObj.metadata
+}
+
+function saveUnlocks(saveObj) {
+  // XXX write unlocks to saveObj.metadata
+}
+
+
+Save.onLoad.add(saveObj => () => migrate(saveObj));
+Save.onLoad.add(saveObj => () => loadUnlocks(saveObj));
+Save.onSave.add(saveObj => () => saveUnlocks(saveObj));
+
+<</script>>

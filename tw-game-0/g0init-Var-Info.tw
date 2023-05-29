@@ -1,0 +1,515 @@
+:: g0init Var Info [inclusion] {"position":"3050,700","size":"100,100"}
+<<append head>><style>
+.revisit-here,
+.revisit-here * {
+  transition: none !important;
+}
+
+.var-info {
+  background-color: #111;
+  color: #999;
+  cursor: default;
+  font-size: 12px;
+  line-height: 14px;
+  margin-bottom: 14px;
+  margin-top: -54px;
+  padding: 12px 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+#return-head .var-info {
+  margin-bottom: 0;
+  position: static;
+}
+#return-head:has(.var-info) {
+  top: 36px;
+}
+
+.var-info > label,
+.var-info-button-outer {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  text-align: center;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.var-info > label {
+  color: #666;
+  cursor: pointer;
+  margin-left: -4px;
+  margin-right: 8px;
+}
+.var-info > label:hover {
+  background-color: #222;
+}
+
+.var-info-hidden > span:not(.var-info-passage) {
+  display: none;
+}
+.var-info-hidden:not(.var-info-to-do) > label::after {
+  content: "\2713"; /* checkmark */
+  margin-left: .5em;
+}
+.var-info-hidden.var-info-to-do > label::after {
+  content: "\1f6a7"; /* construction */
+}
+
+.var-info-separator {
+  margin: 0 16px;
+}
+
+.var-info-compute {
+  margin-right: 1em;
+}
+.var-info-compute:hover {
+  background-color: #333;
+}
+
+.var-info-button-outer {
+  min-width: 4em;
+  position: relative;
+}
+
+.var-info-passage {
+  user-select: all;
+  white-space: nowrap;
+}
+
+.var-info-notable {
+  font-weight: bold;
+}
+.var-info-ignored {
+  border: 1px dashed #882;
+  font-style: italic;
+  font-weight: normal;
+}
+.var-info-always {
+  font-weight: normal;
+  opacity: 0.6;
+}
+
+.var-info-to-do::after {
+  content: "\1f6a7"; /* construction */
+}
+.var-info-was-written::before {
+  content: "\2191"; /* up arrow */
+  padding-right: 1px;
+}
+.var-info-was-read::after {
+  content: "\2193"; /* down arrow */
+  padding-left: 1px;
+}
+.var-info-was-read.var-info-to-do::after {
+  content: "\2193\1f6a7"; /* down arrow, construction */
+  padding-left: 1px;
+}
+
+.var-info-was-deleted:not(.var-info-was-written) {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.var-info-can-change {
+  border-color: #666;
+  cursor: pointer;
+}
+.var-info-can-change:hover {
+  border-color: #ccc;
+}
+
+.var-info-can-change.var-info-notable {
+  border-color: #996;
+}
+.var-info-can-change.var-info-notable:hover {
+  border-color: #ddc;
+}
+
+.var-info-boolean-false {
+  color: #c88;
+}
+.var-info-boolean-true {
+  color: #6a6;
+}
+
+.var-info-enum {
+  color: #88c;
+}
+.var-info-number .var-info-button-label,
+.var-info-enum .var-info-button-label {
+  pointer-events: none;
+}
+.var-info-button-left,
+.var-info-button-right {
+  border: 1px solid #666;
+  border-radius: 4px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  width: 50%;
+}
+.var-info-button-left:hover,
+.var-info-button-right:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.var-info-button-left {
+  border-right: 0;
+  left: 0;
+}
+.var-info-button-right {
+  border-left: 0;
+  right: 0;
+}
+
+.var-info-value {
+  background-color: #033;
+  display: inline-block;
+  max-width: 3em;
+  overflow-x: clip;
+}
+
+</style><</append>>
+
+<<script>>
+
+const alwaysConditional = new Set();
+const alwaysVars = new Map();
+const ignoreVars = new Set();
+let revisitTop = null;
+
+$(document).on(":passagestart", () => {
+  alwaysConditional.clear();
+  alwaysVars.clear();
+  ignoreVars.clear();
+});
+
+MT.revisitHere = fn => {
+  MT.traceStop();
+  revisitTop = $("html").prop("scrollTop");
+  const active = State.active.variables;
+  State.active.variables = clone(State.current.variables);
+  fn && fn(active);
+  Engine.play(State.passage);
+  $("html").addClass("revisit-here");
+};
+Macro.add("revisit-here", {
+  handler: () => {
+    setTimeout(MT.revisitHere);
+  }
+});
+
+$(document).on(":passagestart", () => {
+  State.temporary.revisiting = revisitTop != null;
+});
+
+$(document).on(":passageend", () => {
+  $("html").removeClass("revisit-here");
+  if (revisitTop != null) {
+    $("html")[0].scroll(0, revisitTop);
+    revisitTop = null;
+  }
+});
+
+function withinInclude(ctx) {
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === "include") return true;
+  }
+  return false;
+}
+
+function withinCondition(ctx) {
+  for (; ctx != null; ctx = ctx.parent) {
+    if (ctx.displayName === "if") return true;
+    if (ctx.displayName === "switch") return true;
+  }
+  return false;
+}
+
+/** <<vi-always varname value [reason]>> */
+Macro.add("vi-always", {
+  handler: function() {
+    const [vname, exp] = this.args;
+    if (MT.varExpect(vname) != null && !withinInclude(this)) {
+      MT.warn(`vi-always ${vname} is unnecessary`);
+    }
+    const actual = MT.untracedGet(vname);
+    if (exp !== actual && !(exp === false && actual == null)) {
+      // force a traced read, so it can be toggled
+      const read = State.variables[vname];
+      MT.fail(`vi-always ${vname} ${exp}, but actual value is ${read}`);
+    }
+    alwaysVars.set(vname, exp);
+    if (withinCondition(this)) {
+      alwaysConditional.add(vname);
+    }
+  }
+});
+
+/** <<vi-always-if cond-var varname value [reason]>> */
+Macro.add("vi-always-if", {
+  handler: function() {
+    const [cond, vname, exp] = this.args;
+    const sect = MT.sectHere();
+    if (MT.varExpect(vname) != null && !withinInclude(this)) {
+      MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
+    }
+    if (MT.untracedGet(cond)) {
+      const actual = MT.untracedGet(vname);
+      if (exp !== actual && !(exp === false && actual == null)) {
+        // force a traced read, so it can be toggled
+        const read = State.variables[vname];
+        MT.fail(
+          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`);
+      }
+      alwaysVars.set(vname, exp);
+      if (withinCondition(this)) {
+        alwaysConditional.add(vname);
+      }
+    }
+  }
+});
+
+/** <<vi-ignore var1 ...>> */
+Macro.add("vi-ignore", {
+  handler: function() {
+    for (const vn of this.args) {
+      if (MT.varExpect(vn) != null) {
+        MT.warn(`vi-ignore ${vn} is unnecessary`);
+      }
+      ignoreVars.add(vn);
+    }
+  }
+});
+
+/**
+  * <<vi-ignore-if var1 var2 ...>>
+  * If var1 is true, ignore remaining vars.
+  * If var2 is true, ignore remaining vars.
+  * etc.
+  */
+Macro.add("vi-ignore-if", {
+  handler: function() {
+    for (let p = 0; p < this.args.length - 1; p++) {
+      const cvar = this.args[p];
+      if (MT.varExpect(cvar) != null) {
+        MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
+      }
+      if (MT.untracedGet(cvar)) {
+        this.args.slice(p + 1).forEach(vn => ignoreVars.add(vn));
+      }
+    }
+  }
+});
+
+const str = val => val == null ? String(val) : JSON.stringify(val);
+
+function varButton(vname) {
+  const V = MT.untracedVars();
+  const v0 = State.current.variables;
+
+  const outer = $("<span class=var-info-button-outer>");
+  let tags = "";
+
+  if (MT.trace.wasDeleted.has(vname)) {
+    tags += "[was-deleted]\n";
+    outer.addClass("var-info-was-deleted");
+  }
+  if (MT.trace.wasRead.has(vname)) {
+    tags += "[was-read]\n";
+    outer.addClass("var-info-was-read");
+  }
+  if (MT.trace.wasSet.has(vname)) {
+    tags += "[was-set]\n";
+    outer.addClass("var-info-was-written");
+  }
+
+  const sect = MT.sectHere();
+  const exp = MT.varExpect(vname);
+
+  if (MT.isNotable(sect, vname)) {
+    tags += "[section-notable]\n";
+    outer.addClass("var-info-notable");
+    if (ignoreVars.has(vname)) {
+      tags += "[vi-ignore]\n";
+      outer.addClass("var-info-ignored");
+    } else if (alwaysVars.has(vname)) {
+      tags += `[vi-always ${str(alwaysVars.get(vname))}]\n`;
+      outer.addClass("var-info-always");
+    } else if (!MT.trace.wasRead.has(vname)) {
+      tags += "[to-do]\n";
+      outer.addClass("var-info-to-do");
+    }
+  } else if (exp != null) {
+    tags += `[section-always ${str(exp)}]\n`;
+    outer.addClass("var-info-always");
+  }
+
+  const label = $("<span class=var-info-button-label>").appendTo(outer);
+
+  const jval = str(V[vname]);
+  if (MT.trace.wasSet.has(vname)) {
+    const jval0 = str(v0[vname]);
+    outer.attr("title", `${tags}${vname}=${jval0} ->\n${vname}=${jval}`);
+  } else {
+    outer.attr("title", `${tags}${vname}=${jval}`);
+  }
+
+  // assume undeclared is boolean
+  const vtype = MT.enumVars[vname] || (vname in V ? typeof V[vname] : "boolean");
+
+  const enumList = MT.enums[vtype];
+  if (enumList != null) {
+    outer.addClass("var-info-enum");
+    const sym = enumList[V[vname] || 0];
+    const sameType = Object.values(MT.enumVars).filter(t => t === vtype).length;
+    label.text(sym != null ? sym : vname + "=" + jval);
+    const n = enumList.length;
+    if (MT.trace.wasRead.has(vname)) {
+      const val0 = v0[vname] || 0;
+      if (0 < val0) {
+        $("<span>")
+          .addClass("var-info-button-left var-info-can-change")
+          .appendTo(outer)
+          .on("click", () => {
+            MT.revisitHere(() => State.variables[vname] = val0 - 1);
+          });
+      }
+      if (val0 < n - 1) {
+        $("<span>")
+          .addClass("var-info-button-right var-info-can-change")
+          .appendTo(outer)
+          .on("click", () => {
+            MT.revisitHere(() => State.variables[vname] = val0 + 1);
+          });
+      }
+    }
+    return outer;
+  }
+
+  // This doesn't work well with patience, need to fix something
+  if (false && vtype === "number") {
+    outer.addClass("var-info-number");
+    $("<span class=var-info-vname>").text(vname).appendTo(label);
+    label.append("=");
+    $("<span class=var-info-value>").text(jval).appendTo(label);
+    if (MT.trace.wasRead.has(vname)) {
+      const val0 = v0[vname] || 0;
+      $("<span>")
+        .addClass("var-info-button-left var-info-can-change")
+        .appendTo(outer)
+        .on("click", () => {
+          MT.revisitHere(() => State.variables[vname] = val0 - 1);
+        });
+      $("<span>")
+        .addClass("var-info-button-right var-info-can-change")
+        .appendTo(outer)
+        .on("click", () => {
+          MT.revisitHere(() => State.variables[vname] = val0 + 1);
+        });
+    }
+    return outer;
+  }
+
+  if (vtype === "boolean") {
+    outer.addClass("var-info-boolean-" + (V[vname] ? "true" : "false"));
+    label.text(vname);
+    if (MT.trace.wasRead.has(vname)) {
+      outer.addClass("var-info-can-change");
+      outer.on("click", () => {
+        let val = !v0[vname];
+        MT.revisitHere(() => {
+          State.variables[vname] = val;
+        });
+      });
+    }
+    return outer;
+  }
+
+  $("<span class=var-info-vname>").text(vname).appendTo(label);
+  label.append("=");
+  $("<span class=var-info-value>").text(jval).appendTo(label);
+  outer.addClass("var-info-misc");
+  return outer;
+}
+
+function initVarInfo() {
+  if (!setup.tester) return;
+
+  $(document).on(":passagestart", () => {
+    MT.traceStart();
+  });
+
+  $(document).on(":passageend", () => {
+    MT.traceStop();
+
+    MT.trace.wasTopRead.forEach(vn => {
+      if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
+        const c = alwaysVars.get(vn);
+        MT.warn(`vi-always ${vn} ${c}, but var was read`);
+      }
+      const exp = MT.varExpect(vn);
+      if (exp != null) {
+        MT.warn(`${vn} always ${exp} in this section, but var was read`);
+      }
+    });
+
+    const notable = MT.allNotable();
+    const to_do = notable.filter(
+      vn => !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn));
+    if (to_do.length && !MT.isDraft()) {
+      MT.warn(`non-draft passage has unused notable vars: ${to_do}`);
+    }
+    
+    if (!setup.debug) return;
+
+    const touched = new Set();
+    MT.trace.wasRead.forEach(v => touched.add(v));
+    MT.trace.wasSet.forEach(v => touched.add(v));
+    MT.trace.wasDeleted.forEach(v => touched.add(v));
+    notable.forEach(f => touched.add(f));
+
+    $(".var-info").remove();
+    const outer = $("<div class=var-info>");
+
+    if ($("#return-head").length) {
+      outer.prependTo("#return-head");
+    } else {
+      outer.prependTo("#story");
+    }
+
+    let show = session.get("var-info-show");
+    outer.toggleClass("var-info-hidden", !show);
+
+    $("<label>var-info</label>")
+      .appendTo(outer)
+      .click(() => {
+        show = !show;
+        session.set("var-info-show", show);
+        outer.toggleClass("var-info-hidden", !show);
+      });
+
+    $("<span class=var-info-compute>[compute variants]</span>")
+      .appendTo(outer)
+      .click(() => MT.computeVariants());
+
+
+    if (touched.size) {
+      const el = $("<span class=var-info-touched>").appendTo(outer);
+      [...touched].sort().forEach(v => varButton(v).appendTo(el));
+    }
+
+    $("<span class=var-info-separator>").text("||").appendTo(outer);
+    $("<span class=var-info-passage>").text(State.passage).appendTo(outer);
+
+    if (to_do.length) outer.addClass("var-info-to-do");
+  });
+}
+
+initVarInfo();
+
+<</script>>

@@ -1,0 +1,95 @@
+:: g0init Paths [inclusion] {"position":"2750,600","size":"100,100"}
+<<script>>
+/*
+ * This module is about traversable paths.
+ *
+ * type Path = Step[];
+ * type Step = {
+ *   t?: string; // passage title
+ *   code?: string; // mta/mtl code of the link into this passage
+ *   choice?: string; // choice point name
+ * }
+ *
+ * This depends on MT.log (for mtaCode).
+ */
+
+const pathIgnore = [
+  "Bound",
+];
+
+/**
+ * Returns a full path of the current play log.
+ */
+MT.getPath = () => {
+  const path = [];
+  const log = MT.log;
+  if (log == null || log.length === 0) return [];
+  if (log[0].title !== "Bound") return [];
+
+  for (let i = 0; i < log.length; i++) {
+    const entry = log[i];
+    if (pathIgnore.includes(entry.title)) continue;
+
+    const step = { t: entry.title };
+    if (entry.mtaCode != null) step.code = entry.mtaCode;
+
+    path.push(step);
+  }
+  return path;
+};
+
+/**
+ * Finds the common prefix of P and Q.
+ * Returns [PN, QN], which is the length of the common prefix in P and Q.
+ *
+ * This does not check against the actual storygraph. If P has a forced
+ * step S that isn't in Q, it's assumed that Q can also have S.
+ */
+MT.commonPathLengths = (p, q) => {
+  const prefix = [];
+  let pi = 0, qi = 0;
+  while (pi < p.length && qi < q.length) {
+    const ps = p[pi];
+    const qs = q[qi];
+    if (ps.t == null) {
+      pi++;
+    } else if (qs.t == null) {
+      qi++;
+    } else {
+      if (ps.t !== qs.t) break;
+      if (ps.code !== qs.code) break;
+      if (ps.name !== qs.name) break;
+      pi++, qi++;
+    }
+  }
+  return [pi, qi];
+};
+
+const json = o => JSON.stringify(o);
+
+/**
+ * Returns a pretty string that's js for path.
+ */
+MT.pathToJs = (path) => {
+  let str = "[\n";
+  for (const step of path) {
+    str += "  {";
+    if (step.name != null) str += ` name: ${json(step.name)},`;
+    str += ` t: ${json(step.t || step.title)}`;
+    if (step.code != null) str += `, code: ${json(step.code)},`;
+    str += " },\n";
+  }
+  str += "],\n";
+  return str;
+}
+
+MT.pathName = (path) => {
+  const choices = path.filter(st => st.choice != null).map(st => st.choice);
+  if (choices.length) {
+    return "> " + choices.join(" > ");
+  }
+  const titles = path.filter(st => st.t != null).map(st => st.t);
+  return "> " + titles.join(" > ");
+}
+
+<</script>>

@@ -1,0 +1,128 @@
+:: g0init Nero Templates [inclusion] {"position":"3025,1250","size":"100,100"}
+<<append head>><style>
+
+.master-quiet {
+  font-size: 18px;
+  font-weight: bold;
+  position: relative;
+  text-transform: uppercase;
+  top: 1px;
+}
+.nero-blank {
+  color: rgba(0, 0, 0, 0);
+  font-family: monospace;
+  user-select: none;
+}
+.nero-blank-c {
+  background-color: #333;
+  letter-spacing: 1px;
+  margin-right: 1px;
+}
+.nero-blank .glitch-c:not(#very#very#very#very) {
+  color: rgba(0, 0, 0, 0);
+}
+.sprite-squish {
+  letter-spacing: -1px;
+  margin-right: .1em;
+  word-spacing: -2px;
+}
+
+</style>
+<</append>>
+
+<<script>>
+
+Template.add("blank",
+  "<span class=nero-blank>" +
+    "<span class=nero-blank-c>" +
+      "Blank".split("").join("</span><span class=nero-blank-c>") +
+    "</span>" +
+  "</span>");
+
+function master(p1, p2) {
+  const V = State.variables;
+  const name = V.n1_opportunist ? "An Opportunist" : "Master";
+  if (V.n1_spriteQuiet) {
+    return `<span class=master-quiet>${name}${p2}</span>`;
+  } else {
+    return `${name}${p1}`;
+  }
+}
+Template.add("master", () => master(".", "!"));
+Template.add("masterN", () => master("", ""));
+Template.add("masterQ", () => master("?", "!?"));
+Template.add("masterX", () => master("!", "!"));
+
+Template.add("spell", () => {
+  const V = State.variables;
+  if (V.n1_castEndgame) {
+    return "his Endgame spell";
+  } else if (V.n1_castItch) {
+    return "his Superb Itch";
+  } else if (V.n1_castOil) {
+    return "his Oil of Dragons spell";
+  } else if (V.n1_castYounger) {
+    return "Younger's Escape";
+  } else {
+    throw new Error("bug: cast an unknown spell?");
+  }
+});
+
+Template.add("crystals", () => {
+  const V = State.variables;
+  const U = MT.untracedVars();
+  if (V.n1_gravKnown) {
+    return "Gravity Crystals";
+  } else if (V.n1_gravViewed) {
+    if (V.n2_struggleKnown || U.n2_free) {
+      return "mysterious crystals";
+    } else {
+      return "Dream Crystals";
+    }
+  } else {
+    return "glowing crystals";
+  }
+});
+
+Template.add("globe", () => {
+  const V = state.variables;
+  return V.n1_globeViewed || V.n1_globeAskedHorny
+    ? "snow globe" : "arcane globe";
+});
+
+Template.add("mirror", () => {
+  const V = State.variables;
+  if (V.n2_mirrorBroken) {
+    return "broken mirror";
+  } else if (V.n1_mirrorMagicKnown) {
+    return "magic mirror";
+  } else {
+    return "hand mirror";
+  }
+});
+
+Template.add("sprSays", () => {
+  const V = State.variables;
+  return V.n1_spriteQuiet ? "whispers" : "says";
+});
+Template.add("sprSpeaks", () => {
+  const V = State.variables;
+  return V.n1_spriteQuiet ? "whispers" : "speaks";
+});
+
+Template.add("sprHoldStop", () => {
+  const V = State.variables;
+  let mkp = `?master`;
+  if (MP_onHold === V.n1_magicPhase) {
+    mkp += ` Also, ?sprBadPass`;
+    // cspell: disable-next-line
+    mkp += ` <span class=nobr>remai&mdash;</span>`;
+    mkp += ` Wait a minute, I dropped something, ?master`;
+    V.n1_magicPhase = MP_exitingHold;
+  }
+  return mkp;
+});
+
+Template.add("construction",
+  `<h1>&#x1f6a7;Under Construction&#x1f6a7;</h1>`)
+<</script>>

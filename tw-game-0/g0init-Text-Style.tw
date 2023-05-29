@@ -1,0 +1,61 @@
+:: g0init Text Style [inclusion] {"position":"2850,700","size":"100,100"}
+<<append head>><style>
+
+em {
+  margin-right: 0.05em;
+}
+
+em em {
+  font-weight: bold;
+  margin-right: 0;
+  text-decoration: underline;
+}
+
+.sprite-q {
+  color: #6d6;
+}
+
+meta-text {
+  background-color: transparent;
+  color: #eaf54c;
+  display: inline;
+  font-style: italic;
+}
+meta-ending-bad {
+  color: #f44;
+  font-style: italic;
+  font-weight: bold;
+}
+meta-ending-good {
+  color: #6e6;
+  font-style: italic;
+  font-weight: bold;
+}
+
+</style><</append>>
+
+<<script>>
+function announceEnding(dest, type, vname, text) {
+  const V = State.variables;
+  if (!V[vname]) {
+    $(dest).append(
+      `<meta-text>${text} is now unlocked in the Archive.</meta-text>`);
+    V[vname] = true;
+  } else {
+    $(dest).append(`<meta-ending-${type}>${text}</meta-ending-${type}>`);
+  }
+}
+
+/**
+ * <<meta-ending [good|bad] varname1 text1>>
+ * Announce an ending. If it's locked, unlock it, and announce the unlocking.
+ */
+Macro.add("meta-ending", {
+  handler: function() {
+    const [type, vn1, text1] = this.args;
+    const V = State.variables;
+    announceEnding(this.output, type, vn1, text1);
+  }
+});
+
+<</script>>

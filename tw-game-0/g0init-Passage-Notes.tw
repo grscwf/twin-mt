@@ -1,0 +1,236 @@
+:: g0init Passage Notes [inclusion] {"position":"2000,800","size":"100,100"}
+<<append head>><style>
+  #notes-button {
+    background-color: rgb(255, 255, 255, 0.2);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    gap: 4px;
+    opacity: 0.5;
+    padding: 2px 4px;
+    position: fixed;
+    right: 4px;
+    text-align: right;
+    top: 20px;
+    z-index: 20;
+  }
+  #notes-line-1 {
+    font-size: 18px;
+  }
+  #notes-button.notes-non-zero {
+    border-color: rgb(255, 255, 255, 0.4);
+  }
+  #notes-button.notes-non-zero #notes-count {
+    color: rgb(255, 255, 255, 0.8);
+    font-weight: bold;
+  }
+  #notes-button:hover {
+    background-color: #333;
+    border-color: #eee;
+    color: #eee;
+    opacity: 1;
+  }
+  #notes-line-2::before {
+    content: "\e801\0020";
+    font-family: tme-fa-icons;
+  }
+  #notes-button.notes-non-zero #notes-line-2::before {
+    color: rgb(255, 255, 255, 0.8);
+  }
+  #notes-button.notes-has-note #notes-line-2::before {
+    content: "\e800\0020";
+  }
+  #notes-button.notes-has-note:hover #notes-line-2::before {
+    color: #cc0;
+  }
+  .notes-buttons button {
+    background-color: #000;
+    border-color: #840;
+    border-radius: 8px;
+    color: #ffa000;
+    margin: .2rem .2rem .5rem 0;
+    padding: .3rem .4rem;
+  }
+  .notes-buttons button:disabled {
+    border-color: #444;
+    color: #444;
+  }
+  .notes-buttons button:hover:not(:disabled) {
+    background-color: #c67100;
+    color: #fff;
+  }
+  #notes-input,
+  #notes-conflict textarea {
+    border-radius: 8px;
+    height: 9em;
+    line-height: 1.4;
+    max-width: 100%;
+    min-width: 5em;
+    width: min(90%, 30em);
+  }
+  #notes-conflict {
+    display: none;
+  }
+  #notes-conflict.notes-has-conflict {
+    display: block;
+  }
+</style><</append>>
+
+<<script>>
+
+MT.selectedText = "";
+
+// State.metadata.get always deflates and deserializes from localStorage, but:
+// - we almost always want the localStorage value that might be modified
+//   by another tab.
+// - the cacheable calls to getAll don't happen often enough to make it
+//   worth caching.
+
+MT.notesGetAll = () => {
+  let all = State.metadata.get("notes") || "";
+
+  // migrate old -F names
+  all = all.replace(/^(\[passage\s+n\d\w+)-[FDS]\s/gm, "$1");
+
+  return all;
+};
+const setAll = val => State.metadata.set("notes", val);
+
+function getStats(passage) {
+  let count = 0;
+  let hasNoteHere = false;
+  const nFull = "\n" + MT.notesGetAll();
+  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
+    count += 1;
+    if (m[1] === passage) hasNoteHere = true;
+  }
+  return { count, hasNoteHere };
+}
+
+MT.notesTryReplaceAll = (old, val) => {
+  const cur = MT.notesGetAll().trimEnd();
+  if (old.trimEnd() !== cur) return cur;
+  val = val.trimEnd();
+  setAll(val);
+  updateStatus();
+  return val;
+};
+
+MT.notesCleanup = (text) => {
+  text = "\n" + text + "\n";
+  const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
+  const before = parts.shift().trimEnd().slice(1);
+  const keep = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const passage = parts[i].trim();
+    const body = parts[i+1].trimEnd();
+    if (body === "") continue;
+    keep.push([passage, body]);
+  }
+  keep.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? +1 : 0);
+  let result = "";
+  if (before !== "") result += before + "\n";
+  for (const [passage, body] of keep) {
+    result += `[passage ${passage}]\n${body}\n\n`;
+  }
+  return result;
+};
+
+function splitAt(passage, text) {
+  let nText = "\n" + text;
+  if (nText.slice(-1) !== "\n") nText += "\n";
+  const nHeader = `\n[passage ${passage}]\n`;
+  let pos = 0;
+  while ((pos = nText.indexOf(nHeader, pos)) >= 0) {
+    let end = nText.indexOf("\n[passage ", pos + 1);
+    if (end < 0) end = nText.length;
+    return {
+      before: nText.slice(1, pos + 1),
+      header: nText.slice(pos + 1, pos + nHeader.length),
+      body: nText.slice(pos + nHeader.length, end + 1).trimEnd(),
+      after: nText.slice(end + 1).trimEnd(),
+    };
+  }
+  return {
+    before: nText.slice(1),
+    header: nHeader.slice(1),
+    body: "",
+    after: "",
+  };
+}
+
+MT.notesGet = (passage) => {
+  const full = MT.notesGetAll();
+  const split = splitAt(passage, full);
+  return split.body;
+};
+
+/** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
+MT.notesTryReplace = (passage, old, val) => {
+  const full = MT.notesGetAll();
+  const sp = splitAt(passage, full);
+  if (sp.body !== old.trimEnd()) return sp.body;
+  const replace = /\S/.test(val) ? sp.header + val.trimEnd() +"\n\n" : "";
+  const next = sp.before + replace + sp.after;
+  setAll(next);
+  updateStatus();
+  return val.trimEnd();
+};
+
+// capture selection before click deselects it
+function pointerDown() {
+  MT.selectedText = getSelection().toString().trim();
+}
+
+function openPopup() {
+  const V = State.variables;
+  const T = State.temporary;
+  V.t_notesOrigin = State.passage;
+  if (T.notesVariant != null) {
+    V.t_notesOrigin += " - " + T.notesVariant;
+  }
+  const popupTitle = "[[mt Passage Notes Popup]]".slice(2, -2);
+  const popupText = Story.get(popupTitle).text;
+  Dialog.setup("");
+  Dialog.wiki(popupText);
+  Dialog.open();
+}
+
+function renderButton() {
+  $("#notes-button").remove();
+  const outer = $("<div>")
+    .attr("id", "notes-button")
+    .on("pointerdown", pointerDown)
+    .on("click", openPopup)
+    .appendTo("#story");
+  $("<div>").attr("id", "notes-line-1").text("notes").appendTo(outer);
+  const line2 = $("<div>").attr("id", "notes-line-2").appendTo(outer);
+  $("<span>").attr("id", "notes-count").appendTo(line2);
+  updateStatus();
+}
+
+function updateStatus() {
+  const st = getStats(State.passage);
+  $("#notes-button").toggleClass("notes-has-note", st.hasNoteHere);
+  $("#notes-button").toggleClass("notes-non-zero", st.count > 0);
+  $("#notes-count").text(`${st.count}`);
+}
+
+function initNotes() {
+  if (!setup.tester) return;
+  $(document).on(":passagedisplay", renderButton);
+
+  // migration
+  const old = localStorage.getItem("passage-notes-1");
+  if (old != null) {
+    localStorage.removeItem("passage-notes-1");
+    setAll(old);
+  }
+}
+
+initNotes();
+<</script>>

@@ -1,0 +1,95 @@
+:: g0init Nero Taming [inclusion] {"position":"2925,1250","size":"100,100"}
+<<append head>><style>
+
+.tame-word {
+  transition: all 2s ease-in;
+  background-color: #111;
+  color: #eee;
+}
+
+.tame-fade .tame-word,
+.tame-gone {
+  color: #888;
+  background-color: #888;
+}
+
+.tame-hide {
+  opacity: 0;
+  transition: all .5s ease-in;
+}
+
+.tame-unhide {
+  opacity: 1;
+}
+
+</style>
+<</append>>
+
+<<script>>
+
+// Note, "resist" words are allowed.
+const tameWords = [
+  "attack",
+  "defense",
+  "defensive",
+  "destroy",
+  "escape",
+  "escaping",
+  "fight",
+  "inhibit",
+  "inhibiting",
+  "inhibition",
+  "pretend",
+  "repressing",
+  "repression",
+  "win",
+];
+
+const tameRE = new RegExp("\\b(" + tameWords.join("|") + ")\\b", "gi");
+
+MT.startTaming = () => {
+  const passage = $(".passage");
+  tame(passage[0]);
+  setTimeout(() => passage.addClass("tame-fade"), 200);
+};
+
+function tame(el) {
+  const oldKids = el.childNodes;
+  const newKids = [];
+  let replace = false;
+  for (const node of oldKids) {
+    if (node.nodeType === 1) {
+      tame(node);
+      newKids.push(node);
+    } else if (node.nodeType === 3) {
+      tameTextTo(newKids, node);
+      replace = true;
+    } else {
+      newKids.push(node);
+    }
+  }
+  if (replace) {
+    el.innerHTML = "";
+    for (const kid of newKids) {
+      el.appendChild(kid);
+    }
+  }
+}
+
+function tameTextTo(list, node) {
+  const text = node.textContent;
+  const pieces = text.split(tameRE);
+  for (let i = 0; i < pieces.length; i++) {
+    const piece = document.createTextNode(pieces[i]);
+    if (i % 2 === 0) {
+      list.push(piece);
+    } else {
+      const span = document.createElement("span");
+      span.className = "tame-word";
+      span.appendChild(piece);
+      list.push(span);
+    }
+  }
+}
+
+<</script>>
