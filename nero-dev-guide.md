@@ -316,6 +316,7 @@
     - This is partly for organization, but it's also for asserting state
       within a section. For example, within `n1d`,
       no matter where we are or how we got there, `n1_naked` should be true.
+  - Descriptions of each section are in the passage `g0init Sections`.
 - If a script or style is only used by a single passage, it's usually inlined
   in the passage.
 - Large scripts used by a single passage are usually extracted to a
