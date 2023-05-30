@@ -8,7 +8,7 @@ import fastGlob from "fast-glob";
 const declsFile = `${__dirname}/../nero-vars.txt`;
 
 const varPatterns = [
-  /[$](\w+)/g,
+  /[$]([A-Za-z_]\w*)/g,
   /\b[vVU][01]?[.](\w+)/g,
   /\b(setup[.]\w+)/g,
   /\b(n[0-9]_\w+):/g,
