@@ -1,5 +1,6 @@
 :: g0init Links [inclusion] {"position":"225,625","size":"100,100"}
 <<append head>><style>
+
 .mtl-denied::before {
   filter: grayscale();
 }
@@ -14,8 +15,8 @@
   margin-left: 0.5em;
   font-style: italic;
 }
-</style>
-<</append>>
+
+</style><</append>>
 
 <<script>>
 
@@ -23,7 +24,7 @@
  * <<mta $link [$code]>>
  *   $text
  * <</mta>>
- * 
+ *
  * Similar to <<link $text $link>><<run $code>><</link>>
  * Allows double-bracket syntax for the link.
  * Adds a data-mt-code attribute for disambiguation.
@@ -43,7 +44,7 @@ Macro.add("mta", {
  * <<mtl $link [$script]>>
  *   $text
  * <</mtl>>
- * 
+ *
  * <<mta>> but wrapped in <li></li>
  */
 Macro.add("mtl", {
@@ -60,7 +61,7 @@ Macro.add("mtl", {
  * <<mtl-if $bool $link [$reason]>>
  *   $text
  * <</mtl>>
- * 
+ *
  * <<mtl>> but only if $bool.
  * Otherwise, show it as unavailable, with $reason
  */
@@ -103,13 +104,15 @@ Macro.add("mtl-denied", {
 function makeLink(link, code, text) {
   const el = document.createDocumentFragment();
   const dest = linkTitle(link);
-  State.temporary.mtaThisText = String(text);
+  const destRepr = JSON.stringify(String(dest));
+  const textRepr = JSON.stringify(String(text));
 
   let body = "";
   if (code != null) {
-    body = `<<run $mtaPayload = ["${dest}","${code}"]; ${code}>>`;
+    const codeRepr = JSON.stringify(String(code));
+    body = `<<run $mtaPayload = [${destRepr},${codeRepr}]; ${code}>>`;
   }
-  $(el).wiki(`<<link _mtaThisText "${dest}">>${body}<</link>>`);
+  $(el).wiki(`<<link ${textRepr} ${destRepr}>>${body}<</link>>`);
   if (code != null) {
     $(el).find("a").attr("data-mta-code", code);
   }
@@ -130,5 +133,43 @@ MT.mtaCode = (here) => {
   if (p == null || p[0] !== here) return null;
   return p[1];
 };
+
+/**
+ * <<mtn $link>>
+ *   $text
+ * <</mtn>>
+ *
+ * Show as a link if the destination hasn't been seen recently.
+ * Otherwise just show the text.
+ *
+ * Seen recently is:
+ * - within the last 10 passages,
+ * - since the latest visit to $t_patiencePassage.
+ */
+Macro.add("mtn", {
+  tags: [],
+  handler: function() {
+    const [link] = this.args;
+    const dest = linkTitle(link);
+    const text = this.payload[0].contents;
+    if (recentlyViewed(dest)) {
+      $(this.output).wiki(text);
+    } else {
+      $(this.output).append(makeLink(link, null, text));
+    }
+  }
+});
+
+function recentlyViewed(name) {
+  const limit = MT.untracedGet("t_patiencePassage");
+  const max = 10;
+  for (let i = 1; i < max; i++) {
+    const past = State.peek(-i);
+    if (past == null) return false;
+    if (past.title === limit) return false;
+    if (past.title === name) return true;
+  }
+  return false;
+}
 
 <</script>>
