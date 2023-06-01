@@ -71,6 +71,10 @@ const savedVars = new Set([
  * 
  * The proxy is also installed as the SugarCube temp var `_m`,
  * so that the expression `_m.var` can be used anywhere.
+ * 
+ * Note, get is somewhat expensive, since it always reads and
+ * deserializes from localStorage. Bulk read operations should maybe
+ * filter State.metadata.entries() instead.
  */
 window._m = new Proxy({}, {
   deleteProperty(_, prop) {
@@ -98,10 +102,34 @@ function checkIsKnown(name, verb) {
   throw new Error(`${verb} of nonexistent meta var _m.${name}`);
 }
 
+function metaLoad(save) {
+  if (!save.metadata) return;
+  for (const [key, value] = Object.entries(save.metadata)) {
+    if (!savedVars.has(key)) continue;
+    if (!value) continue;
+    if (!_m[key]) {
+      _m[key] = value;
+      // XXX announce the unlock
+    }
+  }
+}
+
+function metaSave(save) {
+  save.metadata ||= {};
+  const entries = State.metadata.entries();
+  for (const [key, value] of entries) {
+    if (savedVars.has(key)) {
+      save.metadata[key] = value;
+    }
+  }
+}
+
 function metaInit() {
   $(document).on(":passageinit", () => {
     State.temporary.m = _m;
   });
+  Save.onLoad.add(metaLoad);
+  Save.onSave.add(metaSave);
 }
 
 metaInit();

@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5618,6 +5618,10 @@ const savedVars = new Set([
  * 
  * The proxy is also installed as the SugarCube temp var `_m`,
  * so that the expression `_m.var` can be used anywhere.
+ * 
+ * Note, get is somewhat expensive, since it always reads and
+ * deserializes from localStorage. Bulk read operations should maybe
+ * filter State.metadata.entries() instead.
  */
 window._m = new Proxy({}, {
   deleteProperty(_, prop) {
@@ -5645,10 +5649,34 @@ function checkIsKnown(name, verb) {
   throw new Error(`${verb} of nonexistent meta var _m.${name}`);
 }
 
+function metaLoad(save) {
+  if (!save.metadata) return;
+  for (const [key, value] = Object.entries(save.metadata)) {
+    if (!savedVars.has(key)) continue;
+    if (!value) continue;
+    if (!_m[key]) {
+      _m[key] = value;
+      // XXX announce the unlock
+    }
+  }
+}
+
+function metaSave(save) {
+  save.metadata ||= {};
+  const entries = State.metadata.entries();
+  for (const [key, value] of entries) {
+    if (savedVars.has(key)) {
+      save.metadata[key] = value;
+    }
+  }
+}
+
 function metaInit() {
   $(document).on(&quot;:passageinit&quot;, () =&gt; {
     State.temporary.m = _m;
   });
+  Save.onLoad.add(metaLoad);
+  Save.onSave.add(metaSave);
 }
 
 metaInit();
@@ -8500,7 +8528,7 @@ const keywords = {
     ],
   },
   
-  pearson: {
+  kwPearson: {
     title: &quot;Pearson&#39;s Hangover Cantrip&quot;,
     passages: [
       &quot;n1a Hangover Info&quot;,
@@ -8660,6 +8688,7 @@ Macro.add(&quot;nero-kw-announce&quot;, {
 
     const vn = `n9_kw_${key}`;
     V[vn] = true;
+    _m[key] = true;
 
     $(this.output).wiki(
       `&lt;meta-text&gt;\
@@ -10356,10 +10385,14 @@ initRandomWalk();
 
 /** Fix up the in-browser saveGame title. */
 Config.passages.descriptions = function() {
-  let excerpt = this._excerpt || Passage.getExcerptFromText(this.text);
+  let mkp = this.text;
 
-  // remove noise
-  excerpt = excerpt.replace(/^Return to the game /, &#39;&#39;);
+  // remove leading noise
+  mkp = mkp.replace(/&lt;[&lt;]nero-kw-announce&gt;&gt;/, &quot;&quot;);
+  mkp = mkp.replace(/&lt;[&lt;]link &quot;Return[^&gt;]*?&gt;&gt;[^&gt;]*link&gt;&gt;/, &quot;&quot;);
+
+  // ignore this._excerpt
+  let excerpt = Passage.getExcerptFromText(mkp);
 
   // add unlock count
   const [unlocked, total] = countUnlocks();
@@ -15657,7 +15690,7 @@ Needless to say, Nero only made that mistake once.
 
 &lt;&lt;arc-skip&gt;&gt;
   ?P
-  &lt;&lt;nero-kw pearson&gt;&gt;
+  &lt;&lt;nero-kw kwPearson&gt;&gt;
   [[Return|n1a Nero Start]]
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="306" name="n1a Hello 1" tags="mt-ready" position="900,3475" size="100,100">&lt;&lt;nobr&gt;&gt;
