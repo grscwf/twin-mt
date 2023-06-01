@@ -1,0 +1,109 @@
+:: g0boot Metadata [inclusion] {"position":"235,425","size":"100,100"}
+<<script>>
+
+/**
+ * State.metadata vars that do not get added to saved games.
+ */
+const unsavedVars = new Set([
+  // Game persistent state
+  "gmPassedContentWarning",
+  "gmTitleSeen",
+
+  // Nero persistent state
+  "neIvexRememberedEndgame",
+  "nePlayerLeftStudy",
+  "nePlayerLeftStudyWithMirror",
+  "nePlayerReadGlitch",
+
+]);
+
+/**
+ * State.metadata vars that are saved and loaded from saved games.
+ */
+const savedVars = new Set([
+  // Drekkar endings
+  "dxEnthrallment",
+  "dxEnthrallmentLion",
+  "dxExtractionGentle",
+  "dxExtractionForceful",
+  "dxInterrogationFreeze",
+  "dxInterrogationMild",
+  "dxInterrogationRough",
+  "dxInterrogationShock",
+  "dxIvexEnthrallment",
+  "dxIvexExtraction",
+  "dxIvexPunishment",
+
+  // Keywords unlocked
+  "kwAntiMagic",
+  "kwDream",
+  "kwEndgame",
+  "kwGravity",
+  "kwItch",
+  "kwIvex",
+  "kwKelvin",
+  "kwKopic",
+  "kwMcFundamental",
+  "kwMcInhibition",
+  "kwMcRepression",
+  "kwMcSubstitution",
+  "kwMica",
+  "kwNackle",
+  "kwOil",
+  "kwPearson",
+  "kwPevhin",
+  "kwPyron",
+  "kwSprite",
+  "kwTigerKeratin",
+  "kwTigerMyth",
+  "kwYounger",
+
+  // Nero endings unlocked
+  "nxBroken",
+  "nxCagedHarsh",
+  "nxCagedMild",
+  "nxTamedHarsh",
+  "nxTamedMild",
+]);
+
+/**
+ * `_m` is a JS global that's a proxy for State.metadata.
+ * 
+ * The proxy is also installed as the SugarCube temp var `_m`,
+ * so that the expression `_m.var` can be used anywhere.
+ */
+window._m = new Proxy({}, {
+  deleteProperty(_, prop) {
+    checkIsKnown(prop, 'delete');
+    State.metadata.delete(prop);
+  },
+  get(_, prop) {
+    checkIsKnown(prop, 'get');
+    return State.metadata.get(prop);
+  },
+  set(_, prop, value) {
+    checkIsKnown(prop, 'set');
+    if (value == null || value === false) {
+      State.metadata.delete(prop);
+    } else {
+      State.metadata.set(prop, value);
+    }
+    return value;
+  },
+});
+
+function checkIsKnown(name, verb) {
+  if (unsavedVars.has(name)) return;
+  if (savedVars.has(name)) return;
+  throw new Error(`${verb} of nonexistent meta var _m.${name}`);
+}
+
+function metaInit() {
+  $(document).on(":passageinit", () => {
+    State.temporary.m = _m;
+  });
+}
+
+metaInit();
+
+<</script>>
