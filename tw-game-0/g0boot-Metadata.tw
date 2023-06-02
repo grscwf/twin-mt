@@ -77,16 +77,26 @@ const savedVars = new Set([
  * filter State.metadata.entries() instead.
  */
 window._m = new Proxy({}, {
-  deleteProperty(_, prop) {
-    checkIsKnown(prop, 'delete');
+  deleteProperty(target, prop) {
+    if (typeof prop === "symbol") {
+      return Reflect.deleteProperty(target, prop);
+    }
+    checkIsKnown(prop, "delete");
     State.metadata.delete(prop);
   },
-  get(_, prop) {
-    checkIsKnown(prop, 'get');
+  get(target, prop, receiver) {
+    if (typeof prop === "symbol") {
+      return Reflect.get(target, prop, receiver);
+    }
+    checkIsKnown(prop, "get");
     return State.metadata.get(prop);
   },
-  set(_, prop, value) {
-    checkIsKnown(prop, 'set');
+  // TODO: implement getOwnPropertyDescriptor and ownKeys to allow enumeration
+  set(target, prop, value, receiver) {
+    if (typeof prop === "symbol") {
+      return Reflect.set(target, prop, value, receiver);
+    }
+    checkIsKnown(prop, "set");
     if (value == null || value === false) {
       State.metadata.delete(prop);
     } else {
@@ -97,14 +107,22 @@ window._m = new Proxy({}, {
 });
 
 function checkIsKnown(name, verb) {
+  if (typeof name === "symbol") return;
   if (unsavedVars.has(name)) return;
   if (savedVars.has(name)) return;
   throw new Error(`${verb} of nonexistent meta var _m.${name}`);
 }
 
+MT.metaClear = () => {
+  // Preserve notes
+  const notes = State.metadata.get("notes");
+  State.metadata.clear();
+  State.metadata.set("notes", notes);
+};
+
 function metaLoad(save) {
   if (!save.metadata) return;
-  for (const [key, value] = Object.entries(save.metadata)) {
+  for (const [key, value] of Object.entries(save.metadata)) {
     if (!savedVars.has(key)) continue;
     if (!value) continue;
     if (!_m[key]) {
