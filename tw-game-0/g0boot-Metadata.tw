@@ -1,70 +1,76 @@
 :: g0boot Metadata [inclusion] {"position":"235,425","size":"100,100"}
 <<script>>
+/* `_m` is a JS global that's a proxy for State.metadata. Details below. */
 
-/**
- * State.metadata vars that do not get added to saved games.
- */
-const unsavedVars = new Set([
-  // Game persistent state
-  "gmPassedContentWarning",
-  "gmTitleSeen",
+/** metavar is not added to saved games. */
+const NOT_SAVED = 0;
 
-  // Nero persistent state
-  "neIvexRememberedEndgame",
-  "nePlayerLeftStudy",
-  "nePlayerLeftStudyWithMirror",
-  "nePlayerReadGlitch",
+/** metavar is added to saved games. */
+const SAVED = 1;
 
-]);
+/** metavar is not added to saved games, and not erased on reset.  */
+const EXCLUDED = 3;
 
-/**
- * State.metadata vars that are saved and loaded from saved games.
- */
-const savedVars = new Set([
+/** all metavars should be declared here. */
+const allMetavars = {
   // Drekkar endings
-  "dxEnthrallment",
-  "dxEnthrallmentLion",
-  "dxExtractionGentle",
-  "dxExtractionForceful",
-  "dxInterrogationFreeze",
-  "dxInterrogationMild",
-  "dxInterrogationRough",
-  "dxInterrogationShock",
-  "dxIvexEnthrallment",
-  "dxIvexExtraction",
-  "dxIvexPunishment",
+  dxEnthrallment: SAVED,
+  dxEnthrallmentLion: SAVED,
+  dxExtractionGentle: SAVED,
+  dxExtractionForceful: SAVED,
+  dxInterrogationFreeze: SAVED,
+  dxInterrogationMild: SAVED,
+  dxInterrogationRough: SAVED,
+  dxInterrogationShock: SAVED,
+  dxIvexEnthrallment: SAVED,
+  dxIvexExtraction: SAVED,
+  dxIvexPunishment: SAVED,
+
+  // Game persistent state
+  gmPassedContentWarning: NOT_SAVED,
+  gmTitleSeen: NOT_SAVED,
 
   // Keywords unlocked
-  "kwAntiMagic",
-  "kwDream",
-  "kwEndgame",
-  "kwGravity",
-  "kwItch",
-  "kwIvex",
-  "kwKelvin",
-  "kwKopic",
-  "kwMcBasics",
-  "kwMcInhibition",
-  "kwMcRepression",
-  "kwMcSubstitution",
-  "kwMica",
-  "kwNackle",
-  "kwOil",
-  "kwPearson",
-  "kwPevhin",
-  "kwPyron",
-  "kwSprite",
-  "kwTigerKeratin",
-  "kwTigerMyth",
-  "kwYounger",
+  kwAntiMagic: SAVED,
+  kwDream: SAVED,
+  kwEndgame: SAVED,
+  kwGravity: SAVED,
+  kwItch: SAVED,
+  kwIvex: SAVED,
+  kwKelvin: SAVED,
+  kwKopic: SAVED,
+  kwMcBasics: SAVED,
+  kwMcInhibition: SAVED,
+  kwMcRepression: SAVED,
+  kwMcSubstitution: SAVED,
+  kwMica: SAVED,
+  kwNackle: SAVED,
+  kwOil: SAVED,
+  kwPearson: SAVED,
+  kwPevhin: SAVED,
+  kwPyron: SAVED,
+  kwSprite: SAVED,
+  kwTigerKeratin: SAVED,
+  kwTigerMyth: SAVED,
+  kwYounger: SAVED,
+
+  // Nero persistent state
+  neIvexRememberedEndgame: NOT_SAVED,
+  nePlayerLeftStudy: NOT_SAVED,
+  nePlayerLeftStudyWithMirror: NOT_SAVED,
+  nePlayerReadGlitch: NOT_SAVED,
+
+  // Special
+  notes: EXCLUDED,
 
   // Nero endings unlocked
-  "nxBroken",
-  "nxCagedHarsh",
-  "nxCagedMild",
-  "nxTamedHarsh",
-  "nxTamedMild",
-]);
+  nxBroken: SAVED,
+  nxCagedHarsh: SAVED,
+  nxCagedMild: SAVED,
+  nxTamedHarsh: SAVED,
+  nxTamedMild: SAVED,
+}
+
 
 /**
  * `_m` is a JS global that's a proxy for State.metadata.
@@ -108,36 +114,37 @@ window._m = new Proxy({}, {
 
 function checkIsKnown(name, verb) {
   if (typeof name === "symbol") return;
-  if (unsavedVars.has(name)) return;
-  if (savedVars.has(name)) return;
-  throw new Error(`${verb} of nonexistent meta var _m.${name}`);
+  if (name in allMetavars) return;
+  throw new Error(`${verb} of nonexistent metavar _m.${name}`);
 }
 
 /** Returns an object-map of all current metadata entries. */
 MT.metaRecord = () => {
-  const record = {};
-  const entries = State.metadata.entries();
-  for (const [k, v] of entries) {
-    if (k === "notes") continue;
-    record[k] = v;
-  }
+  const entries = State.metadata.entries() || [];
+  const record = Object.fromEntries(entries);
   return record;
 };
 
-/** Erases all metadata, except notes */
+/** Erases all metadata, except EXCLUDED metavars */
 MT.metaClear = () => {
-  // Preserve notes
-  const notes = State.metadata.get("notes");
+  const entries = State.metadata.entries();
+  const preserve = [];
+  for (const [key, value] of entries) {
+    if (allMetavars[key] === EXCLUDED) {
+      preserve.push([key, value]);
+    }
+  }
   State.metadata.clear();
-  State.metadata.set("notes", notes);
+  for (const [key, value] of preserve) {
+    State.metadata.set(key, value);
+  }
 };
 
 function metaLoad(save) {
   if (!save.metadata) return;
+  const current = MT.metaRecord();
   for (const [key, value] of Object.entries(save.metadata)) {
-    if (!savedVars.has(key)) continue;
-    if (!value) continue;
-    if (!_m[key]) {
+    if (value && allMetavars[key] === SAVED && !current[key]) {
       _m[key] = value;
       // XXX announce the unlock
     }
@@ -148,7 +155,7 @@ function metaSave(save) {
   save.metadata ||= {};
   const entries = State.metadata.entries();
   for (const [key, value] of entries) {
-    if (savedVars.has(key)) {
+    if (allMetavars[key] === SAVED) {
       save.metadata[key] = value;
     }
   }
