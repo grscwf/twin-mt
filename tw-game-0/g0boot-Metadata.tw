@@ -1,137 +1,106 @@
 :: g0boot Metadata [inclusion] {"position":"235,425","size":"100,100"}
 <<script>>
-/* `_m` is a JS global that's a proxy for State.metadata. Details below. */
+/*----------------
+ * This module handles game metadata, including saving and loading
+ * the metadata in saved games.
+ */
 
-/** metavar is not added to saved games. */
-const NOT_SAVED = 0;
+/** Record of metadata key -> save type. */
+const knownKeys = {};
 
-/** metavar is added to saved games. */
+const UNSAVED = 0;
 const SAVED = 1;
+const PRESERVED = 2;
 
-/** metavar is not added to saved games, and not erased on reset.  */
-const EXCLUDED = 3;
+/** Throws an error if `key`` is not known. */
+function checkKey(key) {
+  if (key in knownKeys) return;
+  throw new Error(`Unknown metadata key ${key}`);
+}
 
-/** all metavars should be declared here. */
-const allMetavars = {
-  // Drekkar endings
-  dxEnthrallment: SAVED,
-  dxEnthrallmentLion: SAVED,
-  dxExtractionGentle: SAVED,
-  dxExtractionForceful: SAVED,
-  dxInterrogationFreeze: SAVED,
-  dxInterrogationMild: SAVED,
-  dxInterrogationRough: SAVED,
-  dxInterrogationShock: SAVED,
-  dxIvexEnthrallment: SAVED,
-  dxIvexExtraction: SAVED,
-  dxIvexPunishment: SAVED,
+/** Throws an error if `key` is already known. */
+function checkNotKey(key) {
+  if (!(key in knownKeys)) return;
+  throw new Error(`metadata key ${key} already exists.`);
+}
 
-  // Game persistent state
-  gmPassedContentWarning: NOT_SAVED,
-  gmTitleSeen: NOT_SAVED,
-  gmVisited: NOT_SAVED,
-
-  // Keywords unlocked
-  kwAntiMagic: SAVED,
-  kwDream: SAVED,
-  kwEndgame: SAVED,
-  kwGravity: SAVED,
-  kwItch: SAVED,
-  kwIvex: SAVED,
-  kwKelvin: SAVED,
-  kwKopic: SAVED,
-  kwMcBasics: SAVED,
-  kwMcInhibition: SAVED,
-  kwMcRepression: SAVED,
-  kwMcSubstitution: SAVED,
-  kwMica: SAVED,
-  kwNackle: SAVED,
-  kwOil: SAVED,
-  kwPearson: SAVED,
-  kwPevhin: SAVED,
-  kwPyron: SAVED,
-  kwSprite: SAVED,
-  kwTigerKeratin: SAVED,
-  kwTigerMyth: SAVED,
-  kwYounger: SAVED,
-
-  // Nero persistent state
-  neIvexRememberedEndgame: NOT_SAVED,
-  nePlayerLeftStudy: NOT_SAVED,
-  nePlayerLeftStudyWithMirror: NOT_SAVED,
-  nePlayerReadGlitch: NOT_SAVED,
-
-  // Notes do not get added to saved games, and do not get erased
-  notes: EXCLUDED,
-
-  // Nero endings unlocked
-  nxBroken: SAVED,
-  nxCagedHarsh: SAVED,
-  nxCagedMild: SAVED,
-  nxTamedHarsh: SAVED,
-  nxTamedMild: SAVED,
+/**
+ * Defines `key` to be unsaved metadata, which means:
+ * - it persists across game resets.
+ * - it doesn't get stored in saved games.
+ * - it gets deleted in a metadata reset.
+ * 
+*/
+MT.mdDefUnsaved = function(key) {
+  checkNotKey(key);
+  knownKeys[key] = UNSAVED;
 };
 
 /**
- * `_m` is a JS global that's a proxy for State.metadata.
- * 
- * The proxy is also installed as the SugarCube temp var `_m`,
- * so that the expression `_m.var` can be used anywhere.
- * 
- * Note, get is somewhat expensive, since it always reads and
- * deserializes from localStorage. Bulk read operations should maybe
- * filter State.metadata.entries() instead.
+ * Defines `key` to be saved metadata, which means;
+ * - it persists across game resets.
+ * - it gets stored in saved games.
+ * - loading a saved game will set (but not overwrite) its value.
+ * - it gets deleted in a metadata reset.
  */
-window._m = new Proxy({}, {
-  deleteProperty(target, prop) {
-    if (typeof prop === "symbol") {
-      return Reflect.deleteProperty(target, prop);
-    }
-    checkIsKnown(prop, "delete");
-    State.metadata.delete(prop);
-    return true;
-  },
-  get(target, prop, receiver) {
-    if (typeof prop === "symbol") {
-      return Reflect.get(target, prop, receiver);
-    }
-    checkIsKnown(prop, "get");
-    return State.metadata.get(prop);
-  },
-  // TODO: implement getOwnPropertyDescriptor and ownKeys to allow enumeration
-  set(target, prop, value, receiver) {
-    if (typeof prop === "symbol") {
-      return Reflect.set(target, prop, value, receiver);
-    }
-    checkIsKnown(prop, "set");
-    if (value == null || value === false) {
-      State.metadata.delete(prop);
-    } else {
-      State.metadata.set(prop, value);
-    }
-    return value;
-  },
-});
-
-function checkIsKnown(name, verb) {
-  if (typeof name === "symbol") return;
-  if (name in allMetavars) return;
-  throw new Error(`${verb} of nonexistent metavar _m.${name}`);
-}
-
-/** Returns an object-map of all current metadata entries. */
-MT.metaRecord = () => {
-  const entries = State.metadata.entries() || [];
-  const record = Object.fromEntries(entries);
-  return record;
+MT.mdDefSaved = function(key) {
+  checkNotKey(key);
+  knownKeys[key] = SAVED;
 };
 
-/** Erases all metadata, except EXCLUDED metavars */
-MT.metaClear = () => {
-  const entries = State.metadata.entries();
+/**
+ * Defines `key` to be preserved metadata, which means:
+ * - it persists across game resets.
+ * - it doesn't get stored in saved games.
+ * - it doesn't get deleted in a metadata reset.
+ */
+MT.mdDefPreserved = function(key) {
+  checkNotKey(key);
+  knownKeys[key] = PRESERVED;
+};
+
+/**
+ * Returns the value of metadata `key`.
+ * 
+ * Note, each call will always decompress and deserialize
+ * all metadata from localStorage, so it's somewhat expensive.
+ * Use `MT.mdRecord` if you want to read more than a few values at a time.
+ */
+MT.mdGet = function(key) {
+  checkKey(key);
+  return State.metadata.get(key);
+};
+
+/**
+ * Sets metadata `key` to `value`. Any false-y value will delete the key.
+ * 
+ * Note, each call will always decompress and deserialize
+ * all metadata from localStorage, then reserialize and recompress
+ * back to localStorage. So this is very expensive, and SugarCube
+ * doesn't give us a way to batch multiple set operations
+ * (other than bypassing SugarCube and doing it ourselves.)
+ */
+MT.mdSet = function(key, value) {
+  checkKey(key);
+  if (value) {
+    State.metadata.set(key, value);
+  } else {
+    State.metadata.delete(key);
+  }
+};
+
+/** Returns a record (object-map) of all metadata keys and values. */
+MT.mdRecord = function() {
+  return Object.fromEntries(State.metadata.entries());
+};
+
+/** Deletes all metadata, except for PRESERVED keys and unknown keys. */
+MT.mdReset = function() {
   const preserve = [];
+  const entries = State.metadata.entries();
   for (const [key, value] of entries) {
-    if (allMetavars[key] === EXCLUDED) {
+    checkKey(key);
+    if (knownKeys[key] === PRESERVE) {
       preserve.push([key, value]);
     }
   }
@@ -141,53 +110,36 @@ MT.metaClear = () => {
   }
 };
 
-function metaLoad(save) {
+/*----------------
+ * Saving and loading metadata.
+ */
+
+function mdLoad(save) {
   if (!save.metadata) return;
-  const current = MT.metaRecord();
+  const current = MT.mdRecord();
   for (const [key, value] of Object.entries(save.metadata)) {
-    if (value && allMetavars[key] === SAVED && !current[key]) {
-      _m[key] = value;
+    if (value && knownKeys[key] === SAVED && !current[key]) {
+      State.metadata.set(key, value);
       // XXX announce the unlock
     }
   }
 }
 
-function metaSave(save) {
+function mdSave(save) {
   save.metadata ||= {};
   const entries = State.metadata.entries();
   for (const [key, value] of entries) {
-    if (allMetavars[key] === SAVED) {
+    if (knownKeys[key] === SAVED) {
       save.metadata[key] = value;
     }
   }
 }
 
-function metaInit() {
-  $(document).on(":passageinit", () => {
-    State.temporary.m = _m;
-  });
-  Save.onLoad.add(metaLoad);
-  Save.onSave.add(metaSave);
+function mdInit() {
+  Save.onLoad.add(mdLoad);
+  Save.onSave.add(mdSave);
 }
 
-/**
- * <<meta-ending [good|bad] varname text>>
- * Announce an ending. If it's locked, unlock it, and announce the unlocking.
- */
-Macro.add("meta-ending", {
-  handler: function() {
-    const [type, vname, text] = this.args;
-    if (!_m[vname]) {
-      $(this.output).append(
-        `<meta-text>${text} is now unlocked in the Archive.</meta-text>`);
-      _m[vname] = true;
-    } else {
-      $(this.output).append(
-        `<meta-ending-${type}>${text}</meta-ending-${type}>`);
-    }
-  }
-});
-
-metaInit();
+mdInit();
 
 <</script>>
