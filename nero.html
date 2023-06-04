@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5959,10 +5959,10 @@ Macro.add(&quot;arc-set-barbs&quot;, {
 Macro.add(&quot;meta-ending&quot;, {
   handler: function() {
     const [type, vname, text] = this.args;
-    if (!_m[vname]) {
+    if (!MT.mdGet(vname)) {
       $(this.output).append(
         `&lt;meta-text&gt;${text} is now unlocked in the Archive.&lt;/meta-text&gt;`);
-      _m[vname] = true;
+      MT.mdSet(vname, 1);
     } else {
       $(this.output).append(
         `&lt;meta-ending-${type}&gt;${text}&lt;/meta-ending-${type}&gt;`);
@@ -8225,28 +8225,28 @@ $(document).on(&quot;:passageend&quot;, checkConstraints);
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="248" name="g0init Nero Ending" tags="inclusion" position="1475,1475" size="100,100">&lt;&lt;script&gt;&gt;
 
 const endings = {
-  broken: {
+  nxBroken: {
     title: &quot;Challenge Ending: Broken&quot;,
     wip: true,
     passages: [
       &quot;n0a Broken WIP&quot;,
     ]
   },
-  caged_harsh: {
+  nxCagedHarsh: {
     title: &quot;Bad Ending: Caged (Harsh)&quot;,
     wip: true,
     passages: [
       &quot;n0a Caged Harsh WIP&quot;
     ]
   },
-  caged_mild: {
+  nxCagedMild: {
     title: &quot;Bad Ending: Caged (Mild)&quot;,
     wip: true,
     passages: [
       &quot;n0a Caged Mild WIP&quot;,
     ]
   },
-  tamed_harsh: {
+  nxTamedHarsh: {
     title: &quot;Bad Ending: Tamed (Harsh)&quot;,
     passages: [
       &quot;n9a Tamed&quot;,
@@ -8263,7 +8263,7 @@ const endings = {
       &quot;n9a Tamed End 2&quot;,
     ]
   },
-  tamed_mild: {
+  nxTamedMild: {
     title: &quot;Bad Ending: Tamed (Mild)&quot;,
     passages: [
       &quot;n9a Tamed&quot;,
@@ -8312,6 +8312,14 @@ MT.showEnding = info =&gt; {
   mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
   return mkp;
 };
+
+function nxInit() {
+  for (const key of Object.keys(endings)) {
+    MT.mdDefSaved(key);
+  }
+}
+
+nxInit();
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="g0init Nero Glitch" tags="inclusion" position="1600,1475" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
@@ -14968,10 +14976,6 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 ?P
 [[g1m Test fade-in]]
 
-&lt;&lt;set _m.kwPearson = (_m.kwPearson || 0) + 1&gt;&gt;
-
-&lt;br&gt;hello&lt;br&gt;world (_m.kwPearson)
-
 &lt;&lt;script&gt;&gt;
   console.log(1);
   // hello
@@ -15142,8 +15146,8 @@ The story of this failure will be in the public release.
   const V = State.variables;
   const T = State.temporary;
   
-  T.tamed = _m.nxTamedHarsh || _m.nxTamedMild;
-  T.caged = _m.nxCagedHarsh || _m.nxCagedMild;
+  T.tamed = MT.mdGet(&quot;nxTamedHarsh&quot;) || MT.mdGet(&quot;nxTamedMild&quot;);
+  T.caged = MT.mdGet(&quot;nxCagedHarsh&quot;) || MT.mdGet(&quot;nxCagedMild&quot;);
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;arc-ending _tamed
@@ -15154,9 +15158,9 @@ The story of this failure will be in the public release.
   Struggling is hopeless...
 &lt;&lt;arc-variants&gt;&gt;
   &lt;&lt;arc-select n8_tamedVariant &quot;Variant:&quot;&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; _m.nxTamedMild&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; `MT.mdGet(&quot;nxTamedMild&quot;)`&gt;&gt;
       Ivex enjoys cooperative victims...
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; _m.nxTamedHarsh&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; `MT.mdGet(&quot;nxTamedHarsh&quot;)`&gt;&gt;
       Ivex enjoys stubborn victims...
   &lt;&lt;/arc-select&gt;&gt;
   &lt;&lt;arc-barbs n8_tamedBarbs&gt;&gt;
@@ -15170,9 +15174,9 @@ The story of this failure will be in the public release.
   Self-control is overrated...
 &lt;&lt;arc-variants&gt;&gt;
   &lt;&lt;arc-select n8_cagedVariant &quot;Variant:&quot;&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; _m.nxCagedMild&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; `MT.mdGet(&quot;nxCagedMild&quot;)`&gt;&gt;
       Sometimes all that&#39;s needed is a paw...
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; _m.nxCagedHarsh&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; `MT.mdGet(&quot;nxCagedHarsh&quot;)`&gt;&gt;
       &lt;&lt;if !$n1_wandAsked&gt;&gt;
         What does Ivex say about his wand?
       &lt;&lt;else&gt;&gt;
@@ -15182,14 +15186,14 @@ The story of this failure will be in the public release.
   /* &lt;&lt;arc-barbs n8_cagedBarbs&gt;&gt; */
 &lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;arc-ending _m.nxBroken
+&lt;&lt;arc-ending `MT.mdGet(&quot;nxBroken&quot;)`
   [[`Challenge Ending: Broken \ud83d\udea7`|n0a Nero Ending]]
   &quot;&quot;
   &quot;$t_choice = [&#39;broken&#39;, $n8_brokenBarbs]&quot;
 &gt;&gt;
   &lt;&lt;if !_tamed&gt;&gt;
     Another hint will appear after Nero has a disturbing dream...
-  &lt;&lt;elseif !_m.nxCagedHarsh&gt;&gt;
+  &lt;&lt;elseif !MT.mdGet(&quot;nxCagedHarsh&quot;)&gt;&gt;
     Another hint will appear after Nero gets stuck in a red glow...
   &lt;&lt;elseif !$n0_playerLeftStudyWithMirror&gt;&gt;
     Another hint will appear after Nero stops saying please...
@@ -30161,7 +30165,7 @@ that caused the crystals to disappear, taking his genitals with them.
   &lt;!-- weird special case, since this kw is on last page of another kw --&gt;
   &lt;&lt;if $t_kwAnnounce != null&gt;&gt;
     &lt;&lt;set $t_kwAnnounce = null&gt;&gt;
-    &lt;&lt;set _m.kwDream = false&gt;&gt;
+    &lt;&lt;set MT.mdSet(&quot;kwDream&quot;, false)&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 
@@ -40551,7 +40555,7 @@ And your teeth are such a delight.
 Their rubbing sends perfect little shivers into my cock.
 Of course, it helps that I&#39;ve enhanced your teeth
 with a simple spell that makes their touch the smoothest glide.
-&lt;&lt;if _m.kwOil || _m.kwYounger&gt;&gt;
+&lt;&lt;if MT.mdGet(&quot;kwOil&quot;) || MT.mdGet(&quot;kwYounger&quot;)&gt;&gt;
   You might have heard of it.
 &lt;&lt;else&gt;&gt;
   You probably haven&#39;t heard of it.

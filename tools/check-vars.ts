@@ -14,11 +14,12 @@ const varPatterns = [
   /\b(n[0-9]_\w+):/g,
   /\b(t_\w+):/g,
   /\bState[.]variables[.](\w+)/g,
-  /\b_m[.]([A-Za-z]\w*)/g,
-  // /[<]arc-barbs\s+(\w+)/g,   // XXX should check once-only
+  /\b(?:mdSet|mdGet)\("(\w+)"/g,
+  /\b(?:mdSet|mdGet)\('(\w+)'/g,
+  /[<]arc-barbs\s+(\w+)/g,
   /[<]arc-select\s+(\w+)/g,
   /[<]meta-ending\s+\w+\s+(\w+)/g,
-  // /[<]random-once\s+(\w+)/g, // XXX should check once-only
+  /[<]random-once\s+(\w+)/g,
   /[<]state-load\s+(\w+)/g,
   /[<]state-save\s+(\w+)/g,
   /[<]vi-always\s+(\w+)/g,
