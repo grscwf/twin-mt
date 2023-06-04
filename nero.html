@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5576,6 +5576,7 @@ const allMetavars = {
   // Game persistent state
   gmPassedContentWarning: NOT_SAVED,
   gmTitleSeen: NOT_SAVED,
+  gmVisited: NOT_SAVED,
 
   // Keywords unlocked
   kwAntiMagic: SAVED,
@@ -5607,7 +5608,7 @@ const allMetavars = {
   nePlayerLeftStudyWithMirror: NOT_SAVED,
   nePlayerReadGlitch: NOT_SAVED,
 
-  // Special
+  // Notes do not get added to saved games, and do not get erased
   notes: EXCLUDED,
 
   // Nero endings unlocked
@@ -5616,8 +5617,7 @@ const allMetavars = {
   nxCagedMild: SAVED,
   nxTamedHarsh: SAVED,
   nxTamedMild: SAVED,
-}
-
+};
 
 /**
  * `_m` is a JS global that&#39;s a proxy for State.metadata.
@@ -5636,6 +5636,7 @@ window._m = new Proxy({}, {
     }
     checkIsKnown(prop, &quot;delete&quot;);
     State.metadata.delete(prop);
+    return true;
   },
   get(target, prop, receiver) {
     if (typeof prop === &quot;symbol&quot;) {
@@ -5715,6 +5716,24 @@ function metaInit() {
   Save.onLoad.add(metaLoad);
   Save.onSave.add(metaSave);
 }
+
+/**
+ * &lt;&lt;meta-ending [good|bad] varname text&gt;&gt;
+ * Announce an ending. If it&#39;s locked, unlock it, and announce the unlocking.
+ */
+Macro.add(&quot;meta-ending&quot;, {
+  handler: function() {
+    const [type, vname, text] = this.args;
+    if (!_m[vname]) {
+      $(this.output).append(
+        `&lt;meta-text&gt;${text} is now unlocked in the Archive.&lt;/meta-text&gt;`);
+      _m[vname] = true;
+    } else {
+      $(this.output).append(
+        `&lt;meta-ending-${type}&gt;${text}&lt;/meta-ending-${type}&gt;`);
+    }
+  }
+});
 
 metaInit();
 
@@ -11108,33 +11127,7 @@ meta-ending-good {
   font-weight: bold;
 }
 
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-function announceEnding(dest, type, vname, text) {
-  const V = State.variables;
-  if (!V[vname]) {
-    $(dest).append(
-      `&lt;meta-text&gt;${text} is now unlocked in the Archive.&lt;/meta-text&gt;`);
-    V[vname] = true;
-  } else {
-    $(dest).append(`&lt;meta-ending-${type}&gt;${text}&lt;/meta-ending-${type}&gt;`);
-  }
-}
-
-/**
- * &lt;&lt;meta-ending [good|bad] varname1 text1&gt;&gt;
- * Announce an ending. If it&#39;s locked, unlock it, and announce the unlocking.
- */
-Macro.add(&quot;meta-ending&quot;, {
-  handler: function() {
-    const [type, vn1, text1] = this.args;
-    const V = State.variables;
-    announceEnding(this.output, type, vn1, text1);
-  }
-});
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="267" name="g0init UI Style" tags="inclusion" position="300,1125" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;</tw-passagedata><tw-passagedata pid="267" name="g0init UI Style" tags="inclusion" position="300,1125" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 #debug-bar-hint {
   display: none;
@@ -11813,22 +11806,23 @@ MT.visitedHas = title =&gt; visited.has(title);
 
 MT.visitedClear = () =&gt; {
   visited = new Set();
-  State.metadata.delete(&quot;visited&quot;);
+  delete _m.gmVisited;
 };
 
 function add(title) {
   visited.add(title);
-  State.metadata.set(&quot;visited&quot;, visited);
+  _m.gmVisited = visited; // makes a copy
 };
 
 function initVisited() {
   // remove legacy state
   localStorage.removeItem(&quot;vp-1&quot;);
   localStorage.removeItem(&quot;vp-marks-enabled&quot;);
+  State.metadata.delete(&quot;visited&quot;);
 
   if (!setup.debug) return;
 
-  const v = State.metadata.get(&quot;visited&quot;);
+  const v = _m.gmVisited;
   if (v instanceof Set) {
     visited = v;
   }
@@ -15147,7 +15141,7 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 ?construction
 
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;meta-ending bad n9_broken &quot;Challenge Ending: Broken&quot;&gt;&gt;
+  &lt;&lt;meta-ending bad nxBroken &quot;Challenge Ending: Broken&quot;&gt;&gt;
   &lt;&lt;arc-set-barbs n8_brokenBarbs&gt;&gt;
   ?P
 &lt;&lt;/arc-skip&gt;&gt;
@@ -15195,7 +15189,7 @@ This story will be in the public release.
 ?construction
 
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;meta-ending bad n9_cagedHarsh &quot;Bad Ending: Caged (Harsh)&quot;&gt;&gt;
+  &lt;&lt;meta-ending bad nxCagedHarsh &quot;Bad Ending: Caged (Harsh)&quot;&gt;&gt;
   &lt;&lt;arc-set-barbs n8_cagedBarbs&gt;&gt;
 
   ?P
@@ -15243,7 +15237,7 @@ The story of this failure will be in the public release.
 ?construction
 
 &lt;&lt;arc-skip&gt;&gt;
-  &lt;&lt;meta-ending bad n9_cagedMild &quot;Bad Ending: Caged (Mild)&quot;&gt;&gt;
+  &lt;&lt;meta-ending bad nxCagedMild &quot;Bad Ending: Caged (Mild)&quot;&gt;&gt;
   &lt;&lt;arc-set-barbs n8_cagedBarbs&gt;&gt;
   ?P
 &lt;&lt;/arc-skip&gt;&gt;
@@ -15287,15 +15281,14 @@ The story of this failure will be in the public release.
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="292" name="n0a Nero Ending Index" tags="mt-ready inclusion" position="800,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;!--
-  n9_ vars are endings and keywords that are unlocked.
   n8_ vars are selected options that persist.
 --&gt;
 &lt;&lt;script&gt;&gt;
   const V = State.variables;
   const T = State.temporary;
   
-  T.tamed = V.n9_tamedHarsh || V.n9_tamedMild;
-  T.caged = V.n9_cagedHarsh || V.n9_cagedMild;
+  T.tamed = _m.nxTamedHarsh || _m.nxTamedMild;
+  T.caged = _m.nxCagedHarsh || _m.nxCagedMild;
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;arc-ending _tamed
@@ -15306,9 +15299,9 @@ The story of this failure will be in the public release.
   Struggling is hopeless...
 &lt;&lt;arc-variants&gt;&gt;
   &lt;&lt;arc-select n8_tamedVariant &quot;Variant:&quot;&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; $n9_tamedMild&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; _m.nxTamedMild&gt;&gt;
       Ivex enjoys cooperative victims...
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; $n9_tamedHarsh&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; _m.nxTamedHarsh&gt;&gt;
       Ivex enjoys stubborn victims...
   &lt;&lt;/arc-select&gt;&gt;
   &lt;&lt;arc-barbs n8_tamedBarbs&gt;&gt;
@@ -15322,9 +15315,9 @@ The story of this failure will be in the public release.
   Self-control is overrated...
 &lt;&lt;arc-variants&gt;&gt;
   &lt;&lt;arc-select n8_cagedVariant &quot;Variant:&quot;&gt;&gt;
-    &lt;&lt;arc-option mild &quot;Mild&quot; $n9_cagedMild&gt;&gt;
+    &lt;&lt;arc-option mild &quot;Mild&quot; _m.nxCagedMild&gt;&gt;
       Sometimes all that&#39;s needed is a paw...
-    &lt;&lt;arc-option harsh &quot;Harsh&quot; $n9_cagedHarsh&gt;&gt;
+    &lt;&lt;arc-option harsh &quot;Harsh&quot; _m.nxCagedHarsh&gt;&gt;
       &lt;&lt;if !$n1_wandAsked&gt;&gt;
         What does Ivex say about his wand?
       &lt;&lt;else&gt;&gt;
@@ -15334,14 +15327,14 @@ The story of this failure will be in the public release.
   /* &lt;&lt;arc-barbs n8_cagedBarbs&gt;&gt; */
 &lt;&lt;/arc-ending&gt;&gt;
 
-&lt;&lt;arc-ending $n9_broken
+&lt;&lt;arc-ending _m.nxBroken
   [[`Challenge Ending: Broken \ud83d\udea7`|n0a Nero Ending]]
   &quot;&quot;
   &quot;$t_choice = [&#39;broken&#39;, $n8_brokenBarbs]&quot;
 &gt;&gt;
   &lt;&lt;if !_tamed&gt;&gt;
     Another hint will appear after Nero has a disturbing dream...
-  &lt;&lt;elseif !$n9_cagedHarsh&gt;&gt;
+  &lt;&lt;elseif !_m.nxCagedHarsh&gt;&gt;
     Another hint will appear after Nero gets stuck in a red glow...
   &lt;&lt;elseif !$n0_playerLeftStudyWithMirror&gt;&gt;
     Another hint will appear after Nero stops saying please...
@@ -41588,9 +41581,9 @@ The mental chaos becomes overwhelming. The wolf passes out.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="730" name="n9a Tamed Restart" tags="mt-ready roam-stop" position="9900,2800" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;if $t_endingVariant === &quot;harsh&quot;&gt;&gt;
-  &lt;&lt;meta-ending bad n9_tamedHarsh &quot;Bad Ending: Tamed (Harsh)&quot;&gt;&gt;
+  &lt;&lt;meta-ending bad nxTamedHarsh &quot;Bad Ending: Tamed (Harsh)&quot;&gt;&gt;
 &lt;&lt;else&gt;&gt;
-  &lt;&lt;meta-ending bad n9_tamedMild &quot;Bad Ending: Tamed (Mild)&quot;&gt;&gt;
+  &lt;&lt;meta-ending bad nxTamedMild &quot;Bad Ending: Tamed (Mild)&quot;&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 &lt;&lt;arc-set-barbs n8_tamedBarbs&gt;&gt;
 
@@ -41714,7 +41707,7 @@ chastity is too entwined with his life essence, there isn&#39;t a simple solutio
 nero is ashamed, doesn&#39;t want to stay, runs back before ivex gets mad.
 gives up, finds an escape in mental suicide with the taming collar.
 
-&lt;&lt;meta-ending bad n9_broken &quot;Challenge Ending: Broken&quot;&gt;&gt;
+&lt;&lt;meta-ending bad nxBroken &quot;Challenge Ending: Broken&quot;&gt;&gt;
 &lt;&lt;arc-set-barbs n8_brokenBarbs&gt;&gt;
 
 &lt;ul class=actions&gt;
@@ -41752,7 +41745,7 @@ has lots of superstitions about what is needed to win.
 
 blank shows up in an alone period, nero doesn&#39;t break pose
 
-&lt;&lt;meta-ending bad n9_cagedHarsh &quot;Bad Ending: Caged (Harsh)&quot;&gt;&gt;
+&lt;&lt;meta-ending bad nxCagedHarsh &quot;Bad Ending: Caged (Harsh)&quot;&gt;&gt;
 &lt;&lt;arc-set-barbs n8_cagedBarbs&gt;&gt;
 
 &lt;ul class=actions&gt;
@@ -41841,7 +41834,7 @@ eventually tease reader with cock.
 nero becomes obsessed and tries to become
 the best thirsty sub. never fulfill it.
 
-&lt;&lt;meta-ending bad n9_cagedMild &quot;Bad Ending: Caged (Mild)&quot;&gt;&gt;
+&lt;&lt;meta-ending bad nxCagedMild &quot;Bad Ending: Caged (Mild)&quot;&gt;&gt;
 &lt;&lt;arc-set-barbs n8_cagedBarbs&gt;&gt;
 
 &lt;ul class=actions&gt;

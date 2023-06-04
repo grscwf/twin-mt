@@ -14,6 +14,7 @@ const varPatterns = [
   /\b(n[0-9]_\w+):/g,
   /\b(t_\w+):/g,
   /\bState[.]variables[.](\w+)/g,
+  /\b_m[.]([A-Za-z]\w*)/g,
   // /[<]arc-barbs\s+(\w+)/g,   // XXX should check once-only
   /[<]arc-select\s+(\w+)/g,
   /[<]meta-ending\s+\w+\s+(\w+)/g,

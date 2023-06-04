@@ -29,6 +29,7 @@ const allMetavars = {
   // Game persistent state
   gmPassedContentWarning: NOT_SAVED,
   gmTitleSeen: NOT_SAVED,
+  gmVisited: NOT_SAVED,
 
   // Keywords unlocked
   kwAntiMagic: SAVED,
@@ -60,7 +61,7 @@ const allMetavars = {
   nePlayerLeftStudyWithMirror: NOT_SAVED,
   nePlayerReadGlitch: NOT_SAVED,
 
-  // Special
+  // Notes do not get added to saved games, and do not get erased
   notes: EXCLUDED,
 
   // Nero endings unlocked
@@ -69,8 +70,7 @@ const allMetavars = {
   nxCagedMild: SAVED,
   nxTamedHarsh: SAVED,
   nxTamedMild: SAVED,
-}
-
+};
 
 /**
  * `_m` is a JS global that's a proxy for State.metadata.
@@ -89,6 +89,7 @@ window._m = new Proxy({}, {
     }
     checkIsKnown(prop, "delete");
     State.metadata.delete(prop);
+    return true;
   },
   get(target, prop, receiver) {
     if (typeof prop === "symbol") {
@@ -168,6 +169,24 @@ function metaInit() {
   Save.onLoad.add(metaLoad);
   Save.onSave.add(metaSave);
 }
+
+/**
+ * <<meta-ending [good|bad] varname text>>
+ * Announce an ending. If it's locked, unlock it, and announce the unlocking.
+ */
+Macro.add("meta-ending", {
+  handler: function() {
+    const [type, vname, text] = this.args;
+    if (!_m[vname]) {
+      $(this.output).append(
+        `<meta-text>${text} is now unlocked in the Archive.</meta-text>`);
+      _m[vname] = true;
+    } else {
+      $(this.output).append(
+        `<meta-ending-${type}>${text}</meta-ending-${type}>`);
+    }
+  }
+});
 
 metaInit();
 
