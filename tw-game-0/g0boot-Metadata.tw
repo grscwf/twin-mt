@@ -12,16 +12,22 @@ const UNSAVED = 0;
 const SAVED = 1;
 const PRESERVED = 2;
 
-/** Throws an error if `key`` is not known. */
-function checkKey(key) {
-  if (key in knownKeys) return;
-  throw new Error(`Unknown metadata key ${key}`);
+/** If `key` is not known, reports a warning and returns true. */
+function warnUnknownKey(key) {
+  if (!(key in knownKeys)) {
+    MT.diag(`Unknown metadata key ${key}`);
+    return true;
+  }
+  return false;
 }
 
-/** Throws an error if `key` is already known. */
-function checkNotKey(key) {
-  if (!(key in knownKeys)) return;
-  throw new Error(`metadata key ${key} already exists.`);
+/** If `key` is already known, reports a warning and returns true. */
+function warnKnownKey(key) {
+  if (key in knownKeys) {
+    MT.diag(`metadata key ${key} already exists.`);
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -32,7 +38,7 @@ function checkNotKey(key) {
  * 
 */
 MT.mdDefUnsaved = function(key) {
-  checkNotKey(key);
+  if (warnKnownKey(key)) return;
   knownKeys[key] = UNSAVED;
 };
 
@@ -44,7 +50,7 @@ MT.mdDefUnsaved = function(key) {
  * - it gets deleted in a metadata reset.
  */
 MT.mdDefSaved = function(key) {
-  checkNotKey(key);
+  if (warnKnownKey(key)) return;
   knownKeys[key] = SAVED;
 };
 
@@ -55,7 +61,7 @@ MT.mdDefSaved = function(key) {
  * - it doesn't get deleted in a metadata reset.
  */
 MT.mdDefPreserved = function(key) {
-  checkNotKey(key);
+  if (warnKnownKey(key)) return;
   knownKeys[key] = PRESERVED;
 };
 
@@ -67,7 +73,7 @@ MT.mdDefPreserved = function(key) {
  * Use `MT.mdRecord` if you want to read more than a few values at a time.
  */
 MT.mdGet = function(key) {
-  checkKey(key);
+  warnUnknownKey(key);
   return State.metadata.get(key);
 };
 
@@ -81,7 +87,7 @@ MT.mdGet = function(key) {
  * (other than bypassing SugarCube and doing it ourselves.)
  */
 MT.mdSet = function(key, value) {
-  checkKey(key);
+  warnUnknownKey(key);
   if (value) {
     State.metadata.set(key, value);
   } else {
@@ -99,7 +105,7 @@ MT.mdReset = function() {
   const preserve = [];
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
-    checkKey(key);
+    warnUnknownKey(key);
     if (knownKeys[key] === PRESERVE) {
       preserve.push([key, value]);
     }
