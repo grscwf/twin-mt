@@ -14,23 +14,31 @@ hr.arc-entry-sep {
 const T = State.temporary;
 const V = State.variables;
 
-const [name, barbs] = V.t_choice;
+const [name, barbOption] = V.t_choice;
+const barbs = barbOption === "barbs";
 
 T.notesVariant = name;
 
-const info = MT.neroKeywords[name];
+const info = MT.neroKeywords[name] || MT.neroEndings[name];
 if (info == null) {
   throw new Error(`Unknown archive entry ${name}`);
 }
 
-$("<div class=ui-title>").text(info.title).appendTo(output);
+const title = info.title.replace(/%barbs\b/, barbs ? "Barbs" : "Smooth");
+$("<div class=ui-title>").text(title).appendTo(output);
+
 $("<hr>").appendTo(output);
+
+const code = `
+  $n1_barbs = ${barbs};
+  $n1_castEndgame = ${V.n1_castEndgame};
+`;
 
 info.passages.forEach((passage, i) => {
   if (i !== 0) {
     $("<hr class=arc-entry-sep>").appendTo(output);
   }
-  MT.arcRender(output, passage);
+  MT.arcRender(output, passage, code);
 });
 
 <</script>>
