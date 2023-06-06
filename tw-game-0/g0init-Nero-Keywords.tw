@@ -1,7 +1,7 @@
 :: g0init Nero Keywords [inclusion] {"position":"1100,1600","size":"100,100"}
 <<script>>
 
-const neroKeywords = MT.neroKeywords = {
+MT.neroKeywords = {
   nk_AntiMagic: {
     title: "Anti-Magic Fields",
     passages: [
@@ -187,7 +187,7 @@ MT.neroKeywordCount = () => {
   const V = State.variables;
   const mr = MT.mdRecord();
   let unlocked = 0;
-  const keys = Object.keys(neroKeywords);
+  const keys = Object.keys(MT.neroKeywords);
   for (const key of keys) {
     if (mr[key]) unlocked++;
   }
@@ -203,10 +203,10 @@ MT.neroKeywordList = () => {
   const V = State.variables;
   const T = State.temporary;
 
-  const keys = Object.keys(neroKeywords);
+  const keys = Object.keys(MT.neroKeywords);
   keys.sort((a, b) => {
-    const at = neroKeywords[a].title;
-    const bt = neroKeywords[b].title;
+    const at = MT.neroKeywords[a].title;
+    const bt = MT.neroKeywords[b].title;
     return at < bt ? -1 : at > bt ? +1 : 0;
   });
 
@@ -219,7 +219,7 @@ MT.neroKeywordList = () => {
     if (!revealAll && !mr[key]) continue;
     anyShown = true;
     mkp += `<<arc-ending ${mr[key]}`;
-    mkp += ` [\[${neroKeywords[key].title}|g1m Archives Entry]]`;
+    mkp += ` [\[${MT.neroKeywords[key].title}|g1m Archives Entry]]`;
     mkp += ` "" "$t_choice = ['${key}']">>`;
     mkp += `<</arc-ending>>\n`;
   }
@@ -237,7 +237,7 @@ MT.neroKeywordList = () => {
 Macro.add("kw-unlock-soon", {
   handler: function() {
     const [key] = this.args;
-    const kw = neroKeywords[key];
+    const kw = MT.neroKeywords[key];
     if (kw == null) {
       throw new Error(`kw-unlock-soon ${key} not found`);
     }
@@ -263,7 +263,7 @@ Macro.add("kw-announce", {
     if (key == null) return;
     
     delete V.t_kwAnnounce;
-    const kw = neroKeywords[key];
+    const kw = MT.neroKeywords[key];
     if (kw == null) {
       throw new Error(`kw-announce ${key} not found`);
     }
@@ -279,9 +279,7 @@ Macro.add("kw-announce", {
 });
 
 function neroKeywordInit() {
-  for (const key of Object.keys(neroKeywords)) {
-    MT.mdDefSaved(key);
-  }
+  Object.keys(MT.neroKeywords).map(MT.mdDefSaved);
 
   $(document).on(":passageend", () => {
     const T = State.temporary;
