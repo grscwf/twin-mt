@@ -1,55 +1,49 @@
-:: g0init Archive [inclusion] {"position":"175,625","size":"100,100"}
+:: g0init Archives [inclusion] {"position":"175,625","size":"100,100"}
 <<append head>><style>
-  .arc-disabled {
-    opacity: 0.4;
-    pointer-events: none;
-  }
-  .arc-picklocked {
-    opacity: 0.6;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: #990;
-  }
-  .arc-title {
-    font-weight: bold;
-  }
-  .arc-select {
-    margin-left: 1.5rem;
-  }
-  .arc-select label {
-    margin-left: 1em;
-    white-space: nowrap;
-  }
-  .arc-select input[type=radio] {
-    margin-right: 0.4em;
-  }
-  .arc-hint {
-    font-size: small;
-    font-style: italic;
-    margin-left: 1.5rem;
-  }
+
+.arc-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.arc-picklocked {
+  opacity: 0.6;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: #990;
+}
+.arc-title {
+  font-weight: bold;
+}
+.arc-select {
+  margin-left: 1.5rem;
+}
+.arc-select label {
+  margin-left: 1em;
+  white-space: nowrap;
+}
+.arc-select input[type=radio] {
+  margin-right: 0.4em;
+}
+.arc-hint {
+  font-size: small;
+  font-style: italic;
+  margin-left: 1.5rem;
+}
+
 </style><</append>>
 
 <<script>>
-
-/** Clear State.temporary and copy temp into it. */
-const setTemporary = temp => {
-  State.clearTemporary();
-  const T = State.temporary;
-  for (const [k, v] of Object.entries(temp)) {
-    T[k] = v;
-  }
-};
 
 /**
  * Create a scratch state with t_isArchive === true,
  * evaluate script, then render passage to dest.
  */
-MT.arcInclude = (dest, passage, script) => {
+MT.arcRender = (dest, passage, script) => {
   MT.untraced(() => {
     const text = Story.get(passage).text;
-    const saveVars = State.active.variables;
-    const saveTemp = clone(State.temporary);
+    // we can set the variables obj, but we can't set the temporaries obj
+    const savedVars = State.active.variables;
+    const savedTemp = Object.entries(State.temporary);
     try {
       State.active.variables = { t_isArchive: true };
       State.clearTemporary();
@@ -58,8 +52,11 @@ MT.arcInclude = (dest, passage, script) => {
       }
       $(dest).wiki(text);
     } finally {
-      State.active.variables = saveVars;
-      setTemporary(saveTemp);
+      State.active.variables = savedVars;
+      State.clearTemporary();
+      for (const [k, v] of savedTemp) {
+        State.temporary[k] = v;
+      }
     }
   });
 };
@@ -101,7 +98,7 @@ Macro.add("arc-include", {
   handler: function() {
     const [link, script] = this.args;
     const passage = link.isLink ? link.link : String(link);
-    MT.arcInclude(this.output, passage, script);
+    MT.arcRender(this.output, passage, script);
   }
 });
 

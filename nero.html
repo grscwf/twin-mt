@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5681,57 +5681,51 @@ function mdInit() {
 
 mdInit();
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="230" name="g0init Archive" tags="inclusion" position="175,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-  .arc-disabled {
-    opacity: 0.4;
-    pointer-events: none;
-  }
-  .arc-picklocked {
-    opacity: 0.6;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: #990;
-  }
-  .arc-title {
-    font-weight: bold;
-  }
-  .arc-select {
-    margin-left: 1.5rem;
-  }
-  .arc-select label {
-    margin-left: 1em;
-    white-space: nowrap;
-  }
-  .arc-select input[type=radio] {
-    margin-right: 0.4em;
-  }
-  .arc-hint {
-    font-size: small;
-    font-style: italic;
-    margin-left: 1.5rem;
-  }
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="230" name="g0init Archives" tags="inclusion" position="175,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+.arc-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.arc-picklocked {
+  opacity: 0.6;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: #990;
+}
+.arc-title {
+  font-weight: bold;
+}
+.arc-select {
+  margin-left: 1.5rem;
+}
+.arc-select label {
+  margin-left: 1em;
+  white-space: nowrap;
+}
+.arc-select input[type=radio] {
+  margin-right: 0.4em;
+}
+.arc-hint {
+  font-size: small;
+  font-style: italic;
+  margin-left: 1.5rem;
+}
+
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-
-/** Clear State.temporary and copy temp into it. */
-const setTemporary = temp =&gt; {
-  State.clearTemporary();
-  const T = State.temporary;
-  for (const [k, v] of Object.entries(temp)) {
-    T[k] = v;
-  }
-};
 
 /**
  * Create a scratch state with t_isArchive === true,
  * evaluate script, then render passage to dest.
  */
-MT.arcInclude = (dest, passage, script) =&gt; {
+MT.arcRender = (dest, passage, script) =&gt; {
   MT.untraced(() =&gt; {
     const text = Story.get(passage).text;
-    const saveVars = State.active.variables;
-    const saveTemp = clone(State.temporary);
+    // we can set the variables obj, but we can&#39;t set the temporaries obj
+    const savedVars = State.active.variables;
+    const savedTemp = Object.entries(State.temporary);
     try {
       State.active.variables = { t_isArchive: true };
       State.clearTemporary();
@@ -5740,8 +5734,11 @@ MT.arcInclude = (dest, passage, script) =&gt; {
       }
       $(dest).wiki(text);
     } finally {
-      State.active.variables = saveVars;
-      setTemporary(saveTemp);
+      State.active.variables = savedVars;
+      State.clearTemporary();
+      for (const [k, v] of savedTemp) {
+        State.temporary[k] = v;
+      }
     }
   });
 };
@@ -5783,7 +5780,7 @@ Macro.add(&quot;arc-include&quot;, {
   handler: function() {
     const [link, script] = this.args;
     const passage = link.isLink ? link.link : String(link);
-    MT.arcInclude(this.output, passage, script);
+    MT.arcRender(this.output, passage, script);
   }
 });
 
@@ -8345,7 +8342,7 @@ MT.showEnding = info =&gt; {
   mkp += `&lt;div class=ui-title&gt;${title}&lt;/div&gt;\n`;
   mkp += `&lt;hr class=archives-head&gt;\n`;
   for (let i = 0; i &lt; end.passages.length; i++) {
-    if (i !== 0) mkp += &quot;&lt;hr class=archive-sep&gt;\n&quot;;
+    if (i !== 0) mkp += &quot;&lt;hr class=arc-entry-sep&gt;\n&quot;;
     let vars = `$n1_barbs = ${barbs};`;
     vars += `$n1_castEndgame = ${blank};`;
     mkp += `&lt;&lt;arc-include &quot;${end.passages[i]}&quot; &quot;${vars}&quot;&gt;&gt;\n`;
@@ -8537,7 +8534,7 @@ function glitchText(textNode, g, speed) {
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="247" name="g0init Nero Keywords" tags="inclusion" position="1100,1600" size="100,100">&lt;&lt;script&gt;&gt;
 
-const neroKeywords = {
+const neroKeywords = MT.neroKeywords = {
   nk_AntiMagic: {
     title: &quot;Anti-Magic Fields&quot;,
     passages: [
@@ -8755,8 +8752,8 @@ MT.neroKeywordList = () =&gt; {
     if (!revealAll &amp;&amp; !mr[key]) continue;
     anyShown = true;
     mkp += `&lt;&lt;arc-ending ${mr[key]}`;
-    mkp += ` [\[${neroKeywords[key].title}|n0a Nero Keyword]]`;
-    mkp += ` &quot;&quot; &quot;$t_choice = &#39;${key}&#39;&quot;&gt;&gt;`;
+    mkp += ` [\[${neroKeywords[key].title}|g1m Archives Entry]]`;
+    mkp += ` &quot;&quot; &quot;$t_choice = [&#39;${key}&#39;]&quot;&gt;&gt;`;
     mkp += `&lt;&lt;/arc-ending&gt;&gt;\n`;
   }
   if (!anyShown) {
@@ -8765,23 +8762,6 @@ MT.neroKeywordList = () =&gt; {
   mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
   return mkp;
 };
-
-MT.neroKeywordShow = key =&gt; {
-  State.temporary.notesVariant = key;
-  const kw = neroKeywords[key];
-  if (kw == null) {
-    throw new Error(`Unknown keyword ${key}`);
-  }
-  let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
-  mkp += `&lt;div class=ui-title&gt;${kw.title}&lt;/div&gt;\n`;
-  mkp += `&lt;hr class=archive-head&gt;\n`;
-  for (let i = 0; i &lt; kw.passages.length; i++) {
-    if (i !== 0) mkp += &quot;&lt;hr class=archive-sep&gt;\n&quot;;
-    mkp += `&lt;&lt;arc-include &quot;${kw.passages[i]}&quot;&gt;&gt;\n`;
-  }
-  mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
-  return mkp;
-}
 
 /**
  * &lt;&lt;kw-unlock-soon nk_Name&gt;&gt;
@@ -11167,7 +11147,7 @@ meta-ending-good {
   border-top: 1px solid #555;
   height: 1px;
 }
-#passages hr.archive-sep {
+#passages hr.arc-entry-sep {
   margin-left: 10%;
   width: 80%;
 }
@@ -11922,7 +11902,47 @@ Moreover, this story contains immoral characters performing abusive and perverse
 &lt;/div&gt; &lt;!--title-options--&gt;\
 &lt;&lt;/timed&gt;&gt;\
 &lt;/div&gt; &lt;!--title-container--&gt;\
-&lt;/div&gt; &lt;!--title-screen--&gt;\</tw-passagedata><tw-passagedata pid="272" name="g1m Archives Forget" tags="inclusion" position="235,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;/div&gt; &lt;!--title-screen--&gt;\</tw-passagedata><tw-passagedata pid="272" name="g1m Archives Entry" tags="noreturn" position="175,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;style&gt;
+
+hr.arc-entry-sep {
+  margin-left: 10%;
+  width: 80%;
+}
+
+&lt;/style&gt;
+
+&lt;&lt;script&gt;&gt;
+
+const T = State.temporary;
+const V = State.variables;
+
+const [name, barbs] = V.t_choice;
+
+T.notesVariant = name;
+
+const info = MT.neroKeywords[name];
+if (info == null) {
+  throw new Error(`Unknown archive entry ${name}`);
+}
+
+$(&quot;&lt;div class=ui-title&gt;&quot;).text(info.title).appendTo(output);
+$(&quot;&lt;hr&gt;&quot;).appendTo(output);
+
+info.passages.forEach((passage, i) =&gt; {
+  if (i !== 0) {
+    $(&quot;&lt;hr class=arc-entry-sep&gt;&quot;).appendTo(output);
+  }
+  MT.arcRender(output, passage);
+});
+
+&lt;&lt;/script&gt;&gt;
+
+&lt;hr&gt;
+[[Return to the Archives|g1m Archives]]
+&lt;br&gt;
+&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="273" name="g1m Archives Forget" tags="inclusion" position="235,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
 Are you sure you want to forget &lt;em&gt;everything&lt;/em&gt;?
 
 ?P
@@ -11939,7 +11959,7 @@ This will lock all the endings and keywords in the Archives.
     &lt;&lt;goto `State.passage`&gt;&gt;
   &lt;&lt;/button&gt;&gt;
 &lt;/div&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="273" name="g1m Archives" tags="noreturn" position="175,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="274" name="g1m Archives" tags="noreturn" position="175,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;style&gt;
   body { overflow-y: scroll; }
@@ -12086,7 +12106,7 @@ This will lock all the endings and keywords in the Archives.
   &lt;&lt;/script&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="274" name="g1m Credits" tags="noreturn" position="300,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="275" name="g1m Credits" tags="noreturn" position="300,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;return-head&gt;&gt;
 
@@ -12246,7 +12266,7 @@ And, of course, also an honorable mention to everyone that has supported me and 
 &lt;li&gt;Raus&lt;/li&gt;
 &lt;/ul&gt;\
 \
-Thank you so much!</tw-passagedata><tw-passagedata pid="275" name="g1m Dashboard" tags="noreturn" position="425,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
+Thank you so much!</tw-passagedata><tw-passagedata pid="276" name="g1m Dashboard" tags="noreturn" position="425,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;return-head&gt;&gt;
 
 &lt;style&gt;
@@ -12514,7 +12534,7 @@ function render() {
   MT.signPassage();
 };
 $(document).one(&quot;:passagedisplay&quot;, render);
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="276" name="g1m Goto Paths" tags="inclusion" position="300,1525" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="277" name="g1m Goto Paths" tags="inclusion" position="300,1525" size="100,100">&lt;&lt;script&gt;&gt;
 MT.walks = [
   &quot;&lt;hr&gt;&lt;span class=walk-sec-title&gt;Easy Escapes&lt;/span&gt;&quot;,
 
@@ -14229,7 +14249,7 @@ MT.walks = [
     ],
   }
 ];
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="277" name="g1m Goto Script" tags="inclusion" position="300,1650" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="278" name="g1m Goto Script" tags="inclusion" position="300,1650" size="100,100">&lt;&lt;script&gt;&gt;
 
 State.temporary.listWalks = () =&gt; {
   const walks = MT.walks;
@@ -14364,7 +14384,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   })
 });
 
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="278" name="g1m Goto" tags="noreturn" position="175,1525" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="279" name="g1m Goto" tags="noreturn" position="175,1525" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;auto-stow&gt;&gt;
 &lt;&lt;return-head&gt;&gt;
 &lt;&lt;include [[g1m Goto Paths]]&gt;&gt;
@@ -14468,7 +14488,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   &lt;&lt;run _showCurrentPath()&gt;&gt;
 &lt;&lt;/done&gt;&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="279" name="g1m Notes All" tags="noreturn" position="300,1825" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="280" name="g1m Notes All" tags="noreturn" position="300,1825" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;return-head&gt;&gt;
 
 &lt;style&gt;
@@ -14695,7 +14715,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   &lt;textarea disabled&gt;&lt;/textarea&gt;
 &lt;/div&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="280" name="g1m Notes Popup" tags="inclusion" position="175,1950" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="281" name="g1m Notes Popup" tags="inclusion" position="175,1950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
   const T = State.temporary;
   const V = State.variables;
@@ -14825,7 +14845,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 &lt;br&gt;
 [[View all notes|g1m Notes All][Dialog.close()]]
 &lt;br&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="281" name="g1m Notes Single" tags="noreturn" position="300,1950" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="282" name="g1m Notes Single" tags="noreturn" position="300,1950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;return-head&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
@@ -14939,7 +14959,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
     &lt;div class=ui-subtitle&gt;Local storage has a conflicting value:&lt;/div&gt;
     &lt;textarea disabled&gt;&lt;/textarea&gt;
 &lt;/div&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="282" name="g1m Test 1" tags="nobr" position="175,2150" size="100,100">[[g1m Test 2]]
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="283" name="g1m Test 1" tags="nobr" position="175,2150" size="100,100">[[g1m Test 2]]
 
 ?P
 [[g1m Test fade-in]]
@@ -14948,9 +14968,9 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
   console.log(1);
   // hello
   console.log(2);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="283" name="g1m Test 2" tags="" position="300,2150" size="100,100">tmp is _tmp
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="284" name="g1m Test 2" tags="" position="300,2150" size="100,100">tmp is _tmp
 
-[[g1m Test 1]]</tw-passagedata><tw-passagedata pid="284" name="g1m Test fade-in" tags="" position="175,2275" size="100,100">&lt;&lt;nobr&gt;&gt;
+[[g1m Test 1]]</tw-passagedata><tw-passagedata pid="285" name="g1m Test fade-in" tags="" position="175,2275" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;fade-in 0s&gt;&gt;
 one
 &lt;&lt;fade-next 2s&gt;&gt;
@@ -14963,7 +14983,7 @@ hello my old friend
 [[g1m Test 2]]
 hello some more
 &lt;&lt;/fade-in&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="285" name="n0a Broken WIP" tags="mt-ready roam-stop" position="9225,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="286" name="n0a Broken WIP" tags="mt-ready roam-stop" position="9225,2350" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 ?construction
 
@@ -15011,7 +15031,7 @@ This story will be in the public release.
     &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
   &lt;/ul&gt;
 &lt;&lt;/arc-skip&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="286" name="n0a Caged Harsh WIP" tags="mt-ready roam-stop" position="8975,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="287" name="n0a Caged Harsh WIP" tags="mt-ready roam-stop" position="8975,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 ?construction
 
@@ -15059,7 +15079,7 @@ The story of this failure will be in the public release.
     &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
   &lt;/ul&gt;
 &lt;&lt;/arc-skip&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="287" name="n0a Caged Mild WIP" tags="mt-ready roam-stop" position="9550,3100" size="200,200">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="288" name="n0a Caged Mild WIP" tags="mt-ready roam-stop" position="9550,3100" size="200,200">&lt;&lt;nobr&gt;&gt;
 
 ?construction
 
@@ -15106,7 +15126,7 @@ The story of this failure will be in the public release.
     &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
   &lt;/ul&gt;
 &lt;&lt;/arc-skip&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="288" name="n0a Nero Ending Index" tags="mt-ready inclusion" position="800,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="289" name="n0a Nero Ending Index" tags="mt-ready inclusion" position="800,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;!--
   n8_ vars are selected options that persist.
 --&gt;
@@ -15234,16 +15254,9 @@ The story of this failure will be in the public release.
 &lt;&lt;arc-variants&gt;&gt;
   &lt;&lt;arc-barbs n8_ascendantBarbs&gt;&gt;
 &lt;&lt;/arc-ending&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="289" name="n0a Nero Ending" tags="mt-ready noreturn" position="900,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="290" name="n0a Nero Ending" tags="mt-ready noreturn" position="900,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;= MT.showEnding($t_choice)&gt;&gt;
-&lt;hr&gt;
-[[Return to the Archives|g1m Archives]]
-&lt;br&gt;
-&lt;&lt;link &quot;Return to the game&quot; $return&gt;&gt;&lt;&lt;/link&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="290" name="n0a Nero Keyword" tags="mt-ready noreturn" position="900,1825" size="100,100">&lt;&lt;nobr&gt;&gt;
-
-&lt;&lt;= MT.neroKeywordShow($t_choice)&gt;&gt;
 &lt;hr&gt;
 [[Return to the Archives|g1m Archives]]
 &lt;br&gt;
