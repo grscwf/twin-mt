@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5570,7 +5570,7 @@ function warnKnownKey(key) {
  * - it gets deleted in a metadata reset.
  * 
 */
-MT.mdDefUnsaved = function(key) {
+MT.mdDefUnsaved = (key) =&gt; {
   if (warnKnownKey(key)) return;
   knownKeys[key] = UNSAVED;
 };
@@ -5582,7 +5582,7 @@ MT.mdDefUnsaved = function(key) {
  * - loading a saved game will set (but not overwrite) its value.
  * - it gets deleted in a metadata reset.
  */
-MT.mdDefSaved = function(key) {
+MT.mdDefSaved = (key) =&gt; {
   if (warnKnownKey(key)) return;
   knownKeys[key] = SAVED;
 };
@@ -5593,7 +5593,7 @@ MT.mdDefSaved = function(key) {
  * - it doesn&#39;t get stored in saved games.
  * - it doesn&#39;t get deleted in a metadata reset.
  */
-MT.mdDefPreserved = function(key) {
+MT.mdDefPreserved = (key) =&gt; {
   if (warnKnownKey(key)) return;
   knownKeys[key] = PRESERVED;
 };
@@ -5605,7 +5605,7 @@ MT.mdDefPreserved = function(key) {
  * all metadata from localStorage, so it&#39;s somewhat expensive.
  * Use `MT.mdRecord` if you want to read more than a few values at a time.
  */
-MT.mdGet = function(key) {
+MT.mdGet = (key) =&gt; {
   warnUnknownKey(key);
   return State.metadata.get(key);
 };
@@ -5619,7 +5619,7 @@ MT.mdGet = function(key) {
  * doesn&#39;t give us a way to batch multiple set operations
  * (other than bypassing SugarCube and doing it ourselves.)
  */
-MT.mdSet = function(key, value) {
+MT.mdSet = (key, value) =&gt; {
   warnUnknownKey(key);
   if (value) {
     State.metadata.set(key, value);
@@ -5628,13 +5628,18 @@ MT.mdSet = function(key, value) {
   }
 };
 
+/** Returns an array of all [key, value] metadata entries. */
+MT.mdEntries = () =&gt; {
+  return State.metadata.entries() || [];
+};
+
 /** Returns a record (object-map) of all metadata keys and values. */
-MT.mdRecord = function() {
-  return Object.fromEntries(State.metadata.entries() || []);
+MT.mdRecord = () =&gt; {
+  return Object.fromEntries(MT.mdEntries());
 };
 
 /** Deletes all metadata, except for PRESERVED keys and unknown keys. */
-MT.mdReset = function() {
+MT.mdReset = () =&gt; {
   const preserve = [];
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
@@ -8310,6 +8315,19 @@ MT.neroEndings = {
       &quot;n9a Tamed End 2&quot;,
     ]
   },
+
+  // placeholders for unlock counting
+  ne2_HuntedMild: {},
+  ne2_HuntedHarsh: {},
+  ne2_OverwhelmedMild: {},
+  ne2_OverwhelmedHarsh: {},
+  ne2_Wrecked: {},
+  
+  ne3_SatisfiedBlank: {},
+  ne3_SatisfiedMica: {},
+  ne3_SatisfiedPevhin: {},
+  ne3_Dominant: {},
+  ne3_Ascendant: {},
 };
 
 Object.keys(MT.neroEndings).map(MT.mdDefSaved);
@@ -11919,6 +11937,7 @@ This will lock all the endings and keywords in the Archives.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="274" name="g1m Archives Script" tags="inclusion" position="225,1325" size="100,100">&lt;&lt;script&gt;&gt;
 
 const T = State.temporary;
+const V = State.variables;
 
 T.open = which =&gt; {
   $(&quot;.arc-closable&quot;).removeClass(&quot;arc-open&quot;);
@@ -11942,11 +11961,6 @@ T.switch = which =&gt; {
   return mkp;
 };
 
-$(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-  const now = session.get(&quot;arc-open&quot;);
-  T.open(now || &quot;intro&quot;);
-});
-
 function lockpickSetup() {
   if (!setup.debug) return;
   T.lockpick = setup.debug &amp;&amp; session.get(&quot;arc-lockpick&quot;);
@@ -11964,7 +11978,35 @@ function lockpickUpdate() {
   MT.revisitHere();
 }
 
-lockpickSetup();
+function countUnlocks() {
+  const entries = MT.mdEntries();
+  const truthyKeys = entries.filter(([k, v]) =&gt; v).map(([k, v]) =&gt; k);
+  const truthy = new Set(truthyKeys);
+
+  const count = (keys, reveal) =&gt; {
+    const unlocked = keys.filter(k =&gt; truthy.has(k)).length;
+    const total = (reveal || T.lockpick) ? keys.length : &quot;?&quot;;
+    return `${unlocked} of ${total}`;
+  };
+
+  T.drekkarEndingsUnlocked = count(
+    MT.drekkarEndings, V.de3_IvexPunishment);
+  T.neroEndingsUnlocked = count(
+    Object.keys(MT.neroEndings), V.n0_playerLeftStudyWithMirror);
+  T.neroKeywordsUnlocked = count(
+    Object.keys(MT.neroKeywords), V.n0_playerLeftStudyWithMirror);
+}
+
+function archivesInit() {
+  $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
+    const now = session.get(&quot;arc-open&quot;);
+    T.open(now || &quot;intro&quot;);
+  });
+  lockpickSetup();
+  countUnlocks();
+}
+
+archivesInit();
 
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="275" name="g1m Archives" tags="noreturn" position="175,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
 
@@ -12042,7 +12084,7 @@ body {
 &lt;/div&gt;
 
 &lt;div class=ui-subtitle&gt;
-  Drekkar Endings
+  Drekkar Endings (_drekkarEndingsUnlocked)
   &lt;&lt;= _switch(&quot;drekkar&quot;)&gt;&gt;
 &lt;/div&gt;
 &lt;div class=&quot;arc-body arc-closable arc-closable-drekkar&quot;&gt;
@@ -12051,7 +12093,7 @@ body {
 &lt;/div&gt;
 
 &lt;div class=ui-subtitle&gt;
-  Nero Endings
+  Nero Endings (_neroEndingsUnlocked)
   &lt;&lt;= _switch(&quot;nero&quot;)&gt;&gt;
 &lt;/div&gt;
 &lt;div class=&quot;arc-body arc-closable arc-closable-nero&quot;&gt;
@@ -12060,7 +12102,7 @@ body {
 &lt;/div&gt;
 
 &lt;div class=ui-subtitle&gt;
-  Nero Keywords &lt;&lt;= MT.neroKeywordCount()&gt;&gt;
+  Nero Keywords (_neroKeywordsUnlocked)
   &lt;&lt;= _switch(&quot;nero-kw&quot;)&gt;&gt;
 &lt;/div&gt;
 &lt;div class=&quot;arc-body arc-closable arc-closable-nero-kw&quot;&gt;
@@ -15174,7 +15216,7 @@ The story of this failure will be in the public release.
     &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
     &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
   &lt;&lt;/arc-select&gt;&gt;
-  &lt;&lt;arc-barbs n8_huntedBarbs&gt;&gt;
+  /* &lt;&lt;arc-barbs n8_huntedBarbs&gt;&gt; */
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;&lt;arc-ending false &quot;Bad Ending: Overwhelmed \ud83d\udea7&quot;&gt;&gt;
@@ -15184,13 +15226,13 @@ The story of this failure will be in the public release.
     &lt;&lt;arc-option mild &quot;Mild&quot; false&gt;&gt;
     &lt;&lt;arc-option harsh &quot;Harsh&quot; false&gt;&gt;
   &lt;&lt;/arc-select&gt;&gt;
-  &lt;&lt;arc-barbs n8_overwhelmedBarbs&gt;&gt;
+  /* &lt;&lt;arc-barbs n8_overwhelmedBarbs&gt;&gt; */
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;&lt;arc-ending false &quot;Challenge Ending: Wrecked \ud83d\udea7&quot;&gt;&gt;
   Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-  &lt;&lt;arc-barbs n8_wreckedBarbs&gt;&gt;
+  /* &lt;&lt;arc-barbs n8_wreckedBarbs&gt;&gt; */
 &lt;&lt;/arc-ending&gt;&gt;
 
 &lt;hr&gt;
@@ -15208,7 +15250,7 @@ The story of this failure will be in the public release.
 &lt;&lt;arc-ending false &quot;Ending: Dominant \ud83d\udea7&quot;&gt;&gt;
   Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-  &lt;&lt;arc-barbs n8_dominantBarbs&gt;&gt;
+  /* &lt;&lt;arc-barbs n8_dominantBarbs&gt;&gt; */
   &lt;!--
     Chase: No | Yes
     Collar: No | Yes
@@ -15222,7 +15264,7 @@ The story of this failure will be in the public release.
 &lt;&lt;arc-ending false &quot;Challenge Ending: Ascendant \ud83d\udea7&quot;&gt;&gt;
   Under construction.
 &lt;&lt;arc-variants&gt;&gt;
-  &lt;&lt;arc-barbs n8_ascendantBarbs&gt;&gt;
+  /* &lt;&lt;arc-barbs n8_ascendantBarbs&gt;&gt; */
 &lt;&lt;/arc-ending&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="291" name="n0a Project Status" tags="mt-ready inclusion" position="1425,1225" size="100,100">&lt;&lt;nobr&gt;&gt;
 ?P

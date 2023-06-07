@@ -2,6 +2,7 @@
 <<script>>
 
 const T = State.temporary;
+const V = State.variables;
 
 T.open = which => {
   $(".arc-closable").removeClass("arc-open");
@@ -25,11 +26,6 @@ T.switch = which => {
   return mkp;
 };
 
-$(document).one(":passagedisplay", () => {
-  const now = session.get("arc-open");
-  T.open(now || "intro");
-});
-
 function lockpickSetup() {
   if (!setup.debug) return;
   T.lockpick = setup.debug && session.get("arc-lockpick");
@@ -47,6 +43,34 @@ function lockpickUpdate() {
   MT.revisitHere();
 }
 
-lockpickSetup();
+function countUnlocks() {
+  const entries = MT.mdEntries();
+  const truthyKeys = entries.filter(([k, v]) => v).map(([k, v]) => k);
+  const truthy = new Set(truthyKeys);
+
+  const count = (keys, reveal) => {
+    const unlocked = keys.filter(k => truthy.has(k)).length;
+    const total = (reveal || T.lockpick) ? keys.length : "?";
+    return `${unlocked} of ${total}`;
+  };
+
+  T.drekkarEndingsUnlocked = count(
+    MT.drekkarEndings, V.de3_IvexPunishment);
+  T.neroEndingsUnlocked = count(
+    Object.keys(MT.neroEndings), V.n0_playerLeftStudyWithMirror);
+  T.neroKeywordsUnlocked = count(
+    Object.keys(MT.neroKeywords), V.n0_playerLeftStudyWithMirror);
+}
+
+function archivesInit() {
+  $(document).one(":passagedisplay", () => {
+    const now = session.get("arc-open");
+    T.open(now || "intro");
+  });
+  lockpickSetup();
+  countUnlocks();
+}
+
+archivesInit();
 
 <</script>>\

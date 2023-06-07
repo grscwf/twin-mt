@@ -37,7 +37,7 @@ function warnKnownKey(key) {
  * - it gets deleted in a metadata reset.
  * 
 */
-MT.mdDefUnsaved = function(key) {
+MT.mdDefUnsaved = (key) => {
   if (warnKnownKey(key)) return;
   knownKeys[key] = UNSAVED;
 };
@@ -49,7 +49,7 @@ MT.mdDefUnsaved = function(key) {
  * - loading a saved game will set (but not overwrite) its value.
  * - it gets deleted in a metadata reset.
  */
-MT.mdDefSaved = function(key) {
+MT.mdDefSaved = (key) => {
   if (warnKnownKey(key)) return;
   knownKeys[key] = SAVED;
 };
@@ -60,7 +60,7 @@ MT.mdDefSaved = function(key) {
  * - it doesn't get stored in saved games.
  * - it doesn't get deleted in a metadata reset.
  */
-MT.mdDefPreserved = function(key) {
+MT.mdDefPreserved = (key) => {
   if (warnKnownKey(key)) return;
   knownKeys[key] = PRESERVED;
 };
@@ -72,7 +72,7 @@ MT.mdDefPreserved = function(key) {
  * all metadata from localStorage, so it's somewhat expensive.
  * Use `MT.mdRecord` if you want to read more than a few values at a time.
  */
-MT.mdGet = function(key) {
+MT.mdGet = (key) => {
   warnUnknownKey(key);
   return State.metadata.get(key);
 };
@@ -86,7 +86,7 @@ MT.mdGet = function(key) {
  * doesn't give us a way to batch multiple set operations
  * (other than bypassing SugarCube and doing it ourselves.)
  */
-MT.mdSet = function(key, value) {
+MT.mdSet = (key, value) => {
   warnUnknownKey(key);
   if (value) {
     State.metadata.set(key, value);
@@ -95,13 +95,18 @@ MT.mdSet = function(key, value) {
   }
 };
 
+/** Returns an array of all [key, value] metadata entries. */
+MT.mdEntries = () => {
+  return State.metadata.entries() || [];
+};
+
 /** Returns a record (object-map) of all metadata keys and values. */
-MT.mdRecord = function() {
-  return Object.fromEntries(State.metadata.entries() || []);
+MT.mdRecord = () => {
+  return Object.fromEntries(MT.mdEntries());
 };
 
 /** Deletes all metadata, except for PRESERVED keys and unknown keys. */
-MT.mdReset = function() {
+MT.mdReset = () => {
   const preserve = [];
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
