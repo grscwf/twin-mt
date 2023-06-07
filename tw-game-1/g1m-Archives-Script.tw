@@ -1,0 +1,52 @@
+:: g1m Archives Script [inclusion] {"position":"225,1325","size":"100,100"}
+<<script>>
+
+const T = State.temporary;
+
+T.open = which => {
+  $(".arc-closable").removeClass("arc-open");
+  $(".arc-switch").text("(show)");
+  $(`.arc-closable-${which}`).addClass("arc-open");
+  $(`.arc-switch-${which}`).text("(hide)");
+};
+
+T.toggle = which => {
+  const now = session.get("arc-open");
+  const next = now === which ? "none" : which;
+  session.set("arc-open", next);
+  T.open(next);
+};
+
+T.switch = which => {
+  let mkp =
+    `<a class="arc-switch arc-switch-${which}"` +
+    ` onclick="SugarCube.State.temporary.toggle('${which}')"` +
+    `>(show)</a>`;
+  return mkp;
+};
+
+$(document).one(":passagedisplay", () => {
+  const now = session.get("arc-open");
+  T.open(now || "intro");
+});
+
+function lockpickSetup() {
+  if (!setup.debug) return;
+  T.lockpick = setup.debug && session.get("arc-lockpick");
+  $(document).one(":passagedisplay", () => {
+    const el = $("#arc-lockpick");
+    el.prop("checked", T.lockpick);
+    el.on("input", lockpickUpdate);
+  });
+}
+
+function lockpickUpdate() {
+  const el = $("#arc-lockpick");
+  const val = !!el.prop("checked");
+  session.set("arc-lockpick", val);
+  MT.revisitHere();
+}
+
+lockpickSetup();
+
+<</script>>\

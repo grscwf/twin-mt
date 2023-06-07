@@ -2,71 +2,42 @@
 <<nobr>>
 
 <style>
-  body { overflow-y: scroll; }
-  .arc-body {
-    margin-left: 1.5rem;
-  }
-  .arc-closable:not(.arc-open) {
-    display: none;
-  }
-  .arc-switch {
-    font-size: 0.8em;
-    font-weight: normal;
-    margin-left: 0.5em;
-  }
+
+body {
+  overflow-y: scroll;
+}
+.arc-body {
+  margin-left: 1.5rem;
+}
+.arc-closable:not(.arc-open) {
+  display: none;
+}
+.arc-switch {
+  font-size: 0.8em;
+  font-weight: normal;
+  margin-left: 0.5em;
+}
+.arc-vsep {
+  padding: 0 .5em;
+  color: #666;
+}
+
 </style>
 
-<<script>>
-  const T = State.temporary;
-
-  T.open = which => {
-    $(".arc-closable").removeClass("arc-open");
-    $(".arc-switch").text("(show)");
-    $(`.arc-closable-${which}`).addClass("arc-open");
-    $(`.arc-switch-${which}`).text("(hide)");
-  };
-
-  T.toggle = which => {
-    const now = session.get("arc-open");
-    const next = now === which ? "none" : which;
-    session.set("arc-open", next);
-    T.open(next);
-  };
-
-  T.switch = which => {
-    let mkp =
-      `<a class="arc-switch arc-switch-${which}"` +
-      ` onclick="SugarCube.State.temporary.toggle('${which}')"` +
-      `>(show)</a>`;
-    return mkp;
-  };
-
-  $(document).one(":passagedisplay", () => {
-    const now = session.get("arc-open");
-    T.open(now || "intro");
-  });
-  
-  function lockpickSetup() {
-    T.lockpick = setup.debug && session.get("arc-lockpick");
-    if (!setup.tester) return;
-    $(document).one(":passagedisplay", () => {
-      const el = $("#arc-lockpick");
-      el.prop("checked", T.lockpick);
-      el.on("input", lockpickUpdate);
-    });
-  }
-  
-  function lockpickUpdate() {
-    const el = $("#arc-lockpick");
-    const val = !!el.prop("checked");
-    session.set("arc-lockpick", val);
-    MT.revisitHere();
-  }
-  
-  lockpickSetup();
-<</script>>
+<<include [[g1m Archives Script]]>>
 
 <<return-head>>
+
+<<return-block>>
+  <<if setup.debug>>
+    <span class=arc-vsep>||</span>
+    <label>
+      &#x1f527;
+      bypass locks
+      <input id="arc-lockpick" type=checkbox>
+    </label>
+  <</if>>
+<</return-block>>
 
 <div class=ui-title>
   Welcome to the Mage's Tower Archives
@@ -99,36 +70,28 @@
     If you want to re-experience those dynamic endings,
     not just the static version offered here,
     you can save a game at the point the ending begins.
+    ?P
   </div>
-
-  <<if setup.debug>>
-    <br>
-    <label>
-      &#x1f527; bypass locks
-      <input id="arc-lockpick" type=checkbox>
-    </label>
-  <</if>>
 </div>
 
-<hr>
 <div class=ui-subtitle>
   Drekkar Endings
   <<= _switch("drekkar")>>
 </div>
 <div class="arc-body arc-closable arc-closable-drekkar">
   <<include "d0a Drekkar Ending Index">>
+  <hr>
 </div>
 
-<hr>
 <div class=ui-subtitle>
   Nero Endings
   <<= _switch("nero")>>
 </div>
 <div class="arc-body arc-closable arc-closable-nero">
   <<include "n0a Nero Ending Index">>
+  <hr>
 </div>
 
-<hr>
 <div class=ui-subtitle>
   Nero Keywords <<= MT.neroKeywordCount()>>
   <<= _switch("nero-kw")>>
