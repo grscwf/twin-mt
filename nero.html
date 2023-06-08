@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5965,6 +5965,13 @@ Macro.add(&quot;meta-ending&quot;, {
   }
 });
 
+/** Returns a Set of unlocked keys. */
+MT.unlockedSet = () =&gt; {
+  const entries = MT.mdEntries();
+  const truthy = entries.filter(([k, v]) =&gt; v).map(([k, v]) =&gt; k);
+  return new Set(truthy);
+};
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="231" name="g0init Arousal Bar" tags="inclusion" position="300,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   .hzbarbkg {
       position: relative;
@@ -10499,11 +10506,20 @@ Config.passages.descriptions = function() {
   };
 }
 
-const unlockVars = [
-];
-
 function countUnlocks() {
-  return [0, 0]; // TODO
+  const unlocked = MT.unlockedSet();
+  let n = 0;
+  let total = 0;
+  const add = (keys) =&gt; {
+    n += keys.filter(k =&gt; unlocked.has(k)).length;
+    total += keys.length;
+  };
+
+  add(MT.drekkarEndings);
+  add(Object.keys(MT.neroEndings));
+  add(Object.keys(MT.neroKeywords));
+
+  return [n, total];
 }
 
 /** Migrate an old saveObj to current game. */
@@ -10513,19 +10529,6 @@ function migrate(saveObj) {
   // - Rename passages in saveObj.state.history[].title
   // - Rename variables in saveObj.state.history[].variables
 }
-
-function loadUnlocks(saveObj) {
-  // XXX read unlocks from saveObj.metadata
-}
-
-function saveUnlocks(saveObj) {
-  // XXX write unlocks to saveObj.metadata
-}
-
-
-Save.onLoad.add(saveObj =&gt; () =&gt; migrate(saveObj));
-Save.onLoad.add(saveObj =&gt; () =&gt; loadUnlocks(saveObj));
-Save.onSave.add(saveObj =&gt; () =&gt; saveUnlocks(saveObj));
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="260" name="g0init Sections" tags="inclusion" position="175,1125" size="100,100">&lt;&lt;script&gt;&gt;
 
@@ -11923,6 +11926,8 @@ This will lock all the endings and keywords in the Archives.
 const T = State.temporary;
 const V = State.variables;
 
+const sessionKey = &quot;arc-open&quot;;
+
 T.open = which =&gt; {
   $(&quot;.arc-closable&quot;).removeClass(&quot;arc-open&quot;);
   $(&quot;.arc-switch&quot;).text(&quot;(show)&quot;);
@@ -11931,9 +11936,9 @@ T.open = which =&gt; {
 };
 
 T.toggle = which =&gt; {
-  const now = session.get(&quot;arc-open&quot;);
+  const now = session.get(sessionKey);
   const next = now === which ? &quot;none&quot; : which;
-  session.set(&quot;arc-open&quot;, next);
+  session.set(sessionKey, next);
   T.open(next);
 };
 
@@ -11963,14 +11968,11 @@ function lockpickUpdate() {
 }
 
 function countUnlocks() {
-  const entries = MT.mdEntries();
-  const truthyKeys = entries.filter(([k, v]) =&gt; v).map(([k, v]) =&gt; k);
-  const truthy = new Set(truthyKeys);
-
+  const unlocked = MT.unlockedSet();
   const count = (keys, reveal) =&gt; {
-    const unlocked = keys.filter(k =&gt; truthy.has(k)).length;
+    const n = keys.filter(k =&gt; unlocked.has(k)).length;
     const total = (reveal || T.lockpick) ? keys.length : &quot;?&quot;;
-    return `${unlocked} of ${total}`;
+    return `${n} of ${total}`;
   };
 
   T.drekkarEndingsUnlocked = count(
@@ -11983,8 +11985,8 @@ function countUnlocks() {
 
 function archivesInit() {
   $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-    const now = session.get(&quot;arc-open&quot;);
-    T.open(now || &quot;intro&quot;);
+    const state = session.get(sessionKey);
+    T.open(state || &quot;intro&quot;);
   });
   lockpickSetup();
   countUnlocks();

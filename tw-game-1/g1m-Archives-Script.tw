@@ -4,6 +4,8 @@
 const T = State.temporary;
 const V = State.variables;
 
+const sessionKey = "arc-open";
+
 T.open = which => {
   $(".arc-closable").removeClass("arc-open");
   $(".arc-switch").text("(show)");
@@ -12,9 +14,9 @@ T.open = which => {
 };
 
 T.toggle = which => {
-  const now = session.get("arc-open");
+  const now = session.get(sessionKey);
   const next = now === which ? "none" : which;
-  session.set("arc-open", next);
+  session.set(sessionKey, next);
   T.open(next);
 };
 
@@ -44,14 +46,11 @@ function lockpickUpdate() {
 }
 
 function countUnlocks() {
-  const entries = MT.mdEntries();
-  const truthyKeys = entries.filter(([k, v]) => v).map(([k, v]) => k);
-  const truthy = new Set(truthyKeys);
-
+  const unlocked = MT.unlockedSet();
   const count = (keys, reveal) => {
-    const unlocked = keys.filter(k => truthy.has(k)).length;
+    const n = keys.filter(k => unlocked.has(k)).length;
     const total = (reveal || T.lockpick) ? keys.length : "?";
-    return `${unlocked} of ${total}`;
+    return `${n} of ${total}`;
   };
 
   T.drekkarEndingsUnlocked = count(
@@ -64,8 +63,8 @@ function countUnlocks() {
 
 function archivesInit() {
   $(document).one(":passagedisplay", () => {
-    const now = session.get("arc-open");
-    T.open(now || "intro");
+    const state = session.get(sessionKey);
+    T.open(state || "intro");
   });
   lockpickSetup();
   countUnlocks();
