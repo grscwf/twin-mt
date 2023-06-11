@@ -65,6 +65,11 @@ MT.mdDefPreserved = (key) => {
   knownKeys[key] = PRESERVED;
 };
 
+/** True if `key` should be saved. */
+MT.mdShouldSave = (key) => {
+  return knownKeys[key] === SAVED;
+};
+
 /**
  * Returns the value of metadata `key`.
  * 
@@ -111,7 +116,7 @@ MT.mdReset = () => {
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
     warnUnknownKey(key);
-    if (knownKeys[key] === PRESERVE) {
+    if (knownKeys[key] === PRESERVED) {
       preserve.push([key, value]);
     }
   }
@@ -120,37 +125,5 @@ MT.mdReset = () => {
     State.metadata.set(key, value);
   }
 };
-
-/*----------------
- * Saving and loading metadata.
- */
-
-function mdLoad(save) {
-  if (!save.metadata) return;
-  const current = MT.mdRecord();
-  for (const [key, value] of Object.entries(save.metadata)) {
-    if (value && knownKeys[key] === SAVED && !current[key]) {
-      State.metadata.set(key, value);
-      // XXX announce the unlock
-    }
-  }
-}
-
-function mdSave(save) {
-  save.metadata ||= {};
-  const entries = State.metadata.entries() || [];
-  for (const [key, value] of entries) {
-    if (knownKeys[key] === SAVED) {
-      save.metadata[key] = value;
-    }
-  }
-}
-
-function mdInit() {
-  Save.onLoad.add(mdLoad);
-  Save.onSave.add(mdSave);
-}
-
-mdInit();
 
 <</script>>
