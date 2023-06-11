@@ -1,15 +1,24 @@
 :: g0boot Metadata [inclusion] {"position":"235,425","size":"100,100"}
 <<script>>
 /*----------------
- * This module  game metadata.
+ * This module manages game metadata.
+ * It's mostly a wrapper around SugarCube's metadata, with:
+ * - "clear metadata" that preserves keys marked PRESERVED.
+ * - saving and loading keys marked SAVEDs to saved games.
+ * - copying metadata to State.variables for easy access and debug tooling.
+ * 
+ * Note, the values copied to State.variables are writable,
+ * but writing them *does not* write to metadata.
+ * Persisting a value needs to use `MD.mdSet`.
  */
 
-/** Record of metadata key -> save type. */
-const knownKeys = {};
+// metadata types
+const UNSAVED = 1;
+const SAVED = 2;
+const PRESERVED = 3;
 
-const UNSAVED = 0;
-const SAVED = 1;
-const PRESERVED = 2;
+/** metadata key -> metadata type. */
+const knownKeys = {};
 
 /** If `key` is not known, reports a warning and returns true. */
 function warnUnknownKey(key) {
@@ -30,10 +39,10 @@ function warnKnownKey(key) {
 }
 
 /**
- * Defines `key` to be unsaved metadata, which means:
+ * Defines `key` to be UNSAVED metadata, which means:
  * - it persists across game resets.
  * - it doesn't get stored in saved games.
- * - it gets deleted in a metadata reset.
+ * - it gets deleted by "clear metadata".
 */
 MT.mdDefUnsaved = (key) => {
   if (warnKnownKey(key)) return;
@@ -41,11 +50,12 @@ MT.mdDefUnsaved = (key) => {
 };
 
 /**
- * Defines `key` to be saved metadata, which means;
+ * Defines `key` to be SAVED metadata, which means;
  * - it persists across game resets.
  * - it gets stored in saved games.
- * - loading a saved game will set (but not overwrite) its value.
- * - it gets deleted in a metadata reset.
+ * - loading a saved game will set its value from the saved game,
+ *   but only if it isn't already set.
+ * - it gets deleted by "clear metadata".
  */
 MT.mdDefSaved = (key) => {
   if (warnKnownKey(key)) return;
@@ -53,23 +63,33 @@ MT.mdDefSaved = (key) => {
 };
 
 /**
- * Defines `key` to be preserved metadata, which means:
+ * Defines `key` to be PRESERVED metadata, which means:
  * - it persists across game resets.
  * - it doesn't get stored in saved games.
- * - it doesn't get deleted in a metadata reset.
+ * - it doesn't get deleted by "clear metadata".
  */
 MT.mdDefPreserved = (key) => {
   if (warnKnownKey(key)) return;
   knownKeys[key] = PRESERVED;
 };
 
+/** True if `key` is a known metadata key. */
+MT.mdKnown = (key) => knownKeys[key] != null;
+
 /**
  * Returns the value of metadata `key`.
+ *
  * Note, each call will always decompress and deserialize
- * all metadata from localStorage, so it's somewhat expensive.
- * Use `MT.mdRecord` if you want to read more than a few values at a time.
+ * all metadata from localStorage, so this is somewhat expensive.
+ *
+ * If you don't need the authoritative value, you can read the
+ * copy in State.variables (which might be out-of-date if the
+ * value was changed in another tab).
+ *
+ * If you want more than a few authoritative values at a time,
+ * use `MT.mdEntries` or `MT.mdRecord`.
  */
-MT.mdGet = (key) => {
+MT.mdUncachedGet = (key) => {
   warnUnknownKey(key);
   return State.metadata.get(key);
 };
@@ -87,8 +107,10 @@ MT.mdSet = (key, value) => {
   warnUnknownKey(key);
   if (value) {
     State.metadata.set(key, value);
+    State.variables[key] = value;
   } else {
     State.metadata.delete(key);
+    delete State.variables[key];
   }
 };
 
@@ -97,13 +119,13 @@ MT.mdEntries = () => {
   return State.metadata.entries() || [];
 };
 
-/** Returns a record (object-map) of all metadata keys and values. */
+/** Returns an object-map of all metadata keys and values. */
 MT.mdRecord = () => {
   return Object.fromEntries(MT.mdEntries());
 };
 
 /** Deletes all metadata, except for PRESERVED keys and unknown keys. */
-MT.mdReset = () => {
+MT.mdClear = () => {
   const preserve = [];
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
@@ -118,19 +140,8 @@ MT.mdReset = () => {
   }
 };
 
-/*----
- * Saving and loading metadata in saved games
- */
-
-/** Migrate an old saveObj to current game. */
-function migrate(saveObj) {
-  // Nothing necessary yet. In the future:
-  // - Rename passages in saveObj.state.expired[]
-  // - Rename passages in saveObj.state.history[].title
-  // - Rename variables in saveObj.state.history[].variables
-}
-
-function mdLoad(save) {
+/** Merges metadata from `save` into current metadata. */
+function mdReadFromSave(save) {
   if (!save.metadata) return;
   const current = MT.mdRecord();
   for (const [key, value] of Object.entries(save.metadata)) {
@@ -139,9 +150,11 @@ function mdLoad(save) {
       // XXX announce the unlock
     }
   }
+  MT.mdCopyToVars();
 }
 
-function mdSave(save) {
+/** Adds current metadata to `save`. */
+function mdWriteToSave(save) {
   save.metadata ||= {};
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
@@ -151,9 +164,24 @@ function mdSave(save) {
   }
 }
 
+/** Copies current metadata to State.variables */
+function mdCopyToVars() {
+  const U = MT.untracedVars ? MT.untracedVars() : State.variables;
+  const rec = MT.mdRecord();
+  // need to do all known keys, not just set keys
+  for (const key of Object.keys(knownKeys)) {
+    if (rec[key]) {
+      U[key] = rec[key];
+    } else {
+      delete U[key];
+    }
+  }
+};
+
 function mdInit() {
-  Save.onLoad.add(mdLoad);
-  Save.onSave.add(mdSave);
+  Save.onLoad.add(mdReadFromSave);
+  Save.onSave.add(mdWriteToSave);
+  $(document).on(":passageinit", mdCopyToVars);
 }
 
 mdInit();
