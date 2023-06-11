@@ -1,8 +1,7 @@
 :: g0boot Metadata [inclusion] {"position":"235,425","size":"100,100"}
 <<script>>
 /*----------------
- * This module handles game metadata, including saving and loading
- * the metadata in saved games.
+ * This module  game metadata.
  */
 
 /** Record of metadata key -> save type. */
@@ -35,7 +34,6 @@ function warnKnownKey(key) {
  * - it persists across game resets.
  * - it doesn't get stored in saved games.
  * - it gets deleted in a metadata reset.
- * 
 */
 MT.mdDefUnsaved = (key) => {
   if (warnKnownKey(key)) return;
@@ -65,14 +63,8 @@ MT.mdDefPreserved = (key) => {
   knownKeys[key] = PRESERVED;
 };
 
-/** True if `key` should be saved. */
-MT.mdShouldSave = (key) => {
-  return knownKeys[key] === SAVED;
-};
-
 /**
  * Returns the value of metadata `key`.
- * 
  * Note, each call will always decompress and deserialize
  * all metadata from localStorage, so it's somewhat expensive.
  * Use `MT.mdRecord` if you want to read more than a few values at a time.
@@ -126,4 +118,43 @@ MT.mdReset = () => {
   }
 };
 
+/*----
+ * Saving and loading metadata in saved games
+ */
+
+/** Migrate an old saveObj to current game. */
+function migrate(saveObj) {
+  // Nothing necessary yet. In the future:
+  // - Rename passages in saveObj.state.expired[]
+  // - Rename passages in saveObj.state.history[].title
+  // - Rename variables in saveObj.state.history[].variables
+}
+
+function mdLoad(save) {
+  if (!save.metadata) return;
+  const current = MT.mdRecord();
+  for (const [key, value] of Object.entries(save.metadata)) {
+    if (value && knownKeys[key] === SAVED && !current[key]) {
+      State.metadata.set(key, value);
+      // XXX announce the unlock
+    }
+  }
+}
+
+function mdSave(save) {
+  save.metadata ||= {};
+  const entries = State.metadata.entries() || [];
+  for (const [key, value] of entries) {
+    if (knownKeys[key] === SAVED) {
+      save.metadata[key] = value;
+    }
+  }
+}
+
+function mdInit() {
+  Save.onLoad.add(mdLoad);
+  Save.onSave.add(mdSave);
+}
+
+mdInit();
 <</script>>

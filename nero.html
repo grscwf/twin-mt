@@ -470,7 +470,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5534,8 +5534,7 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="229" name="g0boot Metadata" tags="inclusion" position="235,425" size="100,100">&lt;&lt;script&gt;&gt;
 /*----------------
- * This module handles game metadata, including saving and loading
- * the metadata in saved games.
+ * This module  game metadata.
  */
 
 /** Record of metadata key -&gt; save type. */
@@ -5568,7 +5567,6 @@ function warnKnownKey(key) {
  * - it persists across game resets.
  * - it doesn&#39;t get stored in saved games.
  * - it gets deleted in a metadata reset.
- * 
 */
 MT.mdDefUnsaved = (key) =&gt; {
   if (warnKnownKey(key)) return;
@@ -5598,14 +5596,8 @@ MT.mdDefPreserved = (key) =&gt; {
   knownKeys[key] = PRESERVED;
 };
 
-/** True if `key` should be saved. */
-MT.mdShouldSave = (key) =&gt; {
-  return knownKeys[key] === SAVED;
-};
-
 /**
  * Returns the value of metadata `key`.
- * 
  * Note, each call will always decompress and deserialize
  * all metadata from localStorage, so it&#39;s somewhat expensive.
  * Use `MT.mdRecord` if you want to read more than a few values at a time.
@@ -5659,6 +5651,45 @@ MT.mdReset = () =&gt; {
   }
 };
 
+/*----
+ * Saving and loading metadata in saved games
+ */
+
+/** Migrate an old saveObj to current game. */
+function migrate(saveObj) {
+  // Nothing necessary yet. In the future:
+  // - Rename passages in saveObj.state.expired[]
+  // - Rename passages in saveObj.state.history[].title
+  // - Rename variables in saveObj.state.history[].variables
+}
+
+function mdLoad(save) {
+  if (!save.metadata) return;
+  const current = MT.mdRecord();
+  for (const [key, value] of Object.entries(save.metadata)) {
+    if (value &amp;&amp; knownKeys[key] === SAVED &amp;&amp; !current[key]) {
+      State.metadata.set(key, value);
+      // XXX announce the unlock
+    }
+  }
+}
+
+function mdSave(save) {
+  save.metadata ||= {};
+  const entries = State.metadata.entries() || [];
+  for (const [key, value] of entries) {
+    if (knownKeys[key] === SAVED) {
+      save.metadata[key] = value;
+    }
+  }
+}
+
+function mdInit() {
+  Save.onLoad.add(mdLoad);
+  Save.onSave.add(mdSave);
+}
+
+mdInit();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="230" name="g0init Archives" tags="inclusion" position="175,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .arc-disabled {
@@ -10507,42 +10538,6 @@ function countUnlocks() {
 
   return [n, total];
 }
-
-/** Migrate an old saveObj to current game. */
-function migrate(saveObj) {
-  // Nothing necessary yet. In the future:
-  // - Rename passages in saveObj.state.expired[]
-  // - Rename passages in saveObj.state.history[].title
-  // - Rename variables in saveObj.state.history[].variables
-}
-
-function loadMetadata(save) {
-  if (!save.metadata) return;
-  const current = MT.mdRecord();
-  for (const [key, value] of Object.entries(save.metadata)) {
-    if (value &amp;&amp; MT.mdShouldSave(key) &amp;&amp; !current[key]) {
-      State.metadata.set(key, value);
-      // XXX announce the unlock
-    }
-  }
-}
-
-function saveMetadata(save) {
-  save.metadata ||= {};
-  const entries = State.metadata.entries() || [];
-  for (const [key, value] of entries) {
-    if (MT.mdShouldSave(key)) {
-      save.metadata[key] = value;
-    }
-  }
-}
-
-function savesInit() {
-  Save.onLoad.add(loadMetadata);
-  Save.onSave.add(saveMetadata);
-}
-
-savesInit();
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="260" name="g0init Sections" tags="inclusion" position="175,1125" size="100,100">&lt;&lt;script&gt;&gt;
 
