@@ -477,7 +477,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -10520,16 +10520,21 @@ function initRandomWalk() {
 initRandomWalk();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="259" name="g0init Saved Games" tags="inclusion" position="175,1000" size="100,100">&lt;&lt;script&gt;&gt;
 
-/** Fix up the in-browser saveGame title. */
+/** Fix up the in-browser saved game title. */
 Config.passages.descriptions = function() {
-  let mkp = this.text;
 
-  // remove leading noise
-  mkp = mkp.replace(/&lt;[&lt;]kw-announce&gt;&gt;/, &quot;&quot;);
-  mkp = mkp.replace(/&lt;[&lt;]link &quot;Return[^&gt;]*?&gt;&gt;[^&gt;]*link&gt;&gt;/, &quot;&quot;);
+  // SugarCube sometimes gets a description for a passage other than
+  // the current one. In that case, use its default excerpt.
+  if (this.title !== State.passage) return false;
 
-  // ignore this._excerpt
-  let excerpt = Passage.getExcerptFromText(mkp);
+  // For the current passage, use the rendered text, not the source text.
+  
+  const doc = $(&quot;.passage&quot;).clone();
+  doc.find(&quot;style, script, .meta-text&quot;).remove();
+  const text = doc.text();
+  const words = text.trim().split(/\s+/);
+
+  let excerpt = words.slice(0, 10).join(&quot; &quot;);
 
   // add unlock count
   const [unlocked, total] = countUnlocks();
@@ -10537,6 +10542,8 @@ Config.passages.descriptions = function() {
     // not reporting total, it&#39;s kind of a spoiler
     excerpt = `${unlocked}\uD83D\uDD13 ${excerpt}`;
   }
+
+  console.log({ excerpt });
 
   return excerpt;
 };
@@ -10562,18 +10569,20 @@ Config.passages.descriptions = function() {
 
 function countUnlocks() {
   const unlocked = MT.unlockedSet();
-  let n = 0;
+  let num = 0;
   let total = 0;
   const add = (keys) =&gt; {
-    n += keys.filter(k =&gt; unlocked.has(k)).length;
     total += keys.length;
+    for (const k of keys) {
+      if (unlocked.has(k)) num++;
+    }
   };
 
   add(MT.drekkarEndings);
   add(Object.keys(MT.neroEndings));
   add(Object.keys(MT.neroKeywords));
 
-  return [n, total];
+  return [num, total];
 }
 
 /** Migrate an old saveObj to current game. */

@@ -1,16 +1,21 @@
 :: g0init Saved Games [inclusion] {"position":"175,1000","size":"100,100"}
 <<script>>
 
-/** Fix up the in-browser saveGame title. */
+/** Fix up the in-browser saved game title. */
 Config.passages.descriptions = function() {
-  let mkp = this.text;
 
-  // remove leading noise
-  mkp = mkp.replace(/<[<]kw-announce>>/, "");
-  mkp = mkp.replace(/<[<]link "Return[^>]*?>>[^>]*link>>/, "");
+  // SugarCube sometimes gets a description for a passage other than
+  // the current one. In that case, use its default excerpt.
+  if (this.title !== State.passage) return false;
 
-  // ignore this._excerpt
-  let excerpt = Passage.getExcerptFromText(mkp);
+  // For the current passage, use the rendered text, not the source text.
+  
+  const doc = $(".passage").clone();
+  doc.find("style, script, .meta-text").remove();
+  const text = doc.text();
+  const words = text.trim().split(/\s+/);
+
+  let excerpt = words.slice(0, 10).join(" ");
 
   // add unlock count
   const [unlocked, total] = countUnlocks();
@@ -18,6 +23,8 @@ Config.passages.descriptions = function() {
     // not reporting total, it's kind of a spoiler
     excerpt = `${unlocked}\uD83D\uDD13 ${excerpt}`;
   }
+
+  console.log({ excerpt });
 
   return excerpt;
 };
@@ -43,18 +50,20 @@ Config.passages.descriptions = function() {
 
 function countUnlocks() {
   const unlocked = MT.unlockedSet();
-  let n = 0;
+  let num = 0;
   let total = 0;
   const add = (keys) => {
-    n += keys.filter(k => unlocked.has(k)).length;
     total += keys.length;
+    for (const k of keys) {
+      if (unlocked.has(k)) num++;
+    }
   };
 
   add(MT.drekkarEndings);
   add(Object.keys(MT.neroEndings));
   add(Object.keys(MT.neroKeywords));
 
-  return [n, total];
+  return [num, total];
 }
 
 /** Migrate an old saveObj to current game. */
