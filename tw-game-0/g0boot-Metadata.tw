@@ -141,7 +141,7 @@ MT.mdClear = () => {
 };
 
 /** Merges metadata from `save` into current metadata. */
-function mdReadFromSave(save) {
+function readFromSave(save) {
   if (!save.metadata) return;
   const current = MT.mdRecord();
   for (const [key, value] of Object.entries(save.metadata)) {
@@ -150,11 +150,11 @@ function mdReadFromSave(save) {
       // XXX announce the unlock
     }
   }
-  MT.mdCopyToVars();
+  copyToVars();
 }
 
 /** Adds current metadata to `save`. */
-function mdWriteToSave(save) {
+function writeToSave(save) {
   save.metadata ||= {};
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
@@ -165,7 +165,7 @@ function mdWriteToSave(save) {
 }
 
 /** Copies current metadata to State.variables */
-function mdCopyToVars() {
+function copyToVars() {
   const U = MT.untracedVars ? MT.untracedVars() : State.variables;
   const rec = MT.mdRecord();
   // need to do all known keys, not just set keys
@@ -179,9 +179,9 @@ function mdCopyToVars() {
 };
 
 function mdInit() {
-  Save.onLoad.add(mdReadFromSave);
-  Save.onSave.add(mdWriteToSave);
-  $(document).on(":passageinit", mdCopyToVars);
+  Save.onLoad.add(readFromSave);
+  Save.onSave.add(writeToSave);
+  $(document).on(":passageinit", copyToVars);
 }
 
 mdInit();
