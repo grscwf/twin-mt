@@ -1,9 +1,36 @@
-:: g0init State [inclusion] {"position":"425,1000","size":"100,100"}
+:: g0init Checkpoint [inclusion] {"position":"425,1000","size":"100,100"}
 <<script>>
+
+/**
+ * <<checkpoint-save varName>>
+ * Stores current state in varName.
+ */
+Macro.add("checkpoint-save", {
+  handler: function() {
+    const [varName] = this.args[0];
+    MT.untraced(() => {
+      const save = State.marshalForSave();
+      State.variables[varName] = JSON.stringify(save);
+    });
+  }
+});
+
+/**
+ * <<checkpoint-load varName>>
+ * Returns to state stored in varName.
+ */
+Macro.add("checkpoint-load", {
+  handler: function() {
+    const [varName] = this.args[0];
+    const state = JSON.parse(State.variables[varName]);
+    State.unmarshalForSave(state);
+  }
+});
 
 /**
  * <<state-delete prefix1 ...>>
  * Deletes all state vars whose names start with any of the prefixes.
+ * XXX delete this @obsolete
  */
 Macro.add("state-delete", {
   handler: function() {
@@ -23,6 +50,7 @@ Macro.add("state-delete", {
 /**
  * <<state-save varName prefix1 ...>>
  * Saves into varName all state vars whose names start with any prefix.
+ * XXX delete this @obsolete
  */
 Macro.add("state-save", {
   handler: function() {
@@ -46,6 +74,7 @@ Macro.add("state-save", {
 /**
  * <<state-load varName>>
  * Restore state vars from varName.
+ * XXX delete this @obsolete
  */
 Macro.add("state-load", {
   handler: function() {

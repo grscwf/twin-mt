@@ -477,7 +477,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -11057,11 +11057,38 @@ Macro.add(&quot;auto-stow&quot;, {
     &lt;/span&gt;
   &lt;/div&gt;
 &lt;&lt;/append&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="262" name="g0init State" tags="inclusion" position="425,1000" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="262" name="g0init Checkpoint" tags="inclusion" position="425,1000" size="100,100">&lt;&lt;script&gt;&gt;
+
+/**
+ * &lt;&lt;checkpoint-save varName&gt;&gt;
+ * Stores current state in varName.
+ */
+Macro.add(&quot;checkpoint-save&quot;, {
+  handler: function() {
+    const [varName] = this.args[0];
+    MT.untraced(() =&gt; {
+      const save = State.marshalForSave();
+      State.variables[varName] = JSON.stringify(save);
+    });
+  }
+});
+
+/**
+ * &lt;&lt;checkpoint-load varName&gt;&gt;
+ * Returns to state stored in varName.
+ */
+Macro.add(&quot;checkpoint-load&quot;, {
+  handler: function() {
+    const [varName] = this.args[0];
+    const state = JSON.parse(State.variables[varName]);
+    State.unmarshalForSave(state);
+  }
+});
 
 /**
  * &lt;&lt;state-delete prefix1 ...&gt;&gt;
  * Deletes all state vars whose names start with any of the prefixes.
+ * XXX delete this @obsolete
  */
 Macro.add(&quot;state-delete&quot;, {
   handler: function() {
@@ -11081,6 +11108,7 @@ Macro.add(&quot;state-delete&quot;, {
 /**
  * &lt;&lt;state-save varName prefix1 ...&gt;&gt;
  * Saves into varName all state vars whose names start with any prefix.
+ * XXX delete this @obsolete
  */
 Macro.add(&quot;state-save&quot;, {
   handler: function() {
@@ -11104,6 +11132,7 @@ Macro.add(&quot;state-save&quot;, {
 /**
  * &lt;&lt;state-load varName&gt;&gt;
  * Restore state vars from varName.
+ * XXX delete this @obsolete
  */
 Macro.add(&quot;state-load&quot;, {
   handler: function() {
