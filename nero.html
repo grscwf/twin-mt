@@ -477,7 +477,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -6115,7 +6115,98 @@ Macro.add(&quot;arousalbar&quot;, {
     setTimeout(() =&gt; bar.css({ width: hp1 + &quot;%&quot;}), 200);
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="232" name="g0init Compute Variants" tags="inclusion" position="425,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="232" name="g0init Checkpoint" tags="inclusion" position="425,1000" size="100,100">&lt;&lt;script&gt;&gt;
+
+/**
+ * &lt;&lt;checkpoint-save varName&gt;&gt;
+ * Stores current state in varName.
+ */
+Macro.add(&quot;checkpoint-save&quot;, {
+  handler: function() {
+    const [varName] = this.args[0];
+    MT.untraced(() =&gt; {
+      const save = State.marshalForSave();
+      State.variables[varName] = JSON.stringify(save);
+    });
+  }
+});
+
+/**
+ * &lt;&lt;checkpoint-load varName&gt;&gt;
+ * Returns to state stored in varName.
+ */
+Macro.add(&quot;checkpoint-load&quot;, {
+  handler: function() {
+    const [varName] = this.args[0];
+    const state = JSON.parse(State.variables[varName]);
+    State.unmarshalForSave(state);
+  }
+});
+
+/**
+ * &lt;&lt;state-delete prefix1 ...&gt;&gt;
+ * Deletes all state vars whose names start with any of the prefixes.
+ * XXX delete this @obsolete
+ */
+Macro.add(&quot;state-delete&quot;, {
+  handler: function() {
+    const prefixes = this.args;
+    const V = State.variables;
+    for (const key of Object.keys(V)) {
+      for (const p of prefixes) {
+        if (key.startsWith(p)) {
+          delete V[key];
+          break;
+        }
+      }
+    }
+  }
+});
+
+/**
+ * &lt;&lt;state-save varName prefix1 ...&gt;&gt;
+ * Saves into varName all state vars whose names start with any prefix.
+ * XXX delete this @obsolete
+ */
+Macro.add(&quot;state-save&quot;, {
+  handler: function() {
+    const dest = this.args[0];
+    const prefixes = this.args.slice(1);
+    const V = State.variables;
+    const save = {};
+    for (const key of Object.keys(V)) {
+      if (key === dest) continue;
+      for (const p of prefixes) {
+        if (key.startsWith(p)) {
+          save[key] = MT.untracedGet(key);
+          break;
+        }
+      }
+    }
+    V[dest] = save;
+  }
+});
+
+/**
+ * &lt;&lt;state-load varName&gt;&gt;
+ * Restore state vars from varName.
+ * XXX delete this @obsolete
+ */
+Macro.add(&quot;state-load&quot;, {
+  handler: function() {
+    const src = this.args[0];
+    const V = State.variables;
+    const saved = V[src];
+    if (saved == null || typeof saved !== &quot;object&quot;) {
+      console.warn(`no saved state named ${src}`);
+      return;
+    }
+    for (const key of Object.keys(saved)) {
+      V[key] = saved[key];
+    }
+  }
+});
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="233" name="g0init Compute Variants" tags="inclusion" position="425,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .cv-state {
   color: #39f;
@@ -6451,7 +6542,7 @@ function mark(node, c) {
     $(node).addClass(c === 1 ? &quot;cv-diff-a&quot; : &quot;cv-diff-b&quot;);
   }
 }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="233" name="g0init Count Words" tags="inclusion" position="550,625" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="234" name="g0init Count Words" tags="inclusion" position="550,625" size="100,100">&lt;&lt;script&gt;&gt;
 
 MT.countWords = function(text) {
   const tokens = text.split(/(&lt;[&lt;].*?&gt;&gt;|&lt;.*&gt;)/);
@@ -6479,7 +6570,7 @@ MT.countWords = function(text) {
   }
   return n;
 }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="234" name="g0init Draft Sign" tags="inclusion" position="675,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="235" name="g0init Draft Sign" tags="inclusion" position="675,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 #draft-sign {
   font-size: 120px;
@@ -6553,7 +6644,7 @@ MT.signPassage = () =&gt; {
 
 $(document).on(&quot;:passagedisplay&quot;, MT.signPassage);
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="235" name="g0init Drekkar Endings" tags="inclusion" position="1475,1475" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="236" name="g0init Drekkar Endings" tags="inclusion" position="1475,1475" size="100,100">&lt;&lt;script&gt;&gt;
 
 MT.drekkarEndings = [
   &quot;de1_InterrogationMild&quot;,
@@ -6576,7 +6667,7 @@ for (const key of MT.drekkarEndings) {
   MT.mdDefSaved(key);
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="236" name="g0init Drekkar" tags="inclusion" position="925,1275" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="237" name="g0init Drekkar" tags="inclusion" position="925,1275" size="100,100">&lt;&lt;script&gt;&gt;
 const V = variables();
 V.name = &quot;Drekkar&quot;;
 V.class = &quot;warrior&quot;;
@@ -6603,7 +6694,7 @@ V.lionwatch6 = 60;
 V.lionwatch7 = 90;
 V.lionwatchFinal = V.lionwatch1 + V.lionwatch2 + V.lionwatch3 +
   V.lionwatch4 + V.lionwatch5 + V.lionwatch6 + V.lionwatch7;
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="237" name="g0init Error Message" tags="inclusion" position="800,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="238" name="g0init Error Message" tags="inclusion" position="800,625" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #EM-outer {
     position: fixed;
     bottom: 0;
@@ -6786,7 +6877,7 @@ function getFails() {
   });
   return fails;
 }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="238" name="g0init Fade-In" tags="inclusion" position="175,750" size="100,100">&lt;!--
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="239" name="g0init Fade-In" tags="inclusion" position="175,750" size="100,100">&lt;!--
 /*
  * This description assumes you&#39;re using the default style.
  * &lt;&lt;fade-in 1.5s [no-pulse]&gt;&gt;
@@ -6956,7 +7047,7 @@ Macro.add(&quot;fade-in&quot;, {
     setTimeout(next);
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="239" name="g0init Legacy Cleanup" tags="inclusion" position="675,1125" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="g0init Legacy Cleanup" tags="inclusion" position="675,1125" size="100,100">&lt;&lt;script&gt;&gt;
 
 const localStorageDelete = [
   &quot;vp-1&quot;,
@@ -7034,7 +7125,7 @@ function cleanupInit() {
 
 cleanupInit();
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="g0init Links" tags="inclusion" position="300,750" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="241" name="g0init Links" tags="inclusion" position="300,750" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .mtl-denied::before {
   filter: grayscale();
@@ -7207,7 +7298,7 @@ function recentlyViewed(name) {
   return false;
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="241" name="g0init Log" tags="inclusion" position="425,750" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="242" name="g0init Log" tags="inclusion" position="425,750" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 #log-button {
     background-color: #fff;
@@ -7502,7 +7593,7 @@ function openLog() {
 }
 
 initLog();
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="242" name="g0init Nero Actions" tags="inclusion" position="1100,1475" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="243" name="g0init Nero Actions" tags="inclusion" position="1100,1475" size="100,100">&lt;&lt;script&gt;&gt;
 const actionList = [];
 
 $(document).on(&quot;:passagestart&quot;, () =&gt; {
@@ -7551,7 +7642,7 @@ Macro.add(&quot;actions-optional&quot;, {
   }
 });
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="243" name="g0init Nero Barbs" tags="inclusion" position="1225,1475" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="g0init Nero Barbs" tags="inclusion" position="1225,1475" size="100,100">&lt;&lt;script&gt;&gt;
 
 function announceBarbs(dest) {
   const V = State.variables;
@@ -7582,7 +7673,7 @@ Macro.add(&quot;barbs-announce&quot;, {
     }
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="244" name="g0init Nero Constraints" tags="inclusion" position="1350,1475" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="245" name="g0init Nero Constraints" tags="inclusion" position="1350,1475" size="100,100">&lt;&lt;script&gt;&gt;
 
 // - Flags are booleans where null or undefined is equivalent to false.
 // - &quot;implies&quot; are constraints on other vars when the flag is true.
@@ -8306,7 +8397,7 @@ const checkConstraints = () =&gt; {
 };
 
 $(document).on(&quot;:passageend&quot;, checkConstraints);
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="245" name="g0init Nero Endings" tags="inclusion" position="1475,1475" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="246" name="g0init Nero Endings" tags="inclusion" position="1475,1475" size="100,100">&lt;&lt;script&gt;&gt;
 
 MT.neroEndings = {
   ne1_Broken: {
@@ -8380,7 +8471,7 @@ for (const key of Object.keys(MT.neroEndings)) {
   MT.mdDefSaved(key);
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="246" name="g0init Nero Glitch" tags="inclusion" position="1600,1475" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="247" name="g0init Nero Glitch" tags="inclusion" position="1600,1475" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 #glitch-1 {
   white-space: nowrap;
@@ -8553,7 +8644,7 @@ function glitchText(textNode, g, speed) {
   return g;
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="247" name="g0init Nero Keywords" tags="inclusion" position="1100,1600" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="248" name="g0init Nero Keywords" tags="inclusion" position="1100,1600" size="100,100">&lt;&lt;script&gt;&gt;
 
 MT.neroKeywords = {
   nk_AntiMagic: {
@@ -8831,7 +8922,7 @@ function neroKeywordInit() {
 
 neroKeywordInit();
 
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="248" name="g0init Nero Misfire" tags="inclusion" position="1225,1600" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="249" name="g0init Nero Misfire" tags="inclusion" position="1225,1600" size="100,100">&lt;&lt;script&gt;&gt;
 
 /**
  * &lt;&lt;mf-please&gt;&gt;
@@ -8906,7 +8997,7 @@ Macro.add(&quot;mf-pass&quot;, {
     console.log(`mf-pass ${pw}`);
   }
 });
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="249" name="g0init Nero Password" tags="inclusion" position="1475,1600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="250" name="g0init Nero Password" tags="inclusion" position="1475,1600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 #passages:not(.pw-debug-show) .pw-debug &gt; :not(label) {
   display: none;
 }
@@ -9180,7 +9271,7 @@ Template.add(&quot;sprBadPass&quot;, () =&gt; {
   return mkp;
 });
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="250" name="g0init Nero Patience" tags="inclusion" position="1600,1600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="251" name="g0init Nero Patience" tags="inclusion" position="1600,1600" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 .patience-debug:not(.patience-debug-show) &gt; :not(label) {
   display: none;
 }
@@ -9366,7 +9457,7 @@ Macro.add(&quot;n1-patience&quot;, {
   }
 });
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="251" name="g0init Nero Taming" tags="inclusion" position="1100,1725" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="252" name="g0init Nero Taming" tags="inclusion" position="1100,1725" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .tame-word {
   transition: all 2s ease-in;
@@ -9459,7 +9550,7 @@ function tameTextTo(list, node) {
   }
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="252" name="g0init Nero Templates" tags="inclusion" position="1225,1725" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="253" name="g0init Nero Templates" tags="inclusion" position="1225,1725" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .master-quiet {
   font-size: 18px;
@@ -9585,7 +9676,7 @@ Template.add(&quot;sprHoldStop&quot;, () =&gt; {
 
 Template.add(&quot;construction&quot;,
   `&lt;h1&gt;&amp;#x1f6a7;Under Construction&amp;#x1f6a7;&lt;/h1&gt;`)
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="253" name="g0init Notes" tags="inclusion" position="175,1825" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="254" name="g0init Notes" tags="inclusion" position="175,1825" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #notes-button {
     background-color: rgb(255, 255, 255, 0.2);
     border: 1px solid transparent;
@@ -9820,7 +9911,7 @@ function initNotes() {
 }
 
 initNotes();
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="254" name="g0init Paths" tags="inclusion" position="175,875" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="255" name="g0init Paths" tags="inclusion" position="175,875" size="100,100">&lt;&lt;script&gt;&gt;
 /*
  * This module is about traversable paths.
  *
@@ -9913,7 +10004,7 @@ MT.pathName = (path) =&gt; {
   return &quot;&gt; &quot; + titles.join(&quot; &gt; &quot;);
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="255" name="g0init Random Once" tags="inclusion" position="300,875" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="g0init Random Once" tags="inclusion" position="300,875" size="100,100">&lt;&lt;script&gt;&gt;
 
 /**
  * &lt;&lt;random-once seenVar&gt;&gt;
@@ -9974,7 +10065,7 @@ Macro.add(&quot;random-once&quot;, {
     }
   }
 });
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="256" name="g0init Randomness" tags="inclusion" position="425,875" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="257" name="g0init Randomness" tags="inclusion" position="425,875" size="100,100">&lt;&lt;script&gt;&gt;
 /**
  * Pick arbitrary item from list or Set, based on State.random()
  * SugarCube&#39;s Array.random(), either(), etc, use Math.random().
@@ -9999,7 +10090,7 @@ function initRandom() {
 
 // initRandom();
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="257" name="g0init Return Sticky" tags="inclusion" position="550,875" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="258" name="g0init Return Sticky" tags="inclusion" position="550,875" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 #return-head,
 #return-tail {
@@ -10075,7 +10166,7 @@ function stickyInit() {
 
 stickyInit();
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="258" name="g0init Roaming" tags="inclusion" position="675,875" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="259" name="g0init Roaming" tags="inclusion" position="675,875" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #random-walk {
     top: max(5rem, 50vh - 5rem);
     display: flex;
@@ -10518,7 +10609,7 @@ function initRandomWalk() {
 }
 
 initRandomWalk();
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="259" name="g0init Saved Games" tags="inclusion" position="175,1000" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="260" name="g0init Saved Games" tags="inclusion" position="175,1000" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Fix up the in-browser saved game title. */
 Config.passages.descriptions = function() {
@@ -10592,7 +10683,7 @@ function migrate(saveObj) {
   // also, add a migration in mdLoad if necessary.
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="260" name="g0init Sections" tags="inclusion" position="175,1125" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="261" name="g0init Sections" tags="inclusion" position="175,1125" size="100,100">&lt;&lt;script&gt;&gt;
 
 // Passages are grouped into sections by a prefix code in their title.
 // - Prefix should start with a lowercase letter, followed by a number,
@@ -11022,7 +11113,7 @@ function checkSectionStateHere() {
 checkSections();
 $(document).on(&quot;:passageend&quot;, checkSectionStateHere);
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="261" name="g0init Sidebar" tags="inclusion" position="300,1000" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="262" name="g0init Sidebar" tags="inclusion" position="300,1000" size="100,100">&lt;&lt;script&gt;&gt;
 MT.autoStow = () =&gt; {
   if (document.body.offsetWidth &lt;= 768) {
     UIBar.stow();
@@ -11057,98 +11148,7 @@ Macro.add(&quot;auto-stow&quot;, {
     &lt;/span&gt;
   &lt;/div&gt;
 &lt;&lt;/append&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="262" name="g0init Checkpoint" tags="inclusion" position="425,1000" size="100,100">&lt;&lt;script&gt;&gt;
-
-/**
- * &lt;&lt;checkpoint-save varName&gt;&gt;
- * Stores current state in varName.
- */
-Macro.add(&quot;checkpoint-save&quot;, {
-  handler: function() {
-    const [varName] = this.args[0];
-    MT.untraced(() =&gt; {
-      const save = State.marshalForSave();
-      State.variables[varName] = JSON.stringify(save);
-    });
-  }
-});
-
-/**
- * &lt;&lt;checkpoint-load varName&gt;&gt;
- * Returns to state stored in varName.
- */
-Macro.add(&quot;checkpoint-load&quot;, {
-  handler: function() {
-    const [varName] = this.args[0];
-    const state = JSON.parse(State.variables[varName]);
-    State.unmarshalForSave(state);
-  }
-});
-
-/**
- * &lt;&lt;state-delete prefix1 ...&gt;&gt;
- * Deletes all state vars whose names start with any of the prefixes.
- * XXX delete this @obsolete
- */
-Macro.add(&quot;state-delete&quot;, {
-  handler: function() {
-    const prefixes = this.args;
-    const V = State.variables;
-    for (const key of Object.keys(V)) {
-      for (const p of prefixes) {
-        if (key.startsWith(p)) {
-          delete V[key];
-          break;
-        }
-      }
-    }
-  }
-});
-
-/**
- * &lt;&lt;state-save varName prefix1 ...&gt;&gt;
- * Saves into varName all state vars whose names start with any prefix.
- * XXX delete this @obsolete
- */
-Macro.add(&quot;state-save&quot;, {
-  handler: function() {
-    const dest = this.args[0];
-    const prefixes = this.args.slice(1);
-    const V = State.variables;
-    const save = {};
-    for (const key of Object.keys(V)) {
-      if (key === dest) continue;
-      for (const p of prefixes) {
-        if (key.startsWith(p)) {
-          save[key] = MT.untracedGet(key);
-          break;
-        }
-      }
-    }
-    V[dest] = save;
-  }
-});
-
-/**
- * &lt;&lt;state-load varName&gt;&gt;
- * Restore state vars from varName.
- * XXX delete this @obsolete
- */
-Macro.add(&quot;state-load&quot;, {
-  handler: function() {
-    const src = this.args[0];
-    const V = State.variables;
-    const saved = V[src];
-    if (saved == null || typeof saved !== &quot;object&quot;) {
-      console.warn(`no saved state named ${src}`);
-      return;
-    }
-    for (const key of Object.keys(saved)) {
-      V[key] = saved[key];
-    }
-  }
-});
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="263" name="g0init Templates" tags="inclusion" position="550,1000" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="263" name="g0init Templates" tags="inclusion" position="550,1000" size="100,100">&lt;&lt;script&gt;&gt;
 
 Template.add(&quot;P&quot;, &quot;&lt;br&gt;&lt;br&gt;&quot;);
 
