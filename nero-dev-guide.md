@@ -218,9 +218,9 @@
   - Changing a flag adds another state to the history,
     and going back will revert the change.
 - var-info highlights "notable" flags.
-  - Notable flags are flags like `n1_naked` that are expected to have visible
+  - Notable flags are flags like `n_naked` that are expected to have visible
     effects in the current passage.
-  - Notable flags are defined by story section: eg, `n1_naked` is not notable
+  - Notable flags are defined by story section: eg, `n_naked` is not notable
     if it's always true in a section.
   - If a passage does not read a notable flag, it's marked with a
     construction-sign warning.
@@ -285,16 +285,16 @@
   - It's sometimes useful to write conditions specifically for
     helping compute-variants, including redundant flag checks.
 - If a passage has constraints that only apply to some conditions,
-  eg, an assertion on `t_ivexNear` only if `!$n2_ivexGone`,
+  eg, an assertion on `n_ivexNear` only if `!$n_ivexGone`,
   then you probably need to add `cv-try` for the asserted variables,
   to help compute-variants find a state that's consistent.
-- For testing `n1_magicPhase` variants, add a `<<cv-try>>` statement:
+- For testing `n_magicPhase` variants, add a `<<cv-try>>` statement:
   - Include `MP_beforeCast` if it's possible.
   - Include any values tested in the passage.
-  - If the passage checks `n2_free`,
+  - If the passage checks `n_free`,
     include `MP_contact`, `MP_drained`, and `MP_tapLost`.
-- If a passage reads `n1_magicPhaseReached`, it should have most of the
-  same values as `n1_magicPhase`.
+- If a passage reads `n_magicPhaseReached`, it should have most of the
+  same values as `n_magicPhase`.
   - Exclude: `MP_onHold`, `MP_exitingHold`, `MP_lockedOut`, `MP_tapLost`
 - TODO: these rules could be automatic.
 
@@ -315,7 +315,7 @@
   - The trailing letters identify a section within the chapter.
     - This is partly for organization, but it's also for asserting state
       within a section. For example, within `n1d`,
-      no matter where we are or how we got there, `n1_naked` should be true.
+      no matter where we are or how we got there, `n_naked` should be true.
   - Descriptions of each section are in the passage `g0init Sections`.
 - If a script or style is only used by a single passage, it's usually inlined
   in the passage.
@@ -344,18 +344,27 @@
 
 ### State
 
-- All Nero state vars start with a prefix like `n1_` or `t_`.
-  - The `n` is for persistent Nero variables.
-  - The digit indicates what chapter sets the variable.
-    - Restarting at chapter 2 will delete all `t_` variables,
-      all `n2_` and later variables,
-      and then restore a snapshot of `n1_` variables
-      (which is saved before starting chapter 2).
-  - The `t_` variables are for state that doesn't need to be added to a
-    restart snapshot. Generally, local passage connection logic can be
-    `t_` variables.
-- `n0_` vars are for Nero state that persists across replays.
-- `mt_` vars are for overall story state that persists across replays.
+- State variables are specific to a playthrough.
+  - They get erased when the player restarts.
+  - They're stored in saved games and checkpoints.
+  - State variable names start with a prefix:
+    - `d_` is Drekkar's story.
+    - `n_` is Nero's story.
+    - `g_` is state not specific to either story.
+- Metadata variables persist across playthroughs.
+  - They don't get erased when the player restarts.
+  - This is stuff like "which endings are unlocked".
+  - Some of them are also stored in saved games.
+  - Loading a saved game will set metadata from the saved game,
+    but will not erase metadata that isn't in the saved game.
+  - Metadata must be set with `MT.mdSet`.
+  - Metadata is also mirrored to state variables for convenience,
+    but setting the state variable will not update the metadata,
+    and the value will be reset from metadata on the next `:passageinit`.
+  - Metadata variable names start with a prefix:
+    - `dx_` and `nx_` are Drekkar and Nero endings unlocked.
+    - `dk_` and `nk_` are Drekkar and Nero keywords unlocked.
+    - `dm_` and `nm_` are for other Drekkar and Nero metadata.
 - Generally, a passage that changes state will change it at the
   bottom.
   - This makes it easier to write text for the state transition.
