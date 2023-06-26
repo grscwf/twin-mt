@@ -139,13 +139,15 @@ Macro.add("arc-select", {
         break;
       }
     }
-    if (!matched && !T.lockpick) V[varname] = null;
+    if (!matched && !T.lockpick) {
+      MT.mdSet(varname, null);
+    }
 
     // If value is not set, set it to the first enabled choice.
     if (V[varname] == null || V[varname] === "") {
       for (const ch of choices) {
         if (ch.args[2] || T.lockpick) {
-          V[varname] = ch.args[0];
+          MT.mdSet(varname, ch.args[0]);
           break;
         }
       }
@@ -160,17 +162,20 @@ Macro.add("arc-select", {
       const text = ch.args[1];
       const enabled = ch.args[2];
       const unlocked = enabled || T.lockpick;
-      if (unlocked && (V[varname] == null || V[varname] === "")) {
-        V[varname] = text;
-      }
-      const label = $("<label>")
-        .wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
-      label.append(text).appendTo(outer);
+      const label = $("<label>").appendTo(outer);
       label.toggleClass("arc-picklocked", unlocked && !enabled);
+      label.wiki(`<<radiobutton "$${varname}" "${value}" autocheck>>`);
+      const input = label.find("input");
+      input.on("change", function() {
+        if (this.checked) {
+          MT.mdSet(varname, ch.args[0]);
+        }
+      });
+      label.append(text);
       if (!unlocked) {
         if (hint == null) hint = `(${text}) ${ch.contents}`;
         label.addClass("arc-disabled");
-        label.find("input").attr("disabled", "disabled");
+        input.attr("disabled", "disabled");
       }
     }
     if (hint != null) {
@@ -239,8 +244,8 @@ Macro.add("arc-barbs", {
     const [varname] = this.args;
     $(this.output).wiki(
       `<<arc-select ${varname} "Variant:">>` +
-      `  <<arc-option smooth "Smooth" true>>` +
-      `  <<arc-option barbs "Barbs" true>>` +
+      `  <<arc-option n "Smooth" true>>` +
+      `  <<arc-option y "Barbs" true>>` +
       `<</arc-select>>`
     );
   }
@@ -255,7 +260,7 @@ Macro.add("arc-set-barbs", {
     const [vname] = this.args;
     const V = State.variables;
     if (V[vname] == null) {
-      V[vname] = V["n1_barbs"] ? "barbs" : "smooth";
+      MT.mdSet(vname, V["n1_barbs"] ? "y" : "n");
     }
   }
 });

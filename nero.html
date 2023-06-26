@@ -477,7 +477,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -5702,11 +5702,12 @@ function writeToSave(save) {
 function copyToVars() {
   const U = MT.untracedVars ? MT.untracedVars() : State.variables;
   const rec = MT.mdRecord();
-  // need to do all known keys, not just set keys
+  for (const key of Object.keys(rec)) {
+    U[key] = rec[key];
+  }
+  // delete unset known keys
   for (const key of Object.keys(knownKeys)) {
-    if (rec[key]) {
-      U[key] = rec[key];
-    } else {
+    if (!rec[key]) {
       delete U[key];
     }
   }
@@ -5859,13 +5860,15 @@ Macro.add(&quot;arc-select&quot;, {
         break;
       }
     }
-    if (!matched &amp;&amp; !T.lockpick) V[varname] = null;
+    if (!matched &amp;&amp; !T.lockpick) {
+      MT.mdSet(varname, null);
+    }
 
     // If value is not set, set it to the first enabled choice.
     if (V[varname] == null || V[varname] === &quot;&quot;) {
       for (const ch of choices) {
         if (ch.args[2] || T.lockpick) {
-          V[varname] = ch.args[0];
+          MT.mdSet(varname, ch.args[0]);
           break;
         }
       }
@@ -5880,17 +5883,20 @@ Macro.add(&quot;arc-select&quot;, {
       const text = ch.args[1];
       const enabled = ch.args[2];
       const unlocked = enabled || T.lockpick;
-      if (unlocked &amp;&amp; (V[varname] == null || V[varname] === &quot;&quot;)) {
-        V[varname] = text;
-      }
-      const label = $(&quot;&lt;label&gt;&quot;)
-        .wiki(`&lt;&lt;radiobutton &quot;$${varname}&quot; &quot;${value}&quot; autocheck&gt;&gt;`);
-      label.append(text).appendTo(outer);
+      const label = $(&quot;&lt;label&gt;&quot;).appendTo(outer);
       label.toggleClass(&quot;arc-picklocked&quot;, unlocked &amp;&amp; !enabled);
+      label.wiki(`&lt;&lt;radiobutton &quot;$${varname}&quot; &quot;${value}&quot; autocheck&gt;&gt;`);
+      const input = label.find(&quot;input&quot;);
+      input.on(&quot;change&quot;, function() {
+        if (this.checked) {
+          MT.mdSet(varname, ch.args[0]);
+        }
+      });
+      label.append(text);
       if (!unlocked) {
         if (hint == null) hint = `(${text}) ${ch.contents}`;
         label.addClass(&quot;arc-disabled&quot;);
-        label.find(&quot;input&quot;).attr(&quot;disabled&quot;, &quot;disabled&quot;);
+        input.attr(&quot;disabled&quot;, &quot;disabled&quot;);
       }
     }
     if (hint != null) {
@@ -5959,8 +5965,8 @@ Macro.add(&quot;arc-barbs&quot;, {
     const [varname] = this.args;
     $(this.output).wiki(
       `&lt;&lt;arc-select ${varname} &quot;Variant:&quot;&gt;&gt;` +
-      `  &lt;&lt;arc-option smooth &quot;Smooth&quot; true&gt;&gt;` +
-      `  &lt;&lt;arc-option barbs &quot;Barbs&quot; true&gt;&gt;` +
+      `  &lt;&lt;arc-option n &quot;Smooth&quot; true&gt;&gt;` +
+      `  &lt;&lt;arc-option y &quot;Barbs&quot; true&gt;&gt;` +
       `&lt;&lt;/arc-select&gt;&gt;`
     );
   }
@@ -5975,7 +5981,7 @@ Macro.add(&quot;arc-set-barbs&quot;, {
     const [vname] = this.args;
     const V = State.variables;
     if (V[vname] == null) {
-      V[vname] = V[&quot;n1_barbs&quot;] ? &quot;barbs&quot; : &quot;smooth&quot;;
+      MT.mdSet(vname, V[&quot;n1_barbs&quot;] ? &quot;y&quot; : &quot;n&quot;);
     }
   }
 });
