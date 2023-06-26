@@ -477,7 +477,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -7056,82 +7056,21 @@ const localStorageDelete = [
   &quot;vp-marks-enabled&quot;,
 ];
 
-const metadataDelete = [
-  &quot;gmVisited&quot;,
-  &quot;kwAntiMagic&quot;,
-  &quot;kwDream&quot;,
-  &quot;kwEndgame&quot;,
-  &quot;kwGravity&quot;,
-  &quot;kwItch&quot;,
-  &quot;kwIvex&quot;,
-  &quot;kwKelvin&quot;,
-  &quot;kwKopic&quot;,
-  &quot;kwMcBasics&quot;,
-  &quot;kwMcInhibition&quot;,
-  &quot;kwMcRepression&quot;,
-  &quot;kwMcSubstitution&quot;,
-  &quot;kwMica&quot;,
-  &quot;kwNackle&quot;,
-  &quot;kwOil&quot;,
-  &quot;kwPearson&quot;,
-  &quot;kePevhin&quot;,
-  &quot;kwPyron&quot;,
-  &quot;kwSprite&quot;,
-  &quot;kwTigerKeratin&quot;,
-  &quot;kwTigerMyth&quot;,
-  &quot;kwYounger&quot;,
-  &quot;mark-visited&quot;,
-  &quot;ne1_Broken&quot;,
-  &quot;ne1_CagedHarsh&quot;,
-  &quot;ne1_CagedMild&quot;,
-  &quot;ne1_TamedHarsh&quot;,
-  &quot;ne1_TamedMild&quot;,
-  &quot;nk_McBasics&quot;,
-  &quot;nk_McInhibition&quot;,
-  &quot;nk_McRepression&quot;,
-  &quot;nk_McSubstitution&quot;,
-  &quot;nkAntiMagic&quot;,
-  &quot;nkDream&quot;,
-  &quot;nkEndgame&quot;,
-  &quot;nkGravity&quot;,
-  &quot;nkItch&quot;,
-  &quot;nkIvex&quot;,
-  &quot;nkKelvin&quot;,
-  &quot;nkKopic&quot;,
-  &quot;nkMcBasics&quot;,
-  &quot;nkMcInhibition&quot;,
-  &quot;nkMcRepression&quot;,
-  &quot;nkMcSubstitution&quot;,
-  &quot;nkMica&quot;,
-  &quot;nkNackle&quot;,
-  &quot;nkOil&quot;,
-  &quot;nkPearson&quot;,
-  &quot;nkPevhin&quot;,
-  &quot;nkPyron&quot;,
-  &quot;nkSprite&quot;,
-  &quot;nkTigerKeratin&quot;,
-  &quot;nkTigerMyth&quot;,
-  &quot;nkYounger&quot;,
-  &quot;nxBroken&quot;,
-  &quot;nxCagedHarsh&quot;,
-  &quot;nxCagedMild&quot;,
-  &quot;nxTamedHarsh&quot;,
-  &quot;nxTamedMild&quot;,
-  &quot;visited&quot;,
-];
+function cleanupMetadata() {
+  const rec = MT.mdRecord();
+  for (const [k, v] of MT.mdEntries()) {
+    if (!MT.mdKnown(k)) {
+      console.warn(&quot;removing unknown metadata&quot;, {k, v});
+      State.metadata.delete(k);
+    }
+  }
+}
 
 function cleanupInit() {
   for (const k of localStorageDelete) {
     localStorage.removeItem(k);
   }
-
-  // metadata.delete is expensive, so only do it if necessary.
-  const rec = MT.mdRecord();
-  for (const k of metadataDelete) {
-    if (k in rec) {
-      State.metadata.delete(k);
-    }
-  }
+  $(document).on(&quot;:storyready&quot;, cleanupMetadata);
 }
 
 cleanupInit();

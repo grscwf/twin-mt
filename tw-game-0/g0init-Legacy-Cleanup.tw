@@ -6,82 +6,21 @@ const localStorageDelete = [
   "vp-marks-enabled",
 ];
 
-const metadataDelete = [
-  "gmVisited",
-  "kwAntiMagic",
-  "kwDream",
-  "kwEndgame",
-  "kwGravity",
-  "kwItch",
-  "kwIvex",
-  "kwKelvin",
-  "kwKopic",
-  "kwMcBasics",
-  "kwMcInhibition",
-  "kwMcRepression",
-  "kwMcSubstitution",
-  "kwMica",
-  "kwNackle",
-  "kwOil",
-  "kwPearson",
-  "kePevhin",
-  "kwPyron",
-  "kwSprite",
-  "kwTigerKeratin",
-  "kwTigerMyth",
-  "kwYounger",
-  "mark-visited",
-  "ne1_Broken",
-  "ne1_CagedHarsh",
-  "ne1_CagedMild",
-  "ne1_TamedHarsh",
-  "ne1_TamedMild",
-  "nk_McBasics",
-  "nk_McInhibition",
-  "nk_McRepression",
-  "nk_McSubstitution",
-  "nkAntiMagic",
-  "nkDream",
-  "nkEndgame",
-  "nkGravity",
-  "nkItch",
-  "nkIvex",
-  "nkKelvin",
-  "nkKopic",
-  "nkMcBasics",
-  "nkMcInhibition",
-  "nkMcRepression",
-  "nkMcSubstitution",
-  "nkMica",
-  "nkNackle",
-  "nkOil",
-  "nkPearson",
-  "nkPevhin",
-  "nkPyron",
-  "nkSprite",
-  "nkTigerKeratin",
-  "nkTigerMyth",
-  "nkYounger",
-  "nxBroken",
-  "nxCagedHarsh",
-  "nxCagedMild",
-  "nxTamedHarsh",
-  "nxTamedMild",
-  "visited",
-];
+function cleanupMetadata() {
+  const rec = MT.mdRecord();
+  for (const [k, v] of MT.mdEntries()) {
+    if (!MT.mdKnown(k)) {
+      console.warn("removing unknown metadata", {k, v});
+      State.metadata.delete(k);
+    }
+  }
+}
 
 function cleanupInit() {
   for (const k of localStorageDelete) {
     localStorage.removeItem(k);
   }
-
-  // metadata.delete is expensive, so only do it if necessary.
-  const rec = MT.mdRecord();
-  for (const k of metadataDelete) {
-    if (k in rec) {
-      State.metadata.delete(k);
-    }
-  }
+  $(document).on(":storyready", cleanupMetadata);
 }
 
 cleanupInit();
