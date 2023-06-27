@@ -71,44 +71,44 @@ Macro.add("n1-patience", {
     const T = State.temporary;
     const here = State.passage;
 
-    if (V.t_patiencePassage !== here) {
+    if (V.n_patiencePassage !== here) {
       // This is our first visit here
-      V.t_patienceLooks = looks;
-      V.t_patienceActions = actions;
-      V.t_patiencePassage = here;
-      V.t_patienceReturn = 0;
-    } else if (V.t_patienceReturn === 1) {
+      V.n_patienceLooks = looks;
+      V.n_patienceActions = actions;
+      V.n_patiencePassage = here;
+      V.n_patienceReturn = 0;
+    } else if (V.n_patienceReturn === 1) {
       // Return from look
-      V.t_patienceLooks--;
-    } else if (V.t_patienceReturn === 2) {
+      V.n_patienceLooks--;
+    } else if (V.n_patienceReturn === 2) {
       // Return from action
-      V.t_patienceActions--;
-      V.t_didSomeAction = true;
+      V.n_patienceActions--;
+      V.n_didSomeAction = true;
     }
-    T.patienceAdvanced = V.t_patienceReturn > 0;
+    T.patienceAdvanced = V.n_patienceReturn > 0;
 
     // lose patience immediately
-    if (V.t_patienceAccel && T.patienceAdvanced) {
-      V.t_patienceLooks = 0;
-      V.t_patienceActions = 0;
+    if (V.n_patienceAccel && T.patienceAdvanced) {
+      V.n_patienceLooks = 0;
+      V.n_patienceActions = 0;
     }
-    V.t_patienceAccel = false;
+    V.n_patienceAccel = false;
 
 
-    T.patience = Math.min(V.t_patienceLooks, V.t_patienceActions);
+    T.patience = Math.min(V.n_patienceLooks, V.n_patienceActions);
 
     // At warn state, only allow 1 more look or action.
     if (T.patience === 1) {
-      V.t_patienceLooks = 1;
-      V.t_patienceActions = 1;
+      V.n_patienceLooks = 1;
+      V.n_patienceActions = 1;
     }
 
     // set return links
-    V.t_afterLook = `[\[Do something else.|${here}][$t_patienceReturn = 1]]`;
-    V.t_afterLookContinue = `[\[Continue|${here}][$t_patienceReturn = 1]]`;
-    // V.t_afterActionAbort = `[\[Do something else.|${here}][$t_patienceReturn = 2]]`;
-    V.t_afterAction = `[\[Continue|${here}][$t_patienceReturn = 2]]`;
-    V.t_afterAttack = V.t_afterAction;
+    V.n_afterLook = `[\[Do something else.|${here}][$n_patienceReturn = 1]]`;
+    V.n_afterLookContinue = `[\[Continue|${here}][$n_patienceReturn = 1]]`;
+    // V.n_afterActionAbort = `[\[Do something else.|${here}][$n_patienceReturn = 2]]`;
+    V.n_afterAction = `[\[Continue|${here}][$n_patienceReturn = 2]]`;
+    V.n_afterAttack = V.n_afterAction;
 
     // Patience text
     if (T.patience <= 0) {
@@ -116,14 +116,14 @@ Macro.add("n1-patience", {
     } else if (T.patience === 1) {
       $(this.output).wiki(warnText);
     } else {
-      switch (V.t_patienceReturn) {
+      switch (V.n_patienceReturn) {
         case 0: $(this.output).wiki(firstText); break;
         case 1: $(this.output).wiki(remindText); break;
         case 2: $(this.output).wiki(repeatText); break;
-        default: throw new Error(`bug: patienceReturn ${V.t_patienceReturn}`);
+        default: throw new Error(`bug: patienceReturn ${V.n_patienceReturn}`);
       }
     }
-    V.t_patienceReturn = 0;
+    V.n_patienceReturn = 0;
 
     if (setup.debug) {
       let debug = !!session.get("patience-debug");
@@ -138,48 +138,48 @@ Macro.add("n1-patience", {
       $("<a>").text("(reset)").appendTo(outer)
         .click(() => MT.revisitHere(() => {
           const V = State.variables;
-          V.t_patiencePassage = null;
-          V.n2_lustTextPos = null;
+          V.n_patiencePassage = null;
+          V.n_lustTextPos = null;
         }));
       if (looks > 2) {
         $("<a>").text(" (remind)").appendTo(outer)
           .click(() => MT.revisitHere(v0 => {
             const V = State.variables;
-            V.t_patiencePassage = here;
-            V.t_patienceActions = Math.max(2, v0.t_patienceActions);
-            V.t_patienceLooks = Math.max(2, v0.t_patienceLooks);
-            V.t_patienceReturn = 1;
-            V.n2_lustTextPos = Math.min(v0.n2_lustTextPos || 0, 4);
+            V.n_patiencePassage = here;
+            V.n_patienceActions = Math.max(2, v0.n_patienceActions);
+            V.n_patienceLooks = Math.max(2, v0.n_patienceLooks);
+            V.n_patienceReturn = 1;
+            V.n_lustTextPos = Math.min(v0.n_lustTextPos || 0, 4);
           }));
       }
       if (actions > 2) {
         $("<a>").text(" (repeat)").appendTo(outer)
           .click(() => MT.revisitHere(v0 => {
             const V = State.variables;
-            V.t_patiencePassage = here;
-            V.t_patienceActions = Math.max(2, v0.t_patienceActions);
-            V.t_patienceLooks = Math.max(2, v0.t_patienceLooks);
-            V.t_patienceReturn = 2;
-            V.n2_lustTextPos = Math.min(v0.n2_lustTextPos || 0, 4);
+            V.n_patiencePassage = here;
+            V.n_patienceActions = Math.max(2, v0.n_patienceActions);
+            V.n_patienceLooks = Math.max(2, v0.n_patienceLooks);
+            V.n_patienceReturn = 2;
+            V.n_lustTextPos = Math.min(v0.n_lustTextPos || 0, 4);
           }));
       }
       if (looks > 1 && actions > 1) {
         $("<a>").text(" (warn)").appendTo(outer)
           .click(() => MT.revisitHere(() => {
             const V = State.variables;
-            V.t_patiencePassage = here;
-            V.t_patienceActions = 1;
-            V.t_patienceLooks = 1;
-            V.t_patienceReturn = -1;
+            V.n_patiencePassage = here;
+            V.n_patienceActions = 1;
+            V.n_patienceLooks = 1;
+            V.n_patienceReturn = -1;
           }));
       }
       $("<a>").text(" (insist)").appendTo(outer)
         .click(() => MT.revisitHere(() => {
           const V = State.variables;
-          V.t_patiencePassage = here;
-          V.t_patienceActions = 0;
-          V.t_patienceLooks = 0;
-          V.t_patienceReturn = -1;
+          V.n_patiencePassage = here;
+          V.n_patienceActions = 0;
+          V.n_patienceLooks = 0;
+          V.n_patienceReturn = -1;
         }));
     }
   }

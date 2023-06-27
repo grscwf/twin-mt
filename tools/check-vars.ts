@@ -12,7 +12,7 @@ const varPatterns = [
   /\b[vVU][01]?[.](\w+)/g,
   /\b(setup[.]\w+)/g,
   /\b(n[0-9]_\w+):/g,
-  /\b(t_\w+):/g,
+  /\b(n_\w+):/g,
   /\bState[.]variables[.](\w+)/g,
   /\b(?:mdSet|mdUncachedGet|mdDef\w+)\("(\w+)"/g,
   /\b(?:mdSet|mdUncachedGet|mdDef\w+)\('(\w+)'/g,
