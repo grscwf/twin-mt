@@ -477,7 +477,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="175,225" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -6117,30 +6117,60 @@ Macro.add(&quot;arousalbar&quot;, {
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="232" name="g0init Checkpoint" tags="inclusion" position="425,1000" size="100,100">&lt;&lt;script&gt;&gt;
 
 /**
- * &lt;&lt;checkpoint-save varName&gt;&gt;
- * Stores current state in varName.
+ * &lt;&lt;checkpoint-save varName description&gt;&gt;
+ * Store current state to varName, and announce the checkpoint.
  */
 Macro.add(&quot;checkpoint-save&quot;, {
   handler: function() {
-    const [varName] = this.args[0];
+    const [varName, description] = this.args;
+    let mkp = `&lt;meta-text&gt;Checkpoint: ${description}&lt;/meta-text&gt;`;
+    mkp += `?P`;
+    $(this.output).wiki(mkp);
     MT.untraced(() =&gt; {
+      delete State.variables[varName];
       const save = State.marshalForSave();
-      State.variables[varName] = JSON.stringify(save);
+      State.variables[varName] = JSON.stringify({ description, save });
+    });
+  }
+});
+
+/**
+ * &lt;&lt;checkpoint-action varName&gt;&gt;
+ * Emits an action link that returns to state stored in varName.
+ */
+Macro.add(&quot;checkpoint-action&quot;, {
+  handler: function() {
+    const [varName] = this.args;
+    MT.untraced(() =&gt; {
+      const json = State.variables[varName];
+      if (!json) return;
+      const obj = JSON.parse(json);
+      let mkp = `&lt;li&gt;`;
+      mkp += `&lt;&lt;link &quot;Try again from ${obj.description}.&quot;&gt;&gt;`;
+      mkp += `&lt;&lt;checkpoint-load ${varName}&gt;&gt;`;
+      mkp += `&lt;&lt;/link&gt;&gt;`;
+      mkp += `&lt;/li&gt;`;
+      $(this.output).wiki(mkp);
     });
   }
 });
 
 /**
  * &lt;&lt;checkpoint-load varName&gt;&gt;
- * Returns to state stored in varName.
+ * Loads state stored in varName.
  */
 Macro.add(&quot;checkpoint-load&quot;, {
   handler: function() {
-    const [varName] = this.args[0];
-    const state = JSON.parse(State.variables[varName]);
-    State.unmarshalForSave(state);
+    const [varName] = this.args;
+    MT.untraced(() =&gt; {
+      const json = State.variables[varName];
+      if (!json) return;
+      const obj = JSON.parse(json);
+      State.unmarshalForSave(obj.save);
+      Engine.show();
+    });
   }
-});
+})
 
 /**
  * &lt;&lt;state-delete prefix1 ...&gt;&gt;
@@ -8342,7 +8372,6 @@ MT.checkState = (state, used, interactive, active) =&gt; {
 
 const checkConstraints = () =&gt; {
   const here = State.passage;
-  if (State.current.variables.n_restarting) return true;
   if (!/^n/.test(here)) return true;
   return MT.untraced(() =&gt; {
     /* note: current (incoming) state, not active state */
@@ -9649,7 +9678,13 @@ Template.add(&quot;sprHoldStop&quot;, () =&gt; {
 });
 
 Template.add(&quot;construction&quot;,
-  `&lt;h1&gt;&amp;#x1f6a7;Under Construction&amp;#x1f6a7;&lt;/h1&gt;`)
+  `&lt;h1&gt;&amp;#x1f6a7;Under Construction&amp;#x1f6a7;&lt;/h1&gt;`);
+
+Template.add(&quot;restartAction&quot;,
+  `&lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot;&gt;&gt;` +
+  `&lt;&lt;run Engine.restart()&gt;&gt;` +
+  `&lt;&lt;/link&gt;&gt;&lt;/li&gt;`);
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="256" name="g0init Notes" tags="inclusion" position="175,1825" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #notes-button {
     background-color: rgb(255, 255, 255, 0.2);
@@ -11079,8 +11114,6 @@ function checkSectionStateHere() {
   // Note, incoming state, not modified state.
   const s0 = State.current.variables;
   const sect = MT.sectHere();
-  // TODO: remove this temp hack when restart is fixed
-  if (s0.n_restarting) return;
   MT.checkSectionState(s0, sect, false);
 }
 
@@ -15099,16 +15132,8 @@ This story will be in the public release.
     &lt;&lt;if setup.debug&gt;&gt;
       &lt;li&gt;[[Enter construction zone|n9a Broken]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;if $n_tooClever&gt;&gt;
-      &lt;&lt;mtl &quot;n2c Clever Free 1&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-        Try again from the snow globe revelation.
-      &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-      &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-        Try again from Ivex&#39;s disappearance.
-      &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
-    &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+    &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+    ?restartAction
   &lt;/ul&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="290" name="n0a Caged Harsh WIP" tags="mt-ready roam-stop" position="8975,2175" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -15147,16 +15172,8 @@ The story of this failure will be in the public release.
     &lt;&lt;if setup.debug&gt;&gt;
       &lt;li&gt;[[Enter construction zone|n9a Caged Harsh]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;if $n_tooClever&gt;&gt;
-      &lt;&lt;mtl &quot;n2c Clever Free 1&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-        Try again from the snow globe revelation.
-      &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-      &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-        Try again from Ivex&#39;s disappearance.
-      &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
-    &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+    &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+    ?restartAction
   &lt;/ul&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="291" name="n0a Caged Mild WIP" tags="mt-ready roam-stop" position="9550,3100" size="200,200">&lt;&lt;nobr&gt;&gt;
@@ -15194,16 +15211,8 @@ The story of this failure will be in the public release.
     &lt;&lt;if setup.debug&gt;&gt;
       &lt;li&gt;[[Enter construction zone|n9a Caged Mild]]&lt;/li&gt;
     &lt;&lt;/if&gt;&gt;
-    &lt;&lt;if $n_tooClever&gt;&gt;
-      &lt;&lt;mtl &quot;n2c Clever Free 1&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-        Try again from the snow globe revelation.
-      &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-      &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-        Try again from Ivex&#39;s disappearance.
-      &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
-    &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+    &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+    ?restartAction
   &lt;/ul&gt;
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="292" name="n0a Nero Ending Index" tags="mt-ready inclusion" position="800,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -15394,16 +15403,8 @@ Thanks for playing so far!
   &lt;&lt;if setup.debug&gt;&gt;
     &lt;li&gt;[[Enter construction zone|n3a Start]]&lt;/li&gt;
   &lt;&lt;/if&gt;&gt;
-  &lt;&lt;if $n_tooClever&gt;&gt;
-    &lt;&lt;mtl &quot;n2c Clever Free 1&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from the snow globe revelation.
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;else&gt;&gt;
-    &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from Ivex&#39;s disappearance.
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/if&gt;&gt;
-  &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+  &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+  ?restartAction
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="295" name="n1a Endgame 1" tags="mt-ready" position="900,3175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_mageSight false&gt;&gt;
@@ -21048,7 +21049,6 @@ disappears with a &lt;em&gt;fwoosh&lt;/em&gt;.
 &lt;&lt;set $n_candleLit = false&gt;&gt;
 &lt;&lt;set $n_candleHorny = false&gt;&gt;
 &lt;&lt;set $n_ivexGone = true&gt;&gt;
-&lt;&lt;state-save n0_checkpointAlone n_&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="395" name="n1e Heavy Squeeze (1,1)" tags="mt-ready" position="6200,3225" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n_subby n_tough n_abused&gt;&gt;
@@ -21518,7 +21518,6 @@ Incredulous, Nero says the phrase out loud. &quot;Carpe dick?&quot;
 &lt;&lt;set $n_free = true&gt;&gt;
 &lt;&lt;set $n_ivexGone = true&gt;&gt;
 &lt;&lt;set $n_tooClever = true&gt;&gt;
-&lt;&lt;state-save n0_checkpointClever n_&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="404" name="n1f Clever Escape 1" tags="mt-ready section-start" position="5300,3750" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_abused&gt;&gt;
@@ -22538,7 +22537,6 @@ Incredulous, Nero says the phrase out loud. &quot;Carpe dick?&quot;
 &lt;&lt;set $n_free = true&gt;&gt;
 &lt;&lt;set $n_ivexGone = true&gt;&gt;
 &lt;&lt;set $n_tooClever = true&gt;&gt;
-&lt;&lt;state-save n0_checkpointClever n_&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="424" name="n1p Barbs Fast 1" tags="mt-ready big-mood" position="3350,1550" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;style&gt;
@@ -34235,21 +34233,9 @@ smash broken glass into that mocking face!
 
 &lt;&lt;set $n_penguinCoinDropped = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="596" name="n2a Ivex Gone" tags="mt-ready section-start" position="6825,3250" size="200,200">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;set _restarting = $n_restarting&gt;&gt;
-&lt;&lt;state-delete n_ n_ n_&gt;&gt;
-&lt;!-- in case state-load fails --&gt;
-&lt;&lt;set $n_naked = true&gt;&gt;
-&lt;&lt;set $n_ivexGone = true&gt;&gt;
-&lt;&lt;set $n_didSomeAction = true&gt;&gt;
-&lt;&lt;state-load n0_checkpointAlone&gt;&gt;
+&lt;&lt;checkpoint-save n_checkpoint1 &quot;Ivex&#39;s Disappearance&quot;&gt;&gt;
 
-&lt;&lt;if !_restarting&gt;&gt;
-  &lt;meta-text&gt;Checkpoint: Ivex&#39;s Disappearance&lt;/meta-text&gt;
-  ?P
-&lt;&lt;/if&gt;&gt;
-
-Ivex&#39;s exit by teleportation
-&lt;&lt;= _restarting ? &quot;has created&quot; : &quot;creates&quot;&gt;&gt;
+Ivex&#39;s exit by teleportation creates
 &lt;&lt;if $n_mageSight&gt;&gt;
   a swirl of exotic energies and
 &lt;&lt;/if&gt;&gt;
@@ -35454,22 +35440,9 @@ and then he starts the work of setting himself free.
 }
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="620" name="n2c Clever Free 1" tags="mt-ready section-start" position="7050,3825" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;set _restarting = $n_restarting&gt;&gt;
-&lt;&lt;state-delete n_ n_ n_&gt;&gt;
-&lt;!-- in case state-load fails --&gt;
-&lt;&lt;set $n_naked = true&gt;&gt;
-&lt;&lt;set $n_free = true&gt;&gt;
-&lt;&lt;set $n_ivexGone = true&gt;&gt;
-&lt;&lt;set $n_tooClever = true&gt;&gt;
-&lt;&lt;set $n_didSomeAction = true&gt;&gt;
-&lt;&lt;state-load n0_checkpointClever&gt;&gt;
-
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 
-&lt;&lt;if !_restarting&gt;&gt;
-  &lt;meta-text&gt;Checkpoint: Snow Globe Revelation&lt;/meta-text&gt;
-  ?P
-&lt;&lt;/if&gt;&gt;
+&lt;&lt;checkpoint-save n_checkpoint1 &quot;Snow Globe Revelation&quot;&gt;&gt;
 
 The wolf&#39;s left ear itches.
 
@@ -41511,10 +41484,8 @@ The mental chaos becomes overwhelming. The wolf passes out.
 
 ?P
 &lt;ul class=actions&gt;
-  &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-    Try again from Ivex&#39;s disappearance.
-  &lt;&lt;/mtl&gt;&gt;
-  &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+  &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+  ?restartAction
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="728" name="n9a Tamed" tags="mt-ready ending" position="8300,2775" size="200,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;arc-skip&gt;&gt;
@@ -41615,16 +41586,8 @@ gives up, finds an escape in mental suicide with the taming collar.
 &lt;&lt;arc-set-barbs nm_arcBrokenBarbs&gt;&gt;
 
 &lt;ul class=actions&gt;
-  &lt;&lt;if $n_tooClever&gt;&gt;
-    &lt;&lt;mtl &quot;n2c Clever Free 1&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from the snow globe revelation.
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;else&gt;&gt;
-    &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from Ivex&#39;s disappearance.
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/if&gt;&gt;
-  &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+  &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+  ?restartAction
 &lt;/ul&gt;</tw-passagedata><tw-passagedata pid="730" name="n9a Caged Harsh" tags="mt-sketch roam-stop" position="9100,2175" size="100,100">&lt;meta-ending-bad&gt;Bad Ending: Caged (Harsh)&lt;/meta-ending-bad&gt;
 
 theme here is struggling
@@ -41653,16 +41616,8 @@ blank shows up in an alone period, nero doesn&#39;t break pose
 &lt;&lt;arc-set-barbs nm_arcCagedBarbs&gt;&gt;
 
 &lt;ul class=actions&gt;
-  &lt;&lt;if $n_tooClever&gt;&gt;
-    &lt;&lt;mtl &quot;n2c Clever Free 1&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from the snow globe revelation.
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;else&gt;&gt;
-    &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from Ivex&#39;s disappearance.
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/if&gt;&gt;
-  &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+  &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+  ?restartAction
 &lt;/ul&gt;</tw-passagedata><tw-passagedata pid="731" name="n9a Caged Mild" tags="mt-sketch roam-stop" position="9775,3150" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;arc-skip&gt;&gt;
@@ -41742,16 +41697,8 @@ the best thirsty sub. never fulfill it.
 &lt;&lt;arc-set-barbs nm_arcCagedBarbs&gt;&gt;
 
 &lt;ul class=actions&gt;
-  &lt;&lt;if $n_tooClever&gt;&gt;
-    &lt;&lt;mtl &quot;n2c Clever Free 1&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from the snow globe revelation.
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;else&gt;&gt;
-    &lt;&lt;mtl &quot;n2a Ivex Gone&quot; &quot;$n_restarting = true&quot;&gt;&gt;
-      Try again from Ivex&#39;s disappearance.
-    &lt;&lt;/mtl&gt;&gt;  
-  &lt;&lt;/if&gt;&gt;
-  &lt;li&gt;&lt;&lt;link &quot;Try again from the beginning.&quot; &quot;g1a Title Screen&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;/li&gt;
+  &lt;&lt;checkpoint-action n_checkpoint1&gt;&gt;
+  ?restartAction
 &lt;/ul&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="732" name="n9e hunted harsh" tags="mt-sketch ending" position="11100,2850" size="100,100">lion is rapey, nero tries to evade.
 gets caught, pinned down and raped.

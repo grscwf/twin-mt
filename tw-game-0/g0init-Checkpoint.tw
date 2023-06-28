@@ -2,30 +2,60 @@
 <<script>>
 
 /**
- * <<checkpoint-save varName>>
- * Stores current state in varName.
+ * <<checkpoint-save varName description>>
+ * Store current state to varName, and announce the checkpoint.
  */
 Macro.add("checkpoint-save", {
   handler: function() {
-    const [varName] = this.args[0];
+    const [varName, description] = this.args;
+    let mkp = `<meta-text>Checkpoint: ${description}</meta-text>`;
+    mkp += `?P`;
+    $(this.output).wiki(mkp);
     MT.untraced(() => {
+      delete State.variables[varName];
       const save = State.marshalForSave();
-      State.variables[varName] = JSON.stringify(save);
+      State.variables[varName] = JSON.stringify({ description, save });
+    });
+  }
+});
+
+/**
+ * <<checkpoint-action varName>>
+ * Emits an action link that returns to state stored in varName.
+ */
+Macro.add("checkpoint-action", {
+  handler: function() {
+    const [varName] = this.args;
+    MT.untraced(() => {
+      const json = State.variables[varName];
+      if (!json) return;
+      const obj = JSON.parse(json);
+      let mkp = `<li>`;
+      mkp += `<<link "Try again from ${obj.description}.">>`;
+      mkp += `<<checkpoint-load ${varName}>>`;
+      mkp += `<</link>>`;
+      mkp += `</li>`;
+      $(this.output).wiki(mkp);
     });
   }
 });
 
 /**
  * <<checkpoint-load varName>>
- * Returns to state stored in varName.
+ * Loads state stored in varName.
  */
 Macro.add("checkpoint-load", {
   handler: function() {
-    const [varName] = this.args[0];
-    const state = JSON.parse(State.variables[varName]);
-    State.unmarshalForSave(state);
+    const [varName] = this.args;
+    MT.untraced(() => {
+      const json = State.variables[varName];
+      if (!json) return;
+      const obj = JSON.parse(json);
+      State.unmarshalForSave(obj.save);
+      Engine.show();
+    });
   }
-});
+})
 
 /**
  * <<state-delete prefix1 ...>>

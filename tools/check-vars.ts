@@ -20,6 +20,7 @@ const varPatterns = [
   /[<]arc-select\s+(\w+)/g,
   /[<]meta-ending\s+\w+\s+(\w+)/g,
   /[<]random-once\s+(\w+)/g,
+  /[<]checkpoint-action\s+(\w+)/g,
   /[<]checkpoint-load\s+(\w+)/g,
   /[<]checkpoint-save\s+(\w+)/g,
   /[<]state-load\s+(\w+)/g,
