@@ -23,8 +23,6 @@ const varPatterns = [
   /[<]checkpoint-action\s+(\w+)/g,
   /[<]checkpoint-load\s+(\w+)/g,
   /[<]checkpoint-save\s+(\w+)/g,
-  /[<]state-load\s+(\w+)/g,
-  /[<]state-save\s+(\w+)/g,
   /[<]vi-always\s+(\w+)/g,
   /[<]vi-always-if\s+(\w+\s+\w+)/g,
   /[<]vi-ignore\s+(\w+(?:\s+\w+)*)/g,
