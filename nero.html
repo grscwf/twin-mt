@@ -413,7 +413,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -6822,26 +6822,7 @@ function getFails() {
   });
   return fails;
 }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="g0init Fade-In" tags="inclusion" position="200,725" size="100,100">&lt;!--
-/*
- * This description assumes you&#39;re using the default style.
- * &lt;&lt;fade-in 1.5s [no-pulse]&gt;&gt;
- *    A pulsing &quot;...&quot; appears here.
- *    &quot;no-pulse&quot; shows the dots without pulsing.
- *    After 1.5 seconds, this section&#39;s text fades in.
- *    Click on the &quot;...&quot; will skip the delay.
- *    Links in this section are shown without delay, in their proper location,
- *    but blocked out with a gray rectangle.
- *    Click on any blocked-out link will also skip the delay.
- * &lt;&lt;fade-next 1s&gt;&gt;
- *    After the first section has faded-in, the &quot;...&quot; appears here.
- *    After another 1s, this section&#39;s text fades in.
- *    There can be any number of &quot;next&quot; sections.
- * &lt;&lt;/fade-in&gt;&gt;
- */
---&gt;
-
-&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="g0init Fade-In" tags="inclusion" position="200,725" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   /* &lt;span&gt; for each fade-in section */
   .fade-in,
   .fade-in .sprite-q {
@@ -6904,6 +6885,10 @@ function getFails() {
     to { opacity: 1; }
   }
 
+  .fade-in-no-dots.fade-in-next:not(#_#_#_#_#_)::before {
+    content: &quot;&quot;;
+  }
+
   .fade-in-no-pulse.fade-in-next:not(#_#_#_#_#_)::before {
     animation: none;
     opacity: 0.6;
@@ -6931,11 +6916,63 @@ function getFails() {
  */
 const absorbMsec = 500;
 
+/**
+ * This description assumes you&#39;re using the default style.
+ *
+ * &lt;&lt;fade-in 1.5s [no-dots | no-pulse | click-anywhere]&gt;&gt;
+ *    - Normally, a pulsing &quot;...&quot; appears here.
+ *    - After 1.5 seconds, this section&#39;s text fades in.
+ *    - Click on the &quot;...&quot; will skip the delay.
+ *    - Links in this section are shown without delay, but blocked out with
+ *      a gray rectangle.
+ *    - Clicking on a blocked-out link will also skip the delay.
+ *    - &quot;no-dots&quot; means don&#39;t show the dots.
+ *    - &quot;no-pulse&quot; means show the dots, but don&#39;t pulse them.
+ *    - &quot;click-anywhere&quot; means clicking anywhere will skip the delay.
+ * &lt;&lt;fade-next 2s&gt;&gt;
+ *    - After the first section has faded-in, the &quot;...&quot; appears here.
+ *    - After another 2s, this section&#39;s text fades in.
+ *    - There can be any number of &quot;fade-next&quot; sections.
+ * &lt;&lt;/fade-in&gt;&gt;
+ */
 Macro.add(&quot;fade-in&quot;, {
   tags: [&quot;fade-next&quot;],
   handler: function() {
+    const noDots = this.args.includes(&quot;no-dots&quot;);
+    const noPulse = this.args.includes(&quot;no-pulse&quot;);
+    const clickAnywhere = this.args.includes(&quot;click-anywhere&quot;);
+
     const queue = [];
     let timeout = null;
+    let absorbing = false;
+
+    const skipAll = ev =&gt; {
+      // note, this assumes passage only has one fade-in
+      const absorb = $(&quot;#story .fade-in-absorb&quot;);
+      if (absorb.length) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        return;
+      }
+
+      const hidden = $(&quot;#story .fade-in-hidden&quot;);
+      if (!hidden.length) {
+        $(&quot;#story&quot;)[0].removeEventListener(&quot;click&quot;, skipAll, true);
+        return;
+      }
+
+      hidden.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
+      hidden.addClass(&quot;fade-in-absorb&quot;);
+      setTimeout(() =&gt; {
+        hidden.removeClass(&quot;fade-in-absorb&quot;);
+        $(&quot;#story&quot;)[0].removeEventListener(&quot;click&quot;, skipAll, true);
+      }, absorbMsec);
+      queue.length = 0;
+    };
+
+    if (clickAnywhere) {
+      $(&quot;#story&quot;)[0].addEventListener(&quot;click&quot;, skipAll, true);
+    }
 
     const next = () =&gt; {
       if (timeout != null) clearTimeout(timeout);
@@ -6948,7 +6985,7 @@ Macro.add(&quot;fade-in&quot;, {
           setTimeout(() =&gt; span.removeClass(&quot;fade-in-absorb&quot;), absorbMsec);
         }
         span.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
-        if (queue[0][1] === span) {
+        if (queue.length &amp;&amp; queue[0][1] === span) {
           queue.shift();
           next();
         }
@@ -6966,27 +7003,31 @@ Macro.add(&quot;fade-in&quot;, {
     };
 
     for (const section of this.payload) {
-      const noPulse = section.args[1] === &quot;no-pulse&quot;;
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
       if (MT.roaming) delay = 0;
       const span = $(&quot;&lt;span&gt;&quot;)
         .addClass(&quot;fade-in fade-in-hidden&quot;)
+        .toggleClass(&quot;fade-in-no-dots&quot;, noDots)
         .toggleClass(&quot;fade-in-no-pulse&quot;, noPulse)
         .wiki(section.contents)
         .appendTo(this.output);
       const hurry = ev =&gt; {
-        span[0].removeEventListener(&quot;click&quot;, hurry, true);
         if (span.hasClass(&quot;fade-in-absorb&quot;)) {
           ev.preventDefault();
           ev.stopPropagation();
         } else if (span.hasClass(&quot;fade-in-hidden&quot;)) {
-          span.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
-          span.addClass(&quot;fade-in-absorb&quot;);
-          setTimeout(() =&gt; span.removeClass(&quot;fade-in-absorb&quot;), absorbMsec);
           ev.preventDefault();
           ev.stopPropagation();
+          span.removeClass(&quot;fade-in-hidden fade-in-next&quot;);
+          span.addClass(&quot;fade-in-absorb&quot;);
+          setTimeout(() =&gt; {
+            span.removeClass(&quot;fade-in-absorb&quot;);
+            span[0].removeEventListener(&quot;click&quot;, hurry, true);
+          }, absorbMsec);
           skipTo(span);
+        } else {
+          span[0].removeEventListener(&quot;click&quot;, hurry, true);
         }
       };
       span[0].addEventListener(&quot;click&quot;, hurry, true);
@@ -11895,58 +11936,47 @@ Moreover, this story contains immoral characters performing abusive and perverse
   } else {
     T.characterDisplay = &quot;images/panther.png&quot;;
   }
-  T.titleDelay1 = &quot;1s&quot;;
-  T.titleDelay2 = &quot;2s&quot;;
-  T.titleDelay3 = &quot;2s&quot;;
-  T.startGameText = &quot;New Game&quot;;
+
+  T.showContentWarning = () =&gt; {
+    Dialog.setup(&quot;Content Warning&quot;);
+    Dialog.wiki(&quot;&lt;&lt;include [[g1a Content Warning]]&gt;&gt;&quot;);
+    Dialog.open();
+  };
 &lt;&lt;/script&gt;&gt;
 
-&lt;div class=title-screen&gt;
 &lt;div class=title-container&gt;
 
-&lt;&lt;fade-in _titleDelay1&gt;&gt;
-&lt;img class=title-character @src=&quot;_characterDisplay&quot;&gt;
+  &lt;&lt;fade-in 0.5s click-anywhere no-dots&gt;&gt;
+    &lt;img class=title-character @src=&quot;_characterDisplay&quot;&gt;
 
-&lt;&lt;fade-next _titleDelay2&gt;&gt;
-&lt;img class=title-logo src=&quot;images/logo_tr.png&quot;&gt;
+  &lt;&lt;fade-next 2s&gt;&gt;
+    &lt;img class=title-logo src=&quot;images/logo_tr.png&quot;&gt;
 
-&lt;&lt;fade-next _titleDelay3&gt;&gt;
-&lt;br&gt;
-&lt;div class=title-options&gt;
-  &lt;&lt;link _startGameText&gt;&gt;
-    &lt;&lt;if $gm_contentWarningPassed&gt;&gt;
-      &lt;&lt;goto [[g1a Bound]]&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-      &lt;&lt;script&gt;&gt;
-        Dialog.setup(&quot;Content Warning&quot;);
-        Dialog.wiki(&quot;&lt;&lt;include [[g1a Content Warning]]&gt;&gt;&quot;);
-        Dialog.open();
-      &lt;&lt;/script&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
-  &lt;&lt;/link&gt;&gt;
+  &lt;&lt;fade-next 2s&gt;&gt;
+    &lt;br&gt;
+    &lt;div class=title-options&gt;
+      &lt;&lt;link &quot;New Game&quot;&gt;&gt;
+        &lt;&lt;if $gm_contentWarningPassed&gt;&gt;
+          &lt;&lt;goto [[g1a Bound]]&gt;&gt;
+        &lt;&lt;else&gt;&gt;
+          &lt;&lt;run _showContentWarning()&gt;&gt;
+        &lt;&lt;/if&gt;&gt;
+      &lt;&lt;/link&gt;&gt;
+      &lt;br&gt;
+      &lt;&lt;link &quot;Load Game&quot;&gt;&gt;
+        &lt;&lt;run UI.saves()&gt;&gt;
+      &lt;&lt;/link&gt;&gt;
+      &lt;br&gt;
+      &lt;&lt;link &quot;Content Warning&quot;&gt;&gt;
+        &lt;&lt;run _showContentWarning()&gt;&gt;
+      &lt;&lt;/link&gt;&gt;
+      &lt;br&gt;
+      &lt;&lt;link Credits &quot;g1m Credits&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
+    &lt;/div&gt; &lt;!--title-options--&gt;
 
-  &lt;br&gt;
-  &lt;&lt;link &quot;Load Game&quot;&gt;&gt;
-    &lt;&lt;run UI.saves()&gt;&gt;
-  &lt;&lt;/link&gt;&gt;
-
-  &lt;br&gt;
-  &lt;&lt;link &quot;Content Warning&quot;&gt;&gt;
-    &lt;&lt;script&gt;&gt;
-      Dialog.setup(&quot;Content Warning&quot;);
-      Dialog.wiki(&quot;&lt;&lt;include [[g1a Content Warning]]&gt;&gt;&quot;);
-      Dialog.open();
-    &lt;&lt;/script&gt;&gt;
-  &lt;&lt;/link&gt;&gt;
-
-  &lt;br&gt;
-  &lt;&lt;link Credits &quot;g1m Credits&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
-&lt;/div&gt; &lt;!--title-options--&gt;
-
-&lt;&lt;/fade-in&gt;&gt;
+  &lt;&lt;/fade-in&gt;&gt;
 
 &lt;/div&gt; &lt;!--title-container--&gt;
-&lt;/div&gt; &lt;!--title-screen--&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="275" name="g1m Archives Entry" tags="noreturn" position="200,1300" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;style&gt;
@@ -34309,7 +34339,7 @@ Candle&#39;s Influence:
   &lt;&lt;include [[n2b Lust Text]]&gt;&gt;
   ?P
 
-&lt;&lt;fade-next 8s no-pulse&gt;&gt;
+&lt;&lt;fade-next 8s&gt;&gt;
   &lt;&lt;set $n_ivexContext = IC_gone&gt;&gt;
   &lt;&lt;set _hideImpatientSprite = true&gt;&gt;
   &lt;&lt;include &quot;n1x Actions&quot;&gt;&gt;
