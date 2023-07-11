@@ -11,7 +11,8 @@
 const T = State.temporary;
 const V = State.variables;
 
-const { name, barbs } = V.g_arcEntry;
+const arcEntry = V.g_arcEntry;
+const { name, barbs, freeze } = arcEntry;
 
 T.notesVariant = name;
 
@@ -24,12 +25,15 @@ if (info == null || info.title == null) {
   throw new Error(`Unknown archive entry ${name}`);
 }
 
-const title = info.title.replace(/%barbs\b/, barbs ? "Barbs" : "Smooth");
+let title = info.title;
+title = title.replace(/%barbs\b/, barbs ? "Barbs" : "Smooth");
+title = title.replace(/%freeze\b/, freeze ? "Freeze" : "Shock");
 $("<div class=ui-title>").text(title).appendTo(output);
 
 $("<br>").appendTo(output);
 
 const code = `
+  $g_arcName = "${name}";
   $n_barbs = ${barbs};
   $n_castEndgame = ${V.n_castEndgame};
 `;
@@ -37,6 +41,9 @@ const code = `
 info.passages.forEach((passage, i) => {
   if (i !== 0) {
     $("<hr class=text-sep>").appendTo(output);
+  }
+  if (typeof passage === "function") {
+    passage = passage(arcEntry);
   }
   MT.arcRender(output, passage, code);
 });
