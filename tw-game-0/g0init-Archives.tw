@@ -30,6 +30,22 @@
   margin-left: 1.5rem;
 }
 
+.ending-bad {
+  color: #f44;
+  font-style: italic;
+  font-weight: bold;
+}
+.ending-challenge {
+  color: #f44;
+  font-style: italic;
+  font-weight: bold;
+}
+.ending-good {
+  color: #6e6;
+  font-style: italic;
+  font-weight: bold;
+}
+
 </style><</append>>
 
 <<script>>
@@ -266,22 +282,57 @@ Macro.add("arc-set-barbs", {
 });
 
 /**
- * <<meta-ending [good|bad] varname text>>
- * Announce an ending. If it's locked, unlock it, and announce the unlocking.
+ * <<ending-bad text [metaVar]>>
+ * Announce a bad ending.
+ * If metaVar is specified and value is false,
+ * set it to true and announce the ending is unlocked.
  */
-Macro.add("meta-ending", {
+Macro.add("ending-bad", {
   handler: function() {
-    const [type, vname, text] = this.args;
-    if (!State.variables[vname]) {
-      $(this.output).append(
-        `<meta-text>${text} is now unlocked in the Archive.</meta-text>`);
-      MT.mdSet(vname, true);
-    } else {
-      $(this.output).append(
-        `<meta-ending-${type}>${text}</meta-ending-${type}>`);
-    }
+    const [text, metaVar] = this.args;
+    emitEnding("bad", metaVar, `Bad Ending: ${text}`, this.output);
   }
 });
+
+/**
+ * <<ending-challenge text [metaVar]>>
+ * Announce a challenge ending.
+ * If metaVar is specified and value is false,
+ * set it to true and announce the ending is unlocked.
+ */
+Macro.add("ending-challenge", {
+  handler: function() {
+    const [text, vname] = this.args;
+    emitEnding("challenge", metaVar, `Challenge Ending: ${text}`, this.output);
+  }
+});
+
+/**
+ * <<ending-good text [metaVar]>>
+ * Announce a good ending.
+ * If metaVar is specified and value is false,
+ * set it to true and announce the ending is unlocked.
+ */
+Macro.add("ending-good", {
+  handler: function() {
+    const [text, vname] = this.args;
+    emitEnding("good", metaVar, `Ending: ${text}`, this.output);
+  }
+});
+
+function emitEnding(type, metaVar, text, output) {
+  if (metaVar == null || State.variables[metaVar]) {
+    $(output).append(`<span class="ending-${type}">${text}</span>`);
+  } else {
+    $(output).append(
+      `<span class="ending-${type}">`
+      + text
+      + ` <span class=meta-text>is now unlocked in the Archives.</span>`
+      + `</span>`);
+      MT.mdSet(metaVar, true);
+  }
+}
+
 
 /** Returns a Set of unlocked keys. */
 MT.unlockedSet = () => {
