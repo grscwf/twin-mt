@@ -13,7 +13,7 @@ import { Command } from "@commander-js/extra-typings";
 import fastGlob from "fast-glob";
 import fsp from "fs/promises";
 import path from "path";
-import { headerRE, runP, setupEnv } from "./lib";
+import { fnameForTitle, headerRE, runP, setupEnv } from "./lib";
 import { Rule, rules } from "./rules";
 
 async function main(argv: string[]) {
@@ -167,11 +167,6 @@ async function maybeUpdate(fname: string, value: string) {
   if (current === value) return false;
   fsp.writeFile(fname, value);
   return true;
-}
-
-/** Returns a normal filename for a passage title. */
-function fnameForTitle(title: string): string {
-  return title.replaceAll(/[()']/g, "").replaceAll(/[/,\s]+/g, "-") + ".tw";
 }
 
 main(process.argv).catch((e) => {

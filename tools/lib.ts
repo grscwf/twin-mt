@@ -6,6 +6,11 @@ export const headerRE = /^:: ([^\[{\r\n]+)(?:\s[\[{][^\r\n]*)?[\r\n]/gm;
 /** Alias for JSON.stringify */
 export const json = (o: unknown) => JSON.stringify(o);
 
+/** Returns a normal filename for a passage title. */
+export function fnameForTitle(title: string): string {
+  return title.replaceAll(/[()']/g, "").replaceAll(/[/,\s]+/g, "-") + ".tw";
+}
+
 /** Sets env vars for running tweego */
 export function setupEnv(): void {
   const env = process.env;
@@ -14,7 +19,6 @@ export function setupEnv(): void {
     env["WSLENV"] = `${env["WSLENV"]}:TWEEGO_PATH/l`;
   }
 }
-
 
 export type RunOptions = {
   echo?: boolean;
