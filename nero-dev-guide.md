@@ -362,9 +362,9 @@
     but setting the state variable will not update the metadata,
     and the value will be reset from metadata on the next `:passageinit`.
   - Metadata variable names start with a prefix:
-    - `dx_` and `nx_` are Drekkar and Nero endings unlocked.
-    - `dk_` and `nk_` are Drekkar and Nero keywords unlocked.
-    - `dm_` and `nm_` are for other Drekkar and Nero metadata.
+    - `xd_` and `xn_` are Drekkar and Nero endings unlocked.
+    - `kd_` and `kn_` are Drekkar and Nero keywords unlocked.
+    - `md_` and `mn_` are for other Drekkar and Nero metadata.
 - Generally, a passage that changes state will change it at the
   bottom.
   - This makes it easier to write text for the state transition.
