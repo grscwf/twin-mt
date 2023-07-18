@@ -5,6 +5,8 @@ import { headerRE } from "./lib";
 import fsp from "fs/promises";
 import fastGlob from "fast-glob";
 
+/* cspell:ignore nontemp */
+
 const declsFile = `${__dirname}/../nero-vars.txt`;
 
 const varPatterns = [
@@ -35,6 +37,7 @@ type Declarations = {
   vars: Set<string>;
   once: Set<string>;
   twice: Set<string>;
+  nontemp: Set<string>;
 };
 
 type Location = {
@@ -61,6 +64,7 @@ async function readDecls(fname: string) {
     vars: new Set(),
     once: new Set(),
     twice: new Set(),
+    nontemp: new Set(),
   };
   const re = /^\s*((?:setup\.)?\w+)/;
   for (const line of text.split(/\r?\n/)) {
@@ -70,6 +74,7 @@ async function readDecls(fname: string) {
       decls.vars.add(vName);
       if (/@once/.test(line)) decls.once.add(vName);
       if (/@twice/.test(line)) decls.twice.add(vName);
+      if (/@nontemp/.test(line)) decls.nontemp.add(vName);
     }
   }
   return decls;
@@ -123,16 +128,17 @@ function report(decls: Declarations, usages: Usages) {
   const usedOnce = Object.keys(usages.locs).filter(
     (vn) => decls.vars.has(vn) && usages.locs[vn]!.length === 1
   );
-  const unexpectedOnce = usedOnce.filter(vn => !decls.once.has(vn));
+  const unexpectedOnce = usedOnce.filter((vn) => !decls.once.has(vn));
   if (unexpectedOnce.length) {
     console.log("\nUsed once, but not marked @once:");
     showUsages(unexpectedOnce, usages);
   }
 
-  usedOnce.forEach(vn => decls.once.delete(vn));
-  if (decls.once.size) {
+  const unmarkedOnce = new Set(decls.once);
+  usedOnce.forEach((vn) => unmarkedOnce.delete(vn));
+  if (unmarkedOnce.size) {
     console.log("\nMarked @once, but not used exactly once:");
-    showUsages(Array.from(decls.once), usages);
+    showUsages(Array.from(unmarkedOnce), usages);
   }
 
   const undeclared = Object.keys(usages.locs).filter(
@@ -150,6 +156,26 @@ function report(decls: Declarations, usages: Usages) {
       console.log(`  ${vn}`);
     }
   }
+
+  // onlyLocal has too many false positives to really be useful.
+  // The problem is there are many usages of
+  //   <<if !$flag>>...<</if>>
+  //   <<set $flag = true>>
+  // and it's annoying to mark all of those @nontemp
+  // Needs more analysis to catch vars that are only set before being read
+
+  // const onlyLocal = Object.keys(usages.locs).filter((vn) => {
+  //   const locs = usages.locs[vn]!;
+  //   return (
+  //     !decls.nontemp.has(vn) &&
+  //     !decls.once.has(vn) &&
+  //     locs.every((loc) => loc.fname === locs[0]!.fname)
+  //   );
+  // });
+  // if (onlyLocal.length) {
+  //   console.log("\nOnly used locally (maybe could be temp instead):");
+  //   showUsages(onlyLocal, usages);
+  // }
 }
 
 function showUsages(vnames: string[], usages: Usages) {
