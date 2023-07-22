@@ -405,7 +405,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -12535,8 +12535,14 @@ const sectionDefs = {
   // Drekkar bad endings
   d9a: {},
 
+  // Drekkar interrogation ending
+  d9b: {},
+
   // Drekkar good endings
   d9x: {},
+
+  // Drekkar punishment ending
+  d9y: {},
 
   // Nero meta passages
   n0a: {},
@@ -13068,7 +13074,7 @@ meta-text,
   background-color: #222;
 }
 
-.var-info-hidden &gt; span:not(.var-info-passage) {
+.var-info-hidden &gt; span:not(.var-info-show) {
   display: none;
 }
 .var-info-hidden:not(.var-info-to-do) &gt; label::after {
@@ -13527,10 +13533,30 @@ function initVarInfo() {
     }
 
     $(&quot;&lt;span class=var-info-separator&gt;&quot;).text(&quot;||&quot;).appendTo(outer);
-    $(&quot;&lt;span class=var-info-passage&gt;&quot;).text(State.passage).appendTo(outer);
+    $(`&lt;span class=&quot;var-info-passage var-info-show&quot;&gt;`).text(State.passage).appendTo(outer);
+
+    const sizes = computeSizes();
+    $(`&lt;span class=&quot;var-info-separator var-info-show&quot;&gt;`).text(&quot;||&quot;).appendTo(outer);
+    $(`&lt;span class=&quot;var-info-sizes var-info-show&quot;&gt;`).text(sizes).appendTo(outer);
 
     if (to_do.length) outer.addClass(&quot;var-info-to-do&quot;);
   });
+}
+
+function computeSizes() {
+  const ls = computeSize(localStorage);
+  const ss = computeSize(sessionStorage);
+  return `${ls} - ${ss}`;
+}
+
+function computeSize(st) {
+  let size = 0;
+  for (let i = 0, n = st.length; i &lt; n; i++) {
+    const key = st.key(i);
+    const val = st.getItem(key);
+    size += key.length + val.length;
+  }
+  return String(size);
 }
 
 initVarInfo();

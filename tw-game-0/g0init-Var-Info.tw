@@ -49,7 +49,7 @@
   background-color: #222;
 }
 
-.var-info-hidden > span:not(.var-info-passage) {
+.var-info-hidden > span:not(.var-info-show) {
   display: none;
 }
 .var-info-hidden:not(.var-info-to-do) > label::after {
@@ -508,10 +508,30 @@ function initVarInfo() {
     }
 
     $("<span class=var-info-separator>").text("||").appendTo(outer);
-    $("<span class=var-info-passage>").text(State.passage).appendTo(outer);
+    $(`<span class="var-info-passage var-info-show">`).text(State.passage).appendTo(outer);
+
+    const sizes = computeSizes();
+    $(`<span class="var-info-separator var-info-show">`).text("||").appendTo(outer);
+    $(`<span class="var-info-sizes var-info-show">`).text(sizes).appendTo(outer);
 
     if (to_do.length) outer.addClass("var-info-to-do");
   });
+}
+
+function computeSizes() {
+  const ls = computeSize(localStorage);
+  const ss = computeSize(sessionStorage);
+  return `${ls} - ${ss}`;
+}
+
+function computeSize(st) {
+  let size = 0;
+  for (let i = 0, n = st.length; i < n; i++) {
+    const key = st.key(i);
+    const val = st.getItem(key);
+    size += key.length + val.length;
+  }
+  return String(size);
 }
 
 initVarInfo();
