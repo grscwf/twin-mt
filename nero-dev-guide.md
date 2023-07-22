@@ -228,6 +228,9 @@
     - using the flag,
     - or declaring it constant with `<<vi-always flag value>>`,
     - or ignoring it with `<<vi-ignore flag>>`.
+- The two numbers on the right side of var-info are an estimate
+  of total chars stored in localStorage and sessionStorage.
+  Note, these are utf-16 characters, not bytes.
 
 ### Compute variants
 
