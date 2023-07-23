@@ -405,7 +405,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -8527,6 +8527,16 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
   MT.messages = [];
 });
 
+MT.suppressErrors = fn =&gt; {
+  const save = suppress;
+  try {
+    suppress = true;
+    fn();
+  } finally {
+    suppress = save;
+  }
+}
+
 MT.runsWithoutFail = (fn) =&gt; {
   const save = { hf: MT.hasFails, sup: suppress };
   try {
@@ -9112,13 +9122,12 @@ function recentlyViewed(name) {
   outline: none;
 }
 
-#log-outer .log-title {
+.log-title {
   border-bottom: 1px solid #666;
   margin-bottom: 12px;
   text-align: right;
 }
-
-#log-outer .log-title span {
+.log-title span {
   background-color: #333;
   border: 1px solid #666;
   border-bottom: 0;
@@ -9129,11 +9138,15 @@ function recentlyViewed(name) {
   opacity: 0.8;
   padding: 2px 6px;
 }
-#log-outer .log-title span:hover {
+.log-title span:hover {
   border-color: #fff;
   background-color: #111;
   color: #fff;
   opacity: 1;
+}
+
+.log-entry {
+  line-height: 1.75;
 }
 
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
@@ -9176,12 +9189,7 @@ function initLog() {
     .on(&quot;click&quot;, () =&gt; openLog());
 }
 
-/**
- * Returns a cleaned up html string of the passage at jq.
- * nextTitle and nextCode are used to highlight the link being followed.
- */
 function cleanHtml(jq, nextTitle, nextCode) {
-  jq = jq.clone();
   jq.removeClass(&quot;passage-in&quot;);
   jq.find(&quot;.random-walk-chosen&quot;).removeClass(&quot;random-walk-chosen&quot;);
   jq.find(&quot;.fade-in-hidden&quot;).removeClass(&quot;fade-in-hidden&quot;);
@@ -9206,34 +9214,52 @@ function cleanHtml(jq, nextTitle, nextCode) {
   while (jq[0].lastChild != null &amp;&amp; jq[0].lastChild.tagName === &quot;BR&quot;) {
     jq[0].lastChild.remove();
   }
-
-  return jq[0].outerHTML;
 }
 
 function openLog() {
   Dialog.setup(&quot;&quot;);
   const outer = $(&quot;&lt;div id=log-outer&gt;&quot;).appendTo(Dialog.body());
-  let words = 0;
-  MT.log.forEach((e, i) =&gt; {
-    if (e.pending &amp;&amp; e.title === State.passage) return;
-    $(&quot;&lt;div class=log-title&gt;&quot;)
-      .append($(&quot;&lt;span&gt;&quot;).text(e.title))
-      .appendTo(outer);
-    const section = $.parseHTML(e.html);
-    outer.append(section);
-    words += MT.countWords($(section).text());
-  });
 
-  const json = JSON.stringify(MT.log);
-  const compressed = LZString.compressToBase64(json);
-  console.log({ logJson: json.length, compressed: compressed.length });
+  const savedVars = State.active.variables;
+  const savedTemp = Object.entries(State.temporary);
+  try {
+
+    const hist = State.history;
+    for (let i = 0, n = hist.length; i &lt; n; i++) {
+      const step = hist[i];
+
+      // XXX filter out noreturn
+
+      $(&quot;&lt;div class=log-title&gt;&quot;)
+        .append($(&quot;&lt;span&gt;&quot;).text(step.title))
+        .appendTo(outer);
+
+      const text = Story.get(step.title).text;
+      State.active.variables = clone(step.variables);
+      State.clearTemporary();
+      const div = $(&quot;&lt;div class=log-entry&gt;&quot;);
+      MT.suppressErrors(() =&gt; {
+        div.wiki(text);
+      });
+      cleanHtml(div);
+      $(outer).append(div);
+    }
+
+  } finally {
+    State.active.variables = savedVars;
+    State.clearTemporary();
+    for (const [k, v] of savedTemp) {
+      State.temporary[k] = v;
+    }
+  }
+
+  const words = MT.countWords($(outer).text());
 
   const minutes = Math.round(words / 250);
   $(&quot;#ui-dialog-title&quot;)
     .append(`~${minutes} min`)
-    .append(` | ${MT.log.length} p`)
-    .append(` | ${words} w`)
-    .append(` | ${compressed.length} z`);
+    .append(` | ${State.turns} p`)
+    .append(` | ${words} w`);
 
   $(&quot;&lt;a&gt;&amp;#x2191; &lt;/a&gt;&quot;).prependTo(&quot;#ui-dialog-title&quot;)
     .on(&quot;click&quot;, () =&gt; {
