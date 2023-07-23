@@ -14,6 +14,10 @@ Macro.add("checkpoint-save", {
     MT.untraced(() => {
       delete State.variables[varName];
       const save = State.marshalForSave();
+      if (!save.delta) {
+        save.delta = State.deltaEncode(save.history);
+        delete save.history;
+      }
       State.variables[varName] = JSON.stringify({ description, save });
     });
   }
@@ -51,6 +55,10 @@ Macro.add("checkpoint-load", {
       const json = State.variables[varName];
       if (!json) return;
       const obj = JSON.parse(json);
+      const save = obj.save;
+      if (save.delta) {
+        save.history = State.deltaDecode(save.delta);
+      }
       State.unmarshalForSave(obj.save);
       Engine.show();
     });

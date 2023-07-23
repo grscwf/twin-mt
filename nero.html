@@ -405,7 +405,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -523,13 +523,6 @@ runInit(/^g0init /);
   [[Ending: Punishment|g1m Archives Entry]]
   &quot;&quot;
   &quot;$g_arcEntry = { name: &#39;xd_IvexPunishment&#39; }&quot;
-&gt;&gt;
-  The spoils of victory...
-&lt;&lt;/arc-ending&gt;&gt;
-
-
-&lt;&lt;arc-ending $xd_IvexPunishment
-  [[XXX: Punishment|d0a Ivex Punishment Archive]]
 &gt;&gt;
   The spoils of victory...
 &lt;&lt;/arc-ending&gt;&gt;
@@ -7828,6 +7821,10 @@ Macro.add(&quot;checkpoint-save&quot;, {
     MT.untraced(() =&gt; {
       delete State.variables[varName];
       const save = State.marshalForSave();
+      if (!save.delta) {
+        save.delta = State.deltaEncode(save.history);
+        delete save.history;
+      }
       State.variables[varName] = JSON.stringify({ description, save });
     });
   }
@@ -7865,6 +7862,10 @@ Macro.add(&quot;checkpoint-load&quot;, {
       const json = State.variables[varName];
       if (!json) return;
       const obj = JSON.parse(json);
+      const save = obj.save;
+      if (save.delta) {
+        save.history = State.deltaDecode(save.delta);
+      }
       State.unmarshalForSave(obj.save);
       Engine.show();
     });
@@ -11614,8 +11615,11 @@ const pathIgnore = [
   &quot;g1a Bound&quot;,
 ];
 
+/** True if title is a noreturn passage. */
+MT.hasNoReturn = title =&gt; Story.get(title).tags.includes(&quot;noreturn&quot;);
+
 /**
- * Returns a full path of the current play log.
+ * Returns a full path of the current play session.
  */
 MT.getPath = () =&gt; {
   const path = [];
@@ -11624,9 +11628,9 @@ MT.getPath = () =&gt; {
     const title = hist[i].title;
     if (pathIgnore.includes(title)) continue;
 
-    if (Story.get(title).tags.includes(&quot;noreturn&quot;)) {
+    if (MT.hasNoReturn(title)) {
       const from = i === 0 ? null : hist[i - 1].title;
-      while (i &lt; n &amp;&amp; Story.get(hist[i].title).tags.includes(&quot;noreturn&quot;)) {
+      while (i &lt; n &amp;&amp; MT.hasNoReturn(hist[i].title)) {
         i++;
       }
       if (i &lt; n &amp;&amp; hist[i].title === from) i++;
