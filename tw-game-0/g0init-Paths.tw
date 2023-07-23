@@ -14,6 +14,7 @@
  */
 
 const pathIgnore = [
+  "g1a Title Screen",
   "g1a Bound",
 ];
 
@@ -22,17 +23,23 @@ const pathIgnore = [
  */
 MT.getPath = () => {
   const path = [];
-  const log = MT.log;
-  if (log == null || log.length === 0) return [];
-  if (log[0].title !== "g1a Bound") return [];
+  const hist = State.history;
+  for (let i = 0, n = hist.length; i < n; i++) {
+    const title = hist[i].title;
+    if (pathIgnore.includes(title)) continue;
 
-  for (let i = 0; i < log.length; i++) {
-    const entry = log[i];
-    if (pathIgnore.includes(entry.title)) continue;
+    if (Story.get(title).tags.includes("noreturn")) {
+      const from = i === 0 ? null : hist[i - 1].title;
+      while (i < n && Story.get(hist[i].title).tags.includes("noreturn")) {
+        i++;
+      }
+      if (i < n && hist[i].title === from) i++;
+      continue;
+    }
 
-    const step = { t: entry.title };
-    if (entry.mtaCode != null) step.code = entry.mtaCode;
+    // XXX get mtaCode somehow
 
+    const step = { t: title };
     path.push(step);
   }
   return path;

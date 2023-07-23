@@ -79,31 +79,15 @@
 
 <<script>>
 /*
- * This module provides a story transcript of a play session, by taking
- * snapshots of the rendered html of each passage.
+ * This module generates a story transcript from history.
  *
- * In principle, we could reconstruct the transcript by replaying the path.
- * SugarCube has an option for deterministic rng, but its implementation is
- * awkward. We'd have to manage the rng state ourselves.
- *
- * If we want to expose transcript to players, we should probably try to that,
- * because replay from path is a much smaller savestate than html snapshot.
- * (Note, we can't just use passage history, we have to save rng state
- * and disambiguation for links with setters.)
+ * Passages with randomness should use a deterministic rng,
+ * otherwise the transcript might not be accurate.
+ * Note, SugarCube's deterministic rng option is not usable,
+ * because SugarCube does not expose the rng state,
+ * so we can't replay it.
  */
 
-const KEY = "mt-log-1";
-
-/**
- * Array of entries of everything before current passage.
- * Entry is:
- * - turn: number - history turn
- * - title: string - passage title
- * - html: string - html snapshot
- * - mtaCode: string - disambiguator if prev has multiple links here
- * - noChoice: boolean - true if there's only one link out from here
- * - pending: boolean - true if this was before visiting a noreturn passage
- */
 MT.log = [];
 
 /**
@@ -115,100 +99,20 @@ MT.log = [];
  */
 MT.displayedPassage = null;
 
-function saveLog() {
-  session.set(KEY, MT.log);
-}
-
 $(document).on(":enginerestart", () => {
   MT.log = [];
-  session.delete(KEY);
 });
 
 function initLog() {
-  if (!setup.tester) return;
+  // legacy transcript
+  session.delete("mt-log-1");
 
-  MT.log = session.get(KEY) || [];
+  if (!setup.tester) return;
 
   $("<div id=log-button>")
     .appendTo("#story")
     .text("log")
     .on("click", () => openLog());
-
-  $(document).on(":passageinit", captureOnExit);
-  $(document).on(":passagedisplay", captureOnEnter);
-}
-
-/**
- * Runs at passageinit to capture the displayed passage,
- * before it gets overwritten with the next passage.
- */
-function captureOnExit(ev) {
-  const next = ev.passage;
-  if (next == null) return;
-
-  const dp = MT.displayedPassage;
-  if (dp == null) return;
-
-  if (MT.log.length === 0) return;
-
-  // Any passage we want to log, should already have an entry
-  const entry = MT.log[MT.log.length - 1];
-  if (entry.title !== dp.title || entry.turn !== dp.turn) return;
-
-  const jq = $(".passage");
-  entry.pending = next.tags.includes("noreturn");
-  entry.noChoice = jq.find("a[data-passage]").length <= 1;
-  const nextCode = MT.mtaCode(next.title);
-  entry.html = cleanHtml(jq, next.title, nextCode);
-  saveLog();
-}
-
-/** Runs at passagedisplay to capture the just-rendered passage */
-function captureOnEnter(ev) {
-  MT.displayedPassage = null;
-
-  const title = State.passage;
-  const turn = State.turns;
-  const mtaCode = MT.mtaCode();
-
-  if (tags().includes("noreturn")) return;
-  if (title === "g1a Title Screen") return;
-
-  MT.displayedPassage = { turn, title };
-  
-  // If we're starting over, clear log.
-  if (title === "g1a Bound") {
-    MT.log = [];
-  }
-
-  // Remove future entries
-  MT.log = MT.log.filter(e => e.turn < turn);
-  
-  let entry = { title, turn, mtaCode };
-
-  // If we returned from a noreturn, we should update an existing entry
-  if (MT.log.length > 0) {
-    const last = MT.log[MT.log.length - 1];
-    if (last.pending && last.title === title) {
-      const pTitle = State.peek(-1).title;
-      const prev = Story.get(pTitle);
-      if (prev.tags.includes("noreturn")) {
-        MT.log.pop();
-        entry = last;
-        entry.turn = turn;
-        // keep old mtaCode
-      }
-    }
-  }
-
-  MT.log.push(entry);
-
-  entry.pending = true;
-
-  const jq = $(".passage");
-  entry.noChoice = jq.find("a[data-passage]").length <= 1;
-  entry.html = cleanHtml(jq, null, null);
-  saveLog();
 }
 
 /**

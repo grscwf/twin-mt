@@ -405,7 +405,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -9139,31 +9139,15 @@ function recentlyViewed(name) {
 
 &lt;&lt;script&gt;&gt;
 /*
- * This module provides a story transcript of a play session, by taking
- * snapshots of the rendered html of each passage.
+ * This module generates a story transcript from history.
  *
- * In principle, we could reconstruct the transcript by replaying the path.
- * SugarCube has an option for deterministic rng, but its implementation is
- * awkward. We&#39;d have to manage the rng state ourselves.
- *
- * If we want to expose transcript to players, we should probably try to that,
- * because replay from path is a much smaller savestate than html snapshot.
- * (Note, we can&#39;t just use passage history, we have to save rng state
- * and disambiguation for links with setters.)
+ * Passages with randomness should use a deterministic rng,
+ * otherwise the transcript might not be accurate.
+ * Note, SugarCube&#39;s deterministic rng option is not usable,
+ * because SugarCube does not expose the rng state,
+ * so we can&#39;t replay it.
  */
 
-const KEY = &quot;mt-log-1&quot;;
-
-/**
- * Array of entries of everything before current passage.
- * Entry is:
- * - turn: number - history turn
- * - title: string - passage title
- * - html: string - html snapshot
- * - mtaCode: string - disambiguator if prev has multiple links here
- * - noChoice: boolean - true if there&#39;s only one link out from here
- * - pending: boolean - true if this was before visiting a noreturn passage
- */
 MT.log = [];
 
 /**
@@ -9175,100 +9159,20 @@ MT.log = [];
  */
 MT.displayedPassage = null;
 
-function saveLog() {
-  session.set(KEY, MT.log);
-}
-
 $(document).on(&quot;:enginerestart&quot;, () =&gt; {
   MT.log = [];
-  session.delete(KEY);
 });
 
 function initLog() {
-  if (!setup.tester) return;
+  // legacy transcript
+  session.delete(&quot;mt-log-1&quot;);
 
-  MT.log = session.get(KEY) || [];
+  if (!setup.tester) return;
 
   $(&quot;&lt;div id=log-button&gt;&quot;)
     .appendTo(&quot;#story&quot;)
     .text(&quot;log&quot;)
     .on(&quot;click&quot;, () =&gt; openLog());
-
-  $(document).on(&quot;:passageinit&quot;, captureOnExit);
-  $(document).on(&quot;:passagedisplay&quot;, captureOnEnter);
-}
-
-/**
- * Runs at passageinit to capture the displayed passage,
- * before it gets overwritten with the next passage.
- */
-function captureOnExit(ev) {
-  const next = ev.passage;
-  if (next == null) return;
-
-  const dp = MT.displayedPassage;
-  if (dp == null) return;
-
-  if (MT.log.length === 0) return;
-
-  // Any passage we want to log, should already have an entry
-  const entry = MT.log[MT.log.length - 1];
-  if (entry.title !== dp.title || entry.turn !== dp.turn) return;
-
-  const jq = $(&quot;.passage&quot;);
-  entry.pending = next.tags.includes(&quot;noreturn&quot;);
-  entry.noChoice = jq.find(&quot;a[data-passage]&quot;).length &lt;= 1;
-  const nextCode = MT.mtaCode(next.title);
-  entry.html = cleanHtml(jq, next.title, nextCode);
-  saveLog();
-}
-
-/** Runs at passagedisplay to capture the just-rendered passage */
-function captureOnEnter(ev) {
-  MT.displayedPassage = null;
-
-  const title = State.passage;
-  const turn = State.turns;
-  const mtaCode = MT.mtaCode();
-
-  if (tags().includes(&quot;noreturn&quot;)) return;
-  if (title === &quot;g1a Title Screen&quot;) return;
-
-  MT.displayedPassage = { turn, title };
-  
-  // If we&#39;re starting over, clear log.
-  if (title === &quot;g1a Bound&quot;) {
-    MT.log = [];
-  }
-
-  // Remove future entries
-  MT.log = MT.log.filter(e =&gt; e.turn &lt; turn);
-  
-  let entry = { title, turn, mtaCode };
-
-  // If we returned from a noreturn, we should update an existing entry
-  if (MT.log.length &gt; 0) {
-    const last = MT.log[MT.log.length - 1];
-    if (last.pending &amp;&amp; last.title === title) {
-      const pTitle = State.peek(-1).title;
-      const prev = Story.get(pTitle);
-      if (prev.tags.includes(&quot;noreturn&quot;)) {
-        MT.log.pop();
-        entry = last;
-        entry.turn = turn;
-        // keep old mtaCode
-      }
-    }
-  }
-
-  MT.log.push(entry);
-
-  entry.pending = true;
-
-  const jq = $(&quot;.passage&quot;);
-  entry.noChoice = jq.find(&quot;a[data-passage]&quot;).length &lt;= 1;
-  entry.html = cleanHtml(jq, null, null);
-  saveLog();
 }
 
 /**
@@ -11706,6 +11610,7 @@ initNotes();
  */
 
 const pathIgnore = [
+  &quot;g1a Title Screen&quot;,
   &quot;g1a Bound&quot;,
 ];
 
@@ -11714,17 +11619,23 @@ const pathIgnore = [
  */
 MT.getPath = () =&gt; {
   const path = [];
-  const log = MT.log;
-  if (log == null || log.length === 0) return [];
-  if (log[0].title !== &quot;g1a Bound&quot;) return [];
+  const hist = State.history;
+  for (let i = 0, n = hist.length; i &lt; n; i++) {
+    const title = hist[i].title;
+    if (pathIgnore.includes(title)) continue;
 
-  for (let i = 0; i &lt; log.length; i++) {
-    const entry = log[i];
-    if (pathIgnore.includes(entry.title)) continue;
+    if (Story.get(title).tags.includes(&quot;noreturn&quot;)) {
+      const from = i === 0 ? null : hist[i - 1].title;
+      while (i &lt; n &amp;&amp; Story.get(hist[i].title).tags.includes(&quot;noreturn&quot;)) {
+        i++;
+      }
+      if (i &lt; n &amp;&amp; hist[i].title === from) i++;
+      continue;
+    }
 
-    const step = { t: entry.title };
-    if (entry.mtaCode != null) step.code = entry.mtaCode;
+    // XXX get mtaCode somehow
 
+    const step = { t: title };
     path.push(step);
   }
   return path;
@@ -12232,7 +12143,7 @@ function initRandomWalk() {
         return roamStop();
       }
       if (stop) {
-        const steps = MT.log.length;
+        const steps = State.turns;
         const V = State.variables;
         console.log(`stop after ${steps} steps at ${here}`);
         const mp = MT.enumSymbol(&#39;MagicPhase&#39;, V.n_magicPhase);
@@ -12296,7 +12207,7 @@ function initRandomWalk() {
         roamPath.shift();
       }
       if (roamPath.length === 0) {
-        const steps = MT.log.length;
+        const steps = State.turns;
         console.log(`path end after ${steps} steps at ${here}`);
         if (roamDoneFn != null) setTimeout(roamDoneFn);
         roamStop();
