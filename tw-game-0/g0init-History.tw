@@ -1,0 +1,44 @@
+:: g0init History [inclusion] {"position":"250,725","size":"100,100"}
+<<script>>
+
+const histIgnore = [
+  "g1a Title Screen",
+];
+
+/** True if title is a noreturn passage */
+function hasNoReturn(title) {
+  const passage = Story.get(title);
+  return passage.tags.includes("noreturn");
+}
+
+/** Returns history without noreturn nodes. */
+MT.getHistory = () => {
+  const result = [];
+
+  const hist = State.history;
+  for (let i = 0, n = hist.length; i < n; i++) {
+    const title = hist[i].title;
+    if (hasNoReturn(title)) continue;
+
+    result.push(hist[i]);
+
+    // find next passage without noreturn
+    let j = i + 1;
+    while (j < n && hasNoReturn(hist[j].title)) {
+      j++;
+    }
+    if (j > i + 1) {
+      // skip noreturn passages
+      if (j < n && hist[j].title !== title) {
+        // returned to a different passage
+        i = j - 1;
+      } else {
+        // returned to same passage, ignore the repeat
+        i = j;
+      }
+    }
+  }
+  return result;
+};
+
+<</script>>
