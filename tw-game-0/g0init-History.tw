@@ -18,25 +18,19 @@ MT.getHistory = () => {
   const hist = State.history;
   for (let i = 0, n = hist.length; i < n; i++) {
     const title = hist[i].title;
+    if (histIgnore.includes(title)) continue;
     if (hasNoReturn(title)) continue;
 
-    result.push(hist[i]);
-
-    // find next passage without noreturn
-    let j = i + 1;
-    while (j < n && hasNoReturn(hist[j].title)) {
-      j++;
-    }
-    if (j > i + 1) {
-      // skip noreturn passages
-      if (j < n && hist[j].title !== title) {
-        // returned to a different passage
-        i = j - 1;
-      } else {
-        // returned to same passage, ignore the repeat
-        i = j;
+    // if previous passage was noreturn
+    if (i > 0 && hasNoReturn(hist[i - 1].title)) {
+      // and we're returning to the same passage
+      if (result.length > 0 && result[result.length - 1].title === title) {
+        // skip this one too
+        continue;
       }
     }
+
+    result.push(hist[i]);
   }
   return result;
 };

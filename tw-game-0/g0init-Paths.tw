@@ -26,24 +26,11 @@ MT.hasNoReturn = title => Story.get(title).tags.includes("noreturn");
  */
 MT.getPath = () => {
   const path = [];
-  const hist = State.history;
-  for (let i = 0, n = hist.length; i < n; i++) {
-    const title = hist[i].title;
-    if (pathIgnore.includes(title)) continue;
-
-    if (MT.hasNoReturn(title)) {
-      const from = i === 0 ? null : hist[i - 1].title;
-      while (i < n && MT.hasNoReturn(hist[i].title)) {
-        i++;
-      }
-      if (i < n && hist[i].title === from) i++;
-      continue;
-    }
-
+  const hist = MT.getHistory();
+  for (const step of hist) {
+    if (pathIgnore.includes(step.title)) continue;
     // XXX get mtaCode somehow
-
-    const step = { t: title };
-    path.push(step);
+    path.push({ t: step.title });
   }
   return path;
 };
