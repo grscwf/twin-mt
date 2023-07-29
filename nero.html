@@ -405,7 +405,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="noreturn" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -8022,7 +8022,6 @@ MT.computeVariants = function() {
   // - all states with other non-ignored boolean-ish values flipped
 
   // Note, this can get confused by nondeterministic rng.
-  // Need to avoid using either() and Array random extensions in passages.
 
   const passageText = Story.get(State.passage).text;
   const renders = [];
@@ -11695,29 +11694,50 @@ Macro.add(&quot;random-once&quot;, {
   }
 });
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="202" name="g0init Randomness" tags="inclusion" position="450,850" size="100,100">&lt;&lt;script&gt;&gt;
+/*
+ * This is a deterministic RNG that keeps its state in $g_rand,
+ * so it can be replayed for the History page.
+ * 
+ * (SugarCube has a deterministic RNG option, but it uses hidden state
+ * that can&#39;t be replayed easily.)
+ */
+
+/** Returns x rotated left by k bits. */
+function rotl(x, k) {
+  return (x &lt;&lt; k) | (x &gt;&gt;&gt; (32 - k));
+}
+
 /**
- * Pick arbitrary item from list or Set, based on State.random()
- * SugarCube&#39;s Array.random(), either(), etc, use Math.random().
+ * Returns a random uint32. Uses and updates state, which should be
+ * a nonzero [int32, int32] pair. The algorithm is &quot;xoroshiro64**&quot;.
+ */
+MT.rand32 = state =&gt; {
+  const s0 = state[0];
+  let s1 = state[1];
+  const result = rotl(s0 * 0x9e3779bb, 5) * 5;
+
+  s1 ^= s0;
+  state[0] = rotl(s0, 26) ^ s1 ^ (s1 &lt;&lt; 9);
+  state[1] = rotl(s1, 13);
+  return result &gt;&gt;&gt; 0;
+}
+
+/** Returns a new random state. */
+MT.randState = () =&gt; {
+  const state = [1, 0 | (Math.random() * 0xffffffff)];
+  MT.rand32(state);
+  MT.rand32(state);
+  return state;
+}
+
+/**
+ * Returns a random item from list or Set, using deterministic RNG.
  */
 MT.pick = list =&gt; {
   if (list instanceof Set) list = Array.from(list);
   const n = Math.floor(list.length * State.random());
   return list[n];
 };
-
-function getSeed() {
-  const m = /[?&amp;]seed=(\d+)/.exec(location.search);
-  if (m != null) return m[1];
-  return String(Math.random()).slice(2);
-}
-
-function initRandom() {
-  const seed = getSeed();
-  State.prng.init(seed);
-  const state = session.get(&quot;state&quot;);
-}
-
-// initRandom();
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="203" name="g0init Return Sticky" tags="inclusion" position="575,850" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
@@ -11961,7 +11981,6 @@ function initRandomWalk() {
         }
       }
 
-      // Should not use State.random()
       const i = Math.floor(avail.length * Math.random());
       pick = avail[i];
       const code = $(pick).attr(&quot;data-mta-code&quot;);
@@ -14279,7 +14298,7 @@ function showRandom(dest, info) {
     .sort();
   const reroll = () =&gt; {
     body.empty();
-    // Should not use State.random()
+    // Note, uses Math.random()
     toShow.randomMany(5)
       .forEach(t =&gt; todoBlock(info, t).appendTo(body));
   };

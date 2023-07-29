@@ -1,27 +1,48 @@
 :: g0init Randomness [inclusion] {"position":"450,850","size":"100,100"}
 <<script>>
+/*
+ * This is a deterministic RNG that keeps its state in $g_rand,
+ * so it can be replayed for the History page.
+ * 
+ * (SugarCube has a deterministic RNG option, but it uses hidden state
+ * that can't be replayed easily.)
+ */
+
+/** Returns x rotated left by k bits. */
+function rotl(x, k) {
+  return (x << k) | (x >>> (32 - k));
+}
+
 /**
- * Pick arbitrary item from list or Set, based on State.random()
- * SugarCube's Array.random(), either(), etc, use Math.random().
+ * Returns a random uint32. Uses and updates state, which should be
+ * a nonzero [int32, int32] pair. The algorithm is "xoroshiro64**".
+ */
+MT.rand32 = state => {
+  const s0 = state[0];
+  let s1 = state[1];
+  const result = rotl(s0 * 0x9e3779bb, 5) * 5;
+
+  s1 ^= s0;
+  state[0] = rotl(s0, 26) ^ s1 ^ (s1 << 9);
+  state[1] = rotl(s1, 13);
+  return result >>> 0;
+}
+
+/** Returns a new random state. */
+MT.randState = () => {
+  const state = [1, 0 | (Math.random() * 0xffffffff)];
+  MT.rand32(state);
+  MT.rand32(state);
+  return state;
+}
+
+/**
+ * Returns a random item from list or Set, using deterministic RNG.
  */
 MT.pick = list => {
   if (list instanceof Set) list = Array.from(list);
   const n = Math.floor(list.length * State.random());
   return list[n];
 };
-
-function getSeed() {
-  const m = /[?&]seed=(\d+)/.exec(location.search);
-  if (m != null) return m[1];
-  return String(Math.random()).slice(2);
-}
-
-function initRandom() {
-  const seed = getSeed();
-  State.prng.init(seed);
-  const state = session.get("state");
-}
-
-// initRandom();
 
 <</script>>
