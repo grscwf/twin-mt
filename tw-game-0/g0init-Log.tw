@@ -93,8 +93,6 @@
 
 Config.history.maxStates = 1000;
 
-MT.log = [];
-
 /**
  * passageinit can trigger after momentActivate, which means State
  * isn't necessarily what's currently displayed.
@@ -103,10 +101,6 @@ MT.log = [];
  * - title: string
  */
 MT.displayedPassage = null;
-
-$(document).on(":enginerestart", () => {
-  MT.log = [];
-});
 
 function initLog() {
   // legacy transcript
@@ -150,43 +144,12 @@ function cleanHtml(jq, nextTitle, nextCode) {
 function openLog() {
   Dialog.setup("");
   const outer = $("<div id=log-outer>").appendTo(Dialog.body());
-
-  const savedVars = State.active.variables;
-  const savedTemp = Object.entries(State.temporary);
-  const hist = MT.getHistory();
-  try {
-    for (let i = 0, n = hist.length; i < n; i++) {
-      const step = hist[i];
-
-      $("<div class=log-title>")
-        .append($("<span>").text(step.title))
-        .appendTo(outer);
-
-      const text = Story.get(step.title).text;
-      State.active.variables = clone(step.variables);
-      State.clearTemporary();
-      const div = $("<div class=log-entry>");
-      MT.suppressErrors(() => {
-        div.wiki(text);
-      });
-      cleanHtml(div);
-      $(outer).append(div);
-    }
-
-  } finally {
-    State.active.variables = savedVars;
-    State.clearTemporary();
-    for (const [k, v] of savedTemp) {
-      State.temporary[k] = v;
-    }
-  }
-
-  const words = MT.countWords($(outer).text());
-
+  const { passages, words } = renderTo(outer, true);
+  
   const minutes = Math.round(words / 250);
   $("#ui-dialog-title")
     .append(`~${minutes} min`)
-    .append(` | ${hist.length} p`)
+    .append(` | ${passages} p`)
     .append(` | ${words} w`);
 
   $("<a>&#x2191; </a>").prependTo("#ui-dialog-title")
@@ -210,6 +173,53 @@ function openLog() {
     });
 
   Dialog.open();
+}
+
+function renderTo(outer, showTitle) {
+  const savedVars = State.active.variables;
+  const savedTemp = Object.entries(State.temporary);
+  const hist = MT.getHistory();
+  try {
+    for (let i = 0, n = hist.length; i < n; i++) {
+      const step = hist[i];
+
+      if (showTitle) {
+        $("<div class=log-title>")
+          .append($("<span>").text(step.title))
+          .appendTo(outer);
+      } else if (i !== 0) {
+        $("<hr class=text-sep>").appendTo(outer);
+      }
+
+      const text = Story.get(step.title).text;
+      State.active.variables = clone(step.variables);
+      State.clearTemporary();
+      const div = $("<div class=log-entry>");
+      MT.suppressErrors(() => {
+        div.wiki(text);
+      });
+      cleanHtml(div);
+      // clone to remove event handlers
+      const copy = div.clone();
+      $(outer).append(copy);
+    }
+
+  } finally {
+    State.active.variables = savedVars;
+    State.clearTemporary();
+    for (const [k, v] of savedTemp) {
+      State.temporary[k] = v;
+    }
+  }
+
+  const words = MT.countWords($(outer).text());
+  const passages = hist.length;
+  return { passages, words };
+}
+
+MT.renderLog = output => {
+  const outer = $("<div id=log-outer>").appendTo(output);
+  renderTo(outer, false);
 }
 
 initLog();
