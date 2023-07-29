@@ -1,33 +1,6 @@
 :: g0init Log [inclusion] {"position":"450,725","size":"100,100"}
 <<append head>><style>
 
-#log-button {
-    background-color: #fff;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    color: #000;
-    cursor: pointer;
-    font-size: 18px;
-    min-width: 2em;
-    opacity: 0.1;
-    padding: 2px 4px;
-    position: fixed;
-    right: 4px;
-    text-align: center;
-    top: 90px;
-    z-index: 20;
-}
-#log-button:hover {
-  background-color: #333;
-  border-color: #eee;
-  color: #eee;
-  opacity: 1;
-}
-
-#log-outer {
-  max-width: min(90vw, 40em);
-}
-
 #log-outer a {
   color: #aac;
   cursor: text;
@@ -51,33 +24,6 @@
   outline: none;
 }
 
-.log-title {
-  border-bottom: 1px solid #666;
-  margin-bottom: 12px;
-  text-align: right;
-}
-.log-title span {
-  background-color: #333;
-  border: 1px solid #666;
-  border-bottom: 0;
-  border-radius: 6px 6px 0 0;
-  color: #999;
-  display: inline-block;
-  font-size: 12px;
-  opacity: 0.8;
-  padding: 2px 6px;
-}
-.log-title span:hover {
-  border-color: #fff;
-  background-color: #111;
-  color: #fff;
-  opacity: 1;
-}
-
-.log-entry {
-  line-height: 1.75;
-}
-
 </style><</append>>
 
 <<script>>
@@ -93,25 +39,9 @@
 
 Config.history.maxStates = 1000;
 
-/**
- * passageinit can trigger after momentActivate, which means State
- * isn't necessarily what's currently displayed.
- * This keeps track of what's currently visible.
- * - turn: number
- * - title: string
- */
-MT.displayedPassage = null;
-
 function initLog() {
   // legacy transcript
   session.delete("mt-log-1");
-
-  if (!setup.tester) return;
-
-  $("<div id=log-button>")
-    .appendTo("#story")
-    .text("log")
-    .on("click", () => openLog());
 }
 
 function cleanHtml(jq, nextTitle, nextCode) {
@@ -141,41 +71,7 @@ function cleanHtml(jq, nextTitle, nextCode) {
   }
 }
 
-function openLog() {
-  Dialog.setup("");
-  const outer = $("<div id=log-outer>").appendTo(Dialog.body());
-  const { passages, words } = renderTo(outer, true);
-  
-  const minutes = Math.round(words / 250);
-  $("#ui-dialog-title")
-    .append(`~${minutes} min`)
-    .append(` | ${passages} p`)
-    .append(` | ${words} w`);
-
-  $("<a>&#x2191; </a>").prependTo("#ui-dialog-title")
-    .on("click", () => {
-      const divs  = $("#log-outer > div.log-title");
-      if (divs.length) divs[0].scrollIntoView();
-    });
-  $("<a> &#x1f3b2;</a>").appendTo("#ui-dialog-title")
-    .on("click", () => {
-      const divs = $("#log-outer > div.log-title");
-      if (divs.length) {
-        // Should not use State.random()
-        const i = Math.floor(divs.length * Math.random());
-        divs[i].scrollIntoView();
-      }
-    });
-  $("<a> &#x2193;</a>").appendTo("#ui-dialog-title")
-    .on("click", () => {
-      const divs = $("#log-outer > div.log-title");
-      if (divs.length) divs[divs.length - 1].scrollIntoView();
-    });
-
-  Dialog.open();
-}
-
-function renderTo(outer, showTitle) {
+function renderTo(outer) {
   const savedVars = State.active.variables;
   const savedTemp = Object.entries(State.temporary);
   const hist = MT.getHistory();
@@ -183,11 +79,7 @@ function renderTo(outer, showTitle) {
     for (let i = 0, n = hist.length; i < n; i++) {
       const step = hist[i];
 
-      if (showTitle) {
-        $("<div class=log-title>")
-          .append($("<span>").text(step.title))
-          .appendTo(outer);
-      } else if (i !== 0) {
+      if (i !== 0) {
         $("<hr class=text-sep>").appendTo(outer);
       }
 
@@ -219,7 +111,7 @@ function renderTo(outer, showTitle) {
 
 MT.renderLog = output => {
   const outer = $("<div id=log-outer>").appendTo(output);
-  renderTo(outer, false);
+  renderTo(outer);
 }
 
 initLog();
