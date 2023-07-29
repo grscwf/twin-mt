@@ -1,5 +1,34 @@
 :: g0init History [inclusion] {"position":"250,725","size":"100,100"}
+<<append head>><style>
+
+#log-outer a {
+  color: #aac;
+  cursor: text;
+}
+#log-outer ul.actions a {
+  color: #669;
+}
+#log-outer#log-outer a.log-next {
+  color: #6ef;
+}
+
+#log-outer ul.actions li::before {
+  filter: saturate(0);
+}
+
+#log-outer hr {
+  border-color: #333;
+}
+
+#log-outer .random-walk-chosen {
+  outline: none;
+}
+
+</style><</append>>
+
 <<script>>
+
+Config.history.maxStates = 1000;
 
 const histIgnore = [
   "g1a Title Screen",
@@ -34,5 +63,76 @@ MT.getHistory = () => {
   }
   return result;
 };
+
+function cleanHtml(jq, nextTitle, nextCode) {
+  jq.removeClass("passage-in");
+  jq.find(".random-walk-chosen").removeClass("random-walk-chosen");
+  jq.find(".fade-in-hidden").removeClass("fade-in-hidden");
+  jq.find(".fade-in-absorb").removeClass("fade-in-absorb");
+  jq.find(".tame-hide").removeClass("tame-hide");
+  jq.find(".log-remove").remove();
+  jq.find("[data-name=silently]").remove();
+  jq.find(".patience-debug").remove();
+  jq.find(".ro-debug").remove();
+  jq.find(".debug").replaceWith(function() { return $(this).contents(); });
+
+  // highlight the link followed.
+  if (nextTitle != null) {
+    let link = jq.find(`a[data-passage="${nextTitle}"]`);
+    if (link.length > 1 && nextCode != null) {
+      link = link.filter(`[data-mta-code="${nextCode}"]`);
+    }
+    link.addClass("log-next");
+  }
+
+  // remove trailing br
+  while (jq[0].lastChild != null && jq[0].lastChild.tagName === "BR") {
+    jq[0].lastChild.remove();
+  }
+}
+
+function renderTo(outer) {
+  const savedVars = State.active.variables;
+  const savedTemp = Object.entries(State.temporary);
+  const hist = MT.getHistory();
+  try {
+    for (let i = 0, n = hist.length; i < n; i++) {
+      const step = hist[i];
+
+      if (i !== 0) {
+        $("<hr class=text-sep>").appendTo(outer);
+      }
+
+      const text = Story.get(step.title).text;
+      State.active.variables = clone(step.variables);
+      State.clearTemporary();
+      const div = $("<div class=log-entry>");
+      MT.suppressErrors(() => {
+        div.wiki(text);
+      });
+      cleanHtml(div);
+      // clone to remove event handlers
+      const copy = div.clone();
+      $(outer).append(copy);
+    }
+
+  } finally {
+    State.active.variables = savedVars;
+    State.clearTemporary();
+    for (const [k, v] of savedTemp) {
+      State.temporary[k] = v;
+    }
+  }
+
+  const words = MT.countWords($(outer).text());
+  const passages = hist.length;
+  return { passages, words };
+}
+
+MT.renderLog = output => {
+  const outer = $("<div id=log-outer>").appendTo(output);
+  renderTo(outer);
+}
+
 
 <</script>>
