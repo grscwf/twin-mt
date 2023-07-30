@@ -340,10 +340,9 @@
   - `mt-draft` - Passage is an incomplete draft.
   - `mt-ready` - Passage is fully written.
   - `inclusion` - Passage is included by another passage.
-  - `noreturn` - Passage does not set `$return`.
-    `$return` is the current passage in the story.
-    `noreturn` is for meta passages like the Archives.
-    The meta passages will usually have a `Return` link that goes to `$return`.
+  - `noreturn` - Passage is a "menu" passage, not part of the story.
+    (eg, "Credits").
+    "Return to story" searches history for a non-noreturn passage.
 
 ### State
 
