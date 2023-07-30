@@ -17,31 +17,46 @@ function rotl(x, k) {
  * Returns a random uint32. Uses and updates state, which should be
  * a nonzero [int32, int32] pair. The algorithm is "xoroshiro64**".
  */
-MT.rand32 = state => {
+MT.randNext = state => {
   const s0 = state[0];
   let s1 = state[1];
   const result = rotl(s0 * 0x9e3779bb, 5) * 5;
-
   s1 ^= s0;
   state[0] = rotl(s0, 26) ^ s1 ^ (s1 << 9);
   state[1] = rotl(s1, 13);
   return result >>> 0;
-}
+};
 
 /** Returns a new random state. */
-MT.randState = () => {
+MT.randCreate = () => {
   const state = [1, 0 | (Math.random() * 0xffffffff)];
-  MT.rand32(state);
-  MT.rand32(state);
+  MT.randNext(state);
+  MT.randNext(state);
   return state;
-}
+};
 
-/**
- * Returns a random item from list or Set, using deterministic RNG.
- */
+/** Returns a random int in [0, n). Uses and updates $g_rand */
+MT.randInt = (n) => {
+  let state = State.variables.g_rand;
+  if (state == null) {
+    MT.warn("g_rand was not set");
+    state = MT.randCreate();
+  }
+  state = [state[0], state[1]];
+  const r = MT.randNext(state);
+  State.variables.g_rand = state;
+  return r % n;
+};
+
+/** Initializes $g_rand to a new state. */
+MT.randReset = () => {
+  State.variables.g_rand = MT.randCreate();
+};
+
+/** Returns a random item from list (which can be a Set). */
 MT.pick = list => {
   if (list instanceof Set) list = Array.from(list);
-  const n = Math.floor(list.length * State.random());
+  const n = MT.randInt(list.length);
   return list[n];
 };
 
