@@ -28,7 +28,7 @@
  * Similar to <<link $text $link>><<run $code>><</link>>
  * Allows double-bracket syntax for the link.
  * Adds a data-mt-code attribute for disambiguation.
- * Also arranges for the next passage to get the code as _mtaCode
+ * Also arranges for the next passage to get the code as $g_mtaCode
  */
 Macro.add("mta", {
   tags: [],
@@ -110,7 +110,7 @@ function makeLink(link, code, text) {
   let body = "";
   if (code != null) {
     const codeRepr = JSON.stringify(String(code));
-    body = `<<run $mtaPayload = [${destRepr},${codeRepr}]; ${code}>>`;
+    body = `<<run $g_mtaCode = ${codeRepr}; $g_mtaCodeTurn = ${State.turns}; ${code}>>`;
   }
   $(el).wiki(`<<link ${textRepr} ${destRepr}>>${body}<</link>>`);
   if (code != null) {
@@ -125,14 +125,6 @@ function linkTitle(link) {
   const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
   return m == null ? str : m[1];
 }
-
-/** Returns the mta code for the link to here, or null. */
-MT.mtaCode = (here) => {
-  here ||= State.passage;
-  const p = State.variables.mtaPayload;
-  if (p == null || p[0] !== here) return null;
-  return p[1];
-};
 
 /**
  * <<mtn $link>>

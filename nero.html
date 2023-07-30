@@ -402,7 +402,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -9070,7 +9070,7 @@ cleanupInit();
  * Similar to &lt;&lt;link $text $link&gt;&gt;&lt;&lt;run $code&gt;&gt;&lt;&lt;/link&gt;&gt;
  * Allows double-bracket syntax for the link.
  * Adds a data-mt-code attribute for disambiguation.
- * Also arranges for the next passage to get the code as _mtaCode
+ * Also arranges for the next passage to get the code as $g_mtaCode
  */
 Macro.add(&quot;mta&quot;, {
   tags: [],
@@ -9152,7 +9152,7 @@ function makeLink(link, code, text) {
   let body = &quot;&quot;;
   if (code != null) {
     const codeRepr = JSON.stringify(String(code));
-    body = `&lt;&lt;run $mtaPayload = [${destRepr},${codeRepr}]; ${code}&gt;&gt;`;
+    body = `&lt;&lt;run $g_mtaCode = ${codeRepr}; $g_mtaCodeTurn = ${State.turns}; ${code}&gt;&gt;`;
   }
   $(el).wiki(`&lt;&lt;link ${textRepr} ${destRepr}&gt;&gt;${body}&lt;&lt;/link&gt;&gt;`);
   if (code != null) {
@@ -9167,14 +9167,6 @@ function linkTitle(link) {
   const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
   return m == null ? str : m[1];
 }
-
-/** Returns the mta code for the link to here, or null. */
-MT.mtaCode = (here) =&gt; {
-  here ||= State.passage;
-  const p = State.variables.mtaPayload;
-  if (p == null || p[0] !== here) return null;
-  return p[1];
-};
 
 /**
  * &lt;&lt;mtn $link&gt;&gt;
@@ -11575,14 +11567,13 @@ MT.getPath = () =&gt; {
   for (let i = 0, n = hist.length; i &lt; n; i++) {
     if (pathIgnore.includes(hist[i].title)) continue;
     const step = { t: hist[i].title };
-    if (i + 1 &lt; n) {
-      const mtaPayload = hist[i + 1].variables.mtaPayload;
-      if (mtaPayload != null &amp;&amp; mtaPayload[0] === hist[i].title) {
-        let code = mtaPayload[1];
-        code = code.replace(/\s*[/][/](avoid|prefer)/, &quot;&quot;);
-        if (code !== &quot;&quot;) {
-          step.code = mtaPayload[1];
-        }
+
+    let code = hist[i].variables.g_mtaCode;
+    const turn = hist[i].variables.g_mtaCodeTurn;
+    if (code != null &amp;&amp; turn === i) {
+      code = code.replace(/\s*[/][/](avoid|prefer)/, &quot;&quot;);
+      if (code !== &quot;&quot;) {
+        step.code = code;
       }
     }
     path.push(step);
@@ -11628,7 +11619,7 @@ MT.pathToJs = (path) =&gt; {
     str += &quot;  {&quot;;
     if (step.name != null) str += ` name: ${json(step.name)},`;
     str += ` t: ${json(step.t || step.title)}`;
-    if (step.code != null) str += `, code: ${json(step.code)},`;
+    if (step.code != null) str += `, code: ${json(step.code)}`;
     str += &quot; },\n&quot;;
   }
   str += &quot;],\n&quot;;
@@ -11707,7 +11698,7 @@ Macro.add(&quot;random-once&quot;, {
 });
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="202" name="g0init Randomness" tags="inclusion" position="450,850" size="100,100">&lt;&lt;script&gt;&gt;
 /*
- * This is a deterministic RNG that keeps its state in $g_rand,
+ * This is a deterministic RNG that keeps its state in $g_rand0 and $g_rand1,
  * so it can be replayed for the History page.
  * 
  * (SugarCube has a deterministic RNG option, but it uses hidden state
@@ -11741,22 +11732,24 @@ MT.randCreate = () =&gt; {
   return state;
 };
 
-/** Returns a random int in [0, n). Uses and updates $g_rand */
+/** Returns a random int in [0, n). Uses and updates $g_rand0 and $g_rand1 */
 MT.randInt = (n) =&gt; {
-  let state = State.variables.g_rand;
-  if (state == null) {
-    MT.warn(&quot;g_rand was not set&quot;);
-    state = MT.randCreate();
+  let rng = [State.variables.g_rand0, State.variables.g_rand1];
+  if (rng[0] == null || rng[1] == null) {
+    MT.warn(&quot;g_rand0 and g_rand1 are not set&quot;);
+    rng = MT.randCreate();
   }
-  state = [state[0], state[1]];
-  const r = MT.randNext(state);
-  State.variables.g_rand = state;
+  const r = MT.randNext(rng);
+  State.variables.g_rand0 = rng[0];
+  State.variables.g_rand1 = rng[1];
   return r % n;
 };
 
 /** Initializes $g_rand to a new state. */
 MT.randReset = () =&gt; {
-  State.variables.g_rand = MT.randCreate();
+  const rng = MT.randCreate();
+  State.variables.g_rand0 = rng[0];
+  State.variables.g_rand1 = rng[1];
 };
 
 /** Returns a random item from list (which can be a Set). */
@@ -11932,8 +11925,8 @@ function initRandomWalk() {
 
   const idOf = el =&gt; {
     const title = $(el).attr(&quot;data-passage&quot;);
-    const mtaCode = $(el).attr(&quot;data-mta-code&quot;);
-    return `${title}/${mtaCode}`;
+    const code = $(el).attr(&quot;data-mta-code&quot;);
+    return `${title}/${code}`;
   };
 
   function updateLabel() {
@@ -14549,7 +14542,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },
@@ -14638,7 +14631,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },
@@ -14720,7 +14713,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },
@@ -14798,7 +14791,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },
@@ -14874,7 +14867,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },
@@ -15000,7 +14993,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },
@@ -15111,7 +15104,7 @@ MT.walks = [
       { t: &quot;n1cr Ivex Fascinated (4,3)&quot; },
       { choice: &quot;guess&quot; },
       { t: &quot;n1s Guess Password&quot; },
-      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot;, },
+      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot; },
       { t: &quot;n1cr Ivex Fascinated (4,3)&quot; },
       { choice: &quot;globe&quot; },
       { t: &quot;n1x Globe&quot; },
@@ -15211,7 +15204,7 @@ MT.walks = [
       { t: &quot;n1cs Ivex Dominant (3,2)&quot; },
       { choice: &quot;guess&quot; },
       { t: &quot;n1s Guess Password&quot; },
-      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot;, },
+      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot; },
       { t: &quot;n1cs Ivex Dominant (3,2)&quot; },
       { t: &quot;n1cs Licking Eager&quot; },
       { t: &quot;n1cs Licking Continue&quot; },
@@ -15326,9 +15319,9 @@ MT.walks = [
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
       { choice: &quot;guess&quot; },
       { t: &quot;n1s Guess Password&quot; },
-      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot;, },
+      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot; },
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
-      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = &#39;That Bounty Hunter&#39;&quot;, },
+      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = &#39;That Bounty Hunter&#39;&quot; },
       { t: &quot;n1cr Reject Fantasy 2&quot; },
       { t: &quot;n1cx Start Candle 1&quot; },
       { t: &quot;n1d Start Candle 2&quot; },
@@ -15443,9 +15436,9 @@ MT.walks = [
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
       { choice: &quot;guess&quot; },
       { t: &quot;n1s Guess Password&quot; },
-      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot;, },
+      { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot; },
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
-      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = &#39;That Bounty Hunter&#39;&quot;, },
+      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = &#39;That Bounty Hunter&#39;&quot; },
       { t: &quot;n1cr Reject Fantasy 2&quot; },
       { t: &quot;n1cx Start Candle 1&quot; },
       { t: &quot;n1d Start Candle 2&quot; },
@@ -15793,7 +15786,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },
@@ -15888,7 +15881,7 @@ MT.walks = [
       { t: &quot;n1e Pull&quot; },
       { t: &quot;n1e Punch&quot; },
       { t: &quot;n1e Heavy Squeeze (1,1)&quot; },
-      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot;, },
+      { t: &quot;n1e Crop 1&quot;, code: &quot;//2&quot; },
       { t: &quot;n1e Crop 2&quot; },
       { t: &quot;n1e Crop 3&quot; },
       { t: &quot;n1e Crop 4&quot; },

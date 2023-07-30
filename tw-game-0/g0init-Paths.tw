@@ -23,14 +23,13 @@ MT.getPath = () => {
   for (let i = 0, n = hist.length; i < n; i++) {
     if (pathIgnore.includes(hist[i].title)) continue;
     const step = { t: hist[i].title };
-    if (i + 1 < n) {
-      const mtaPayload = hist[i + 1].variables.mtaPayload;
-      if (mtaPayload != null && mtaPayload[0] === hist[i].title) {
-        let code = mtaPayload[1];
-        code = code.replace(/\s*[/][/](avoid|prefer)/, "");
-        if (code !== "") {
-          step.code = mtaPayload[1];
-        }
+
+    let code = hist[i].variables.g_mtaCode;
+    const turn = hist[i].variables.g_mtaCodeTurn;
+    if (code != null && turn === i) {
+      code = code.replace(/\s*[/][/](avoid|prefer)/, "");
+      if (code !== "") {
+        step.code = code;
       }
     }
     path.push(step);
@@ -76,7 +75,7 @@ MT.pathToJs = (path) => {
     str += "  {";
     if (step.name != null) str += ` name: ${json(step.name)},`;
     str += ` t: ${json(step.t || step.title)}`;
-    if (step.code != null) str += `, code: ${json(step.code)},`;
+    if (step.code != null) str += `, code: ${json(step.code)}`;
     str += " },\n";
   }
   str += "],\n";
