@@ -16,16 +16,24 @@ const pathIgnore = [
   "g1a Bound",
 ];
 
-/**
- * Returns a full path of the current play session.
- */
+/** Returns a full path of the current play session. */
 MT.getPath = () => {
   const path = [];
   const hist = MT.getHistory();
-  for (const step of hist) {
-    if (pathIgnore.includes(step.title)) continue;
-    // XXX get mtaCode somehow
-    path.push({ t: step.title });
+  for (let i = 0, n = hist.length; i < n; i++) {
+    if (pathIgnore.includes(hist[i].title)) continue;
+    const step = { t: hist[i].title };
+    if (i + 1 < n) {
+      const mtaPayload = hist[i + 1].variables.mtaPayload;
+      if (mtaPayload != null && mtaPayload[0] === hist[i].title) {
+        let code = mtaPayload[1];
+        code = code.replace(/\s*[/][/](avoid|prefer)/, "");
+        if (code !== "") {
+          step.code = mtaPayload[1];
+        }
+      }
+    }
+    path.push(step);
   }
   return path;
 };

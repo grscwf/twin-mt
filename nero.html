@@ -402,7 +402,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -11568,16 +11568,24 @@ const pathIgnore = [
   &quot;g1a Bound&quot;,
 ];
 
-/**
- * Returns a full path of the current play session.
- */
+/** Returns a full path of the current play session. */
 MT.getPath = () =&gt; {
   const path = [];
   const hist = MT.getHistory();
-  for (const step of hist) {
-    if (pathIgnore.includes(step.title)) continue;
-    // XXX get mtaCode somehow
-    path.push({ t: step.title });
+  for (let i = 0, n = hist.length; i &lt; n; i++) {
+    if (pathIgnore.includes(hist[i].title)) continue;
+    const step = { t: hist[i].title };
+    if (i + 1 &lt; n) {
+      const mtaPayload = hist[i + 1].variables.mtaPayload;
+      if (mtaPayload != null &amp;&amp; mtaPayload[0] === hist[i].title) {
+        let code = mtaPayload[1];
+        code = code.replace(/\s*[/][/](avoid|prefer)/, &quot;&quot;);
+        if (code !== &quot;&quot;) {
+          step.code = mtaPayload[1];
+        }
+      }
+    }
+    path.push(step);
   }
   return path;
 };
@@ -16455,7 +16463,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 
 &lt;&lt;return-head&gt;&gt;
 
-&lt;div class=ui-title&gt;History&lt;/div&gt;
+&lt;div class=ui-title&gt;Your Story So Far...&lt;/div&gt;
 &lt;br&gt;
 
 &lt;&lt;script&gt;&gt;
