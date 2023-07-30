@@ -40,6 +40,30 @@ function hasNoReturn(title) {
   return passage.tags.includes("noreturn");
 }
 
+/** Pops history to last story passage. */
+MT.popToStory = () => {
+  const hist = State.history;
+  let pos = State.length - 1;
+  while (pos > 0 && hasNoReturn(hist[pos].title)) {
+    pos--;
+  }
+  Engine.goTo(pos);
+};
+
+/** Moves forward to last story passage. */
+MT.returnToStory = () => {
+  const hist = State.history;
+  let pos = State.length - 1;
+  while (pos > 0 && hasNoReturn(hist[pos].title)) {
+    pos--;
+  }
+  const rand = hist[pos].variables.g_rand;
+  if (rand != null) {
+    State.variables.g_rand = clone(rand);
+  }
+  Engine.play(hist[pos].title);
+};
+
 /** Returns history without noreturn loops. */
 MT.getHistory = () => {
   const result = [];
