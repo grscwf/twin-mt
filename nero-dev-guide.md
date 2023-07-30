@@ -11,8 +11,8 @@
   - [Passages](#passages)
   - [State](#state)
 - [Rationales](#rationales)
-  - [State.random](#staterandom)
-  - [nobr](#nobr)
+  - [not using `State.random`](#not-using-staterandom)
+  - [using `<<nobr>>`](#using-nobr)
 
 ## Twine and Twee
 
@@ -353,6 +353,11 @@
     - `d_` is Drekkar's story.
     - `n_` is Nero's story.
     - `g_` is state not specific to either story.
+  - Important: Avoid storing arrays in state variables.
+    - SugarCube uses a simple delta encoding for state history,
+      so that each turn only needs to record the state that changes.
+      However, its delta algorithm does not handle arrays,
+      so any array value will be continually repeated in every delta.
 - Metadata variables persist across playthroughs.
   - They don't get erased when the player restarts.
   - This is stuff like "which endings are unlocked".
@@ -385,15 +390,16 @@
 
 ## Rationales
 
-### State.random
+### not using `State.random`
 - SugarCube has an option to seed a deterministic rng,
   which in theory might be helpful for reproducing sessions.
 - Savestates with seeded random are incompatible with
   savestates without seeded random.
-- Deterministic rng makes it awkward to render a passage
-  independent of history, as used by archives.
+- SugarCube does not expose the deterministic rng's state,
+  which means it's difficult to render a passage
+  independent of history, as used by archives and transcript.
 
-### nobr
+### using `<<nobr>>`
 - SugarCube's default line-breaking behavior is pretty awkward.
   - Passages with a lot of `<<if>>` and other macros need a lot of
     backslashes or `<<nobr>>`
