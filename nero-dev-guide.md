@@ -340,9 +340,9 @@
   - `mt-draft` - Passage is an incomplete draft.
   - `mt-ready` - Passage is fully written.
   - `inclusion` - Passage is included by another passage.
-  - `noreturn` - Passage is a "menu" passage, not part of the story.
+  - `is-menu` - Passage is a "menu" passage, not part of the story.
     (eg, "Credits").
-    "Return to story" searches history for a non-noreturn passage.
+    "Return to story" searches history for a passage without `is-menu`.
 
 ### State
 

@@ -34,23 +34,23 @@ const histIgnore = [
   "g1a Title Screen",
 ];
 
-/** True if title is a noreturn passage */
-function hasNoReturn(title) {
+/** True if title is a menu passage */
+function isMenu(title) {
   const passage = Story.get(title);
-  return passage.tags.includes("noreturn");
+  return passage.tags.includes("is-menu");
 }
 
 /** Pops history to last story passage. */
 MT.popToStory = () => {
   const hist = State.history;
   let pos = State.length - 1;
-  while (pos > 0 && hasNoReturn(hist[pos].title)) {
+  while (pos > 0 && isMenu(hist[pos].title)) {
     pos--;
   }
   Engine.goTo(pos);
 };
 
-/** Returns history without noreturn loops. */
+/** Returns history without is-menu loops. */
 MT.getHistory = () => {
   const result = [];
 
@@ -58,10 +58,10 @@ MT.getHistory = () => {
   for (let i = 0, n = hist.length; i < n; i++) {
     const title = hist[i].title;
     if (histIgnore.includes(title)) continue;
-    if (hasNoReturn(title)) continue;
+    if (isMenu(title)) continue;
 
-    // if previous passage was noreturn
-    if (i > 0 && hasNoReturn(hist[i - 1].title)) {
+    // if previous passage is a menu passage
+    if (i > 0 && isMenu(hist[i - 1].title)) {
       // and we're returning to the same passage
       if (result.length > 0 && result[result.length - 1].title === title) {
         // skip this one too
