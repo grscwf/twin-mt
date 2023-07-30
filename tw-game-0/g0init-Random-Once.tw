@@ -15,7 +15,7 @@ Macro.delete("random-once");
 Macro.add("random-once", {
   tags: ["ro-choice"],
   handler: function() {
-    const shown = this.args[0];
+    const [seenVar] = this.args;
     const valid = new Set();
     for (let i = 1; i < this.payload.length; i++) {
       const cond = this.payload[i].args.full;
@@ -30,33 +30,31 @@ Macro.add("random-once", {
     }
 
     const V = State.variables;
-    V[shown] || (V[shown] = []);
+    let seen = JSON.parse(V[seenVar] || "[]");
 
     let avail = new Set(valid);
-    V[shown].forEach(i => avail.delete(i));
+    seen.forEach(i => avail.delete(i));
 
     if (avail.size === 0) {
       avail = new Set(valid);
-      if (avail.size > 1 && V[shown].length > 0) {
-        avail.delete(V[shown][V[shown].length - 1]);
+      if (avail.size > 1 && seen.length > 0) {
+        avail.delete(seen[seen.length - 1]);
       }
-      V[shown] = [];
+      seen = [];
     }
 
     const choice = MT.pick(avail);
-    V[shown].push(choice);
+    seen.push(choice);
+    V[seenVar] = JSON.stringify(seen);
 
     $(this.output).wiki(this.payload[choice].contents);
 
     if (setup.debug && valid.size > 1) {
       const outer = $("<span class=ro-debug>").appendTo(this.output);
-      const val = V[shown];
       outer.append("&#x1f527;");
       $("<a>").html("&#x1f3b2;")
         .appendTo(outer)
-        .click(() => MT.revisitHere(() => {
-          State.variables[shown] = val;
-        }));
+        .click(() => MT.revisitHere());
     }
   }
 });

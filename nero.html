@@ -402,7 +402,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -11651,7 +11651,7 @@ Macro.delete(&quot;random-once&quot;);
 Macro.add(&quot;random-once&quot;, {
   tags: [&quot;ro-choice&quot;],
   handler: function() {
-    const shown = this.args[0];
+    const [seenVar] = this.args;
     const valid = new Set();
     for (let i = 1; i &lt; this.payload.length; i++) {
       const cond = this.payload[i].args.full;
@@ -11666,33 +11666,31 @@ Macro.add(&quot;random-once&quot;, {
     }
 
     const V = State.variables;
-    V[shown] || (V[shown] = []);
+    let seen = JSON.parse(V[seenVar] || &quot;[]&quot;);
 
     let avail = new Set(valid);
-    V[shown].forEach(i =&gt; avail.delete(i));
+    seen.forEach(i =&gt; avail.delete(i));
 
     if (avail.size === 0) {
       avail = new Set(valid);
-      if (avail.size &gt; 1 &amp;&amp; V[shown].length &gt; 0) {
-        avail.delete(V[shown][V[shown].length - 1]);
+      if (avail.size &gt; 1 &amp;&amp; seen.length &gt; 0) {
+        avail.delete(seen[seen.length - 1]);
       }
-      V[shown] = [];
+      seen = [];
     }
 
     const choice = MT.pick(avail);
-    V[shown].push(choice);
+    seen.push(choice);
+    V[seenVar] = JSON.stringify(seen);
 
     $(this.output).wiki(this.payload[choice].contents);
 
     if (setup.debug &amp;&amp; valid.size &gt; 1) {
       const outer = $(&quot;&lt;span class=ro-debug&gt;&quot;).appendTo(this.output);
-      const val = V[shown];
       outer.append(&quot;&amp;#x1f527;&quot;);
       $(&quot;&lt;a&gt;&quot;).html(&quot;&amp;#x1f3b2;&quot;)
         .appendTo(outer)
-        .click(() =&gt; MT.revisitHere(() =&gt; {
-          State.variables[shown] = val;
-        }));
+        .click(() =&gt; MT.revisitHere());
     }
   }
 });
