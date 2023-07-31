@@ -402,7 +402,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -10616,8 +10616,9 @@ Macro.add(&quot;mf-pass&quot;, {
     }
 
     // usually already set, except when debugging
-    V.n_passTried || (V.n_passTried = []);
-    V.n_passTried.unshift(`#${pw}`);
+    const tried = JSON.parse(V.n_passTried || &quot;[]&quot;);
+    tried.unshift(`#${pw}`);
+    V.n_passTried = JSON.stringify(tried);
     V.n_magicPhase = MP_onHold;
     let mkp = `&lt;&lt;nobr&gt;&gt;`;
     mkp += ` ?P`;
@@ -10785,7 +10786,7 @@ Macro.add(&quot;pw-suggest&quot;, {
       }
     }
 
-    const tried = V.n_passTried || (V.n_passTried = []);
+    const tried = JSON.parse(V.n_passTried || &quot;[]&quot;);
     const found = JSON.parse(V.n_passFound || &quot;[]&quot;);
 
     let allFailed = true;
@@ -10832,8 +10833,7 @@ Macro.add(&quot;pw-suggest&quot;, {
         $(&quot;&lt;a&gt;&quot;).text(&quot; (reset)&quot;).appendTo(outer)
           .on(&quot;click&quot;, () =&gt; MT.revisitHere(() =&gt; {
             const V = State.variables;
-            const tried = V.n_passTried || (V.n_passTried = []);
-            tried.length = 0;
+            V.n_passTried = &quot;[]&quot;;
           }));
       }
       for (const p of this.payload) {
@@ -10843,8 +10843,9 @@ Macro.add(&quot;pw-suggest&quot;, {
         $(&quot;&lt;a&gt;&quot;).text(` (try ${pw})`).appendTo(outer)
           .on(&quot;click&quot;, () =&gt; MT.revisitHere(() =&gt; {
             const V = State.variables;
-            const tried = V.n_passTried || (V.n_passTried = []);
+            const tried = JSON.parse(V.n_passTried || &quot;[]&quot;);
             tried.push(pw);
+            V.n_passTried = JSON.stringify(tried);
           }));
       }
     }
@@ -10856,7 +10857,8 @@ MT.passAgainSoon = () =&gt; {
   const V = State.variables;
   const mp = V.n_magicPhase;
   if (MP_onHold === mp || MP_exitingHold === mp) {
-    return V.n_passTried != null &amp;&amp; V.n_passTried.length !== 3;
+    const tried = JSON.parse(V.n_passTried || &quot;[]&quot;);
+    return tried.length !== 3;
   }
   return false;
 };
@@ -10872,8 +10874,8 @@ MT.passWanted = () =&gt; {
 Template.add(&quot;sprBadPass&quot;, () =&gt; {
   const V = State.variables;
 
-  const pw = V.n_passTried[0].replace(/^#/, &quot;&quot;);
-  const tried = V.n_passTried.length;
+  const tried = JSON.parse(V.n_passTried || &#39;[&quot;#bug&quot;]&#39;);
+  const pw = tried[0].replace(/^#/, &quot;&quot;);
 
   let mkp = `&lt;em&gt;${pw}&lt;/em&gt; `;
   if (passSprite[pw] != null) {
@@ -10881,13 +10883,13 @@ Template.add(&quot;sprBadPass&quot;, () =&gt; {
   }
 
   // oldPassword joke detracts from the tried joke
-  if (oldPasswords[pw] &amp;&amp; tried !== 2) {
+  if (oldPasswords[pw] &amp;&amp; tried.length !== 2) {
     mkp += oldPasswords[pw];
   } else {
     mkp += &quot;is not the correct password, ?master&quot;;
   }
 
-  switch (tried) {
+  switch (tried.length) {
     case 1:
       mkp += &quot; You have two tries&quot;;
       break;
@@ -10905,7 +10907,7 @@ Template.add(&quot;sprBadPass&quot;, () =&gt; {
       mkp += &quot; You have no more tries&quot;;
       break;
     default:
-      throw new Error(`unexpected passTried ${V.n_passTried.length}`);
+      throw new Error(`unexpected passTried ${V.n_passTried}`);
   }
   return mkp;
 });
@@ -19461,6 +19463,7 @@ and steps away with a laugh.
 &lt;&lt;mf-pass &quot;The Guild&#39;s Name&quot;&gt;&gt;
   ?P
   The wolf mentally kicks himself.
+  ?P
 &lt;&lt;/mf-pass&gt;&gt;
 &lt;&lt;if $n_abused&gt;&gt;
   Nero has not thought of any tale
@@ -26502,8 +26505,9 @@ fully charged. And maybe another second if his bladder is full.
 
 &lt;&lt;include [[n1s Guess Script]]&gt;&gt;
 
-&lt;&lt;set _oneLeft = $n_passTried.length === 2&gt;&gt;
-&lt;&lt;set _zeroLeft = $n_passTried.length === 3&gt;&gt;
+&lt;&lt;set _tried = JSON.parse($n_passTried || &quot;[]&quot;)&gt;&gt;
+&lt;&lt;set _oneLeft = _tried.length === 2&gt;&gt;
+&lt;&lt;set _zeroLeft = _tried.length === 3&gt;&gt;
 
 &lt;&lt;if $n_candleHorny&gt;&gt;
   The flirtatious Sprite
@@ -26514,7 +26518,7 @@ fully charged. And maybe another second if his bladder is full.
   One last step, and then Nero can use Nackle&#39;s Device.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n_passTried.length &gt; 0&gt;&gt;
+&lt;&lt;if _tried.length &gt; 0&gt;&gt;
   ?P
   The wolf has already tried &lt;&lt;= _listFailed()&gt;&gt;
 &lt;&lt;/if&gt;&gt;
@@ -26532,7 +26536,7 @@ fully charged. And maybe another second if his bladder is full.
 
 &lt;&lt;else&gt;&gt;
 
-  &lt;&lt;switch $n_passTried.length&gt;&gt;
+  &lt;&lt;switch _tried.length&gt;&gt;
   &lt;&lt;case 1&gt;&gt;
     The Sprite will allow two more guesses.
     Nero does not really know much about
@@ -26599,7 +26603,7 @@ fully charged. And maybe another second if his bladder is full.
     &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`unexpected passTried ${$n_passTried.length}`)&gt;&gt;
+    &lt;&lt;run throw new Error(`unexpected passTried ${$n_passTried}`)&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -26621,8 +26625,6 @@ fully charged. And maybe another second if his bladder is full.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="423" name="n1s Guess Script" tags="mt-ready inclusion" position="4275,925" size="100,100">&lt;&lt;script&gt;&gt;
 const V = State.variables;
 const T = State.temporary;
-
-V.n_passTried || (V.n_passTried = []);
 
 T.sayPassword = &quot;[[n1s Say Password]]&quot;.slice(2, -2);
 
@@ -26660,7 +26662,7 @@ T.describe = pw =&gt; {
 
 T.listFailed = () =&gt; {
   // note, reverse order
-  const tried = V.n_passTried || [];
+  const tried = JSON.parse(V.n_passTried || &quot;[]&quot;);
   const desc = i =&gt; T.describe(tried[i]);
   if (tried.length === 1) {
     return `${desc(0)}.`;
@@ -26678,15 +26680,16 @@ T.listFailed = () =&gt; {
 
 T.toTry = [];
 T.hasBasics = false;
+const tried = JSON.parse(V.n_passTried || &quot;[]&quot;);
 for (const pw of Object.keys(MT.basicPasswords)) {
-  if (!V.n_passTried.includes(pw)) {
+  if (!tried.includes(pw)) {
     T.toTry.push(pw);
     T.hasBasics = true;
   }
 }
 for (const pw of JSON.parse(V.n_passFound || &quot;[]&quot;)) {
-  if (pw === PW_hunter &amp;&amp; V.n_passTried.includes(PW_too)) continue;
-  if (!V.n_passTried.includes(pw)) {
+  if (pw === PW_hunter &amp;&amp; tried.includes(PW_too)) continue;
+  if (!tried.includes(pw)) {
     T.toTry.push(pw);
   }
 }
@@ -27168,7 +27171,7 @@ $n_afterAction
 
 &lt;span class=sprite-q&gt;&quot;?sprBadPass remaining, ?master&quot;&lt;/span&gt;
 
-&lt;&lt;switch $n_passTried.length&gt;&gt;
+&lt;&lt;switch JSON.parse($n_passTried || &quot;[]&quot;).length&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
   &lt;&lt;set $n_magicPhase = MP_wantPass&gt;&gt;
 
@@ -27255,7 +27258,7 @@ $n_afterAction
   [[Continue|n1s Pass Failed]]
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unexpected passTried ${$n_passTried.length}`)&gt;&gt;
+  &lt;&lt;run throw new Error(`unexpected passTried ${$n_passTried}`)&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 /* n_magicPhase is set above */
@@ -27617,12 +27620,13 @@ while I check your password, ?master&quot;&lt;/span&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;if _patience &gt; 0&gt;&gt;
-  &lt;&lt;switch $n_passTried.length&gt;&gt;
+  &lt;&lt;set _tried = JSON.parse($n_passTried || &quot;[]&quot;)&gt;&gt;
+  &lt;&lt;switch _tried.length&gt;&gt;
   &lt;&lt;case 1&gt;&gt;
     /* nothing */
   &lt;&lt;case 2&gt;&gt;
     ?P
-    &lt;&lt;if $n_passTried[0][0] === &quot;#&quot;&gt;&gt;
+    &lt;&lt;if _tried[0][0] === &quot;#&quot;&gt;&gt;
       Nero is a little upset that the Sprite again misinterpreted
       conversation as a password. The wolf now has only one more
       attempt at guessing the password. He&#39;d better make it a good one.
@@ -27633,7 +27637,7 @@ while I check your password, ?master&quot;&lt;/span&gt;
   &lt;&lt;case 3&gt;&gt;
     ?P
     That was Nero&#39;s last guess.
-    &lt;&lt;if $n_passTried[0][0] === &quot;#&quot;&gt;&gt;
+    &lt;&lt;if _tried[0][0] === &quot;#&quot;&gt;&gt;
       Unfortunately it was a terrible one.
       Well, there will be some other way to escape.
     &lt;&lt;else&gt;&gt;
@@ -27641,7 +27645,7 @@ while I check your password, ?master&quot;&lt;/span&gt;
       But if it isn&#39;t, there will be some other way to escape.
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG passTried ${$n_passTried.length}`)&gt;&gt;
+    &lt;&lt;run throw new Error(`BUG passTried ${$n_passTried}`)&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 
   &lt;&lt;set $n_magicAction =
@@ -28127,11 +28131,13 @@ $n_afterAction
 &lt;&lt;set $n_magicPhaseReached = MP_wantTouch&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="441" name="n1s Say Password" tags="mt-ready" position="4275,1050" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
-&lt;&lt;em-assert $n_passTried.length &gt;= 1&gt;&gt;
-&lt;&lt;em-assert $n_passTried.length &lt;= 3&gt;&gt;
+
+&lt;&lt;set _numTried = JSON.parse($n_passTried || &quot;[]&quot;).length&gt;&gt;
+&lt;&lt;em-assert _numTried &gt;= 1&gt;&gt;
+&lt;&lt;em-assert _numTried &lt;= 3&gt;&gt;
 
 &lt;&lt;if $n_candleHorny&gt;&gt;
-  &lt;&lt;switch $n_passTried.length&gt;&gt;
+  &lt;&lt;switch _numTried&gt;&gt;
   &lt;&lt;case 1&gt;&gt;
     The wolf&#39;s first offering was clearly a mistake.
     He whines to the Sprite, &quot;$n_passToTry&quot;.
@@ -28154,7 +28160,7 @@ $n_afterAction
   &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
-  &lt;&lt;switch $n_passTried.length&gt;&gt;
+  &lt;&lt;switch _numTried&gt;&gt;
   &lt;&lt;case 1&gt;&gt;
     Nero is not certain of this choice, but he does get to try again,
     and choosing an action is better than failing to act from indecision.
@@ -28291,7 +28297,7 @@ The Sprite ?sprSays,
 Please hold while I double-check that one, ?master&quot;&lt;/span&gt;
 
 ?P
-&lt;&lt;switch $n_passTried.length&gt;&gt;
+&lt;&lt;switch _numTried&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
   &lt;&lt;if $n_candleHorny&gt;&gt;
     It starts loudly humming a vigorous tune that throbs to the beat of the
@@ -28342,7 +28348,9 @@ $n_afterAction
 
 /* note n_passToTry can be changed above */
 &lt;&lt;set $n_magicPhase = MP_onHold&gt;&gt;
-&lt;&lt;set $n_passTried.unshift($n_passToTry)&gt;&gt;
+&lt;&lt;set _tried = JSON.parse($n_passTried || &quot;[]&quot;)&gt;&gt;
+&lt;&lt;set _tried.unshift($n_passToTry)&gt;&gt;
+&lt;&lt;set $n_passTried = JSON.stringify(_tried)&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="442" name="n1s Scan Horny" tags="mt-ready" position="3725,875" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_candleLit true&gt;&gt;
 &lt;&lt;vi-always n_candleHorny true&gt;&gt;
@@ -28841,7 +28849,7 @@ that function entirely.
   &lt;span class=sprite-q&gt;&quot;Please say your password, ?master&quot;&lt;/span&gt;
   &lt;&lt;if _patience &gt; 0&gt;&gt;
     ?P
-    &lt;&lt;switch $n_passTried.length&gt;&gt;
+    &lt;&lt;switch JSON.parse($n_passTried || &quot;[]&quot;).length&gt;&gt;
     &lt;&lt;case 1&gt;&gt;
       Nero has two guesses remaining.
       Not as many as he&#39;d like, but better than nothing.
@@ -28853,7 +28861,7 @@ that function entirely.
       It probably means there is not actually
       a limit to the number of guesses.
     &lt;&lt;default&gt;&gt;
-      &lt;&lt;run throw new Error(`bug: passTried ${$n_passTried.length}`)&gt;&gt;
+      &lt;&lt;run throw new Error(`bug: passTried length ${$n_passTried}`)&gt;&gt;
     &lt;&lt;/switch&gt;&gt;
     &lt;&lt;set $n_magicAction = &quot;[[Guess a password.|n1s Guess Password]]&quot;&gt;&gt;
   &lt;&lt;/if&gt;&gt;
@@ -29313,7 +29321,7 @@ Unexpectedly, the Sprite whispers,
   prevent him from trying another password.
 
   ?P
-  This is a fairly common problem students have
+  This is a fairly common problem that students have
   when instructing a Sprite.
   Telling a Sprite a sequence of steps is straightforward,
   but once the instructions involve steps that repeat
@@ -29321,7 +29329,7 @@ Unexpectedly, the Sprite whispers,
   it becomes difficult to instruct the Sprite
   to perform an intended task correctly.
   Success usually requires testing the Sprite quite
-  thoroughly, and scolding it for any mistake.
+  thoroughly, and scolding it for any mistakes.
 
   ?P
   Ivex is clearly not very skilled at instructing Sprites.
@@ -29329,7 +29337,7 @@ Unexpectedly, the Sprite whispers,
 
   ?P
   Since the Sprite did not stop asking at zero,
-  it&#39;s  that it will &lt;em&gt;never&lt;/em&gt; stop asking.
+  it&#39;s likely that it will &lt;em&gt;never&lt;/em&gt; stop asking.
   This mistake will allow Nero to make as many guesses
   as he wants!
 &lt;&lt;/if&gt;&gt;
@@ -29718,7 +29726,7 @@ a shelf near the desk has
       the password the Sprite wants,
       but the panther told a strange and implausible story
       when Nero tried to ask about it.
-      &lt;&lt;set _oneLeft = $n_passTried.length === 2&gt;&gt;
+      &lt;&lt;set _oneLeft = JSON.parse($n_passTried || &quot;[]&quot;).length === 2&gt;&gt;
       &lt;&lt;if !$n_ivexGone &amp;&amp; _oneLeft&gt;&gt;
         ?P
         The wolf considers asking again anyway,
@@ -31415,12 +31423,16 @@ He moves to the desk to pick up the globe.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="478" name="n1x Globe WantPass" tags="mt-ready inclusion" position="6350,1175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_ivexReceptive&gt;&gt;
 
-&lt;&lt;set _oneLeft = $n_passTried.length === 2&gt;&gt;
-&lt;&lt;set _zeroLeft = $n_passTried.length === 3&gt;&gt;
-
-&lt;&lt;set _triedCarpe = $n_passTried.includes(&quot;Carpe Diem&quot;)&gt;&gt;
-&lt;&lt;set _triedLiskov = $n_passTried.includes(&quot;Caverns of Liskov&quot;)&gt;&gt;
-&lt;&lt;set _triedLuminance = $n_passTried.includes(&quot;Caverns of Luminance&quot;)&gt;&gt;
+&lt;&lt;script&gt;&gt;
+  const T = State.temporary;
+  const V = State.variables;
+  const tried = JSON.parse(V.n_passTried || &quot;[]&quot;);
+  T.oneLeft = tried.length === 2;
+  T.zeroLeft = tried.length === 3;
+  T.triedCarpe = tried.includes(&quot;Carpe Diem&quot;);
+  T.triedLiskov = tried.includes(&quot;Caverns of Liskov&quot;);
+  T.triedLuminance = tried.includes(&quot;Caverns of Luminance&quot;);
+&lt;&lt;/script&gt;&gt;
 
 The caverns of the snow globe might be Ivex&#39;s favorite vacation spot,
 which is a common choice of password: easy to remember,
@@ -33115,7 +33127,7 @@ The map is quite large, perhaps two meters wide.
 
 &lt;&lt;set $n_mapViewed = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="499" name="n1x Map WantPass" tags="mt-ready inclusion" position="6350,350" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;set _oneLeft = $n_passTried.length === 2&gt;&gt;
+&lt;&lt;set _oneLeft = JSON.parse($n_passTried || &quot;[]&quot;).length === 2&gt;&gt;
 
 
 ?P
@@ -33773,7 +33785,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
 &lt;&lt;cv-try n_magicPhase
   `MP_beforeCast` `MP_wantTouch` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n_passTried `[]` `[&quot;Ivy&quot;]`&gt;&gt;
+&lt;&lt;cv-try n_passTried &quot;[]&quot; &#39;[&quot;Ivy&quot;]&#39;&gt;&gt;
 
 &lt;&lt;set _lusted = $n_paintingViewedHorny&gt;&gt;
 &lt;&lt;set _window = $n_windowBroken ? &quot;broken window&quot; : &quot;round window&quot;&gt;&gt;
@@ -34129,7 +34141,7 @@ of that monstrous creature. Is that a bird of some sort?&quot;
 &lt;&lt;set if ($n_ivexWasReceptive) {
   $n_magicPhase = MP_onHold;
   $n_magicPhaseReached = MP_wantPass;
-  $n_passTried = [&quot;#I Dearly Loved My First Familiar As Well&quot;];
+  $n_passTried = &#39;[&quot;#I Dearly Loved My First Familiar As Well&quot;]&#39;;
   $n_penguinCoinDropped = false;
   $n_penguinTouched = true;
   $n_ivexNear = false;
@@ -34146,7 +34158,7 @@ of that monstrous creature. Is that a bird of some sort?&quot;
 &lt;&lt;cv-try n_magicPhase
   `MP_beforeCast` `MP_wantTouch` `MP_wantPass`
   `MP_contact` `MP_tapLost`&gt;&gt;
-&lt;&lt;cv-try n_passTried `null` `[&quot;Hunter Too&quot;]`&gt;&gt; /* maybe also Please */
+&lt;&lt;cv-try n_passTried &quot;[]&quot; &#39;[&quot;Hunter Too&quot;]&#39;&gt;&gt; /* maybe also Please */
 
 &lt;&lt;if $n_penguinAsked&gt;&gt;
   Ivex&#39;s deceased familiar,
