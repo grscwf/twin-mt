@@ -402,7 +402,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -12867,9 +12867,18 @@ function cleanHtml(jq, nextTitle, nextCode) {
     link.addClass(&quot;tran-next&quot;);
   }
 
-  // remove trailing br
-  while (jq[0].lastChild != null &amp;&amp; jq[0].lastChild.tagName === &quot;BR&quot;) {
-    jq[0].lastChild.remove();
+  // remove trailing space and Continue/Return links
+  const shouldRemove = el =&gt; {
+    if (el.nodeName === &quot;BR&quot;) return true;
+    if (el.nodeName === &quot;#text&quot; &amp;&amp; el.nodeValue.trim() === &quot;&quot;) return true;
+    if (el.nodeName === &quot;A&quot;) {
+      if (/^(Continue|Return)$/.test(el.textContent)) return true;
+    }
+    return false;
+  };
+  const el = jq[0];
+  while (el.lastChild != null &amp;&amp; shouldRemove(el.lastChild)) {
+    el.lastChild.remove();
   }
 }
 
@@ -12893,17 +12902,29 @@ MT.tranRender = output =&gt; {
           $(&quot;&lt;hr class=text-sep&gt;&quot;).appendTo(outer);
         }
 
+        let nextTitle = null;
+        let nextCode = null;
+        if (turn + 1 &lt; hist.length) {
+          nextTitle = hist[turn + 1].title;
+          const V = hist[turn + 1].variables;
+          if (V.g_mtaCodeTurn === turn + 1) {
+            nextCode = V.g_mtaCode;
+          }
+        }
+
         const text = Story.get(moment.title).text;
         State.active.variables = clone(moment.variables);
         State.clearTemporary();
-        const div = $(&quot;&lt;div class=tran-entry&gt;&quot;);
+
+        let div = $(&quot;&lt;div class=tran-entry&gt;&quot;);
         MT.suppressErrors(() =&gt; {
           div.wiki(text);
         });
-        cleanHtml(div);
         // clone to remove event handlers
-        const copy = div.clone();
-        $(outer).append(copy);
+        div = div.clone();
+
+        cleanHtml(div, nextTitle, nextCode);
+        $(outer).append(div);
       }
     } finally {
       State.active.variables = savedVars;
@@ -12926,6 +12947,14 @@ MT.tranRender = output =&gt; {
   
   renderLoop();
 }
+
+Macro.add(&quot;tran-skip&quot;, {
+  tags: [],
+  handler: function() {
+    const outer = $(&quot;&lt;span class=tran-remove&gt;&quot;).appendTo(this.output);
+    outer.wiki(this.payload[0].text);
+  }
+});
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="211" name="g0init Validate" tags="inclusion" position="325,1100" size="100,100">&lt;&lt;script&gt;&gt;
 

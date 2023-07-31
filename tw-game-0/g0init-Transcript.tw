@@ -49,9 +49,18 @@ function cleanHtml(jq, nextTitle, nextCode) {
     link.addClass("tran-next");
   }
 
-  // remove trailing br
-  while (jq[0].lastChild != null && jq[0].lastChild.tagName === "BR") {
-    jq[0].lastChild.remove();
+  // remove trailing space and Continue/Return links
+  const shouldRemove = el => {
+    if (el.nodeName === "BR") return true;
+    if (el.nodeName === "#text" && el.nodeValue.trim() === "") return true;
+    if (el.nodeName === "A") {
+      if (/^(Continue|Return)$/.test(el.textContent)) return true;
+    }
+    return false;
+  };
+  const el = jq[0];
+  while (el.lastChild != null && shouldRemove(el.lastChild)) {
+    el.lastChild.remove();
   }
 }
 
@@ -75,17 +84,29 @@ MT.tranRender = output => {
           $("<hr class=text-sep>").appendTo(outer);
         }
 
+        let nextTitle = null;
+        let nextCode = null;
+        if (turn + 1 < hist.length) {
+          nextTitle = hist[turn + 1].title;
+          const V = hist[turn + 1].variables;
+          if (V.g_mtaCodeTurn === turn + 1) {
+            nextCode = V.g_mtaCode;
+          }
+        }
+
         const text = Story.get(moment.title).text;
         State.active.variables = clone(moment.variables);
         State.clearTemporary();
-        const div = $("<div class=tran-entry>");
+
+        let div = $("<div class=tran-entry>");
         MT.suppressErrors(() => {
           div.wiki(text);
         });
-        cleanHtml(div);
         // clone to remove event handlers
-        const copy = div.clone();
-        $(outer).append(copy);
+        div = div.clone();
+
+        cleanHtml(div, nextTitle, nextCode);
+        $(outer).append(div);
       }
     } finally {
       State.active.variables = savedVars;
@@ -108,5 +129,13 @@ MT.tranRender = output => {
   
   renderLoop();
 }
+
+Macro.add("tran-skip", {
+  tags: [],
+  handler: function() {
+    const outer = $("<span class=tran-remove>").appendTo(this.output);
+    outer.wiki(this.payload[0].text);
+  }
+});
 
 <</script>>
