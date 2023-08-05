@@ -100,12 +100,19 @@ function initRandomWalk() {
   function updateLabel() {
     const isMenu = tags().includes("is-menu");
     $("#random-walk").toggleClass("at-menu", isMenu);
+
+    const noFuture = () => {
+      if (ignoreFuture) return true;
+      if (State.length === State.size) return true;
+      const next = State.history[State.length].title;
+      const links = $("#passages a[data-passage]")
+        .filter((i, el) => $(el).attr("data-passage") === next);
+      console.log({next, links});
+      return links.length === 0;
+    };
+
     const el = $("#rw-forw");
-    if (State.length === State.size || ignoreFuture) {
-      el.text("rand");
-    } else {
-      el.text("forw");
-    }
+    el.text(noFuture() ? "rand" : "next");
   }
 
   const goRandom = () => {
@@ -227,7 +234,7 @@ function initRandomWalk() {
       links.addClass("random-walk-chosen");
       links[0].scrollIntoView(false);
     } else {
-      Engine.forward();
+      goRandom();
     }
   };
 
@@ -445,7 +452,7 @@ function initRandomWalk() {
     }
   });
 
-  $(document).on(":passagestart", () => {
+  $(document).on(":passagedisplay", () => {
     updateLabel();
   });
 }
