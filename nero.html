@@ -438,7 +438,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -12866,6 +12866,12 @@ function cleanHtml(jq, nextTitle, nextCode) {
       link = link.filter(`[data-mta-code=&quot;${nextCode}&quot;]`);
     }
     link.addClass(&quot;tran-next&quot;);
+
+    // remove tran-skip-if
+    const sk = jq.find(&quot;.tran-skip-if&quot;);
+    if (sk.length &amp;&amp; sk.attr(&quot;data-tran-skip-if&quot;) === nextTitle) {
+      sk.replaceWith(`&lt;span class=&quot;tran-elided&quot;&gt;&amp;hellip;&lt;/span&gt;`);
+    }
   }
 
   // glitch link
@@ -12972,9 +12978,22 @@ Macro.add(&quot;tran-skip&quot;, {
   tags: [],
   handler: function() {
     const outer = $(&quot;&lt;span class=tran-remove&gt;&quot;).appendTo(this.output);
-    outer.wiki(this.payload[0].text);
+    outer.wiki(this.payload[0].contents);
   }
 });
+
+Macro.add(&quot;tran-skip-if&quot;, {
+  tags: [],
+  handler: function() {
+    let [link] = this.args;
+    if (link.isLink) {
+      link = link.link;
+    }
+    const outer = $(&quot;&lt;span class=tran-skip-if&gt;&quot;).appendTo(this.output);
+    outer.attr(&quot;data-tran-skip-if&quot;, link);
+    outer.wiki(this.payload[0].contents);
+  }
+})
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="210" name="g0init Validate" tags="inclusion" position="325,1100" size="100,100">&lt;&lt;script&gt;&gt;
 
@@ -17355,13 +17374,15 @@ The wolf&#39;s limbs appear to be bound in a spread-eagle position to something 
 ?P
 All this would be an overwhelming disadvantage to most spellcasters, but the lupine mage always has one spell ready to cast, which doesn&#39;t need complex gestures or precisely spoken words. He&#39;s kept the spell&#39;s construction a secret, so there isn&#39;t a proper name for it yet. Privately he thinks of it as
 [[Nero&#39;s Endgame|n1s Endgame Info 1]].
-It has only one charge, and it requires a few hours with an assistant to prepare again, so it&#39;s a spell of last resort for desperate circumstances.
+&lt;&lt;tran-skip-if [[n1s Endgame Info 1]]&gt;&gt;
+  It has only one charge, and it requires a few hours with an assistant to prepare again, so it&#39;s a spell of last resort for desperate circumstances.
 
-?P
-Mysterious abduction by an unknown captor is a circumstance that seems sufficiently desperate. So Nero prepares the spell&#39;s image in his mind, and then &lt;em&gt;twists&lt;/em&gt; it...
+  ?P
+  Mysterious abduction by an unknown captor is a circumstance that seems sufficiently desperate. So Nero prepares the spell&#39;s image in his mind, and then &lt;em&gt;twists&lt;/em&gt; it...
 
-?P
-[[Continue|n1a Endgame 2]]
+  ?P
+  [[Continue|n1a Endgame 2]]
+&lt;&lt;/tran-skip-if&gt;&gt;
 
 &lt;&lt;set $n_returnEndgame = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="n1a Endgame 2" tags="mt-ready" position="1050,3150" size="100,100">&lt;&lt;nobr&gt;&gt;

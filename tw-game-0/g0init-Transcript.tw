@@ -63,6 +63,12 @@ function cleanHtml(jq, nextTitle, nextCode) {
       link = link.filter(`[data-mta-code="${nextCode}"]`);
     }
     link.addClass("tran-next");
+
+    // remove tran-skip-if
+    const sk = jq.find(".tran-skip-if");
+    if (sk.length && sk.attr("data-tran-skip-if") === nextTitle) {
+      sk.replaceWith(`<span class="tran-elided">&hellip;</span>`);
+    }
   }
 
   // glitch link
@@ -169,8 +175,21 @@ Macro.add("tran-skip", {
   tags: [],
   handler: function() {
     const outer = $("<span class=tran-remove>").appendTo(this.output);
-    outer.wiki(this.payload[0].text);
+    outer.wiki(this.payload[0].contents);
   }
 });
+
+Macro.add("tran-skip-if", {
+  tags: [],
+  handler: function() {
+    let [link] = this.args;
+    if (link.isLink) {
+      link = link.link;
+    }
+    const outer = $("<span class=tran-skip-if>").appendTo(this.output);
+    outer.attr("data-tran-skip-if", link);
+    outer.wiki(this.payload[0].contents);
+  }
+})
 
 <</script>>
