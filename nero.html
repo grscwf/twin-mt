@@ -438,7 +438,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -12843,6 +12843,10 @@ Template.add(&quot;restartAction&quot;,
   top: -26px;
 }
 
+.tran-elided {
+  margin-left: .2em;
+}
+
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
@@ -12869,9 +12873,23 @@ function cleanHtml(jq, nextTitle, nextCode) {
 
     // remove tran-skip-if
     const sk = jq.find(&quot;.tran-skip-if&quot;);
-    if (sk.length &amp;&amp; sk.attr(&quot;data-tran-skip-if&quot;) === nextTitle) {
-      sk.replaceWith(`&lt;span class=&quot;tran-elided&quot;&gt;&amp;hellip;&lt;/span&gt;`);
-    }
+    sk.each((i, el) =&gt; {
+      if ($(el).attr(&quot;data-tran-skip-if&quot;) === nextTitle) {
+        $(el).replaceWith(`&lt;span class=&quot;tran-elided&quot;&gt;&amp;hellip;&lt;/span&gt;`);
+      }
+    });
+
+    // remove tran-cut
+    const cut = jq.find(&quot;.tran-cut&quot;);
+    cut.each((i, el) =&gt; {
+      if ($(el).attr(&quot;data-passage&quot;) === nextTitle) {
+        while (el.nextSibling != null) {
+          el.nextSibling.remove();
+        }
+        $(el).parent().append(
+          `&lt;span class=&quot;tran-elided&quot;&gt;&amp;hellip;&lt;/span&gt;`);
+      }
+    });
   }
 
   // glitch link
@@ -12974,14 +12992,6 @@ MT.tranRender = output =&gt; {
   renderLoop();
 }
 
-Macro.add(&quot;tran-skip&quot;, {
-  tags: [],
-  handler: function() {
-    const outer = $(&quot;&lt;span class=tran-remove&gt;&quot;).appendTo(this.output);
-    outer.wiki(this.payload[0].contents);
-  }
-});
-
 Macro.add(&quot;tran-skip-if&quot;, {
   tags: [],
   handler: function() {
@@ -12993,7 +13003,14 @@ Macro.add(&quot;tran-skip-if&quot;, {
     outer.attr(&quot;data-tran-skip-if&quot;, link);
     outer.wiki(this.payload[0].contents);
   }
-})
+});
+
+Macro.add(&quot;tran-cut&quot;, {
+  handler: function() {
+    $(this.output).wiki(this.args.raw);
+    $(this.output).find(&quot;a&quot;).addClass(&quot;tran-cut&quot;);
+  }
+});
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="210" name="g0init Validate" tags="inclusion" position="325,1100" size="100,100">&lt;&lt;script&gt;&gt;
 
@@ -17369,20 +17386,30 @@ Thanks for playing so far!
 
 &lt;&lt;kw-announce&gt;&gt;
 
-The wolf&#39;s limbs appear to be bound in a spread-eagle position to something sturdy, probably made of wood. And his tongue feels too numb to correctly cast any spell just yet.
+The wolf&#39;s limbs appear to be bound in a spread-eagle position
+to something sturdy, probably made of wood. And his tongue feels
+too numb to correctly cast any spell just yet.
 
 ?P
-All this would be an overwhelming disadvantage to most spellcasters, but the lupine mage always has one spell ready to cast, which doesn&#39;t need complex gestures or precisely spoken words. He&#39;s kept the spell&#39;s construction a secret, so there isn&#39;t a proper name for it yet. Privately he thinks of it as
-[[Nero&#39;s Endgame|n1s Endgame Info 1]].
-&lt;&lt;tran-skip-if [[n1s Endgame Info 1]]&gt;&gt;
-  It has only one charge, and it requires a few hours with an assistant to prepare again, so it&#39;s a spell of last resort for desperate circumstances.
+All this would be an overwhelming disadvantage to most spellcasters,
+but the lupine mage always has one spell ready to cast,
+which doesn&#39;t need complex gestures or precisely spoken words.
+He&#39;s kept the spell&#39;s construction a secret,
+so there isn&#39;t a proper name for it yet.
+Privately he thinks of it as
+&lt;&lt;tran-cut [[Nero&#39;s Endgame|n1s Endgame Info 1]]&gt;&gt;.
+It has only one charge, and it requires a few hours
+with an assistant to prepare again,
+so it&#39;s a spell of last resort for desperate circumstances.
 
-  ?P
-  Mysterious abduction by an unknown captor is a circumstance that seems sufficiently desperate. So Nero prepares the spell&#39;s image in his mind, and then &lt;em&gt;twists&lt;/em&gt; it...
+?P
+Mysterious abduction by an unknown captor is a circumstance
+that seems sufficiently desperate.
+So Nero prepares the spell&#39;s image in his mind,
+and then &lt;em&gt;twists&lt;/em&gt; it...
 
-  ?P
-  [[Continue|n1a Endgame 2]]
-&lt;&lt;/tran-skip-if&gt;&gt;
+?P
+[[Continue|n1a Endgame 2]]
 
 &lt;&lt;set $n_returnEndgame = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="240" name="n1a Endgame 2" tags="mt-ready" position="1050,3150" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -17700,12 +17727,17 @@ Well. &lt;em&gt;That&lt;/em&gt; sort of posturing is familiar. Nero has encounte
 &lt;&lt;kw-announce&gt;&gt;
 &lt;&lt;vi-always n_mageSight false&gt;&gt;
 
-Nero&#39;s head feels stuffed, like it&#39;s crammed full with pebbles that shift a little painfully when he moves his head. He starts to prepare
-[[Pearson&#39;s Hangover Cantrip|n1a Hangover Info]],
-but he decides he&#39;s unlikely to recite it correctly in his current condition. There are probably more important things for him to focus on anyway.
+Nero&#39;s head feels stuffed, like it&#39;s crammed full with pebbles
+that shift a little painfully when he moves his head.
+He starts to prepare
+&lt;&lt;tran-cut [[Pearson&#39;s Hangover Cantrip|n1a Hangover Info]]&gt;&gt;,
+but he decides he&#39;s unlikely to recite it correctly
+in his current condition.
+There are probably more important things for him to focus on anyway.
 
 ?P
-&quot;Last chance, buddy. Wake up, or else...&quot; says the voice, with a hint of manic glee.
+&quot;Last chance, buddy. Wake up, or else...&quot; says the voice,
+with a hint of manic glee.
 
 ?P
 Nero considers how to respond.
@@ -17718,6 +17750,7 @@ Nero considers how to respond.
   &lt;li&gt;[[Try to sweet talk his way through this.|n1a Hello 1]]&lt;/li&gt;
   &lt;li&gt;[[Activate his emergency protection spell.|n1a Endgame 1]]&lt;/li&gt;
 &lt;/ul&gt;
+
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="253" name="n1cn 100 Percent" tags="mt-ready" position="2575,2975" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_abused true&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
@@ -18775,6 +18808,7 @@ the edge of a cluttered desk.
 
 ?P
 He&#39;s a [[pretentiously dressed black panther|n1cn Ivex Desc]],
+
 larger than Nero expected from the dossier.
 But the images in the dossier come from school portraits
 that were created several years ago,

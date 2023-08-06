@@ -40,6 +40,10 @@
   top: -26px;
 }
 
+.tran-elided {
+  margin-left: .2em;
+}
+
 </style><</append>>
 
 <<script>>
@@ -66,9 +70,23 @@ function cleanHtml(jq, nextTitle, nextCode) {
 
     // remove tran-skip-if
     const sk = jq.find(".tran-skip-if");
-    if (sk.length && sk.attr("data-tran-skip-if") === nextTitle) {
-      sk.replaceWith(`<span class="tran-elided">&hellip;</span>`);
-    }
+    sk.each((i, el) => {
+      if ($(el).attr("data-tran-skip-if") === nextTitle) {
+        $(el).replaceWith(`<span class="tran-elided">&hellip;</span>`);
+      }
+    });
+
+    // remove tran-cut
+    const cut = jq.find(".tran-cut");
+    cut.each((i, el) => {
+      if ($(el).attr("data-passage") === nextTitle) {
+        while (el.nextSibling != null) {
+          el.nextSibling.remove();
+        }
+        $(el).parent().append(
+          `<span class="tran-elided">&hellip;</span>`);
+      }
+    });
   }
 
   // glitch link
@@ -171,14 +189,6 @@ MT.tranRender = output => {
   renderLoop();
 }
 
-Macro.add("tran-skip", {
-  tags: [],
-  handler: function() {
-    const outer = $("<span class=tran-remove>").appendTo(this.output);
-    outer.wiki(this.payload[0].contents);
-  }
-});
-
 Macro.add("tran-skip-if", {
   tags: [],
   handler: function() {
@@ -190,6 +200,13 @@ Macro.add("tran-skip-if", {
     outer.attr("data-tran-skip-if", link);
     outer.wiki(this.payload[0].contents);
   }
-})
+});
+
+Macro.add("tran-cut", {
+  handler: function() {
+    $(this.output).wiki(this.args.raw);
+    $(this.output).find("a").addClass("tran-cut");
+  }
+});
 
 <</script>>
