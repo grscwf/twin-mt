@@ -25,6 +25,7 @@ const varPatterns = [
   /[<]checkpoint-load\s+(\w+)/g,
   /[<]checkpoint-save\s+(\w+)/g,
   /[<]ending-(?:bad|good|challenge)\s+"[^"]+"\s+(\w+)/g,
+  /[<]kw-unlock-soon\s+(\w+)/g,
   /[<]vi-always\s+(\w+)/g,
   /[<]vi-always-if\s+(\w+\s+\w+)/g,
   /[<]vi-ignore\s+(\w+(?:\s+\w+)*)/g,
