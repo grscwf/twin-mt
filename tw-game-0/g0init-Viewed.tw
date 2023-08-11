@@ -1,0 +1,63 @@
+:: g0init Viewed [inclusion] {"position":"625,1100","size":"100,100"}
+<<append head>><style>
+
+.mt-viewed-true a {
+  color: #ddcc99;
+}
+.mt-viewed-true a:hover {
+  color: #aa9966;
+}
+
+/*
+ * in debug mode, if a passage with multiple links,
+ * mark links that don't have mt-viewed
+ */
+.passage.has-choices a[data-passage]::after {
+  color: #ff0;
+  content: ' \26a0';
+}
+.passage.has-choices .mt-viewed-true a[data-passage]::after,
+.passage.has-choices .mt-viewed-false a[data-passage]::after {
+  content: '';
+}
+
+</style><</append>>
+
+<<script>>
+
+/**
+ * <<mt-viewed $boolean>>
+ *   ...
+ * <</mt-viewed>>
+ * 
+ * Wrap contents with a <span class="mt-viewed-X">
+ * where X is either "true" or "false"
+ * depending on $boolean.
+ */
+Macro.add("mt-viewed", {
+  tags: [],
+  skipArgs: true,
+  handler: function() {
+    const expr = this.args.raw;
+    const cond = MT.untraced(() => Scripting.evalTwineScript(expr));
+    const outer = $("<span>").appendTo(this.output);
+    outer.addClass(`mt-viewed-${!!cond}`);
+    outer.wiki(this.payload[0].contents);
+  }
+});
+
+function initViewed() {
+  if (setup.debug) {
+    $(document).on(":passagedisplay", () => {
+      if (/Title Screen/.test(State.passage)) return;
+      const links = $(".passage a[data-passage]");
+      if (links.length > 1) {
+        $(".passage").addClass("has-choices");
+      }
+    });
+  }
+}
+
+initViewed();
+
+<</script>>
