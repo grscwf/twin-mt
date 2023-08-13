@@ -68,14 +68,6 @@ function cleanHtml(jq, nextTitle, nextCode) {
     }
     link.addClass("tran-next");
 
-    // remove tran-skip-if
-    const sk = jq.find(".tran-skip-if");
-    sk.each((i, el) => {
-      if ($(el).attr("data-tran-skip-if") === nextTitle) {
-        $(el).replaceWith(`<span class="tran-elided">&hellip;</span>`);
-      }
-    });
-
     // remove tran-cut
     const cut = jq.find(".tran-cut");
     cut.each((i, el) => {
@@ -147,7 +139,6 @@ MT.tranRender = output => {
 
         $("<hr class=text-sep>").appendTo(outer);
 
-
         let nextTitle = null;
         let nextCode = null;
         if (turn + 1 < hist.length) {
@@ -161,6 +152,7 @@ MT.tranRender = output => {
         const text = Story.get(moment.title).text;
         State.active.variables = clone(moment.variables);
         State.clearTemporary();
+        State.temporary.isTranscript = true;
 
         let div = $("<div class=tran-entry>");
 
@@ -199,19 +191,6 @@ MT.tranRender = output => {
   
   renderLoop();
 }
-
-Macro.add("tran-skip-if", {
-  tags: [],
-  handler: function() {
-    let [link] = this.args;
-    if (link.isLink) {
-      link = link.link;
-    }
-    const outer = $("<span class=tran-skip-if>").appendTo(this.output);
-    outer.attr("data-tran-skip-if", link);
-    outer.wiki(this.payload[0].contents);
-  }
-});
 
 /**
  * <<tran-cut [[link]]>>

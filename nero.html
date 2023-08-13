@@ -485,7 +485,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -12915,8 +12915,7 @@ function initSeen() {
   if (setup.debug) {
     $(document).on(&quot;:passagedisplay&quot;, () =&gt; {
       const title = State.passage;
-      if (title === &quot;g1m Title Screen&quot;) return;
-      if (title === &quot;g1m Transcript&quot;) return;
+      if (/^g1m /.test(title)) return;
       const links = $(&quot;.passage a[data-passage]&quot;);
       if (links.length &gt; 1) {
         $(&quot;.passage&quot;).addClass(&quot;has-choices&quot;);
@@ -13054,14 +13053,6 @@ function cleanHtml(jq, nextTitle, nextCode) {
     }
     link.addClass(&quot;tran-next&quot;);
 
-    // remove tran-skip-if
-    const sk = jq.find(&quot;.tran-skip-if&quot;);
-    sk.each((i, el) =&gt; {
-      if ($(el).attr(&quot;data-tran-skip-if&quot;) === nextTitle) {
-        $(el).replaceWith(`&lt;span class=&quot;tran-elided&quot;&gt;&amp;hellip;&lt;/span&gt;`);
-      }
-    });
-
     // remove tran-cut
     const cut = jq.find(&quot;.tran-cut&quot;);
     cut.each((i, el) =&gt; {
@@ -13133,7 +13124,6 @@ MT.tranRender = output =&gt; {
 
         $(&quot;&lt;hr class=text-sep&gt;&quot;).appendTo(outer);
 
-
         let nextTitle = null;
         let nextCode = null;
         if (turn + 1 &lt; hist.length) {
@@ -13147,6 +13137,7 @@ MT.tranRender = output =&gt; {
         const text = Story.get(moment.title).text;
         State.active.variables = clone(moment.variables);
         State.clearTemporary();
+        State.temporary.isTranscript = true;
 
         let div = $(&quot;&lt;div class=tran-entry&gt;&quot;);
 
@@ -13185,19 +13176,6 @@ MT.tranRender = output =&gt; {
   
   renderLoop();
 }
-
-Macro.add(&quot;tran-skip-if&quot;, {
-  tags: [],
-  handler: function() {
-    let [link] = this.args;
-    if (link.isLink) {
-      link = link.link;
-    }
-    const outer = $(&quot;&lt;span class=tran-skip-if&gt;&quot;).appendTo(this.output);
-    outer.attr(&quot;data-tran-skip-if&quot;, link);
-    outer.wiki(this.payload[0].contents);
-  }
-});
 
 /**
  * &lt;&lt;tran-cut [[link]]&gt;&gt;
@@ -14333,7 +14311,9 @@ who&#39;s always happy to receive feedback at
 or
 &lt;a id=&quot;gsw-email&quot; target=&quot;_blank&quot;&gt;email&lt;/a&gt;.
 &lt;&lt;script&gt;&gt;
+  console.log(&quot;credits&quot;);
   $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
+    console.log(&quot;credits display&quot;);
     const em = $(&quot;#gsw-email&quot;)[0];
     const a = atob(&#39;eG1haWx0bzo&#39;).slice(1);
     const b = $(&quot;#gsw-fa&quot;)[0].href.slice(-13);
@@ -17560,16 +17540,20 @@ Feel free to contact Grayscale Wolf on
     &gt;FurAffinity&lt;/a&gt;,
 or
 &lt;a id=&quot;gsw-email&quot; target=&quot;_blank&quot;&gt;email&lt;/a&gt;
-&lt;&lt;script&gt;&gt;
-  $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-    const em = $(&quot;#gsw-email&quot;)[0];
-    const a = atob(&#39;eG1haWx0bzo&#39;).slice(1);
-    const b = $(&quot;#gsw-fa&quot;)[0].href.slice(-13);
-    const c = $(&quot;#gsw-ma&quot;)[0].href[24];
-    const d = em.id.splice(1, 4);
-    em.href = `${a}${b}${c}${d}.com`;
-  });
-&lt;&lt;/script&gt;&gt;
+&lt;&lt;if !_isTranscript&gt;&gt;
+  &lt;&lt;script&gt;&gt;
+    console.log(&quot;project status&quot;);
+    $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
+      console.log(&quot;project status display&quot;);
+      const em = $(&quot;#gsw-email&quot;)[0];
+      const a = atob(&#39;eG1haWx0bzo&#39;).slice(1);
+      const b = $(&quot;#gsw-fa&quot;)[0].href.slice(-13);
+      const c = $(&quot;#gsw-ma&quot;)[0].href[24];
+      const d = em.id.splice(1, 4);
+      em.href = `${a}${b}${c}${d}.com`;
+    });
+  &lt;&lt;/script&gt;&gt;
+&lt;&lt;/if&gt;&gt;
 if you have suggestions or find a bug.
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="239" name="n0a Second Floor WIP" tags="mt-ready roam-stop" position="9775,3625" size="100,100">&lt;&lt;nobr&gt;&gt;
