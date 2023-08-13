@@ -1,23 +1,23 @@
-:: g0init Viewed [inclusion] {"position":"625,1100","size":"100,100"}
+:: g0init Seen [inclusion] {"position":"625,1100","size":"100,100"}
 <<append head>><style>
 
-.mt-viewed-true a {
+.mt-seen-true a {
   color: #ddcc99;
 }
-.mt-viewed-true a:hover {
+.mt-seen-true a:hover {
   color: #aa9966;
 }
 
 /*
  * in debug mode, if a passage with multiple links,
- * mark links that don't have mt-viewed
+ * mark links that don't have mt-seen
  */
-.passage.has-choices a[data-passage]::after {
+.has-choices a[data-passage]::after {
   color: #ff0;
   content: ' \26a0';
 }
-.passage.has-choices .mt-viewed-true a[data-passage]::after,
-.passage.has-choices .mt-viewed-false a[data-passage]::after {
+.has-choices .mt-seen-true a[data-passage]::after,
+.has-choices .mt-seen-false a[data-passage]::after {
   content: '';
 }
 
@@ -26,30 +26,32 @@
 <<script>>
 
 /**
- * <<mt-viewed $boolean>>
+ * <<mt-seen $boolean>>
  *   ...
- * <</mt-viewed>>
+ * <</mt-seen>>
  * 
- * Wrap contents with a <span class="mt-viewed-X">
+ * Wrap contents with a <span class="mt-seen-X">
  * where X is either "true" or "false"
  * depending on $boolean.
  */
-Macro.add("mt-viewed", {
+Macro.add("mt-seen", {
   tags: [],
   skipArgs: true,
   handler: function() {
     const expr = this.args.raw;
     const cond = MT.untraced(() => Scripting.evalTwineScript(expr));
     const outer = $("<span>").appendTo(this.output);
-    outer.addClass(`mt-viewed-${!!cond}`);
+    outer.addClass(`mt-seen-${!!cond}`);
     outer.wiki(this.payload[0].contents);
   }
 });
 
-function initViewed() {
+function initSeen() {
   if (setup.debug) {
     $(document).on(":passagedisplay", () => {
-      if (/Title Screen/.test(State.passage)) return;
+      const title = State.passage;
+      if (title === "g1m Title Screen") return;
+      if (title === "g1m Transcript") return;
       const links = $(".passage a[data-passage]");
       if (links.length > 1) {
         $(".passage").addClass("has-choices");
@@ -58,6 +60,6 @@ function initViewed() {
   }
 }
 
-initViewed();
+initSeen();
 
 <</script>>
