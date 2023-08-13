@@ -485,7 +485,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -12864,21 +12864,17 @@ $(document).on(&quot;:passageend&quot;, checkSectionStateHere);
   color: #aa9966;
 }
 
-ul.actions .mt-seen-true li::before {
-  filter: saturate(20%);
-}
-
-/*
- * in debug mode, if a passage with multiple links,
- * mark links that don&#39;t have mt-seen
- */
-.has-choices a[data-passage]::after {
-  color: #ff0;
+.debugging .mt-seen-todo a::after {
   content: &#39; \26a0&#39;;
 }
-.has-choices .mt-seen-true a[data-passage]::after,
-.has-choices .mt-seen-false a[data-passage]::after {
-  content: &#39;&#39;;
+
+.debugging .mt-seen-false a,
+.debugging .mt-seen-true a {
+  text-decoration: underline dotted #888;
+}
+
+ul.actions .mt-seen-true li::before {
+  filter: saturate(20%);
 }
 
 &lt;/style&gt;&lt;&lt;/append&gt;&gt;
@@ -12893,35 +12889,23 @@ ul.actions .mt-seen-true li::before {
  * Wrap contents with a &lt;span class=&quot;mt-seen-X&quot;&gt;
  * where X is either &quot;true&quot; or &quot;false&quot;
  * depending on $boolean.
+ *
+ * $boolean can also be &quot;todo&quot;.
  */
 Macro.add(&quot;mt-seen&quot;, {
   tags: [],
   skipArgs: true,
   handler: function() {
     const expr = this.args.raw;
-    const cond = MT.untraced(() =&gt; Scripting.evalTwineScript(expr));
+    const cond = /^todo$/i.test(expr) ? &quot;todo&quot;
+      : !!MT.untraced(() =&gt; Scripting.evalTwineScript(expr));
     const outer = $(&quot;&lt;span&gt;&quot;).appendTo(this.output);
-    outer.addClass(`mt-seen-${!!cond}`);
+    outer.addClass(`mt-seen-${cond}`);
     outer.wiki(this.payload[0].contents);
   }
 });
 
-function initSeen() {
-  if (setup.debug) {
-    $(document).on(&quot;:passagedisplay&quot;, () =&gt; {
-      const title = State.passage;
-      if (/^g1m /.test(title)) return;
-      const links = $(&quot;.passage a[data-passage]&quot;);
-      if (links.length &gt; 1) {
-        $(&quot;.passage&quot;).addClass(&quot;has-choices&quot;);
-      }
-    });
-  }
-
-  MT.mdDefUnsaved(&quot;sn_barbsSkip&quot;);
-}
-
-initSeen();
+MT.mdDefUnsaved(&quot;sn_barbsSkip&quot;);
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="208" name="g0init Sidebar" tags="inclusion" position="325,975" size="100,100">&lt;&lt;script&gt;&gt;
 MT.autoStow = () =&gt; {
@@ -13074,14 +13058,6 @@ function cleanHtml(jq, nextTitle, nextCode) {
       gl.removeClass(&quot;glitch-link&quot;);
     } else {
       gl.remove();
-    }
-  }
-
-  // add .has-choices for mt-seen
-  if (setup.debug) {
-    const links = jq.find(&quot;a[data-passage]&quot;);
-    if (links.length &gt; 1) {
-      jq.addClass(&quot;has-choices&quot;);
     }
   }
 
@@ -13884,22 +13860,18 @@ The bound wolf lets out a pained groan. Everything hurts. Slowly but surely, mem
 
 ?P
 &lt;ul class=actions&gt;
-  &lt;&lt;mt-seen false&gt;&gt;
-    &lt;&lt;mtl [[d1a Drekkar Start]]&gt;&gt;
-      Continue as Drekkar...
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/mt-seen&gt;&gt;
+  &lt;&lt;mtl [[d1a Drekkar Start]]&gt;&gt;
+    Continue as Drekkar...
+  &lt;&lt;/mtl&gt;&gt;
 &lt;/ul&gt;
 
 &lt;b&gt;Nero&lt;/b&gt; - A slender wolf, and unusually handsome for a mage. But he&#39;s always valued his mind more than his body. Nero is an unacknowledged son of one of Lady Garloch&#39;s nephews (or so he says). He&#39;s equally at ease covering for absent professors at the prestigious Windbone Magic Academy as he is when singing with drunken sailors at a Seaside tavern. His talent for magic has turned out to be very useful in his career of discreetly handling difficult problems for patrons who have way more money than sense. But this time...
 
 ?P
 &lt;ul class=actions&gt;
-  &lt;&lt;mt-seen false&gt;&gt;
-    &lt;&lt;mtl [[n1a Nero Start]]&gt;&gt;
-      Continue as Nero...
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/mt-seen&gt;&gt;
+  &lt;&lt;mtl [[n1a Nero Start]]&gt;&gt;
+    Continue as Nero...
+  &lt;&lt;/mtl&gt;&gt;
 &lt;/ul&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="216" name="g1a Content Warning" tags="inclusion" position="275,4275" size="100,100">This interactive story features kinky male/male sexual content. If you find this distasteful or are under the age of 18, please exit now.
@@ -17613,9 +17585,7 @@ So Nero prepares the spell&#39;s image in his mind,
 and then &lt;em&gt;twists&lt;/em&gt; it...
 
 ?P
-&lt;&lt;mt-seen false&gt;&gt;
-  [[Continue|n1a Endgame 2]]
-&lt;&lt;/mt-seen&gt;&gt;
+[[Continue|n1a Endgame 2]]
 
 &lt;&lt;set $n_returnEndgame = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="241" name="n1a Endgame 2" tags="mt-ready" position="1050,3150" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -17952,13 +17922,11 @@ Nero considers how to respond.
 
 ?P
 &lt;ul class=actions&gt;
-  &lt;&lt;mt-seen false&gt;&gt;
-    &lt;li&gt;
-      [[Feign sleep to learn more about the situation.|n1a Feign Sleep 1]]
-    &lt;/li&gt;
-    &lt;li&gt;[[Try to sweet talk his way through this.|n1a Hello 1]]&lt;/li&gt;
-    &lt;li&gt;[[Activate his emergency protection spell.|n1a Endgame 1]]&lt;/li&gt;
-  &lt;&lt;/mt-seen&gt;&gt;
+  &lt;li&gt;
+    [[Feign sleep to learn more about the situation.|n1a Feign Sleep 1]]
+  &lt;/li&gt;
+  &lt;li&gt;[[Try to sweet talk his way through this.|n1a Hello 1]]&lt;/li&gt;
+  &lt;li&gt;[[Activate his emergency protection spell.|n1a Endgame 1]]&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="254" name="n1cn 100 Percent" tags="mt-ready" position="2575,2975" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -18652,29 +18620,25 @@ He shakes his head, nods, but then shakes his head again.
 &lt;ul class=actions&gt;
   &lt;&lt;em-assert !$n_subby &amp;&amp; !$n_tough&gt;&gt;
 
-  &lt;&lt;mt-seen false&gt;&gt;
-    &lt;&lt;mtl [[n1cn Charm]]&gt;&gt;
-      &lt;&lt;if $n_abused&gt;&gt;
-        &quot;Please, let me explain!&quot;
-      &lt;&lt;elseif $n_naked&gt;&gt;
-        Speak firmly, &quot;No, you misunderstand...&quot;
-      &lt;&lt;else&gt;&gt;
-        Speak lightly, &quot;Ah, I see the misunderstanding...&quot;
-      &lt;&lt;/if&gt;&gt;
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/mt-seen&gt;&gt;
+  &lt;&lt;mtl [[n1cn Charm]]&gt;&gt;
+    &lt;&lt;if $n_abused&gt;&gt;
+      &quot;Please, let me explain!&quot;
+    &lt;&lt;elseif $n_naked&gt;&gt;
+      Speak firmly, &quot;No, you misunderstand...&quot;
+    &lt;&lt;else&gt;&gt;
+      Speak lightly, &quot;Ah, I see the misunderstanding...&quot;
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/mtl&gt;&gt;
 
-  &lt;&lt;mt-seen false&gt;&gt;
-    &lt;&lt;mtl [[n1cn Rebuff]] &quot;//avoid&quot;&gt;&gt;
-      &lt;&lt;if $n_abused&gt;&gt;
-        Growl softly at Ivex.
-      &lt;&lt;elseif $n_naked&gt;&gt;
-        Snarl contemptuously at Ivex.
-      &lt;&lt;else&gt;&gt;
-        Rebuff Ivex with a growl.
-      &lt;&lt;/if&gt;&gt;
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/mt-seen&gt;&gt;
+  &lt;&lt;mtl [[n1cn Rebuff]] &quot;//avoid&quot;&gt;&gt;
+    &lt;&lt;if $n_abused&gt;&gt;
+      Growl softly at Ivex.
+    &lt;&lt;elseif $n_naked&gt;&gt;
+      Snarl contemptuously at Ivex.
+    &lt;&lt;else&gt;&gt;
+      Rebuff Ivex with a growl.
+    &lt;&lt;/if&gt;&gt;
+  &lt;&lt;/mtl&gt;&gt;
 
   $n_magicAction
 &lt;/ul&gt;
@@ -19077,11 +19041,9 @@ I really hope you make the right choice.&quot;
 
 ?P
 &lt;ul class=actions&gt;
-  &lt;&lt;mt-seen false&gt;&gt;
-    &lt;&lt;mtl [[n1cn Ivex Intro 2]]&gt;&gt;
-      &quot;There must be some mistake...&quot;
-    &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/mt-seen&gt;&gt;
+  &lt;&lt;mtl [[n1cn Ivex Intro 2]]&gt;&gt;
+    &quot;There must be some mistake...&quot;
+  &lt;&lt;/mtl&gt;&gt;
 &lt;/ul&gt;
 
 &lt;&lt;set $n_ivexNear = false&gt;&gt;
@@ -19182,9 +19144,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;/if&gt;&gt;
 
 ?P
-&lt;&lt;mt-seen false&gt;&gt;
-  [[Continue|n1cn First Action (4,3)]]
-&lt;&lt;/mt-seen&gt;&gt;
+[[Continue|n1cn First Action (4,3)]]
 
 &lt;&lt;set $n_returnAntiMagic = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="275" name="n1cn Ivex Offended (1,1)" tags="mt-ready" position="2450,3475" size="100,200">&lt;&lt;nobr&gt;&gt;
@@ -25305,11 +25265,9 @@ All of Nero&#39;s clothes disappear.
       &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;/mt-seen&gt;&gt;
     &lt;span class=glitch-link&gt;
-      &lt;&lt;mt-seen false&gt;&gt;
-        &lt;&lt;mtl [[n1p Barbs Glitch 1]]&gt;&gt;
-          His subconscious expected this...
-        &lt;&lt;/mtl&gt;&gt;
-      &lt;&lt;/mt-seen&gt;&gt;
+      &lt;&lt;mtl [[n1p Barbs Glitch 1]]&gt;&gt;
+        His subconscious expected this...
+      &lt;&lt;/mtl&gt;&gt;
     &lt;/span&gt;
   &lt;/ul&gt;
 &lt;&lt;else&gt;&gt;
@@ -25618,9 +25576,7 @@ and he&#39;s running his fingers across the newly exposed fur
 on Nero&#39;s naked chest.
 
 ?P
-&lt;&lt;mt-seen false&gt;&gt;
-  $n_afterNaked
-&lt;&lt;/mt-seen&gt;&gt;
+$n_afterNaked
 
 &lt;&lt;set $n_barbsSlow = true&gt;&gt;
 &lt;&lt;set $n_ivexNear = true&gt;&gt;
@@ -25736,22 +25692,18 @@ newly developed attacks.
   The lupine mage realizes he desperately needs to stroke his throbbing cock.
   His mind searches for a spell that will let him slip free from his bonds.
   &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mt-seen false&gt;&gt;`
-    + `&lt;&lt;mtl [[n1s Cast Horny 1]]&gt;&gt;`
+    `&lt;&lt;mtl [[n1s Cast Horny 1]]&gt;&gt;`
     + `Cast a simple escape spell.`
-    + `&lt;&lt;/mtl&gt;&gt;`
-    + `&lt;&lt;/mt-seen&gt;&gt;`&gt;&gt;
+    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
 
 &lt;&lt;elseif $n_ivexGone&gt;&gt;
   &lt;&lt;vi-always n_naked true&gt;&gt;
   Now that Ivex is gone, Nero can cast an escape spell
   without interruption.
   &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mt-seen false&gt;&gt;`
-    + `&lt;&lt;mtl [[n1s Cast Alone 1]]&gt;&gt;`
+    `&lt;&lt;mtl [[n1s Cast Alone 1]]&gt;&gt;`
     + `Cast a simple escape spell.`
-    + `&lt;&lt;/mtl&gt;&gt;`
-    + `&lt;&lt;/mt-seen&gt;&gt;`&gt;&gt;
+    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
 
 &lt;&lt;elseif $n_subby&gt;&gt;
   &lt;&lt;vi-always n_naked true&gt;&gt;
@@ -25760,8 +25712,7 @@ newly developed attacks.
   and most of them are simple and obvious.
   But he has one surprising spell that should impress even Ivex.
   &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mt-seen false&gt;&gt;`
-    + `&lt;&lt;mtl [[n1s Cast Endgame 1]]&gt;&gt;`
+    `&lt;&lt;mtl [[n1s Cast Endgame 1]]&gt;&gt;`
     + `Cast Nero&#39;s Endgame.`
     + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
 
@@ -25772,11 +25723,9 @@ newly developed attacks.
   Perhaps this is a good time for Nero to impress the panther
   with a difficult escape spell.
   &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mt-seen false&gt;&gt;`
-    + `&lt;&lt;mtl [[n1s Cast Younger 1]]&gt;&gt;`
+    `&lt;&lt;mtl [[n1s Cast Younger 1]]&gt;&gt;`
     + `Cast an impressive escape spell.`
-    + `&lt;&lt;/mtl&gt;&gt;`
-    + `&lt;&lt;/mt-seen&gt;&gt;`&gt;&gt;
+    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
   &lt;&lt;vi-always n_naked false&gt;&gt;
@@ -25787,11 +25736,9 @@ newly developed attacks.
     Or maybe he should try something else first.
   &lt;&lt;/if&gt;&gt;
   &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mt-seen false&gt;&gt;`
-    + `&lt;&lt;mtl [[n1s Cast Itch 1]]&gt;&gt;`
+    `&lt;&lt;mtl [[n1s Cast Itch 1]]&gt;&gt;`
     + `Cast an attack spell.`
-    + `&lt;&lt;/mtl&gt;&gt;`
-    + `&lt;&lt;/mt-seen&gt;&gt;`&gt;&gt;
+    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="401" name="n1s Cast Alone 1" tags="mt-ready" position="2475,1725" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -26165,9 +26112,7 @@ Superb Itch is not the flashiest of spells, but it&#39;s very quick to cast. In 
 The lupine mage pronounces the final syllable of the spell...
 
 ?P
-&lt;&lt;mt-seen false&gt;&gt;
-  [[Continue|n1s Cast Itch 2]]
-&lt;&lt;/mt-seen&gt;&gt;
+[[Continue|n1s Cast Itch 2]]
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="410" name="n1s Cast Itch 2" tags="mt-ready" position="2600,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_ivexGone false&gt;&gt;
@@ -26408,9 +26353,7 @@ He stares with eyes that are gleaming marbles above
 &lt;&lt;/if&gt;&gt;
 
 ?P
-&lt;&lt;mt-seen false&gt;&gt;
-  $n_afterAttack
-&lt;&lt;/mt-seen&gt;&gt;
+$n_afterAttack
 
 &lt;&lt;set $n_ivexNear = false&gt;&gt;
 &lt;&lt;set $n_patienceAccel = true&gt;&gt;
@@ -27905,11 +27848,9 @@ The best thing about the spell is that it appears to other mages that Nero has h
   But the wolf&#39;s power is still drained by the failure of ?spell.
   He tries to think of a way to replenish it.
   &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mt-seen false&gt;&gt;`
-    + `&lt;&lt;mtl [[n1s Cast Sight Horny]]&gt;&gt;`
+    `&lt;&lt;mtl [[n1s Cast Sight Horny]]&gt;&gt;`
     + `Search for more magic energy.`
-    + `&lt;&lt;/mtl&gt;&gt;`
-    + `&lt;&lt;/mt-seen&gt;&gt;`&gt;&gt;
+    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
 &lt;&lt;else&gt;&gt;
   The wolf&#39;s power is temporarily depleted by the failure of ?spell.
   But he does have enough power left to cast mage-sight,
@@ -27927,11 +27868,9 @@ The best thing about the spell is that it appears to other mages that Nero has h
     &lt;&lt;/if&gt;&gt;
   &lt;&lt;/if&gt;&gt;
   &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mt-seen false&gt;&gt;`
-    + `&lt;&lt;mtl [[n1s Cast Sight 1]]&gt;&gt;`
+    `&lt;&lt;mtl [[n1s Cast Sight 1]]&gt;&gt;`
     + `Cast mage-sight.`
-    + `&lt;&lt;/mtl&gt;&gt;`
-    + `&lt;&lt;/mt-seen&gt;&gt;`&gt;&gt;
+    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="435" name="n1s Oil Info" tags="mt-ready" position="2525,1600" size="100,100">&lt;&lt;nobr&gt;&gt;

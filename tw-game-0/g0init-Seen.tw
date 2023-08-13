@@ -8,21 +8,17 @@
   color: #aa9966;
 }
 
-ul.actions .mt-seen-true li::before {
-  filter: saturate(20%);
-}
-
-/*
- * in debug mode, if a passage with multiple links,
- * mark links that don't have mt-seen
- */
-.has-choices a[data-passage]::after {
-  color: #ff0;
+.debugging .mt-seen-todo a::after {
   content: ' \26a0';
 }
-.has-choices .mt-seen-true a[data-passage]::after,
-.has-choices .mt-seen-false a[data-passage]::after {
-  content: '';
+
+.debugging .mt-seen-false a,
+.debugging .mt-seen-true a {
+  text-decoration: underline dotted #888;
+}
+
+ul.actions .mt-seen-true li::before {
+  filter: saturate(20%);
 }
 
 </style><</append>>
@@ -37,34 +33,22 @@ ul.actions .mt-seen-true li::before {
  * Wrap contents with a <span class="mt-seen-X">
  * where X is either "true" or "false"
  * depending on $boolean.
+ *
+ * $boolean can also be "todo".
  */
 Macro.add("mt-seen", {
   tags: [],
   skipArgs: true,
   handler: function() {
     const expr = this.args.raw;
-    const cond = MT.untraced(() => Scripting.evalTwineScript(expr));
+    const cond = /^todo$/i.test(expr) ? "todo"
+      : !!MT.untraced(() => Scripting.evalTwineScript(expr));
     const outer = $("<span>").appendTo(this.output);
-    outer.addClass(`mt-seen-${!!cond}`);
+    outer.addClass(`mt-seen-${cond}`);
     outer.wiki(this.payload[0].contents);
   }
 });
 
-function initSeen() {
-  if (setup.debug) {
-    $(document).on(":passagedisplay", () => {
-      const title = State.passage;
-      if (/^g1m /.test(title)) return;
-      const links = $(".passage a[data-passage]");
-      if (links.length > 1) {
-        $(".passage").addClass("has-choices");
-      }
-    });
-  }
-
-  MT.mdDefUnsaved("sn_barbsSkip");
-}
-
-initSeen();
+MT.mdDefUnsaved("sn_barbsSkip");
 
 <</script>>
