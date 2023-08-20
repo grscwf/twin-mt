@@ -485,7 +485,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -12883,10 +12883,12 @@ MT.mdDefUnsaved(&quot;sn_trapChoices&quot;);
 MT.neroResetObjectDim = () =&gt; {
   const V = State.variables;
   delete V.n_dimBookcases;
+  delete V.n_dimBooks;
   delete V.n_dimBottle;
   delete V.n_dimCabinets;
   delete V.n_dimCoins;
   delete V.n_dimDesk;
+  delete V.n_dimGlobe;
   delete V.n_dimMap;
   delete V.n_dimPainting;
   delete V.n_dimPenguin;
@@ -28306,7 +28308,12 @@ And unfortunately, the horse cock,
 $n_afterAction
 
 &lt;&lt;run
+  delete $n_dimBooks;
+  delete $n_dimGlobe;
   delete $n_dimMap;
+  delete $n_dimPainting;
+  delete $n_dimPenguin;
+  delete $n_dimWand;
   delete $n_ivexNear;
   delete $n_penguinCoinDropped;
   $n_magicPhase = MP_onHold;
@@ -33305,7 +33312,7 @@ was merely an actor hired by Rankine, with no magic ability of his own.
   &lt;&lt;mt-seen $n_dimMap&gt;&gt;
     a &lt;&lt;mta &quot;n1x Map&quot;&gt;&gt;_map&lt;&lt;/mta&gt;&gt;, and a
   &lt;&lt;/mt-seen&gt;&gt;
-  &lt;&lt;mt-seen todo&gt;&gt;
+  &lt;&lt;mt-seen $n_dimPainting&gt;&gt;
     &lt;&lt;mta &quot;n1x Painting&quot;&gt;&gt;_painting&lt;&lt;/mta&gt;&gt;.
   &lt;&lt;/mt-seen&gt;&gt;
 
@@ -33909,7 +33916,7 @@ The X is a more likely
 &lt;&lt;run
   $n_dimMap =
     $n_tooClever ? $n_mapDefaced
-    : MT.passWanted() &amp;&amp; !$n_ivexGone ? $n_mapAsked
+    : MT.passWanted() ? $n_ivexGone || $n_mapAsked
     : true;
   $n_mapViewed = true;
 &gt;&gt;
@@ -34564,7 +34571,14 @@ The large painting beside the _window
   &lt;li&gt;$n_afterLook&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;&lt;set $n_paintingViewed = true&gt;&gt;
+&lt;&lt;run
+  $n_dimPainting =
+    $n_tooClever ? false
+    : MT.passWanted() ? $n_ivexGone || $n_paintingKnown
+    : MP_wantTouch === $n_magicPhase ? $n_paintingHoleTried
+    : true;
+  $n_paintingViewed = true;
+&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="511" name="n1x Penguin Ask" tags="mt-ready" position="6350,725" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_mageSight true&gt;&gt;
 &lt;&lt;vi-always n_magicPhase `MP_wantTouch`&gt;&gt;
@@ -35025,11 +35039,12 @@ Nero stares at the penguin
     has a &lt;&lt;mta-no-loop &quot;n1x Map&quot;&gt;&gt;large map&lt;&lt;/mta-no-loop&gt;&gt;
   &lt;&lt;/mt-seen&gt;&gt;
   and a
-  &lt;&lt;if $n_paintingKnown&gt;&gt;
-    &lt;&lt;mta-no-loop &quot;n1x Painting&quot;&gt;&gt;painting of Ivex&#39;s mother&lt;&lt;/mta-no-loop&gt;&gt;
-  &lt;&lt;else&gt;&gt;
-    &lt;&lt;mta-no-loop &quot;n1x Painting&quot;&gt;&gt;painting of a pantheress&lt;&lt;/mta-no-loop&gt;&gt;
-  &lt;&lt;/if&gt;&gt;
+  &lt;&lt;mt-seen $n_dimPainting&gt;&gt;
+    &lt;&lt;mta-no-loop &quot;n1x Painting&quot;&gt;&gt;
+        painting of
+        &lt;&lt;= $n_paintingKnown ? &quot;Ivex&#39;s mother&quot; : &quot;a pantheress&quot;&gt;&gt;
+    &lt;&lt;/mta-no-loop&gt;&gt;
+  &lt;&lt;/mt-seen&gt;&gt;
   on either side of a
   &lt;&lt;mt-seen $n_dimWindow&gt;&gt;
     &lt;&lt;mta-no-loop &quot;n1x Window&quot;&gt;&gt;prominent round window&lt;&lt;/mta-no-loop&gt;&gt;.
@@ -35206,7 +35221,9 @@ To the &lt;&lt;= $n_roomFlipped ? &quot;right&quot; : &quot;left&quot;&gt;&gt; o
 
 &lt;&lt;else&gt;&gt;
   On the opposite side of the window is a
-  &lt;&lt;mta-no-loop &quot;n1x Painting&quot;&gt;&gt;_painting&lt;&lt;/mta-no-loop&gt;&gt;
+  &lt;&lt;mt-seen $n_dimPainting&gt;&gt;
+    &lt;&lt;mta-no-loop &quot;n1x Painting&quot;&gt;&gt;_painting&lt;&lt;/mta-no-loop&gt;&gt;
+  &lt;&lt;/mt-seen&gt;&gt;
   that&#39;s the same size as the map.
   &lt;&lt;if $n_paintingBlasted&gt;&gt;
     The pantheress in the painting is
@@ -41261,7 +41278,9 @@ $n_afterAction
   &lt;&lt;mt-seen $n_dimMap&gt;&gt;
     a &lt;&lt;mta-no-loop &quot;n1x Map&quot;&gt;&gt;_map&lt;&lt;/mta-no-loop&gt;&gt;
   &lt;&lt;/mt-seen&gt;&gt;
-  and a &lt;&lt;mta-no-loop &quot;n1x Painting&quot;&gt;&gt;_painting&lt;&lt;/mta-no-loop&gt;&gt;.
+  &lt;&lt;mt-seen $n_dimPainting&gt;&gt;
+    and a &lt;&lt;mta-no-loop &quot;n1x Painting&quot;&gt;&gt;_painting&lt;&lt;/mta-no-loop&gt;&gt;.
+  &lt;&lt;/mt-seen&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
   The wall with the
