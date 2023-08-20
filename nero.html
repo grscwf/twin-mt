@@ -485,7 +485,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -24279,12 +24279,13 @@ The objects in his hand are both crystals.
 ?P
 [[Continue|n1f Horny Clever 4]]
 
-&lt;&lt;set if ($n_endgameUsable) {
-  MT.mdSet(&quot;mn_playerLostEndgame&quot;, true);
-  $n_penguinCoinDropped = true;
-  $n_penguinShrunk = true;
-  delete $n_endgameUsable;
-}
+&lt;&lt;run
+  if ($n_endgameUsable) {
+    delete $n_endgameUsable;
+    $n_penguinCoinDropped = true;
+    $n_penguinShrunk = true;
+    MT.mdSet(&quot;mn_playerLostEndgame&quot;, true);
+  }
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="358" name="n1f Horny Clever 4" tags="mt-ready" position="5700,3875" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_abused&gt;&gt;
@@ -30884,19 +30885,28 @@ is
   &lt;&lt;/mt-seen&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;set _tail = $n_coinsLanced ?
-  &quot; that&#39;s wearing a mangled-metal gag made from unspeakably lewd coins.&quot;
-  : &quot;.&quot;&gt;&gt;
+&lt;&lt;run
+  _penguin =
+    $n_wandExploded &amp;&amp; $n_penguinTorn
+    ? &quot;flaming, wing-less penguin&quot;
+    : $n_wandExploded
+    ? &quot;flaming penguin&quot;
+    : $n_penguinTorn
+    ? &quot;wing-less penguin&quot;
+    : &quot;stuffed penguin&quot;;
+  _tail =
+    $n_coinsLanced
+    ? &quot; that&#39;s wearing a mangled-metal gag made from unspeakably lewd coins.&quot;
+    : &quot;.&quot;;
+&gt;&gt;
+
 &lt;&lt;if $n_penguinFlown&gt;&gt;
   and the absence of a stuffed penguin.
-&lt;&lt;elseif $n_wandExploded &amp;&amp; $n_penguinTorn&gt;&gt;
-  and a &lt;&lt;mta-no-loop &quot;n1x Penguin&quot;&gt;&gt;flaming, wing-less penguin&lt;&lt;/mta-no-loop&gt;&gt;_tail
-&lt;&lt;elseif $n_wandExploded&gt;&gt;
-  and a &lt;&lt;mta-no-loop &quot;n1x Penguin&quot;&gt;&gt;flaming penguin&lt;&lt;/mta-no-loop&gt;&gt;_tail
-&lt;&lt;elseif $n_penguinTorn&gt;&gt;
-  and a &lt;&lt;mta-no-loop &quot;n1x Penguin&quot;&gt;&gt;wing-less penguin&lt;&lt;/mta-no-loop&gt;&gt;_tail
 &lt;&lt;else&gt;&gt;
-  and a &lt;&lt;mta-no-loop &quot;n1x Penguin&quot;&gt;&gt;stuffed penguin&lt;&lt;/mta-no-loop&gt;&gt;_tail
+  and a
+  &lt;&lt;mt-seen $n_dimPenguin&gt;&gt;
+    &lt;&lt;mta-no-loop &quot;n1x Penguin&quot;&gt;&gt;_penguin&lt;&lt;/mta-no-loop&gt;&gt;_tail
+  &lt;&lt;/mt-seen&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 The others are bare.
@@ -33608,26 +33618,26 @@ was merely an actor hired by Rankine, with no magic ability of his own.
     &lt;&lt;/mt-seen&gt;&gt;
   &lt;&lt;/if&gt;&gt;
 
-  &lt;&lt;set _tail = $n_coinsLanced ?
-    &quot; wearing a mangled-metal gag made from unspeakably lewd coins.&quot;
-    : &quot;.&quot;&gt;&gt;
+  &lt;&lt;run
+    _penguin =
+      $n_wandExploded &amp;&amp; $n_penguinTorn
+        ? &quot;flaming, wing-less penguin&quot;
+      : $n_wandExploded
+        ? &quot;flaming penguin&quot;
+      : $n_penguinTorn
+        ? &quot;wing-less penguin&quot;
+      : &quot;stuffed penguin&quot;;
+    _tail =
+      $n_coinsLanced
+        ? ` that&#39;s wearing a mangled-metal gag`
+          + ` made from unspeakably lewd coins.`
+      : &quot;.&quot;;
+  &gt;&gt;
   &lt;&lt;if $n_penguinFlown&gt;&gt;
     and the absence of a stuffed penguin.
-  &lt;&lt;elseif $n_wandExploded &amp;&amp; $n_penguinTorn&gt;&gt;
-    &lt;&lt;mt-seen todo&gt;&gt;
-      and a &lt;&lt;mta &quot;n1x Penguin&quot;&gt;&gt;flaming, wing-less penguin&lt;&lt;/mta&gt;&gt;_tail
-    &lt;&lt;/mt-seen&gt;&gt;
-  &lt;&lt;elseif $n_wandExploded&gt;&gt;
-    &lt;&lt;mt-seen todo&gt;&gt;
-      and a &lt;&lt;mta &quot;n1x Penguin&quot;&gt;&gt;flaming penguin&lt;&lt;/mta&gt;&gt;_tail
-    &lt;&lt;/mt-seen&gt;&gt;
-  &lt;&lt;elseif $n_penguinTorn&gt;&gt;
-    &lt;&lt;mt-seen todo&gt;&gt;
-      and a &lt;&lt;mta &quot;n1x Penguin&quot;&gt;&gt;wing-less penguin&lt;&lt;/mta&gt;&gt;_tail
-    &lt;&lt;/mt-seen&gt;&gt;
   &lt;&lt;else&gt;&gt;
-    &lt;&lt;mt-seen todo&gt;&gt;
-      and a &lt;&lt;mta &quot;n1x Penguin&quot;&gt;&gt;stuffed penguin&lt;&lt;/mta&gt;&gt;_tail
+    &lt;&lt;mt-seen $n_dimPenguin&gt;&gt;
+      and a &lt;&lt;mta &quot;n1x Penguin&quot;&gt;&gt;_penguin&lt;&lt;/mta&gt;&gt;_tail
     &lt;&lt;/mt-seen&gt;&gt;
   &lt;&lt;/if&gt;&gt;
   &lt;&lt;= $n_deskCleared || $n_globeLanced ? &quot;?P&quot; : &quot;&quot;&gt;&gt;
@@ -35143,6 +35153,12 @@ Nero stares at the penguin
 
 &lt;&lt;run
   delete $n_penguinShrunk;
+  $n_dimPenguin =
+    $n_tooClever
+      ? $n_penguinLanced
+    : MP_wantTouch === $n_magicPhase
+      ? $n_ivexGone || $n_penguinAsked
+    : true;
   $n_penguinCoinDropped = true;
   if ($n_free) {
     $n_cabinetsUnderViewed = true;
