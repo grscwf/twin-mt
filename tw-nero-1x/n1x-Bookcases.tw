@@ -114,19 +114,24 @@ Only one of its shelves has books, which are placed in
   ?P
 <</if>>
 
-<<set _objs = []>>
-<<if $n_wandExploded>>
-  /* nothing */
-<<elseif $n_wandTubeShot>>
-  <<set _objs.push("a [\[bare magic wand|n1x Wand]]")>>
-<<elseif !$n_wandRanAway && !$n_wandUsed>>
-  <<set _objs.push("a [\[magic wand|n1x Wand]]")>>
-<</if>>
-<<if !$n_coinsLanced>>
-  <<set _coins = $n_wandExploded ? "jumble of coins" : "stack of coins">>
-  <<set _objs.push("a [\[_coins|n1x Coins]]")>>
-<</if>>
+<<run
+  _objs = [];
 
+  if ($n_wandExploded) {
+    /* nothing */
+  } else if ($n_wandTubeShot) {
+    _objs.push(`a [\[bare magic wand|n1x Wand]]`);
+  } else if (!$n_wandRanAway && !$n_wandUsed) {
+    _objs.push(`a [\[magic wand|n1x Wand]]`);
+  }
+
+  if (!$n_coinsLanced) {
+    _coins = $n_wandExploded ? "jumble of coins" : "stack of coins";
+    _objs.push(`<<mt-seen $n_dimCoins>>`
+      + `a [\[_coins|n1x Coins]]`
+      + `<</mt-seen>>`);
+  }
+>>
 <<= _objs.length === 0 ? "Another shelf is empty."
   : _objs.length === 1 ? `Another shelf has ${_objs[0]}.`
   : `Another shelf has ${_objs[0]} and ${_objs[1]}.`

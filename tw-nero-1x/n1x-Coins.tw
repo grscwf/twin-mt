@@ -1,12 +1,13 @@
 :: n1x Coins [mt-ready has-hole] {"position":"6225,1550","size":"100,200"}
 <<nobr>>
 <<vi-ignore n_ivexReceptive>>
+<<vi-always n_coinsLanced false>>
 
 <<cv-try n_magicPhase
   `MP_beforeCast` `MP_wantTouch` `MP_contact` `MP_tapLost`>>
 
 <<cv-ignore n_candleLit>> /* minor variation */
-<<cv-ignore n_coinThrown n_coinThrownAgain>> /* minor variation */
+<<cv-ignore n_coinsThrown n_coinsThrownAgain>> /* minor variation */
 
 <<if $n_candleLit>>
   On a shelf that's as red as the
@@ -16,11 +17,11 @@
   On one shelf is
 <</if>>
 a small <<= $n_wandExploded ? "jumble" : "stack">> of
-<<if $n_coinThrownAgain>>
+<<if $n_coinsThrownAgain>>
   the coins that Ivex
   <<= $n_ivexGone ? "had" : "has">>
   been flinging at Nero's crotch.
-<<elseif $n_coinThrown>>
+<<elseif $n_coinsThrown>>
   coins, which is the source of the one that Ivex
   <<= $n_ivexGone ? "had" : "">>
   flung at Nero's crotch earlier.
@@ -50,7 +51,7 @@ a small <<= $n_wandExploded ? "jumble" : "stack">> of
     the holes would be if the persons depicted were real.
     In any case, the coins don't seem useful
     or important right now.
-  <<elseif $n_coinShown>>
+  <<elseif $n_coinsShown>>
     Ivex did touch one, and the Sprite did not accept that touch.
     Perhaps a different coin could have satisfied the Sprite?
     But how would Ivex know which of the coins to touch?
@@ -68,7 +69,7 @@ a small <<= $n_wandExploded ? "jumble" : "stack">> of
     correct coin to touch during an emergency. It's probably something else.
   <</if>>
 
-<<elseif $n_coinShown>>
+<<elseif $n_coinsShown>>
   Several, maybe all of the coins have a hole in them.
   <<if $n_mageSight>>
     Some might have magic, but the room's dense web of exotic energy
@@ -104,8 +105,8 @@ a small <<= $n_wandExploded ? "jumble" : "stack">> of
     see if any of the coins have magic attached to them.
   <</if>>
   ?P
-  <<if $n_coinThrown>>
-    <<if $n_coinThrownAgain>>
+  <<if $n_coinsThrown>>
+    <<if $n_coinsThrownAgain>>
       But one of the thrown coins
     <<else>>
       But the coin that was thrown
@@ -127,7 +128,7 @@ a small <<= $n_wandExploded ? "jumble" : "stack">> of
   as a single unit of currency called a "vector".
   ?P
   <<if MP_wantTouch === $n_magicPhase>>
-    <<if $n_coinAsked>>
+    <<if $n_coinsAsked>>
       A coin might be the hole that the Sprite wants him to touch.
       But asking about them provoked hostility from the panther.
       Perhaps Nero should
@@ -161,7 +162,7 @@ a small <<= $n_wandExploded ? "jumble" : "stack">> of
 
 ?P
 <ul class=actions>
-  <<if !$n_coinAsked>>
+  <<if !$n_coinsAsked>>
     <<if $n_ivexGone>>
       <<mtl-denied "Ask Ivex about the coins." "Ivex is gone">>
     <<elseif MP_wantTouch !== $n_magicPhase>>
@@ -169,11 +170,17 @@ a small <<= $n_wandExploded ? "jumble" : "stack">> of
     <</if>>
   <</if>>
   <<actions-get>>
-  <<if $n_tooClever && !$n_coinsLanced>>
+  <<if $n_tooClever>>
     <li>[[Destroy the coins with Nackle.|n2x Lance Coins]]</li>
   <</if>>
   <li>$n_afterLook</li>
 </ul>
 
-<<set $n_coinViewed = true>>
+<<run
+  $n_coinsViewed = true;
+  $n_dimCoins =
+    $n_tooClever ? false
+    : MP_wantTouch === $n_magicPhase ? $n_coinsAsked || $n_ivexGone
+    : true;
+>>
 <</nobr>>
