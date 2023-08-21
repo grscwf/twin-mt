@@ -10,6 +10,7 @@
 - [Story structure](#story-structure)
   - [Passages](#passages)
   - [State](#state)
+  - [Marking already-seen choices](#marking-already-seen-choices)
 - [Rationales](#rationales)
   - [not using `State.random`](#not-using-staterandom)
   - [using `<<nobr>>`](#using-nobr)
@@ -387,6 +388,25 @@
     - This is confusing and unhelpful, but fixing this in compute-variants
       is not straightforward.
     - Rewriting conditionals without `<<if>>` is a simple workaround.
+
+### Marking already-seen choices
+- Some choices can become desaturated, which is similar to how web browsers
+  mark visited links.
+- These choices have to be manually marked with the `<<mt-seen>>` macro.
+- This is used in a couple different ways:
+  1. Keywords are marked as seen if they're unlocked in the archives,
+     (ie, the player has seen them in any playthrough).
+  2. A choice that leads to an ending is marked as seen if the ending
+     is unlocked in the archives.
+  3. Objects in the room are marked as seen if they've been viewed in the
+     current playthrough, and no actions are available.
+     - Various state changes can cause objects to become unseen again.
+     - Note, this is meant to be Nero-subjective significance.
+       Minor changes to an object's description does not make it unseen.
+  4. A few passages will mark choices that the player has seen in
+     previous playthroughs.
+     - This is mostly to nudge players away from bad or weak paths that
+       are not significant enough to be easily remembered.
 
 ## Rationales
 
