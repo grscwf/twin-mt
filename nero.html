@@ -485,7 +485,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -9264,6 +9264,35 @@ function recentlyViewed(name) {
   return false;
 }
 
+/**
+ * &lt;&lt;return-before $fromPassage&gt;&gt;
+ *
+ * Make a return link that goes to the passage before $fromPassage
+ * in history.
+ */
+Macro.add(&quot;return-before&quot;, {
+  handler: function() {
+    let [from] = this.args;
+    if (from.isLink) {
+      from = from.link;
+    }
+
+    const hist = State.history;
+    let i = State.length - 1;
+    while (i &gt;= 0 &amp;&amp; hist[i].title !== from) {
+      i--;
+    }
+    if (i &lt; 1) {
+      throw new Error(`return-before failed for ${from}`);
+    }
+
+    const dest = hist[i - 1].title;
+    $(this.output).wiki(
+      `&lt;&lt;mta [[${dest}]]&gt;&gt;Return&lt;&lt;/mta&gt;&gt;`
+    );
+  }
+});
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="186" name="g0init Metadata Defs" tags="inclusion" position="575,725" size="100,100">&lt;&lt;script&gt;&gt;
 
 MT.mdDefUnsaved(&quot;mg_contentWarningPassed&quot;);
@@ -16664,6 +16693,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 
 .walk-sp {
   position: relative;
+  white-space: nowrap;
 }
 .walk-sp-w {
   opacity: 0;
@@ -17598,13 +17628,10 @@ So Nero prepares the spell&#39;s image in his mind,
 and then &lt;em&gt;twists&lt;/em&gt; it...
 
 ?P
-&lt;&lt;mta [[n1a Endgame 2]] &quot;delete $n_returnEndgame&quot;&gt;&gt;
+&lt;&lt;mta [[n1a Endgame 2]]&gt;&gt;
   Continue
 &lt;&lt;/mta&gt;&gt;
 
-&lt;&lt;run
-  $n_returnEndgame = State.passage;
-&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="241" name="n1a Endgame 2" tags="mt-ready" position="1050,3150" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_mageSight false&gt;&gt;
 
@@ -26025,7 +26052,6 @@ He calls out, &quot;Behold!&quot; and &lt;em&gt;twists&lt;/em&gt; the matrix...
 ?P
 [[Continue|n1s Cast Endgame 2]]
 
-&lt;&lt;set $n_returnEndgame = State.passage&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="405" name="n1s Cast Endgame 2" tags="mt-ready" position="2600,1325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_ivexGone false&gt;&gt;
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
@@ -27019,7 +27045,7 @@ fully charged. And maybe another second if his bladder is full.
 &lt;&lt;arc-skip&gt;&gt;
   ?P
   &lt;&lt;kw-unlock-soon kn_Endgame&gt;&gt;
-  &lt;&lt;mta $n_returnEndgame&gt;&gt;Return&lt;&lt;/mta&gt;&gt;
+  &lt;&lt;return-before &quot;n1s Endgame Info 1&quot;&gt;&gt;
 
   &lt;&lt;set $n_taraIntroduced = true&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -27984,7 +28010,6 @@ The best thing about the spell is that it appears to other mages that Nero has h
 &lt;&lt;case `MP_triedMagic`&gt;&gt;
   &lt;&lt;run
     delete $n_returnAntiMagic;
-    delete $n_returnEndgame;
     delete $n_returnOil;
   &gt;&gt;
   &lt;&lt;if $n_mageSight&gt;&gt;

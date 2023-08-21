@@ -164,4 +164,33 @@ function recentlyViewed(name) {
   return false;
 }
 
+/**
+ * <<return-before $fromPassage>>
+ *
+ * Make a return link that goes to the passage before $fromPassage
+ * in history.
+ */
+Macro.add("return-before", {
+  handler: function() {
+    let [from] = this.args;
+    if (from.isLink) {
+      from = from.link;
+    }
+
+    const hist = State.history;
+    let i = State.length - 1;
+    while (i >= 0 && hist[i].title !== from) {
+      i--;
+    }
+    if (i < 1) {
+      throw new Error(`return-before failed for ${from}`);
+    }
+
+    const dest = hist[i - 1].title;
+    $(this.output).wiki(
+      `<<mta [[${dest}]]>>Return<</mta>>`
+    );
+  }
+});
+
 <</script>>
