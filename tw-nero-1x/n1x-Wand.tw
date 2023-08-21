@@ -26,33 +26,46 @@
   <<if !$n_wandAsked>>
     <<if $n_ivexGone>>
       <<mtl-denied "Ask Ivex about his... wand." "Ivex is gone">>
-    <<elseif MP_wantTouch !== $n_magicPhase && !MT.passWanted()>>
-      <<if $n_abused || $n_naked>>
-        <<mtl-denied "Ask Ivex about his... wand." "um, no">>
-      <<else>>
-        <<mtl-denied "Ask Ivex about his... wand." "not interested">>
-      <</if>>
+    <<elseif MP_wantTouch === $n_magicPhase || MT.passWanted()>>
+      <<mtl [[n1x Wand Ask]]>>Ask Ivex about his... wand.<</mtl>>
+      <<set _hasAction = true>>
+    <<else>>
+      <<set _reason = $n_abused || $n_naked ? "um, no" : "not interested">>
+      <<mtl-denied "Ask Ivex about his... wand." _reason>>
     <</if>>
   <</if>>
 
-  <<if $n_wandUsed && !$n_wandTubeShot>>
-    <<mt-seen todo>>
-      <<actions-get>>
-    <</mt-seen>>
-  <<else>>
-    <<actions-get>>
+  <<if $n_free && !$n_wandTubeShot && !$n_wandRanAway>>
+    <<if $n_wandUsed>>
+      <<mt-seen todo>>
+        <<mtl [[n2x Wand Cock Again 1]]>>
+          How harmful can just one orgasm be? Use the wand again.
+        <</mtl>>
+      <</mt-seen>>
+    <<elseif $n_wandAsked>>
+      <<mtl [[n2x Wand Cock 1]]>>
+        Cautiously try Ivex's wand.
+      <</mtl>>
+    <<else>>
+      <<mtl [[n2x Wand Try 1]]>>
+        Try Ivex's wand.
+      <</mtl>>
+    <</if>>
+    <<set _hasAction = true>>
   <</if>>
 
   <<if $n_tooClever && !$n_wandRanAway>>
     <<if !$n_wandTubeShot>>
       <li>[[Destroy the wand with Nackle.|n2x Lance Wand]]</li>
+      <<set _hasAction = true>>
     <<elseif !$n_wandLanced>>
-      <<mtl [[n2x Lance Wand Inside 1]] "$n_wandAgain = true">>
+      <<mtl [[n2x Lance Wand Inside 1]]>>
         Destroy the wand inside the room.
       <</mtl>>
-      <<mtl [[n2x Lance Wand Outside 1]] "$n_wandAgain = true">>
+      <<mtl [[n2x Lance Wand Outside 1]]>>
         Destroy the wand outside the window.
       <</mtl>>
+      <<set _hasAction = true>>
     <</if>>
   <</if>>
 
@@ -60,12 +73,7 @@
 </ul>
 
 <<run
-  $n_dimWand =
-    $n_tooClever ? $n_wandRanAway || $n_wandLanced
-    : $n_free ? $n_wandRanAway || $n_wandRefused
-    : MP_wantTouch === $n_magicPhase || MT.passWanted()
-      ? $n_ivexGone || $n_wandAsked
-    : true;
+  $n_dimWand = !_hasAction;
   $n_wandViewed = true;
   if ($n_mageSight) {
     $n_wandMageSight = true;
