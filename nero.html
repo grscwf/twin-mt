@@ -386,53 +386,6 @@ ul.actions li::before {
   100% {
     background-color: #ebe6ff;
   }
-}
-
-/*====
- * css-only scroll shadow
- *
- * Normally, the scroll shadow uses background-attachment: scroll,
- * but that requires restructuring the html so that an element
- * other than body has the scrollbar.
- *
- * Instead of doing that, we use background-attachment: fixed,
- * and adjust the scroll-shadow size and position when #story
- * doesn't fill the whole viewport.
- *
- * (It might be better to restructure the html.)
- */
-
-#story {
-  background-attachment: local, local, fixed, fixed;
-  background-image: 
-    linear-gradient(#111111 33%, rgba(17,17,17, 0)),
-    linear-gradient(rgba(17,17,17, 0), #111111 66%),
-    radial-gradient(farthest-side at 50% 0, rgba(255,160,0, 0.6), rgba(0,0,0,0)),
-    radial-gradient(farthest-side at 50% 100%, rgba(255,160,0, 0.6), rgba(0,0,0,0));
-  background-position-x: 0, 0, 50%, 50%;
-  background-position-y: 0, 100%, 0, 100%;
-  background-repeat: no-repeat;
-  background-size: 100% 60px, 100% 60px, 50% 20px, 50% 20px;
-}
-
-/* move scroll-shadow center when ui-bar is visible */
-#ui-bar:not(.stowed) ~ #story {
-  background-position-x: 0, 0, calc(19em + (100% - 19em) / 2), calc(19em + (100% - 19em) / 2);
-}
-
-/* move scroll-shadow below var-info (collapsed) */
-.debugging #story {
-  background-position-y: 60px, 100%, 45px, 100%;
-}
-
-/* move scroll shadow below return-head */
-#story:has(#return-head) {
-  background-position-y: 90px, 100%, 60px, 100%;
-}
-
-/* move scroll shadow below var-info (collapsed) and return-head */
-.debugging #story:has(#return-head) {
-  background-position-y: 60px, 100%, 85px, 100%;
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.saves.id = 'sleth-mages-tower-2';
 Config.ui.stowBarInitially = !session.get("show-sidebar");
 
@@ -485,7 +438,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -11757,96 +11710,7 @@ MT.pick = list =&gt; {
   return list[n];
 };
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="202" name="g0init Return Sticky" tags="inclusion" position="575,850" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
-
-#return-head,
-#return-tail,
-#sticky-head {
-  background-color: #111;
-  line-height: 1.75;
-  margin: 0 auto;
-  /* same as #passages */
-  max-width: 54em;
-  position: sticky;
-  z-index: 10;
-}
-
-#return-head,
-#sticky-head {
-  margin-bottom: 2em;
-  margin-top: -1em;
-  padding-top: 1em;
-  top: 0;
-}
-
-#return-tail {
-  padding-bottom: 1em;
-  bottom: 0;
-}
-
-&lt;/style&gt;&lt;&lt;/append&gt;&gt;
-
-&lt;&lt;script&gt;&gt;
-
-function addReturn(where, contents) {
-  MT.assert(
-    tags().includes(&quot;is-menu&quot;),
-    &quot;tags should have is-menu&quot;);
-
-  $(`#return-${where}`).remove();
-  const div = $(`&lt;div id=return-${where}&gt;`)
-    .wiki(`&lt;&lt;link &quot;Return to the game&quot;&gt;&gt;&lt;&lt;run MT.popToStory()&gt;&gt;&lt;&lt;/link&gt;&gt;`)
-    .wiki(contents);
-
-  if (where === &quot;head&quot;) {
-    div.append(&quot;&lt;hr&gt;&quot;);
-    $(&quot;#story&quot;).prepend(div);
-  } else {
-    div.prepend(&quot;&lt;hr&gt;&quot;);
-    $(&quot;#story&quot;).append(div);
-  }
-}
-
-Macro.add(&quot;return-head&quot;, {
-  handler: function() {
-    addReturn(&quot;head&quot;, &quot;&quot;);
-  }
-});
-
-Macro.add(&quot;return-tail&quot;, {
-  handler: function() {
-    addReturn(&quot;tail&quot;, &quot;&quot;);
-  }
-});
-
-Macro.add(&quot;return-block&quot;, {
-  tags: [],
-  handler: function() {
-    addReturn(&quot;head&quot;, this.payload[0].contents);
-  }
-});
-
-Macro.add(&quot;sticky-head&quot;, {
-  tags: [],
-  handler: function() {
-    $(&quot;#sticky-head&quot;).remove();
-    const div = $(&quot;&lt;div id=sticky-head&gt;&quot;).prependTo(&quot;#story&quot;);
-    div.wiki(this.payload[0].contents);
-  }
-});
-
-function stickyInit() {
-  $(document).on(&quot;:passageinit&quot;, () =&gt; {
-    MT.autoStow();
-    $(`#return-head`).remove();
-    $(`#return-tail`).remove();
-    $(&quot;#sticky-head&quot;).remove();
-  });
-}
-
-stickyInit();
-
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="203" name="g0init Roaming" tags="inclusion" position="700,850" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="202" name="g0init Roaming" tags="inclusion" position="700,850" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
   #random-walk {
     top: max(5rem, 50vh - 5rem);
     display: flex;
@@ -12305,7 +12169,7 @@ function initRandomWalk() {
 }
 
 initRandomWalk();
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="204" name="g0init Saved Games" tags="inclusion" position="200,975" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="203" name="g0init Saved Games" tags="inclusion" position="200,975" size="100,100">&lt;&lt;script&gt;&gt;
 
 /** Fix up the in-browser saved game title. */
 Config.passages.descriptions = function() {
@@ -12378,7 +12242,7 @@ function migrate(saveObj) {
   // also, add a migration in mdLoad if necessary.
 }
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="205" name="g0init Sections" tags="inclusion" position="200,1100" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="204" name="g0init Sections" tags="inclusion" position="200,1100" size="100,100">&lt;&lt;script&gt;&gt;
 
 // Passages are grouped into sections by a prefix code in their title.
 // - Prefix should start with a lowercase letter, followed by a number,
@@ -12812,7 +12676,7 @@ function checkSectionStateHere() {
 checkSections();
 $(document).on(&quot;:passageend&quot;, checkSectionStateHere);
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="206" name="g0init Seen" tags="inclusion" position="625,1100" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="205" name="g0init Seen" tags="inclusion" position="625,1100" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .mt-seen-true a {
   color: #ddcc99;
@@ -12892,22 +12756,19 @@ MT.neroResetObjectDim = () =&gt; {
   delete V.n_dimWindow;
 };
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="207" name="g0init Sidebar" tags="inclusion" position="325,975" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="206" name="g0init Sidebar" tags="inclusion" position="325,975" size="100,100">&lt;&lt;script&gt;&gt;
+
 MT.autoStow = () =&gt; {
   if (document.body.offsetWidth &lt;= 768) {
     UIBar.stow();
   }
 };
 
-Macro.add(&quot;auto-stow&quot;, {
-  handler: MT.autoStow,
-});
-
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;nobr&gt;&gt;
 &lt;&lt;append &quot;#ui-bar-body&quot;&gt;&gt;
-  &lt;div id=ui-bar-footer&gt;
+  &lt;div id=&quot;ui-bar-footer&quot;&gt;
     &lt;span&gt;
       &lt;a class=footer-element target=&quot;_blank&quot;
         href=&quot;https://www.patreon.com/sleth&quot;
@@ -12927,7 +12788,159 @@ Macro.add(&quot;auto-stow&quot;, {
     &lt;/span&gt;
   &lt;/div&gt;
 &lt;&lt;/append&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="208" name="g0init Templates" tags="inclusion" position="575,975" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="207" name="g0init Sticky Panes" tags="inclusion" position="575,850" size="100,100">/*
+ * Header and footer elements, that also supply scroll shadows.
+ */
+
+&lt;&lt;append head&gt;&gt;&lt;style&gt;
+
+/*
+ * The sticky panes are inside #story, outside #passage.
+ * We move sugarcube&#39;s #story margin to #passage,
+ * as padding instead of margin.
+ * (margin would add spacing above/below the sticky observer).
+ */
+#story {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+#passages {
+  padding-bottom: 1.5em;
+  padding-top: 1.5em;
+}
+
+/*
+ * Sticky panes, which may be empty, positioned for box-shadow.
+ * Should not have padding (messes up box-shadow position).
+ */
+#sticky-head,
+#sticky-tail {
+  background-color: #111;
+  position: sticky;
+  transition: box-shadow .2s;
+  z-index: 5;
+}
+#sticky-head {
+  top: 0;
+}
+#sticky-tail {
+  bottom: 0;
+}
+
+/*
+ * Non-empty sticky panes should have a horizontal separator
+ */
+#sticky-head:has(&gt; *),
+#sticky-tail:has(&gt; *) {
+  border: 0 solid #333;
+}
+#sticky-head:has(&gt; *) {
+  border-bottom-width: 1px;
+}
+#sticky-tail:has(&gt; *) {
+  border-top-width: 1px;
+}
+
+/*
+ * box-shadow needs a non-zero box, so we add a before or after,
+ * with a size large enough for the box-shadow we want.
+ */
+#sticky-head.shadow::after,
+#sticky-tail.shadow::before {
+  content: &quot;&quot;;
+  height: 40px;
+  position: absolute;
+  width: 100%;
+  z-index: -1;
+}
+#sticky-head.shadow::after {
+  box-shadow: 0 10px 10px -10px #ffa000;
+  margin-top: -40px;
+}
+#sticky-tail.shadow::before {
+  box-shadow: 0 -10px 15px -10px #ffa000;
+}
+
+/*
+ * sticky-inner content should have top-bottom padding (not margin)
+ */
+.sticky-inner {
+  padding: 24px 0;
+}
+
+&lt;/style&gt;&lt;&lt;/append&gt;&gt;
+
+&lt;&lt;script&gt;&gt;
+
+Macro.add(&quot;sticky-head&quot;, {
+  tags: [],
+  handler: function() {
+    let inner = $(&quot;#sticky-head .sticky-inner&quot;);
+    if (inner.length === 0) {
+      inner = $(&quot;&lt;div class=sticky-inner&gt;&quot;).appendTo(&quot;#sticky-head&quot;);
+    }
+    inner.wiki(this.payload[0].contents);
+  }
+});
+
+function stickyReturn(and) {
+  let inner = $(&quot;#sticky-tail .sticky-inner&quot;);
+  if (inner.length === 0) {
+    inner = $(&quot;&lt;div class=sticky-inner&gt;&quot;).appendTo(&quot;#sticky-tail&quot;);
+  }
+  inner.wiki(`&lt;&lt;link &quot;Return to the game&quot;&gt;&gt;&lt;&lt;run MT.popToStory()&gt;&gt;&lt;&lt;/link&gt;&gt;`)
+  if (and != null &amp;&amp; and !== &quot;&quot;) {
+    inner.wiki(and);
+  }
+}
+
+Macro.add(&quot;sticky-return&quot;, {
+  handler: function() {
+    stickyReturn();
+  }
+});
+
+Macro.add(&quot;sticky-return-and&quot;, {
+  tags: [],
+  handler: function() {
+    stickyReturn(this.payload[0].contents);
+  }
+});
+
+function stickyInit() {
+  $(document).on(&quot;:passageinit&quot;, () =&gt; {
+    MT.autoStow();
+    $(&quot;#sticky-head&quot;).remove();
+    $(&quot;#sticky-head-obs&quot;).remove();
+    const headDiv =
+      $(&quot;&lt;div id=sticky-head&gt;&quot;)
+      .prependTo(&quot;#story&quot;);
+    const headObsDiv =
+      $(&quot;&lt;div id=sticky-head-obs&gt;&quot;)
+      .prependTo(&quot;#story&quot;);
+    const headObs = new IntersectionObserver(([e]) =&gt; {
+      headDiv.toggleClass(&quot;shadow&quot;, !e.isIntersecting);
+    });
+    headObs.observe(headObsDiv[0]);
+
+    $(&quot;#sticky-tail&quot;).remove();
+    $(&quot;#sticky-tail-obs&quot;).remove();
+    const tailDiv = 
+      $(&quot;&lt;div id=sticky-tail&gt;&quot;)
+      .appendTo(&quot;#story&quot;);
+    const tailObsDiv =
+      $(&quot;&lt;div id=sticky-tail-obs&gt;&quot;)
+      .appendTo(&quot;#story&quot;);
+    const tailObs = new IntersectionObserver(([e]) =&gt; {
+      tailDiv.toggleClass(&quot;shadow&quot;, !e.isIntersecting);
+    });
+    tailObs.observe(tailObsDiv[0]);
+  });
+}
+
+stickyInit();
+
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="208" name="g0init Templates" tags="inclusion" position="575,975" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
 
 .mt-cons {
   font-size: 1.5rem;
@@ -13198,22 +13211,7 @@ initValidate();
   cursor: default;
   font-size: 12px;
   line-height: 14px;
-  margin-bottom: 14px;
-  margin-top: -56px;
-  padding: 12px 0;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-
-#return-head .var-info,
-#sticky-head .var-info {
-  margin-bottom: 0;
-  position: static;
-}
-#return-head:has(.var-info),
-#sticky-head:has(.var-info) {
-  top: 36px;
+  padding: 4px 0;
 }
 
 .var-info &gt; label,
@@ -13665,13 +13663,7 @@ function initVarInfo() {
     $(&quot;.var-info&quot;).remove();
     const outer = $(&quot;&lt;div class=var-info&gt;&quot;);
 
-    if ($(&quot;#return-head&quot;).length) {
-      outer.prependTo(&quot;#return-head&quot;);
-    } else if ($(&quot;#sticky-head&quot;).length) {
-      outer.prependTo(&quot;#sticky-head&quot;);
-    } else {
-      outer.prependTo(&quot;#passages&quot;);
-    }
+    outer.prependTo(&quot;#sticky-head&quot;);
 
     let show = session.get(&quot;var-info-show&quot;);
     outer.toggleClass(&quot;var-info-hidden&quot;, !show);
@@ -14007,10 +13999,10 @@ Moreover, this story contains immoral characters performing abusive and perverse
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="217" name="g1m Archives Entry" tags="is-menu" position="200,1300" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;return-block&gt;&gt;
+&lt;&lt;sticky-return-and&gt;&gt;
   &lt;span class=mt-vsep&gt;||&lt;/span&gt;
   [[Return to the Archives|g1m Archives]]
-&lt;&lt;/return-block&gt;&gt;
+&lt;&lt;/sticky-return-and&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
 
@@ -14173,7 +14165,7 @@ body {
 
 &lt;&lt;include [[g1m Archives Script]]&gt;&gt;
 
-&lt;&lt;return-block&gt;&gt;
+&lt;&lt;sticky-return-and&gt;&gt;
   &lt;&lt;if setup.debug&gt;&gt;
     &lt;span class=mt-vsep&gt;||&lt;/span&gt;
     &lt;label&gt;
@@ -14182,7 +14174,7 @@ body {
       &lt;input id=&quot;arc-lockpick&quot; type=checkbox&gt;
     &lt;/label&gt;
   &lt;&lt;/if&gt;&gt;
-&lt;&lt;/return-block&gt;&gt;
+&lt;&lt;/sticky-return-and&gt;&gt;
 
 &lt;div class=ui-title&gt;
   Welcome to the Mage&#39;s Tower Archives
@@ -14258,10 +14250,9 @@ body {
 
 &lt;&lt;sticky-head&gt;&gt;
   &lt;div class=ui-title&gt;Credits&lt;/div&gt;
-  &lt;hr&gt;
 &lt;&lt;/sticky-head&gt;&gt;
 
-&lt;&lt;return-tail&gt;&gt;
+&lt;&lt;sticky-return&gt;&gt;
 
 The writing and development of this interactive story was made by me, [[Sleth|http://www.slethstories.com/]].
 
@@ -14289,18 +14280,21 @@ or
 &lt;&lt;/script&gt;&gt;
 
 /* cspell:ignore Raus, MFarley */
-&lt;&lt;/nobr&gt;&gt;
 
+?P
 The amazing artwork you see in the game, including the character art and the Mage&#39;s Tower logo, was done by commission by [[BlainWolf|https://twitter.com/Blain_Wolf]]. You can check out more of his stuff in his [[Twitter|https://twitter.com/Blain_Wolf]] or [[FurAffinity|https://www.furaffinity.net/user/blainwolf]] pages!
 
+?P
 I&#39;d also like to give a special, personal thanks to [[Raus|https://twitter.com/rausmutt]] and [[MFarley|https://www.furaffinity.net/user/mfarley/]] for supporting this idea  and my writing in general, as well as helping me shape things up and polish them!
 
+?P
 Not only that, but I&#39;d also like to extend my deepest gratitude to my patrons, who have been supporting me and my craft through the months it took to develop this interactive story! None of this would be possible without you all!
 
+?P
 First and foremost, my patrons that have supported me in these last 4 months it took for me to develop, learn and finish this project:
-\
-&lt;b&gt;&lt;ul&gt;\
-/* cspell:disable */ \
+
+&lt;b&gt;&lt;ul&gt;
+/* cspell:disable */
     &lt;li&gt;John Harris&lt;/li&gt;
     &lt;li&gt;Timba Saber&lt;/li&gt;
     &lt;li&gt;Kevin Deiderich&lt;/li&gt;
@@ -14344,11 +14338,11 @@ First and foremost, my patrons that have supported me in these last 4 months it 
     &lt;li&gt;Martin Farley&lt;/li&gt;
     &lt;li&gt;Knight of the Dragon&lt;/li&gt;
     &lt;li&gt;Raus&lt;/li&gt;
-&lt;/ul&gt;&lt;/b&gt;\
-\
+&lt;/ul&gt;&lt;/b&gt;
+
 And, of course, also an honorable mention to everyone that has supported me and my writing in the these last years I have had my patreon going:
-\
-&lt;ul&gt;\
+
+&lt;ul&gt;
 &lt;li&gt;John Harris&lt;/li&gt;
 &lt;li&gt;Timba Saber&lt;/li&gt;
 &lt;li&gt;Kevin Deiderich&lt;/li&gt;
@@ -14416,10 +14410,11 @@ And, of course, also an honorable mention to everyone that has supported me and 
 &lt;li&gt;Mr Blackstone&lt;/li&gt;
 &lt;li&gt;Martin Farley&lt;/li&gt;
 &lt;li&gt;Raus&lt;/li&gt;
-&lt;/ul&gt;\
-\
-Thank you so much!</tw-passagedata><tw-passagedata pid="222" name="g1m Dashboard" tags="is-menu" position="325,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;return-head&gt;&gt;
+&lt;/ul&gt;
+
+Thank you so much!
+
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="222" name="g1m Dashboard" tags="is-menu" position="325,1700" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;style&gt;
 .dash-stats {
@@ -14457,8 +14452,10 @@ Thank you so much!</tw-passagedata><tw-passagedata pid="222" name="g1m Dashboard
 }
 &lt;/style&gt;
 
-&lt;&lt;/nobr&gt;&gt;\
-&lt;div id=&quot;dash-outer&quot;&gt;&lt;/div&gt;\
+&lt;&lt;sticky-return&gt;&gt;
+
+&lt;div id=&quot;dash-outer&quot;&gt;&lt;/div&gt;
+
 &lt;&lt;script&gt;&gt;
 
 const countable = new Set([
@@ -14600,7 +14597,7 @@ function showRandom(dest, info) {
     .sort();
   const reroll = () =&gt; {
     body.empty();
-    // Note, uses Math.random()
+    /* Note, uses Math.random() */
     toShow.randomMany(5)
       .forEach(t =&gt; todoBlock(info, t).appendTo(body));
   };
@@ -14683,7 +14680,9 @@ function render() {
   MT.signPassage();
 };
 $(document).one(&quot;:passagedisplay&quot;, render);
-&lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="223" name="g1m Goto Paths" tags="inclusion" position="325,1875" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;
+
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="223" name="g1m Goto Paths" tags="inclusion" position="325,1875" size="100,100">&lt;&lt;script&gt;&gt;
 MT.walks = [
   &quot;&lt;hr&gt;&lt;span class=walk-sec-title&gt;Drekkar&lt;/span&gt;&quot;,
   {
@@ -16626,8 +16625,6 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 });
 
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="225" name="g1m Goto" tags="is-menu" position="200,1875" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;auto-stow&gt;&gt;
-&lt;&lt;return-head&gt;&gt;
 &lt;&lt;include [[g1m Goto Paths]]&gt;&gt;
 &lt;&lt;include [[g1m Goto Script]]&gt;&gt;
 
@@ -16697,6 +16694,8 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 
 &lt;/style&gt;
 
+&lt;&lt;sticky-return&gt;&gt;
+
 &lt;&lt;mta &quot;g1m Test 1&quot;&gt;&gt;
   &gt; Test 1
 &lt;&lt;/mta&gt;&gt;
@@ -16741,7 +16740,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 &lt;&lt;/done&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="226" name="g1m Notes All" tags="is-menu" position="325,2200" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;return-head&gt;&gt;
+&lt;&lt;sticky-return&gt;&gt;
 
 &lt;style&gt;
   #notes-load-file {
@@ -17098,7 +17097,7 @@ If you have this game opened in multiple browser tabs, editing a note in one tab
 [[View all notes|g1m Notes All][Dialog.close()]]
 &lt;br&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="228" name="g1m Notes Single" tags="is-menu" position="325,2325" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;return-head&gt;&gt;
+&lt;&lt;sticky-return&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
   const T = State.temporary;
@@ -17236,7 +17235,7 @@ hello some more
 &lt;&lt;/fade-in&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="232" name="g1m Transcript" tags="is-menu" position="250,1875" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;return-head&gt;&gt;
+&lt;&lt;sticky-return&gt;&gt;
 
 &lt;div class=ui-title&gt;Story Transcript&lt;/div&gt;
 

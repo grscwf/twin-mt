@@ -1,0 +1,154 @@
+:: g0init Sticky Panes [inclusion] {"position":"575,850","size":"100,100"}
+/*
+ * Header and footer elements, that also supply scroll shadows.
+ */
+
+<<append head>><style>
+
+/*
+ * The sticky panes are inside #story, outside #passage.
+ * We move sugarcube's #story margin to #passage,
+ * as padding instead of margin.
+ * (margin would add spacing above/below the sticky observer).
+ */
+#story {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+#passages {
+  padding-bottom: 1.5em;
+  padding-top: 1.5em;
+}
+
+/*
+ * Sticky panes, which may be empty, positioned for box-shadow.
+ * Should not have padding (messes up box-shadow position).
+ */
+#sticky-head,
+#sticky-tail {
+  background-color: #111;
+  position: sticky;
+  transition: box-shadow .2s;
+  z-index: 5;
+}
+#sticky-head {
+  top: 0;
+}
+#sticky-tail {
+  bottom: 0;
+}
+
+/*
+ * Non-empty sticky panes should have a horizontal separator
+ */
+#sticky-head:has(> *),
+#sticky-tail:has(> *) {
+  border: 0 solid #333;
+}
+#sticky-head:has(> *) {
+  border-bottom-width: 1px;
+}
+#sticky-tail:has(> *) {
+  border-top-width: 1px;
+}
+
+/*
+ * box-shadow needs a non-zero box, so we add a before or after,
+ * with a size large enough for the box-shadow we want.
+ */
+#sticky-head.shadow::after,
+#sticky-tail.shadow::before {
+  content: "";
+  height: 40px;
+  position: absolute;
+  width: 100%;
+  z-index: -1;
+}
+#sticky-head.shadow::after {
+  box-shadow: 0 10px 10px -10px #ffa000;
+  margin-top: -40px;
+}
+#sticky-tail.shadow::before {
+  box-shadow: 0 -10px 15px -10px #ffa000;
+}
+
+/*
+ * sticky-inner content should have top-bottom padding (not margin)
+ */
+.sticky-inner {
+  padding: 24px 0;
+}
+
+</style><</append>>
+
+<<script>>
+
+Macro.add("sticky-head", {
+  tags: [],
+  handler: function() {
+    let inner = $("#sticky-head .sticky-inner");
+    if (inner.length === 0) {
+      inner = $("<div class=sticky-inner>").appendTo("#sticky-head");
+    }
+    inner.wiki(this.payload[0].contents);
+  }
+});
+
+function stickyReturn(and) {
+  let inner = $("#sticky-tail .sticky-inner");
+  if (inner.length === 0) {
+    inner = $("<div class=sticky-inner>").appendTo("#sticky-tail");
+  }
+  inner.wiki(`<<link "Return to the game">><<run MT.popToStory()>><</link>>`)
+  if (and != null && and !== "") {
+    inner.wiki(and);
+  }
+}
+
+Macro.add("sticky-return", {
+  handler: function() {
+    stickyReturn();
+  }
+});
+
+Macro.add("sticky-return-and", {
+  tags: [],
+  handler: function() {
+    stickyReturn(this.payload[0].contents);
+  }
+});
+
+function stickyInit() {
+  $(document).on(":passageinit", () => {
+    MT.autoStow();
+    $("#sticky-head").remove();
+    $("#sticky-head-obs").remove();
+    const headDiv =
+      $("<div id=sticky-head>")
+      .prependTo("#story");
+    const headObsDiv =
+      $("<div id=sticky-head-obs>")
+      .prependTo("#story");
+    const headObs = new IntersectionObserver(([e]) => {
+      headDiv.toggleClass("shadow", !e.isIntersecting);
+    });
+    headObs.observe(headObsDiv[0]);
+
+    $("#sticky-tail").remove();
+    $("#sticky-tail-obs").remove();
+    const tailDiv = 
+      $("<div id=sticky-tail>")
+      .appendTo("#story");
+    const tailObsDiv =
+      $("<div id=sticky-tail-obs>")
+      .appendTo("#story");
+    const tailObs = new IntersectionObserver(([e]) => {
+      tailDiv.toggleClass("shadow", !e.isIntersecting);
+    });
+    tailObs.observe(tailObsDiv[0]);
+  });
+}
+
+stickyInit();
+
+<</script>>
