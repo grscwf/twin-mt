@@ -1,7 +1,7 @@
 :: g0init Migrate [inclusion] {"position":"700,1100","size":"100,100"}
 <<script>>
 
-function cleanupMetadata() {
+function deleteUnknownMetadata() {
   const rec = MT.mdRecord();
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
@@ -11,15 +11,17 @@ function cleanupMetadata() {
   }
 }
 
-function cleanupInit() {
+function deleteOldStorage() {
   session.delete("mt-log-1");
-
   localStorage.removeItem("vp-1");
   localStorage.removeItem("vp-marks-enabled");
-
-  $(document).on(":storyready", cleanupMetadata);
 }
 
-cleanupInit();
+function migrateInit() {
+  deleteOldStorage();
+  $(document).on(":storyready", deleteUnknownMetadata);
+}
+
+migrateInit();
 
 <</script>>
