@@ -438,7 +438,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -9248,6 +9248,33 @@ function migrateInit() {
 
 migrateInit();
 
+/*
+ * Sketch of general saved-data migration.
+ *
+ * If story structure is changed, saved games and current-session will
+ * need to be fixed to fit the new structure.
+ *
+ * Structure changes include: renaming a passage, renaming a state var,
+ * renaming a metadata var.
+ *
+ * Saved games can be fixed with a `Save.onLoad.add(save =&gt; ...)` hook:
+ * - for metadata, look in g0boot-Metadata `readFromSave`
+ * - save.state is an expanded snapshot. see below.
+ *
+ * Current session needs to be fixed in an init script, before it&#39;s loaded.
+ * - session.get(&quot;state&quot;) is a compact snapshot. see below.
+ * - fix it, and write it back with session.set(&quot;state&quot;, state);
+ * 
+ * Fixing a snapshot named `state`
+ * - expanded snapshot has state.history
+ * - compact snapshot has state.delta
+ *   - use State.decodeDelta(state.delta) to get the flat history
+ * - for each moment in the flat history
+ *   - fix moment.title (passage name)
+ *   - fix var names in moment.variables
+ *   - if moment.variables has snapshots, recursively fix them
+ */
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="187" name="g0init Nero Barbs" tags="inclusion" position="1125,1200" size="100,100">&lt;&lt;script&gt;&gt;
 
 function announceBarbs(dest) {
@@ -12229,15 +12256,6 @@ function countUnlocks() {
   add(Object.keys(MT.neroKeywords));
 
   return [num, total];
-}
-
-/** Migrate an old saveObj to current game. */
-function migrate(saveObj) {
-  // Nothing necessary yet. In the future:
-  // - Rename passages in saveObj.state.expired[]
-  // - Rename passages in saveObj.state.history[].title
-  // - Rename variables in saveObj.state.history[].variables
-  // also, add a migration in mdLoad if necessary.
 }
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="204" name="g0init Sections" tags="inclusion" position="200,1100" size="100,100">&lt;&lt;script&gt;&gt;
