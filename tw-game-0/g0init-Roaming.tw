@@ -114,7 +114,7 @@ function initRandomWalk() {
     el.text(noFuture() ? "rand" : "next");
   }
 
-  const goRandom = () => {
+  const goRandom = (isManual) => {
     const V = State.variables;
 
     const chosen = $("#passages .random-walk-chosen");
@@ -159,7 +159,7 @@ function initRandomWalk() {
         break;
     }
     const prefer = all.filter(important);
-    if (prefer.length && Math.random() < .7) {
+    if (!isManual && prefer.length && Math.random() < .7) {
       const names = prefer.map((i, el) => $(el).attr("data-passage"));
       console.log(`prefer [${[...names].join(",")}]`);
       avail = prefer;
@@ -182,7 +182,7 @@ function initRandomWalk() {
       pick = avail[i];
       const code = $(pick).attr("data-mta-code");
       const avoid = code != null && code.includes("//avoid");
-      if (avoid && Math.random() < .9) {
+      if (!isManual && avoid && Math.random() < .9) {
         const title = $(pick).attr("data-passage");
         console.log(`avoiding ${title}`);
         pick = null;
@@ -211,7 +211,7 @@ function initRandomWalk() {
   const goForward = () => {
     if (tags().includes("is-menu")) return;
     if (State.length === State.size || ignoreFuture) {
-      goRandom();
+      goRandom(true);
       return;
     }
     ignoreFuture = false;
@@ -222,7 +222,7 @@ function initRandomWalk() {
       if (chosen.attr("data-passage") === next) {
         Engine.forward();
       } else {
-        goRandom();
+        goRandom(true);
       }
       return;
     }
@@ -233,7 +233,7 @@ function initRandomWalk() {
       links.addClass("random-walk-chosen");
       links[0].scrollIntoView(false);
     } else {
-      goRandom();
+      goRandom(true);
     }
   };
 
@@ -396,7 +396,7 @@ function initRandomWalk() {
       console.log(`milestone ${here}`);
     }
 
-    if (goRandom()) {
+    if (goRandom(false)) {
       setTimeout(roamNext, roamDelay);
       return;
     }
