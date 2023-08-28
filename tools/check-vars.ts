@@ -1,9 +1,10 @@
 #!/usr/bin/env ts-node
 
-import { rules } from "./rules";
-import { headerRE } from "./lib";
-import fsp from "fs/promises";
 import fastGlob from "fast-glob";
+import fsp from "fs/promises";
+import path from "path";
+import { fnameForTitle, headerRE } from "./lib";
+import { rules } from "./rules";
 
 /* cspell:ignore nontemp */
 
@@ -55,8 +56,8 @@ type Usages = {
 async function main() {
   const decls = await readDecls(declsFile);
   const nero = rules.find((r) => r.target === "nero.html")!;
-  const analysis = await scanDirs(nero.dirs);
-  report(decls, analysis);
+  const usages = await scanDirs(nero.dirs);
+  report(decls, usages);
 }
 
 async function readDecls(fname: string) {
@@ -94,7 +95,13 @@ async function scanDirs(dirs: string[]) {
 async function scanFile(fname: string, usages: Usages) {
   const text = await fsp.readFile(fname, "utf8");
   const m = new RegExp(headerRE).exec(text);
-  const passage = m == null ? "" : m[1]!;
+  const title = m == null ? "" : m[1]!;
+
+  const expected = fnameForTitle(title);
+  if (expected !== path.basename(fname)) {
+    console.log(`${fname} expected to have filename ${expected}`);
+  }
+
   const lines = text.split(/\r?\n/);
   // might be faster to match whole text then find lno of matches,
   // but this is fast enough for the size of this project.
@@ -109,7 +116,7 @@ async function scanFile(fname: string, usages: Usages) {
         for (const vn of vNames) {
           const context = getContext(line, m.index!);
           usages.locs[vn] ??= [];
-          usages.locs[vn]!.push({ fname, passage, lno, context });
+          usages.locs[vn]!.push({ fname, passage: title, lno, context });
         }
       }
     }
@@ -203,5 +210,6 @@ function showLocs(vn: string, locs: Location[]) {
 }
 
 main().catch((e) => {
-  throw e;
+  console.error(e);
+  process.exit(1);
 });
