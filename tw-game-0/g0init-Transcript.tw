@@ -86,6 +86,20 @@ function cleanHtml(jq, nextTitle, nextCode) {
     });
   }
 
+  // remove tran-cut-span
+  jq.find(".tran-cut-span").each((i, el) => {
+    if ($(el).find(".tran-next").length) {
+      while (el.parentNode != null && !el.classList.contains("tran-entry")) {
+        while (el.nextSibling != null) {
+          el.nextSibling.remove();
+        }
+        el = el.parentNode;
+      }
+      $(el).append(
+        `<span class="tran-elided">&hellip;</span>`);
+    }
+  });
+
   // fade-in separators
   const fb1 = jq.find(".fade-in").prev("br");
   fb1.replaceWith("<hr class=tran-fade-in>");
@@ -218,6 +232,23 @@ Macro.add("tran-cut", {
     }
     $(frag).find("a").addClass("tran-cut");
     $(this.output).append(frag);
+  }
+});
+
+/**
+ * <<tran-cut-span>>
+ *   text
+ * <</tran-cut-span>>
+ * 
+ * Emit text. In the transcript, if the player follows a link within
+ * the text, elide everything after this block.
+ */
+Macro.add("tran-cut-span", {
+  tags: [],
+  handler: function() {
+    const span = $("<span class=tran-cut-span>");
+    span.wiki(this.payload[0].contents);
+    $(this.output).append(span);
   }
 });
 
