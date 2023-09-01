@@ -438,7 +438,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -11962,12 +11962,10 @@ function initRandomWalk() {
     }
   };
 
+  let roamDoneFn = null;
   let roamForce = false;
   let roamLoop = 0;
-  let roamLooping = false;
-  let roamMoved = false;
   let roamPath = null;
-  let roamDoneFn = null;
 
   const roamDelay = 50;
   const maxLoop = 5;
@@ -11981,120 +11979,111 @@ function initRandomWalk() {
     }
   };
 
+  function hasTodo() {
+    return MT.isDraft(State.passage) ||
+      /\bX[X]X\b|\bTO[D]O\b/.test($(&quot;.passage&quot;).text());
+  }
+
+  const startLoop = () =&gt; {
+    console.log(&quot;# starting new loop&quot;);
+    MT.forgetWalkHistory();
+    State.reset();
+    Engine.play(&quot;g1a Bound&quot;);
+    roamForce = false;
+    const neroStart = [
+      { t: &quot;g1a Choose Character&quot; },
+      { t: &quot;n1a Nero Start&quot; },
+    ];
+    MT.roamStart(neroStart, () =&gt; {
+      MT.roamStart(null, () =&gt; {
+        roamLoop--;
+        if (roamLoop &gt; 0) startLoop();
+      });
+    });
+  };
+
   const roamStart = MT.roamStart = (path, doneFn, force) =&gt; {
-    $(&quot;#rw-roam&quot;).addClass(&quot;rw-roaming&quot;);
-    MT.roaming = true;
-    roamForce = force;
-    roamMoved = false;
     roamPath = path;
     roamDoneFn = doneFn;
+    roamForce = force;
+
+    $(&quot;#rw-roam&quot;).addClass(&quot;rw-roaming&quot;);
+    MT.roaming = true;
+
+    /* If starting from an ending, start looping. */
+    if (path == null &amp;&amp; tags().includes(&quot;roam-stop&quot;)) {
+      roamLoop = maxLoop;
+      return startLoop();
+    }
+
+    /* If starting from draft or todo, continue past todo */
+    if (path == null &amp;&amp; hasTodo()) {
+      roamForce = true;
+    }
+
     setTimeout(roamNext, roamDelay);
   };
 
   const roamStop = () =&gt; {
     MT.roaming = false;
-    roamPath = null;
     roamDoneFn = null;
+    roamPath = null;
     $(&quot;#rw-roam&quot;).removeClass(&quot;rw-roaming&quot;);
   };
 
+  const reportEnd = reason =&gt; {
+    const V = State.variables;
+    console.log(`${reason} after ${State.turns} steps at ${State.passage}`);
+    console.log(`- local + session storage = ${MT.computeSizes()}`);
+    const mp = MT.enumSymbol(&#39;MagicPhase&#39;, V.n_magicPhase);
+    const mpr = MT.enumSymbol(&#39;MagicPhase&#39;, V.n_magicPhaseReached);
+    console.log(`- magicPhase ${mp}, ${mpr}`);
+  };
+
   const roamNext = () =&gt; {
-    const here = State.passage;
-
     if (!MT.roaming) return roamStop();
-    if (roamMoved &amp;&amp; here === Config.passages.start) return roamStop();
-
-    let hasProblem = false;
-    hasProblem = hasProblem || MT.hasFails;
-    hasProblem = hasProblem || MT.hasWarnings;
-    hasProblem = hasProblem || $(&quot;.error-view&quot;).length !== 0;
-
-    let hasTodo = /\bX[X]X\b|\bTO[D]O\b/.test($(&quot;.passage&quot;).text());
-
-    const isDraft = MT.isDraft(here);
-    const stop = tags().includes(&quot;roam-stop&quot;);
-
-    if (roamMoved) {
-      if (hasProblem) {
-        console.log(&#39;stopping on problem&#39;);
-        return roamStop();
-      }
-      if (!roamForce &amp;&amp; (hasTodo || isDraft)) {
-        console.log(&#39;stopping on to-do&#39;);
-        return roamStop();
-      }
-      if (stop) {
-        const steps = State.turns;
-        const V = State.variables;
-        console.log(`stop after ${steps} steps at ${here}`);
-        console.log(`local + session storage = ${MT.computeSizes()}`);
-        const mp = MT.enumSymbol(&#39;MagicPhase&#39;, V.n_magicPhase);
-        const mpr = MT.enumSymbol(&#39;MagicPhase&#39;, V.n_magicPhaseReached);
-        console.log(`- magicPhase ${mp}, ${mpr}`);
-        if (roamLoop &lt;= 0) {
-          if (roamLooping) {
-            roamLooping = false;
-            console.log(&quot;stop at max loops&quot;);
-          }
-          return roamStop();
-        }
-      }
-    }
-
-    if (!roamMoved) {
-      if (hasTodo || isDraft) {
-        roamForce = true;
-      }
-      if (stop) {
-        roamLoop = maxLoop;
-        roamLooping = true;
-      }
-    }
-
-    if (stop) {
-      roamLoop--;
-      if (roamLoop &lt;= 0) {
-        roamLooping = false;
-        console.log(&quot;stop at max loops&quot;);
-        return roamStop();
-      }
-      MT.forgetWalkHistory();
-      State.reset();
-      Engine.play(&quot;g1a Bound&quot;);
-      roamForce = false;
-      const neroStart = [
-        { t: &quot;g1a Choose Character&quot; },
-        { t: &quot;n1a Nero Start&quot; },
-      ];
-      MT.roamStart(neroStart, () =&gt; {
-        MT.roamStart();
-      });
-      return;
-    }
 
     const chosen = $(&quot;#passages .random-walk-chosen&quot;);
     if (chosen.length === 1) {
-      roamMoved = true;
       chosen[0].click();
       setTimeout(roamNext, roamDelay);
       return;
     }
 
-    if (roamLoop &amp;&amp; roamPath != null &amp;&amp; roamPath.length === 0) {
-      roamPath = null;
+    /* show milestone */
+    const here = State.passage;
+    if (milestones.has(here)) {
+      console.log(`milestone ${here}`);
     }
 
+    /* stop on problem */
+    if (MT.hasFails || MT.hasWarnings || $(&quot;.error-view&quot;).length) {
+      console.log(&#39;stopping on problem&#39;);
+      return roamStop();
+    }
+
+    /* stop on to-do (if not forced) */
+    if (!roamForce &amp;&amp; hasTodo()) {
+      console.log(&#39;stopping on to-do&#39;);
+      return roamStop();
+    }
+
+    /* skip comments in path */
     if (roamPath != null) {
       while (roamPath.length &amp;&amp; roamPath[0].t == null) {
         roamPath.shift();
       }
-      if (roamPath.length === 0) {
-        const steps = State.turns;
-        console.log(`path end after ${steps} steps at ${here}`);
-        if (roamDoneFn != null) setTimeout(roamDoneFn);
-        roamStop();
-        return;
-      }
+    }
+
+    /* at end of path */
+    if (roamPath != null &amp;&amp; roamPath.length === 0) {
+      if (roamDoneFn != null) setTimeout(roamDoneFn);
+      reportEnd(&quot;path end&quot;);
+      return roamStop();
+    }
+
+    /* follow path */
+    if (roamPath != null) {
       const next = roamPath[0];
       const links = $(&quot;#story a[data-passage]&quot;);
       const isStep = (el, step) =&gt; {
@@ -12111,16 +12100,18 @@ function initRandomWalk() {
           return;
         }
       }
-
-      let msg = `Broken path: ${JSON.stringify(next)}`;
+      MT.warn(`Broken path: ${JSON.stringify(next)}`);
       MT.warn(msg);
+    }
+
+    /* stop at stop passage */
+    if (tags().includes(&quot;roam-stop&quot;)) {
+      reportEnd(&quot;roam-stop&quot;);
+      if (roamDoneFn != null) setTimeout(roamDoneFn);
       return roamStop();
     }
 
-    if (milestones.has(here)) {
-      console.log(`milestone ${here}`);
-    }
-
+    /* pick a random link */
     if (goRandom(false)) {
       setTimeout(roamNext, roamDelay);
       return;
@@ -18265,9 +18256,7 @@ or
 &lt;a id=&quot;gsw-email&quot; target=&quot;_blank&quot;&gt;email&lt;/a&gt;
 &lt;&lt;if !_isTranscript&gt;&gt;
   &lt;&lt;script&gt;&gt;
-    console.log(&quot;project status&quot;);
     $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
-      console.log(&quot;project status display&quot;);
       const em = $(&quot;#gsw-email&quot;)[0];
       const a = atob(&#39;eG1haWx0bzo&#39;).slice(1);
       const b = $(&quot;#gsw-fa&quot;)[0].href.slice(-13);

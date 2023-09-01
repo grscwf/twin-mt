@@ -237,12 +237,10 @@ function initRandomWalk() {
     }
   };
 
+  let roamDoneFn = null;
   let roamForce = false;
   let roamLoop = 0;
-  let roamLooping = false;
-  let roamMoved = false;
   let roamPath = null;
-  let roamDoneFn = null;
 
   const roamDelay = 50;
   const maxLoop = 5;
@@ -256,120 +254,111 @@ function initRandomWalk() {
     }
   };
 
+  function hasTodo() {
+    return MT.isDraft(State.passage) ||
+      /\bX[X]X\b|\bTO[D]O\b/.test($(".passage").text());
+  }
+
+  const startLoop = () => {
+    console.log("# starting new loop");
+    MT.forgetWalkHistory();
+    State.reset();
+    Engine.play("g1a Bound");
+    roamForce = false;
+    const neroStart = [
+      { t: "g1a Choose Character" },
+      { t: "n1a Nero Start" },
+    ];
+    MT.roamStart(neroStart, () => {
+      MT.roamStart(null, () => {
+        roamLoop--;
+        if (roamLoop > 0) startLoop();
+      });
+    });
+  };
+
   const roamStart = MT.roamStart = (path, doneFn, force) => {
-    $("#rw-roam").addClass("rw-roaming");
-    MT.roaming = true;
-    roamForce = force;
-    roamMoved = false;
     roamPath = path;
     roamDoneFn = doneFn;
+    roamForce = force;
+
+    $("#rw-roam").addClass("rw-roaming");
+    MT.roaming = true;
+
+    /* If starting from an ending, start looping. */
+    if (path == null && tags().includes("roam-stop")) {
+      roamLoop = maxLoop;
+      return startLoop();
+    }
+
+    /* If starting from draft or todo, continue past todo */
+    if (path == null && hasTodo()) {
+      roamForce = true;
+    }
+
     setTimeout(roamNext, roamDelay);
   };
 
   const roamStop = () => {
     MT.roaming = false;
-    roamPath = null;
     roamDoneFn = null;
+    roamPath = null;
     $("#rw-roam").removeClass("rw-roaming");
   };
 
+  const reportEnd = reason => {
+    const V = State.variables;
+    console.log(`${reason} after ${State.turns} steps at ${State.passage}`);
+    console.log(`- local + session storage = ${MT.computeSizes()}`);
+    const mp = MT.enumSymbol('MagicPhase', V.n_magicPhase);
+    const mpr = MT.enumSymbol('MagicPhase', V.n_magicPhaseReached);
+    console.log(`- magicPhase ${mp}, ${mpr}`);
+  };
+
   const roamNext = () => {
-    const here = State.passage;
-
     if (!MT.roaming) return roamStop();
-    if (roamMoved && here === Config.passages.start) return roamStop();
-
-    let hasProblem = false;
-    hasProblem = hasProblem || MT.hasFails;
-    hasProblem = hasProblem || MT.hasWarnings;
-    hasProblem = hasProblem || $(".error-view").length !== 0;
-
-    let hasTodo = /\bX[X]X\b|\bTO[D]O\b/.test($(".passage").text());
-
-    const isDraft = MT.isDraft(here);
-    const stop = tags().includes("roam-stop");
-
-    if (roamMoved) {
-      if (hasProblem) {
-        console.log('stopping on problem');
-        return roamStop();
-      }
-      if (!roamForce && (hasTodo || isDraft)) {
-        console.log('stopping on to-do');
-        return roamStop();
-      }
-      if (stop) {
-        const steps = State.turns;
-        const V = State.variables;
-        console.log(`stop after ${steps} steps at ${here}`);
-        console.log(`local + session storage = ${MT.computeSizes()}`);
-        const mp = MT.enumSymbol('MagicPhase', V.n_magicPhase);
-        const mpr = MT.enumSymbol('MagicPhase', V.n_magicPhaseReached);
-        console.log(`- magicPhase ${mp}, ${mpr}`);
-        if (roamLoop <= 0) {
-          if (roamLooping) {
-            roamLooping = false;
-            console.log("stop at max loops");
-          }
-          return roamStop();
-        }
-      }
-    }
-
-    if (!roamMoved) {
-      if (hasTodo || isDraft) {
-        roamForce = true;
-      }
-      if (stop) {
-        roamLoop = maxLoop;
-        roamLooping = true;
-      }
-    }
-
-    if (stop) {
-      roamLoop--;
-      if (roamLoop <= 0) {
-        roamLooping = false;
-        console.log("stop at max loops");
-        return roamStop();
-      }
-      MT.forgetWalkHistory();
-      State.reset();
-      Engine.play("g1a Bound");
-      roamForce = false;
-      const neroStart = [
-        { t: "g1a Choose Character" },
-        { t: "n1a Nero Start" },
-      ];
-      MT.roamStart(neroStart, () => {
-        MT.roamStart();
-      });
-      return;
-    }
 
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
-      roamMoved = true;
       chosen[0].click();
       setTimeout(roamNext, roamDelay);
       return;
     }
 
-    if (roamLoop && roamPath != null && roamPath.length === 0) {
-      roamPath = null;
+    /* show milestone */
+    const here = State.passage;
+    if (milestones.has(here)) {
+      console.log(`milestone ${here}`);
     }
 
+    /* stop on problem */
+    if (MT.hasFails || MT.hasWarnings || $(".error-view").length) {
+      console.log('stopping on problem');
+      return roamStop();
+    }
+
+    /* stop on to-do (if not forced) */
+    if (!roamForce && hasTodo()) {
+      console.log('stopping on to-do');
+      return roamStop();
+    }
+
+    /* skip comments in path */
     if (roamPath != null) {
       while (roamPath.length && roamPath[0].t == null) {
         roamPath.shift();
       }
-      if (roamPath.length === 0) {
-        const steps = State.turns;
-        console.log(`path end after ${steps} steps at ${here}`);
-        if (roamDoneFn != null) setTimeout(roamDoneFn);
-        roamStop();
-        return;
-      }
+    }
+
+    /* at end of path */
+    if (roamPath != null && roamPath.length === 0) {
+      if (roamDoneFn != null) setTimeout(roamDoneFn);
+      reportEnd("path end");
+      return roamStop();
+    }
+
+    /* follow path */
+    if (roamPath != null) {
       const next = roamPath[0];
       const links = $("#story a[data-passage]");
       const isStep = (el, step) => {
@@ -386,16 +375,18 @@ function initRandomWalk() {
           return;
         }
       }
-
-      let msg = `Broken path: ${JSON.stringify(next)}`;
+      MT.warn(`Broken path: ${JSON.stringify(next)}`);
       MT.warn(msg);
+    }
+
+    /* stop at stop passage */
+    if (tags().includes("roam-stop")) {
+      reportEnd("roam-stop");
+      if (roamDoneFn != null) setTimeout(roamDoneFn);
       return roamStop();
     }
 
-    if (milestones.has(here)) {
-      console.log(`milestone ${here}`);
-    }
-
+    /* pick a random link */
     if (goRandom(false)) {
       setTimeout(roamNext, roamDelay);
       return;
