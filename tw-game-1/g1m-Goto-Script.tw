@@ -121,10 +121,13 @@ State.temporary.walkAll = () => {
   const walks = MT.walks;
   const force = !!$("#walk-force").prop("checked");
   let i = 0;
-  const next = () => {
+  const t0 = Date.now();
+  const startNext = () => {
+    const t1 = Date.now();
     while (i < walks.length && walks[i].path == null) i++;
     if (i >= walks.length) {
-      console.log("done walkAll");
+      const dt = Date.now() - t0;
+      console.log(`done walkAll in ${dt / 1000}s`);
       return;
     }
     const walk = walks[i++];
@@ -134,9 +137,14 @@ State.temporary.walkAll = () => {
     Engine.play("g1a Bound");
     setMeta(walk.meta);
     setVars(walk.vars);
-    MT.roamStart(walk.path, next, force);
+    const done = () => {
+      const dt = Date.now() - t1;
+      console.log(`done path in ${dt / 1000}s`);
+      startNext();
+    };
+    MT.roamStart(walk.path, done, force);
   };
-  next();
+  startNext();
 }
 
 $(document).one(":passagedisplay", () => {
