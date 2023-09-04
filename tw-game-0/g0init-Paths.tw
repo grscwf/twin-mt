@@ -7,8 +7,15 @@
  * type Step = {
  *   t?: string; // passage title
  *   code?: string; // mta/mtl code of the link into this passage
- *   choice?: string; // choice point name
+ *   choice?: string; // choice point label
  * }
+ * 
+ * A choice point is a moment where a significant choice is available.
+ * - The label describes the choice taken by the next step.
+ * - In GOTO, selecting a choice label will traverse past that moment,
+ *   to the next choice.
+ * - If the choice also causes a significant status change,
+ *   the label can be "choice + status"
  */
 
 const pathIgnore = [
@@ -83,9 +90,11 @@ MT.pathToJs = (path) => {
 }
 
 MT.pathName = (path) => {
-  const choices = path.filter(st => st.choice != null).map(st => st.choice);
-  if (choices.length) {
-    return "> " + choices.join(" > ");
+  const labels =
+    path.filter(st => st != null)
+    .map(st => st.choice);
+  if (labels.length) {
+    return "> " + labels.join(" > ");
   }
   const titles = path.filter(st => st.t != null).map(st => st.t);
   return "> " + titles.join(" > ");
