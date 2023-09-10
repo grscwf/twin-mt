@@ -51,18 +51,19 @@
 <<script>>
 
 /**
- * Create a scratch state with g_isArchive === true,
+ * Create a scratch state with _isArchive === true,
  * evaluate script, then render passage to dest.
  */
 MT.arcRender = (dest, passage, script) => {
   MT.untraced(() => {
     const text = Story.get(passage).text;
-    // we can set the variables obj, but we can't set the temporaries obj
+    // we can change the variables obj, but we can't change the temporaries obj
     const savedVars = State.active.variables;
     const savedTemp = Object.entries(State.temporary);
     try {
-      State.active.variables = { g_isArchive: true };
+      State.active.variables = {};
       State.clearTemporary();
+      State.temporary.isArchive = true;
       if (script != null) {
         $(dest).wiki(`<<run ${script}>>`);
       }
@@ -84,8 +85,7 @@ MT.arcRender = (dest, passage, script) => {
 Macro.add("arc-only", {
   tags: [],
   handler: function() {
-    const V = State.variables;
-    if (V.g_isArchive) {
+    if (State.temporary.isArchive) {
       $(this.output).wiki(this.payload[0].contents);
     }
   }
@@ -98,8 +98,7 @@ Macro.add("arc-only", {
 Macro.add("arc-skip", {
   tags: [],
   handler: function() {
-    const V = State.variables;
-    const mkp = V.g_isArchive ? "" : this.payload[0].contents;
+    const mkp = State.temporary.isArchive ? "" : this.payload[0].contents;
     // this will add debug markers around the output
     $(this.output).wiki(mkp);
   }
