@@ -407,6 +407,8 @@
      previous playthroughs.
      - This is mostly to nudge players away from bad or weak paths that
        are not significant enough to be easily remembered.
+- In debug mode, links within `<<mt-seen>>` will have a dashed underline,
+  to help you check whether it's sensible for them to be marked or not.
 
 ## Rationales
 
