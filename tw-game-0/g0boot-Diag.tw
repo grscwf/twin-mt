@@ -17,22 +17,34 @@ const messages = [];
 
 MT.diag = (...args) => {
   console.log(args);
-  messages.push(args.map(a => String(a)).join(" "));
+  messages.push(args.map(a =>
+    typeof a === "string" ? a : JSON.stringify(a)
+  ).join(" "));
 };
 
-function diagReport() {
+/** Show diag messages */
+MT.diagReport = () => {
   $("#mt-diag").remove();
-  if (!messages.length) return;
-
-  const div = $("<div id=mt-diag>").prependTo("#story");
-  for (const msg of messages) {
-    $("<div>").text(msg).appendTo(div);
+  if (messages.length) {
+    const div = $("<div id=mt-diag>").prependTo("#story");
+    for (const msg of messages) {
+      $("<div>").text(msg).appendTo(div);
+    }
   }
-  messages.length = 0;
+}
+
+/** Clear diag messages that were shown */
+function diagClear() {
+  const div = $("#mt-diag");
+  if (div.length) {
+    div.remove();
+    messages.length = 0;
+  }
 }
 
 function diagInit() {
-  $(document).on(":passageend", diagReport);
+  $(document).on(":passageend", MT.diagReport);
+  $(document).on(":passageinit", diagClear);
 }
 
 diagInit();

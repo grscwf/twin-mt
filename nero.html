@@ -442,7 +442,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -7181,22 +7181,34 @@ const messages = [];
 
 MT.diag = (...args) =&gt; {
   console.log(args);
-  messages.push(args.map(a =&gt; String(a)).join(&quot; &quot;));
+  messages.push(args.map(a =&gt;
+    typeof a === &quot;string&quot; ? a : JSON.stringify(a)
+  ).join(&quot; &quot;));
 };
 
-function diagReport() {
+/** Show diag messages */
+MT.diagReport = () =&gt; {
   $(&quot;#mt-diag&quot;).remove();
-  if (!messages.length) return;
-
-  const div = $(&quot;&lt;div id=mt-diag&gt;&quot;).prependTo(&quot;#story&quot;);
-  for (const msg of messages) {
-    $(&quot;&lt;div&gt;&quot;).text(msg).appendTo(div);
+  if (messages.length) {
+    const div = $(&quot;&lt;div id=mt-diag&gt;&quot;).prependTo(&quot;#story&quot;);
+    for (const msg of messages) {
+      $(&quot;&lt;div&gt;&quot;).text(msg).appendTo(div);
+    }
   }
-  messages.length = 0;
+}
+
+/** Clear diag messages that were shown */
+function diagClear() {
+  const div = $(&quot;#mt-diag&quot;);
+  if (div.length) {
+    div.remove();
+    messages.length = 0;
+  }
 }
 
 function diagInit() {
-  $(document).on(&quot;:passageend&quot;, diagReport);
+  $(document).on(&quot;:passageend&quot;, MT.diagReport);
+  $(document).on(&quot;:passageinit&quot;, diagClear);
 }
 
 diagInit();
@@ -9240,10 +9252,11 @@ function deleteUnknownMetadata() {
   const rec = MT.mdRecord();
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
-      console.warn(&quot;removing unknown metadata&quot;, {k, v});
+      MT.diag(&quot;Warning: removing unknown metadata:&quot;, {[k]: v});
       State.metadata.delete(k);
     }
   }
+  MT.diagReport();
 }
 
 function deleteOldStorage() {
