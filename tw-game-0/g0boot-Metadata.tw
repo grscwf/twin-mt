@@ -3,7 +3,7 @@
 /*----------------
  * This module manages game metadata.
  * It's mostly a wrapper around SugarCube's metadata, with:
- * - "clear metadata" that preserves keys marked PRESERVED.
+ * - "clear metadata" that preserves keys marked IGNORED.
  * - saving and loading keys marked SAVED to saved games.
  * - copying metadata to State.variables for easy access and debug tooling.
  *
@@ -15,7 +15,7 @@
 // metadata types
 const UNSAVED = 1;
 const SAVED = 2;
-const PRESERVED = 3;
+const IGNORED = 3;
 
 /** metadata key -> metadata type. */
 const knownKeys = {};
@@ -40,9 +40,9 @@ function warnKnownKey(key) {
 
 /**
  * Defines `key` to be UNSAVED metadata, which means:
- * - it persists across game resets.
- * - it doesn't get stored in saved games.
- * - it gets deleted by "clear metadata".
+ * - it ISN'T stored in saved games.
+ * - it IS mirrored to State.variables.
+ * - it IS deleted by "clear metadata".
 */
 MT.mdDefUnsaved = (key) => {
   if (warnKnownKey(key)) return;
@@ -51,11 +51,11 @@ MT.mdDefUnsaved = (key) => {
 
 /**
  * Defines `key` to be SAVED metadata, which means;
- * - it persists across game resets.
- * - it gets stored in saved games.
+ * - it IS stored in saved games.
+ * - it IS mirrored to State.variables.
+ * - it ISt deleted by "clear metadata".
  * - loading a saved game will set its value from the saved game,
  *   but only if it isn't already set.
- * - it gets deleted by "clear metadata".
  */
 MT.mdDefSaved = (key) => {
   if (warnKnownKey(key)) return;
@@ -63,14 +63,14 @@ MT.mdDefSaved = (key) => {
 };
 
 /**
- * Defines `key` to be PRESERVED metadata, which means:
- * - it persists across game resets.
- * - it doesn't get stored in saved games.
- * - it doesn't get deleted by "clear metadata".
+ * Defines `key` to be IGNORED metadata, which means:
+ * - it ISN'T stored in saved games.
+ * - it ISN'T mirrored to State.variables.
+ * - it ISN'T deleted by "clear metadata".
  */
-MT.mdDefPreserved = (key) => {
+MT.mdDefIgnored = (key) => {
   if (warnKnownKey(key)) return;
-  knownKeys[key] = PRESERVED;
+  knownKeys[key] = IGNORED;
 };
 
 /** True if `key` is a known metadata key. */
@@ -107,7 +107,9 @@ MT.mdSet = (key, value) => {
   warnUnknownKey(key);
   if (value) {
     State.metadata.set(key, value);
-    State.variables[key] = value;
+    if (knownKeys[key] !== IGNORED) {
+      State.variables[key] = value;
+    }
   } else {
     State.metadata.delete(key);
     delete State.variables[key];
@@ -124,13 +126,13 @@ MT.mdRecord = () => {
   return Object.fromEntries(MT.mdEntries());
 };
 
-/** Deletes all metadata, except for PRESERVED keys and unknown keys. */
+/** Deletes all metadata, except for IGNORED keys and unknown keys. */
 MT.mdClear = () => {
   const preserve = [];
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
     warnUnknownKey(key);
-    if (knownKeys[key] === PRESERVED) {
+    if (knownKeys[key] === IGNORED) {
       preserve.push([key, value]);
     }
   }

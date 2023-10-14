@@ -442,7 +442,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=story-version&gt;
   v2.20220929.0
@@ -7299,7 +7299,7 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
 /*----------------
  * This module manages game metadata.
  * It&#39;s mostly a wrapper around SugarCube&#39;s metadata, with:
- * - &quot;clear metadata&quot; that preserves keys marked PRESERVED.
+ * - &quot;clear metadata&quot; that preserves keys marked IGNORED.
  * - saving and loading keys marked SAVED to saved games.
  * - copying metadata to State.variables for easy access and debug tooling.
  *
@@ -7311,7 +7311,7 @@ $(document).on(&quot;:passagestart&quot;, () =&gt; {
 // metadata types
 const UNSAVED = 1;
 const SAVED = 2;
-const PRESERVED = 3;
+const IGNORED = 3;
 
 /** metadata key -&gt; metadata type. */
 const knownKeys = {};
@@ -7336,9 +7336,9 @@ function warnKnownKey(key) {
 
 /**
  * Defines `key` to be UNSAVED metadata, which means:
- * - it persists across game resets.
- * - it doesn&#39;t get stored in saved games.
- * - it gets deleted by &quot;clear metadata&quot;.
+ * - it ISN&#39;T stored in saved games.
+ * - it IS mirrored to State.variables.
+ * - it IS deleted by &quot;clear metadata&quot;.
 */
 MT.mdDefUnsaved = (key) =&gt; {
   if (warnKnownKey(key)) return;
@@ -7347,11 +7347,11 @@ MT.mdDefUnsaved = (key) =&gt; {
 
 /**
  * Defines `key` to be SAVED metadata, which means;
- * - it persists across game resets.
- * - it gets stored in saved games.
+ * - it IS stored in saved games.
+ * - it IS mirrored to State.variables.
+ * - it ISt deleted by &quot;clear metadata&quot;.
  * - loading a saved game will set its value from the saved game,
  *   but only if it isn&#39;t already set.
- * - it gets deleted by &quot;clear metadata&quot;.
  */
 MT.mdDefSaved = (key) =&gt; {
   if (warnKnownKey(key)) return;
@@ -7359,14 +7359,14 @@ MT.mdDefSaved = (key) =&gt; {
 };
 
 /**
- * Defines `key` to be PRESERVED metadata, which means:
- * - it persists across game resets.
- * - it doesn&#39;t get stored in saved games.
- * - it doesn&#39;t get deleted by &quot;clear metadata&quot;.
+ * Defines `key` to be IGNORED metadata, which means:
+ * - it ISN&#39;T stored in saved games.
+ * - it ISN&#39;T mirrored to State.variables.
+ * - it ISN&#39;T deleted by &quot;clear metadata&quot;.
  */
-MT.mdDefPreserved = (key) =&gt; {
+MT.mdDefIgnored = (key) =&gt; {
   if (warnKnownKey(key)) return;
-  knownKeys[key] = PRESERVED;
+  knownKeys[key] = IGNORED;
 };
 
 /** True if `key` is a known metadata key. */
@@ -7403,7 +7403,9 @@ MT.mdSet = (key, value) =&gt; {
   warnUnknownKey(key);
   if (value) {
     State.metadata.set(key, value);
-    State.variables[key] = value;
+    if (knownKeys[key] !== IGNORED) {
+      State.variables[key] = value;
+    }
   } else {
     State.metadata.delete(key);
     delete State.variables[key];
@@ -7420,13 +7422,13 @@ MT.mdRecord = () =&gt; {
   return Object.fromEntries(MT.mdEntries());
 };
 
-/** Deletes all metadata, except for PRESERVED keys and unknown keys. */
+/** Deletes all metadata, except for IGNORED keys and unknown keys. */
 MT.mdClear = () =&gt; {
   const preserve = [];
   const entries = State.metadata.entries() || [];
   for (const [key, value] of entries) {
     warnUnknownKey(key);
-    if (knownKeys[key] === PRESERVED) {
+    if (knownKeys[key] === IGNORED) {
       preserve.push([key, value]);
     }
   }
@@ -11376,7 +11378,7 @@ MT.selectedText = &quot;&quot;;
 
 const popupTitle = &quot;g1m Notes Popup&quot;;
 
-MT.mdDefPreserved(&quot;notes&quot;);
+MT.mdDefIgnored(&quot;notes&quot;);
 
 // State.metadata.get always deflates and deserializes from localStorage, but:
 // - we almost always want the localStorage value that might be modified
