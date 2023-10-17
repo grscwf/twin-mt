@@ -3,23 +3,15 @@
 
 /**
  * <<checkpoint-save varName description>>
- * Store current state to varName, and announce the checkpoint.
+ * Store current turn and description in varName, and announce the checkpoint.
  */
 Macro.add("checkpoint-save", {
   handler: function() {
-    const [varName, description] = this.args;
-    let mkp = `<meta-text>Checkpoint: ${description}</meta-text>`;
+    const [varName, desc] = this.args;
+    let mkp = `<meta-text>Checkpoint: ${desc}</meta-text>`;
     mkp += `?P`;
     $(this.output).wiki(mkp);
-    MT.untraced(() => {
-      delete State.variables[varName];
-      const save = State.marshalForSave();
-      if (!save.delta) {
-        save.delta = State.deltaEncode(save.history);
-        delete save.history;
-      }
-      State.variables[varName] = JSON.stringify({ description, save });
-    });
+    State.variables[varName] = { desc, turn: State.turns };
   }
 });
 
@@ -30,39 +22,40 @@ Macro.add("checkpoint-save", {
 Macro.add("checkpoint-action", {
   handler: function() {
     const [varName] = this.args;
-    MT.untraced(() => {
-      const json = State.variables[varName];
-      if (!json) return;
-      const obj = JSON.parse(json);
-      let mkp = `<li>`;
-      mkp += `<<link "Try again from Checkpoint: ${obj.description}.">>`;
+    const cp = State.variables[varName];
+    const lost = State.turns - State.length;
+    if (cp.turn < lost) {
+      let mkp = `<<mtl-denied "Try again from Checkpoint: ${cp.desc}"`;
+      mkp += ` "forgotten somehow?">>`;
+      $(this.output).wiki(mkp);
+    } else {
+      let mkp = '<li>';
+      mkp += `<<link "Try again from Checkpoint: ${cp.desc}.">>`;
       mkp += `<<checkpoint-load ${varName}>>`;
       mkp += `<</link>>`;
       mkp += `</li>`;
       $(this.output).wiki(mkp);
-    });
+    }
   }
 });
 
 /**
  * <<checkpoint-load varName>>
- * Loads state stored in varName.
+ * Goes to turn stored in varName.
  */
 Macro.add("checkpoint-load", {
   handler: function() {
     const [varName] = this.args;
-    MT.untraced(() => {
-      const json = State.variables[varName];
-      if (!json) return;
-      const obj = JSON.parse(json);
-      const save = obj.save;
-      if (save.delta) {
-        save.history = State.deltaDecode(save.delta);
-      }
-      State.unmarshalForSave(obj.save);
-      Engine.show();
-    });
+    const cp = State.variables[varName];
+    const lost = State.turns - State.length;
+    if (cp.turn < lost) {
+      MT.diag(`Sorry! Checkpoint: ${cp.desc} (turn ${cp.turn})`
+        + ` is no longer in the history`);
+      MT.diagReport();
+    } else {
+      Engine.goTo(cp.turn - lost - 1);
+    }
   }
-})
+});
 
 <</script>>
