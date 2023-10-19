@@ -134,7 +134,7 @@
 
 ## Debug controls
 
-- Adding `?debug` or `?tester` to the URL will turn on some debug controls.
+- Adding `?debug` or `?playtest` to the URL will turn on some debug controls.
 - `?debug` mode turns on several features:
   - The top has a "var-info" display.
   - The right side has several buttons.
@@ -144,7 +144,7 @@
   - The bottom right is SugarCube's debug panel, which is somewhat redundant,
     but there are a few things it can do that aren't easy to do with the
     other debug controls.
-- `?tester` mode is a subset of `?debug`, enabling some controls that
+- `?playtest` mode is a subset of `?debug`, enabling some controls that
   are useful for play-testing, without spoilers.
 
 ### Right side buttons
