@@ -4,16 +4,43 @@
 <style>
 
 .trail-group {
-  margin-bottom: 0.5rem;
+  line-height: 1.2;
+  margin-bottom: 16px;
 }
 
 .trail-item {
   border: 1px solid #444;
   border-radius: 2px;
   display: inline-block;
-  margin-left: 2px;
-  height: 1rem;
-  width: 1rem;
+  height: 40px;
+  width: 40px;
+}
+.trail-item:not(:last-child) {
+  margin-right: 4px;
+}
+@media (pointer: fine) {
+  .trail-item {
+    height: 20px;
+    width: 20px;
+  }
+}
+
+.trail-small-box {
+  border: 1px solid #444;
+  border-radius: 2px;
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+}
+
+.trail-current {
+  background-color: #ca2;
+}
+.trail-recent {
+  background-color: #5a3;
+}
+.trail-all {
+  background-color: #559;
 }
 
 </style>
@@ -48,11 +75,7 @@ function gatherPassages() {
     sections[sect] ||= [];
     sections[sect].push(p.title);
 
-    const coords = p.element.attributes.position.value.split(",");
-    const x = parseInt(coords[0], 10);
-    const y = parseInt(coords[1], 10);
-
-    passageInfo[p.title] = { sect, x, y };
+    passageInfo[p.title] = { };
   }
 
   sectNames.push(... Object.keys(sections).sort());
@@ -63,11 +86,14 @@ function gatherPassages() {
 }
 
 MT.trailRender = (out) => {
+  const current = new Set(State.history.map(m => m.title));
+
   for (const sect of sectNames) {
     const group = $(`<div class=trail-group>`).appendTo(out);
     for (const title of sections[sect]) {
       const item = $(`<div class=trail-item>`)
         .attr("title", title)
+        .toggleClass("trail-current", current.has(title))
         .appendTo(group);
     }
   }

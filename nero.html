@@ -453,7 +453,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -499,7 +499,7 @@ runInit(/^g0init /);
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;if setup.debug&gt;&gt;
-  &lt;&lt;mta &quot;g1m Trail&quot;&gt;&gt;&amp;#x1f527; Trail&lt;&lt;/mta&gt;&gt;
+  &lt;&lt;mta &quot;g1m Trail&quot;&gt;&gt;&amp;#x1f527; Player Trail&lt;&lt;/mta&gt;&gt;
   &lt;&lt;mta &quot;g1m Goto&quot;&gt;&gt;&amp;#x1f527; Goto&lt;&lt;/mta&gt;&gt;
   &lt;&lt;mta &quot;g1m Dashboard&quot;&gt;&gt;&amp;#x1f527; Dashboard&lt;&lt;/mta&gt;&gt;
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="d0a Drekkar Ending Index" tags="inclusion" position="700,1900" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -13026,16 +13026,43 @@ Template.add(&quot;restartAction&quot;,
 &lt;style&gt;
 
 .trail-group {
-  margin-bottom: 0.5rem;
+  line-height: 1.2;
+  margin-bottom: 16px;
 }
 
 .trail-item {
   border: 1px solid #444;
   border-radius: 2px;
   display: inline-block;
-  margin-left: 2px;
-  height: 1rem;
-  width: 1rem;
+  height: 40px;
+  width: 40px;
+}
+.trail-item:not(:last-child) {
+  margin-right: 4px;
+}
+@media (pointer: fine) {
+  .trail-item {
+    height: 20px;
+    width: 20px;
+  }
+}
+
+.trail-small-box {
+  border: 1px solid #444;
+  border-radius: 2px;
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+}
+
+.trail-current {
+  background-color: #ca2;
+}
+.trail-recent {
+  background-color: #5a3;
+}
+.trail-all {
+  background-color: #559;
 }
 
 &lt;/style&gt;
@@ -13070,11 +13097,7 @@ function gatherPassages() {
     sections[sect] ||= [];
     sections[sect].push(p.title);
 
-    const coords = p.element.attributes.position.value.split(&quot;,&quot;);
-    const x = parseInt(coords[0], 10);
-    const y = parseInt(coords[1], 10);
-
-    passageInfo[p.title] = { sect, x, y };
+    passageInfo[p.title] = { };
   }
 
   sectNames.push(... Object.keys(sections).sort());
@@ -13085,11 +13108,14 @@ function gatherPassages() {
 }
 
 MT.trailRender = (out) =&gt; {
+  const current = new Set(State.history.map(m =&gt; m.title));
+
   for (const sect of sectNames) {
     const group = $(`&lt;div class=trail-group&gt;`).appendTo(out);
     for (const title of sections[sect]) {
       const item = $(`&lt;div class=trail-item&gt;`)
         .attr(&quot;title&quot;, title)
+        .toggleClass(&quot;trail-current&quot;, current.has(title))
         .appendTo(group);
     }
   }
@@ -18594,7 +18620,26 @@ hello some more
 
 &lt;&lt;sticky-return&gt;&gt;
 
-XXX need foldable explanation
+&lt;h1&gt;Player Trail&lt;/h1&gt;
+
+This is a record of what parts of the story have been seen.
+Each square represents a page in the story.
+
+&lt;br&gt;
+Clicking on a square will show more information about the page.
+
+&lt;br&gt;
+&lt;span class=nobr&gt;
+  &lt;span class=&quot;trail-small-box trail-current&quot;&gt;&lt;/span&gt; current playthrough
+&lt;/span&gt;
+&amp;nbsp;
+&lt;span class=nobr&gt;
+  &lt;span class=&quot;trail-small-box trail-recent&quot;&gt;&lt;/span&gt; recent playthroughs
+&lt;/span&gt;
+&amp;nbsp;
+&lt;span class=nobr&gt;
+  &lt;span class=&quot;trail-small-box trail-all&quot;&gt;&lt;/span&gt; all playthroughs
+&lt;/span&gt;
 
 ?P
 
