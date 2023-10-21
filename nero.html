@@ -453,7 +453,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -13022,35 +13022,82 @@ Template.add(&quot;restartAction&quot;,
   `&lt;&lt;run Engine.restart()&gt;&gt;` +
   `&lt;&lt;/link&gt;&gt;&lt;/li&gt;`);
 
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="209" name="g0init Trail" tags="inclusion" position="675,1100" size="100,100">&lt;&lt;script&gt;&gt;
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="209" name="g0init Trail" tags="inclusion" position="675,1100" size="100,100">&lt;&lt;append head&gt;&gt;
+&lt;style&gt;
 
-function getVariants(text) {
-  return [];
+.trail-group {
+  margin-bottom: 0.5rem;
 }
 
-MT.trailList = () =&gt; {
-  let mkp = &quot;&lt;&lt;nobr&gt;&gt;&quot;;
+.trail-item {
+  border: 1px solid #444;
+  border-radius: 2px;
+  display: inline-block;
+  margin-left: 2px;
+  height: 1rem;
+  width: 1rem;
+}
 
-  const all = Story.lookup()
-    .filter(p =&gt;
-      !p.tags.includes(&quot;inclusion&quot;) &amp;&amp;
-      !p.tags.includes(&quot;is-menu&quot;) &amp;&amp;
-      !p.tags.includes(&quot;mt-sketch&quot;) &amp;&amp;
-      /^[n]\d/.test(p.title)
-    )
-    .map(p =&gt; p.title);
-  all.sort();
+&lt;/style&gt;
+&lt;&lt;/append&gt;&gt;
 
-  for (const title of all) {
-    mkp += `&lt;div class=trail-item&gt;${title}&lt;/div&gt;`;
+&lt;&lt;script&gt;&gt;
+
+/** Record of passage title -&gt; info */
+const passageInfo = {};
+
+/** Ordered list of section names */
+const sectNames = [];
+
+/** Record of section name -&gt; array of titles */
+const sections = {};
+
+/** expose state for easier debugging */
+MT.trail = { passageInfo, sectNames, sections }
+
+function gatherPassages() {
+  const all = Story.lookup();
+
+  for (const p of all) {
+    if (p.tags.includes(&quot;inclusion&quot;)) continue;
+    if (p.tags.includes(&quot;is-menu&quot;)) continue;
+    if (p.tags.includes(&quot;mt-sketch&quot;)) continue;
+
+    const m = /^[n]\d\w*\b/.exec(p.title);
+    if (m == null) continue;
+
+    const sect = m[0];
+    sections[sect] ||= [];
+    sections[sect].push(p.title);
+
+    const coords = p.element.attributes.position.value.split(&quot;,&quot;);
+    const x = parseInt(coords[0], 10);
+    const y = parseInt(coords[1], 10);
+
+    passageInfo[p.title] = { sect, x, y };
   }
 
-  mkp += &quot;&lt;&lt;/nobr&gt;&gt;&quot;;
-  return mkp;
+  sectNames.push(... Object.keys(sections).sort());
+
+  for (const titles of Object.values(sections)) {
+    titles.sort();
+  }
+}
+
+MT.trailRender = (out) =&gt; {
+  for (const sect of sectNames) {
+    const group = $(`&lt;div class=trail-group&gt;`).appendTo(out);
+    for (const title of sections[sect]) {
+      const item = $(`&lt;div class=trail-item&gt;`)
+        .attr(&quot;title&quot;, title)
+        .appendTo(group);
+    }
+  }
 };
 
 function trailInit() {
   if (!setup.playtest) return;
+  gatherPassages();
 }
 
 trailInit();
@@ -18547,7 +18594,13 @@ hello some more
 
 &lt;&lt;sticky-return&gt;&gt;
 
-&lt;&lt;= MT.trailList()&gt;&gt;
+XXX need foldable explanation
+
+?P
+
+&lt;&lt;script&gt;&gt;
+  MT.trailRender(output)
+&lt;&lt;/script&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="235" name="g1m Transcript" tags="is-menu" position="250,1875" size="100,100">&lt;&lt;nobr&gt;&gt;
 
