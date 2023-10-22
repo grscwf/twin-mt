@@ -1,0 +1,55 @@
+:: g0init Tab Id [inclusion] {"position":"775,1100","size":"100,100"}
+<<script>>
+/*
+ * A tabId is a small integer identifying the current tab,
+ * distinct from other tabs playing the same game.
+ *
+ * The complication is:
+ * - If the player duplicates a tab, one of the tabs should
+ *   get a new tab id.
+ * - If the player reloads a tab, the tab should usually keep
+ *   the same tab id.
+ */
+
+let tabId = null;
+const myLease = Date.now();
+
+/* This should be small, but larger than the expected number of open tabs. */
+const MAX_ID = 20;
+
+/* on page load */
+function tabIdInit() {
+  const leases = JSON.parse(localStorage.getItem("tabIdLeases") || "[]");
+
+  /* retrieve tabId, or allocate a new one */
+  tabId = JSON.parse(sessionStorage.getItem("tabId") || "null");
+  if (tabId == null) {
+    /* if we've allocated too many ids, force everyone to reset. */
+    if (leases.length === MAX_ID) {
+      leases = [];
+    }
+    tabId = leases.length;
+  }
+
+  /* claim the tabId */
+  leases[tabId] = myLease;
+  localStorage.setItem("tabIdLeases", JSON.stringify(leases));
+  sessionStorage.setItem("tabId", JSON.stringify(tabId));
+}
+
+MT.getTabId = () => {
+  /* check if we still have the lease */
+  const leases = JSON.parse(localStorage.getItem("tabIdLeases") || "[]");
+  if (leases[tabId] !== myLease) {
+    /* someone else has it, get a new tabId */
+    tabId = leases.length;
+    leases[tabId] = myLease;
+    localStorage.setItem("tabIdLeases", JSON.stringify(leases));
+    sessionStorage.setItem("tabId", JSON.stringify(tabId));
+  }
+  return tabId;
+};
+
+tabIdInit();
+
+<</script>>
