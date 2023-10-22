@@ -453,7 +453,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
   v2.20220929.0
@@ -13103,6 +13103,7 @@ const sectInfo = {
     use: &quot;n9a&quot;,
   },
   n1a: {
+    alwaysShow: true,
     preamble: &quot;Nero First Floor&quot;,
     title: &quot;Beginning&quot;,
   },
@@ -13250,17 +13251,17 @@ MT.trailClearRecent = () =&gt; {
   MT.mdSet(&quot;mg_trail&quot;, trail);
 };
 
-MT.trailEraseAll = () =&gt; {
+MT.trailEraseOlder = () =&gt; {
   const trail = MT.trailGet();
+  trail.events.splice(0, trail.recent);
   trail.recent = 0;
-  trail.events = [];
   MT.mdSet(&quot;mg_trail&quot;, trail);
 };
 
 MT.trailRender = (out) =&gt; {
   const current = new Set(State.history.map(m =&gt; m.title));
   const recent = new Set();
-  const all = new Set();
+  const older = new Set();
 
   const trail = MT.trailGet();
   for (let i = 0, n = trail.events.length; i &lt; n; i++) {
@@ -13268,14 +13269,15 @@ MT.trailRender = (out) =&gt; {
     if (ev.title == null) continue;
     if (current.has(ev.title)) continue;
     if (i &lt; trail.recent) {
-      all.add(ev.title)
+      older.add(ev.title)
     } else {
+      older.delete(ev.title);
       recent.add(ev.title);
     }
   }
 
   let hasRecent = false;
-  let hasAll = false;
+  let hasOlder = false;
   for (const sect of sectNames) {
     if (sectInfo[sect].preamble) {
       $(`&lt;div class=trail-preamble&gt;`)
@@ -13290,21 +13292,23 @@ MT.trailRender = (out) =&gt; {
       const item = $(`&lt;div class=trail-item&gt;`)
         .toggleClass(&quot;trail-current&quot;, current.has(title))
         .toggleClass(&quot;trail-recent&quot;, recent.has(title))
-        .toggleClass(&quot;trail-all&quot;, all.has(title))
+        .toggleClass(&quot;trail-older&quot;, older.has(title))
         .appendTo(group);
       if (setup.debug) {
         item.attr(&quot;title&quot;, title);
       }
       hasRecent ||= recent.has(title);
-      hasAll ||= all.has(title);
-      anyKnown ||= current.has(title) || recent.has(title) || all.has(title);
+      hasOlder ||= older.has(title);
+      anyKnown ||= current.has(title) || recent.has(title) || older.has(title);
     }
-    if (anyKnown) {
+    if (anyKnown || sectInfo[sect].alwaysShow) {
       groupTitle.text(sectInfo[sect].title)
         .addClass(&quot;trail-group-title-known&quot;);
-    } else {
+    } else if (false) {
       groupTitle.text(sectInfo[sect].title.replace(/./g, &quot;?&quot;))
         .addClass(&quot;trail-group-title-unknown&quot;);
+    } else {
+      group.remove();
     }
   }
 
@@ -13312,16 +13316,41 @@ MT.trailRender = (out) =&gt; {
     $(&quot;#trail-clear-recent&quot;)
       .prop(&quot;disabled&quot;, false)
       .on(&quot;click&quot;, () =&gt; {
-        MT.trailClearRecent();
-        MT.revisitHere();
+        Dialog.setup(&quot;Confirm Clear Recent&quot;);
+        Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
+          This will remove the &quot;recent&quot; marks.
+          The pages will become marked as &quot;older&quot;.
+          ?P
+          &lt;&lt;button &quot;Clear Recent&quot;&gt;&gt;
+            &lt;&lt;run
+              Dialog.close();
+              MT.trailClearRecent();
+              MT.revisitHere();
+            &gt;&gt;
+          &lt;&lt;/button&gt;&gt;
+          &lt;&lt;/nobr&gt;&gt;
+        `);
+        Dialog.open();
       });
   }
-  if (hasRecent || hasAll) {
-    $(&quot;#trail-erase-all&quot;)
+  if (hasRecent || hasOlder) {
+    $(&quot;#trail-erase-older&quot;)
       .prop(&quot;disabled&quot;, false)
       .on(&quot;click&quot;, () =&gt; {
-        MT.trailEraseAll();
-        MT.revisitHere();
+        Dialog.setup(&quot;Confirm Erase Older&quot;);
+        Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
+          This will erase the record of older playthroughs.
+          ?P
+          &lt;&lt;button &quot;Erase Older&quot;&gt;&gt;
+            &lt;&lt;run
+              Dialog.close();
+              MT.trailEraseOlder();
+              MT.revisitHere();
+            &gt;&gt;
+          &lt;&lt;/button&gt;&gt;
+          &lt;&lt;/nobr&gt;&gt;
+        `);
+        Dialog.open();
       });
   }
 };
@@ -18913,7 +18942,7 @@ hello some more
 .trail-recent {
   background-color: #5a3;
 }
-.trail-all {
+.trail-older {
   background-color: #55b;
 }
 .trail-loaded {
@@ -18935,11 +18964,11 @@ hello some more
   Clicking on a square will show more information about the page.
   &lt;br&gt;
   */
-  In beta release, some pages shown here might not be reachable.
+  This is a dev tool, so some pages shown here might not be reachable.
 &lt;/div&gt;
 
 &lt;button disabled id=&quot;trail-clear-recent&quot;&gt;Clear Recent&lt;/button&gt;
-&lt;button disabled id=&quot;trail-erase-all&quot;&gt;Erase All&lt;/button&gt;
+&lt;button disabled id=&quot;trail-erase-older&quot;&gt;Erase Older&lt;/button&gt;
 /* &lt;button disabled id=&quot;trail-forget-all&quot;&gt;Forget Loaded&lt;/button&gt; */
 
 &lt;br&gt;
@@ -18952,7 +18981,7 @@ hello some more
 &lt;/span&gt;
 &amp;nbsp;
 &lt;span class=nobr&gt;
-  &lt;span class=&quot;trail-small-box trail-all&quot;&gt;&lt;/span&gt; all playthroughs
+  &lt;span class=&quot;trail-small-box trail-older&quot;&gt;&lt;/span&gt; older playthroughs
 &lt;/span&gt;
 /*
 &amp;nbsp;
