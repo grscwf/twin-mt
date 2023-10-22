@@ -15,37 +15,51 @@ let tabId = null;
 const myLease = Date.now();
 
 /* This should be small, but larger than the expected number of open tabs. */
-const MAX_ID = 20;
+const MAX_LEASES = 20;
+
+function getLeases() {
+  let leases = JSON.parse(localStorage.getItem("tabIdLeases") || "null");
+  leases ??= { min: 0, values: [] };
+  if (leases.min == null) {
+    leases = { min: 0, values: leases };
+  }
+  return leases;
+}
+
+function newLease(leases) {
+  if (leases.values.length >= MAX_LEASES) {
+    /* force everyone to get new ids */
+    leases.min += leases.values.length;
+    leases.values = [];
+  }
+  return leases.min + leases.values.length;
+}
+
+function claimLease(id, value, leases) {
+  if (id >= leases.min) {
+    leases.values[id - leases.min] = value;
+  }
+  localStorage.setItem("tabIdLeases", JSON.stringify(leases));
+  sessionStorage.setItem("tabId", JSON.stringify(id));
+}
+
+function leaseIsValid(id, value, leases) {
+  return id >= leases.min && leases.values[id - leases.min] === value;
+}
 
 /* on page load */
 function tabIdInit() {
-  const leases = JSON.parse(localStorage.getItem("tabIdLeases") || "[]");
-
-  /* retrieve tabId, or allocate a new one */
+  const leases = getLeases();
   tabId = JSON.parse(sessionStorage.getItem("tabId") || "null");
-  if (tabId == null) {
-    /* if we've allocated too many ids, force everyone to reset. */
-    if (leases.length === MAX_ID) {
-      leases = [];
-    }
-    tabId = leases.length;
-  }
-
-  /* claim the tabId */
-  leases[tabId] = myLease;
-  localStorage.setItem("tabIdLeases", JSON.stringify(leases));
-  sessionStorage.setItem("tabId", JSON.stringify(tabId));
+  tabId ??= newLease(leases);
+  claimLease(tabId, myLease, leases);
 }
 
 MT.getTabId = () => {
-  /* check if we still have the lease */
-  const leases = JSON.parse(localStorage.getItem("tabIdLeases") || "[]");
-  if (leases[tabId] !== myLease) {
-    /* someone else has it, get a new tabId */
-    tabId = leases.length;
-    leases[tabId] = myLease;
-    localStorage.setItem("tabIdLeases", JSON.stringify(leases));
-    sessionStorage.setItem("tabId", JSON.stringify(tabId));
+  const leases = getLeases();
+  if (!leaseIsValid(tabId, myLease, leases)) {
+    tabId = newLease(leases);
+    claimLease(tabId, myLease, leases);
   }
   return tabId;
 };
