@@ -1,52 +1,66 @@
 :: g0init Trail [inclusion] {"position":"675,1100","size":"100,100"}
-
-<<append head>>
-<style>
-
-.trail-group {
-  line-height: 1.2;
-  margin-bottom: 16px;
-}
-
-.trail-item {
-  border: 1px solid #444;
-  border-radius: 2px;
-  display: inline-block;
-  height: 40px;
-  width: 40px;
-}
-.trail-item:not(:last-child) {
-  margin-right: 4px;
-}
-@media (pointer: fine) {
-  .trail-item {
-    height: 20px;
-    width: 20px;
-  }
-}
-
-.trail-small-box {
-  border: 1px solid #444;
-  border-radius: 2px;
-  display: inline-block;
-  height: 10px;
-  width: 10px;
-}
-
-.trail-current {
-  background-color: #ca2;
-}
-.trail-recent {
-  background-color: #5a3;
-}
-.trail-all {
-  background-color: #559;
-}
-
-</style>
-<</append>>
-
 <<script>>
+
+const sectInfo = {
+  n0a: {
+    use: "n9a",
+  },
+  n1a: {
+    preamble: "Nero First Floor",
+    title: "Beginning",
+  },
+  n1cn: {
+    title: "Sparring",
+  },
+  n1cr: {
+    title: "Seducing",
+  },
+  n1cs: {
+    title: "Submitting",
+  },
+  n1cx: {
+    use: "n1d",
+  },
+  n1d: {
+    title: "The Candle",
+  },
+  n1e: {
+    use: "n1d",
+  },
+  n1f: {
+    title: "The Globe",
+  },
+  n1p: {
+    title: "The Cock",
+  },
+  n1s: {
+    title: "The Magic",
+  },
+  n1x: {
+    title: "The Objects",
+  },
+  n1y: {
+    use: "n1x",
+  },
+  n2a: {
+    title: "Alone",
+  },
+  n2b: {
+    use: "n2a",
+  },
+  n2c: {
+    use: "n2a",
+  },
+  n2f: {
+    title: "Free",
+  },
+  n2x: {
+    use: "n1x",
+  },
+  n9a: {
+    title: "Ending",
+  },
+};
 
 /** Record of passage title -> info */
 const passageInfo = {};
@@ -62,7 +76,6 @@ MT.trail = { passageInfo, sectNames, sections }
 
 function gatherPassages() {
   const all = Story.lookup();
-
   for (const p of all) {
     if (p.tags.includes("inclusion")) continue;
     if (p.tags.includes("is-menu")) continue;
@@ -71,7 +84,14 @@ function gatherPassages() {
     const m = /^[n]\d\w*\b/.exec(p.title);
     if (m == null) continue;
 
-    const sect = m[0];
+    let sect = m[0];
+    if (sectInfo[sect] == null) {
+      MT.diag(`Warning: no sectInfo for ${sect}`);
+    }
+    if (sectInfo[sect].use != null) {
+      sect = sectInfo[sect].use;
+    }
+
     sections[sect] ||= [];
     sections[sect].push(p.title);
 
@@ -85,23 +105,127 @@ function gatherPassages() {
   }
 }
 
+MT.trailGet = () => {
+  let trail = MT.mdGetUncached("mg_trail");
+  trail ??= {
+    recent: 0,
+    events: [],
+  };
+  return trail;
+}
+
+MT.trailAddNow = () => {
+  if (MT.untracedGet("g_mutated")) return;
+  const trail = MT.trailGet();
+  const n = trail.events.length;
+  if (n > 0 && trail.events[n - 1].turn === State.turns) return;
+  const event = {
+    tab: MT.getTabId(),
+    title: State.passage,
+    turn: State.turns,
+  };
+  if (MT.trace.wasRead.size > 0) {
+    event.state = {};
+    for (const vn of MT.trace.wasRead) {
+      // Note: current (incoming) state, not active state.
+      event.state[vn] = State.current[vn];
+    }
+  }
+  trail.events.push(event);
+  MT.mdSet("mg_trail", trail);
+};
+
+MT.trailAddOther = ev => {
+  const trail = MT.trailGet();
+  trail.events.push(ev);
+  MT.mdSet("mg_trail", trail);
+};
+
+MT.trailClearRecent = () => {
+  const trail = MT.trailGet();
+  trail.recent = trail.events.length;
+  MT.mdSet("mg_trail", trail);
+};
+
+MT.trailEraseAll = () => {
+  const trail = MT.trailGet();
+  trail.recent = 0;
+  trail.events = [];
+  MT.mdSet("mg_trail", trail);
+};
+
 MT.trailRender = (out) => {
   const current = new Set(State.history.map(m => m.title));
+  const recent = new Set();
+  const all = new Set();
 
+  const trail = MT.trailGet();
+  for (let i = 0, n = trail.events.length; i < n; i++) {
+    const ev = trail.events[i];
+    if (ev.title == null) continue;
+    if (current.has(ev.title)) continue;
+    if (i < trail.recent) {
+      all.add(ev.title)
+    } else {
+      recent.add(ev.title);
+    }
+  }
+
+  let hasRecent = false;
+  let hasAll = false;
   for (const sect of sectNames) {
+    if (sectInfo[sect].preamble) {
+      $(`<div class=trail-preamble>`)
+        .text(sectInfo[sect].preamble)
+        .appendTo(out);
+    }
     const group = $(`<div class=trail-group>`).appendTo(out);
+    const title = $(`<div class=trail-group-title>`)
+      .appendTo(group);
+    let anyKnown = false;
     for (const title of sections[sect]) {
       const item = $(`<div class=trail-item>`)
         .attr("title", title)
         .toggleClass("trail-current", current.has(title))
+        .toggleClass("trail-recent", recent.has(title))
+        .toggleClass("trail-all", all.has(title))
         .appendTo(group);
+      hasRecent ||= recent.has(title);
+      hasAll ||= all.has(title);
+      anyKnown ||= current.has(title) || recent.has(title) || all.has(title);
     }
+    if (anyKnown) {
+      title.text(sectInfo[sect].title)
+        .addClass("trail-group-title-known");
+    } else {
+      title.text(sectInfo[sect].title.replace(/./g, "?"))
+        .addClass("trail-group-title-unknown");
+    }
+  }
+
+  if (hasRecent) {
+    $("#trail-clear-recent")
+      .prop("disabled", false)
+      .on("click", () => {
+        MT.trailClearRecent();
+        MT.revisitHere();
+      });
+  }
+  if (hasRecent || hasAll) {
+    $("#trail-erase-all")
+      .prop("disabled", false)
+      .on("click", () => {
+        MT.trailEraseAll();
+        MT.revisitHere();
+      });
   }
 };
 
 function trailInit() {
   if (!setup.playtest) return;
+  MT.mdDefIgnored("mg_trail");
   gatherPassages();
+  $(document).on(":passageend", MT.trailAddNow);
 }
 
 trailInit();
