@@ -126,10 +126,16 @@ MT.trailAddNow = () => {
   };
   if (MT.trace.wasRead.size > 0) {
     event.state = {};
+    // Note: current (incoming) state, not active state.
+    const CV = State.current.variables;
+    let anySet = false;
     for (const vn of MT.trace.wasRead) {
-      // Note: current (incoming) state, not active state.
-      event.state[vn] = State.current[vn];
+      if (CV[vn] != null) {
+        event.state[vn] = CV[vn];
+        anySet = true;
+      }
     }
+    if (!anySet) delete event.state;
   }
   trail.events.push(event);
   MT.mdSet("mg_trail", trail);
