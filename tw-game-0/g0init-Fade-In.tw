@@ -179,16 +179,26 @@ Macro.add("fade-in", {
       next();
     };
 
-    for (const section of this.payload) {
+    const T = State.temporary;
+
+    for (let i = 0; i < this.payload.length; i++) {
+      const section = this.payload[i];
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
-      if (MT.roaming) delay = 0;
+      if (MT.roaming || T.isArchive) delay = 0;
       const span = $("<span>")
         .addClass("fade-in fade-in-hidden")
         .toggleClass("fade-in-no-dots", noDots)
         .toggleClass("fade-in-no-pulse", noPulse)
         .wiki(section.contents)
         .appendTo(this.output);
+
+      if (T.isArchive || T.isTranscript) {
+        if (i < this.payload.length - 1) {
+          span.find("br:last-child").replaceWith("<hr class=time-sep>");
+        }
+      }
+
       const hurry = ev => {
         if (span.hasClass("fade-in-absorb")) {
           ev.preventDefault();
