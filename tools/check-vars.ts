@@ -53,7 +53,10 @@ type Usages = {
   locs: Record<string, Location[]>;
 };
 
+let positions: Record<string, string> = {};
+
 export async function main() {
+  positions = {};
   const decls = await readDecls(declsFile);
   const nero = rules.find((r) => r.target === "nero.html")!;
   const usages = await scanDirs(nero.dirs);
@@ -96,6 +99,18 @@ async function scanFile(fname: string, usages: Usages) {
   const text = await fsp.readFile(fname, "utf8");
   const m = new RegExp(headerRE).exec(text);
   const title = m == null ? "" : m[1]!;
+
+  if (m != null) {
+    const m2 = /"position":"(\d+,\d+)"/.exec(m[0]);
+    if (m2 != null) {
+      const pos = m2[1]!;
+      if (positions[pos] != null) {
+        console.log(`WARNING: ${title} has same position as ${positions[pos]}`);
+      } else {
+        positions[pos] = title;
+      }
+    }
+  }
 
   const expected = fnameForTitle(title);
   if (expected !== path.basename(fname)) {
