@@ -53,7 +53,7 @@ type Usages = {
   locs: Record<string, Location[]>;
 };
 
-async function main() {
+export async function main() {
   const decls = await readDecls(declsFile);
   const nero = rules.find((r) => r.target === "nero.html")!;
   const usages = await scanDirs(nero.dirs);
@@ -99,7 +99,7 @@ async function scanFile(fname: string, usages: Usages) {
 
   const expected = fnameForTitle(title);
   if (expected !== path.basename(fname)) {
-    console.log(`${fname} expected to have filename ${expected}`);
+    console.log(`WARNING: ${fname} expected to have filename ${expected}`);
   }
 
   const lines = text.split(/\r?\n/);

@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /*
- * ts-node builder.ts [--watch]
+ * ts-node tw-to-html.ts [--watch]
  *
  * Combine .tw files into Twine .html files.
  *
@@ -9,15 +9,16 @@
  */
 
 import { Command } from "@commander-js/extra-typings";
+import ansi from "ansi-colors";
 import chokidar from "chokidar";
 import { createHash } from "crypto";
+import fastGlob from "fast-glob";
 import type { Stats } from "fs";
 import fsp from "fs/promises";
+import { main as checkVars } from "./check-vars";
 import { runP, setupEnv, timestamp } from "./lib";
 import type { Rule } from "./rules";
 import { rules } from "./rules";
-import fastGlob from "fast-glob";
-import ansi from 'ansi-colors';
 
 const buildDelay = 200; // msec
 
@@ -79,7 +80,7 @@ async function buildRule(rule: Rule): Promise<void> {
   let dirs = await fastGlob(rule.dirs, { onlyFiles: false });
   if (rule.omit != null) {
     const omit = await fastGlob(rule.omit, { onlyFiles: false });
-    dirs = dirs.filter(d => !omit.includes(d));
+    dirs = dirs.filter((d) => !omit.includes(d));
   }
   const cmd = `tweego -o ${rule.target} ${dirs.join(" ")}`;
   log(cmd);
@@ -171,7 +172,8 @@ async function watch(force: boolean) {
         return;
       }
       log(`${path} changed, rebuilding ${target}`);
-      rebuild();
+      await rebuild();
+      await checkVars();
     };
     const dirs = await fastGlob(rule.dirs, { onlyFiles: false });
     const watcher = chokidar.watch(dirs, { ignoreInitial: true });
