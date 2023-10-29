@@ -63,6 +63,9 @@ const sectInfo = {
   },
 };
 
+MT.trailMaxEvents = 1000;
+MT.trailMaxFirst = 1000;
+
 /** Record of passage title -> info */
 const passageInfo = {};
 
@@ -106,14 +109,27 @@ function gatherPassages() {
   }
 }
 
+function compact(trail) {
+  const over = trail.events.length - MT.trailMaxEvents;
+  if (over > 0) {
+    const room = trail.first.length - MT.trailMaxFirst;
+    if (room > 0) {
+      const save = trail.events.slice(0, Math.min(room, over));
+      trail.first.push(...save);
+    }
+    trail.events.splice(0, over);
+    trail.recent -= over;
+  }
+}
+
 MT.trailGet = () => {
   let trail = MT.mdGetUncached("mg_trail");
-  trail ??= {
-    recent: 0,
-    events: [],
-  };
+  trail ??= {};
+  trail.recent ??= 0;
+  trail.events ??= [];
+  trail.first ??= [];
   return trail;
-}
+};
 
 MT.trailAddNow = () => {
   if (MT.roaming) return;
@@ -124,8 +140,8 @@ MT.trailAddNow = () => {
   const event = {
     tab: MT.getTabId(),
     time: new Date().toISOString(),
-    title: State.passage,
     turn: State.turns,
+    title: State.passage,
   };
   if (MT.trace.wasRead.size > 0) {
     event.state = {};
@@ -141,6 +157,7 @@ MT.trailAddNow = () => {
     if (!anySet) delete event.state;
   }
   trail.events.push(event);
+  compact(trail);
   MT.mdSet("mg_trail", trail);
 };
 
@@ -151,6 +168,7 @@ MT.trailAddOther = event => {
     time: new Date().toISOString(),
     ...event
   });
+  compact(trail);
   MT.mdSet("mg_trail", trail);
 };
 
@@ -163,6 +181,7 @@ MT.trailClearRecent = () => {
 MT.trailForgetOlder = () => {
   const trail = MT.trailGet();
   trail.events.splice(0, trail.recent);
+  trail.first = [];
   trail.recent = 0;
   MT.mdSet("mg_trail", trail);
 };
@@ -183,6 +202,10 @@ MT.trailRender = (out) => {
       older.delete(ev.title);
       recent.add(ev.title);
     }
+  }
+  for (const ev of trail.first) {
+    if (ev.title == null) continue;
+    older.add(ev.title);
   }
 
   let hasRecent = false;
