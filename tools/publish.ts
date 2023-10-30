@@ -24,7 +24,7 @@ async function main(argv: string[]) {
     await checkVersion();
   }
 
-  const cmd = `rsync -aiL --delete ${src} ${dest}`;
+  const cmd = `rsync -aiL --no-p --chmod=D755,F644 --delete ${src} ${dest}`;
   await runP(cmd, { echo: true });
 }
 
