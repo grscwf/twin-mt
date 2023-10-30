@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /*
- * ts-node publish.ts [--force]
+ * ts-node deploy.ts [--force]
  *
  * Publishes docroot to mt2.canids.net
  */

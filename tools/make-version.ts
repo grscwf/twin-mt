@@ -54,7 +54,7 @@ async function main(argv: string[]) {
   await runP(`git tag "${version}"`, { echo: true });
 
   if (opts.deploy) {
-    await runP(`ts-node ${top}/tools/publish.ts`, { echo: true });
+    await runP(`ts-node ${top}/tools/deploy.ts`, { echo: true });
   }
 
   await fsP.writeFile(storyJS, text);
