@@ -61,7 +61,7 @@ async function main(argv: string[]) {
   await runP(`ts-node ${top}/tools/tw-to-html.ts`)
   await runP(`git commit -am "Revert to ${oldVersion}"`, { echo: true });
   if (opts.push) {
-    await runP(`git push origin HEAD "${version}"`, { echo: true });
+    await runP(`git push origin HEAD "${version}" 2>&1`, { echo: true });
   }
 }
 
