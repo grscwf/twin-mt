@@ -173,6 +173,19 @@ MT.notesGet = (passage) => {
   return split.body;
 };
 
+MT.notesRemoveTrail = (text) => {
+  const start = /^\[player trail\]/m.exec(text);
+  if (start != null) {
+    const end = /\n\[/.exec(text.slice(start.index + 1));
+    if (end != null) {
+      return text.slice(0, start.index) + text.slice(end.index);
+    } else {
+      return text.slice(0, start.index);
+    }
+  }
+  return text;
+};
+
 /** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
 MT.notesTryReplace = (passage, old, val) => {
   const full = MT.notesGetAll();
@@ -224,6 +237,9 @@ function updateStatus() {
 }
 
 function initNotes() {
+  MT.mdDefUnsaved("mg_notesNoTrail");
+  MT.mdDefUnsaved("mg_notesNoTrailTimes");
+
   if (!setup.playtest) return;
   $(document).on(":passagedisplay", renderButton);
 

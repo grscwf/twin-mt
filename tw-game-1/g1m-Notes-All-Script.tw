@@ -1,0 +1,246 @@
+:: g1m Notes All Script [inclusion] {"position":"355,2200","size":"100,100"}
+<<script>>
+  const T = State.temporary;
+  const V = State.variables;
+  const noteStore = window.sessionStorage;
+
+  T.savedVal = "";
+  T.editVal = "";
+  T.hasConflict = false;
+
+  T.canShare = navigator.canShare
+    && navigator.canShare({ title: "1", text: "2" });
+
+  $(document).one(":passagedisplay", () => {
+    $("#notes-input").on("input", onInput);
+    $("#notes-copy").click(copyToClipboard);
+    $("#notes-clean").click(confirmClean);
+    $("#notes-delete").click(confirmDelete);
+    $("#notes-lose").click(confirmLose);
+    $("#notes-overwrite").click(confirmOverwrite);
+    $("#notes-save").click(saveToFile);
+    $("#notes-load").click(loadFromFile);
+    $("#notes-load-file").on("change", loadFilePicked);
+    $("#notes-share").prop("disabled", T.canShare).click(doShare);
+    $("input[name=notes-add-trail]").on("change", toggleTrail);
+    $("input[name=notes-add-trail-times]").on("change", toggleTrailTimes);
+    restoreSession();
+    uiUpdate();
+  });
+
+  function restoreSession() {
+    T.savedVal = MT.notesGetAll();
+    T.editVal = noteStore.getItem("notes-full") || T.savedVal;
+    $("#notes-input").val(T.editVal);
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+
+    const noTrail = MT.mdGetUncached("mg_notesNoTrail");
+    const noTimes = MT.mdGetUncached("mg_notesNoTrailTimes");
+    $("input[name=notes-add-trail]").prop("checked", !noTrail);
+    $("input[name=notes-add-trail-times]").prop("checked", !noTimes);
+    $("input[name=notes-add-trail-times]").prop("disabled", noTrail);
+    renderTrail();
+  }
+
+  function uiUpdate() {
+    $("#notes-conflict").toggleClass("notes-has-conflict", T.hasConflict);
+    if (T.hasConflict) $("#notes-conflict textarea").val(T.savedVal);
+    const hasEdit = T.editVal.trimEnd() !== "";
+    const hasData = T.savedVal.trimEnd() !== "" || hasEdit;
+    const addTrail = $("input[name=notes-add-trail]").prop("checked");
+    $("#notes-delete").prop("disabled", !hasData || T.hasConflict);
+    $("#notes-clean").prop("disabled", !hasEdit);
+    $("#notes-copy").prop("disabled", !hasEdit && !addTrail);
+    $("#notes-save").prop("disabled", !hasEdit && !addTrail);
+    $("#notes-load").prop("disabled", T.hasConflict);
+    $("#notes-share").prop("disabled", !hasEdit && !addTrail);
+  }
+
+  function toggleTrail() {
+    const addTrail = $("input[name=notes-add-trail]").prop("checked");
+    MT.mdSet("mg_notesNoTrail", !addTrail);
+    $("input[name=notes-add-trail-times]").prop("disabled", !addTrail);
+    renderTrail();
+    uiUpdate();
+  }
+
+  function toggleTrailTimes() {
+    const addTimes = $("input[name=notes-add-trail-times").prop("checked");
+    MT.mdSet("mg_notesNoTrailTimes", !addTimes);
+    renderTrail();
+  }
+
+  function renderTrail() {
+    const addTrail = $("input[name=notes-add-trail]").prop("checked");
+    const addTimes = $("input[name=notes-add-trail-times").prop("checked");
+    const textarea = $("#notes-trail");
+    if (!addTrail) {
+      textarea.val("");
+      return;
+    }
+    const trail = MT.mdGetUncached("mg_trail");
+
+    let render = "";
+
+    const addEventList = events => {
+      events.forEach((ev, i) => {
+        if (i !== 0) render += ",\n";
+        if (!addTimes) {
+          ev = Object.assign(ev);
+          delete ev.time;
+        }
+        render += "    " + JSON.stringify(ev);
+      });
+      if (events.length) render += "\n";
+    };
+
+    render += `{\n`;
+    if (trail.first.length) {
+      render += `  "first": [\n`;
+      addEventList(trail.first);
+      render += `  ],\n`;
+    }
+    render += `  "events": [\n`;
+    addEventList(trail.events);
+    render += `  ]\n`;
+    render += "}\n";
+    textarea.val(render);
+  }
+
+  function onInput() {
+    saveValue($("#notes-input").val(), false);
+  }
+
+  function overwriteValue(val) {
+    $("#notes-input").val(val);
+    saveValue(val, true);
+  }
+
+  function saveValue(val, overwrite) {
+    T.editVal = val;
+    if (overwrite || !T.hasConflict) {
+      T.savedVal = MT.notesTryReplaceAll(T.savedVal, T.editVal);
+    }
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    if (T.hasConflict) {
+      noteStore.setItem("notes-full", T.editVal);
+    } else {
+      noteStore.removeItem("notes-full");
+    }
+    uiUpdate();
+  }
+
+  T.doClean = () => {
+    saveValue(MT.notesCleanup(T.editVal), false);
+    $("#notes-input").val(T.editVal);
+  };
+  function confirmClean() {
+    Dialog.setup("Confirm Clean Up");
+    Dialog.wiki(`
+      Clean-up will remove empty notes and sort the remaining notes
+      by passage name.
+      ?P
+      <<button "Clean up">><<run Dialog.close(); _doClean()>><</button>>
+    `);
+    Dialog.open();
+  }
+
+  T.doDelete = () => overwriteValue("");
+  function confirmDelete() {
+    Dialog.setup("Confirm Delete All");
+    Dialog.wiki(`
+      Are you sure you want to delete ALL notes?
+      ?P
+      <<button "Delete all">><<run Dialog.close(); _doDelete()>><</button>>
+    `);
+    Dialog.open();
+  }
+
+  T.doLose = () => overwriteValue(T.savedVal);
+  function confirmLose() {
+    Dialog.setup("Confirm Lose Edits");
+    Dialog.wiki(`
+      Are you sure you want to lose your edits and revert to the conflicting value?
+      ?P
+      <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
+    `);
+    Dialog.open();
+  }
+
+  T.doOverwrite = () => overwriteValue(T.editVal);
+  function confirmOverwrite() {
+    Dialog.setup("Confirm Overwrite Conflict");
+    Dialog.wiki(`
+      Are you sure you want to overwrite the conflicting value with your edits?
+      ?P
+      <<button "Overwrite conflict">><<run Dialog.close(); _doOverwrite()>><</button>>
+    `);
+    Dialog.open();
+  }
+
+  function getText() {
+    let text = T.editVal;
+    if (text.slice(-1) !== "\n") text += "\n";
+
+    const trail = $("#notes-trail").val();
+    if (trail != null && trail !== "") {
+      text += `\n[player trail]\n` + trail;
+    }
+    return text;
+  }
+
+  function copyToClipboard() {
+    const text = getText();
+    navigator.clipboard.writeText(text);
+    Dialog.setup();
+    Dialog.wiki("All notes copied to clipboard");
+    Dialog.open();
+  }
+
+  function makeTitle() {
+    const now = new Date();
+    const yyyy = String(now.getFullYear());
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const HH = String(now.getHours()).padStart(2, "0");
+    const MM = String(now.getMinutes()).padStart(2, "0");
+    const SS = String(now.getSeconds()).padStart(2, "0");
+    const title = `MagesTowerNotes-${yyyy}-${mm}-${dd}-${HH}${MM}${SS}.txt`;
+    return title;
+  }
+
+  function saveToFile() {
+    const fname = makeTitle();
+    const text = getText();
+    const blob = new Blob([text], { type: 'text/plain;charset=UTF-8' });
+    /* saveAs is from filesaver.js, bundled with sugarcube-2 */
+    saveAs(blob, fname);
+  }
+
+  function loadFromFile() {
+    $("#notes-load-file").click();
+  }
+  function loadFilePicked(ev) {
+    const reader = new FileReader();
+    $(reader).one("loadend", () => {
+      if (reader.error) throw reader.error;
+      let text = reader.result;
+      text = MT.notesRemoveTrail(text);
+      overwriteValue(text);
+    });
+    const file = ev.target.files[0];
+    reader.readAsText(file);
+  }
+
+  function doShare() {
+    const title = makeTitle();
+    const text = getText();
+    navigator.share({ title, text });
+  }
+
+  T.switch = () => {
+    $("#notes-detail").toggleClass("notes-hidden");
+    const hidden = $("#notes-detail").hasClass("notes-hidden");
+    $("#notes-switch").text(hidden ? "(more information)" : "(hide)");
+  };
+<</script>>\
