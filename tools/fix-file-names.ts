@@ -23,14 +23,17 @@ async function main() {
 }
 
 async function cyclicRename(renames: Record<string, string>) {
+  renames = Object.assign(renames);
   let keys = Object.keys(renames);
   while (keys.length) {
     const from = keys.pop()!;
     let to = renames[from]!;
+    delete renames[from];
     const todo: [string, string][] = [[from, to]];
     while (renames[to] != null && to !== from) {
       keys = keys.filter(k => k !== to);
       todo.push([to, renames[to]!]);
+      delete renames[to];
       to = renames[to]!;
     }
     if (to === from) {
