@@ -2,7 +2,7 @@
 /*
  * ts-node tw-to-html.ts [--watch]
  *
- * Combine .tw files into Twine .html files.
+ * Combines .tw files into Twine .html files.
  *
  * In watch mode, continually watch .tw files and rebuild if .tw files change.
  * Complains and exits if someone else changes the .html files.
