@@ -14,12 +14,13 @@ const storyJS = `${top}/tw-twine/Story-JavaScript.tw`;
 
 async function main(argv: string[]) {
   const program = new Command()
-    .option("--publish", "publish the new version to mt2")
+    .option("--deploy", "deploy the new version to mt2")
+    .option("--push", "push to origin")
     .parse(argv);
   const opts = program.opts();
 
   const status = await runP("git status --porcelain", { echo: true });
-  if (false && status !== "") {
+  if (status !== "") {
     throw new Error(`checkout is not clean`);
   }
 
@@ -47,17 +48,21 @@ async function main(argv: string[]) {
     + text.slice(m.index + m[0].length - 1);
 
   await fsP.writeFile(storyJS, newText);
+  await runP(`ts-node ${top}/tools/tw-to-html.ts`)
 
   await runP(`git commit -am "${version}"`, { echo: true });
   await runP(`git tag "${version}"`, { echo: true });
 
-  if (opts.publish) {
+  if (opts.deploy) {
     await runP(`ts-node ${top}/tools/publish.ts`, { echo: true });
   }
 
   await fsP.writeFile(storyJS, text);
+  await runP(`ts-node ${top}/tools/tw-to-html.ts`)
   await runP(`git commit -am "Revert to ${oldVersion}"`, { echo: true });
-  await runP(`git push origin main "${version}"`, { echo: true });
+  if (opts.push) {
+    await runP(`git push origin HEAD "${version}"`, { echo: true });
+  }
 }
 
 main(process.argv).catch(e => {

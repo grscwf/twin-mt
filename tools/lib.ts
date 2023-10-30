@@ -40,6 +40,7 @@ export function runP(command: string, options?: RunOptions): Promise<string> {
       const child = cp.spawn(command, { shell: true });
       child.stderr.on("data", (data: Buffer) => {
         gotStderr = true;
+        process.stderr.write("[stderr] ");
         process.stderr.write(data);
       });
       child.stdout.on("data", (data: Buffer) => {
