@@ -31,6 +31,7 @@ export type RunOptions = {
  * Resolves to output that was written to stdout.
  */
 export function runP(command: string, options?: RunOptions): Promise<string> {
+  console.log(`+ ${command}`);
   return new Promise((resolve, reject) => {
     try {
       const opts = options ?? {};

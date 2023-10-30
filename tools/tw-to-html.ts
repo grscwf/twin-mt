@@ -83,7 +83,6 @@ async function buildRule(rule: Rule): Promise<void> {
     dirs = dirs.filter((d) => !omit.includes(d));
   }
   const cmd = `tweego -o ${rule.target} ${dirs.join(" ")}`;
-  log(cmd);
   await runP(cmd, { echo: true });
   log("done");
 }

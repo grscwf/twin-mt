@@ -25,7 +25,6 @@ async function main(argv: string[]) {
   }
 
   const cmd = `rsync -aiL --delete ${src} ${dest}`;
-  console.log(cmd);
   await runP(cmd, { echo: true });
 }
 
