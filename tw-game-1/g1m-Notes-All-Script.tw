@@ -136,11 +136,12 @@
   };
   function confirmClean() {
     Dialog.setup("Confirm Clean Up");
-    Dialog.wiki(`
+    Dialog.wiki(`<<nobr>>
       Clean-up will remove empty notes and sort the remaining notes
       by passage name.
       ?P
       <<button "Clean up">><<run Dialog.close(); _doClean()>><</button>>
+      <</nobr>>
     `);
     Dialog.open();
   }
@@ -148,10 +149,11 @@
   T.doDelete = () => overwriteValue("");
   function confirmDelete() {
     Dialog.setup("Confirm Delete All");
-    Dialog.wiki(`
+    Dialog.wiki(`<<nobr>>
       Are you sure you want to delete ALL notes?
       ?P
       <<button "Delete all">><<run Dialog.close(); _doDelete()>><</button>>
+      <</nobr>>
     `);
     Dialog.open();
   }
@@ -159,10 +161,11 @@
   T.doLose = () => overwriteValue(T.savedVal);
   function confirmLose() {
     Dialog.setup("Confirm Lose Edits");
-    Dialog.wiki(`
+    Dialog.wiki(`<<nobr>>
       Are you sure you want to lose your edits and revert to the conflicting value?
       ?P
       <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
+      <</nobr>>
     `);
     Dialog.open();
   }
@@ -170,21 +173,28 @@
   T.doOverwrite = () => overwriteValue(T.editVal);
   function confirmOverwrite() {
     Dialog.setup("Confirm Overwrite Conflict");
-    Dialog.wiki(`
+    Dialog.wiki(`<<nobr>>
       Are you sure you want to overwrite the conflicting value with your edits?
       ?P
       <<button "Overwrite conflict">><<run Dialog.close(); _doOverwrite()>><</button>>
+      <</nobr>>
     `);
     Dialog.open();
   }
 
   function getText() {
-    let text = T.editVal;
+    let text = `[version]\n${setup.version}\n`;
+
+    if (!T.editVal.trim().startsWith("[")) {
+      text += "[preamble]\n";
+    }
+
+    text += T.editVal;
     if (text.slice(-1) !== "\n") text += "\n";
 
     const trail = $("#notes-trail").val();
-    if (trail != null && trail !== "") {
-      text += `\n[player trail]\n` + trail;
+    if (trail !== "") {
+      text += `[player trail]\n` + trail;
     }
     return text;
   }
@@ -225,7 +235,7 @@
     $(reader).one("loadend", () => {
       if (reader.error) throw reader.error;
       let text = reader.result;
-      text = MT.notesRemoveTrail(text);
+      text = MT.notesUnwrap(text);
       overwriteValue(text);
     });
     const file = ev.target.files[0];

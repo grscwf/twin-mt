@@ -480,7 +480,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot;&gt;Sleth&lt;/a&gt;
 and &lt;a href=&quot;https://mastodon.social/@gray17&quot; target=&quot;_blank&quot;&gt;Grayscale&lt;/a&gt;
 &lt;div id=&quot;story-version&quot;&gt;
@@ -11504,18 +11504,29 @@ MT.notesGet = (passage) =&gt; {
   return split.body;
 };
 
-MT.notesRemoveTrail = (text) =&gt; {
-  const start = /^\[player trail\]/m.exec(text);
-  if (start != null) {
-    const end = /\n\[/.exec(text.slice(start.index + 1));
-    if (end != null) {
-      return text.slice(0, start.index) + text.slice(end.index);
-    } else {
-      return text.slice(0, start.index);
-    }
+MT.notesUnwrap = (text) =&gt; {
+  text = removeSection(&quot;version&quot;, text);
+  text = removeSection(&quot;player trail&quot;, text);
+  text = text.trim();
+  if (text.startsWith(&quot;[preamble]&quot;)) {
+    text = text.slice(&quot;[preamble]&quot;.length).trim();
   }
   return text;
 };
+
+function removeSection(name, text) {
+  const re = new RegExp(`^\\[${name}\\]`, &quot;m&quot;);
+  const m = re.exec(text);
+  if (m == null) return text;
+
+  let result = text.slice(0, m.index).trim() + &quot;\n&quot;;
+
+  const m2 = /^\[/m.exec(text.slice(m.index + 1));
+  if (m2 != null) {
+    result += text.slice(m.index + 1 + m2.index);
+  }
+  return result;
+}
 
 /** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
 MT.notesTryReplace = (passage, old, val) =&gt; {
@@ -18496,11 +18507,12 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   };
   function confirmClean() {
     Dialog.setup(&quot;Confirm Clean Up&quot;);
-    Dialog.wiki(`
+    Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
       Clean-up will remove empty notes and sort the remaining notes
       by passage name.
       ?P
       &lt;&lt;button &quot;Clean up&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doClean()&gt;&gt;&lt;&lt;/button&gt;&gt;
+      &lt;&lt;/nobr&gt;&gt;
     `);
     Dialog.open();
   }
@@ -18508,10 +18520,11 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   T.doDelete = () =&gt; overwriteValue(&quot;&quot;);
   function confirmDelete() {
     Dialog.setup(&quot;Confirm Delete All&quot;);
-    Dialog.wiki(`
+    Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
       Are you sure you want to delete ALL notes?
       ?P
       &lt;&lt;button &quot;Delete all&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doDelete()&gt;&gt;&lt;&lt;/button&gt;&gt;
+      &lt;&lt;/nobr&gt;&gt;
     `);
     Dialog.open();
   }
@@ -18519,10 +18532,11 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   T.doLose = () =&gt; overwriteValue(T.savedVal);
   function confirmLose() {
     Dialog.setup(&quot;Confirm Lose Edits&quot;);
-    Dialog.wiki(`
+    Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
       Are you sure you want to lose your edits and revert to the conflicting value?
       ?P
       &lt;&lt;button &quot;Lose edits&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doLose()&gt;&gt;&lt;&lt;/button&gt;&gt;
+      &lt;&lt;/nobr&gt;&gt;
     `);
     Dialog.open();
   }
@@ -18530,21 +18544,28 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   T.doOverwrite = () =&gt; overwriteValue(T.editVal);
   function confirmOverwrite() {
     Dialog.setup(&quot;Confirm Overwrite Conflict&quot;);
-    Dialog.wiki(`
+    Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
       Are you sure you want to overwrite the conflicting value with your edits?
       ?P
       &lt;&lt;button &quot;Overwrite conflict&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doOverwrite()&gt;&gt;&lt;&lt;/button&gt;&gt;
+      &lt;&lt;/nobr&gt;&gt;
     `);
     Dialog.open();
   }
 
   function getText() {
-    let text = T.editVal;
+    let text = `[version]\n${setup.version}\n`;
+
+    if (!T.editVal.trim().startsWith(&quot;[&quot;)) {
+      text += &quot;[preamble]\n&quot;;
+    }
+
+    text += T.editVal;
     if (text.slice(-1) !== &quot;\n&quot;) text += &quot;\n&quot;;
 
     const trail = $(&quot;#notes-trail&quot;).val();
-    if (trail != null &amp;&amp; trail !== &quot;&quot;) {
-      text += `\n[player trail]\n` + trail;
+    if (trail !== &quot;&quot;) {
+      text += `[player trail]\n` + trail;
     }
     return text;
   }
@@ -18585,7 +18606,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
     $(reader).one(&quot;loadend&quot;, () =&gt; {
       if (reader.error) throw reader.error;
       let text = reader.result;
-      text = MT.notesRemoveTrail(text);
+      text = MT.notesUnwrap(text);
       overwriteValue(text);
     });
     const file = ev.target.files[0];
@@ -18923,10 +18944,11 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   T.doDelete = () =&gt; overwriteValue(&quot;&quot;);
   function confirmDelete() {
     Dialog.setup(&quot;Confirm Delete&quot;);
-    Dialog.wiki(`
+    Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
       Are you sure you want to delete this note?
       ?P
       &lt;&lt;button Delete&gt;&gt;&lt;&lt;run Dialog.close(); _doDelete()&gt;&gt;&lt;&lt;/button&gt;&gt;
+      &lt;&lt;/nobr&gt;&gt;
     `);;
     Dialog.open();
   }
@@ -18934,10 +18956,11 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   T.doLose = () =&gt; overwriteValue(T.savedVal);
   function confirmLose() {
     Dialog.setup(&quot;Confirm Lose Edits&quot;);
-    Dialog.wiki(`
+    Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
       Are you sure you want to lose your edits and revert to the conflicting value?
       ?P
       &lt;&lt;button &quot;Lose edits&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doLose()&gt;&gt;&lt;&lt;/button&gt;&gt;
+      &lt;&lt;/nobr&gt;&gt;
     `);;
     Dialog.open();
   }
@@ -18945,10 +18968,11 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   T.doOverwrite = () =&gt; overwriteValue(T.editVal);
   function confirmOverwrite() {
     Dialog.setup(&quot;Confirm Overwrite Conflict&quot;);
-    Dialog.wiki(`
+    Dialog.wiki(`&lt;&lt;nobr&gt;&gt;
       Are you sure you want to overwrite the conflicting value with your edits?
       ?P
       &lt;&lt;button &quot;Overwrite conflict&quot;&gt;&gt;&lt;&lt;run Dialog.close(); _doOverwrite()&gt;&gt;&lt;&lt;/button&gt;&gt;
+      &lt;&lt;/nobr&gt;&gt;
     `);
     Dialog.open();
   }

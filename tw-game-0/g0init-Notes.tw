@@ -173,18 +173,29 @@ MT.notesGet = (passage) => {
   return split.body;
 };
 
-MT.notesRemoveTrail = (text) => {
-  const start = /^\[player trail\]/m.exec(text);
-  if (start != null) {
-    const end = /\n\[/.exec(text.slice(start.index + 1));
-    if (end != null) {
-      return text.slice(0, start.index) + text.slice(end.index);
-    } else {
-      return text.slice(0, start.index);
-    }
+MT.notesUnwrap = (text) => {
+  text = removeSection("version", text);
+  text = removeSection("player trail", text);
+  text = text.trim();
+  if (text.startsWith("[preamble]")) {
+    text = text.slice("[preamble]".length).trim();
   }
   return text;
 };
+
+function removeSection(name, text) {
+  const re = new RegExp(`^\\[${name}\\]`, "m");
+  const m = re.exec(text);
+  if (m == null) return text;
+
+  let result = text.slice(0, m.index).trim() + "\n";
+
+  const m2 = /^\[/m.exec(text.slice(m.index + 1));
+  if (m2 != null) {
+    result += text.slice(m.index + 1 + m2.index);
+  }
+  return result;
+}
 
 /** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
 MT.notesTryReplace = (passage, old, val) => {
