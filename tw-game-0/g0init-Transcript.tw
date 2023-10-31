@@ -141,6 +141,39 @@ function cleanHtml(jq, nextTitle, nextCode) {
   }
 }
 
+function tranRenderInternal(title, state, turn, next) {
+  const text = Story.get(title).text;
+  State.active.variables = clone(state) || {};
+  State.clearTemporary();
+  State.temporary.isTranscript = true;
+  State.temporary.tranPassage = title;
+  State.temporary.tranTurn = turn;
+
+  let div = $("<div class=tran-entry>");
+  MT.suppressErrors(() => {
+    div.wiki(text);
+  });
+  // clone to remove event handlers
+  div = div.clone();
+  cleanHtml(div, next.title, next.code);
+
+  return div;
+}
+
+MT.tranRenderOne = (title, state) => {
+  const savedVars = State.active.variables;
+  const savedTemp = Object.entries(State.temporary);
+  try {
+    return tranRenderInternal(title, state, 0, {});
+  } finally {
+    State.active.variables = savedVars;
+    State.clearTemporary();
+    for (const [k, v] of savedTemp) {
+      State.temporary[k] = v;
+    }
+  }
+};
+
 MT.tranRender = output => {
   const outer = $("<div id=tran-outer>").appendTo(output);
 
@@ -161,45 +194,20 @@ MT.tranRender = output => {
           $("<hr class=text-sep>").appendTo(outer);
         }
 
-        let nextTitle = null;
-        let nextCode = null;
+        const next = {};
         if (turn + 1 < hist.length) {
-          nextTitle = hist[turn + 1].title;
+          next.title = hist[turn + 1].title;
           const V = hist[turn + 1].variables;
           if (V.g_mtaCodeTurn === turn + 2) {
-            nextCode = V.g_mtaCode;
+            next.code = V.g_mtaCode;
           }
         }
-
-        const text = Story.get(moment.title).text;
-        State.active.variables = clone(moment.variables);
-        State.clearTemporary();
-        State.temporary.isTranscript = true;
-        State.temporary.tranPassage = moment.title;
-        State.temporary.tranTurn = turn;
-
-        let div = $("<div class=tran-entry>");
+        const div = tranRenderInternal(moment.title, moment.variables, turn, next);
 
         if (setup.playtest) {
           $("<div class=tran-title>")
             .text(moment.title)
-            .appendTo(div);
-        }
-
-        MT.suppressErrors(() => {
-          div.wiki(text);
-        });
-        // clone to remove event handlers
-        div = div.clone();
-        cleanHtml(div, nextTitle, nextCode);
-
-        // click on title to jump to history. this is annoyingly hard to undo,
-        // so restrict it to debug mode.
-        if (setup.debug) {
-          let dest = turn;
-          div.find(".tran-title").addClass("tran-clickable").on("click", () => {
-            Engine.goTo(dest);
-          });
+            .prependTo(div);
         }
 
         $(outer).append(div);

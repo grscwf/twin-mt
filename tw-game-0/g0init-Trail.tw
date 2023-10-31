@@ -186,6 +186,58 @@ MT.trailForgetOlder = () => {
   MT.mdSet("mg_trail", trail);
 };
 
+function renderSeen(title, state, out) {
+  out.empty();
+  const div = MT.tranRenderOne(title, state);
+  out.append(div);
+}
+
+function renderUnseen(title, out) {
+  out.empty();
+  const div = MT.tranRenderOne(title, null);
+  div.addClass("trail-info-unseen");
+
+  let wordsLeft = 10;
+  const trim = node => {
+    if (wordsLeft <= 0) {
+      node.parentNode.removeChild(node);
+
+    } else if (node.nodeType === 3 /* text */) {
+      const words = node.nodeValue.split(/\s+/);
+      let n = words.length;
+      if (n > 0 && words[n - 1] === "") n -= 1;
+      if (n > 0 && words[0] === "") n -= 1;
+      if (n === 0) return;
+      if (n > wordsLeft) {
+        if (words[0] === "") wordsLeft += 1;
+        const phrase = words.slice(0, wordsLeft).join(" ");
+        const textNode = document.createTextNode(phrase);
+        node.parentNode.replaceChild(textNode, node);
+      }
+      wordsLeft -= n;
+
+    } else if (node.nodeType === 1 /* element*/) {
+      if (node.tagName === "B" && node.getAttribute("id") === "clue-cut") {
+        wordsLeft = 0;
+      } else if (/^(BR|HR)/.test(node.tagName)) {
+        node.parentNode.removeChild(node);
+      } else if (/^(STYLE)$/.test(node.tagName)) {
+        return;
+      } else {
+        const kids = Array.from(node.childNodes);
+        kids.forEach(kid => trim(kid));
+      }
+
+    } else {
+      node.parentNode.removeChild(node);
+    }
+  };
+  trim(div[0]);
+  div.append("...");
+
+  out.append(div);
+}
+
 MT.trailRender = (out) => {
   const current = new Set(State.history.map(m => m.title));
   const recent = new Set();
@@ -208,6 +260,43 @@ MT.trailRender = (out) => {
     older.add(ev.title);
   }
 
+  const renderInfo = (title, out) => {
+    if (current.has(title)) {
+      const moment = State.history.findLast(m => m.title === title);
+      renderSeen(title, moment.variables, out);
+
+    } else if (recent.has(title) || older.has(title)) {
+      const event = trail.events.findLast(ev => ev.title === title) ||
+        trail.first.findLast(ev => ev.title === title);
+      renderSeen(title, event.state, out);
+
+    } else {
+      renderUnseen(title, out);
+    }
+  };
+
+  const onClick = ev => {
+    const target = $(ev.target);
+    let info = $("#trail-info");
+
+    if (target.hasClass("trail-selected")) {
+      target.removeClass("trail-selected");
+      info.remove();
+      return;
+    }
+
+    $(".trail-selected").removeClass("trail-selected");
+    target.addClass("trail-selected");
+
+    if (info.length === 0) {
+      info = $("<div id=trail-info>");
+    }
+    info.appendTo(target.parent());
+
+    const title = target.attr("data-title");
+    renderInfo(title, info);
+  };
+
   let hasRecent = false;
   let hasOlder = false;
   for (const sect of sectNames) {
@@ -229,6 +318,9 @@ MT.trailRender = (out) => {
       if (setup.debug) {
         item.attr("title", title);
       }
+      item.attr("data-title", title);
+      item.on("click", onClick);
+
       hasRecent ||= recent.has(title);
       hasOlder ||= older.has(title);
       anyKnown ||= current.has(title) || recent.has(title) || older.has(title);
@@ -236,6 +328,10 @@ MT.trailRender = (out) => {
     if (anyKnown || sectInfo[sect].alwaysShow) {
       groupTitle.text(sectInfo[sect].title)
         .addClass("trail-group-title-known");
+    } else if (setup.debug) {
+      groupTitle.text(sectInfo[sect].title)
+        .addClass("trail-group-title-debug");
+
     } else if (false) {
       groupTitle.text(sectInfo[sect].title.replace(/./g, "?"))
         .addClass("trail-group-title-unknown");

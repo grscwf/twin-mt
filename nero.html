@@ -426,6 +426,19 @@ meta-text {
 
 .sprite-q {
   color: #9ce;
+}
+
+/* transcript entries */
+
+.tran-entry a {
+  color: #aac;
+  cursor: text;
+}
+.tran-entry ul.actions li::before {
+  filter: saturate(0);
+}
+.tran-entry hr {
+  border-color: #555;
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">setup.version = "v2.0-nero-wip";
 
 Config.saves.id = 'sleth-mages-tower-2';
@@ -480,7 +493,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
   &gt;Sleth&lt;/a&gt;
 and &lt;a href=&quot;https://mastodon.social/@gray17&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
@@ -13336,6 +13349,58 @@ MT.trailForgetOlder = () =&gt; {
   MT.mdSet(&quot;mg_trail&quot;, trail);
 };
 
+function renderSeen(title, state, out) {
+  out.empty();
+  const div = MT.tranRenderOne(title, state);
+  out.append(div);
+}
+
+function renderUnseen(title, out) {
+  out.empty();
+  const div = MT.tranRenderOne(title, null);
+  div.addClass(&quot;trail-info-unseen&quot;);
+
+  let wordsLeft = 10;
+  const trim = node =&gt; {
+    if (wordsLeft &lt;= 0) {
+      node.parentNode.removeChild(node);
+
+    } else if (node.nodeType === 3 /* text */) {
+      const words = node.nodeValue.split(/\s+/);
+      let n = words.length;
+      if (n &gt; 0 &amp;&amp; words[n - 1] === &quot;&quot;) n -= 1;
+      if (n &gt; 0 &amp;&amp; words[0] === &quot;&quot;) n -= 1;
+      if (n === 0) return;
+      if (n &gt; wordsLeft) {
+        if (words[0] === &quot;&quot;) wordsLeft += 1;
+        const phrase = words.slice(0, wordsLeft).join(&quot; &quot;);
+        const textNode = document.createTextNode(phrase);
+        node.parentNode.replaceChild(textNode, node);
+      }
+      wordsLeft -= n;
+
+    } else if (node.nodeType === 1 /* element*/) {
+      if (node.tagName === &quot;B&quot; &amp;&amp; node.getAttribute(&quot;id&quot;) === &quot;clue-cut&quot;) {
+        wordsLeft = 0;
+      } else if (/^(BR|HR)/.test(node.tagName)) {
+        node.parentNode.removeChild(node);
+      } else if (/^(STYLE)$/.test(node.tagName)) {
+        return;
+      } else {
+        const kids = Array.from(node.childNodes);
+        kids.forEach(kid =&gt; trim(kid));
+      }
+
+    } else {
+      node.parentNode.removeChild(node);
+    }
+  };
+  trim(div[0]);
+  div.append(&quot;...&quot;);
+
+  out.append(div);
+}
+
 MT.trailRender = (out) =&gt; {
   const current = new Set(State.history.map(m =&gt; m.title));
   const recent = new Set();
@@ -13358,6 +13423,43 @@ MT.trailRender = (out) =&gt; {
     older.add(ev.title);
   }
 
+  const renderInfo = (title, out) =&gt; {
+    if (current.has(title)) {
+      const moment = State.history.findLast(m =&gt; m.title === title);
+      renderSeen(title, moment.variables, out);
+
+    } else if (recent.has(title) || older.has(title)) {
+      const event = trail.events.findLast(ev =&gt; ev.title === title) ||
+        trail.first.findLast(ev =&gt; ev.title === title);
+      renderSeen(title, event.state, out);
+
+    } else {
+      renderUnseen(title, out);
+    }
+  };
+
+  const onClick = ev =&gt; {
+    const target = $(ev.target);
+    let info = $(&quot;#trail-info&quot;);
+
+    if (target.hasClass(&quot;trail-selected&quot;)) {
+      target.removeClass(&quot;trail-selected&quot;);
+      info.remove();
+      return;
+    }
+
+    $(&quot;.trail-selected&quot;).removeClass(&quot;trail-selected&quot;);
+    target.addClass(&quot;trail-selected&quot;);
+
+    if (info.length === 0) {
+      info = $(&quot;&lt;div id=trail-info&gt;&quot;);
+    }
+    info.appendTo(target.parent());
+
+    const title = target.attr(&quot;data-title&quot;);
+    renderInfo(title, info);
+  };
+
   let hasRecent = false;
   let hasOlder = false;
   for (const sect of sectNames) {
@@ -13379,6 +13481,9 @@ MT.trailRender = (out) =&gt; {
       if (setup.debug) {
         item.attr(&quot;title&quot;, title);
       }
+      item.attr(&quot;data-title&quot;, title);
+      item.on(&quot;click&quot;, onClick);
+
       hasRecent ||= recent.has(title);
       hasOlder ||= older.has(title);
       anyKnown ||= current.has(title) || recent.has(title) || older.has(title);
@@ -13386,6 +13491,10 @@ MT.trailRender = (out) =&gt; {
     if (anyKnown || sectInfo[sect].alwaysShow) {
       groupTitle.text(sectInfo[sect].title)
         .addClass(&quot;trail-group-title-known&quot;);
+    } else if (setup.debug) {
+      groupTitle.text(sectInfo[sect].title)
+        .addClass(&quot;trail-group-title-debug&quot;);
+
     } else if (false) {
       groupTitle.text(sectInfo[sect].title.replace(/./g, &quot;?&quot;))
         .addClass(&quot;trail-group-title-unknown&quot;);
@@ -13589,6 +13698,39 @@ function cleanHtml(jq, nextTitle, nextCode) {
   }
 }
 
+function tranRenderInternal(title, state, turn, next) {
+  const text = Story.get(title).text;
+  State.active.variables = clone(state) || {};
+  State.clearTemporary();
+  State.temporary.isTranscript = true;
+  State.temporary.tranPassage = title;
+  State.temporary.tranTurn = turn;
+
+  let div = $(&quot;&lt;div class=tran-entry&gt;&quot;);
+  MT.suppressErrors(() =&gt; {
+    div.wiki(text);
+  });
+  // clone to remove event handlers
+  div = div.clone();
+  cleanHtml(div, next.title, next.code);
+
+  return div;
+}
+
+MT.tranRenderOne = (title, state) =&gt; {
+  const savedVars = State.active.variables;
+  const savedTemp = Object.entries(State.temporary);
+  try {
+    return tranRenderInternal(title, state, 0, {});
+  } finally {
+    State.active.variables = savedVars;
+    State.clearTemporary();
+    for (const [k, v] of savedTemp) {
+      State.temporary[k] = v;
+    }
+  }
+};
+
 MT.tranRender = output =&gt; {
   const outer = $(&quot;&lt;div id=tran-outer&gt;&quot;).appendTo(output);
 
@@ -13609,45 +13751,20 @@ MT.tranRender = output =&gt; {
           $(&quot;&lt;hr class=text-sep&gt;&quot;).appendTo(outer);
         }
 
-        let nextTitle = null;
-        let nextCode = null;
+        const next = {};
         if (turn + 1 &lt; hist.length) {
-          nextTitle = hist[turn + 1].title;
+          next.title = hist[turn + 1].title;
           const V = hist[turn + 1].variables;
           if (V.g_mtaCodeTurn === turn + 2) {
-            nextCode = V.g_mtaCode;
+            next.code = V.g_mtaCode;
           }
         }
-
-        const text = Story.get(moment.title).text;
-        State.active.variables = clone(moment.variables);
-        State.clearTemporary();
-        State.temporary.isTranscript = true;
-        State.temporary.tranPassage = moment.title;
-        State.temporary.tranTurn = turn;
-
-        let div = $(&quot;&lt;div class=tran-entry&gt;&quot;);
+        const div = tranRenderInternal(moment.title, moment.variables, turn, next);
 
         if (setup.playtest) {
           $(&quot;&lt;div class=tran-title&gt;&quot;)
             .text(moment.title)
-            .appendTo(div);
-        }
-
-        MT.suppressErrors(() =&gt; {
-          div.wiki(text);
-        });
-        // clone to remove event handlers
-        div = div.clone();
-        cleanHtml(div, nextTitle, nextCode);
-
-        // click on title to jump to history. this is annoyingly hard to undo,
-        // so restrict it to debug mode.
-        if (setup.debug) {
-          let dest = turn;
-          div.find(&quot;.tran-title&quot;).addClass(&quot;tran-clickable&quot;).on(&quot;click&quot;, () =&gt; {
-            Engine.goTo(dest);
-          });
+            .prependTo(div);
         }
 
         $(outer).append(div);
@@ -19405,6 +19522,9 @@ hello some more
 .trail-group-title-unknown {
   color: #666;
 }
+.trail-group-title-debug::after {
+  content: &quot;\1f527&quot;;
+}
 
 .trail-item {
   border: 1px solid #444;
@@ -19436,6 +19556,36 @@ hello some more
   background-color: #555;
 }
 
+.trail-selected {
+  border-color: #fff;
+}
+
+#trail-info {
+  border: 1px solid #999;
+  border-radius: 2px;
+  box-sizing: border-box;
+  opacity: 0.8;
+  margin: 0.5rem 0;
+  opacity: 0.8;
+  overflow-y: auto;
+  padding: 0.5rem;
+  width: 100%;
+  word-break: break-word;
+}
+
+#trail-info .tran-entry div,
+#trail-info .tran-entry li,
+#trail-info .tran-entry ol,
+#trail-info .tran-entry ul {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.trail-info-unseen {
+  opacity: 0.5;
+}
+
 &lt;/style&gt;
 
 &lt;&lt;sticky-return&gt;&gt;
@@ -19444,15 +19594,10 @@ hello some more
 
 &lt;div id=&quot;trail-intro&quot;&gt;
   This is a record of what pages in the story have been seen.
-  &lt;br&gt;
   Each square represents one page or variant of a page.
-  &lt;br&gt;
-  /*
   Clicking on a square will show more information about the page.
-  &lt;br&gt;
-  */
-  This is a dev tool, so some pages shown here might not be reachable.
-  &lt;br&gt;
+  Note: This is a dev tool, so some pages shown here might not be reachable.
+  ?P
   The trail can be exported or shared with [[All Notes|g1m Notes All]].
 &lt;/div&gt;
 
@@ -22762,18 +22907,20 @@ raise the subject again.
 &lt;&lt;script&gt;&gt;
   const V = State.variables;
   const T = State.temporary;
-  switch (V.g_choice) {
-    case 1: T.pass = &quot;That Bounty Hunter&quot;; break;
-    case 2: T.pass = &quot;I Told You&quot;; break;
-    case 4: T.pass = &quot;I&#39;m A Messenger&quot;; break;
-    case 8: T.pass = &quot;I Didn&#39;t Receive&quot;; break;
-    default:
-      throw new Error(`Unexpected g_choice ${V.g_choice}`);
-  }
+  if (!_isTranscript) {
+    switch (V.g_choice) {
+      case 1: T.pass = &quot;That Bounty Hunter&quot;; break;
+      case 2: T.pass = &quot;I Told You&quot;; break;
+      case 4: T.pass = &quot;I&#39;m A Messenger&quot;; break;
+      case 8: T.pass = &quot;I Didn&#39;t Receive&quot;; break;
+      default:
+        if (!_isTranscript) throw new Error(`Unexpected g_choice ${V.g_choice}`);
+    }
 
-  let tc = V.sn_trapChoices || 0;
-  tc = tc | V.g_choice;
-  MT.mdSet(&quot;sn_trapChoices&quot;, tc);
+    let tc = V.sn_trapChoices || 0;
+    tc = tc | V.g_choice;
+    MT.mdSet(&quot;sn_trapChoices&quot;, tc);
+  }
 &lt;&lt;/script&gt;&gt;
 
 Ivex suddenly slams a knee into the wolf&#39;s crotch!
@@ -31270,6 +31417,12 @@ $n_afterAction
 &lt;&lt;set _numTried = JSON.parse($n_passTried || &quot;[]&quot;).length&gt;&gt;
 &lt;&lt;em-assert _numTried &gt;= 1&gt;&gt;
 &lt;&lt;em-assert _numTried &lt;= 3&gt;&gt;
+
+&lt;&lt;run
+  if (_isTranscript &amp;&amp; !$n_ivexContext) {
+    $n_ivexContext = IC_gone;
+  }
+&gt;&gt;
 
 &lt;&lt;if $n_candleHorny&gt;&gt;
   &lt;&lt;switch _numTried&gt;&gt;
@@ -42302,7 +42455,9 @@ his situation.
 &lt;&lt;set _searchedSome =
   $n_bookcasesSearched || $n_cabinetsSearched || $n_deskSearched&gt;&gt;
 
-The door labelled &quot;DOOR&quot; opens to beckon the wolf
+The door
+&lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
+labelled &quot;DOOR&quot; opens to beckon the wolf
 &lt;&lt;= $n_extraHorny ? &quot;and his erect cock&quot; : &quot;&quot;&gt;&gt;
 into the unknown.
 
@@ -43434,6 +43589,7 @@ out from the stack...
 &lt;&lt;vi-ignore n_tooClever&gt;&gt;
 
 The full title of the book is
+&lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
 &quot;Losing My Virginity to the Class of 621&quot;,
 and the barely-clothed wolves on the cover make it clear that it&#39;s
 a &lt;em&gt;male&lt;/em&gt; wolf losing his virginity to other male wolves.
@@ -43463,7 +43619,9 @@ Perhaps the book with the plain brown cover will be more useful...
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore n_tooClever&gt;&gt;
 
-No. The plain brown book is also porn.
+No. The plain brown book is
+&lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
+also porn.
 This one has pictures on every page, and very few words.
 ?P
 &lt;&lt;if $n_extraHorny&gt;&gt;
@@ -48104,6 +48262,12 @@ The mental chaos becomes overwhelming. The wolf passes out.
   [[Continue|n9a Tamed End 1]]
 &lt;&lt;/arc-skip&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="730" name="n9a Tamed Restart" tags="mt-ready roam-stop" position="10500,2875" size="100,100">&lt;&lt;nobr&gt;&gt;
+
+&lt;&lt;run
+  if (_isTranscript &amp;&amp; !$n_endingVariant) {
+    $n_endingVariant = &quot;mild&quot;;
+  }
+&gt;&gt;
 
 &lt;&lt;switch $n_endingVariant&gt;&gt;
 &lt;&lt;case harsh&gt;&gt;
