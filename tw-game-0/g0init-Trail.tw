@@ -188,14 +188,23 @@ MT.trailForgetOlder = () => {
 
 function renderSeen(title, state, out) {
   out.empty();
+  if (setup.debug) {
+    $("<div class=trail-info-title>")
+      .text(`\ud83d\udd27 ${title}`)
+      .appendTo(out);
+  }
   const div = MT.tranRenderOne(title, state);
   out.append(div);
+  if (setup.debug) {
+    $("<div class=trail-info-state>")
+      .text(JSON.stringify(state, null, " "))
+      .appendTo(out);
+  }
 }
 
 function renderUnseen(title, out) {
   out.empty();
   const div = MT.tranRenderOne(title, null);
-  div.addClass("trail-info-unseen");
 
   let wordsLeft = 10;
   const trim = node => {
@@ -232,10 +241,19 @@ function renderUnseen(title, out) {
       node.parentNode.removeChild(node);
     }
   };
-  trim(div[0]);
-  div.append("...");
+  const copy = div.clone();
+  trim(copy[0]);
+  copy.addClass("trail-info-unseen");
+  copy.append("...");
 
-  out.append(div);
+  out.append(copy);
+
+  if (setup.debug) {
+    $("<div class=trail-info-debug>")
+      .append($("<div class=trail-info-title>").text(`\ud83d\udd27 ${title}`))
+      .append(div)
+      .appendTo(out);
+  }
 }
 
 MT.trailRender = (out) => {

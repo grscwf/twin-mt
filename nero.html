@@ -493,7 +493,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
   &gt;Sleth&lt;/a&gt;
 and &lt;a href=&quot;https://mastodon.social/@gray17&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
@@ -7326,16 +7326,18 @@ defineEnum(&quot;IvexContext&quot;, [
 
 declareVarEnum(&quot;n_ivexContext&quot;, &quot;IvexContext&quot;);
 
-// This should run before any other Nero :passagestart
-$(document).on(&quot;:passagestart&quot;, () =&gt; {
-  // Initialize enums that are generally expected to be non-null
+/** Initialize enums that are generally expected to be non-null */
+MT.enumInit = () =&gt; {
   MT.untraced(() =&gt; {
     const V = State.variables;
     V.n_magicPhase != null || (V.n_magicPhase = 0);
     V.n_magicPhaseReached != null || (V.n_magicPhaseReached = 0);
     V.n_ivexContext != null || (V.n_ivexContext = 0);
   });
-});
+}
+
+// This should run before any other Nero :passagestart
+$(document).on(&quot;:passagestart&quot;, MT.enumInit);
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="172" name="g0boot Metadata" tags="inclusion" position="450,250" size="100,100">&lt;&lt;script&gt;&gt;
 /*----------------
@@ -13360,14 +13362,23 @@ MT.trailForgetOlder = () =&gt; {
 
 function renderSeen(title, state, out) {
   out.empty();
+  if (setup.debug) {
+    $(&quot;&lt;div class=trail-info-title&gt;&quot;)
+      .text(`\ud83d\udd27 ${title}`)
+      .appendTo(out);
+  }
   const div = MT.tranRenderOne(title, state);
   out.append(div);
+  if (setup.debug) {
+    $(&quot;&lt;div class=trail-info-state&gt;&quot;)
+      .text(JSON.stringify(state, null, &quot; &quot;))
+      .appendTo(out);
+  }
 }
 
 function renderUnseen(title, out) {
   out.empty();
   const div = MT.tranRenderOne(title, null);
-  div.addClass(&quot;trail-info-unseen&quot;);
 
   let wordsLeft = 10;
   const trim = node =&gt; {
@@ -13404,10 +13415,19 @@ function renderUnseen(title, out) {
       node.parentNode.removeChild(node);
     }
   };
-  trim(div[0]);
-  div.append(&quot;...&quot;);
+  const copy = div.clone();
+  trim(copy[0]);
+  copy.addClass(&quot;trail-info-unseen&quot;);
+  copy.append(&quot;...&quot;);
 
-  out.append(div);
+  out.append(copy);
+
+  if (setup.debug) {
+    $(&quot;&lt;div class=trail-info-debug&gt;&quot;)
+      .append($(&quot;&lt;div class=trail-info-title&gt;&quot;).text(`\ud83d\udd27 ${title}`))
+      .append(div)
+      .appendTo(out);
+  }
 }
 
 MT.trailRender = (out) =&gt; {
@@ -13710,6 +13730,7 @@ function cleanHtml(jq, nextTitle, nextCode) {
 function tranRenderInternal(title, state, turn, next) {
   const text = Story.get(title).text;
   State.active.variables = clone(state) || {};
+  MT.enumInit();
   State.clearTemporary();
   State.temporary.isTranscript = true;
   State.temporary.tranPassage = title;
@@ -19573,7 +19594,6 @@ hello some more
   border: 1px solid #999;
   border-radius: 2px;
   box-sizing: border-box;
-  opacity: 0.8;
   margin: 0.5rem 0;
   opacity: 0.8;
   overflow-y: auto;
@@ -19582,10 +19602,10 @@ hello some more
   word-break: break-word;
 }
 
-#trail-info .tran-entry div,
-#trail-info .tran-entry li,
-#trail-info .tran-entry ol,
-#trail-info .tran-entry ul {
+.trail-info-unseen div,
+.trail-info-unseen li,
+.trail-info-unseen ol,
+.trail-info-unseen ul {
   display: inline;
   margin: 0;
   padding: 0;
@@ -19593,6 +19613,29 @@ hello some more
 
 .trail-info-unseen {
   opacity: 0.5;
+}
+
+.trail-info-debug {
+  border-top: 1px solid #666;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+}
+
+#trail-info .trail-info-title {
+  text-align: right;
+  color: #ccc;
+  font-size: 0.8em;
+  margin-bottom: .5em;
+}
+
+#trail-info .trail-info-state {
+  border-top: 1px solid #666;
+  color: #ccc;
+  font-family: monospace;
+  font-size: 10px;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  white-space: pre-wrap;
 }
 
 &lt;/style&gt;
@@ -19606,6 +19649,11 @@ hello some more
   Each square represents one page or variant of a page.
   Clicking on a square will show more information about the page.
   Note: This is a dev tool, so some pages shown here might not be reachable.
+
+  &lt;&lt;if setup.debug&gt;&gt;
+    ?P
+    In ?debug mode, unvisited pages will show one rendering of the page.
+  &lt;&lt;/if&gt;&gt;
   ?P
   The trail can be exported or shared with [[All Notes|g1m Notes All]].
 &lt;/div&gt;
