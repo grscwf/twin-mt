@@ -493,7 +493,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
   &gt;Sleth&lt;/a&gt;
 and &lt;a href=&quot;https://mastodon.social/@gray17&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
@@ -7440,16 +7440,21 @@ MT.mdGetUncached = (key) =&gt; {
  * back to localStorage. So this is very expensive, and SugarCube
  * doesn&#39;t give us a way to batch multiple set operations
  * (other than bypassing SugarCube and doing it ourselves.)
+ * 
+ * When _isTranscript, will set state but not metadata.
  */
 MT.mdSet = (key, value) =&gt; {
   warnUnknownKey(key);
-  if (value) {
-    State.metadata.set(key, value);
-    if (knownKeys[key] !== IGNORED) {
-      State.variables[key] = value;
-    }
-  } else {
+  if (!State.temporary.isTranscript) {
+    if (value) {
+      State.metadata.set(key, value);
+    } else {
     State.metadata.delete(key);
+    }
+  }
+  if (value &amp;&amp; knownKeys[key] !== IGNORED) {
+    State.variables[key] = value;
+  } else {
     delete State.variables[key];
   }
 };
@@ -7581,7 +7586,8 @@ mdInit();
 &lt;&lt;script&gt;&gt;
 
 /**
- * Create a scratch state with _isArchive === true,
+ * Create a scratch state with _isArchive === true
+ * and _isTranscript === true,
  * evaluate script, then render passage to dest.
  */
 MT.arcRender = (dest, passage, script) =&gt; {
@@ -7594,6 +7600,7 @@ MT.arcRender = (dest, passage, script) =&gt; {
       State.active.variables = {};
       State.clearTemporary();
       State.temporary.isArchive = true;
+      State.temporary.isTranscript = true;
       if (script != null) {
         $(dest).wiki(`&lt;&lt;run ${script}&gt;&gt;`);
       }
@@ -7636,7 +7643,7 @@ Macro.add(&quot;arc-skip&quot;, {
 
 /**
  * &lt;&lt;arc-include passage [script]&gt;&gt;
- * Create a scratch state with g_isArchive true,
+ * Create a scratch state with _isArchive and _isTranscript true,
  * evaluate the script, and render passage.
  */
 Macro.add(&quot;arc-include&quot;, {
@@ -9007,7 +9014,7 @@ Macro.add(&quot;fade-in&quot;, {
       const section = this.payload[i];
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
-      if (MT.roaming || T.isArchive) delay = 0;
+      if (MT.roaming || T.isTranscript) delay = 0;
       const span = $(&quot;&lt;span&gt;&quot;)
         .addClass(&quot;fade-in fade-in-hidden&quot;)
         .toggleClass(&quot;fade-in-no-dots&quot;, noDots)
@@ -9015,7 +9022,7 @@ Macro.add(&quot;fade-in&quot;, {
         .wiki(section.contents)
         .appendTo(this.output);
 
-      if (T.isArchive || T.isTranscript) {
+      if (T.isTranscript) {
         if (i &lt; this.payload.length - 1) {
           span.find(&quot;br:last-child&quot;).replaceWith(&quot;&lt;hr class=time-sep&gt;&quot;);
         }
@@ -11208,8 +11215,10 @@ Macro.add(&quot;n1-patience&quot;, {
 &lt;&lt;script&gt;&gt;
 
 MT.startTaming = () =&gt; {
-  const passage = $(&quot;.passage&quot;);
-  setTimeout(() =&gt; passage.addClass(&quot;tame-fade&quot;), 200);
+  if (!State.temporary.isTranscript) {
+    const passage = $(&quot;.passage&quot;);
+    setTimeout(() =&gt; passage.addClass(&quot;tame-fade&quot;), 200);
+  }
 };
 
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="197" name="g0init Nero Templates" tags="inclusion" position="1125,1450" size="100,100">&lt;&lt;append head&gt;&gt;&lt;style&gt;
@@ -22907,20 +22916,20 @@ raise the subject again.
 &lt;&lt;script&gt;&gt;
   const V = State.variables;
   const T = State.temporary;
-  if (!_isTranscript) {
-    switch (V.g_choice) {
-      case 1: T.pass = &quot;That Bounty Hunter&quot;; break;
-      case 2: T.pass = &quot;I Told You&quot;; break;
-      case 4: T.pass = &quot;I&#39;m A Messenger&quot;; break;
-      case 8: T.pass = &quot;I Didn&#39;t Receive&quot;; break;
-      default:
-        if (!_isTranscript) throw new Error(`Unexpected g_choice ${V.g_choice}`);
-    }
-
-    let tc = V.sn_trapChoices || 0;
-    tc = tc | V.g_choice;
-    MT.mdSet(&quot;sn_trapChoices&quot;, tc);
+  if (T.isTranscript &amp;&amp; !V.g_choice) {
+    V.g_choice = 1;
   }
+  switch (V.g_choice) {
+    case 1: T.pass = &quot;That Bounty Hunter&quot;; break;
+    case 2: T.pass = &quot;I Told You&quot;; break;
+    case 4: T.pass = &quot;I&#39;m A Messenger&quot;; break;
+    case 8: T.pass = &quot;I Didn&#39;t Receive&quot;; break;
+    default:
+      throw new Error(`Unexpected g_choice ${V.g_choice}`);
+  }
+  let tc = V.sn_trapChoices || 0;
+  tc = tc | V.g_choice;
+  MT.mdSet(&quot;sn_trapChoices&quot;, tc);
 &lt;&lt;/script&gt;&gt;
 
 Ivex suddenly slams a knee into the wolf&#39;s crotch!
@@ -27735,14 +27744,14 @@ His mind was
 
 &lt;&lt;/glitch-text&gt;&gt;
 
-&lt;&lt;if !_isTranscript&gt;&gt;
-  &lt;&lt;script&gt;&gt;
+&lt;&lt;script&gt;&gt;
+  if (!State.temporary.isTranscript) {
     $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
       $(&quot;#glitch-2&quot;).removeClass(&quot;glitch-hidden&quot;);
       setTimeout(() =&gt; $(&quot;#glitch-2&quot;).addClass(&quot;glitch-fading-out&quot;), 1000);
     });
-  &lt;&lt;/script&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+  }
+&lt;&lt;/script&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="396" name="n1p Barbs Glitch 4" tags="mt-ready" position="3925,1375" size="100,100">&lt;&lt;nobr&gt;&gt;
 
@@ -27828,14 +27837,14 @@ The panther speaks. &quot;Is this
 
 &lt;&lt;/glitch-text&gt;&gt;
 
-&lt;&lt;if !_isTranscript&gt;&gt;
-  &lt;&lt;script&gt;&gt;
+&lt;&lt;script&gt;&gt;
+  if (!State.temporary.isTranscript) {
     $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
       $(&quot;#glitch-2&quot;).removeClass(&quot;glitch-hidden&quot;);
       setTimeout(() =&gt; $(&quot;#glitch-2&quot;).addClass(&quot;glitch-fading-out&quot;), 1000);
     });
-  &lt;&lt;/script&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+  }
+&lt;&lt;/script&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="398" name="n1p Barbs Glitch 6" tags="mt-ready" position="4175,1375" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 Nero shakes his head. The exotic energy filling this room is quite
@@ -33928,13 +33937,15 @@ Nero think of something more sensual than meat.
   &lt;&lt;glitch-text 3&gt;&gt;
     ?blank&#39;s fascinating ##barbed-1## cock as he...
   &lt;&lt;/glitch-text&gt;&gt;
-  &lt;&lt;done&gt;&gt;
-    &lt;&lt;script&gt;&gt;
-      $(&quot;#glitch-2&quot;).removeClass(&quot;glitch-hidden&quot;).addClass(&quot;glitch-fading-in&quot;);
-      setTimeout(() =&gt; $(&quot;#glitch-2&quot;).removeClass(&quot;glitch-fading-in&quot;), 100);
-      setTimeout(() =&gt; $(&quot;#glitch-2&quot;).addClass(&quot;glitch-fading-out&quot;), 200);
-    &lt;&lt;/script&gt;&gt;
-  &lt;&lt;/done&gt;&gt;
+  &lt;&lt;script&gt;&gt;
+    if (!State.temporary.isTranscript) {
+      $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
+        $(&quot;#glitch-2&quot;).removeClass(&quot;glitch-hidden&quot;).addClass(&quot;glitch-fading-in&quot;);
+        setTimeout(() =&gt; $(&quot;#glitch-2&quot;).removeClass(&quot;glitch-fading-in&quot;), 100);
+        setTimeout(() =&gt; $(&quot;#glitch-2&quot;).addClass(&quot;glitch-fading-out&quot;), 200);
+      });
+    }
+  &lt;&lt;/script&gt;&gt;
 &lt;&lt;else&gt;&gt;
   It&#39;s like the panties that the fabulous
   &lt;span class=nobr&gt;Ms. Tara&lt;/span&gt; wore when she...

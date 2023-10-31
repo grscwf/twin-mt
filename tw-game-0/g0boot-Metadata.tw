@@ -102,16 +102,21 @@ MT.mdGetUncached = (key) => {
  * back to localStorage. So this is very expensive, and SugarCube
  * doesn't give us a way to batch multiple set operations
  * (other than bypassing SugarCube and doing it ourselves.)
+ * 
+ * When _isTranscript, will set state but not metadata.
  */
 MT.mdSet = (key, value) => {
   warnUnknownKey(key);
-  if (value) {
-    State.metadata.set(key, value);
-    if (knownKeys[key] !== IGNORED) {
-      State.variables[key] = value;
-    }
-  } else {
+  if (!State.temporary.isTranscript) {
+    if (value) {
+      State.metadata.set(key, value);
+    } else {
     State.metadata.delete(key);
+    }
+  }
+  if (value && knownKeys[key] !== IGNORED) {
+    State.variables[key] = value;
+  } else {
     delete State.variables[key];
   }
 };
