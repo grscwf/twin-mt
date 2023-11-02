@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
   &gt;Sleth&lt;/a&gt;
 and &lt;a href=&quot;https://mastodon.social/@gray17&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
@@ -9366,11 +9366,15 @@ migrateInit();
 function announceBarbs(dest) {
   const V = State.variables;
   V.n_announceBarbsSoon = false;
-  const barbs = MT.untracedGet(&quot;n_glitched&quot;)
-    ? &quot;Barbs?&quot;
-    : MT.untracedGet(&quot;n_barbs&quot;)
-    ? &quot;Barbs&quot; : &quot;Smooth&quot;;
-  $(dest).wiki(`&lt;meta-text&gt;Story Variant: ${barbs}&lt;/meta-text&gt;?P`);
+  V.n_barbsChoiceMade = true;
+
+  if (!V.n_glitched) {
+    MT.mdSet(&quot;mg_barbsNo&quot;, !V.n_barbs);
+    MT.mdSet(&quot;mg_barbsYes&quot;, V.n_barbs);
+  }
+
+  const text = V.n_glitched ? &quot;Barbs?&quot; : V.n_barbs ? &quot;Barbs&quot; : &quot;Smooth&quot;;
+  $(dest).wiki(`&lt;meta-text&gt;Story Variant: ${text}&lt;/meta-text&gt;?P`);
 }
 
 Macro.add(&quot;barbs-announce&quot;, {
@@ -9392,6 +9396,43 @@ Macro.add(&quot;barbs-announce&quot;, {
     }
   }
 });
+
+/** True if Nero side has canine knots */
+MT.impliedKnot = () =&gt; {
+  const V = State.variables;
+
+  // make sure we&#39;re ambiguous before player makes a barb choice
+  if (!V.n_barbsChoiceMade) {
+    throw new Error(&quot;knot indeterminate&quot;);
+  }
+
+  // if player has expressed a knot choice in Drekkar, use it.
+  // otherwise match the barb choice
+  if (V.mg_knotNo || V.mg_knotYes) {
+    return V.mg_knotYes;
+  } else {
+    return V.n_barbs;
+  }
+};
+
+/** True if Drekkar side has feline barbs */
+MT.impliedBarbs = () =&gt; {
+  const V = State.variables;
+
+  // make sure we&#39;re ambiguous before player makes a knot choice
+  if (!V.d_knotChoiceMade) {
+    throw new Error(&quot;barbs indeterminate&quot;);
+  }
+
+  // if player has expressed a barbs choice in Nero, use it.
+  // otherwise match the knot choice
+  if (V.mg_barbsNo || V.mg_barbsYes) {
+    return V.mg_barbsYes;
+  } else {
+    return V.d_knot;
+  }
+};
+
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="188" name="g0init Nero Constraints" tags="inclusion" position="1250,1200" size="100,100">&lt;&lt;script&gt;&gt;
 
 // - Flags are booleans where null or undefined is equivalent to false.
@@ -20186,7 +20227,7 @@ being bound and completely nude in front of a
 &quot;If you don&#39;t cooperate...&quot; Ivex runs his fingers through the fur covering the wolf&#39;s ribs, moving slowly down the abdomen, toward Nero&#39;s exposed crotch...
 
 ?P
-When the panther&#39;s paw stops, his palm is resting against Nero&#39;s sheath, and all five claws are firmly pressed into Nero&#39;s balls.
+When the panther&#39;s paw stops, his palm is resting against Nero&#39;s crotch, and all five claws are firmly pressed into Nero&#39;s balls.
 
 ?P
 Threat. Yes. That is definitely a threat.
@@ -27592,6 +27633,7 @@ Nero briefly admired the size of the liberated cock, before approaching it with 
 &lt;&lt;arc-only&gt;&gt;
   &lt;&lt;set $n_glitched = true&gt;&gt;
 &lt;&lt;/arc-only&gt;&gt;
+
 &lt;&lt;arc-skip&gt;&gt;
   &lt;&lt;barbs-announce now&gt;&gt;
 &lt;&lt;/arc-skip&gt;&gt;
@@ -27614,7 +27656,12 @@ for this appointment, and said,
 ?P
 The lupine mage made a few adjustments to the new spell.
 He then applied it firmly to the cheetah&#39;s erect cock,
-forcing the member down into retreat, back into its sheath.
+forcing the member down into
+&lt;&lt;if $n_barbs &amp;&amp; !$n_glitched&gt;&gt;
+  retreat, back into its sheath.
+&lt;&lt;else&gt;&gt;
+  retreat.
+&lt;&lt;/if&gt;&gt;
 It did not go willingly. Pevhin complained as well.
 
 ?P
@@ -27639,6 +27686,7 @@ Lord Pevhin was livid, but still helplessly strapped to the workshop table. Lady
   &lt;&lt;kw-unlock-soon kn_Pevhin&gt;&gt;
   [[Continue|n1p Barbs Fast End]]
 &lt;&lt;/arc-skip&gt;&gt;
+
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="391" name="n1p Barbs Fast End" tags="mt-ready" position="4050,1525" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;kw-announce&gt;&gt;
@@ -27983,16 +28031,19 @@ Ivex the Magnificent&#39;s...
 &lt;&lt;barbs-announce soon&gt;&gt;
 &lt;ul class=actions&gt;
   &lt;&lt;mt-seen $sn_barbsSkip&gt;&gt;
-    &lt;&lt;mtl $n_afterNaked &quot;$n_barbs = true; MT.mdSet(&#39;sn_barbsSkip&#39;, true)&quot;&gt;&gt;
+    &lt;&lt;mtl $n_afterNaked &quot;$n_barbs = true&quot;&gt;&gt;
       ...barbed feline cock.
     &lt;&lt;/mtl&gt;&gt;
-    &lt;&lt;mtl $n_afterNaked &quot;delete $n_barbs; MT.mdSet(&#39;sn_barbsSkip&#39;, true)&quot;&gt;&gt;
+    &lt;&lt;mtl $n_afterNaked &quot;delete $n_barbs&quot;&gt;&gt;
       ...smooth feline cock.
     &lt;&lt;/mtl&gt;&gt;
   &lt;&lt;/mt-seen&gt;&gt;
 &lt;/ul&gt;
 
-&lt;&lt;set $n_ivexNear = true&gt;&gt;
+&lt;&lt;run
+  $n_ivexNear = true;
+  MT.mdSet(&#39;sn_barbsSkip&#39;, true);
+&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="400" name="n1p Barbs Slow 1" tags="mt-ready big-mood" position="3375,1825" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_candleLit false&gt;&gt;
 
@@ -28194,7 +28245,7 @@ He was wearing clear glass goggles that glinted in the light. And nothing else.
 Nero had undressed himself in plain view of an older, naked, male, &lt;em&gt;very naked&lt;/em&gt;, &lt;em&gt;very male&lt;/em&gt;, tiger.
 
 ?P
-The tiger&#39;s member was not erect, not fully. The wolf might have fled immediately if it were. It was merely &lt;em&gt;there&lt;/em&gt;, undeniably present, and Nero could see more than a little of the pink shaft protruding from the sheath.
+The tiger&#39;s member was not erect, not fully. Nero might have fled immediately if it were. It was merely &lt;em&gt;there&lt;/em&gt;, undeniably present, and the wolf could see it twitch.
 
 ?P
 Nero looked away quickly, pretending not to notice anything.

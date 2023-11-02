@@ -4,11 +4,15 @@
 function announceBarbs(dest) {
   const V = State.variables;
   V.n_announceBarbsSoon = false;
-  const barbs = MT.untracedGet("n_glitched")
-    ? "Barbs?"
-    : MT.untracedGet("n_barbs")
-    ? "Barbs" : "Smooth";
-  $(dest).wiki(`<meta-text>Story Variant: ${barbs}</meta-text>?P`);
+  V.n_barbsChoiceMade = true;
+
+  if (!V.n_glitched) {
+    MT.mdSet("mg_barbsNo", !V.n_barbs);
+    MT.mdSet("mg_barbsYes", V.n_barbs);
+  }
+
+  const text = V.n_glitched ? "Barbs?" : V.n_barbs ? "Barbs" : "Smooth";
+  $(dest).wiki(`<meta-text>Story Variant: ${text}</meta-text>?P`);
 }
 
 Macro.add("barbs-announce", {
@@ -30,4 +34,41 @@ Macro.add("barbs-announce", {
     }
   }
 });
+
+/** True if Nero side has canine knots */
+MT.impliedKnot = () => {
+  const V = State.variables;
+
+  // make sure we're ambiguous before player makes a barb choice
+  if (!V.n_barbsChoiceMade) {
+    throw new Error("knot indeterminate");
+  }
+
+  // if player has expressed a knot choice in Drekkar, use it.
+  // otherwise match the barb choice
+  if (V.mg_knotNo || V.mg_knotYes) {
+    return V.mg_knotYes;
+  } else {
+    return V.n_barbs;
+  }
+};
+
+/** True if Drekkar side has feline barbs */
+MT.impliedBarbs = () => {
+  const V = State.variables;
+
+  // make sure we're ambiguous before player makes a knot choice
+  if (!V.d_knotChoiceMade) {
+    throw new Error("barbs indeterminate");
+  }
+
+  // if player has expressed a barbs choice in Nero, use it.
+  // otherwise match the knot choice
+  if (V.mg_barbsNo || V.mg_barbsYes) {
+    return V.mg_barbsYes;
+  } else {
+    return V.d_knot;
+  }
+};
+
 <</script>>
