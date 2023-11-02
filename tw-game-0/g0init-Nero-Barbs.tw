@@ -38,9 +38,10 @@ Macro.add("barbs-announce", {
 /** True if Nero side has canine knots */
 MT.impliedKnot = () => {
   const V = State.variables;
+  const T = State.temporary;
 
   // make sure we're ambiguous before player makes a barb choice
-  if (!V.n_barbsChoiceMade) {
+  if (!T.isTranscript && !V.n_barbsChoiceMade) {
     throw new Error("knot indeterminate");
   }
 
@@ -48,17 +49,20 @@ MT.impliedKnot = () => {
   // otherwise match the barb choice
   if (V.mg_knotNo || V.mg_knotYes) {
     return V.mg_knotYes;
-  } else {
+  } else if (V.n_barbsChoiceMade) {
     return V.n_barbs;
+  } else {
+    return V.mg_barbsYes;
   }
 };
 
 /** True if Drekkar side has feline barbs */
 MT.impliedBarbs = () => {
   const V = State.variables;
+  const T = State.temporary;
 
   // make sure we're ambiguous before player makes a knot choice
-  if (!V.d_knotChoiceMade) {
+  if (!T.isTranscript && !V.d_knotChoiceMade) {
     throw new Error("barbs indeterminate");
   }
 
@@ -66,8 +70,10 @@ MT.impliedBarbs = () => {
   // otherwise match the knot choice
   if (V.mg_barbsNo || V.mg_barbsYes) {
     return V.mg_barbsYes;
-  } else {
+  } else if (V.d_knotChoiceMade) {
     return V.d_knot;
+  } else {
+    return V.mg_knotYes;
   }
 };
 

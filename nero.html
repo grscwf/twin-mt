@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
   &gt;Sleth&lt;/a&gt;
 and &lt;a href=&quot;https://mastodon.social/@gray17&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
@@ -9400,9 +9400,10 @@ Macro.add(&quot;barbs-announce&quot;, {
 /** True if Nero side has canine knots */
 MT.impliedKnot = () =&gt; {
   const V = State.variables;
+  const T = State.temporary;
 
   // make sure we&#39;re ambiguous before player makes a barb choice
-  if (!V.n_barbsChoiceMade) {
+  if (!T.isTranscript &amp;&amp; !V.n_barbsChoiceMade) {
     throw new Error(&quot;knot indeterminate&quot;);
   }
 
@@ -9410,17 +9411,20 @@ MT.impliedKnot = () =&gt; {
   // otherwise match the barb choice
   if (V.mg_knotNo || V.mg_knotYes) {
     return V.mg_knotYes;
-  } else {
+  } else if (V.n_barbsChoiceMade) {
     return V.n_barbs;
+  } else {
+    return V.mg_barbsYes;
   }
 };
 
 /** True if Drekkar side has feline barbs */
 MT.impliedBarbs = () =&gt; {
   const V = State.variables;
+  const T = State.temporary;
 
   // make sure we&#39;re ambiguous before player makes a knot choice
-  if (!V.d_knotChoiceMade) {
+  if (!T.isTranscript &amp;&amp; !V.d_knotChoiceMade) {
     throw new Error(&quot;barbs indeterminate&quot;);
   }
 
@@ -9428,8 +9432,10 @@ MT.impliedBarbs = () =&gt; {
   // otherwise match the knot choice
   if (V.mg_barbsNo || V.mg_barbsYes) {
     return V.mg_barbsYes;
-  } else {
+  } else if (V.d_knotChoiceMade) {
     return V.d_knot;
+  } else {
+    return V.mg_knotYes;
   }
 };
 
@@ -25295,8 +25301,8 @@ every spicy breath of air that the wolf inhales.
 has also noticed the naked wolf&#39;s traitorous penis,
 and the
 &lt;&lt;= $n_abused ? &quot;brutal&quot; : &quot;lecherous&quot;&gt;&gt;
-panther brings the fingers of one paw
-to stroke the fur of the wolf&#39;s sheath.
+panther brings the fingers of one paw to stroke the fur
+&lt;&lt;= MT.impliedKnot() ? &quot;of the wolf&#39;s sheath.&quot; : &quot;at the wolf&#39;s crotch.&quot;&gt;&gt;
 &lt;&lt;if $n_subby&gt;&gt;
   Nero pants and shivers at the touch.
 &lt;&lt;elseif $n_tough || $n_abused&gt;&gt;
@@ -25305,10 +25311,22 @@ to stroke the fur of the wolf&#39;s sheath.
   Nero struggles to escape the touch.
 &lt;&lt;/if&gt;&gt;
 
-The panther teases the sheath, fondling it gently and deliberately,
-pulling lightly on the lip and inserting a finger within,
-encouraging the wolf&#39;s red shaft to rouse itself and peek out further
-into the spicy, candle-scented air.
+&lt;&lt;if MT.impliedKnot()&gt;&gt;
+  The panther teases the wolf&#39;s sheath,
+  fondling it gently and deliberately,
+  pulling lightly on the lip and inserting a finger within,
+  encouraging the wolf&#39;s red shaft to rouse itself
+  and peek out further
+  into the spicy, candle-scented air.
+&lt;&lt;else&gt;&gt;
+  The panther teases the wolf&#39;s cock,
+  fondling it gently and deliberately,
+  brushing lightly across the head with the tip of a claw,
+  encouraging the wolf&#39;s smooth shaft to rouse itself
+  and extend further
+  into of the spicy, candle-scented air.
+&lt;&lt;/if&gt;&gt;
+
 ?P
 Nero looks down at himself,
 at Ivex&#39;s paw
@@ -25819,7 +25837,8 @@ even if the touch is the crop that brings a new type of pain.
 &lt;&lt;vi-ignore n_tough&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 
-Ivex moves the tip of the crop around the base of the wolf&#39;s sheath.
+Ivex moves the tip of the crop around the base of the wolf&#39;s
+&lt;&lt;= MT.impliedKnot() ? &quot;sheath.&quot; : &quot;cock.&quot;&gt;&gt;
 The shaft of the crop comes close to the wolf&#39;s own growing shaft.
 Nero strains within the leather bonds and
 pulls against his own trapped balls,
@@ -26640,7 +26659,8 @@ The panther gestures toward the
 &lt;&lt;/if&gt;&gt;
 &quot;This is why I have that candle. Can you feel it yet?&quot;
 He places a paw on the wolf&#39;s crotch, above the tortured balls.
-The panther uses his fingers to gently stroke the fur on Nero&#39;s sheath.
+The panther uses his fingers to gently stroke the fur
+&lt;&lt;= MT&gt;impliedKnot() ? &quot;on Nero&#39;s sheath.&quot; : &quot;at Nero&#39;s crotch.&quot;&gt;&gt;
 
 ?P
 The wolf&#39;s attention is dominated by the agony at his crotch.
@@ -26659,7 +26679,9 @@ the wolf is discovering his destiny, the place he&#39;s meant
 &lt;span class=nobr&gt;to be.&lt;/span&gt;
 
 ?P
-His cock bulges out his sheath with anticipation.
+His cock bulges
+&lt;&lt;= MT.impliedKnot() ? &quot;out his sheath&quot; : &quot;forward&quot;&gt;&gt;
+with anticipation.
 
 ?P
 [[Continue|n1f Clever Escape 6]]
@@ -29006,7 +29028,8 @@ me to... scratch some other itches.&quot;
 
 ?P
 The panther&#39;s right paw is now at the wolf&#39;s crotch.
-The claws lightly brush up and down the wolf&#39;s furry sheath
+The claws lightly brush up and down the wolf&#39;s
+&lt;&lt;= MT.impliedKnot() ? &quot;furry sheath&quot; : &quot;growing cock&quot;&gt;&gt;
 in long, slow strokes.
 
 ?P
@@ -29490,7 +29513,12 @@ Ivex leans close and presses his muzzle into the wolf&#39;s ear.
 Don&#39;t worry your pretty little head about it.&quot;
 
 ?P
-The panther&#39;s right paw is now fingering the fur of the wolf&#39;s naked sheath,
+The panther&#39;s right paw is now fingering the
+&lt;&lt;if MT.impliedKnot()&gt;&gt;
+  fur of the wolf&#39;s naked sheath,
+&lt;&lt;else&gt;&gt;
+  skin of the wolf&#39;s naked cock,
+&lt;&lt;/if&gt;&gt;
 up and down its length in slow, gentle strokes.
 
 ?P
@@ -42327,8 +42355,13 @@ The feeling is ecstasy. His cock welcomes the familiar
 touch that it had missed for so long.
 The firm pressure of his palm pad is a delight
 on the shaft below the tip.
-The soft strokes of his fingers feel amazing
-on the sensitive skin and fur of his sheath.
+The soft strokes of his fingers feel amazing on
+the sensitive
+&lt;&lt;if MT.impliedKnot()&gt;&gt;
+  fur of his sheath.
+&lt;&lt;else&gt;&gt;
+  head of his cock.
+&lt;&lt;/if&gt;&gt;
 And his paw&#39;s light, gentle caress brings welcome relief
 to his sore and aching balls.
 
@@ -47941,8 +47974,9 @@ seems to make the wolf&#39;s cock eager for more.
 Nero does not want the full length of the panther inside his mouth,
 but he moves his head forward along the side of the shaft,
 and he stretches his tongue out to touch the skin
-near the sheath at the base of the panther&#39;s cock,
-hoping that Ivex will do the same and touch the wolf&#39;s bulging knot.
+near the base of the panther&#39;s cock,
+hoping that Ivex will do the same on the wolf&#39;s bulging
+&lt;&lt;= MT.impliedKnot() ? &quot;knot.&quot; : &quot;cock.&quot;&gt;&gt;
 The wolf tries his best to tease and suggest moves for the dance,
 tries to lead the dance, not follow.
 
