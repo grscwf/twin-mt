@@ -188,12 +188,14 @@ MT.trailForgetOlder = () => {
 
 function renderSeen(title, state, out) {
   out.empty();
+  const div = MT.tranRenderOne(title, state);
   if (setup.debug) {
+    const clue = summarize(div);
+    clue.wiki("?debugIcon <hr>").appendTo(out);
     $("<div class=trail-info-title>")
       .wiki(`?debugIcon ${title}`)
       .appendTo(out);
   }
-  const div = MT.tranRenderOne(title, state);
   out.append(div);
   if (setup.debug) {
     $("<div class=trail-info-state>")
@@ -205,7 +207,19 @@ function renderSeen(title, state, out) {
 function renderUnseen(title, out) {
   out.empty();
   const div = MT.tranRenderOne(title, null);
+  const clue = summarize(div);
+  out.append(clue);
 
+  if (setup.debug) {
+    $("<div class=trail-info-debug>")
+      .append("<hr>")
+      .append($("<div class=trail-info-title>").text(`\ud83d\udd27 ${title}`))
+      .append(div)
+      .appendTo(out);
+  }
+}
+
+function summarize(div) {
   let wordsLeft = 10;
   const trim = node => {
     if (wordsLeft <= 0) {
@@ -245,15 +259,7 @@ function renderUnseen(title, out) {
   trim(copy[0]);
   copy.addClass("trail-info-unseen");
   copy.append("...");
-
-  out.append(copy);
-
-  if (setup.debug) {
-    $("<div class=trail-info-debug>")
-      .append($("<div class=trail-info-title>").text(`\ud83d\udd27 ${title}`))
-      .append(div)
-      .appendTo(out);
-  }
+  return copy;
 }
 
 MT.trailRender = (out) => {
