@@ -190,7 +190,8 @@ function renderSeen(title, state, out) {
   out.empty();
   const div = MT.tranRenderOne(title, state);
   if (setup.debug) {
-    const clue = summarize(div);
+    const plain = MT.tranRenderOne(title, null);
+    const clue = makeClue(plain);
     clue.wiki("?debugIcon <hr>").appendTo(out);
     $("<div class=trail-info-title>")
       .wiki(`?debugIcon ${title}`)
@@ -207,7 +208,7 @@ function renderSeen(title, state, out) {
 function renderUnseen(title, out) {
   out.empty();
   const div = MT.tranRenderOne(title, null);
-  const clue = summarize(div);
+  const clue = makeClue(div);
   out.append(clue);
 
   if (setup.debug) {
@@ -219,8 +220,9 @@ function renderUnseen(title, out) {
   }
 }
 
-function summarize(div) {
-  let wordsLeft = 10;
+function makeClue(div) {
+  const hasCut = div.find("#clue-cut").length !== 0;
+  let wordsLeft = hasCut ? 100 : 10;
   const trim = node => {
     if (wordsLeft <= 0) {
       node.parentNode.removeChild(node);
@@ -256,6 +258,8 @@ function summarize(div) {
     }
   };
   const copy = div.clone();
+  copy.find("meta-text").remove();
+  copy.find(".clue-remove").remove();
   trim(copy[0]);
   copy.addClass("trail-info-unseen");
   copy.append("...");
