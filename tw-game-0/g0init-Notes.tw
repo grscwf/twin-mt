@@ -84,8 +84,6 @@
 
 MT.selectedText = "";
 
-const popupTitle = "g1m Notes Popup";
-
 // State.metadata.get always deflates and deserializes from localStorage, but:
 // - we almost always want the localStorage value that might be modified
 //   by another tab.
@@ -94,21 +92,19 @@ const popupTitle = "g1m Notes Popup";
 
 MT.notesGetAll = () => {
   let all = State.metadata.get("notes") || "";
-
-  // migrate old -F names
-  all = all.replace(/^(\[passage\s+n\d\w+)-[FDS]\s/gm, "$1");
-
+  // migrate [passage] to [page]
+  all = all.replace(/^(\[passage\s)/gm, "[page ");
   return all;
 };
 const setAll = val => State.metadata.set("notes", val);
 
-function getStats(passage) {
+function getStats(pageName) {
   let count = 0;
   let hasNoteHere = false;
   const nFull = "\n" + MT.notesGetAll();
-  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
+  for (const m of nFull.matchAll(/\n\[page ([^\n\]]+)\]\n/g)) {
     count += 1;
-    if (m[1] === passage) hasNoteHere = true;
+    if (m[1] === pageName) hasNoteHere = true;
   }
   return { count, hasNoteHere };
 }
@@ -124,31 +120,31 @@ MT.notesTryReplaceAll = (old, val) => {
 
 MT.notesCleanup = (text) => {
   text = "\n" + text + "\n";
-  const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
+  const parts = text.split(/\n\[page\s+(.*?)\]\s*?\n/);
   const before = parts.shift().trimEnd().slice(1);
   const keep = [];
   for (let i = 0; i < parts.length; i += 2) {
-    const passage = parts[i].trim();
+    const pageName = parts[i].trim();
     const body = parts[i+1].trimEnd();
     if (body === "") continue;
-    keep.push([passage, body]);
+    keep.push([pageName, body]);
   }
   keep.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? +1 : 0);
   let result = "";
   if (before !== "") result += before + "\n";
-  for (const [passage, body] of keep) {
-    result += `[passage ${passage}]\n${body}\n\n`;
+  for (const [pageName, body] of keep) {
+    result += `[page ${pageName}]\n${body}\n\n`;
   }
   return result;
 };
 
-function splitAt(passage, text) {
+function splitAt(pageName, text) {
   let nText = "\n" + text;
   if (nText.slice(-1) !== "\n") nText += "\n";
-  const nHeader = `\n[passage ${passage}]\n`;
+  const nHeader = `\n[page ${pageName}]\n`;
   let pos = 0;
   while ((pos = nText.indexOf(nHeader, pos)) >= 0) {
-    let end = nText.indexOf("\n[passage ", pos + 1);
+    let end = nText.indexOf("\n[page ", pos + 1);
     if (end < 0) end = nText.length;
     return {
       before: nText.slice(1, pos + 1),
@@ -165,9 +161,9 @@ function splitAt(passage, text) {
   };
 }
 
-MT.notesGet = (passage) => {
+MT.notesGet = (pageName) => {
   const full = MT.notesGetAll();
-  const split = splitAt(passage, full);
+  const split = splitAt(pageName, full);
   return split.body;
 };
 
@@ -195,10 +191,10 @@ function removeSection(name, text) {
   return result;
 }
 
-/** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
-MT.notesTryReplace = (passage, old, val) => {
+/** If page note is old, overwrite it with val, then returns the note (either val or conflict) */
+MT.notesTryReplace = (pageName, old, val) => {
   const full = MT.notesGetAll();
-  const sp = splitAt(passage, full);
+  const sp = splitAt(pageName, full);
   if (sp.body !== old.trimEnd()) return sp.body;
   const replace = /\S/.test(val) ? sp.header + val.trimEnd() +"\n\n" : "";
   const next = sp.before + replace + sp.after;
@@ -219,7 +215,7 @@ function openPopup() {
   if (T.notesVariant != null) {
     V.n_notesOrigin += " - " + T.notesVariant;
   }
-  const popupText = Story.get(popupTitle).text;
+  const popupText = Story.get("g1m Notes Popup").text;
   Dialog.setup("");
   Dialog.wiki(popupText);
   Dialog.open();
@@ -252,13 +248,6 @@ function initNotes() {
 
   if (!setup.playtest) return;
   $(document).on(":passagedisplay", renderButton);
-
-  // migration
-  const old = localStorage.getItem("passage-notes-1");
-  if (old != null) {
-    localStorage.removeItem("passage-notes-1");
-    setAll(old);
-  }
 }
 
 initNotes();

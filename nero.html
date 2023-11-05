@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -11527,8 +11527,6 @@ Template.add(&quot;sprHoldStop&quot;, () =&gt; {
 
 MT.selectedText = &quot;&quot;;
 
-const popupTitle = &quot;g1m Notes Popup&quot;;
-
 // State.metadata.get always deflates and deserializes from localStorage, but:
 // - we almost always want the localStorage value that might be modified
 //   by another tab.
@@ -11537,21 +11535,19 @@ const popupTitle = &quot;g1m Notes Popup&quot;;
 
 MT.notesGetAll = () =&gt; {
   let all = State.metadata.get(&quot;notes&quot;) || &quot;&quot;;
-
-  // migrate old -F names
-  all = all.replace(/^(\[passage\s+n\d\w+)-[FDS]\s/gm, &quot;$1&quot;);
-
+  // migrate [passage] to [page]
+  all = all.replace(/^(\[passage\s)/gm, &quot;[page &quot;);
   return all;
 };
 const setAll = val =&gt; State.metadata.set(&quot;notes&quot;, val);
 
-function getStats(passage) {
+function getStats(pageName) {
   let count = 0;
   let hasNoteHere = false;
   const nFull = &quot;\n&quot; + MT.notesGetAll();
-  for (const m of nFull.matchAll(/\n\[passage ([^\n\]]+)\]\n/g)) {
+  for (const m of nFull.matchAll(/\n\[page ([^\n\]]+)\]\n/g)) {
     count += 1;
-    if (m[1] === passage) hasNoteHere = true;
+    if (m[1] === pageName) hasNoteHere = true;
   }
   return { count, hasNoteHere };
 }
@@ -11567,31 +11563,31 @@ MT.notesTryReplaceAll = (old, val) =&gt; {
 
 MT.notesCleanup = (text) =&gt; {
   text = &quot;\n&quot; + text + &quot;\n&quot;;
-  const parts = text.split(/\n\[passage\s+(.*?)\]\s*?\n/);
+  const parts = text.split(/\n\[page\s+(.*?)\]\s*?\n/);
   const before = parts.shift().trimEnd().slice(1);
   const keep = [];
   for (let i = 0; i &lt; parts.length; i += 2) {
-    const passage = parts[i].trim();
+    const pageName = parts[i].trim();
     const body = parts[i+1].trimEnd();
     if (body === &quot;&quot;) continue;
-    keep.push([passage, body]);
+    keep.push([pageName, body]);
   }
   keep.sort((a, b) =&gt; a[0] &lt; b[0] ? -1 : a[0] &gt; b[0] ? +1 : 0);
   let result = &quot;&quot;;
   if (before !== &quot;&quot;) result += before + &quot;\n&quot;;
-  for (const [passage, body] of keep) {
-    result += `[passage ${passage}]\n${body}\n\n`;
+  for (const [pageName, body] of keep) {
+    result += `[page ${pageName}]\n${body}\n\n`;
   }
   return result;
 };
 
-function splitAt(passage, text) {
+function splitAt(pageName, text) {
   let nText = &quot;\n&quot; + text;
   if (nText.slice(-1) !== &quot;\n&quot;) nText += &quot;\n&quot;;
-  const nHeader = `\n[passage ${passage}]\n`;
+  const nHeader = `\n[page ${pageName}]\n`;
   let pos = 0;
   while ((pos = nText.indexOf(nHeader, pos)) &gt;= 0) {
-    let end = nText.indexOf(&quot;\n[passage &quot;, pos + 1);
+    let end = nText.indexOf(&quot;\n[page &quot;, pos + 1);
     if (end &lt; 0) end = nText.length;
     return {
       before: nText.slice(1, pos + 1),
@@ -11608,9 +11604,9 @@ function splitAt(passage, text) {
   };
 }
 
-MT.notesGet = (passage) =&gt; {
+MT.notesGet = (pageName) =&gt; {
   const full = MT.notesGetAll();
-  const split = splitAt(passage, full);
+  const split = splitAt(pageName, full);
   return split.body;
 };
 
@@ -11638,10 +11634,10 @@ function removeSection(name, text) {
   return result;
 }
 
-/** If passage note is old, overwrite it with val, then returns the note (either val or conflict) */
-MT.notesTryReplace = (passage, old, val) =&gt; {
+/** If page note is old, overwrite it with val, then returns the note (either val or conflict) */
+MT.notesTryReplace = (pageName, old, val) =&gt; {
   const full = MT.notesGetAll();
-  const sp = splitAt(passage, full);
+  const sp = splitAt(pageName, full);
   if (sp.body !== old.trimEnd()) return sp.body;
   const replace = /\S/.test(val) ? sp.header + val.trimEnd() +&quot;\n\n&quot; : &quot;&quot;;
   const next = sp.before + replace + sp.after;
@@ -11662,7 +11658,7 @@ function openPopup() {
   if (T.notesVariant != null) {
     V.n_notesOrigin += &quot; - &quot; + T.notesVariant;
   }
-  const popupText = Story.get(popupTitle).text;
+  const popupText = Story.get(&quot;g1m Notes Popup&quot;).text;
   Dialog.setup(&quot;&quot;);
   Dialog.wiki(popupText);
   Dialog.open();
@@ -11695,13 +11691,6 @@ function initNotes() {
 
   if (!setup.playtest) return;
   $(document).on(&quot;:passagedisplay&quot;, renderButton);
-
-  // migration
-  const old = localStorage.getItem(&quot;passage-notes-1&quot;);
-  if (old != null) {
-    localStorage.removeItem(&quot;passage-notes-1&quot;);
-    setAll(old);
-  }
 }
 
 initNotes();
@@ -19217,7 +19206,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   }
 &lt;/style&gt;
 &lt;div class=NP-subtitle&gt;
-    Notes for [passage $n_notesOrigin]
+    Notes for [page $n_notesOrigin]
 &lt;/div&gt;
 &lt;textarea id=NP-input rows=&quot;8&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
 &lt;br&gt;
@@ -19335,7 +19324,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 
 &lt;hr&gt;
 &lt;div class=ui-subtitle&gt;
-    Notes for [passage $n_notesOrigin]
+    Notes for [page $n_notesOrigin]
 &lt;/div&gt;
 &lt;textarea id=&quot;notes-input&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
 &lt;div class=notes-buttons&gt;
