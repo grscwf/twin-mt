@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13555,6 +13555,18 @@ function makeClue(div) {
   return copy;
 }
 
+function lastNonMenuPassage() {
+  const hist = State.history;
+  for (let i = hist.length - 1; i &gt;= 0; i--) {
+    const title = hist[i].title;
+    const passage = Story.get(title);
+    if (!passage.tags.includes(&quot;is-menu&quot;)) {
+      return title;
+    }
+  }
+  return null;
+}
+
 MT.trailRender = (out) =&gt; {
   const current = new Set(State.history.map(m =&gt; m.title));
   const recent = new Set();
@@ -13699,6 +13711,8 @@ MT.trailRender = (out) =&gt; {
     }
   };
 
+  const here = lastNonMenuPassage();
+
   let hasRecent = false;
   let hasOlder = false;
   for (const sect of sectNames) {
@@ -13721,6 +13735,9 @@ MT.trailRender = (out) =&gt; {
         item.attr(&quot;title&quot;, title);
       }
       item.attr(&quot;data-title&quot;, title);
+      if (title === here) {
+        $(`&lt;span id=&quot;trail-here&quot;&gt;`).appendTo(item);
+      }
       item.on(&quot;click&quot;, onClick);
 
       hasRecent ||= recent.has(title);
@@ -19795,6 +19812,7 @@ hello some more
   border: 1px solid #444;
   border-radius: 2px;
   display: inline-block;
+  position: relative;
   height: 40px;
   width: 40px;
 }
@@ -19831,6 +19849,17 @@ hello some more
   background-color: #555;
 }
 
+#trail-here {
+  background-color: #b33;
+  border-radius: 4px;
+  display: inline-block;
+  height: 7px;
+  left: 6px;
+  pointer-events: none;
+  position: absolute;
+  top: 6px;
+  width: 7px;
+}
 
 #trail-info {
   border: 1px solid #999;
