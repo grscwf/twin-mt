@@ -303,26 +303,107 @@ MT.trailRender = (out) => {
     }
   };
 
-  const onClick = ev => {
-    const target = $(ev.target);
-    let info = $("#trail-info");
-
-    if (target.hasClass("trail-selected")) {
-      target.removeClass("trail-selected");
-      info.remove();
-      return;
-    }
+  const select = target => {
+    if (target == null || !target.length) return;
 
     $(".trail-selected").removeClass("trail-selected");
     target.addClass("trail-selected");
 
-    if (info.length === 0) {
+    let info = $("#trail-info");
+    if (!info.length) {
       info = $("<div id=trail-info>");
     }
     info.appendTo(target.parent());
 
     const title = target.attr("data-title");
     renderInfo(title, info);
+
+    const win = $(window);
+    const winTop = win.scrollTop();
+    const winBot = winTop + win.height();
+    const top = target.offset().top;
+    if (top < winTop + 20 || top > winBot - 100) {
+      target[0].scrollIntoView({ block: "center" });
+    }
+  };
+
+  const deselect = () => {
+    $("#trail-info").remove();
+    $(".trail-selected").removeClass("trail-selected");
+  };
+
+  const onKeyDown = ev => {
+    let sel = $(".trail-selected");
+    switch (ev.key) {
+      case "ArrowUp": {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let pos = sel.prevAll(".trail-item").length;
+        let t = sel.parent().prevAll(".trail-group").first();
+        if (t.length) {
+          const kids = t.find(".trail-item");
+          pos = Math.min(pos, kids.length && kids.length - 1);
+          t = $(kids[pos]);
+        }
+        select(t);
+        break;
+      }
+      case "ArrowDown": {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let pos = sel.prevAll(".trail-item").length;
+        let t = sel.parent().nextAll(".trail-group").first();
+        if (t.length) {
+          const kids = t.find(".trail-item");
+          pos = Math.min(pos, kids.length && kids.length - 1);
+          t = $(kids[pos]);
+        }
+        select(t);
+        break;
+      }
+      case "ArrowLeft": {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let t = sel.prev(".trail-item");
+        if (!t.length) {
+          t = sel.parent().prevAll(".trail-group").first();
+          t = t.find(".trail-item").last();
+        }
+        select(t);
+        break;
+      }
+      case "ArrowRight": {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let t = sel.next(".trail-item");
+        if (!t.length) {
+          t = sel.parent().nextAll(".trail-group").first();
+          t = t.find(".trail-item").first();
+        }
+        select(t);
+        break;
+      }
+    }
+  };
+
+  $(".passage").on("click", deselect);
+  $(document).on("keydown", onKeyDown);
+  $(document).on(":passageinit", () => {
+    $(document).off("keydown", onKeyDown);
+  });
+
+  const onClick = ev => {
+    const target = $(ev.target);
+    if (target.hasClass("trail-selected")) {
+      deselect();
+    } else {
+      select(target);
+      ev.stopPropagation();
+    }
   };
 
   let hasRecent = false;

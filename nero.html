@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13566,26 +13566,107 @@ MT.trailRender = (out) =&gt; {
     }
   };
 
-  const onClick = ev =&gt; {
-    const target = $(ev.target);
-    let info = $(&quot;#trail-info&quot;);
-
-    if (target.hasClass(&quot;trail-selected&quot;)) {
-      target.removeClass(&quot;trail-selected&quot;);
-      info.remove();
-      return;
-    }
+  const select = target =&gt; {
+    if (target == null || !target.length) return;
 
     $(&quot;.trail-selected&quot;).removeClass(&quot;trail-selected&quot;);
     target.addClass(&quot;trail-selected&quot;);
 
-    if (info.length === 0) {
+    let info = $(&quot;#trail-info&quot;);
+    if (!info.length) {
       info = $(&quot;&lt;div id=trail-info&gt;&quot;);
     }
     info.appendTo(target.parent());
 
     const title = target.attr(&quot;data-title&quot;);
     renderInfo(title, info);
+
+    const win = $(window);
+    const winTop = win.scrollTop();
+    const winBot = winTop + win.height();
+    const top = target.offset().top;
+    if (top &lt; winTop + 20 || top &gt; winBot - 100) {
+      target[0].scrollIntoView({ block: &quot;center&quot; });
+    }
+  };
+
+  const deselect = () =&gt; {
+    $(&quot;#trail-info&quot;).remove();
+    $(&quot;.trail-selected&quot;).removeClass(&quot;trail-selected&quot;);
+  };
+
+  const onKeyDown = ev =&gt; {
+    let sel = $(&quot;.trail-selected&quot;);
+    switch (ev.key) {
+      case &quot;ArrowUp&quot;: {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let pos = sel.prevAll(&quot;.trail-item&quot;).length;
+        let t = sel.parent().prevAll(&quot;.trail-group&quot;).first();
+        if (t.length) {
+          const kids = t.find(&quot;.trail-item&quot;);
+          pos = Math.min(pos, kids.length &amp;&amp; kids.length - 1);
+          t = $(kids[pos]);
+        }
+        select(t);
+        break;
+      }
+      case &quot;ArrowDown&quot;: {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let pos = sel.prevAll(&quot;.trail-item&quot;).length;
+        let t = sel.parent().nextAll(&quot;.trail-group&quot;).first();
+        if (t.length) {
+          const kids = t.find(&quot;.trail-item&quot;);
+          pos = Math.min(pos, kids.length &amp;&amp; kids.length - 1);
+          t = $(kids[pos]);
+        }
+        select(t);
+        break;
+      }
+      case &quot;ArrowLeft&quot;: {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let t = sel.prev(&quot;.trail-item&quot;);
+        if (!t.length) {
+          t = sel.parent().prevAll(&quot;.trail-group&quot;).first();
+          t = t.find(&quot;.trail-item&quot;).last();
+        }
+        select(t);
+        break;
+      }
+      case &quot;ArrowRight&quot;: {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!sel.length) return;
+        let t = sel.next(&quot;.trail-item&quot;);
+        if (!t.length) {
+          t = sel.parent().nextAll(&quot;.trail-group&quot;).first();
+          t = t.find(&quot;.trail-item&quot;).first();
+        }
+        select(t);
+        break;
+      }
+    }
+  };
+
+  $(&quot;.passage&quot;).on(&quot;click&quot;, deselect);
+  $(document).on(&quot;keydown&quot;, onKeyDown);
+  $(document).on(&quot;:passageinit&quot;, () =&gt; {
+    $(document).off(&quot;keydown&quot;, onKeyDown);
+  });
+
+  const onClick = ev =&gt; {
+    const target = $(ev.target);
+    if (target.hasClass(&quot;trail-selected&quot;)) {
+      deselect();
+    } else {
+      select(target);
+      ev.stopPropagation();
+    }
   };
 
   let hasRecent = false;
@@ -19681,6 +19762,15 @@ hello some more
   }
 }
 
+.trail-selected {
+  border-color: #fff;
+}
+
+.trail-item:not(.trail-selected):hover {
+  border-color: #1ff;
+  opacity: 0.8;
+}
+
 .trail-current {
   background-color: #ca2;
 }
@@ -19694,9 +19784,6 @@ hello some more
   background-color: #555;
 }
 
-.trail-selected {
-  border-color: #fff;
-}
 
 #trail-info {
   border: 1px solid #999;
@@ -19798,7 +19885,6 @@ hello some more
 &lt;div id=&quot;trail-output&quot;&gt;&lt;/div&gt;
 
 &lt;&lt;script&gt;&gt;
-
   State.temporary.switch = () =&gt; {
     $(&quot;#trail-intro&quot;).toggleClass(&quot;mt-hidden&quot;);
     const hidden = $(&quot;#trail-intro&quot;).hasClass(&quot;mt-hidden&quot;);
