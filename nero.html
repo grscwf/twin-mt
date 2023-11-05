@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -9345,8 +9345,7 @@ function deleteUnknownMetadata() {
   const rec = MT.mdRecord();
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
-      MT.diag(&quot;Warning: removing unknown metadata:&quot;, {[k]: v});
-      State.metadata.delete(k);
+      MT.diag(&quot;Warning: unknown metadata:&quot;, k);
     }
   }
   MT.diagReport();
@@ -9358,18 +9357,34 @@ function deleteOldStorage() {
   localStorage.removeItem(&quot;vp-marks-enabled&quot;);
 }
 
+function migrateMetadata() {
+  const rec = MT.mdRecord();
+  const rename = (from, to) =&gt; {
+    if (rec[from] != null &amp;&amp; rec[to] == null) {
+      State.metadata.set(to, rec[from]);
+      State.metadata.delete(from);
+    }
+  };
+
+  rename(&quot;mg_notesNoTrail&quot;, &quot;mi_notesNoTrail&quot;);
+  rename(&quot;mg_notesNoTrailTimes&quot;, &quot;mi_notesNoTrailTimes&quot;);
+  rename(&quot;mg_trail&quot;, &quot;mi_trail&quot;);
+  rename(&quot;notes&quot;, &quot;mi_notes&quot;);
+}
+
 function migrateNotes() {
-  const original = State.metadata.get(&quot;notes&quot;) || &quot;&quot;;
+  const original = State.metadata.get(&quot;mi_notes&quot;) || &quot;&quot;;
   let fixed = original;
   // migrate [passage] to [page]
   fixed = fixed.replace(/^(\[passage\s)/gm, &quot;[page &quot;);
   if (fixed !== original) {
-    State.metadata.set(&quot;notes&quot;, fixed);
+    State.metadata.set(&quot;mi_notes&quot;, fixed);
   }
 }
 
 function migrateInit() {
   deleteOldStorage();
+  migrateMetadata();
   migrateNotes();
   $(document).on(&quot;:storyready&quot;, deleteUnknownMetadata);
 }
@@ -11544,8 +11559,8 @@ MT.selectedText = &quot;&quot;;
 // - the cacheable calls to getAll don&#39;t happen often enough to make it
 //   worth caching.
 
-MT.notesGetAll = () =&gt; State.metadata.get(&quot;notes&quot;) || &quot;&quot;;
-const setAll = val =&gt; State.metadata.set(&quot;notes&quot;, val);
+MT.notesGetAll = () =&gt; State.metadata.get(&quot;mi_notes&quot;) || &quot;&quot;;
+const setAll = val =&gt; State.metadata.set(&quot;mi_notes&quot;, val);
 
 function getStats(pageName) {
   let count = 0;
@@ -11691,9 +11706,9 @@ function updateStatus() {
 }
 
 function initNotes() {
-  MT.mdDefIgnored(&quot;notes&quot;);
-  MT.mdDefIgnored(&quot;mg_notesNoTrail&quot;);
-  MT.mdDefIgnored(&quot;mg_notesNoTrailTimes&quot;);
+  MT.mdDefIgnored(&quot;mi_notes&quot;);
+  MT.mdDefIgnored(&quot;mi_notesNoTrail&quot;);
+  MT.mdDefIgnored(&quot;mi_notesNoTrailTimes&quot;);
 
   if (!setup.playtest) return;
   $(document).on(&quot;:passagedisplay&quot;, renderButton);
@@ -13381,7 +13396,7 @@ function compact(trail) {
 }
 
 MT.trailGet = () =&gt; {
-  let trail = MT.mdGetUncached(&quot;mg_trail&quot;);
+  let trail = MT.mdGetUncached(&quot;mi_trail&quot;);
   trail ??= {};
   trail.recent ??= 0;
   trail.events ??= [];
@@ -13416,7 +13431,7 @@ MT.trailAddNow = () =&gt; {
   }
   trail.events.push(event);
   compact(trail);
-  MT.mdSet(&quot;mg_trail&quot;, trail);
+  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 MT.trailAddOther = event =&gt; {
@@ -13427,13 +13442,13 @@ MT.trailAddOther = event =&gt; {
     ...event
   });
   compact(trail);
-  MT.mdSet(&quot;mg_trail&quot;, trail);
+  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 MT.trailClearRecent = () =&gt; {
   const trail = MT.trailGet();
   trail.recent = trail.events.length;
-  MT.mdSet(&quot;mg_trail&quot;, trail);
+  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 MT.trailForgetOlder = () =&gt; {
@@ -13441,7 +13456,7 @@ MT.trailForgetOlder = () =&gt; {
   trail.events.splice(0, trail.recent);
   trail.first = [];
   trail.recent = 0;
-  MT.mdSet(&quot;mg_trail&quot;, trail);
+  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 function renderSeen(title, state, out) {
@@ -13750,7 +13765,7 @@ MT.trailRender = (out) =&gt; {
 };
 
 function trailInit() {
-  MT.mdDefIgnored(&quot;mg_trail&quot;);
+  MT.mdDefIgnored(&quot;mi_trail&quot;);
 
   if (!setup.playtest) return;
   gatherPassages();
@@ -18758,8 +18773,8 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
     $(&quot;#notes-input&quot;).val(T.editVal);
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
 
-    const noTrail = MT.mdGetUncached(&quot;mg_notesNoTrail&quot;);
-    const noTimes = MT.mdGetUncached(&quot;mg_notesNoTrailTimes&quot;);
+    const noTrail = MT.mdGetUncached(&quot;mi_notesNoTrail&quot;);
+    const noTimes = MT.mdGetUncached(&quot;mi_notesNoTrailTimes&quot;);
     $(&quot;input[name=notes-add-trail]&quot;).prop(&quot;checked&quot;, !noTrail);
     $(&quot;input[name=notes-add-trail-times]&quot;).prop(&quot;checked&quot;, !noTimes);
     $(&quot;input[name=notes-add-trail-times]&quot;).prop(&quot;disabled&quot;, noTrail);
@@ -18782,7 +18797,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 
   function toggleTrail() {
     const addTrail = $(&quot;input[name=notes-add-trail]&quot;).prop(&quot;checked&quot;);
-    MT.mdSet(&quot;mg_notesNoTrail&quot;, !addTrail);
+    MT.mdSet(&quot;mi_notesNoTrail&quot;, !addTrail);
     $(&quot;input[name=notes-add-trail-times]&quot;).prop(&quot;disabled&quot;, !addTrail);
     renderTrail();
     uiUpdate();
@@ -18790,7 +18805,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
 
   function toggleTrailTimes() {
     const addTimes = $(&quot;input[name=notes-add-trail-times&quot;).prop(&quot;checked&quot;);
-    MT.mdSet(&quot;mg_notesNoTrailTimes&quot;, !addTimes);
+    MT.mdSet(&quot;mi_notesNoTrailTimes&quot;, !addTimes);
     renderTrail();
   }
 
@@ -18802,7 +18817,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
       textarea.val(&quot;&quot;);
       return;
     }
-    const trail = MT.mdGetUncached(&quot;mg_trail&quot;);
+    const trail = MT.mdGetUncached(&quot;mi_trail&quot;);
 
     let render = &quot;&quot;;
 
@@ -18819,14 +18834,18 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
     };
 
     render += `{\n`;
-    if (trail.first.length) {
-      render += `  &quot;first&quot;: [\n`;
-      addEventList(trail.first);
-      render += `  ],\n`;
+    if (trail != null) {
+      if (trail.first != null &amp;&amp; trail.first.length) {
+        render += `  &quot;first&quot;: [\n`;
+        addEventList(trail.first);
+        render += `  ],\n`;
+      }
+      if (trail.events != null) {
+        render += `  &quot;events&quot;: [\n`;
+        addEventList(trail.events);
+        render += `  ]\n`;
+      }
     }
-    render += `  &quot;events&quot;: [\n`;
-    addEventList(trail.events);
-    render += `  ]\n`;
     render += &quot;}\n&quot;;
     textarea.val(render);
   }

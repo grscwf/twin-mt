@@ -5,8 +5,7 @@ function deleteUnknownMetadata() {
   const rec = MT.mdRecord();
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
-      MT.diag("Warning: removing unknown metadata:", {[k]: v});
-      State.metadata.delete(k);
+      MT.diag("Warning: unknown metadata:", k);
     }
   }
   MT.diagReport();
@@ -18,18 +17,34 @@ function deleteOldStorage() {
   localStorage.removeItem("vp-marks-enabled");
 }
 
+function migrateMetadata() {
+  const rec = MT.mdRecord();
+  const rename = (from, to) => {
+    if (rec[from] != null && rec[to] == null) {
+      State.metadata.set(to, rec[from]);
+      State.metadata.delete(from);
+    }
+  };
+
+  rename("mg_notesNoTrail", "mi_notesNoTrail");
+  rename("mg_notesNoTrailTimes", "mi_notesNoTrailTimes");
+  rename("mg_trail", "mi_trail");
+  rename("notes", "mi_notes");
+}
+
 function migrateNotes() {
-  const original = State.metadata.get("notes") || "";
+  const original = State.metadata.get("mi_notes") || "";
   let fixed = original;
   // migrate [passage] to [page]
   fixed = fixed.replace(/^(\[passage\s)/gm, "[page ");
   if (fixed !== original) {
-    State.metadata.set("notes", fixed);
+    State.metadata.set("mi_notes", fixed);
   }
 }
 
 function migrateInit() {
   deleteOldStorage();
+  migrateMetadata();
   migrateNotes();
   $(document).on(":storyready", deleteUnknownMetadata);
 }
