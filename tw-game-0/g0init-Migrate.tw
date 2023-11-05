@@ -18,8 +18,19 @@ function deleteOldStorage() {
   localStorage.removeItem("vp-marks-enabled");
 }
 
+function migrateNotes() {
+  const original = State.metadata.get("notes") || "";
+  let fixed = original;
+  // migrate [passage] to [page]
+  fixed = fixed.replace(/^(\[passage\s)/gm, "[page ");
+  if (fixed !== original) {
+    State.metadata.set("notes", fixed);
+  }
+}
+
 function migrateInit() {
   deleteOldStorage();
+  migrateNotes();
   $(document).on(":storyready", deleteUnknownMetadata);
 }
 
