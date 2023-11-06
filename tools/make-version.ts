@@ -1,6 +1,6 @@
 #!/usr/bin/env ts-node
 /*
- * ts-node make-version.ts [--publish]
+ * ts-node make-version.ts [--deploy]
  *
  * Create a new version and tag it.
  */
