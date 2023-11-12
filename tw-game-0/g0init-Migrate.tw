@@ -2,7 +2,6 @@
 <<script>>
 
 function deleteUnknownMetadata() {
-  const rec = MT.mdRecord();
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
       MT.diag("Warning: unknown metadata:", k);
@@ -25,6 +24,13 @@ function migrateMetadata() {
       State.metadata.delete(from);
     }
   };
+  const remove = name => {
+    if (rec[name] != null) {
+      State.metadata.delete(name);
+    }
+  }
+
+  remove("mn_playerLostEndgame");
 
   rename("mg_notesNoTrail", "mi_notesNoTrail");
   rename("mg_notesNoTrailTimes", "mi_notesNoTrailTimes");
@@ -46,6 +52,7 @@ function migrateInit() {
   deleteOldStorage();
   migrateMetadata();
   migrateNotes();
+  // has to be run late, after all the mdDef* calls
   $(document).on(":storyready", deleteUnknownMetadata);
 }
 
