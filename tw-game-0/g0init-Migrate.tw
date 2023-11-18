@@ -48,12 +48,37 @@ function migrateNotes() {
   }
 }
 
+function checkSessionVersion() {
+  const ver = State.variables.g_versionAtStart || "unknown version";
+  if (ver === setup.version) return;
+  MT.diag(
+    `Warning: Current session is from a different version of the game.`
+    + ` Some things may not work correctly.`
+    + ` ("${ver}" !== "${setup.version}")`);
+  MT.diagReport();
+}
+
+function checkSaveVersion(save) {
+  const V = save.state.history[0]?.variables || {};
+  const ver = V.g_versionAtStart || "unknown version";
+  if (ver === setup.version) return;
+  $(document).one(":passagestart", () => {
+    MT.diag(
+      `Warning: Saved game is from a different version of the game.`
+      + ` Some things may not work correctly.`
+      + ` ("${ver}" !== "${setup.version}")`);
+  });
+}
+
 function migrateInit() {
   deleteOldStorage();
   migrateMetadata();
   migrateNotes();
   // has to be run late, after all the mdDef* calls
   $(document).on(":storyready", deleteUnknownMetadata);
+
+  Save.onLoad.add(save => checkSaveVersion(save));
+  $(document).on(":storyready", checkSessionVersion);
 }
 
 migrateInit();
