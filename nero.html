@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -9407,12 +9407,37 @@ function migrateNotes() {
   }
 }
 
+function checkSessionVersion() {
+  const ver = State.variables.g_versionAtStart || &quot;unknown version&quot;;
+  if (ver === setup.version) return;
+  MT.diag(
+    `Warning: Current session is from a different version of the game.`
+    + ` Some things may not work correctly.`
+    + ` (&quot;${ver}&quot; !== &quot;${setup.version}&quot;)`);
+  MT.diagReport();
+}
+
+function checkSaveVersion(save) {
+  const V = save.state.history[0]?.variables || {};
+  const ver = V.g_versionAtStart || &quot;unknown version&quot;;
+  if (ver === setup.version) return;
+  $(document).one(&quot;:passagestart&quot;, () =&gt; {
+    MT.diag(
+      `Warning: Saved game is from a different version of the game.`
+      + ` Some things may not work correctly.`
+      + ` (&quot;${ver}&quot; !== &quot;${setup.version}&quot;)`);
+  });
+}
+
 function migrateInit() {
   deleteOldStorage();
   migrateMetadata();
   migrateNotes();
   // has to be run late, after all the mdDef* calls
   $(document).on(&quot;:storyready&quot;, deleteUnknownMetadata);
+
+  Save.onLoad.add(save =&gt; checkSaveVersion(save));
+  $(document).on(&quot;:storyready&quot;, checkSessionVersion);
 }
 
 migrateInit();
@@ -14952,6 +14977,8 @@ Moreover, this story contains immoral characters performing abusive and perverse
   } else {
     T.characterDisplay = &quot;images/panther.png&quot;;
   }
+
+  V.g_versionAtStart = setup.version;
 
   T.showContentWarning = () =&gt; {
     Dialog.setup(&quot;Content Warning&quot;);
@@ -22169,7 +22196,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;/if&gt;&gt;
 
 ?P
-&lt;&lt;if $n_magicPhase &gt;= MP_triedMagic&gt;&gt;
+&lt;&lt;if $n_magicPhase &gt;= MP_triedMagic &amp;&amp; !$n_castSkipped&gt;&gt;
   &lt;&lt;vi-always n_naked true&gt;&gt;
   His nakedness deprives him of several magical aids
   that were hidden in his robe, and the
@@ -23101,7 +23128,7 @@ Nero was
 too dismissive of the rumors about the panther&#39;s magic.
 The lupine mage has &lt;em&gt;not&lt;/em&gt; equipped his spirit
 for an advanced mind-control fight.
-&lt;&lt;if MP_beforeCast === $n_magicPhase&gt;&gt;
+&lt;&lt;if MP_beforeCast === $n_magicPhase || $n_castSkipped&gt;&gt;
   But there may still be time enough to prepare,
   if he can steer Ivex away from the idea of immediately
   &lt;em&gt;using&lt;/em&gt; mind control.
@@ -33560,6 +33587,9 @@ helplessly bound to
 $n_afterAction
 
 &lt;&lt;run
+  if (MP_beforeCast === $n_magicPhase) {
+    $n_castSkipped = true;
+  }
   $n_dimMirror = true;
   $n_magicPhase = MP_wantDevice;
   $n_magicPhaseReached = MP_wantDevice;
