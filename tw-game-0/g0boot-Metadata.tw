@@ -152,13 +152,19 @@ MT.mdClear = () => {
 function readFromSave(save) {
   if (!save.metadata) return;
   const current = MT.mdRecord();
+  let unlocks = false;
   for (const [key, value] of Object.entries(save.metadata)) {
     if (value && knownKeys[key] === SAVED && !current[key]) {
       State.metadata.set(key, value);
-      // XXX announce the unlock
+      unlocks = true;
     }
   }
   copyToVars();
+  if (unlocks) {
+    $(document).one(":passagestart", () => {
+      MT.diag("Note: The Archives have unlocked some more entries.");
+    })
+  }
 }
 
 /** Adds current metadata to `save`. */
