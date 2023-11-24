@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -29458,7 +29458,9 @@ Everyone was astonished at the sight. Nero especially so. His ears were complete
 
 &lt;&lt;elseif $n_subby&gt;&gt;
   &lt;&lt;vi-always n_naked true&gt;&gt;
-  The wolf knows he has not demonstrated any magic yet.
+  The wolf knows he has not demonstrated
+  &lt;&lt;= $n_mageSight ? &quot;much&quot; : &quot;any&quot;&gt;&gt;
+  magic yet.
   There are only a few spells he can cast while naked and restrained,
   and most of them are simple and obvious.
   But he has one surprising spell that should impress even Ivex.
@@ -32949,7 +32951,6 @@ $n_afterAction
 &lt;&lt;vi-always n_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n_mageSight true&gt;&gt;
 
-XXX didCast
 &lt;&lt;if !$n_scanned&gt;&gt;
   Nero scans the magic of the room.
   Normally the lupine mage
@@ -33025,8 +33026,16 @@ XXX didCast
     ?P
   &lt;&lt;/if&gt;&gt;
   Nero is quite intellectually frustrated by the puzzle,
-  but he reminds himself that he has limited magic energy left.
-  He should not waste it on fruitless exercise.
+  but he reminds himself that
+  &lt;&lt;if MT.neroDidCast()&gt;&gt;
+    he has limited magic energy left.
+    He should not waste it
+  &lt;&lt;else&gt;&gt;
+    /* unreachable: mage-sight before cast, never gets &quot;scan&quot; action */
+    he is still captive in a strange mage&#39;s lair.
+    It&#39;s perhaps not the best time to expend energy
+  &lt;&lt;/if&gt;&gt;
+  on fruitless exercise.
 
   ?P
   &lt;&lt;if $n_mirrorFlawNoticed&gt;&gt;
@@ -33726,7 +33735,7 @@ $n_afterAction
 &lt;&lt;vi-always n_mirrorBroken false&gt;&gt;
 &lt;&lt;vi-always n_mirrorTaken false&gt;&gt;
 
-XXX didCast
+&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;if $n_candleHorny&gt;&gt;
   &lt;&lt;random-once n_mageSightHorny1&gt;&gt;
@@ -35612,9 +35621,15 @@ Well, however the cross is installed,
   &lt;&lt;= $n_abused ? &quot;likely punish&quot; : &quot;not appreciate&quot;&gt;&gt;
   such overt resistance.
 
-&lt;&lt;elseif MP_beforeCast === $n_magicPhase&gt;&gt;
-  escape from the leather bonds will be easy.
-  XXX didCast
+&lt;&lt;elseif !MT.neroDidCast()&gt;&gt;
+  escape from the leather bonds will be
+  &lt;&lt;if $n_ivexGone&gt;&gt;
+    easy, now that Nero can cast spells
+    without Ivex&#39;s interference.
+  &lt;&lt;else&gt;&gt;
+    easy. Nero just has to find the
+    right time to cast the right spell.
+  &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;elseif $n_ivexGone&gt;&gt;
   Ivex&#39;s departure means
@@ -35709,6 +35724,7 @@ Nero would throw
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="541" name="n1x Cross Grav Noticed" tags="mt-ready inclusion" position="6850,2500" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 
 Unyielding leather straps are holding the
 &lt;&lt;= $n_naked ? &quot;naked&quot; : &quot;&quot;&gt;&gt;
@@ -35763,10 +35779,16 @@ to anything.
     The wolf would like to be &lt;em&gt;far away&lt;/em&gt; when the crystals
     implode. Nero smiles nervously at the panther.
 
-  &lt;&lt;elseif MP_beforeCast === $n_magicPhase&gt;&gt;
+  &lt;&lt;elseif !MT.neroDidCast()&gt;&gt;
     The wolf would like to be &lt;em&gt;far away&lt;/em&gt; if the crystals implode.
-    Fortunately, escape from the leather bonds will be easy
-    with the right magic.
+    Fortunately, escape from the leather bonds will be
+    &lt;&lt;if $n_ivexGone&gt;&gt;
+      easy, now that Nero can cast spells
+      without Ivex&#39;s interference.
+    &lt;&lt;else&gt;&gt;
+      easy. Nero just has to find the
+      right time to cast the right spell.
+    &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;elseif $n_ivexGone&gt;&gt;
     The wolf would &lt;em&gt;like&lt;/em&gt; to be &lt;em&gt;far away&lt;/em&gt;
@@ -35815,12 +35837,19 @@ to anything.
     on the crystals and delay the spell&#39;s collapse as long
     as possible.
 
-  &lt;&lt;elseif MP_beforeCast === $n_magicPhase&gt;&gt;
+  &lt;&lt;elseif !MT.neroDidCast()&gt;&gt;
     Still, &quot;any moment now&quot; is an unpredictable
     time in the future. The wolf prefers a &lt;em&gt;little&lt;/em&gt;
     more control
     over his situation. Fortunately, escaping the leather bonds
-    will be easy.
+    will be
+    &lt;&lt;if $n_ivexGone&gt;&gt;
+      easy, now that Nero can cast spells
+      without Ivex&#39;s interference.
+    &lt;&lt;else&gt;&gt;
+      easy. Nero just has to find the
+      right time to cast the right spell.
+    &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;elseif $n_ivexGone&gt;&gt;
     And Nero can accelerate that process!
@@ -35854,15 +35883,20 @@ to anything.
     Perhaps the wolf will soon be able to suggest something
     less uncomfortable.
 
-  &lt;&lt;elseif MP_beforeCast === $n_magicPhase&gt;&gt;
+  &lt;&lt;elseif !MT.neroDidCast()&gt;&gt;
     Nero catches himself becoming distracted by the shiny crystals.
     This is not the time to indulge his intellectual curiosity.
     The wolf needs to focus
-    on escaping from the leather bonds, which will be easy.
+    on escaping from the leather bonds, which will be
+    &lt;&lt;if $n_ivexGone&gt;&gt;
+      easy, now that Nero can cast spells
+      without Ivex&#39;s interference.
+    &lt;&lt;else&gt;&gt;
+      easy. Nero just has to find the
+      right time to cast the right spell.
+    &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;else&gt;&gt;
-    &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
-    XXX didCast
     Since magic seems unavailable to the wolf right now,
     Nero considers what
     other approaches might release himself from this contraption.
@@ -35888,17 +35922,6 @@ to anything.
   &lt;&lt;include [[n1x Cross Grav Noticed]]&gt;&gt;
 &lt;&lt;else&gt;&gt;
   &lt;&lt;include [[n1x Cross Bound]]&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
-&lt;&lt;if MP_beforeCast === $n_magicPhase &amp;&amp; (!$n_subby || $n_ivexGone)&gt;&gt;
-  XXX didCast
-  &lt;&lt;if $n_ivexGone&gt;&gt;
-    Especially now that Nero can cast spells
-    without Ivex&#39;s interference.
-  &lt;&lt;else&gt;&gt;
-    Nero just has to find the
-    right time to cast the right spell.
-  &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
 ?P
@@ -35987,9 +36010,13 @@ to anything.
   &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
+  &lt;&lt;run
+    _knifeUnnecessary = !MT.neroDidCast() || ($n_subby &amp;&amp; !$n_ivexGone);
+  &gt;&gt;
   The rest of the clutter on the desk appears to be miscellaneous papers and
   writing tools: pens and ink, wax seal, blotter,
-  &lt;&lt;if MP_beforeCast === $n_magicPhase || ($n_subby &amp;&amp; !$n_ivexGone)&gt;&gt;
+  &lt;&lt;if _knifeUnnecessary&gt;&gt;
+    &lt;&lt;vi-always $n_knifeTaken false&gt;&gt;
     &lt;&lt;mt-seen $n_dimKnife&gt;&gt;
       &lt;&lt;mta-no-loop &quot;n1x Knife&quot;&gt;&gt;letter opener&lt;&lt;/mta-no-loop&gt;&gt;,
     &lt;&lt;/mt-seen&gt;&gt;
@@ -35997,11 +36024,7 @@ to anything.
   and so forth.
   &lt;&lt;if $n_knifeTaken&gt;&gt;
     None of them look particularly interesting.
-  &lt;&lt;elseif $n_knifeOnFloor 
-    || MP_beforeCast === $n_magicPhase
-    || ($n_subby &amp;&amp; !$n_ivexGone)
-  &gt;&gt;
-    XXX didCast
+  &lt;&lt;elseif $n_knifeOnFloor || _knifeUnnecessary&gt;&gt;
     None of them seem particularly useful to Nero&#39;s situation right now.
   &lt;&lt;else&gt;&gt;
     ?P
@@ -36768,12 +36791,13 @@ $n_afterAction
   &lt;&lt;= $n_ivexGone ? &quot;seemed&quot; : &quot;is&quot;&gt;&gt;
   completely unaware of the hazards
   inherent in his careless use of the crystals.
-
   &lt;&lt;if $n_subby &amp;&amp; !$n_ivexGone&gt;&gt;
     But berating the panther will not be productive.
     The wolf hopes that Ivex will soon realize that an apprentice
     is more useful when he &lt;em&gt;isn&#39;t&lt;/em&gt; bound to a cross.
-
+  &lt;&lt;elseif !MT.neroDidCast()&gt;&gt;
+    The wolf had better escape before he gets injured by that
+    impending disaster!
   &lt;&lt;else&gt;&gt;
     But as a captive in Ivex&#39;s lair,
     Nero is exhilarated by the panther&#39;s stupidity.
@@ -36794,7 +36818,7 @@ $n_afterAction
     that impending disaster. He hopes that Ivex will soon
     realize that an apprentice is more useful when he
     &lt;em&gt;isn&#39;t&lt;/em&gt; bound to a cross.
-  &lt;&lt;elseif MP_beforeCast === $n_magicPhase&gt;&gt;
+  &lt;&lt;elseif !MT.neroDidCast()&gt;&gt;
     Nero had better escape before he gets injured by that
     impending disaster!
   &lt;&lt;else&gt;&gt;
@@ -36803,7 +36827,6 @@ $n_afterAction
     The wolf may need to examine the Gravity Crystal power flows.
     His magic is still depleted from his failed spell,
     but he does have enough energy to cast mage-sight.
-    XXX didCast
   &lt;&lt;/if&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -36847,7 +36870,7 @@ Unless the panther&#39;s energy source is enormous!
   Learning more about the crystals might help Nero understand
   the panther&#39;s power.
 
-&lt;&lt;elseif MP_beforeCast === $n_magicPhase&gt;&gt;
+&lt;&lt;elseif !MT.neroDidCast()&gt;&gt;
   &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
   Well, this is all intellectually fascinating,
   but not particularly useful.
@@ -36867,9 +36890,8 @@ Unless the panther&#39;s energy source is enormous!
   process by increasing the strain on the crystals.
 
 &lt;&lt;else&gt;&gt;
-XXX didCast
-  Learning more about Ivex&#39;s power might help find ways
-  to bypass his defenses.
+  Learning more about Ivex&#39;s power might help Nero find ways
+  to escape the panther&#39;s control.
 &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="554" name="n1x Grav" tags="mt-ready" position="7400,1300" size="100,200">&lt;&lt;nobr&gt;&gt;
@@ -36917,8 +36939,7 @@ floating behind the
   &lt;&lt;if !$n_gravKnown&gt;&gt;
     &lt;&lt;if $n_ivexGone&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the ?crystals.&quot; &quot;Ivex is gone&quot;&gt;&gt;
-    &lt;&lt;elseif MP_beforeCast === $n_magicPhase &amp;&amp; !$n_subby&gt;&gt;
-    XXX didCast
+    &lt;&lt;elseif !MT.neroDidCast() &amp;&amp; !$n_subby&gt;&gt;
       &lt;&lt;mtl-denied &quot;Ask Ivex about the ?crystals.&quot; &quot;doesn&#39;t seem important&quot;&gt;&gt;
     &lt;&lt;else&gt;&gt;
       &lt;&lt;mtl [[n1x Grav Ask 1]]&gt;&gt;Ask Ivex about the ?crystals.&lt;&lt;/mtl&gt;&gt;
@@ -37405,8 +37426,10 @@ was merely an actor hired by Rankine, with no magic ability of his own.
   &lt;&lt;/if&gt;&gt;
   and it&#39;s probably made of steel.
 
-  &lt;&lt;if MP_beforeCast === $n_magicPhase || ($n_subby &amp;&amp; !$n_ivexGone)&gt;&gt;
-    XXX didCast
+  &lt;&lt;run
+    _knifeUnnecessary = !MT.neroDidCast() || ($n_subby &amp;&amp; $n_ivexGone);
+  &gt;&gt;
+  &lt;&lt;if _knifeUnnecessary&gt;&gt;
     ?P
     Nero keeps a knife of his own in his robes.
     Cutting is often needed when preparing spells.
@@ -38646,8 +38669,10 @@ But this is the first time Nero has seen these glyphs installed on
 the surface of a metallic horse cock trapped inside a bottle.
 
 ?P
-&lt;&lt;if $n_magicPhaseReached &lt; MP_triedMagic || ($n_subby &amp;&amp; !$n_ivexGone)&gt;&gt;
-  XXX didCast
+&lt;&lt;run
+  _nackleUnnecessary = !MT.neroDidCast() || ($n_subby &amp;&amp; !$n_ivexGone);
+&gt;&gt;
+&lt;&lt;if _nackleUnnecessary&gt;&gt;
   The unusual substrate for the spell is perhaps just an
   unintelligible perversion from the depraved panther&#39;s mind.
   But its placement in a bottle is a mystery
