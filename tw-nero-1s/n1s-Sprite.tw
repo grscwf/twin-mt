@@ -10,6 +10,8 @@
       $n_magicPhase = MP_wantPass;
     }
   }
+  /* note, _canCast is true only when subby>glitch or candle>glitch>horny */
+  _canCast = !MT.neroDidCast();
 >>
 
 <<if $n_candleHorny>>
@@ -38,93 +40,11 @@
 
 <<switch $n_magicPhase>>
 <<case `MP_wantDevice`>>
-  <span class=sprite-q>"Which device in this room do you wish
-  to contact, ?masterQ"</span>
-  <<if _patience <= 0>>
-    /* nothing */
-  <<elseif $n_bottleViewed>>
-    <<if $n_candleHorny>>
-      The wolf only knows one device in this room. Nackle's device
-      is somewhat of a bold choice for a new relationship,
-      but there does not seem to be anything else available.
-    <<else>>
-      The wolf wonders if the Sprite can contact Nackle's device.
-    <</if>>
-    <<set _please = $n_rememberPlease ? "Please, " : "">>
-    <<set $n_magicAction =
-      `<<mtl [[n1s Say Device 1]]>>`
-      + `Tell the Sprite, "${_please}Nackle's Poltergeist Device."`
-      + `<</mtl>>`>>
-  <<elseif !$n_helpDeviceAsked>>
-    <<if $n_candleHorny>>
-      The request is somewhat forward for such a new relationship,
-      but the wolf is quite happy that it <em>is</em> a relationship.
-    <<else>>
-      The wolf is unsure exactly what that means. Perhaps it's a way
-      for him to use a magic device?
-    <</if>>
-    <<set $n_magicAction =
-      `<<mtl [[n1s Help Device]]>>`
-      + `Ask the Sprite for help.`
-      + `<</mtl>>`>>
-  <<elseif $n_candleHorny>>
-    The teasing innuendo in the Sprite's tone is impossible to ignore.
-    The wolf desperately looks around the room for a device that will
-    satisfy their shared desire.
-  <<else>>
-    The wolf wishes the Sprite had been instructed to be more helpful.
-    There must be <em>some</em> device in the room that he can contact.
-  <</if>>
+  <<include [[n1s Sprite Want Device]]>>
 
 <<case `MP_wantName`>>
-  <span class=sprite-q>"Which device in this room do you wish
-  to contact, ?masterQ"</span>
-  <<if _patience <= 0>>
-    /* nothing */
-  <<elseif $n_bottleNameKnown>>
-    ?P
-    <<if $n_candleHorny>>
-      Its earlier dismissal of Nackle was disheartening.
-      But perhaps the Sprite misunderstood the wolf's intent.
-      He wants merely an <em>introduction</em> to the horse cock
-      that the Sprite already knows.
-    <<else>>
-      The wolf hesitates to say the name of the horse cock aloud.
-    <</if>>
-    <<set $n_magicAction =
-      `<<mtl [[n1s Say Lance]]>>`
-      + `Tell the Sprite, "Please, Lance Rockhard."`
-      + `<</mtl>>`>>
-  <<elseif !$n_helpDeviceAsked>>
-    <<if $n_candleHorny>>
-      The wolf is unsure of this relationship. It is not progressing
-      as quickly as he likes. But the Sprite seems
-      willing to continue to try.
-    <<else>>
-      "Nackle's Device" was not specific enough.
-      The wolf will need to tell
-      the Sprite a name that Ivex has given to his devices.
-    <</if>>
-    <<set $n_magicAction =
-      `<<mtl [[n1s Help Device]]>>`
-      + `Ask the Sprite, "Please, help!"`
-      + `<</mtl>>`>>
-  <<elseif $n_candleHorny>>
-    All of them, of course, but the wolf knows that the Sprite is
-    not yet ready for that.
-    <<if $n_ivexGone>>
-      Perhaps Ivex could have suggested the right one to start with.
-      The wolf's cock strains uncomfortably at the thought.
-    <<else>>
-      The wolf will have to choose a name to whisper to the Sprite.
-    <</if>>
-  <<elseif $n_ivexGone>>
-    Unfortunately, the wolf sees no way of guessing what names
-    Ivex has given to his devices. The Sprite is a useless annoyance now.
-  <<else>>
-    The imitation of helpfulness is annoying.
-    The wolf will have to trick Ivex into revealing the name of a device.
-  <</if>>
+  <<include [[n1s Sprite Want Name]]>>
+
 
 <<case `MP_wantTouch`>>
   <span class=sprite-q>"Please touch my hole, ?master"</span>
@@ -136,19 +56,41 @@
     <<else>>
       The wolf wonders where this hole might be.
     <</if>>
-    <<set $n_magicAction =
-      `<<mtl [[n1s Help Touch]]>>`
-      + `Ask the Sprite, "Please, help!"`
-      + `<</mtl>>`>>
+    <<run
+      $n_magicAction =
+        `<<mtl [[n1s Help Touch]]>>`
+        + `Ask the Sprite, "Please, help!"`
+        + `<</mtl>>`;
+    >>
   <<elseif $n_candleHorny>>
     The wolf would love to. Why doesn't the Sprite understand that he
-    <em>can't</em> without its help?
+    <<if _canCast>>
+        wants it to help?
+    <<else>>
+      <em>can't</em> without its help?
+    <</if>>
   <<elseif $n_ivexGone>>
     The wolf has no way to touch any hole,
     now that Ivex is gone.
     The Sprite's pestering is annoying.
   <<else>>
     There must be some way to trick Ivex into touching the right hole.
+  <</if>>
+
+  <<if _patience > 0 && _canCast>>
+    <<if $n_candleHorny>>
+      He considers casting a spell he should cast a spell that will let
+      him approach the Sprite.
+      <<run
+        $n_magicAction +=
+          `<<mtl [[n1s Cast Horny 1]]>>Cast a simple escape spell.<</mtl>>`;
+      >>
+    <<elseif $n_ivexGone>>
+      XXX
+    <<else>>
+      <<vi-always n_subby true>>
+      XXX
+    <</if>>
   <</if>>
 
 <<case `MP_wantPass`>>
@@ -185,12 +127,22 @@
     <<default>>
       <<run throw new Error(`bug: passTried length ${$n_passTried}`)>>
     <</switch>>
-    <<set $n_magicAction =
-      `<<mtl [[n1s Guess Password]]>>`
-      + `Guess a password.`
-      + `<</mtl>>`>>
+    <<run
+      $n_magicAction =
+        `<<mtl [[n1s Guess Password]]>>Guess a password.<</mtl>>`;
+    >>
   <</if>>
 
+  <<if _patience > 0 && _canCast>>
+    <<if $n_candleHorny>>
+      XXX
+    <<elseif $n_ivexGone>>
+      XXX
+    <<else>>
+      <<vi-always n_subby true>>
+      XXX
+    <</if>>
+  <</if>>
 
 <<case `MP_onHold`>>
   <<include [[n1s On Hold]]>>
@@ -205,5 +157,7 @@
   <<run throw new Error(`BUG: sprite magicPhase ${$n_magicPhase}`)>>
 <</switch>>
 
-<<set $n_spriteSaidPhase = $n_magicPhase>>
+<<run
+  $n_spriteSaidPhase = $n_magicPhase;
+>>
 <</nobr>>\
