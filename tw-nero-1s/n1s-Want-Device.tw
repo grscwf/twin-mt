@@ -1,9 +1,13 @@
 :: n1s Want Device [mt-ready inclusion] {"position":"4635,800","size":"100,100"}
 <<nobr>>
 
+<<run
+  _please = $n_rememberPlease ? "Please, " : "";
+>>
+
 ?P
-<<if $n_candleHorny>>
-  <<if $n_bottleViewed>>
+<<if $n_bottleViewed>>
+  <<if $n_candleHorny>>
     The wolf only knows one device in this room. Nackle
     is a bold choice for a new relationship,
     but there does not seem to be anything else available.
@@ -12,13 +16,27 @@
       get closer to the Sprite.
     <</if>>
     <<run
-      _please = $n_rememberPlease ? "Please, " : "";
-      $n_magicAction =
-        `<<mtl [[n1s Say Device 1]]>>`
-        + `Murmur to the Sprite, "${_please}Nackle's Poltergeist Device."`
-        + `<</mtl>>`;
+      $n_magicAction = `<<mtl [[n1s Say Device 1]]>>`
+        + `Murmur to the Sprite, "${_please}Nackle's Poltergeist Device."<</mtl>>`;
     >>
-  <<elseif !$n_helpDeviceAsked>>
+  <<else>>
+    The wolf wonders if the Sprite can contact Nackle's device.
+    <<if _canCast>>
+      <<if $n_ivexGone>>
+        Of course, Nero can just cast an escape spell, now that Ivex is gone.
+      <<else>>
+        Or maybe it's better to focus on impressing Ivex
+        with a special spell that no other mage can cast.
+      <</if>>
+    <</if>>
+    <<run
+      $n_magicAction = `<<mtl [[n1s Say Device 1]]>>`
+        + `Tell the Sprite, "${_please}Nackle's Poltergeist Device."<</mtl>>`;
+    >>
+  <</if>>
+
+<<elseif !$n_helpDeviceAsked>>
+  <<if $n_candleHorny>>
     The request is somewhat forward for such a new relationship,
     but the wolf is quite happy that it <em>is</em> a relationship.
     <<if _canCast>>
@@ -26,65 +44,68 @@
       help him get closer to the Sprite.
     <</if>>
     <<run
-      $n_magicAction =
-        `<<mtl [[n1s Help Device]]>>Plead for the Sprite's help.<</mtl>>`;
+      $n_magicAction = `<<mtl [[n1s Help Device]]>>`
+        + `Plead for the Sprite's help.<</mtl>>`;
     >>
   <<else>>
+    The wolf is unsure exactly what that means. Perhaps it's a way
+    for him to use a magic device?
+    <<if _canCast>>
+      <<if $n_ivexGone>>
+        Of course, Nero can just cast an escape spell, now that Ivex is gone.
+      <<else>>
+        Or maybe it's better to focus on impressing Ivex
+        with a special spell that no other mage can cast.
+      <</if>>
+    <</if>>
+    <<run
+      $n_magicAction = `<<mtl [[n1s Help Device]]>>`
+        + `Ask the Sprite for help.<</mtl>>`;
+    >>
+  <</if>>
+
+<<else>>
+  <<if $n_candleHorny>>
     The teasing innuendo in the Sprite's tone is impossible to ignore.
     The wolf
     <<if _canCast>>
-      realizes he needs to be free to find
+      realizes he should cast a spell to free himself.
+      And then, he can find
     <<else>>
       desperately looks around the room for
     <</if>>
     a device that will satisfy their shared desire.
-  <</if>>
-  <<run
-    if (_canCast) {
-      $n_magicAction +=
-        `<<mtl [[n1s Cast Horny 1]]>>Cast a simple escape spell.<</mtl>>`;
-    }
-  >>
 
-<<else>>
-  <<if $n_bottleViewed>>
-    The wolf wonders if the Sprite can contact Nackle's device.
-    <<run
-      _please = $n_rememberPlease ? "Please, " : "";
-      $n_magicAction =
-        `<<mtl [[n1s Say Device 1]]>>`
-        + `Tell the Sprite, "${_please}Nackle's Poltergeist Device."`
-        + `<</mtl>>`;
-    >>
-  <<elseif !$n_helpDeviceAsked>>
-    The wolf is unsure exactly what that means. Perhaps it's a way
-    for him to use a magic device?
-    <<run
-      $n_magicAction =
-        `<<mtl [[n1s Help Device]]>>Ask the Sprite for help.<</mtl>>`;
-    >>
   <<else>>
     The wolf wishes the Sprite had been instructed to be more helpful.
     There must be <em>some</em> device in the room that he can contact.
-  <</if>>
-
-  <<if _canCast>>
-    <<if $n_ivexGone>>
-      Of course, Nero can just cast an escape spell, now that Ivex is gone.
-      <<run
-        $n_magicAction +=
-          `<<mtl [[n1s Cast Alone 1]]>>Cast a simple escape spell.<</mtl>>`;
-      >>
-    <<else>>
-      <<vi-always n_subby true>>
-      Or maybe it's better to focus on impressing Ivex
-      with a special spell that no other mage can cast.
-      <<run
-        $n_magicAction +=
-          `<<mtl [[n1s Cast Endgame 1]]>>Cast Nero's Endgame.<</mtl>>`;
-      >>
+    <<if _canCast>>
+      <<if $n_ivexGone>>
+        Of course, Nero can just cast an escape spell, now that Ivex is gone.
+      <<else>>
+        Or maybe it's better to focus on impressing Ivex
+        with a special spell that no other mage can cast.
+      <</if>>
     <</if>>
   <</if>>
 <</if>>
+
+<<run
+  if (_canCast) {
+    if ($n_candleHorny) {
+      $n_magicAction += `<<mtl [[n1s Cast Horny 1]]>>`
+        + `Cast a simple escape spell.<</mtl>>`;
+
+    } else if ($n_ivexGone) {
+      $n_magicAction += `<<mtl [[n1s Cast Alone 1]]>>`
+        + `Cast a simple escape spell.<</mtl>>`;
+
+    } else {
+      MT.assert($n_subby, "$n_subby");
+      $n_magicAction += `<<mtl [[n1s Cast Endgame 1]]>>`
+        + `Cast Nero's Endgame.<</mtl>>`;
+    }
+  };
+>>
 
 <</nobr>>\
