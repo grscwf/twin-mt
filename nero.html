@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -33137,7 +33137,9 @@ $n_afterAction
 &lt;&lt;vi-always n_candleLit true&gt;&gt;
 &lt;&lt;vi-always n_candleHorny true&gt;&gt;
 
-XXX didCast
+/* mage-sight before cast will get cast action, not scan */
+&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
+
 &lt;&lt;if !$n_ivexGone&gt;&gt;
   Nero scans the room, searching for any magic or energy that he can
   use, but no matter where he looks,
@@ -33200,6 +33202,9 @@ $n_afterAction
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-always n_candleHorny false&gt;&gt;
 &lt;&lt;vi-always n_mageSight true&gt;&gt;
+
+/* mage-sight before cast will get cast action, not scan */
+&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;if !$n_scanned&gt;&gt;
   Nero scans the magic of the room.
@@ -33276,16 +33281,8 @@ $n_afterAction
     ?P
   &lt;&lt;/if&gt;&gt;
   Nero is quite intellectually frustrated by the puzzle,
-  but he reminds himself that
-  &lt;&lt;if MT.neroDidCast()&gt;&gt;
-    he has limited magic energy left.
-    He should not waste it
-  &lt;&lt;else&gt;&gt;
-    /* unreachable: mage-sight before cast, never gets &quot;scan&quot; action */
-    he is still captive in a strange mage&#39;s lair.
-    It&#39;s perhaps not the best time to expend energy
-  &lt;&lt;/if&gt;&gt;
-  on fruitless exercise.
+  but he reminds himself that he has limited magic energy left.
+  He should not waste it on fruitless exercise.
 
   ?P
   &lt;&lt;if $n_mirrorFlawNoticed&gt;&gt;
@@ -33871,6 +33868,7 @@ $n_afterAction
 &lt;&lt;vi-always n_mirrorBroken false&gt;&gt;
 &lt;&lt;vi-always n_mirrorTaken false&gt;&gt;
 
+/* mage-sight before cast will get cast action, not scan */
 &lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;if $n_candleHorny&gt;&gt;
@@ -33915,22 +33913,20 @@ $n_afterAction
   before his energy is completely depleted.
 &lt;&lt;/if&gt;&gt;
 
-&lt;&lt;if $n_candleHorny&gt;&gt;
-  &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mtl [[n1s Scan Horny]]&gt;&gt;`
-    + `Scan the room for energy he can use.`
-    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
-&lt;&lt;elseif $n_scanned&gt;&gt;
-  &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mtl [[n1s Scan]]&gt;&gt;`
-    + `Scan the room&#39;s magic again.`
-    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
-&lt;&lt;else&gt;&gt;
-  &lt;&lt;set $n_magicAction =
-    `&lt;&lt;mtl [[n1s Scan]]&gt;&gt;`
-    + `Scan the room&#39;s magic.`
-    + `&lt;&lt;/mtl&gt;&gt;`&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+&lt;&lt;run
+  if ($n_candleHorny) {
+    $n_magicAction = `&lt;&lt;mtl [[n1s Scan Horny]]&gt;&gt;`
+      + `Scan the room for energy he can use.&lt;&lt;/mtl&gt;&gt;`;
+
+  } else if ($n_scanned) {
+    $n_magicAction = `&lt;&lt;mtl [[n1s Scan]]&gt;&gt;`
+      + `Scan the room&#39;s magic again.&lt;&lt;/mtl&gt;&gt;`;
+
+  } else {
+    $n_magicAction = `&lt;&lt;mtl [[n1s Scan]]&gt;&gt;`
+      + `Scan the room&#39;s magic.&lt;&lt;/mtl&gt;&gt;`;
+  }
+&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="521" name="n1s Want Device" tags="mt-ready inclusion" position="4635,800" size="100,100">&lt;&lt;nobr&gt;&gt;
 
@@ -35308,11 +35304,8 @@ Such as:
         q.push(`Could Nero have used Nackle to grab`
           + ` the letter opener earlier and escape more quickly?`);
       }
-    } else if (MP_beforeCast === V.n_magicPhase
-      || (V.n_subby &amp;&amp; !V.n_ivexGone))
-    {
+    } else if (!MT.neroDidCast() || (V.n_subby &amp;&amp; !V.n_ivexGone)) {
       /* nothing */
-      /* XXX didCast */
 
     } else if (V.n_deskViewed &amp;&amp; MP_wantDevice &lt;= V.n_magicPhaseReached) {
       q.push(`And will the wolf be able to use the device to grab the sharp`
@@ -38067,8 +38060,7 @@ was merely an actor hired by Rankine, with no magic ability of his own.
   _worried = false;
 } else if ($n_subby &amp;&amp; !$n_ivexGone) {
   _worried = true;
-} else if ($n_tough || MP_beforeCast === $n_magicPhase) {
-  /* XXX didCast */
+} else if ($n_tough || !MT.neroDidCast()) {
   _worried = false;
 } else {
   _worried = true;
