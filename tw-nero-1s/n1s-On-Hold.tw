@@ -20,6 +20,9 @@
   if (!$n_holdPhase) {
     $n_holdPhase = 1;
   }
+
+  _tried = JSON.parse($n_passTried || "[]");
+  _misfire = _tried[0][0] === "#";
 >>
 
 <span class=sprite-q>
@@ -31,22 +34,11 @@
   <<if $n_candleHorny>>
     The Sprite resumes its soft humming of
     a throbbing, sensual tune that makes Nero's cock twitch.
-    <<if _patience > 0>>
-      ?P
-      Does he know the right password already?
-      Or has the Sprite hidden it somewhere in the room for him to find?
-      The humming is making it hard to concentrate.
-    <</if>>
     <<set _action = "be quiet!">>
   <<else>>
     The Sprite resumes its soft humming of
     a cheerful children's song.
-    <<if _patience > 0>>
-      ?P
-      <<= _annoyance()>>
-      Nero wonders what the Sprite is doing. In the meantime,
-      he can look for more clues to Ivex's password.
-    <</if>>
+    <<= _annoyance()>>
     <<set _action = "be quiet.">>
   <</if>>
 
@@ -88,57 +80,136 @@
 <</switch>>
 
 <<if _patience > 0>>
-  <<set _tried = JSON.parse($n_passTried || "[]")>>
   <<switch _tried.length>>
   <<case 1>>
-    /* nothing */
+    ?P
+    <<if $n_candleHorny>>
+      Does he know the right password already?
+      Or has the Sprite hidden it somewhere in the room for him to find?
+      The humming is making it hard to concentrate.
+      <<if _canCast>>
+        Perhaps Nero should free himself to search the room better.
+      <</if>>
+    <<else>>
+      Nero wonders what the Sprite is doing. In the meantime,
+      he can look for more clues to Ivex's password.
+      <<if _canCast>>
+        <<if $n_ivexGone>>
+          Or maybe he should just cast a spell to escape.
+        <<else>>
+          The panther might reveal more secrets if the wolf
+          can impress him, perhaps by casting a spell that
+          no other mage knows.
+        <</if>>
+      <</if>>
+    <</if>>
 
   <<case 2>>
     ?P
-    <<if _tried[0][0] === "#">>
-      Nero is
-      <<= $n_candleHorny ? "" : "a little">>
-      upset that the Sprite has again misinterpreted
-      conversation as a password. The wolf now has only one more
-      attempt at guessing the password. He'd better make it a good one.
+    <<if $n_candleHorny>>
+      <<if _misfire>>
+        Nero is upset that the Sprite misinterpreted conversation
+        as a password, again! The wolf only has one more chance.
+        <<if _canCast>>
+          He should free himself to look for the best possible password.
+        <<else>>
+          He'd better be sure of it.
+        <</if>>
+      <<else>>
+        Nero hopes the Sprite will accept his latest password.
+        If it doesn't, he only has one more chance.
+        <<if _canCast>>
+          He should free himself to look for the best possible password.
+        <<else>>
+          He'd better think of the best possible password.
+        <</if>>
+      <</if>>
+
     <<else>>
-      If Nero's guess is wrong, he will only have one more attempt.
-      He'd better make it a good one.
+      <<if _misfire>>
+        Nero is a little upset that the Sprite has again misinterpreted
+        conversation as a password. The wolf now has only one more
+        chance to get it right. He'd better make sure he picks
+        a good password.
+      <<else>>
+        If Nero's latest guess is wrong, he will only have one more chance
+        to get it right. He'd better make sure he finds a good password.
+      <</if>>
+      <<if _canCast>>
+        ?P
+        But is this password guessing game a pointless distraction?
+        <<if $n_ivexGone>>
+          Maybe he should just cast a spell to escape.
+        <<else>>
+          Maybe he should focus on impressing Ivex.
+          Nero knows a special spell that will do the trick.
+        <</if>>
+      <</if>>
     <</if>>
 
   <<case 3>>
     ?P
-    That was Nero's last guess.
-    <<if _tried[0][0] === "#">>
-      Unfortunately it was a terrible one.
-      <<if $n_candleHorny>>
-        Still, the wolf has hope that the Sprite will look kindly on his
-        earnest courtship.
-      <<elseif $n_subby && !$n_ivexGone>>
-        XXX canCast?
-        Well, there are other magics to examine.
+    <<if $n_candleHorny>>
+      <<if _misfire>>
+        Unfortunately, Nero's last guess was a terrible one.
+        Still, the wolf has hope that the Sprite will look kindly on
+        his earnest courtship.
       <<else>>
-        Well, there will be some other way to escape.
+        Nero hopes his last guess will be acceptable.
+      <</if>>
+      <<if _canCast>>
+        Perhaps he should escape his bonds and woo the Sprite more directly.
       <</if>>
     <<else>>
-      He hopes that it's correct.
-      <<if $n_candleHorny>>
-        XXX
-      <<elseif $n_subby && !$n_ivexGone>>
-        But if it isn't, there
-        are other magics to explore.
+      <<if _misfire>>
+        Unfortunately, Nero's last guess was a terrible one.
+        He considers for a moment that it <em>might</em> be correct?
+        ?P
+        What an absurd thought.
+        <<if _canCast>>
+          <<if $n_ivexGone>>
+            He laughs and reminds himself he can easily escape,
+            now that Ivex is gone.
+          <<else>>
+            He laughs to himself and shifts his attention to the panther.
+            Perhaps it's time to impress Ivex with a special spell.
+          <</if>>
+        <<else>>
+          He laughs and tells himself that there are plenty of other
+          ways to escape.
+        <</if>>
       <<else>>
-        But if it isn't, there
-        will be some other way to escape.
+        Nero hopes that he has guessed correctly, but he knows the odds
+        are slim.
+        <<if _canCast>>
+          <<if $n_ivexGone>>
+            No matter. It will be easy to escape now that Ivex is gone.
+          <<else>>
+            No matter. The password is a distraction.
+            It's more important to impress Ivex with the wolf's abilities.
+            And Nero knows the right spell to do so.
+          <</if>>
+        <<else>>
+          No matter. There are plenty of other ways to escape.
+          Probably. Definitely.
+        <</if>>
       <</if>>
     <</if>>
 
   <<case 4>>
     ?P
     <<if $n_candleHorny>>
-      XXX
+      Nero hopes that <em>this</em> time he's proposed an
+      acceptable password.
+      <<if _canCast>>
+        The Sprite's distance has become annoying.
+        The wolf should try to get closer.
+      <<else>>
+        If not, he's ready to try again, and again,
+        until the Sprite yields itself to him.
+      <</if>>
     <<else>>
-      <<if _tried[0][0] === "#">>
+      <<if _misfire>>
         Nero is amused that the Sprite has again misinterpreted
         conversation as a password. No matter.
         He'll get another chance soon.
@@ -150,27 +221,45 @@
       are only a few
       more possibilities to try. Ivex is not a complicated panther.
       He will not have a complicated password.
+      <<if _canCast>>
+        ?P
+        <<if $n_ivexGone>>
+          Of course, the wolf can abandon this silly guessing game
+          and just cast a spell to escape, now that Ivex is gone.
+        <<else>>
+          Nero hopes this password-guessing exercise will
+          give him greater insight into Ivex's character.
+          But maybe now is not the time for subtle psychology.
+          Instead, the wolf can try to impress Ivex with
+          a spell that no other mage can cast.
+        <</if>>
+      <</if>>
     <</if>>
 
   <<default>>
     <<run throw new Error(`BUG passTried ${$n_passTried}`)>>
   <</switch>>
 
-  <<set $n_magicAction =
-    `<<mtl [[n1s Impatient]]>>`
-    + `Tell the Sprite, "Please, ${_action}"`
-    + `<</mtl>>`>>
+  <<run
+    $n_magicAction = `<<mtl [[n1s Impatient]]>>`
+      + `Tell the Sprite, "Please, ${_action}"<</mtl>>`;
 
-  <<if _canCast>>
-    <<if $n_candleHorny>>
-      XXX
-    <<elseif $n_ivexGone>>
-      XXX
-    <<else>>
-      <<vi-always n_subby true>>
-      XXX
-    <</if>>
-  <</if>>
+    if (_canCast) {
+      if ($n_candleHorny) {
+        $n_magicAction += `<<mtl [[n1s Cast Horny 1]]>>`
+          + `Cast a simple escape spell.<</mtl>>`;
+
+      } else if ($n_ivexGone) {
+        $n_magicAction += `<<mtl [[n1s Cast Alone 1]]>>`
+          + `Cast a simple escape spell.<</mtl>>`;
+
+      } else {
+        MT.assert($n_subby, "$n_subby");
+        $n_magicAction += `<<mtl [[n1s Cast Endgame 1]]>>`
+          + `Cast Nero's Endgame.<</mtl>>`;
+      }
+    }
+  >>
 <</if>>
 
 <</nobr>>\
