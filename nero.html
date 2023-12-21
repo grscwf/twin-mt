@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13446,7 +13446,9 @@ const sectInfo = {
   },
 };
 
+/** Keep up to this many latest events */
 MT.trailMaxEvents = 1000;
+/** Keep up to this many earliest events */
 MT.trailMaxFirst = 1000;
 
 /** Record of passage title -&gt; info */
@@ -13501,7 +13503,7 @@ function compact(trail) {
       trail.first.push(...save);
     }
     trail.events.splice(0, over);
-    trail.recent -= over;
+    trail.recent = Math.max(trail.recent - over, 0);
   }
 }
 
@@ -13515,7 +13517,7 @@ MT.trailGet = () =&gt; {
 };
 
 MT.trailAddNow = () =&gt; {
-  if (MT.roaming) return;
+  // if (MT.roaming) return;
   if (MT.untracedGet(&quot;g_mutated&quot;)) return;
   const trail = MT.trailGet();
   const n = trail.events.length;
@@ -30213,7 +30215,8 @@ And then...
   if ($n_magicPhase &lt; MP_triedMagic) {
     $n_magicPhase = MP_triedMagic;
     $n_magicPhaseReached = MP_triedMagic;
-  } else {
+  }
+  if ($n_mageSight) {
     $n_drainPending = true;
   }
 &gt;&gt;
@@ -30308,7 +30311,8 @@ tightly shut. He blinks until he can see again.
   if ($n_magicPhase &lt; MP_triedMagic) {
     $n_magicPhase = MP_triedMagic;
     $n_magicPhaseReached = MP_triedMagic;
-  } else {
+  }
+  if ($n_mageSight) {
     $n_drainPending = true;
   }
 &gt;&gt;
@@ -30428,7 +30432,8 @@ He desperately searches for another way to satisfy it.
   if ($n_magicPhase &lt; MP_triedMagic) {
     $n_magicPhase = MP_triedMagic;
     $n_magicPhaseReached = MP_triedMagic;
-  } else {
+  }
+  if ($n_mageSight) {
     $n_drainPending = true;
   }
 &gt;&gt;
@@ -34494,6 +34499,7 @@ $n_afterAction
   $n_spriteSaidPhase = MP_wantDevice;
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="528" name="n1s Use Sight" tags="mt-ready inclusion" position="3675,550" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-always n_mageSight true&gt;&gt;
 &lt;&lt;vi-always n_mirrorTapped false&gt;&gt;
 &lt;&lt;vi-always n_mirrorBroken false&gt;&gt;
 &lt;&lt;vi-always n_mirrorTaken false&gt;&gt;
@@ -34506,32 +34512,44 @@ $n_afterAction
   &lt;&lt;ro-choice&gt;&gt;
     It feels like the exotic energy is singing,
     asking the lupine mage to surrender to its whispered pleasures.
-    And he tries to, but he feels his magic energies depleting, and
+    And he tries to, but he feels his magic energies depleting.
   &lt;&lt;ro-choice&gt;&gt;
     The exotic energies are singing to him a song
     of buried pleasures.
     The lupine mage wants to add his voice to it,
-    but his own energies are fading, and
+    but his own energies are fading.
   &lt;&lt;ro-choice&gt;&gt;
     The lupine mage is entranced by the rhythms of exotic energy.
     It sings and dances a promise of endless days and
     nights of secret pleasures.
-    Nero wants to add his dwindling energy to it, but
+    Nero wants to add his dwindling energy to it.
   &lt;&lt;/random-once&gt;&gt;
+
+  &lt;&lt;if $n_drainPending&gt;&gt;
+    ?P
+    His energy was drained by the failure of ?spell,
+    and the wolf wonders why the exotic energy is not refreshing him.
+  &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;random-once n_mageSightHorny2&gt;&gt;
   &lt;&lt;ro-choice&gt;&gt;
-    he knows that once the mage-sight is gone,
+    He knows that once the mage-sight is gone,
     the song of the exotic energy will also be gone.
     There must be something he can do to keep the music going.
   &lt;&lt;ro-choice&gt;&gt;
-    he&#39;s afraid that when his mage-sight is gone,
+    He&#39;s afraid that when his mage-sight is gone,
     he&#39;ll forget the song and remain in silence alone.
     There must be some way to hold onto this music longer.
   &lt;&lt;/random-once&gt;&gt;
 
 &lt;&lt;else&gt;&gt;
-  The lupine mage does not know how much longer he can
+  The lupine mage
+  &lt;&lt;if $n_drainPending&gt;&gt;
+    is feeling unusually drained from the failure of ?spell.
+    The exotic energy in this place is not replenishing his power.
+    Nero
+  &lt;&lt;/if&gt;&gt;
+  does not know how much longer he can
   sustain the mage-sight spell. He&#39;d better
   &lt;&lt;if $n_mirrorFlawNoticed&gt;&gt;
     do something useful
@@ -34555,6 +34573,13 @@ $n_afterAction
   } else {
     $n_magicAction = `&lt;&lt;mtl [[n1s Scan]]&gt;&gt;`
       + `Scan the room&#39;s magic.&lt;&lt;/mtl&gt;&gt;`;
+  }
+&gt;&gt;
+
+&lt;&lt;run
+  if ($n_drainPending) {
+    delete $n_drainPending;
+    $n_knowsDrained = true;
   }
 &gt;&gt;
 
