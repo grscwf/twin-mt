@@ -66,6 +66,8 @@ const sectInfo = {
   },
 };
 
+// XXX new trail structure
+
 /** Keep up to this many latest events */
 MT.trailMaxEvents = 1000;
 /** Keep up to this many earliest events */
@@ -128,8 +130,7 @@ function compact(trail) {
 }
 
 MT.trailGet = () => {
-  let trail = MT.mdGetUncached("mi_trail");
-  trail ??= {};
+  let trail = {};
   trail.recent ??= 0;
   trail.events ??= [];
   trail.first ??= [];
@@ -163,7 +164,6 @@ MT.trailAddNow = () => {
   }
   trail.events.push(event);
   compact(trail);
-  MT.mdSet("mi_trail", trail);
 };
 
 MT.trailAddOther = event => {
@@ -174,13 +174,11 @@ MT.trailAddOther = event => {
     ...event
   });
   compact(trail);
-  MT.mdSet("mi_trail", trail);
 };
 
 MT.trailClearRecent = () => {
   const trail = MT.trailGet();
   trail.recent = trail.events.length;
-  MT.mdSet("mi_trail", trail);
 };
 
 MT.trailForgetOlder = () => {
@@ -188,7 +186,6 @@ MT.trailForgetOlder = () => {
   trail.events.splice(0, trail.recent);
   trail.first = [];
   trail.recent = 0;
-  MT.mdSet("mi_trail", trail);
 };
 
 function renderSeen(title, state, out) {
@@ -528,7 +525,6 @@ MT.trailRender = (out) => {
 };
 
 function trailInit() {
-  MT.mdDefIgnored("mi_trail");
 
   if (!setup.playtest) return;
 

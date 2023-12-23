@@ -229,9 +229,12 @@
     - using the flag,
     - or declaring it constant with `<<vi-always flag value>>`,
     - or ignoring it with `<<vi-ignore flag>>`.
-- The two numbers on the right side of var-info are an estimate
-  of total chars stored in localStorage and sessionStorage.
-  Note, these are utf-16 characters, not bytes.
+- The numbers on the right side of var-info are an estimate
+  of bytes used in sessionStorage and localStorage.
+  - SugarCube metadata size is called out because
+    SugarCube does lz-compress on every read and write of metadata,
+    which can be expensive when metadata gets large
+    (10k is ok, 100k is noticeably slow).
 
 ### Compute variants
 

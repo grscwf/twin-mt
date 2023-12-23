@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -9393,14 +9393,16 @@ function migrateMetadata() {
     }
   }
 
+  remove(&quot;mg_trail&quot;);
+  remove(&quot;mg_notesNoTrailTimes&quot;);
+  remove(&quot;mi_notesNoTrailTimes&quot;);
+  remove(&quot;mi_trail&quot;);
   remove(&quot;mn_playerFailedCatch&quot;);
   remove(&quot;mn_playerLostEndgame&quot;);
   remove(&quot;mn_playerReadGlitch&quot;);
   remove(&quot;mn_playerSawIvexRemember&quot;);
 
   rename(&quot;mg_notesNoTrail&quot;, &quot;mi_notesNoTrail&quot;);
-  rename(&quot;mg_notesNoTrailTimes&quot;, &quot;mi_notesNoTrailTimes&quot;);
-  rename(&quot;mg_trail&quot;, &quot;mi_trail&quot;);
   rename(&quot;notes&quot;, &quot;mi_notes&quot;);
 }
 
@@ -10817,6 +10819,7 @@ MT.mdDefUnsaved(&quot;mn_arcTamedVariant&quot;);
 // things the player has done, which affect hints
 // these are not saved, because player might load someone else&#39;s saved game
 
+MT.mdDefUnsaved(&quot;mn_brokenJumpFailed&quot;);
 MT.mdDefUnsaved(&quot;mn_brokenTriedDirect&quot;);
 MT.mdDefUnsaved(&quot;mn_brokenTooSlow&quot;);
 
@@ -11796,7 +11799,6 @@ function updateStatus() {
 function initNotes() {
   MT.mdDefIgnored(&quot;mi_notes&quot;);
   MT.mdDefIgnored(&quot;mi_notesNoTrail&quot;);
-  MT.mdDefIgnored(&quot;mi_notesNoTrailTimes&quot;);
 
   if (!setup.playtest) return;
   $(document).on(&quot;:passagedisplay&quot;, renderButton);
@@ -13446,6 +13448,8 @@ const sectInfo = {
   },
 };
 
+// XXX new trail structure
+
 /** Keep up to this many latest events */
 MT.trailMaxEvents = 1000;
 /** Keep up to this many earliest events */
@@ -13508,8 +13512,7 @@ function compact(trail) {
 }
 
 MT.trailGet = () =&gt; {
-  let trail = MT.mdGetUncached(&quot;mi_trail&quot;);
-  trail ??= {};
+  let trail = {};
   trail.recent ??= 0;
   trail.events ??= [];
   trail.first ??= [];
@@ -13543,7 +13546,6 @@ MT.trailAddNow = () =&gt; {
   }
   trail.events.push(event);
   compact(trail);
-  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 MT.trailAddOther = event =&gt; {
@@ -13554,13 +13556,11 @@ MT.trailAddOther = event =&gt; {
     ...event
   });
   compact(trail);
-  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 MT.trailClearRecent = () =&gt; {
   const trail = MT.trailGet();
   trail.recent = trail.events.length;
-  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 MT.trailForgetOlder = () =&gt; {
@@ -13568,7 +13568,6 @@ MT.trailForgetOlder = () =&gt; {
   trail.events.splice(0, trail.recent);
   trail.first = [];
   trail.recent = 0;
-  MT.mdSet(&quot;mi_trail&quot;, trail);
 };
 
 function renderSeen(title, state, out) {
@@ -13908,7 +13907,6 @@ MT.trailRender = (out) =&gt; {
 };
 
 function trailInit() {
-  MT.mdDefIgnored(&quot;mi_trail&quot;);
 
   if (!setup.playtest) return;
 
@@ -14730,16 +14728,26 @@ function initVarInfo() {
 
     const sizes = MT.computeSizes();
     $(`&lt;span class=&quot;var-info-separator var-info-show&quot;&gt;`).text(&quot;||&quot;).appendTo(outer);
-    $(`&lt;span class=&quot;var-info-sizes var-info-show&quot;&gt;`).text(sizes).appendTo(outer);
+    $(`&lt;span class=&quot;var-info-sizes var-info-show&quot;&gt;`).text(sizes)
+      .attr(&quot;title&quot;,
+        &quot;Storage size estimate in bytes\n&quot;
+        + &quot;ss = sessionStorage (current tab)\n&quot;
+        + &quot;ls = localStorage (shared by tabs)\n&quot;
+        + &quot;md = SugarCube metadata (within localStorage)\n&quot;
+      )
+      .appendTo(outer);
 
     if (to_do.length) outer.addClass(&quot;var-info-to-do&quot;);
   });
 }
 
 MT.computeSizes = () =&gt; {
+  const mdKey = &quot;nero.metadata&quot;;
+  const ms = mdKey.length + localStorage.getItem(mdKey).length;
+
   const ls = computeSize(localStorage);
   const ss = computeSize(sessionStorage);
-  return `${ls} + ${ss}`;
+  return `ss ${2*ss} + ls ${2*ls} (md ${2*ms})`;
 }
 
 function computeSize(st) {
@@ -19444,7 +19452,6 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
     $(&quot;#notes-load-file&quot;).on(&quot;change&quot;, loadFilePicked);
     $(&quot;#notes-share&quot;).prop(&quot;disabled&quot;, T.canShare).click(doShare);
     $(&quot;input[name=notes-add-trail]&quot;).on(&quot;change&quot;, toggleTrail);
-    $(&quot;input[name=notes-add-trail-times]&quot;).on(&quot;change&quot;, toggleTrailTimes);
     restoreSession();
     uiUpdate();
   });
@@ -19456,10 +19463,7 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
     T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
 
     const noTrail = MT.mdGetUncached(&quot;mi_notesNoTrail&quot;);
-    const noTimes = MT.mdGetUncached(&quot;mi_notesNoTrailTimes&quot;);
     $(&quot;input[name=notes-add-trail]&quot;).prop(&quot;checked&quot;, !noTrail);
-    $(&quot;input[name=notes-add-trail-times]&quot;).prop(&quot;checked&quot;, !noTimes);
-    $(&quot;input[name=notes-add-trail-times]&quot;).prop(&quot;disabled&quot;, noTrail);
     renderTrail();
   }
 
@@ -19480,26 +19484,19 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   function toggleTrail() {
     const addTrail = $(&quot;input[name=notes-add-trail]&quot;).prop(&quot;checked&quot;);
     MT.mdSet(&quot;mi_notesNoTrail&quot;, !addTrail);
-    $(&quot;input[name=notes-add-trail-times]&quot;).prop(&quot;disabled&quot;, !addTrail);
     renderTrail();
     uiUpdate();
   }
 
-  function toggleTrailTimes() {
-    const addTimes = $(&quot;input[name=notes-add-trail-times&quot;).prop(&quot;checked&quot;);
-    MT.mdSet(&quot;mi_notesNoTrailTimes&quot;, !addTimes);
-    renderTrail();
-  }
-
   function renderTrail() {
     const addTrail = $(&quot;input[name=notes-add-trail]&quot;).prop(&quot;checked&quot;);
-    const addTimes = $(&quot;input[name=notes-add-trail-times&quot;).prop(&quot;checked&quot;);
     const textarea = $(&quot;#notes-trail&quot;);
     if (!addTrail) {
       textarea.val(&quot;&quot;);
       return;
     }
-    const trail = MT.mdGetUncached(&quot;mi_trail&quot;);
+    // XXX render new trail in notes
+    const trail = null;
 
     let render = &quot;&quot;;
 
@@ -19788,11 +19785,6 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
   &lt;label&gt;
     &lt;input type=checkbox name=&quot;notes-add-trail&quot;&gt;
     Include player trail
-  &lt;/label&gt;
-  &lt;br&gt;
-  &lt;label&gt;
-    &lt;input type=checkbox name=&quot;notes-add-trail-times&quot;&gt;
-    Include timestamps in trail
   &lt;/label&gt;
   &lt;br&gt;
   &lt;textarea id=&quot;notes-trail&quot; readonly placeholder=&quot;(no trail added)&quot;

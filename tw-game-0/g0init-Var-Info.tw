@@ -506,16 +506,26 @@ function initVarInfo() {
 
     const sizes = MT.computeSizes();
     $(`<span class="var-info-separator var-info-show">`).text("||").appendTo(outer);
-    $(`<span class="var-info-sizes var-info-show">`).text(sizes).appendTo(outer);
+    $(`<span class="var-info-sizes var-info-show">`).text(sizes)
+      .attr("title",
+        "Storage size estimate in bytes\n"
+        + "ss = sessionStorage (current tab)\n"
+        + "ls = localStorage (shared by tabs)\n"
+        + "md = SugarCube metadata (within localStorage)\n"
+      )
+      .appendTo(outer);
 
     if (to_do.length) outer.addClass("var-info-to-do");
   });
 }
 
 MT.computeSizes = () => {
+  const mdKey = "nero.metadata";
+  const ms = mdKey.length + localStorage.getItem(mdKey).length;
+
   const ls = computeSize(localStorage);
   const ss = computeSize(sessionStorage);
-  return `${ls} + ${ss}`;
+  return `ss ${2*ss} + ls ${2*ls} (md ${2*ms})`;
 }
 
 function computeSize(st) {
