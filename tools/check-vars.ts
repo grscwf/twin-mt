@@ -17,6 +17,7 @@ const varPatterns = [
   /\b(n[0-9]_\w+):/g,
   /\b(n_\w+):/g,
   /\bState[.]variables[.](\w+)/g,
+  /\bState[.](?:current|active)[.]variables[.](\w+)/g,
   /\b(?:mdGetUncached|mdSet|mdDef\w+)\("(\w+)"/g,
   /\b(?:mdGetUncached|mdSet|mdDef\w+)\('(\w+)'/g,
   /\bState[.]metadata[.](?:delete|get|set)\("(\w+)"/g,
