@@ -1,63 +1,209 @@
 :: g0init Trail [inclusion] {"position":"450,950","size":"100,100"}
 <<script>>
 
-// XXX new trail structure
+/**
+ * This tries to save entire player history in a compact way.
+ *
+ * Instead of a tree structure, we keep a list of linear histories,
+ * because it's simpler and more legible. The histories use SugarCube's
+ * delta encoding, and we rely on lz-compress for compactness.
+ *
+ * One tricky problem is the game can be run in multiple tabs,
+ * and tabs can be cloned. We want to keep history of every tab.
+ * The player might close a tab before it reaches any checkpoint,
+ * and using the "unload" event is not reliable,
+ * so we have to continually save every tab's history to localStorage,
+ * without tabs overwriting each other.
+ *
+ * We do that by giving each tab a trail-id, and save that trail-id
+ * to sessionStorage. Whenever a tab re-initializes, it generates
+ * a new trail-id and deletes the trail stored with the saved trail-id.
+ *
+ * Trail objects have three possible representations
+ * - trail.history - array of moments with all variables in each moment.
+ * - trail.delta - delta-encoded history. Packed trails have only this.
+ * - trail.lzState - lz-compressed state object. This is only in
+ *     active-tab states, used for fast update.
+ */
 
-/*
-  type Trail = {
-    id: number;
-    msecStart: number;
-    msecEnd: number;
-    steps: Step[];
-  };
+const trailId = Date.now();
 
-  type Step = {
-    title: string;
+const stringify = JSON._real_stringify || JSON.stringify;
+const parse = JSON._real_parse || JSON.parse;
 
-    // This is any values in the initial state that are different from the
-    // previous step's initial state.
-    // Deleted vars will have the value "null".
-    // This also has values for any used vars, even if the value is unchanged.
-    // Key order is always alphabetical.
-    delta: Record<string, unknown>;
-
-    // Vars that are read by this step, sorted alphabetically.
-    used: string[];
-  };
-*/
-
-
-/** expose state for easier debugging */
-MT.trail = { }
-
-
-MT.trailAddNow = () => {
-  // if (MT.roaming) return;
-  if (MT.untracedGet("g_mutated")) return;
-  const event = {
-    turn: State.turns,
-    title: State.passage,
-  };
-  if (MT.trace.wasRead.size > 0) {
-    event.state = {};
-    // Note: current (incoming) state, not active state.
-    const CV = State.current.variables;
-    let anySet = false;
-    for (const vn of MT.trace.wasRead) {
-      if (CV[vn] != null) {
-        event.state[vn] = CV[vn];
-        anySet = true;
-      }
-    }
-    if (!anySet) delete event.state;
-  }
-  // XXX
+/** Our last view of localStorage trail.packed */
+let packedCache = {
+  str: null,
+  obj: [],
 };
 
+/**
+ * Returns a list of the packed trails.
+ * The list returned is shared mutable, so be careful.
+ * The trails in the list might not have .history expanded yet.
+ */
+function getPackedTrails() {
+  const packed = localStorage.getItem("trail.packed");
+  if (packed !== packedCache.str) {
+    packedCache.obj = deserializeList(packed, "trail.packed");
+    packedCache.str = packed;
+  }
+  return packedCache.obj;
+}
+
+/** Deserializes str, expecting the result to be an array. */
+function deserializeList(str, id) {
+  try {
+    const json = LZString.decompressFromUTF16(str);
+    const list = parse(json);
+    if (Array.isArray(list)) {
+      return list;
+    }
+    console.warn(`${id} did not deserialize to an array, ignoring.`);
+  } catch (e) {
+    console.warn(`Error deserializing ${id}`, e);
+  }
+  return [];
+}
+
+/** Claims and deletes any existing active trail for this session. */
+function claimOldTrail() {
+  const oldId = sessionStorage.getItem("trail.id");
+  if (oldId != null) {
+    const oldKey = `trail.active.${oldId}`;
+    const oldVal = localStorage.getItem(oldKey);
+    if (oldVal != null) {
+      localStorage.removeItem(oldKey);
+    }
+  }
+  sessionStorage.setItem("trail.id", trailId);
+}
+
+/** Saves current state as an active trail to localStorage */
+function saveCurrentTrail() {
+  // Use the state that SugarCube already lz'ed
+  const lzState = sessionStorage.getItem("nero.state");
+  if (lzState == null) return;
+
+  const key = `trail.active.${trailId}`;
+  const trail = {
+    id: trailId,
+    time: Date.now(),
+    lzState,
+  };
+  localStorage.setItem(key, stringify(trail));
+}
+
+/**
+ * Sets packed trails to `packed`, and stores it to localStorage.
+ * `packed` will be modified and shared, so be careful.
+ */
+function savePackedTrails(packed) {
+  const compact = [];
+  for (const trail of packed) {
+    if (trail.delta == null) {
+      if (trail.history == null) {
+        expandTrail(trail);
+      }
+      trail.delta = State.deltaEncode(trail.history);
+    }
+    const slim = {
+      id: trail.id,
+      time: trail.time,
+      delta: trail.delta,
+    };
+    compact.push(slim);
+  }
+  const str = LZString.compressToUTF16(stringify(compact));
+  localStorage.setItem("trail.packed", str);
+  packedCache.str = str;
+  packedCache.obj = packed;
+}
+
+/** If trail has delta or state, expands in-place to history. */
+function expandTrail(trail) {
+  if (trail.history != null) return;
+
+  // if there's an lzState, decompress it
+  if (trail.delta == null && trail.lzState != null) {
+    let state;
+    try {
+      const str = LZString.decompressFromUTF16(trail.lzState);
+      state = parse(str);
+    } catch (e) {
+      trail.history = [];
+      return;
+    }
+    // state probably has delta, but could have history instead.
+    // state index might not be at end of history, doesn't matter here.
+    if (state.history != null) {
+      trail.history = state.history;
+      return;
+    } else if (state.delta != null) {
+      trail.delta = state.delta;
+    }
+  }
+
+  if (trail.delta != null) {
+    trail.history = State.deltaDecode(trail.delta);
+    return;
+  }
+
+  console.warn(`expandTrail failed for some reason?`, trail);
+  trail.history = [];
+  return;
+}
+
+/** Add some trails to packed trails */
+function packSomeTrails(trails) {
+  const packed = getPackedTrails();
+  for (const trail of trails) {
+    packed.push(trail);
+  }
+  savePackedTrails(packed);
+}
+
+/** Move stale active trails to packed trails. */
+function packStaleTrails() {
+  const stale = [];
+  // If a tab is still open but hasn't been touched in N hours,
+  // then we pack it prematurely. This is harmless, it just means
+  // there will be an extra trail in packed trails.
+  const old = Date.now() - 24 * 60 * 60 * 1000;
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith("trail.active.")) {
+      keys.push(key);
+    }
+  }
+  for (const key of keys) {
+    const trail = localStorage.getItem(key);
+    if (trail.time < old) {
+      localStorage.removeItem(key);
+      stale.push(trail);
+    }
+  }
+  if (stale.length) {
+    packSomeTrails(stale);
+  }
+}
+
+function packActiveTrail() {
+  const key = `trail.active.${trailId}`;
+  const str = localStorage.getItem(key);
+  if (str == null) return;
+  const trail = parse(str);
+  packSomeTrails([trail]);
+  localStorage.removeItem(key);
+}
 
 function trailInit() {
   if (!setup.playtest) return;
-  $(document).on(":passageend", MT.trailAddNow);
+  claimOldTrail();
+  packStaleTrails();
+  $(document).on(":passageend", saveCurrentTrail);
+  $(document).on(":enginerestart", packActiveTrail);
 }
 
 trailInit();
