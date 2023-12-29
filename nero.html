@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13710,11 +13710,12 @@ trailViewInit();
 &lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="212" name="g0init Trail" tags="inclusion" position="450,950" size="100,100">&lt;&lt;script&gt;&gt;
 
 /**
- * This tries to save entire player history in a compact way.
+ * This tries to save entire player history in a compact-ish way.
  *
- * Instead of a tree structure, we keep a list of linear histories,
- * because it&#39;s simpler and more legible. The histories use SugarCube&#39;s
- * delta encoding, and we rely on lz-compress for compactness.
+ * For now, we keep a linear list of histories in localStorage,
+ * and rely on LZString to compact it. LZString is only so-so
+ * compression, so this could be much more compact.
+ * Current method uses about 70b per step, so 5M will hold ~70k steps.
  *
  * One tricky problem is the game can be run in multiple tabs,
  * and tabs can be cloned. We want to keep history of every tab.
@@ -13732,6 +13733,23 @@ trailViewInit();
  * - trail.delta - delta-encoded history. Packed trails have only this.
  * - trail.lzState - lz-compressed state object. This is only in
  *     active-tab states, used for fast update.
+ *
+ * TODO: either use a more compact representation, or use indexeddb instead.
+ *
+ * Sketch of a more compact representation that will LZString-compress well:
+ *   type Trails = [...Trail, dict: string[]];
+ *   type Trail = [
+ *     id: number,
+ *     date: number,
+ *     ...steps: Step[],
+ *   ];
+ *   type Step = TitleId | StateDelta;
+ *   type TitleId = number;
+ *   type StateDelta = Record&lt;VarId, unknown&gt;;
+ *   type VarId = number;
+ * dict is a table of id -&gt; string. The ids are used for var names,
+ * passage titles, and nontrivial string values in StateDelta
+ * (which are encoded as `,${strId}`).
  */
 
 const trailId = Date.now();
@@ -13793,6 +13811,9 @@ function saveCurrentTrail() {
   const lzState = sessionStorage.getItem(&quot;nero.state&quot;);
   if (lzState == null) return;
 
+  // XXX check if we&#39;ve diverged
+  // XXX ignore back from menu
+
   const key = `trail.active.${trailId}`;
   const trail = {
     id: trailId,
@@ -13821,7 +13842,9 @@ function savePackedTrails(packed) {
       delta: trail.delta,
     };
     compact.push(slim);
+    // XXX count size
   }
+  // XXX expire old entries if over size limit
   const str = LZString.compressToUTF16(stringify(compact));
   localStorage.setItem(&quot;trail.packed&quot;, str);
   packedCache.str = str;
@@ -13913,6 +13936,8 @@ function trailInit() {
   $(document).on(&quot;:passageend&quot;, saveCurrentTrail);
   $(document).on(&quot;:enginerestart&quot;, packActiveTrail);
 }
+
+// XXX public async consumer api
 
 trailInit();
 

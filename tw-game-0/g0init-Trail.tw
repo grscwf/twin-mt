@@ -2,11 +2,12 @@
 <<script>>
 
 /**
- * This tries to save entire player history in a compact way.
+ * This tries to save entire player history in a compact-ish way.
  *
- * Instead of a tree structure, we keep a list of linear histories,
- * because it's simpler and more legible. The histories use SugarCube's
- * delta encoding, and we rely on lz-compress for compactness.
+ * For now, we keep a linear list of histories in localStorage,
+ * and rely on LZString to compact it. LZString is only so-so
+ * compression, so this could be much more compact.
+ * Current method uses about 70b per step, so 5M will hold ~70k steps.
  *
  * One tricky problem is the game can be run in multiple tabs,
  * and tabs can be cloned. We want to keep history of every tab.
@@ -24,6 +25,23 @@
  * - trail.delta - delta-encoded history. Packed trails have only this.
  * - trail.lzState - lz-compressed state object. This is only in
  *     active-tab states, used for fast update.
+ *
+ * TODO: either use a more compact representation, or use indexeddb instead.
+ *
+ * Sketch of a more compact representation that will LZString-compress well:
+ *   type Trails = [...Trail, dict: string[]];
+ *   type Trail = [
+ *     id: number,
+ *     date: number,
+ *     ...steps: Step[],
+ *   ];
+ *   type Step = TitleId | StateDelta;
+ *   type TitleId = number;
+ *   type StateDelta = Record<VarId, unknown>;
+ *   type VarId = number;
+ * dict is a table of id -> string. The ids are used for var names,
+ * passage titles, and nontrivial string values in StateDelta
+ * (which are encoded as `,${strId}`).
  */
 
 const trailId = Date.now();
@@ -85,6 +103,9 @@ function saveCurrentTrail() {
   const lzState = sessionStorage.getItem("nero.state");
   if (lzState == null) return;
 
+  // XXX check if we've diverged
+  // XXX ignore back from menu
+
   const key = `trail.active.${trailId}`;
   const trail = {
     id: trailId,
@@ -113,7 +134,9 @@ function savePackedTrails(packed) {
       delta: trail.delta,
     };
     compact.push(slim);
+    // XXX count size
   }
+  // XXX expire old entries if over size limit
   const str = LZString.compressToUTF16(stringify(compact));
   localStorage.setItem("trail.packed", str);
   packedCache.str = str;
@@ -205,6 +228,8 @@ function trailInit() {
   $(document).on(":passageend", saveCurrentTrail);
   $(document).on(":enginerestart", packActiveTrail);
 }
+
+// XXX public async consumer api
 
 trailInit();
 
