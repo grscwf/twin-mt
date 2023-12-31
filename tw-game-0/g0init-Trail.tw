@@ -46,6 +46,9 @@
 
 const trailId = Date.now();
 
+/* ~70b per step, 20k * 70 = ~1.4M */
+const MAX_STEPS = 20000;
+
 const stringify = JSON._real_stringify || JSON.stringify;
 const parse = JSON._real_parse || JSON.parse;
 
@@ -103,7 +106,7 @@ function saveCurrentTrail() {
   const lzState = sessionStorage.getItem("nero.state");
   if (lzState == null) return;
 
-  // XXX check if we've diverged
+  // XXX save tip of history, check if current history includes tip
   // XXX ignore back from menu
 
   const key = `trail.active.${trailId}`;
@@ -134,9 +137,18 @@ function savePackedTrails(packed) {
       delta: trail.delta,
     };
     compact.push(slim);
-    // XXX count size
   }
-  // XXX expire old entries if over size limit
+
+  let steps = 0;
+  for (let i = compact.length - 1; i >= 0; i--) {
+    steps += compact[i].delta.length;
+    if (steps > MAX_STEPS) {
+      console.warn(`Forgetting ${i} trails`);
+      compact.splice(0, i);
+      break;
+    } 
+  }
+
   const str = LZString.compressToUTF16(stringify(compact));
   localStorage.setItem("trail.packed", str);
   packedCache.str = str;

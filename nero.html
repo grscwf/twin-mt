@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13754,6 +13754,9 @@ trailViewInit();
 
 const trailId = Date.now();
 
+/* ~70b per step, 20k * 70 = ~1.4M */
+const MAX_STEPS = 20000;
+
 const stringify = JSON._real_stringify || JSON.stringify;
 const parse = JSON._real_parse || JSON.parse;
 
@@ -13811,7 +13814,7 @@ function saveCurrentTrail() {
   const lzState = sessionStorage.getItem(&quot;nero.state&quot;);
   if (lzState == null) return;
 
-  // XXX check if we&#39;ve diverged
+  // XXX save tip of history, check if current history includes tip
   // XXX ignore back from menu
 
   const key = `trail.active.${trailId}`;
@@ -13842,9 +13845,18 @@ function savePackedTrails(packed) {
       delta: trail.delta,
     };
     compact.push(slim);
-    // XXX count size
   }
-  // XXX expire old entries if over size limit
+
+  let steps = 0;
+  for (let i = compact.length - 1; i &gt;= 0; i--) {
+    steps += compact[i].delta.length;
+    if (steps &gt; MAX_STEPS) {
+      console.warn(`Forgetting ${i} trails`);
+      compact.splice(0, i);
+      break;
+    } 
+  }
+
   const str = LZString.compressToUTF16(stringify(compact));
   localStorage.setItem(&quot;trail.packed&quot;, str);
   packedCache.str = str;
