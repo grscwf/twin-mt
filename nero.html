@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13752,7 +13752,7 @@ trailViewInit();
  * (which are encoded as `,${strId}`).
  */
 
-const trailId = Date.now();
+let trailId = Date.now();
 
 /* ~70b per step, 20k * 70 = ~1.4M */
 const MAX_STEPS = 20000;
@@ -13765,6 +13765,9 @@ let packedCache = {
   str: null,
   obj: [],
 };
+
+/** The last value we saved to trail.active.${trailId} */
+let activeCache = null;
 
 /**
  * Returns a list of the packed trails.
@@ -13808,22 +13811,65 @@ function claimOldTrail() {
   sessionStorage.setItem(&quot;trail.id&quot;, trailId);
 }
 
+/** True if current history has diverged from saved active trial. */
+function isDiverged() {
+  if (activeCache == null) return false;
+  if (State.size &lt;= activeCache.tip) return true;
+  const aTip = State.history[activeCache.tip];
+  return (
+    aTip.title !== activeCache.tipTitle ||
+    // instead of checking entire state, we check just g_rand0 and g_rand1
+    aTip.variables.g_rand0 !== activeCache.tipRand0 ||
+    aTip.variables.g_rand1 !== activeCache.tipRand1
+  );
+}
+
+/** Pack current active trail and assign a new trailId */
+function packStaleActive() {
+  packSomeTrails([activeCache]);
+  const key = `trail.active.${trailId}`;
+  localStorage.removeItem(key);
+  trailId = Date.now();
+  sessionStorage.setItem(&quot;trail.id&quot;, trailId);
+}
+
+/** True if the moment in current history is a menu passage */
+function isMenu(moment) {
+  const title = State.history[moment].title;
+  return Story.get(title).tags.includes(&quot;is-menu&quot;);
+}
+
 /** Saves current state as an active trail to localStorage */
 function saveCurrentTrail() {
   // Use the state that SugarCube already lz&#39;ed
   const lzState = sessionStorage.getItem(&quot;nero.state&quot;);
   if (lzState == null) return;
 
-  // XXX save tip of history, check if current history includes tip
-  // XXX ignore back from menu
+  // Find current tip of history
+  let tip = State.size - 1;
+  while (tip &gt; 0 &amp;&amp; isMenu(tip)) {
+    tip--;
+  }
+  if (tip &lt;= 0) return;
+
+  const tipTitle = State.history[tip].title;
+  const tipVars = State.history[tip].variables;
+
+  if (isDiverged()) {
+    packStaleActive();
+  }
 
   const key = `trail.active.${trailId}`;
-  const trail = {
+  activeCache = {
     id: trailId,
     time: Date.now(),
+    tip,
+    tipTitle,
+    tipRand0: tipVars.g_rand0,
+    tipRand1: tipVars.g_rand1,
     lzState,
   };
-  localStorage.setItem(key, stringify(trail));
+  localStorage.setItem(key, stringify(activeCache));
 }
 
 /**
@@ -13948,8 +13994,6 @@ function trailInit() {
   $(document).on(&quot;:passageend&quot;, saveCurrentTrail);
   $(document).on(&quot;:enginerestart&quot;, packActiveTrail);
 }
-
-// XXX public async consumer api
 
 trailInit();
 
