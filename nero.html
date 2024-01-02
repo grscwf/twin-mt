@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13646,6 +13646,14 @@ MT.trailViewRender = (out) =&gt; {
 
   const here = lastNonMenuPassage();
 
+  const packed = MT.getPackedTrails();
+  for (const trail of packed) {
+    MT.expandTrail(trail);
+    for (const step of trail.history) {
+      older.add(step.title);
+    }
+  }
+
   let hasRecent = false;
   let hasOlder = false;
   for (const sect of sectNames) {
@@ -13774,7 +13782,7 @@ let activeCache = null;
  * The list returned is shared mutable, so be careful.
  * The trails in the list might not have .history expanded yet.
  */
-function getPackedTrails() {
+MT.getPackedTrails = function getPackedTrails() {
   const packed = localStorage.getItem(&quot;trail.packed&quot;);
   if (packed !== packedCache.str) {
     packedCache.obj = deserializeList(packed, &quot;trail.packed&quot;);
@@ -13910,7 +13918,7 @@ function savePackedTrails(packed) {
 }
 
 /** If trail has delta or state, expands in-place to history. */
-function expandTrail(trail) {
+MT.expandTrail = function expandTrail(trail) {
   if (trail.history != null) return;
 
   // if there&#39;s an lzState, decompress it
@@ -20552,14 +20560,14 @@ hello some more
   border-color: #1ff;
 }
 
-.trail-current {
-  background-color: #ca2;
-}
 .trail-recent {
   background-color: #5a3;
 }
 .trail-older {
   background-color: #55b;
+}
+.trail-current {
+  background-color: #ca2;
 }
 .trail-loaded {
   background-color: #555;
@@ -20645,12 +20653,12 @@ hello some more
     Normally, unvisited pages will only show a small text excerpt,
     but ?debug mode will also show one full rendering of the page.
   &lt;&lt;/if&gt;&gt;
-  ?P
-  Your trail can be exported or shared with [[All Notes|g1m Notes All]].
 &lt;/div&gt;
 
 &lt;span class=nobr&gt;
-  &lt;span class=&quot;trail-small-box trail-current&quot;&gt;&lt;/span&gt; current playthrough
+  &lt;span class=&quot;trail-small-box trail-current&quot;&gt;&lt;/span&gt; current trail
+  &amp;nbsp;
+  &lt;span class=&quot;trail-small-box trail-older&quot;&gt;&lt;/span&gt; older trails
 &lt;/span&gt;
 
 ?P
