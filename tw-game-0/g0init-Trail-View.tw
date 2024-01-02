@@ -66,6 +66,8 @@ const sectInfo = {
   },
 };
 
+const repr = JSON._real_stringify || JSON.stringify;
+
 /** Ordered list of section names */
 const sectNames = [];
 
@@ -117,9 +119,13 @@ function renderSeen(title, state, out) {
   }
   out.append(div);
   if (setup.debug) {
-    $("<div class=trail-info-state>")
-      .text(JSON.stringify(state || {}, null, " "))
-      .appendTo(out);
+    const read = JSON.parse(state.g_varsRead || "[]");
+    const obj = {};
+    for (const v of read) {
+      obj[v] = state[v];
+    }
+    const json = repr(obj, null, "  ");
+    $("<div class=trail-info-state>").text(json).appendTo(out);
   }
 }
 
@@ -200,6 +206,16 @@ MT.trailViewRender = (out) => {
   const current = new Set(State.history.map(m => m.title));
   const recent = new Set();
   const older = new Set();
+  const snapshots = {};
+
+  const packed = MT.getPackedTrails();
+  for (const trail of packed) {
+    MT.expandTrail(trail);
+    for (const step of trail.history) {
+      older.add(step.title);
+      snapshots[step.title] = step.variables;
+    }
+  }
 
   const renderInfo = (title, out) => {
     if (current.has(title)) {
@@ -207,9 +223,7 @@ MT.trailViewRender = (out) => {
       renderSeen(title, moment.variables, out);
 
     } else if (recent.has(title) || older.has(title)) {
-      const event = trail.events.findLast(ev => ev.title === title) ||
-        trail.first.findLast(ev => ev.title === title);
-      renderSeen(title, event.state, out);
+      renderSeen(title, snapshots[title], out);
 
     } else {
       renderUnseen(title, out);
@@ -327,13 +341,6 @@ MT.trailViewRender = (out) => {
 
   const here = lastNonMenuPassage();
 
-  const packed = MT.getPackedTrails();
-  for (const trail of packed) {
-    MT.expandTrail(trail);
-    for (const step of trail.history) {
-      older.add(step.title);
-    }
-  }
 
   let hasRecent = false;
   let hasOlder = false;

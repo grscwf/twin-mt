@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13385,6 +13385,8 @@ const sectInfo = {
   },
 };
 
+const repr = JSON._real_stringify || JSON.stringify;
+
 /** Ordered list of section names */
 const sectNames = [];
 
@@ -13436,9 +13438,13 @@ function renderSeen(title, state, out) {
   }
   out.append(div);
   if (setup.debug) {
-    $(&quot;&lt;div class=trail-info-state&gt;&quot;)
-      .text(JSON.stringify(state || {}, null, &quot; &quot;))
-      .appendTo(out);
+    const read = JSON.parse(state.g_varsRead || &quot;[]&quot;);
+    const obj = {};
+    for (const v of read) {
+      obj[v] = state[v];
+    }
+    const json = repr(obj, null, &quot;  &quot;);
+    $(&quot;&lt;div class=trail-info-state&gt;&quot;).text(json).appendTo(out);
   }
 }
 
@@ -13519,6 +13525,16 @@ MT.trailViewRender = (out) =&gt; {
   const current = new Set(State.history.map(m =&gt; m.title));
   const recent = new Set();
   const older = new Set();
+  const snapshots = {};
+
+  const packed = MT.getPackedTrails();
+  for (const trail of packed) {
+    MT.expandTrail(trail);
+    for (const step of trail.history) {
+      older.add(step.title);
+      snapshots[step.title] = step.variables;
+    }
+  }
 
   const renderInfo = (title, out) =&gt; {
     if (current.has(title)) {
@@ -13526,9 +13542,7 @@ MT.trailViewRender = (out) =&gt; {
       renderSeen(title, moment.variables, out);
 
     } else if (recent.has(title) || older.has(title)) {
-      const event = trail.events.findLast(ev =&gt; ev.title === title) ||
-        trail.first.findLast(ev =&gt; ev.title === title);
-      renderSeen(title, event.state, out);
+      renderSeen(title, snapshots[title], out);
 
     } else {
       renderUnseen(title, out);
@@ -13646,13 +13660,6 @@ MT.trailViewRender = (out) =&gt; {
 
   const here = lastNonMenuPassage();
 
-  const packed = MT.getPackedTrails();
-  for (const trail of packed) {
-    MT.expandTrail(trail);
-    for (const step of trail.history) {
-      older.add(step.title);
-    }
-  }
 
   let hasRecent = false;
   let hasOlder = false;
@@ -19595,17 +19602,14 @@ $(document).one(&quot;:passagedisplay&quot;, () =&gt; {
     for (let i = 0, n = State.length; i &lt; n; i++) {
       const step = State.history[i];
       render += `  { t: ${repr(step.title)}`;
-      const read = step.variables.g_varsRead;
-      if (read != null &amp;&amp; read !== &quot;&quot;) {
-        const vars = JSON.parse(read);
-        const obj = {};
-        for (const v of vars) {
-          obj[v] = step.variables[v];
-        }
-        const json = repr(obj);
-        if (json !== &quot;{}&quot;) {
-          render += `, vars: ${repr(obj)}`;
-        }
+      const read = JSON.parse(step.variables.g_varsRead || &quot;[]&quot;);
+      const obj = {};
+      for (const v of vars) {
+        obj[v] = step.variables[v];
+      }
+      const json = repr(obj);
+      if (json !== &quot;{}&quot;) {
+        render += `, vars: ${repr(obj)}`;
       }
       render += &quot; },\n&quot;;
     }
