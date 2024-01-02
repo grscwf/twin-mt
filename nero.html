@@ -497,7 +497,7 @@ $(document).on(':passagestart', function (ev) {
       session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-});</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -11956,15 +11956,6 @@ Macro.add(&quot;random-once&quot;, {
     V[seenVar] = JSON.stringify(seen);
 
     $(this.output).wiki(this.payload[choice].contents);
-
-    // TODO: this doesn&#39;t work with deterministic rng
-    if (false &amp;&amp; setup.debug &amp;&amp; valid.size &gt; 1) {
-      const outer = $(&quot;&lt;span class=ro-debug&gt;&quot;).appendTo(this.output);
-      outer.wiki(&quot;?debugIcon&quot;);
-      $(&quot;&lt;a&gt;&quot;).html(&quot;&amp;#x1f3b2;&quot;)
-        .appendTo(outer)
-        .click(() =&gt; MT.revisitHere());
-    }
   }
 });
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="203" name="g0init Randomness" tags="inclusion" position="450,700" size="100,100">&lt;&lt;script&gt;&gt;
@@ -13748,23 +13739,6 @@ trailViewInit();
  * - trail.delta - delta-encoded history. Packed trails have only this.
  * - trail.lzState - lz-compressed state object. This is only in
  *     active-tab states, used for fast update.
- *
- * TODO: either use a more compact representation, or use indexeddb instead.
- *
- * Sketch of a more compact representation that will LZString-compress well:
- *   type Trails = [...Trail, dict: string[]];
- *   type Trail = [
- *     id: number,
- *     date: number,
- *     ...steps: Step[],
- *   ];
- *   type Step = TitleId | StateDelta;
- *   type TitleId = number;
- *   type StateDelta = Record&lt;VarId, unknown&gt;;
- *   type VarId = number;
- * dict is a table of id -&gt; string. The ids are used for var names,
- * passage titles, and nontrivial string values in StateDelta
- * (which are encoded as `,${strId}`).
  */
 
 let trailId = Date.now();
@@ -15698,9 +15672,8 @@ function analyze(passages) {
   const wordCount = {};
 
   const getKind = (title, tags) =&gt; {
-    if (tags.includes(&quot;is-menu&quot;)) return &quot;menu&quot;;
-    /* mt should probably be a separate kind */
-    if (/^Init |^mt/.test(title)) return &quot;init&quot;;
+    if (/^g0/.test(title)) return &quot;g0&quot;;
+    if (/^g1/.test(title)) return &quot;g1&quot;;
     if (/^Story/.test(title)) return &quot;twine&quot;;
     return MT.signOf(title) || &quot;untagged&quot;;
   };
@@ -15876,15 +15849,17 @@ function showPassages(dest, info) {
 const passages = Story.lookup()
   .sort((a, b) =&gt; a.title &lt; b.title ? -1 : a.title &gt; b.title ? +1 : 0);
 
-const neroRe = /^n\d|^mt|^Init |^Story/;
+const neroRe = /^n\d|^g\d|^Story/;
 
 const neroPassages = passages
   .filter(p =&gt; neroRe.test(p.title));
 const neroInfo = analyze(neroPassages);
+MT.neroInfo = neroInfo;
 
 const otherPassages = passages
   .filter(p =&gt; !neroRe.test(p.title));
 const otherInfo = analyze(otherPassages);
+MT.otherInfo = otherInfo;
 
 function render() {
   const dest = $(&quot;#dash-outer&quot;);
@@ -15906,7 +15881,6 @@ $(document).one(&quot;:passagedisplay&quot;, render);
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="227" name="g1m Goto Paths" tags="inclusion" position="325,1875" size="100,100">&lt;&lt;script&gt;&gt;
-
 /*
  * &quot;choice&quot; elements:
  * - generally, the node before a &quot;choice&quot; has a meaningful choice.
@@ -15919,13 +15893,6 @@ $(document).one(&quot;:passagedisplay&quot;, render);
  *   which will align the paths.
  * - &quot;note&quot; will bold the choice, making it easier to see which
  *   choices are different.
- * 
- * &quot;choice&quot; as status elements:
- * - when there are consecutive &quot;choice&quot; elements, all but one
- *   is a status element, marking a meaningful state change
- *   that happens sometime during that choice.
- * - TODO: this is kind of confusing, should make a &quot;status&quot;
- *   element instead.
  */
 MT.walks = [
   &quot;&lt;hr&gt;&lt;span class=walk-sec-title&gt;Drekkar&lt;/span&gt;&quot;,
@@ -20832,7 +20799,7 @@ The conclusion of this failure will be in the public release.
     ?restartAction
   &lt;/ul&gt;
 &lt;&lt;/arc-skip&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="245" name="n0a Nero Ending Index" tags="inclusion" position="600,1250" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="245" name="n0a Nero Ending Index" tags="mt-ready inclusion" position="600,1250" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
   const T = State.temporary;
   const V = State.variables;

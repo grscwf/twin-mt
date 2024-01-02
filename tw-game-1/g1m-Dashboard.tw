@@ -60,9 +60,8 @@ function analyze(passages) {
   const wordCount = {};
 
   const getKind = (title, tags) => {
-    if (tags.includes("is-menu")) return "menu";
-    /* mt should probably be a separate kind */
-    if (/^Init |^mt/.test(title)) return "init";
+    if (/^g0/.test(title)) return "g0";
+    if (/^g1/.test(title)) return "g1";
     if (/^Story/.test(title)) return "twine";
     return MT.signOf(title) || "untagged";
   };
@@ -238,15 +237,17 @@ function showPassages(dest, info) {
 const passages = Story.lookup()
   .sort((a, b) => a.title < b.title ? -1 : a.title > b.title ? +1 : 0);
 
-const neroRe = /^n\d|^mt|^Init |^Story/;
+const neroRe = /^n\d|^g\d|^Story/;
 
 const neroPassages = passages
   .filter(p => neroRe.test(p.title));
 const neroInfo = analyze(neroPassages);
+MT.neroInfo = neroInfo;
 
 const otherPassages = passages
   .filter(p => !neroRe.test(p.title));
 const otherInfo = analyze(otherPassages);
+MT.otherInfo = otherInfo;
 
 function render() {
   const dest = $("#dash-outer");
