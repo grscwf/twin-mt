@@ -49,7 +49,7 @@ let activeCache = null;
  * The list returned is shared mutable, so be careful.
  * The trails in the list might not have .history expanded yet.
  */
-MT.getPackedTrails = function getPackedTrails() {
+MT.getPackedTrails = () => {
   const packed = localStorage.getItem("trail.packed");
   if (packed !== packedCache.str) {
     packedCache.obj = deserializeList(packed, "trail.packed");
@@ -156,7 +156,7 @@ function savePackedTrails(packed) {
   for (const trail of packed) {
     if (trail.delta == null) {
       if (trail.history == null) {
-        expandTrail(trail);
+        MT.expandTrail(trail);
       }
       trail.delta = State.deltaEncode(trail.history);
     }
@@ -185,7 +185,7 @@ function savePackedTrails(packed) {
 }
 
 /** If trail has delta or state, expands in-place to history. */
-MT.expandTrail = function expandTrail(trail) {
+MT.expandTrail = (trail) => {
   if (trail.history != null) return;
 
   // if there's an lzState, decompress it
@@ -220,7 +220,7 @@ MT.expandTrail = function expandTrail(trail) {
 
 /** Add some trails to packed trails */
 function packSomeTrails(trails) {
-  const packed = getPackedTrails();
+  const packed = MT.getPackedTrails();
   for (const trail of trails) {
     packed.push(trail);
   }
