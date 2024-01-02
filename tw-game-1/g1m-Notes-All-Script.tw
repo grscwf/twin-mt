@@ -4,6 +4,8 @@
   const V = State.variables;
   const noteStore = window.sessionStorage;
 
+  const repr = JSON._real_stringify || JSON.stringify;
+
   T.savedVal = "";
   T.editVal = "";
   T.hasConflict = false;
@@ -66,37 +68,26 @@
       textarea.val("");
       return;
     }
-    // XXX render new trail in notes
-    const trail = null;
 
-    let render = "";
-
-    const addEventList = events => {
-      events.forEach((ev, i) => {
-        if (i !== 0) render += ",\n";
-        if (!addTimes) {
-          ev = Object.assign(ev);
-          delete ev.time;
+    let render = "[\n";
+    for (let i = 0, n = State.length; i < n; i++) {
+      const step = State.history[i];
+      render += `  { t: ${repr(step.title)}`;
+      const read = step.variables.g_varsRead;
+      if (read != null && read !== "") {
+        const vars = JSON.parse(read);
+        const obj = {};
+        for (const v of vars) {
+          obj[v] = step.variables[v];
         }
-        render += "    " + JSON.stringify(ev);
-      });
-      if (events.length) render += "\n";
-    };
-
-    render += `{\n`;
-    if (trail != null) {
-      if (trail.first != null && trail.first.length) {
-        render += `  "first": [\n`;
-        addEventList(trail.first);
-        render += `  ],\n`;
+        const json = repr(obj);
+        if (json !== "{}") {
+          render += `, vars: ${repr(obj)}`;
+        }
       }
-      if (trail.events != null) {
-        render += `  "events": [\n`;
-        addEventList(trail.events);
-        render += `  ]\n`;
-      }
+      render += " },\n";
     }
-    render += "}\n";
+    render += "]\n";
     textarea.val(render);
   }
 
