@@ -8,6 +8,9 @@ export const json = (o: unknown) => JSON.stringify(o);
 
 /** Returns a normal filename for a passage title. */
 export function fnameForTitle(title: string): string {
+  if (/[.](css|js)$/.test(title)) {
+    return title;
+  }
   return title.replaceAll(/[()']/g, "").replaceAll(/[/,\s]+/g, "-") + ".tw";
 }
 

@@ -16,6 +16,8 @@ import path from "path";
 import { fnameForTitle, headerRE, runP, setupEnv } from "./lib";
 import { Rule, rules } from "./rules";
 
+const repr = JSON.stringify;
+
 async function main(argv: string[]) {
   setupEnv();
   const program = new Command()
@@ -66,7 +68,7 @@ async function untwine(htmlFiles: string[]) {
 }
 
 async function untwineOne(htmlFile: string) {
-  console.log('');
+  console.log("");
 
   const rule = rules.find((r) => r.target === htmlFile);
   if (rule == null) {
@@ -81,6 +83,45 @@ async function untwineOne(htmlFile: string) {
   let unchanged = 0;
   let updated = 0;
 
+  const maybeWrite = async (title: string, passage: string) => {
+    const f = existing.get(title);
+    if (f == null) {
+      await makeNew(rule, title, passage);
+      newFiles++;
+    } else if (await maybeUpdate(f, passage)) {
+      updated++;
+    } else {
+      unchanged++;
+    }
+  };
+
+  const splitJoined = async (passage: string) => {
+    const re1 = /(^[/][*] twine-user-(?:script|stylesheet) .*?\r?\n)/gm;
+    const parts = passage.split(re1);
+    const re2 = /twine-user-(?:script|stylesheet) #\d+: "(.*?)"/;
+    // First section should be the main Story JavaScript or Stylesheet
+    {
+      const m = re2.exec(parts[1]!);
+      const title = m![1]!;
+      if (!/^Story (JavaScript|Stylesheet)$/.test(title)) {
+        throw new Error(`Unexpected joined structure ${parts[0]}`);
+      }
+      // attach twine header to that section
+      maybeWrite(title, parts[0]! + parts[2]!);
+    }
+    // rest are individual files
+    for (let i = 3; i < parts.length; i += 2) {
+      const head = parts[i]!;
+      const body = parts[i + 1]!;
+      const m = re2.exec(head);
+      if (m == null) {
+        throw new Error(`couldn't parse header? ${repr(head[0])}`);
+      }
+      const title = m[1]!;
+      maybeWrite(title, body);
+    }
+  };
+
   const headers = Array.from(twee.matchAll(headerRE));
   for (let i = 0; i < headers.length; i++) {
     const title = headers[i]![1]!;
@@ -90,14 +131,10 @@ async function untwineOne(htmlFile: string) {
     let passage = twee.slice(start, end).trimEnd();
     passage += passage.includes("\r") ? "\r\n" : "\n";
 
-    const f = existing.get(title);
-    if (f == null) {
-      await makeNew(rule, title, passage);
-      newFiles++;
-    } else if (await maybeUpdate(f, passage)) {
-      updated++;
+    if (/^[/][*] twine-user-/m.test(passage)) {
+      await splitJoined(passage);
     } else {
-      unchanged++;
+      await maybeWrite(title, passage);
     }
   }
 
@@ -109,12 +146,21 @@ async function untwineOne(htmlFile: string) {
 /** Returns a map of existing passage title -> filename */
 async function findExisting(rule: Rule) {
   const existing = new Map<string, string>();
-  const patterns = rule.dirs.map((d) => `${d}/**/*.tw`);
+  const patterns = rule.dirs.map((d) => `${d}/**`);
   console.log("Searching", patterns);
   const files = await fastGlob(patterns);
   for (const file of files) {
-    const twee = await fsp.readFile(file, "utf8");
+    if (/[.](css|js)$/.test(file)) {
+      const title = path.basename(file);
+      if (existing.has(title)) {
+        const other = existing.get(title);
+        throw new Error(`duplicate filenames ${file} and ${other}`);
+      }
+      existing.set(title, file);
+      continue;
+    }
 
+    const twee = await fsp.readFile(file, "utf8");
     const headers = Array.from(twee.matchAll(headerRE));
     if (headers.length !== 1) {
       throw new Error(
@@ -160,8 +206,8 @@ async function makeNew(rule: Rule, title: string, passage: string) {
  */
 async function maybeUpdate(fname: string, value: string) {
   let current = await fsp.readFile(fname, "utf8");
-  current = current.replaceAll(/\r\n/g, '\n');
-  value = value.replaceAll(/\r\n/g, '\n');
+  current = current.replaceAll(/\r\n/g, "\n");
+  value = value.replaceAll(/\r\n/g, "\n");
   if (current === value) return false;
   fsp.writeFile(fname, value);
   return true;
