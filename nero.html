@@ -450,11 +450,61 @@ meta-text {
 .hello-world {
   visibility: visible;
 }
-</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "Story JavaScript" */
+/* twine-user-stylesheet #3: "g0init-Nero-Caged.css" */
+.caged-box {
+  border: 4px solid #555;
+  margin: 0 auto;
+  height: min(70vh - 5em, 35em);
+  overflow: hidden;
+  padding: 4px;
+  position: relative;
+  text-align: justify;
+  width: min(90vw - 5em, 20em);
+  word-break: break-all;
+}
+
+/* special handling for the word cock */
+.caged-cock {
+  color: #f99;
+  word-break: normal;
+}
+
+/* used for measuring text. */
+.caged-hidden {
+  visibility: hidden;
+}
+
+.caged-continue {
+  background: #000;
+  color: #ff9;
+  display: inline-block;
+  padding-left: 4px;
+  position: absolute;
+  right: 4px;
+}
+
+/*
+ * on page-load, sugarcube sets #passages to display:none.
+ * override that so we can measure text.
+ */
+#passages.caged-render {
+  display: block !important;
+}
+
+/* for debugging */
+/* body:has(.caged-render) #init-screen {
+  display: none !important;
+}
+.caged-hidden {
+  visibility: visible;
+} */</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "Story JavaScript" */
 setup.version = "v2.0-nero-wip";
 
 Config.saves.id = 'sleth-mages-tower-2';
 Config.ui.stowBarInitially = !session.get("show-sidebar");
+
+/** globals for Mage's Tower */
+window.MT = {};
 
 // enable debug mode if URL has ?debug
 if (/[?&]debug\b/.test(location.search)) {
@@ -514,7 +564,119 @@ $(document).on(':passagestart', function (ev) {
 function helloWorld() {
   return "world";
 }
-</script><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+/* twine-user-script #3: "g0init-Nero-Caged.js" */
+(() => {
+  const BORDER = 4;
+
+  // @ts-expect-error real_stringify
+  const repr = JSON._real_stringify || JSON.stringify;
+
+  Macro.add("nero-caged", {
+    tags: [],
+    handler: function () {
+      const [next] = this.args;
+      let body = this.payload[0]?.contents ?? "";
+      body = body.replace(/[?]P/g, " ");
+      const split = splitText(body);
+
+      console.log(split);
+
+      const outer = $("<div class=caged-box>");
+      outer.appendTo(this.output);
+
+      let first = split[0];
+      if (first != null) {
+        first = encloseCock(first);
+        outer.html(first + `<div class=caged-continue>Continue</div>`);
+      }
+    },
+  });
+
+  /** @type { (text: string) => string } */
+  function encloseCock(text) {
+    return text.replace(/\bcock\b/g, `<span class=caged-cock>cock</span>`);
+  }
+
+  /**
+   * Split text into segments that fit in caged-box.
+   * @type { (text: string) => string[] }
+   */
+  function splitText(text) {
+    const words = text.trim().split(/\s+/);
+    /** @type { HTMLSpanElement[] } */
+    const spans = [];
+    for (const word of words) {
+      const span = document.createElement("span");
+      if (/^<em>[^<\s]*<[/]em>\S?$/.test(word)) {
+        span.innerHTML = word + " ";
+        spans.push(span);
+      } else if (/^</.test(word)) {
+        MT.diag(`unexpected < in nero-caged ${repr(word)}`);
+      } else if (/\bcock\b/.test(word)) {
+        span.innerHTML = encloseCock(word) + " ";
+        spans.push(span);
+      } else {
+        span.innerText = word + " ";
+        spans.push(span);
+      }
+    }
+
+    const inner = document.createElement("div");
+    inner.className = "caged-box caged-hidden";
+    const outer = $("<div class='passage caged-hidden'>");
+    outer.append(inner);
+
+    $("#passages").addClass("caged-render").prepend(outer);
+
+    /** @type { string[] } */
+    const blocks = [];
+    try {
+      const box = inner.getBoundingClientRect();
+      if (box.width === 0) {
+        MT.diag("failed to render in splitText");
+        return [text];
+      }
+
+      let lastLine = 0;
+      let prevLeft = 0;
+      let blockStart = 0;
+      for (let i = 0; i < spans.length; i++) {
+        const span = spans[i];
+        if (span == null) throw new Error("bug?");
+        inner.append(span);
+        const rect = span.getBoundingClientRect();
+        if (rect.bottom > box.bottom - BORDER) {
+          const block = words.slice(blockStart, i);
+          blocks.push(block.join(" "));
+          if (blockStart === lastLine) {
+            debugger;
+            throw new Error(`splitText failed to make progress?`);
+          }
+          for (let j = blockStart; j < lastLine; j++) {
+            const first = inner.children[0];
+            if (first == null) throw new Error("bug?");
+            first.remove();
+          }
+          blockStart = lastLine;
+        } else if (rect.left < prevLeft) {
+          console.log([i, words[i]]);
+          lastLine = i;
+        }
+        prevLeft = rect.left;
+      }
+      const block = words.slice(blockStart);
+      blocks.push(block.join(" "));
+    } finally {
+      $("#passages").removeClass("caged-render");
+      outer.remove();
+    }
+
+    return blocks;
+  }
+
+  MT["splitText"] = splitText;
+})();
+</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -528,9 +690,6 @@ and
 &lt;img src=&quot;images/logo_v2.png&quot; width=&quot;220&quot;&gt;
 &lt;div class=&quot;divider div-transparent div-arrow-down&quot;&gt;&lt;/div&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="3" name="StoryDisplayTitle" tags="" position="450,100" size="100,100">The Mage&#39;s Tower (v2 beta)</tw-passagedata><tw-passagedata pid="4" name="StoryInit" tags="inclusion" position="575,100" size="100,100">&lt;&lt;script&gt;&gt;
-
-/** globals for Mage&#39;s Tower */
-window.MT = {};
 
 /** Evaluate all passages that match regex. */
 function runInit(regex) {
@@ -49875,72 +50034,69 @@ blank shows up in an alone period, nero doesn&#39;t break pose
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="786" name="n9a Caged Mild 1" tags="mt-ready" position="12925,3375" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-When Nero wakes, before his eyes even open,
-the first thing he notices is his cock.
-It&#39;s erect, or trying to be erect, but it&#39;s pressing hard against
-something that prevents it from fully extending itself.
-The feeling is more uncomfortable than painful,
-but the wolf frantically paws at his crotch to remove whatever
-it is that&#39;s confining his cock.
+&lt;&lt;nero-caged [[n9a Caged Mild 2]]&gt;&gt;
+  When Nero wakes, before his eyes even open,
+  the first thing he notices is his cock.
+  It&#39;s erect, or trying to be erect, but it&#39;s pressing hard against
+  something that prevents it from fully extending itself.
+  The feeling is more uncomfortable than painful,
+  but the wolf frantically paws at his crotch to remove whatever
+  it is that&#39;s confining his cock.
 
-?P
-Nothing&#39;s there.
-
-?P
-He&#39;s suddenly &lt;em&gt;very&lt;/em&gt; awake.
-His cock and balls are &lt;em&gt;missing&lt;/em&gt;.
-He can still feel them.
-His bulging cock is throbbing against whatever is holding it.
-But he can&#39;t &lt;em&gt;touch&lt;/em&gt; it.
-At his crotch, his fingers find nothing but a smooth,
-pink-ish surface where his genitals should be.
-
-?P
-The surface is hard and unyielding.
-Nero tries scratching it, but his claws have been trimmed short
-and blunt.
-Pressing the surface does not move it,
-and it doesn&#39;t transmit any sensation to his cock.
-All he feels from his cock is unchanging pressure against
-the surfaces restraining it.
-
-?P
-If his cock were not continually reporting its distress,
-Nero might worry that it was removed entirely.
-The covering on his crotch is flatter than he thinks it
-should be.
-There does not seem to be space for his cock,
-and certainly not space for the way his cock
-feels as stiff as it&#39;s ever been.
-
-?P
-Nero looks for the edges of the covering on his crotch,
-where it seems to be attached to the skin beneath his fur.
-There&#39;s no way of lifting it, no way of getting
-underneath the edge without breaking his skin,
-and the wolf is not willing to try that yet.
-
-?P
-Other than the strange thing at his crotch,
-the wolf is naked.
-He&#39;s in a tiny, bare cell.
-The ceiling is too low to stand up without crouching,
-and the walls do not give him enough space to lie down straight.
-A soft white light emanates from the floor.
-It&#39;s quiet. The only sounds are the ones he makes,
-and the only scents are dust and his own musk.
-
-?P
-No, the wolf realizes there&#39;s one more scent, slowly growing.
-It&#39;s spicy and unfortunately familiar.
-Smoke from one of Ivex&#39;s red candles is entering from a spot on the
-ceiling. Nero tries to block the flow, but the smoke seeps in anyway.
-
-
-&lt;&lt;arc-skip&gt;&gt;
   ?P
-  [[Continue|n9a Caged Mild 2]]
-&lt;&lt;/arc-skip&gt;&gt;
+  Nothing&#39;s there.
+
+  ?P
+  He&#39;s suddenly &lt;em&gt;very&lt;/em&gt; awake.
+  His cock and balls are &lt;em&gt;missing&lt;/em&gt;.
+  He can still feel them.
+  His bulging cock is throbbing against whatever is holding it.
+  But he can&#39;t &lt;em&gt;touch&lt;/em&gt; it.
+  At his crotch, his fingers find nothing but a smooth,
+  pink-ish surface where his genitals should be.
+
+  ?P
+  The surface is hard and unyielding.
+  Nero tries scratching it, but his claws have been trimmed short
+  and blunt.
+  Pressing the surface does not move it,
+  and it doesn&#39;t transmit any sensation to his cock.
+  All he feels from his cock is unchanging pressure against
+  the surfaces restraining it.
+
+  ?P
+  If his cock were not continually reporting its distress,
+  Nero might worry that it was removed entirely.
+  The covering on his crotch is flatter than he thinks it
+  should be.
+  There does not seem to be space for his cock,
+  and certainly not space for the way his cock
+  feels as stiff as it&#39;s ever been.
+
+  ?P
+  Nero looks for the edges of the covering on his crotch,
+  where it seems to be attached to the skin beneath his fur.
+  There&#39;s no way of lifting it, no way of getting
+  underneath the edge without breaking his skin,
+  and the wolf is not willing to try that yet.
+
+  ?P
+  Other than the strange thing at his crotch,
+  the wolf is naked.
+  He&#39;s in a tiny, bare cell.
+  The ceiling is too low to stand up without crouching,
+  and the walls do not give him enough space to lie down straight.
+  A soft white light emanates from the floor.
+  It&#39;s quiet. The only sounds are the ones he makes,
+  and the only scents are dust and his own musk.
+
+  ?P
+  No, the wolf realizes there&#39;s one more scent, slowly growing.
+  It&#39;s spicy and unfortunately familiar.
+  Smoke from one of Ivex&#39;s red candles is entering from a spot on the
+  ceiling. Nero tries to block the flow, but the smoke seeps in anyway.
+
+&lt;&lt;/nero-caged&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="787" name="n9a Caged Mild 2" tags="mt-ready" position="13050,3375" size="100,100">&lt;&lt;nobr&gt;&gt;
 
