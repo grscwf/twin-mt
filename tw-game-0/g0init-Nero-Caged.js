@@ -8,22 +8,54 @@
     tags: [],
     handler: function () {
       const [next] = this.args;
+
       let body = this.payload[0]?.contents ?? "";
       body = body.replace(/[?]P/g, " ");
       const split = splitText(body);
 
-      console.log(split);
-
-      const outer = $("<div class=caged-box>");
-      outer.appendTo(this.output);
-
-      let first = split[0];
-      if (first != null) {
-        first = encloseCock(first);
-        outer.html(first + `<div class=caged-continue>Continue</div>`);
+      if (State.temporary.isTranscript) {
+        renderTranscript(this.output, split);
+      } else {
+        renderLive(this.output, split);
       }
+
     },
   });
+
+  /** @type { (out: DocumentFragment | HTMLElement, split: string[]) => void } */
+  function renderTranscript(out, split) {
+    for (let i = 0; i < split.length; i++) {
+      if (i !== 0) {
+        $("<br>").appendTo(out);
+      }
+
+      let part = split[i];
+      if (part == null) throw new Error("bug?");
+      part = encloseCock(part);
+      if (i !== split.length - 1) {
+        part += "<div class=caged-continue>Continue</div>";
+      }
+
+      const outer = $("<div class='caged-box caged-transcript'>");
+      outer.html(part).appendTo(out);
+    }
+  }
+
+  /** @type { (out: DocumentFragment | HTMLElement, split: string[]) => void } */
+  function renderLive(out, split) {
+    // XXX cock should look like a link, and click on cock blocks it
+    // XXX if not all cocks blocked, click on continue is blocked and highlights cocks
+    // XXX click on continue to render the next box
+
+    const outer = $("<div class=caged-box>");
+    outer.appendTo(out);
+
+    let first = split[0];
+    if (first != null) {
+      first = encloseCock(first);
+      outer.html(first + `<div class=caged-continue>Continue</div>`);
+    }
+  }
 
   /** @type { (text: string) => string } */
   function encloseCock(text) {
@@ -79,10 +111,10 @@
         inner.append(span);
         const rect = span.getBoundingClientRect();
         if (rect.bottom > box.bottom - BORDER) {
+          // XXX if no cocks in the current block, go back and add some.
           const block = words.slice(blockStart, i);
           blocks.push(block.join(" "));
           if (blockStart === lastLine) {
-            debugger;
             throw new Error(`splitText failed to make progress?`);
           }
           for (let j = blockStart; j < lastLine; j++) {
@@ -92,11 +124,11 @@
           }
           blockStart = lastLine;
         } else if (rect.left < prevLeft) {
-          console.log([i, words[i]]);
           lastLine = i;
         }
         prevLeft = rect.left;
       }
+      // XXX fill the last block with cock noise
       const block = words.slice(blockStart);
       blocks.push(block.join(" "));
     } finally {

@@ -491,13 +491,15 @@ meta-text {
   display: block !important;
 }
 
-/* for debugging */
-/* body:has(.caged-render) #init-screen {
+/* for debugging layout */
+/*
+body:has(.caged-render) #init-screen {
   display: none !important;
 }
 .caged-hidden {
   visibility: visible;
-} */</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "Story JavaScript" */
+}
+*/</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "Story JavaScript" */
 setup.version = "v2.0-nero-wip";
 
 Config.saves.id = 'sleth-mages-tower-2';
@@ -575,22 +577,54 @@ function helloWorld() {
     tags: [],
     handler: function () {
       const [next] = this.args;
+
       let body = this.payload[0]?.contents ?? "";
       body = body.replace(/[?]P/g, " ");
       const split = splitText(body);
 
-      console.log(split);
-
-      const outer = $("<div class=caged-box>");
-      outer.appendTo(this.output);
-
-      let first = split[0];
-      if (first != null) {
-        first = encloseCock(first);
-        outer.html(first + `<div class=caged-continue>Continue</div>`);
+      if (State.temporary.isTranscript) {
+        renderTranscript(this.output, split);
+      } else {
+        renderLive(this.output, split);
       }
+
     },
   });
+
+  /** @type { (out: DocumentFragment | HTMLElement, split: string[]) => void } */
+  function renderTranscript(out, split) {
+    for (let i = 0; i < split.length; i++) {
+      if (i !== 0) {
+        $("<br>").appendTo(out);
+      }
+
+      let part = split[i];
+      if (part == null) throw new Error("bug?");
+      part = encloseCock(part);
+      if (i !== split.length - 1) {
+        part += "<div class=caged-continue>Continue</div>";
+      }
+
+      const outer = $("<div class='caged-box caged-transcript'>");
+      outer.html(part).appendTo(out);
+    }
+  }
+
+  /** @type { (out: DocumentFragment | HTMLElement, split: string[]) => void } */
+  function renderLive(out, split) {
+    // XXX cock should look like a link, and click on cock blocks it
+    // XXX if not all cocks blocked, click on continue is blocked and highlights cocks
+    // XXX click on continue to render the next box
+
+    const outer = $("<div class=caged-box>");
+    outer.appendTo(out);
+
+    let first = split[0];
+    if (first != null) {
+      first = encloseCock(first);
+      outer.html(first + `<div class=caged-continue>Continue</div>`);
+    }
+  }
 
   /** @type { (text: string) => string } */
   function encloseCock(text) {
@@ -646,10 +680,10 @@ function helloWorld() {
         inner.append(span);
         const rect = span.getBoundingClientRect();
         if (rect.bottom > box.bottom - BORDER) {
+          // XXX if no cocks in the current block, go back and add some.
           const block = words.slice(blockStart, i);
           blocks.push(block.join(" "));
           if (blockStart === lastLine) {
-            debugger;
             throw new Error(`splitText failed to make progress?`);
           }
           for (let j = blockStart; j < lastLine; j++) {
@@ -659,11 +693,11 @@ function helloWorld() {
           }
           blockStart = lastLine;
         } else if (rect.left < prevLeft) {
-          console.log([i, words[i]]);
           lastLine = i;
         }
         prevLeft = rect.left;
       }
+      // XXX fill the last block with cock noise
       const block = words.slice(blockStart);
       blocks.push(block.join(" "));
     } finally {
@@ -676,7 +710,7 @@ function helloWorld() {
 
   MT["splitText"] = splitText;
 })();
-</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
