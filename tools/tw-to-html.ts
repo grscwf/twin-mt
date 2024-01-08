@@ -54,7 +54,7 @@ async function needsBuild(rule: Rule, force: boolean) {
     log(`${rule.target} does not exist`);
     return true;
   }
-  const patterns = rule.dirs.map((d) => `${d}/**/*.tw`);
+  const patterns = rule.dirs.map((d) => `${d}/**`);
   const deps = await fastGlob(patterns);
   for (const dep of deps) {
     const dStat = await fsp.stat(dep);
