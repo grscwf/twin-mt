@@ -16,7 +16,7 @@
       if (State.temporary.isTranscript) {
         renderTranscript(this.output, split);
       } else {
-        renderLive(this.output, split);
+        renderLive(this.output, split, next.isLink ? next.link : next);
       }
 
     },
@@ -33,7 +33,7 @@
       if (part == null) throw new Error("bug?");
       part = encloseCock(part);
       if (i !== split.length - 1) {
-        part += "<div class=caged-continue>Continue</div>";
+        part += "<a class=caged-continue>Continue</a>";
       }
 
       const outer = $("<div class='caged-box caged-transcript'>");
@@ -41,25 +41,55 @@
     }
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: string[]) => void } */
-  function renderLive(out, split) {
-    // XXX cock should look like a link, and click on cock blocks it
-    // XXX if not all cocks blocked, click on continue is blocked and highlights cocks
-    // XXX click on continue to render the next box
+  /** @type { (out: DocumentFragment | HTMLElement, split: string[], next: string) => void } */
+  function renderLive(out, split, next) {
 
     const outer = $("<div class=caged-box>");
     outer.appendTo(out);
 
-    let first = split[0];
-    if (first != null) {
-      first = encloseCock(first);
-      outer.html(first + `<div class=caged-continue>Continue</div>`);
-    }
+    /** @type { (i: number) => void } */
+    const render = i => {
+      outer.empty();
+      let text = split[i];
+      if (text == null) throw new Error(`bug? ${i}`);
+      text = encloseCock(text);
+      if (i != split.length - 1) {
+        text += "<a class=caged-continue>Continue</a>";
+      } else {
+        text += "<br><a class='caged-continue caged-final'>Continue</a>";
+      }
+      outer.html(text);
+    };
+
+    let current = 0;
+    render(current);
+
+    outer.on("click", e => {
+      const t = $(e.target);
+      if (t.hasClass("caged-cock")) {
+        t.addClass("caged-blocked");
+      } else if (t.hasClass("caged-continue")) {
+        const open = outer.find(".caged-cock:not(.caged-blocked)");
+        if (open.length) {
+          outer.addClass("caged-flash");
+          setTimeout(() => outer.removeClass("caged-flash"), 500);
+        } else if (current == split.length - 1) {
+          Engine.play(next);
+        } else {
+          current++;
+          outer.removeClass("caged-fade-in-2");
+          outer.addClass("caged-fade-in-1");
+          render(current);
+          setTimeout(() => outer.addClass("caged-fade-in-2"), 100);
+          setTimeout(() => outer.removeClass("caged-fade-in-1"), 200);
+        }
+      }
+    })
   }
 
   /** @type { (text: string) => string } */
   function encloseCock(text) {
-    return text.replace(/\bcock\b/g, `<span class=caged-cock>cock</span>`);
+    return text.replace(/\bcock\b/g, `<a class=caged-cock>cock</a>`);
   }
 
   /**
@@ -111,7 +141,6 @@
         inner.append(span);
         const rect = span.getBoundingClientRect();
         if (rect.bottom > box.bottom - BORDER) {
-          // XXX if no cocks in the current block, go back and add some.
           const block = words.slice(blockStart, i);
           blocks.push(block.join(" "));
           if (blockStart === lastLine) {
