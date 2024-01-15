@@ -4,6 +4,8 @@
   // @ts-expect-error real_stringify
   const repr = JSON._real_stringify || JSON.stringify;
 
+  /** @typedef { { height: number, blocks: string[] } } SplitInfo */
+
   Macro.add("nero-caged", {
     tags: [],
     handler: function () {
@@ -22,17 +24,17 @@
     },
   });
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: string[]) => void } */
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo) => void } */
   function renderTranscript(out, split) {
-    for (let i = 0; i < split.length; i++) {
+    for (let i = 0; i < split.blocks.length; i++) {
       if (i !== 0) {
         $("<br>").appendTo(out);
       }
 
-      let part = split[i];
+      let part = split.blocks[i];
       if (part == null) throw new Error("bug?");
       part = encloseCock(part);
-      if (i !== split.length - 1) {
+      if (i !== split.blocks.length - 1) {
         part += "<a class=caged-continue>Continue</a>";
       }
 
@@ -41,7 +43,7 @@
     }
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: string[], next: string) => void } */
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
   function renderLive(out, split, next) {
 
     const outer = $("<div class=caged-box>");
@@ -50,15 +52,18 @@
     /** @type { (i: number) => void } */
     const render = i => {
       outer.empty();
-      let text = split[i];
+      let text = split.blocks[i];
       if (text == null) throw new Error(`bug? ${i}`);
       text = encloseCock(text);
-      if (i != split.length - 1) {
-        text += "<a class=caged-continue>Continue</a>";
-      } else {
-        text += "<br><a class='caged-continue caged-final'>Continue</a>";
+      const cont = document.createElement("a");
+      cont.innerText = "Continue";
+      cont.className = "caged-continue";
+      if (i == split.blocks.length - 1) {
+        text += "<br>";
+        cont.className += "caged-final";
       }
       outer.html(text);
+      outer.append(cont);
     };
 
     let current = 0;
@@ -73,7 +78,7 @@
         if (open.length) {
           outer.addClass("caged-flash");
           setTimeout(() => outer.removeClass("caged-flash"), 500);
-        } else if (current == split.length - 1) {
+        } else if (current == split.blocks.length - 1) {
           Engine.play(next);
         } else {
           current++;
@@ -94,7 +99,7 @@
 
   /**
    * Split text into segments that fit in caged-box.
-   * @type { (text: string) => string[] }
+   * @type { (text: string) => SplitInfo }
    */
   function splitText(text) {
     const words = text.trim().split(/\s+/);
@@ -129,7 +134,7 @@
       const box = inner.getBoundingClientRect();
       if (box.width === 0) {
         MT.diag("failed to render in splitText");
-        return [text];
+        return { height: 0, blocks: [text] };
       }
 
       let lastLine = 0;
@@ -165,7 +170,7 @@
       outer.remove();
     }
 
-    return blocks;
+    return { height: 0, blocks };
   }
 
   MT["splitText"] = splitText;

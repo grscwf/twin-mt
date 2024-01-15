@@ -474,7 +474,7 @@ meta-text {
 }
 
 .caged-blocked:not(#_#_#_#_#_),
-.caged-blocked:hover:not(#_#_#_#_) {
+.caged-blocked:hover:not(#_#_#_#_#_) {
   background: #333;
   color: #333;
   cursor: not-allowed;
@@ -603,6 +603,8 @@ function helloWorld() {
   // @ts-expect-error real_stringify
   const repr = JSON._real_stringify || JSON.stringify;
 
+  /** @typedef { { height: number, blocks: string[] } } SplitInfo */
+
   Macro.add("nero-caged", {
     tags: [],
     handler: function () {
@@ -621,17 +623,17 @@ function helloWorld() {
     },
   });
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: string[]) => void } */
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo) => void } */
   function renderTranscript(out, split) {
-    for (let i = 0; i < split.length; i++) {
+    for (let i = 0; i < split.blocks.length; i++) {
       if (i !== 0) {
         $("<br>").appendTo(out);
       }
 
-      let part = split[i];
+      let part = split.blocks[i];
       if (part == null) throw new Error("bug?");
       part = encloseCock(part);
-      if (i !== split.length - 1) {
+      if (i !== split.blocks.length - 1) {
         part += "<a class=caged-continue>Continue</a>";
       }
 
@@ -640,7 +642,7 @@ function helloWorld() {
     }
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: string[], next: string) => void } */
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
   function renderLive(out, split, next) {
 
     const outer = $("<div class=caged-box>");
@@ -649,15 +651,18 @@ function helloWorld() {
     /** @type { (i: number) => void } */
     const render = i => {
       outer.empty();
-      let text = split[i];
+      let text = split.blocks[i];
       if (text == null) throw new Error(`bug? ${i}`);
       text = encloseCock(text);
-      if (i != split.length - 1) {
-        text += "<a class=caged-continue>Continue</a>";
-      } else {
-        text += "<br><a class='caged-continue caged-final'>Continue</a>";
+      const cont = document.createElement("a");
+      cont.innerText = "Continue";
+      cont.className = "caged-continue";
+      if (i == split.blocks.length - 1) {
+        text += "<br>";
+        cont.className += "caged-final";
       }
       outer.html(text);
+      outer.append(cont);
     };
 
     let current = 0;
@@ -672,7 +677,7 @@ function helloWorld() {
         if (open.length) {
           outer.addClass("caged-flash");
           setTimeout(() => outer.removeClass("caged-flash"), 500);
-        } else if (current == split.length - 1) {
+        } else if (current == split.blocks.length - 1) {
           Engine.play(next);
         } else {
           current++;
@@ -693,7 +698,7 @@ function helloWorld() {
 
   /**
    * Split text into segments that fit in caged-box.
-   * @type { (text: string) => string[] }
+   * @type { (text: string) => SplitInfo }
    */
   function splitText(text) {
     const words = text.trim().split(/\s+/);
@@ -728,7 +733,7 @@ function helloWorld() {
       const box = inner.getBoundingClientRect();
       if (box.width === 0) {
         MT.diag("failed to render in splitText");
-        return [text];
+        return { height: 0, blocks: [text] };
       }
 
       let lastLine = 0;
@@ -764,12 +769,12 @@ function helloWorld() {
       outer.remove();
     }
 
-    return blocks;
+    return { height: 0, blocks };
   }
 
   MT["splitText"] = splitText;
 })();
-</script><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -15124,7 +15129,7 @@ function initVarInfo() {
 
 MT.computeSizes = () =&gt; {
   const mdKey = storage._prefix + &quot;metadata&quot;;
-  const ms = mdKey.length + localStorage.getItem(mdKey).length;
+  const ms = mdKey.length + (localStorage.getItem(mdKey) ?? &quot;&quot;).length;
 
   const ls = computeSize(localStorage);
   const ss = computeSize(sessionStorage);
@@ -46090,7 +46095,7 @@ He&#39;s confident he can
   And then Nero will wield more than just Nackle
 &lt;&lt;else&gt;&gt;
   find a flaw in the panther&#39;s anti-magic field.
-  Once that&#39;s gone, Nero will have &lt;em&gt;all&lt;/em&gt; his power
+  Once that&#39;s done, Nero will have &lt;em&gt;all&lt;/em&gt; his power
 &lt;&lt;/if&gt;&gt;
 when Ivex returns.
 
@@ -46112,7 +46117,7 @@ The wolf plots out each move and countermove like a chess game.
 He considers every possible tactic Ivex might try,
 and for every action that the panther makes,
 Nero can see clearly what to do next.
-He knows the right responses that will lead to triumph
+He knows all the right responses that will lead to triumph
 and satisfaction for his cock.
 
 &lt;&lt;arc-skip&gt;&gt;
