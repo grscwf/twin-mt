@@ -774,7 +774,7 @@ function helloWorld() {
 
   MT["splitText"] = splitText;
 })();
-</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -9327,7 +9327,8 @@ Macro.add(&quot;fade-in&quot;, {
 
       if (T.isTranscript) {
         if (i &lt; this.payload.length - 1) {
-          span.find(&quot;br:last-child&quot;).replaceWith(&quot;&lt;hr class=time-sep&gt;&quot;);
+          const br = span.find(&quot;br&quot;).get(-1);
+          $(br).replaceWith(&quot;&lt;hr class=time-sep&gt;&quot;);
         }
       }
 
@@ -12836,6 +12837,9 @@ const KEY = &quot;scroll.pos&quot;;
 const repr = JSON._real_stringify || JSON.stringify;
 const parse = JSON._real_parse || JSON.parse;
 
+/** True if an async renderer is still busy. */
+MT.isRendering = false;
+
 function rememberPos() {
   const obj = {
     turn: State.turns,
@@ -12852,7 +12856,11 @@ function restorePos() {
 
   const el = document.documentElement;
   const doScroll = () =&gt; {
-    el.scrollTo({ top: obj.top, behavior: &quot;smooth&quot; });
+    if (MT.isRendering) {
+      setTimeout(doScroll, 100);
+    } else {
+      el.scrollTo({ top: obj.top, behavior: &quot;smooth&quot; });
+    }
   };
   if (obj.top &lt; el.scrollHeight) {
     doScroll();
@@ -14478,6 +14486,7 @@ MT.tranRenderOne = (title, state) =&gt; {
 };
 
 MT.tranRender = output =&gt; {
+  MT.isRendering = true;
   const outer = $(&quot;&lt;div id=tran-outer&gt;&quot;).appendTo(output);
 
   const hist = MT.getHistory();
@@ -14539,6 +14548,7 @@ MT.tranRender = output =&gt; {
     const minutes = Math.round(words / 250);
     let stats = `${passages} pages, ${words} words, ~${minutes} minutes`;
     $(&quot;#tran-stats&quot;).text(`(${stats})`);
+    MT.isRendering = false;
   }
   
   renderLoop();
@@ -23485,7 +23495,7 @@ to have you join their &lt;em&gt;inner&lt;/em&gt; council.&quot;
   Nero is
   &lt;&lt;= $n_abused ? &quot;&quot; : &quot;a little&quot;&gt;&gt;
   dismayed. He had hoped that the hint of arcane mysteries
-  would be attractive enough for Ivex to take the bait without much
+  would be enticing enough for Ivex to take the bait without much
   questioning of the premise. The wolf will need to make the lure better
   somehow.
 &lt;&lt;/if&gt;&gt;
@@ -24077,7 +24087,7 @@ The wolf maintains his slight, superior smile despite a feeling of
 &lt;&lt;= $n_abused ? &quot;panic.&quot; : &quot;embarrassment.&quot;&gt;&gt;
 How did he overlook that problem?
 How can he fix it?
-There must be a simple way to explain it.
+There must be a clever way to explain it.
 
 ?P
 He speaks aloud, &quot;Really? &lt;em&gt;That&#39;s&lt;/em&gt; the reason for your hesitation?
@@ -24144,7 +24154,7 @@ of Ivex if the panther fails to deduce this explanation himself.
 &lt;&lt;vi-ignore n_abused n_mageSight n_naked&gt;&gt;
 
 &lt;&lt;n1-patience 4 3&gt;&gt;
-  Ivex suddenly asks, &quot;Is the secret council&#39;s
+  Ivex stops pacing and asks, &quot;Is the secret council&#39;s
   &lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
   mind control based on
   inhibition or repression?&quot;
@@ -27641,8 +27651,8 @@ at air some more.
 
 ?P
 Ivex anticipates the wolf&#39;s
-&lt;&lt;= $n_subby ? &quot;licking&quot; : &quot;snapping&quot;&gt;&gt;
-motions and smoothly moves
+&lt;&lt;= $n_subby ? &quot;licking motions&quot; : &quot;snapping motion&quot;&gt;&gt;
+and smoothly moves
 away from where the wolf can reach.
 &quot;Are you trying to remove my mask?&quot; he asks.
 &quot;What a naughty dog you are...&quot;
@@ -30371,13 +30381,34 @@ He said, &quot;Penile barbs are a myth.&quot;
 &quot;I- I&#39;m sorry, wh- what?&quot; Nero&#39;s voice quavered.
 
 ?P
-The tiger produced a lazy smile. &quot;It&#39;s the first question every canine wants to ask. I&#39;ll admit, when I was a first-year student, I had curiosity about the anatomy of your species too.&quot;
+The tiger produced a lazy smile.
+&quot;It&#39;s the first question every canine wants to ask.
+I&#39;ll admit, when I was a first-year student,
+I had curiosity about the anatomy of your species too.&quot;
 
 ?P
-The young wolf wrapped his too-small towel around his nakedness, trying to make his shy actions seem like just normal steps in the drying of his fur.
+The young wolf wrapped his too-small towel around his nakedness,
+trying to make his shy actions seem like just
+normal steps in the drying of his fur.
 
 ?P
-The tiger continued with confidence. &quot;It&#39;s true that feral feline species, many of them, have keratinous spines on their penis. But we appear to have lost them sometime in the evolution of an upright posture. There&#39;s ongoing debate on the subject. Penises are not particularly well preserved in archeological or fossil records. Much of the debate centers on interpretation of some historical writings that appear to mention penile barbs. The most well-known instance is an uncharacteristically vulgar play that is attributed to Jocoros of Ancient Parenthia. But even if the authorship weren&#39;t in doubt, the comically large barbed penis in the play is attached to a lynx that&#39;s a manifestation of the god Torna, who represents, among other things, the bestial impulses that arise when people engage in war, and love...&quot;
+The tiger continued with confidence.
+&quot;It&#39;s true that feral feline species,
+many of them, have keratinous spines on their penis.
+But we appear to have lost them sometime
+in the evolution of an upright posture.
+There&#39;s ongoing debate on the subject.
+Penises are not particularly well preserved
+in archeological or fossil records.
+Much of the debate centers on interpretation
+of some historical writings that appear to mention penile barbs.
+The most well-known instance is an uncharacteristically vulgar play
+that is attributed to Jocoros of Ancient Parenthia.
+But even if the authorship weren&#39;t in doubt,
+the comically large barbed penis in the play is attached to
+a lynx that&#39;s a manifestation of the god Toruna,
+who represents, among other things, the bestial impulses that arise
+when people engage in war, and love...&quot;
 
 &lt;&lt;arc-skip&gt;&gt;
   ?P
@@ -40114,7 +40145,7 @@ at an angle that allows him to see
 &lt;&lt;else&gt;&gt;
   &lt;&lt;= $n_naked ? &quot;his naked self&quot; : &quot;himself&quot;&gt;&gt; in it.
   Not that he particularly &lt;em&gt;needs&lt;/em&gt; to see his own
-  &lt;&lt;= $n_naked ? &quot;slender, masculine body&quot;
+  &lt;&lt;= $n_naked ? &quot;trim, masculine body&quot;
     : &quot;fashionably-robed body&quot;&gt;&gt;,
   but the view also reveals an interesting arrangement of
   &lt;&lt;mt-seen $n_dimGrav&gt;&gt;
@@ -41827,7 +41858,7 @@ But I don&#39;t recognize the attachment on the end.&quot;
   &lt;&lt;= $n_candleLit ? &quot;in his mask&quot; : &quot;&quot;&gt;&gt;
   and moves to pick up the wand.
   &quot;This is my own custom modification.
-  I call it my Fuck Toy 9000.&quot;
+  I call it my &lt;span class=nobr&gt;Fuck Toy 9000.&quot;&lt;/span&gt;
   He inserts a finger into the hole.
   The tube &lt;em&gt;squishes&lt;/em&gt; in a disturbing way.
   &quot;This part has magic that will snugly grasp my erect cock.
@@ -41845,7 +41876,8 @@ But I don&#39;t recognize the attachment on the end.&quot;
   The panther
   &lt;&lt;= $n_candleLit ? &quot;laughs&quot; : &quot;smirks&quot;&gt;&gt;
   and puts the wand back on the shelf.
-  &quot;My Fuck Toy 9000 is not a gadget I will let just anyone try.
+  &quot;My &lt;span class=nobr&gt;Fuck Toy 9000&lt;/span&gt;
+  is not a gadget I will let just anyone try.
   But I &lt;em&gt;have&lt;/em&gt; used it on several adventurers
   who were quickly reduced to begging by its...
   &lt;em&gt;pleasures sublime&lt;/em&gt;.&quot;
@@ -45857,12 +45889,12 @@ Nero
 &lt;&lt;/if&gt;&gt;
 lies down and relaxes on the floor as he fondles his crotch.
 His cock is still firmly erect from exposure to Ivex&#39;s
-potent red candle. But the sexual excitement is more than just that.
+red candle. But the sexual excitement is more than just that.
 
 ?P
 The wolf has &lt;em&gt;escaped!&lt;/em&gt;
 Nero defeated the wooden cross.
-He overcame the dangerous red candle.
+He overcame the hypnotic red candle.
 He freed himself from the leather bonds.
 And he did it all &lt;em&gt;without&lt;/em&gt; the use of
 &lt;&lt;= $n_tooClever ? &quot;his own&quot; : &quot;&quot;&gt;&gt; magic.
