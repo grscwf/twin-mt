@@ -6,6 +6,9 @@ const KEY = "scroll.pos";
 const repr = JSON._real_stringify || JSON.stringify;
 const parse = JSON._real_parse || JSON.parse;
 
+/** True if an async renderer is still busy. */
+MT.isRendering = false;
+
 function rememberPos() {
   const obj = {
     turn: State.turns,
@@ -22,7 +25,11 @@ function restorePos() {
 
   const el = document.documentElement;
   const doScroll = () => {
-    el.scrollTo({ top: obj.top, behavior: "smooth" });
+    if (MT.isRendering) {
+      setTimeout(doScroll, 100);
+    } else {
+      el.scrollTo({ top: obj.top, behavior: "smooth" });
+    }
   };
   if (obj.top < el.scrollHeight) {
     doScroll();
