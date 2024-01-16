@@ -126,6 +126,8 @@
     const outer = $("<div class='passage caged-hidden'>");
     outer.append(inner);
 
+    let height = 0;
+
     $("#passages").addClass("caged-render").prepend(outer);
 
     /** @type { string[] } */
@@ -134,15 +136,14 @@
       const box = inner.getBoundingClientRect();
       if (box.width === 0) {
         MT.diag("failed to render in splitText");
-        return { height: 0, blocks: [text] };
+        return { height, blocks: [text] };
       }
 
       let lastLine = 0;
       let prevLeft = 0;
       let blockStart = 0;
       for (let i = 0; i < spans.length; i++) {
-        const span = spans[i];
-        if (span == null) throw new Error("bug?");
+        const span = /** @type { HTMLSpanElement } */ (spans[i]);
         inner.append(span);
         const rect = span.getBoundingClientRect();
         if (rect.bottom > box.bottom - BORDER) {
@@ -152,8 +153,7 @@
             throw new Error(`splitText failed to make progress?`);
           }
           for (let j = blockStart; j < lastLine; j++) {
-            const first = inner.children[0];
-            if (first == null) throw new Error("bug?");
+            const first = /** @type { Element } */ (inner.children[0]);
             first.remove();
           }
           blockStart = lastLine;
@@ -170,7 +170,7 @@
       outer.remove();
     }
 
-    return { height: 0, blocks };
+    return { height, blocks };
   }
 
   MT["splitText"] = splitText;
