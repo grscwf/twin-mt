@@ -1,5 +1,5 @@
 (() => {
-  const BORDER = 4;
+  const BORDER = 0;
 
   // @ts-expect-error real_stringify
   const repr = JSON._real_stringify || JSON.stringify;
@@ -20,37 +20,45 @@
       } else {
         renderLive(this.output, split, next.isLink ? next.link : next);
       }
-
     },
   });
 
   /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo) => void } */
   function renderTranscript(out, split) {
-    for (let i = 0; i < split.blocks.length; i++) {
+    const last = State.variables.n_cagedBlock ?? split.blocks.length - 1;
+    for (let i = 0; i < last + 1; i++) {
       if (i !== 0) {
         $("<br>").appendTo(out);
       }
 
-      let part = split.blocks[i];
-      if (part == null) throw new Error("bug?");
-      part = encloseCock(part);
+      let block = /** @type { string } */ (split.blocks[i]);
+      block = encloseCock(block);
       if (i !== split.blocks.length - 1) {
-        part += "<a class=caged-continue>Continue</a>";
+        block += "<a class=caged-continue>Continue</a>";
       }
 
-      const outer = $("<div class='caged-box caged-transcript'>");
-      outer.html(part).appendTo(out);
+      const cage = $("<div class='caged-box caged-transcript'>");
+      cage.html(block).appendTo(out);
+
+      if (split.height) {
+        /** @type { HTMLElement } */
+        (cage[0]).style.height = split.height + "px";
+      }
     }
   }
 
   /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
   function renderLive(out, split, next) {
-
     const outer = $("<div class=caged-box>");
     outer.appendTo(out);
 
+    if (split.height) {
+      /** @type { HTMLElement } */
+      (outer[0]).style.height = split.height + "px";
+    }
+
     /** @type { (i: number) => void } */
-    const render = i => {
+    const render = (i) => {
       outer.empty();
       let text = split.blocks[i];
       if (text == null) throw new Error(`bug? ${i}`);
@@ -66,10 +74,12 @@
       outer.append(cont);
     };
 
-    let current = 0;
-    render(current);
+    /* Note: current history state, not active state */
+    const curState = State.current.variables;
+    curState.n_cagedBlock = 0;
+    render(curState.n_cagedBlock);
 
-    outer.on("click", e => {
+    outer.on("click", (e) => {
       const t = $(e.target);
       if (t.hasClass("caged-cock")) {
         t.addClass("caged-blocked");
@@ -78,18 +88,18 @@
         if (open.length) {
           outer.addClass("caged-flash");
           setTimeout(() => outer.removeClass("caged-flash"), 500);
-        } else if (current == split.blocks.length - 1) {
+        } else if (curState.n_cagedBlock == split.blocks.length - 1) {
           Engine.play(next);
         } else {
-          current++;
           outer.removeClass("caged-fade-in-2");
           outer.addClass("caged-fade-in-1");
-          render(current);
+          curState.n_cagedBlock++;
+          render(curState.n_cagedBlock);
           setTimeout(() => outer.addClass("caged-fade-in-2"), 100);
           setTimeout(() => outer.removeClass("caged-fade-in-1"), 200);
         }
       }
-    })
+    });
   }
 
   /** @type { (text: string) => string } */
@@ -147,6 +157,11 @@
         inner.append(span);
         const rect = span.getBoundingClientRect();
         if (rect.bottom > box.bottom - BORDER) {
+          if (height === 0) {
+            const bot = /** @type { HTMLSpanElement} */ (spans[lastLine]);
+            const bRect = bot.getBoundingClientRect();
+            height = bRect.bottom - box.top;
+          }
           const block = words.slice(blockStart, i);
           blocks.push(block.join(" "));
           if (blockStart === lastLine) {
@@ -173,5 +188,5 @@
     return { height, blocks };
   }
 
-  MT["splitText"] = splitText;
+  MT.splitText = splitText;
 })();
