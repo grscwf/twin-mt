@@ -7,13 +7,17 @@
   /** @typedef { { height: number, blocks: string[] } } SplitInfo */
 
   Macro.add("nero-caged", {
-    tags: [],
+    tags: ["nero-caged-fill"],
     handler: function () {
       const [next] = this.args;
 
       let body = this.payload[0]?.contents ?? "";
       body = body.replace(/[?]P/g, " ");
-      const split = splitText(body);
+
+      let fill = this.payload[1]?.contents ?? "";
+      fill = fill.replace(/[?]P/g, " ");
+
+      const split = splitText(body, fill);
 
       if (State.temporary.isTranscript) {
         renderTranscript(this.output, split);
@@ -33,9 +37,7 @@
 
       let block = /** @type { string } */ (split.blocks[i]);
       block = encloseCock(block);
-      if (i !== split.blocks.length - 1) {
-        block += "<a class=caged-continue>Continue</a>";
-      }
+      block += "<a class=caged-continue>Continue</a>";
 
       const cage = $("<div class='caged-box caged-transcript'>");
       cage.html(block).appendTo(out);
@@ -66,10 +68,6 @@
       const cont = document.createElement("a");
       cont.innerText = "Continue";
       cont.className = "caged-continue";
-      if (i == split.blocks.length - 1) {
-        text += "<br>";
-        cont.className += "caged-final";
-      }
       outer.html(text);
       outer.append(cont);
     };
@@ -109,10 +107,13 @@
 
   /**
    * Split text into segments that fit in caged-box.
-   * @type { (text: string) => SplitInfo }
+   * @type { (text: string, fill: string) => SplitInfo }
    */
-  function splitText(text) {
-    const words = text.trim().split(/\s+/);
+  function splitText(text, fill) {
+    const textWords = text.trim().split(/\s+/);
+    const fillWords = fill.trim().split(/\s+/);
+    const words = textWords.concat(fillWords);
+
     /** @type { HTMLSpanElement[] } */
     const spans = [];
     for (const word of words) {
@@ -152,7 +153,8 @@
       let lastLine = 0;
       let prevLeft = 0;
       let blockStart = 0;
-      for (let i = 0; i < spans.length; i++) {
+      let i = 0;
+      for (; i < spans.length; i++) {
         const span = /** @type { HTMLSpanElement } */ (spans[i]);
         inner.append(span);
         const rect = span.getBoundingClientRect();
@@ -172,14 +174,22 @@
             first.remove();
           }
           blockStart = lastLine;
+
+          // If we're past the main text, stop rendering in middle filler
+          if (i >= textWords.length) break;
+
         } else if (rect.left < prevLeft) {
           lastLine = i;
         }
         prevLeft = rect.left;
       }
-      // XXX fill the last block with cock noise
-      const block = words.slice(blockStart);
-      blocks.push(block.join(" "));
+
+      // If we didn't exit early, the last block doesn't fill the box.
+      // Emit it anyway.
+      if (i === spans.length) {
+        const block = words.slice(blockStart);
+        blocks.push(block.join(" "));
+      }
     } finally {
       $("#passages").removeClass("caged-render");
       outer.remove();
