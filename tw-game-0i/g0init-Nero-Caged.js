@@ -36,7 +36,6 @@
       }
 
       let block = /** @type { string } */ (split.blocks[i]);
-      block = encloseCock(block);
       block += "<a class=caged-continue>Continue</a>";
 
       const cage = $("<div class='caged-box caged-transcript'>");
@@ -64,7 +63,6 @@
       outer.empty();
       let text = split.blocks[i];
       if (text == null) throw new Error(`bug? ${i}`);
-      text = encloseCock(text);
       const cont = document.createElement("a");
       cont.innerText = "Continue";
       cont.className = "caged-continue";
@@ -82,7 +80,7 @@
       if (t.hasClass("caged-cock")) {
         t.addClass("caged-blocked");
       } else if (t.hasClass("caged-continue")) {
-        const open = outer.find(".caged-cock:not(.caged-blocked)");
+        const open = outer.find(".caged-cock:not(.caged-blocked):not(.caged-optional)");
         if (open.length) {
           outer.addClass("caged-flash");
           setTimeout(() => outer.removeClass("caged-flash"), 500);
@@ -100,11 +98,6 @@
     });
   }
 
-  /** @type { (text: string) => string } */
-  function encloseCock(text) {
-    return text.replace(/\bcock\b/g, `<a class=caged-cock>cock</a>`);
-  }
-
   /**
    * Split text into segments that fit in caged-box.
    * @type { (text: string, fill: string) => SplitInfo }
@@ -114,22 +107,21 @@
     const fillWords = fill.trim().split(/\s+/);
     const words = textWords.concat(fillWords);
 
+    for (let i = 0; i < words.length; i++) {
+      const word = /** @type { string } */ (words[i]);
+      if (/\bcock\b/.test(word)) {
+        words[i] = word.replace(/\bcock\b/, `<a class=caged-cock>cock</a>`);
+      } else if (/^<[^>]*$/.test(word)) {
+        MT.diag(`unexpected < in nero-caged ${repr(word)}`);
+      }
+    }
+
     /** @type { HTMLSpanElement[] } */
     const spans = [];
     for (const word of words) {
       const span = document.createElement("span");
-      if (/^<em>[^<\s]*<[/]em>\S?$/.test(word)) {
-        span.innerHTML = word + " ";
-        spans.push(span);
-      } else if (/^</.test(word)) {
-        MT.diag(`unexpected < in nero-caged ${repr(word)}`);
-      } else if (/\bcock\b/.test(word)) {
-        span.innerHTML = encloseCock(word) + " ";
-        spans.push(span);
-      } else {
-        span.innerText = word + " ";
-        spans.push(span);
-      }
+      span.innerHTML = word + " ";
+      spans.push(span);
     }
 
     const inner = document.createElement("div");
@@ -159,10 +151,19 @@
         inner.append(span);
         const rect = span.getBoundingClientRect();
         if (rect.bottom > box.bottom - BORDER) {
+          // Get the precise height of a full box
           if (height === 0) {
             const bot = /** @type { HTMLSpanElement} */ (spans[lastLine]);
             const bRect = bot.getBoundingClientRect();
             height = bRect.bottom - box.top;
+          }
+          // If there's any cock in the last line, mark it as optional,
+          // since it might be overlapped by "Continue"
+          for (let j = lastLine; j < i; j++) {
+            const word = /** @type { string } */ (words[j]);
+            if (word.includes("caged-cock")) {
+              words[j] = `<a class="caged-cock caged-optional">cock</a>`;
+            }
           }
           const block = words.slice(blockStart, i);
           blocks.push(block.join(" "));
