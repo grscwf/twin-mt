@@ -63,10 +63,12 @@
       outer.empty();
       let text = split.blocks[i];
       if (text == null) throw new Error(`bug? ${i}`);
+
+      outer.html(text);
+
       const cont = document.createElement("a");
       cont.innerText = "Continue";
       cont.className = "caged-continue";
-      outer.html(text);
       outer.append(cont);
     };
 
@@ -76,28 +78,42 @@
     render(curState.n_cagedBlock);
     setTimeout(() => outer.removeClass("caged-fade-start"), 300);
 
+    const advance = () => {
+      if (curState.n_cagedBlock == split.blocks.length - 1) {
+        Engine.play(next);
+      } else {
+        outer.removeClass("caged-fade-fast");
+        outer.removeClass("caged-fade-slow");
+        outer.addClass("caged-fade-start");
+        curState.n_cagedBlock++;
+        render(curState.n_cagedBlock);
+        setTimeout(() => outer.addClass("caged-fade-fast"), 100);
+        setTimeout(() => outer.removeClass("caged-fade-start"), 200);
+      }
+    };
+
     outer.on("click", (e) => {
       const t = $(e.target);
       if (t.hasClass("caged-cock")) {
         t.addClass("caged-blocked");
       } else if (t.hasClass("caged-continue")) {
-        const open = outer.find(".caged-cock:not(.caged-blocked):not(.caged-optional)");
-        if (open.length) {
+        const open = outer.find(
+          ".caged-cock:not(.caged-blocked):not(.caged-optional)"
+        );
+        if (open.length === 0 || (setup.debug && e.shiftKey)) {
+          advance();
+        } else {
           outer.addClass("caged-flash");
           setTimeout(() => outer.removeClass("caged-flash"), 500);
-        } else if (curState.n_cagedBlock == split.blocks.length - 1) {
-          Engine.play(next);
-        } else {
-          outer.removeClass("caged-fade-fast");
-          outer.removeClass("caged-fade-slow");
-          outer.addClass("caged-fade-start");
-          curState.n_cagedBlock++;
-          render(curState.n_cagedBlock);
-          setTimeout(() => outer.addClass("caged-fade-fast"), 100);
-          setTimeout(() => outer.removeClass("caged-fade-start"), 200);
         }
       }
     });
+
+    if (setup.debug) {
+      const skip = $("<div class=caged-skip>");
+      skip.html("&#x1f527; shift-click to skip the cock block");
+      skip.appendTo(out);
+    }
   }
 
   /**
@@ -180,7 +196,6 @@
 
           // If we're past the main text, stop rendering in middle filler
           if (i >= textWords.length) break;
-
         } else if (rect.left < prevLeft) {
           lastLine = i;
         }
