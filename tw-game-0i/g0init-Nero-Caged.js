@@ -50,7 +50,7 @@
 
   /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
   function renderLive(out, split, next) {
-    const outer = $("<div class=caged-box>");
+    const outer = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
     outer.appendTo(out);
 
     if (split.height) {
@@ -74,6 +74,7 @@
     const curState = State.current.variables;
     curState.n_cagedBlock = 0;
     render(curState.n_cagedBlock);
+    setTimeout(() => outer.removeClass("caged-fade-start"), 300);
 
     outer.on("click", (e) => {
       const t = $(e.target);
@@ -87,12 +88,13 @@
         } else if (curState.n_cagedBlock == split.blocks.length - 1) {
           Engine.play(next);
         } else {
-          outer.removeClass("caged-fade-in-2");
-          outer.addClass("caged-fade-in-1");
+          outer.removeClass("caged-fade-fast");
+          outer.removeClass("caged-fade-slow");
+          outer.addClass("caged-fade-start");
           curState.n_cagedBlock++;
           render(curState.n_cagedBlock);
-          setTimeout(() => outer.addClass("caged-fade-in-2"), 100);
-          setTimeout(() => outer.removeClass("caged-fade-in-1"), 200);
+          setTimeout(() => outer.addClass("caged-fade-fast"), 100);
+          setTimeout(() => outer.removeClass("caged-fade-start"), 200);
         }
       }
     });
