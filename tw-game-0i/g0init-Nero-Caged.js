@@ -180,7 +180,7 @@
           for (let j = lastLine; j < i; j++) {
             const word = /** @type { string } */ (words[j]);
             if (word.includes("caged-cock")) {
-              words[j] = `<a class="caged-cock caged-optional">cock</a>`;
+              words[j] = word.replace(/caged-cock/, "caged-cock caged-optional");
             }
           }
           const block = words.slice(blockStart, i);
@@ -213,6 +213,7 @@
       outer.remove();
     }
 
+    console.log(blocks);
     return { height, blocks };
   }
 
