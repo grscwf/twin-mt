@@ -74,8 +74,11 @@
 
     /* Note: current history state, not active state */
     const curState = State.current.variables;
-    curState.n_cagedBlock = 0;
+    curState.n_cagedBlock ??= 0;
     render(curState.n_cagedBlock);
+    if (curState.n_cagedBlock !== 0) {
+      outer.removeClass("caged-fade-slow");
+    }
     setTimeout(() => outer.removeClass("caged-fade-start"), 300);
 
     const advance = () => {
