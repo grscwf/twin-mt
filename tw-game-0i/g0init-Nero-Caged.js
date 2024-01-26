@@ -98,10 +98,10 @@
     outer.on("click", (e) => {
       const t = $(e.target);
       if (t.hasClass("caged-cock")) {
-        t.addClass("caged-blocked");
+        t.addClass("caged-touched");
       } else if (t.hasClass("caged-continue")) {
         const open = outer.find(
-          ".caged-cock:not(.caged-blocked):not(.caged-optional)"
+          ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
         if (open.length === 0 || (setup.debug && e.shiftKey)) {
           advance();
@@ -132,6 +132,11 @@
       const word = /** @type { string } */ (words[i]);
       if (/\bcock\b/.test(word)) {
         words[i] = word.replace(/\bcock\b/, `<a class=caged-cock>cock</a>`);
+      } else if (/\bcock2\b/.test(word)) {
+        words[i] = word.replace(
+          /\bcock2\b/,
+          `<a class="caged-cock caged-cock2">cock</a>`
+        );
       } else if (/^<[^>]*$/.test(word)) {
         MT.diag(`unexpected < in nero-caged ${repr(word)}`);
       }
@@ -183,7 +188,10 @@
           for (let j = lastLine; j < i; j++) {
             const word = /** @type { string } */ (words[j]);
             if (word.includes("caged-cock")) {
-              words[j] = word.replace(/caged-cock/, "caged-cock caged-optional");
+              words[j] = word.replace(
+                /caged-cock/,
+                "caged-cock caged-optional"
+              );
             }
           }
           const block = words.slice(blockStart, i);
