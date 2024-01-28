@@ -10,6 +10,8 @@ declare module "twine-sugarcube" {
   interface SugarCubeStoryVariables {
     /** Current block shown by nero-caged. */
     n_cagedBlock: number;
+    /** Turn that n_cagedBlock is for. */
+    n_cagedBlockTurn: number;
   }
 
   interface SugarCubeSetupObject {

@@ -73,23 +73,27 @@
     };
 
     /* Note: current history state, not active state */
-    const curState = State.current.variables;
-    curState.n_cagedBlock ??= 0;
-    render(curState.n_cagedBlock);
-    if (curState.n_cagedBlock !== 0) {
+    const cur = State.current.variables;
+    if (cur.n_cagedBlockTurn !== State.turns) {
+      cur.n_cagedBlock = 0;
+    }
+    cur.n_cagedBlockTurn = State.turns;
+    cur.n_cagedBlock ??= 0;
+    render(cur.n_cagedBlock);
+    if (cur.n_cagedBlock !== 0) {
       outer.removeClass("caged-fade-slow");
     }
     setTimeout(() => outer.removeClass("caged-fade-start"), 300);
 
     const advance = () => {
-      if (curState.n_cagedBlock == split.blocks.length - 1) {
+      if (cur.n_cagedBlock == split.blocks.length - 1) {
         Engine.play(next);
       } else {
         outer.removeClass("caged-fade-fast");
         outer.removeClass("caged-fade-slow");
         outer.addClass("caged-fade-start");
-        curState.n_cagedBlock++;
-        render(curState.n_cagedBlock);
+        cur.n_cagedBlock++;
+        render(cur.n_cagedBlock);
         setTimeout(() => outer.addClass("caged-fade-fast"), 100);
         setTimeout(() => outer.removeClass("caged-fade-start"), 200);
       }
@@ -189,8 +193,8 @@
             const word = /** @type { string } */ (words[j]);
             if (word.includes("caged-cock")) {
               words[j] = word.replace(
-                /caged-cock/,
-                "caged-cock caged-optional"
+                /=caged-cock/,
+                `="caged-cock caged-optional"`
               );
             }
           }
