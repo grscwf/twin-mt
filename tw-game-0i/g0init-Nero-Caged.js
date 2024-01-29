@@ -6,6 +6,22 @@
 
   /** @typedef { { height: number, blocks: string[] } } SplitInfo */
 
+  /**
+   * <<nero-caged>>
+   *   Text that's split into blocks.
+   *   - Cannot use SugarCube <<macros>> or ?templates.
+   *   - Can use simple html elements around single words like <em>word</em>.
+   *   - Cannot use html elements with attributes.
+   *   - Cannot use html elements around multiple words.
+   *   Some special words:
+   *   - plain "cock" is Nero's cock.
+   *   - "@ivexCock" is Ivex's cock.
+   *   - "@barbed" is either "barbed" or "smooth".
+   *
+   * <<nero-caged-fill>>
+   *   Text used to fill the last block, which can be cut off.
+   * <</nero-caged>>
+   */
   Macro.add("nero-caged", {
     tags: ["nero-caged-fill"],
     handler: function () {
@@ -136,13 +152,49 @@
       const word = /** @type { string } */ (words[i]);
       if (/\bcock\b/.test(word)) {
         words[i] = word.replace(/\bcock\b/, `<a class=caged-cock>cock</a>`);
-      } else if (/\bcock2\b/.test(word)) {
-        words[i] = word.replace(
-          /\bcock2\b/,
-          `<a class="caged-cock caged-cock2">cock</a>`
-        );
-      } else if (/^<[^>]*$/.test(word)) {
+        continue;
+      }
+
+      {
+        const m = /@(\w+)/.exec(word);
+        if (m) {
+          let replace = word;
+          switch (m[1]) {
+            case "ivexCock":
+              replace = `<a class="caged-cock caged-ivex-cock">cock</a>`;
+              break;
+            case "barbed":
+              replace = State.variables.n_barbs ? "barbed" : "smooth";
+              break;
+            default:
+              MT.diag(`Unexpected ${word} in nero-caged`);
+              break;
+          }
+          words[i] =
+            word.slice(0, m.index) +
+            replace +
+            word.slice(m.index + m[0].length);
+          continue;
+        }
+      }
+
+      if (/^<[^>]*$/.test(word)) {
+        // probably an html element with an attr that we split at space.
         MT.diag(`unexpected < in nero-caged ${repr(word)}`);
+        continue;
+      }
+      if (/^[^<]*<[/]/.test(word)) {
+        // probably an html element around multiple words that we split
+        MT.diag(`unexpected </ in nero-caged ${repr(word)}`);
+        continue;
+      }
+
+      {
+        const m = /(@|<<|^[?])/.exec(word);
+        if (m) {
+          MT.diag(`unexpected ${repr(m[1])} in nero-caged ${repr(word)}`);
+          continue;
+        }
       }
     }
 

@@ -8,6 +8,10 @@ declare global {
 
 declare module "twine-sugarcube" {
   interface SugarCubeStoryVariables {
+
+    /** True if player chose barbed instead of smooth */
+    n_barbs: boolean;
+
     /** Current block shown by nero-caged. */
     n_cagedBlock: number;
     /** Turn that n_cagedBlock is for. */

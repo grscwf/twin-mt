@@ -489,8 +489,8 @@ meta-text {
   cursor: not-allowed;
 }
 
-.caged-cock2.caged-touched:not(#_#_#_#_#_),
-.caged-cock2.caged-touched:hover:not(#_#_#_#_#_) {
+.caged-ivex-cock.caged-touched:not(#_#_#_#_#_),
+.caged-ivex-cock.caged-touched:hover:not(#_#_#_#_#_) {
   background: #944;
   color: #fcc;
 }
@@ -636,6 +636,22 @@ function helloWorld() {
 
   /** @typedef { { height: number, blocks: string[] } } SplitInfo */
 
+  /**
+   * <<nero-caged>>
+   *   Text that's split into blocks.
+   *   - Cannot use SugarCube <<macros>> or ?templates.
+   *   - Can use simple html elements around single words like <em>word</em>.
+   *   - Cannot use html elements with attributes.
+   *   - Cannot use html elements around multiple words.
+   *   Some special words:
+   *   - plain "cock" is Nero's cock.
+   *   - "@ivexCock" is Ivex's cock.
+   *   - "@barbed" is either "barbed" or "smooth".
+   *
+   * <<nero-caged-fill>>
+   *   Text used to fill the last block, which can be cut off.
+   * <</nero-caged>>
+   */
   Macro.add("nero-caged", {
     tags: ["nero-caged-fill"],
     handler: function () {
@@ -766,13 +782,49 @@ function helloWorld() {
       const word = /** @type { string } */ (words[i]);
       if (/\bcock\b/.test(word)) {
         words[i] = word.replace(/\bcock\b/, `<a class=caged-cock>cock</a>`);
-      } else if (/\bcock2\b/.test(word)) {
-        words[i] = word.replace(
-          /\bcock2\b/,
-          `<a class="caged-cock caged-cock2">cock</a>`
-        );
-      } else if (/^<[^>]*$/.test(word)) {
+        continue;
+      }
+
+      {
+        const m = /@(\w+)/.exec(word);
+        if (m) {
+          let replace = word;
+          switch (m[1]) {
+            case "ivexCock":
+              replace = `<a class="caged-cock caged-ivex-cock">cock</a>`;
+              break;
+            case "barbed":
+              replace = State.variables.n_barbs ? "barbed" : "smooth";
+              break;
+            default:
+              MT.diag(`Unexpected ${word} in nero-caged`);
+              break;
+          }
+          words[i] =
+            word.slice(0, m.index) +
+            replace +
+            word.slice(m.index + m[0].length);
+          continue;
+        }
+      }
+
+      if (/^<[^>]*$/.test(word)) {
+        // probably an html element with an attr that we split at space.
         MT.diag(`unexpected < in nero-caged ${repr(word)}`);
+        continue;
+      }
+      if (/^[^<]*<[/]/.test(word)) {
+        // probably an html element around multiple words that we split
+        MT.diag(`unexpected </ in nero-caged ${repr(word)}`);
+        continue;
+      }
+
+      {
+        const m = /(@|<<|^[?])/.exec(word);
+        if (m) {
+          MT.diag(`unexpected ${repr(m[1])} in nero-caged ${repr(word)}`);
+          continue;
+        }
       }
     }
 
@@ -864,7 +916,7 @@ function helloWorld() {
 
   MT.splitText = splitText;
 })();
-</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -50325,13 +50377,13 @@ on the floor.
 &lt;&lt;nero-caged [[n9a Caged Mild 4]]&gt;&gt;
   When Nero regains his wits, the first thing he notices
   is a scent stronger than the lingering candle smoke.
-  It&#39;s the reek of a male cock2 unfamiliar to him,
+  It&#39;s the reek of a male @ivexCock unfamiliar to him,
   but he recognizes undertones of the scent.
   It&#39;s Ivex, of course, and the panther&#39;s
-  erect, dripping cock2 is protruding
+  erect, dripping @ivexCock is protruding
   through the wall not far from the wolf&#39;s head.
 
-  Nero grimaces and tries to ignore the cock2,
+  Nero grimaces and tries to ignore the @ivexCock,
   and he realizes that his own cock is no longer trapped.
   Well, it&#39;s still &lt;em&gt;missing&lt;/em&gt;. The strange device
   is still covering his crotch,
@@ -50342,9 +50394,13 @@ on the floor.
   make his aching cock &lt;em&gt;touch&lt;/em&gt; something.
   It doesn&#39;t work.
   Nero suppresses panic.
+
   He shakes his whole body in desperation.
   The motion makes his muzzle accidentally
-  brush against the
+  brush against the @barbed head of Ivex&#39;s
+  @ivexCock, which leaves a smear of pre-cum
+  on the wolf&#39;s fur.
+  A moment later,
 
 
   XXX
