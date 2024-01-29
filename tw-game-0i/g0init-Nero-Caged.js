@@ -273,7 +273,13 @@
           const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
           const range = document.createRange();
           range.setStartBefore(first);
-          range.setEndBefore(span);
+
+          /** @type { Node } */
+          let end = span;
+          while (end.parentNode?.firstChild === end) {
+            end = end.parentNode;
+          }
+          range.setEndBefore(end);
 
           const block = range.cloneContents();
           blocks.push(block);
