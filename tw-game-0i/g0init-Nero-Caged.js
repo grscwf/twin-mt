@@ -63,6 +63,11 @@
       }
 
       const cage = $("<div class='caged-box caged-transcript'>");
+      cage.appendTo(out);
+
+      if (i === last) {
+        cage.addClass("caged-last");
+      }
 
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
@@ -85,6 +90,9 @@
 
     /** @type { (i: number) => void } */
     const renderBlock = (i) => {
+      if (i === split.blocks.length - 1) {
+        outer.addClass("caged-last");
+      }
       outer.empty();
       outer.append(split.blocks[i] || "");
       outer.append("<a class=caged-continue>Continue</a>");
@@ -106,7 +114,7 @@
     setTimeout(() => outer.removeClass("caged-fade-start"), 300);
 
     const advance = () => {
-      if (cur.n_cagedBlock == split.blocks.length - 1) {
+      if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
       } else {
         outer.removeClass("caged-fade-fast caged-fade-slow");
