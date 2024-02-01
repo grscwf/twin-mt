@@ -139,6 +139,8 @@
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
         if (open.length === 0 || (setup.debug && e.shiftKey)) {
+          e.preventDefault();
+          e.stopPropagation();
           advance();
         } else {
           outer.addClass("caged-flash");
