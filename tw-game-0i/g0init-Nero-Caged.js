@@ -263,56 +263,76 @@
 
         const span = /** @type { HTMLSpanElement } */ (spans[i]);
         const rect = span.getBoundingClientRect();
-        if (rect.bottom > box.bottom - BORDER) {
-          const prevLineSpan = /** @type { HTMLElement } */ (spans[prevLine]);
-          // Get the precise height of a full box
-          if (height === 0) {
-            const rect = prevLineSpan.getBoundingClientRect();
-            height = rect.bottom - box.top;
+
+        // if the box isn't full yet
+        if (rect.bottom <= box.bottom - BORDER) {
+          // note, when a word is split, rect.left is at the second part
+          if (rect.left < prevLeft) {
+            prevLine = i;
           }
-
-          // Mark links in the last line as optional
-          for (let j = prevLine; j < i; j++) {
-            const span = /** @type { HTMLElement } */ (spans[j]);
-            const par = span.parentElement;
-            if (par != null && par.tagName === "A") {
-              par.className += " caged-optional";
-            }
-          }
-          
-          const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
-          const range = document.createRange();
-          range.setStartBefore(first);
-
-          /** @type { Node } */
-          let end = span;
-          while (end.parentNode?.firstChild === end) {
-            end = end.parentNode;
-          }
-          range.setEndBefore(end);
-
-          const block = range.cloneContents();
-          blocks.push(block);
-
-          if (filling) {
-            break;
-          }
-
-          range.setEndBefore(prevLineSpan);
-          range.deleteContents();
-
-          prevLine = 0;
-          prevLeft = 0;
-          spans = inner.find(".caged-word");
-          i = 0;
+          prevLeft = rect.left;
+          i++;
           continue;
         }
 
-        if (rect.left < prevLeft) {
-          prevLine = i;
+        // We have a full box now
+
+        // Get the precise height of the full box
+        const prevLineSpan = /** @type { HTMLElement } */ (spans[prevLine]);
+        const prevRect = prevLineSpan.getBoundingClientRect();
+        if (height === 0) {
+          height = prevRect.bottom - box.top;
         }
-        prevLeft = rect.left;
-        i++;
+
+        // Mark links in the last line as optional
+        for (let j = prevLine; j < i; j++) {
+          const span = /** @type { HTMLElement } */ (spans[j]);
+          const par = span.parentElement;
+          if (par != null && par.tagName === "A") {
+            par.className += " caged-optional";
+          }
+        }
+
+        const range = document.createRange();
+
+        const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
+        range.setStartBefore(first);
+
+        /** @type { Node } */
+        let end = span;
+        while (end.parentNode?.firstChild === end) {
+          end = end.parentNode;
+        }
+        range.setEndBefore(end);
+
+        const block = range.cloneContents();
+        blocks.push(block);
+
+        if (filling) {
+          break;
+        }
+
+        // Cut before the last line
+        range.setEndBefore(prevLineSpan);
+
+        // Try to find out exactly where the word break is
+        const word = prevLineSpan.textContent || "";
+        const chars = Array.from(word).map(c => jqUnwrap($("<span>").text(c)));
+        $(prevLineSpan).empty().append(chars);
+        for (const ch of chars) {
+          const rect = ch.getBoundingClientRect();
+          if (rect.left === prevRect.left) {
+            range.setEndBefore(ch);
+            break;
+          }
+        }
+
+        range.deleteContents();
+
+        prevLine = 0;
+        prevLeft = 0;
+        spans = inner.find(".caged-word");
+        i = 0;
       }
     } finally {
       $("#passages").removeClass("caged-render");
