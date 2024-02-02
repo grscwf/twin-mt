@@ -138,7 +138,7 @@
         const open = outer.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
-        if (open.length === 0 || (setup.debug && e.shiftKey)) {
+        if (open.length === 0 || (setup.debug && e.ctrlKey)) {
           e.preventDefault();
           e.stopPropagation();
           advance();
@@ -151,7 +151,7 @@
 
     if (setup.debug) {
       const skip = $("<div class=caged-skip>");
-      skip.html("&#x1f527; shift-click to skip the cock block");
+      skip.html("&#x1f527; ctrl-click to skip the cock block");
       skip.appendTo(out);
     }
   }
