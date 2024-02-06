@@ -445,22 +445,56 @@ meta-text {
 .tran-entry hr {
   border-color: #555;
 }
-/* twine-user-stylesheet #2: "g0boot-Hello.css" */
-/* Hello world */
-.hello-world {
-  visibility: visible;
+/* twine-user-stylesheet #2: "g0a-Nero-Caged.css" */
+/*
+ * Caged text. We try to be precise with layout despite not
+ * really knowing what font is used. (It'll probably be Arial on desktops,
+ * SF Pro on iOS, and Roboto on Android)
+ */
+
+.caged-grid {
+  display: grid;
 }
-/* twine-user-stylesheet #3: "g0init-Nero-Caged.css" */
-.caged-box {
-  background: #222;
+
+.caged-box,
+.caged-box2 {
+  font-family: Arial, sans-serif;
+  line-height: 1.75rem;
   margin: 0 auto;
-  height: min(70vh - 5em, 35em);
   overflow: hidden;
-  padding: 4px 8px;
   position: relative;
   text-align: justify;
-  width: min(90vw - 5em, 20em);
   word-break: break-all;
+}
+
+.caged-box {
+  background: rgba(34, 34, 34, 0.5);
+  border: 2px solid rgba(34, 34, 34, 0.8);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  grid-column: 1;
+  grid-row: 1;
+  height: min(70vh - 5em, 35em);
+  padding: 4px 8px;
+  width: min(90vw - 5em, 20em);
+}
+.caged-box span {
+  position: relative;
+  z-index: 2;
+}
+
+.caged-box2, .caged-box2 * {
+  /* background: #222; */
+  /* border: 1px solid #333; */
+  color: #569;
+  font-size: 0.7rem;
+  grid-column: 1;
+  grid-row: 1;
+  height: min(70vh - 10em, 25em);
+  padding: 4px 8px;
+  top: 2.7rem;
+  width: min(90vw - 5em, 20em);
+  z-index: 0;
 }
 
 .caged-fade-start {
@@ -560,7 +594,13 @@ body:has(.caged-render) #init-screen {
 }
 .caged-hidden {
   visibility: visible;
-}</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "Story JavaScript" */
+}
+/* twine-user-stylesheet #3: "g0boot-Hello.css" */
+/* Hello world */
+.hello-world {
+  visibility: visible;
+}
+</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "Story JavaScript" */
 setup.version = "v2.0-nero-wip";
 
 Config.saves.id = 'sleth-mages-tower-2';
@@ -619,31 +659,7 @@ $(document).on(':passagestart', function (ev) {
     });
   });
 });
-/* twine-user-script #2: "g0boot-Hello.js" */
-/**
- * Hello world
- * @type { () => string }
- */
-function helloWorld() {
-  return "world";
-}
-/* twine-user-script #3: "g0init-Debugging.js" */
-(() => {
-  if (!setup.debug) return;
-
-  // SugarCube debug mode puts passage source in title hover text,
-  // which is useless and distracting for long sources. Remove it.
-  $(document).on(":passagedisplay", () => {
-    $("span.debug").each((i, el) => {
-      const title = el.title ?? "";
-      if (title.includes("\n") || title.length > 30) {
-        el.removeAttribute("title");
-        el.removeAttribute("aria-label");
-      }
-    });
-  });
-})();
-/* twine-user-script #4: "g0init-Nero-Caged.js" */
+/* twine-user-script #2: "g0a-Nero-Caged.js" */
 (() => {
   const BORDER = 0;
 
@@ -708,10 +724,10 @@ function helloWorld() {
         $("<br>").appendTo(out);
       }
 
-      const cage = $("<div class='caged-box caged-transcript'>");
-      cage.appendTo(out);
+      const grid = $(`<div class="caged-grid">`).appendTo(out);
+      const cage = $("<div class='caged-box caged-transcript'>").appendTo(grid);
 
-      if (i === last) {
+      if (i === split.blocks.length - 1) {
         cage.addClass("caged-last");
       }
 
@@ -727,21 +743,22 @@ function helloWorld() {
 
   /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
   function renderLive(out, split, next) {
-    const outer = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
-    outer.appendTo(out);
+    const grid = $(`<div class="caged-grid">`).appendTo(out);
+    const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
+    box.appendTo(grid);
 
     if (split.height) {
-      outer.attr("style", `height: ${split.height}px`);
+      box.attr("style", `height: ${split.height}px`);
     }
 
     /** @type { (i: number) => void } */
     const renderBlock = (i) => {
       if (i === split.blocks.length - 1) {
-        outer.addClass("caged-last");
+        box.addClass("caged-last");
       }
-      outer.empty();
-      outer.append(split.blocks[i] || "");
-      outer.append("<a class=caged-continue>Continue</a>");
+      box.empty();
+      box.append(split.blocks[i] || "");
+      box.append("<a class=caged-continue>Continue</a>");
     };
 
     /* Note: current history state, not active state */
@@ -755,24 +772,24 @@ function helloWorld() {
     renderBlock(cur.n_cagedBlock);
 
     if (cur.n_cagedBlock !== 0) {
-      outer.removeClass("caged-fade-slow");
+      box.removeClass("caged-fade-slow");
     }
-    setTimeout(() => outer.removeClass("caged-fade-start"), 300);
+    setTimeout(() => box.removeClass("caged-fade-start"), 300);
 
     const advance = () => {
       if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
       } else {
-        outer.removeClass("caged-fade-fast caged-fade-slow");
-        outer.addClass("caged-fade-start");
+        box.removeClass("caged-fade-fast caged-fade-slow");
+        box.addClass("caged-fade-start");
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
-        setTimeout(() => outer.addClass("caged-fade-fast"), 100);
-        setTimeout(() => outer.removeClass("caged-fade-start"), 200);
+        setTimeout(() => box.addClass("caged-fade-fast"), 100);
+        setTimeout(() => box.removeClass("caged-fade-start"), 200);
       }
     };
 
-    outer.on("click", (e) => {
+    box.on("click", (e) => {
       let t = $(e.target);
       // go up to an <a>
       while (t.length && t.prop("tagName") !== "A") {
@@ -781,7 +798,7 @@ function helloWorld() {
       if (t.hasClass("caged-cock")) {
         t.addClass("caged-touched");
       } else if (t.hasClass("caged-continue")) {
-        const open = outer.find(
+        const open = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
         if (open.length === 0 || (setup.debug && e.ctrlKey)) {
@@ -789,8 +806,8 @@ function helloWorld() {
           e.stopPropagation();
           advance();
         } else {
-          outer.addClass("caged-flash");
-          setTimeout(() => outer.removeClass("caged-flash"), 500);
+          box.addClass("caged-flash");
+          setTimeout(() => box.removeClass("caged-flash"), 500);
         }
       }
     });
@@ -963,7 +980,9 @@ function helloWorld() {
 
         // Try to find out exactly where the word break is
         const word = prevLineSpan.textContent || "";
-        const chars = Array.from(word).map(c => jqUnwrap($("<span>").text(c)));
+        const chars = Array.from(word).map((c) =>
+          jqUnwrap($("<span>").text(c))
+        );
         $(prevLineSpan).empty().append(chars);
         for (const ch of chars) {
           const rect = ch.getBoundingClientRect();
@@ -993,7 +1012,31 @@ function helloWorld() {
     splitText,
   };
 })();
-</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+/* twine-user-script #3: "g0boot-Hello.js" */
+/**
+ * Hello world
+ * @type { () => string }
+ */
+function helloWorld() {
+  return "world";
+}
+/* twine-user-script #4: "g0init-Debugging.js" */
+(() => {
+  if (!setup.debug) return;
+
+  // SugarCube debug mode puts passage source in title hover text,
+  // which is useless and distracting for long sources. Remove it.
+  $(document).on(":passagedisplay", () => {
+    $("span.debug").each((i, el) => {
+      const title = el.title ?? "";
+      if (title.includes("\n") || title.length > 30) {
+        el.removeAttribute("title");
+        el.removeAttribute("aria-label");
+      }
+    });
+  });
+})();
+</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -50277,28 +50320,7 @@ blank shows up in an alone period, nero doesn&#39;t break pose
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="780" name="n9a Caged Harsh 2" tags="mt-draft" position="11175,2125" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 
-&lt;style&gt;
-#cage-2 {
-  color: #89c;
-  font-size: 12px;
-  left: 28%;
-  line-height: 28px;
-  position: absolute;
-  top: 129px;
-  width: 20em;
-}
-
-.caged-box {
-  background-color: rgba(34, 34, 34, 0.5);
-  border: 2px solid #222;
-  color: rgba(255, 255, 255, 0.8);
-  position: relative;
-  
-}
-&lt;/style&gt;
-
-
-&lt;div id=&quot;cage-2&quot;&gt;
+&lt;div id=&quot;cage-2&quot; class=&quot;caged-box2&quot;&gt;
   XXX placeholder text
     The device presses firmly on his cock without sliding,
   and the wolf struggles with endless thoughts
@@ -50311,6 +50333,11 @@ blank shows up in an alone period, nero doesn&#39;t break pose
   he does not feel with his cock,
   a motion that does not bring relief,
 &lt;/div&gt;
+&lt;&lt;done&gt;&gt;
+  &lt;&lt;script&gt;&gt;
+    $(&quot;#cage-2&quot;).appendTo(&quot;.caged-grid&quot;);
+  &lt;&lt;/script&gt;&gt;
+&lt;&lt;/done&gt;&gt;
 
 
 &lt;&lt;nero-caged [[n9a Caged Harsh 3]]&gt;&gt;

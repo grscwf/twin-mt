@@ -62,10 +62,10 @@
         $("<br>").appendTo(out);
       }
 
-      const cage = $("<div class='caged-box caged-transcript'>");
-      cage.appendTo(out);
+      const grid = $(`<div class="caged-grid">`).appendTo(out);
+      const cage = $("<div class='caged-box caged-transcript'>").appendTo(grid);
 
-      if (i === last) {
+      if (i === split.blocks.length - 1) {
         cage.addClass("caged-last");
       }
 
@@ -81,21 +81,22 @@
 
   /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
   function renderLive(out, split, next) {
-    const outer = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
-    outer.appendTo(out);
+    const grid = $(`<div class="caged-grid">`).appendTo(out);
+    const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
+    box.appendTo(grid);
 
     if (split.height) {
-      outer.attr("style", `height: ${split.height}px`);
+      box.attr("style", `height: ${split.height}px`);
     }
 
     /** @type { (i: number) => void } */
     const renderBlock = (i) => {
       if (i === split.blocks.length - 1) {
-        outer.addClass("caged-last");
+        box.addClass("caged-last");
       }
-      outer.empty();
-      outer.append(split.blocks[i] || "");
-      outer.append("<a class=caged-continue>Continue</a>");
+      box.empty();
+      box.append(split.blocks[i] || "");
+      box.append("<a class=caged-continue>Continue</a>");
     };
 
     /* Note: current history state, not active state */
@@ -109,24 +110,24 @@
     renderBlock(cur.n_cagedBlock);
 
     if (cur.n_cagedBlock !== 0) {
-      outer.removeClass("caged-fade-slow");
+      box.removeClass("caged-fade-slow");
     }
-    setTimeout(() => outer.removeClass("caged-fade-start"), 300);
+    setTimeout(() => box.removeClass("caged-fade-start"), 300);
 
     const advance = () => {
       if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
       } else {
-        outer.removeClass("caged-fade-fast caged-fade-slow");
-        outer.addClass("caged-fade-start");
+        box.removeClass("caged-fade-fast caged-fade-slow");
+        box.addClass("caged-fade-start");
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
-        setTimeout(() => outer.addClass("caged-fade-fast"), 100);
-        setTimeout(() => outer.removeClass("caged-fade-start"), 200);
+        setTimeout(() => box.addClass("caged-fade-fast"), 100);
+        setTimeout(() => box.removeClass("caged-fade-start"), 200);
       }
     };
 
-    outer.on("click", (e) => {
+    box.on("click", (e) => {
       let t = $(e.target);
       // go up to an <a>
       while (t.length && t.prop("tagName") !== "A") {
@@ -135,7 +136,7 @@
       if (t.hasClass("caged-cock")) {
         t.addClass("caged-touched");
       } else if (t.hasClass("caged-continue")) {
-        const open = outer.find(
+        const open = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
         if (open.length === 0 || (setup.debug && e.ctrlKey)) {
@@ -143,8 +144,8 @@
           e.stopPropagation();
           advance();
         } else {
-          outer.addClass("caged-flash");
-          setTimeout(() => outer.removeClass("caged-flash"), 500);
+          box.addClass("caged-flash");
+          setTimeout(() => box.removeClass("caged-flash"), 500);
         }
       }
     });
@@ -317,7 +318,9 @@
 
         // Try to find out exactly where the word break is
         const word = prevLineSpan.textContent || "";
-        const chars = Array.from(word).map(c => jqUnwrap($("<span>").text(c)));
+        const chars = Array.from(word).map((c) =>
+          jqUnwrap($("<span>").text(c))
+        );
         $(prevLineSpan).empty().append(chars);
         for (const ch of chars) {
           const rect = ch.getBoundingClientRect();
