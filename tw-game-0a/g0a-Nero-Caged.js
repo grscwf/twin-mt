@@ -20,23 +20,44 @@
    * <</nero-caged>>
    */
   Macro.add("nero-caged", {
-    tags: ["nero-caged-fill"],
+    tags: ["nero-caged-fill", "nero-caged-2", "nero-caged-2-fill"],
     handler: function () {
       const [next] = this.args;
 
-      let body = this.payload[0]?.contents ?? "";
+      let cage = "";
+      let fill = ". ";
+      let cage2 = "";
+      let fill2 = ". ";
+      let wait = false;
 
-      let fill = this.payload[1]?.contents ?? "";
-      if (fill.trim() === "") {
-        fill = ". ";
+      for (const payload of this.payload) {
+        switch (payload.name) {
+          case "nero-caged":
+            cage = payload.contents.trim();
+            break;
+          case "nero-caged-fill":
+            fill = payload.contents.trim();
+            break;
+          case "nero-caged-2":
+            cage2 = payload.contents.trim();
+            wait = payload.args[0] === "wait";
+            break;
+          case "nero-caged-2-fill":
+            fill2 = payload.contents.trim();
+            break;
+          default:
+            throw new Error(`Unexpected nero-caged ${payload.name}`);
+        }
       }
 
-      const split = splitText(body, fill);
+      const split = splitText("caged-box", cage, fill);
+      const split2 = splitText("caged-box2", cage2, fill2);
 
       if (State.temporary.isTranscript) {
-        renderTranscript(this.output, split);
+        renderTranscript(this.output, split, split2, wait);
       } else {
-        renderLive(this.output, split, next.isLink ? next.link : next);
+        const link = next.isLink ? next.link : next;
+        renderLive(this.output, split, link, split2, wait);
       }
     },
   });
@@ -54,8 +75,8 @@
     return /** @type { HTMLElement } */ (jq[0]);
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo) => void } */
-  function renderTranscript(out, split) {
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, split2: SplitInfo, wait: boolean) => void } */
+  function renderTranscript(out, split, split2, wait) {
     const last = State.variables.n_cagedBlock ?? split.blocks.length - 1;
     for (let i = 0; i < last + 1; i++) {
       if (i !== 0) {
@@ -79,8 +100,8 @@
     }
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
-  function renderLive(out, split, next) {
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string, split2: SplitInfo, wait: boolean) => void } */
+  function renderLive(out, split, next, split2, wait) {
     const grid = $(`<div class="caged-grid">`).appendTo(out);
     const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
     box.appendTo(grid);
@@ -217,16 +238,16 @@
 
   /**
    * Split text into segments that fit in caged-box.
-   * @type { (text: string, fill: string) => SplitInfo }
+   * @type { (tag: string, text: string, fill: string) => SplitInfo }
    */
-  function splitText(text, fill) {
+  function splitText(tag, text, fill) {
     let rendered = renderWithWordsMarked(text);
     let renderedFill = renderWithWordsMarked(fill);
 
     const outer = $(`<div class="passage caged-hidden">`);
     $("#passages").addClass("caged-render").prepend(outer);
 
-    const inner = $(`<div class="caged-box caged-hidden">`);
+    const inner = $(`<div class="${tag} caged-hidden">`);
     inner.appendTo(outer);
     inner.append($(rendered).contents());
 
@@ -345,6 +366,7 @@
     return { height, blocks };
   }
 
+  // exposed for console experimentation
   MT.caged = {
     renderWithWordsMarked,
     splitText,
