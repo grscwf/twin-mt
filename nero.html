@@ -483,7 +483,7 @@ meta-text {
   z-index: 2;
 }
 
-.caged-box2, .caged-box2 * {
+.caged-box2 {
   /* background: #222; */
   /* border: 1px solid #333; */
   color: #569;
@@ -492,7 +492,8 @@ meta-text {
   grid-row: 1;
   height: min(70vh - 10em, 25em);
   padding: 4px 8px;
-  top: 2.7rem;
+  pointer-events: none;
+  top: 4.5rem;
   width: min(90vw - 5em, 20em);
   z-index: 0;
 }
@@ -675,10 +676,13 @@ $(document).on(':passagestart', function (ev) {
    * <<nero-caged>>
    *   Text that's split into blocks.
    *   Within the text, ?iCock and ?nCock have special behavior.
-   *
    * <<nero-caged-fill>>
    *   Text that's repeated to fill the last block.
    *   If omitted, fills with dots.
+   * <<nero-caged-2 [wait]>>
+   *   Text shown in bg box. "wait" means don't show until click.
+   * <<nero-caged-2-fill>>
+   *   Text repeated to fill bg box.
    * <</nero-caged>>
    */
   Macro.add("nero-caged", {
@@ -712,8 +716,8 @@ $(document).on(':passagestart', function (ev) {
         }
       }
 
-      const split = splitText("caged-box", cage, fill);
-      const split2 = splitText("caged-box2", cage2, fill2);
+      const split = splitText("caged-box", cage, fill, false);
+      const split2 = splitText("caged-box2", cage2, fill2, true);
 
       if (State.temporary.isTranscript) {
         renderTranscript(this.output, split, split2, wait);
@@ -746,7 +750,7 @@ $(document).on(':passagestart', function (ev) {
       }
 
       const grid = $(`<div class="caged-grid">`).appendTo(out);
-      const cage = $("<div class='caged-box caged-transcript'>").appendTo(grid);
+      const cage = $(`<div class="caged-box caged-transcript">`).appendTo(grid);
 
       if (i === split.blocks.length - 1) {
         cage.addClass("caged-last");
@@ -759,6 +763,16 @@ $(document).on(':passagestart', function (ev) {
       if (split.height) {
         cage.attr("style", `height: ${split.height}px`);
       }
+
+      if (i < split2.blocks.length) {
+        const cage2 = $(`<div class="caged-box2 caged-transcript">`);
+        cage2.appendTo(grid);
+        const block2 = /** @type { DocumentFragment } */ (split2.blocks[i]);
+        cage2.append($(block2).contents());
+        if (split2.height) {
+          cage2.attr("style", `height: ${split2.height}px`);
+        }
+      }
     }
   }
 
@@ -767,19 +781,28 @@ $(document).on(':passagestart', function (ev) {
     const grid = $(`<div class="caged-grid">`).appendTo(out);
     const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
     box.appendTo(grid);
-
     if (split.height) {
       box.attr("style", `height: ${split.height}px`);
     }
 
+    const box2 = $(`<div class="caged-box2 caged-fade-slow caged-fade-start">`);
+    box2.appendTo(grid);
+    if (split2.height) {
+      box2.attr("style", `height: ${split2.height}px`);
+    }
+
     /** @type { (i: number) => void } */
     const renderBlock = (i) => {
-      if (i === split.blocks.length - 1) {
-        box.addClass("caged-last");
-      }
+      box.toggleClass("caged-last", i === split.blocks.length - 1);
       box.empty();
       box.append(split.blocks[i] || "");
       box.append("<a class=caged-continue>Continue</a>");
+
+      box2.empty();
+      if (i < split2.blocks.length) {
+        box2.append(split2.blocks[i] || "");
+        box2.toggleClass("caged-last", i === split2.blocks.length - 1);
+      }
     };
 
     /* Note: current history state, not active state */
@@ -794,8 +817,12 @@ $(document).on(':passagestart', function (ev) {
 
     if (cur.n_cagedBlock !== 0) {
       box.removeClass("caged-fade-slow");
+      box2.removeClass("caged-fade-slow");
     }
-    setTimeout(() => box.removeClass("caged-fade-start"), 300);
+    setTimeout(() => {
+      box.removeClass("caged-fade-start");
+      box2.removeClass("caged-fade-start");
+    }, 300);
 
     const advance = () => {
       if (cur.n_cagedBlock === split.blocks.length - 1) {
@@ -803,10 +830,18 @@ $(document).on(':passagestart', function (ev) {
       } else {
         box.removeClass("caged-fade-fast caged-fade-slow");
         box.addClass("caged-fade-start");
+        box2.removeClass("caged-fade-fast caged-fade-slow");
+        box2.addClass("caged-fade-start");
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
-        setTimeout(() => box.addClass("caged-fade-fast"), 100);
-        setTimeout(() => box.removeClass("caged-fade-start"), 200);
+        setTimeout(() => {
+          box.addClass("caged-fade-fast");
+          box2.addClass("caged-fade-fast");
+        }, 100);
+        setTimeout(() => {
+          box.removeClass("caged-fade-start");
+          box2.removeClass("caged-fade-start");
+        }, 200);
       }
     };
 
@@ -900,9 +935,12 @@ $(document).on(':passagestart', function (ev) {
 
   /**
    * Split text into segments that fit in caged-box.
-   * @type { (tag: string, text: string, fill: string) => SplitInfo }
+   * @type { (tag: string, text: string, fill: string, second: boolean) => SplitInfo }
    */
-  function splitText(tag, text, fill) {
+  function splitText(tag, text, fill, second) {
+    if (text.trim() === "") {
+      return { height: 0, blocks: [] };
+    }
     let rendered = renderWithWordsMarked(text);
     let renderedFill = renderWithWordsMarked(fill);
 
@@ -982,12 +1020,16 @@ $(document).on(':passagestart', function (ev) {
         const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
         range.setStartBefore(first);
 
-        /** @type { Node } */
-        let end = span;
-        while (end.parentNode?.firstChild === end) {
-          end = end.parentNode;
+        if (second) {
+          range.setEndAfter(span);
+        } else {
+          /** @type { Node } */
+          let end = span;
+          while (end.parentNode?.firstChild === end) {
+            end = end.parentNode;
+          }
+          range.setEndBefore(end);
         }
-        range.setEndBefore(end);
 
         const block = range.cloneContents();
         blocks.push(block);
@@ -1058,7 +1100,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -50408,6 +50450,11 @@ blank shows up in an alone period, nero doesn&#39;t break pose
   over again against the floor, a motion that
   he does not feel with his cock,
   a motion that does not bring relief,
+  blah blah blah blah blah
+  blah blah blah blah blah
+  blah blah blah blah blah
+  blah blah blah blah blah
+  blah blah blah blah blah
 
 &lt;&lt;/nero-caged&gt;&gt;
 

@@ -13,10 +13,13 @@
    * <<nero-caged>>
    *   Text that's split into blocks.
    *   Within the text, ?iCock and ?nCock have special behavior.
-   *
    * <<nero-caged-fill>>
    *   Text that's repeated to fill the last block.
    *   If omitted, fills with dots.
+   * <<nero-caged-2 [wait]>>
+   *   Text shown in bg box. "wait" means don't show until click.
+   * <<nero-caged-2-fill>>
+   *   Text repeated to fill bg box.
    * <</nero-caged>>
    */
   Macro.add("nero-caged", {
@@ -50,8 +53,8 @@
         }
       }
 
-      const split = splitText("caged-box", cage, fill);
-      const split2 = splitText("caged-box2", cage2, fill2);
+      const split = splitText("caged-box", cage, fill, false);
+      const split2 = splitText("caged-box2", cage2, fill2, true);
 
       if (State.temporary.isTranscript) {
         renderTranscript(this.output, split, split2, wait);
@@ -84,7 +87,7 @@
       }
 
       const grid = $(`<div class="caged-grid">`).appendTo(out);
-      const cage = $("<div class='caged-box caged-transcript'>").appendTo(grid);
+      const cage = $(`<div class="caged-box caged-transcript">`).appendTo(grid);
 
       if (i === split.blocks.length - 1) {
         cage.addClass("caged-last");
@@ -97,6 +100,16 @@
       if (split.height) {
         cage.attr("style", `height: ${split.height}px`);
       }
+
+      if (i < split2.blocks.length) {
+        const cage2 = $(`<div class="caged-box2 caged-transcript">`);
+        cage2.appendTo(grid);
+        const block2 = /** @type { DocumentFragment } */ (split2.blocks[i]);
+        cage2.append($(block2).contents());
+        if (split2.height) {
+          cage2.attr("style", `height: ${split2.height}px`);
+        }
+      }
     }
   }
 
@@ -105,19 +118,28 @@
     const grid = $(`<div class="caged-grid">`).appendTo(out);
     const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
     box.appendTo(grid);
-
     if (split.height) {
       box.attr("style", `height: ${split.height}px`);
     }
 
+    const box2 = $(`<div class="caged-box2 caged-fade-slow caged-fade-start">`);
+    box2.appendTo(grid);
+    if (split2.height) {
+      box2.attr("style", `height: ${split2.height}px`);
+    }
+
     /** @type { (i: number) => void } */
     const renderBlock = (i) => {
-      if (i === split.blocks.length - 1) {
-        box.addClass("caged-last");
-      }
+      box.toggleClass("caged-last", i === split.blocks.length - 1);
       box.empty();
       box.append(split.blocks[i] || "");
       box.append("<a class=caged-continue>Continue</a>");
+
+      box2.empty();
+      if (i < split2.blocks.length) {
+        box2.append(split2.blocks[i] || "");
+        box2.toggleClass("caged-last", i === split2.blocks.length - 1);
+      }
     };
 
     /* Note: current history state, not active state */
@@ -132,8 +154,12 @@
 
     if (cur.n_cagedBlock !== 0) {
       box.removeClass("caged-fade-slow");
+      box2.removeClass("caged-fade-slow");
     }
-    setTimeout(() => box.removeClass("caged-fade-start"), 300);
+    setTimeout(() => {
+      box.removeClass("caged-fade-start");
+      box2.removeClass("caged-fade-start");
+    }, 300);
 
     const advance = () => {
       if (cur.n_cagedBlock === split.blocks.length - 1) {
@@ -141,10 +167,18 @@
       } else {
         box.removeClass("caged-fade-fast caged-fade-slow");
         box.addClass("caged-fade-start");
+        box2.removeClass("caged-fade-fast caged-fade-slow");
+        box2.addClass("caged-fade-start");
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
-        setTimeout(() => box.addClass("caged-fade-fast"), 100);
-        setTimeout(() => box.removeClass("caged-fade-start"), 200);
+        setTimeout(() => {
+          box.addClass("caged-fade-fast");
+          box2.addClass("caged-fade-fast");
+        }, 100);
+        setTimeout(() => {
+          box.removeClass("caged-fade-start");
+          box2.removeClass("caged-fade-start");
+        }, 200);
       }
     };
 
@@ -238,9 +272,12 @@
 
   /**
    * Split text into segments that fit in caged-box.
-   * @type { (tag: string, text: string, fill: string) => SplitInfo }
+   * @type { (tag: string, text: string, fill: string, second: boolean) => SplitInfo }
    */
-  function splitText(tag, text, fill) {
+  function splitText(tag, text, fill, second) {
+    if (text.trim() === "") {
+      return { height: 0, blocks: [] };
+    }
     let rendered = renderWithWordsMarked(text);
     let renderedFill = renderWithWordsMarked(fill);
 
@@ -320,12 +357,16 @@
         const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
         range.setStartBefore(first);
 
-        /** @type { Node } */
-        let end = span;
-        while (end.parentNode?.firstChild === end) {
-          end = end.parentNode;
+        if (second) {
+          range.setEndAfter(span);
+        } else {
+          /** @type { Node } */
+          let end = span;
+          while (end.parentNode?.firstChild === end) {
+            end = end.parentNode;
+          }
+          range.setEndBefore(end);
         }
-        range.setEndBefore(end);
 
         const block = range.cloneContents();
         blocks.push(block);
