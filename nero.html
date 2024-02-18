@@ -672,8 +672,8 @@ $(document).on(':passagestart', function (ev) {
     passages.addEventListener(
       "click",
       (ev) => {
-        const newState = State.active.variables;
-        delete newState.g_choiceTaken;
+        const vars = State.active.variables;
+        delete vars.g_choiceTaken;
 
         const target = /** @type {HTMLElement} */ (ev.target);
         if (target.dataset.passage == null) {
@@ -690,24 +690,80 @@ $(document).on(':passagestart', function (ev) {
         if (pos === links.length) {
           MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
         } else {
-          newState.g_choiceTaken = pos;
+          vars.g_choiceTaken = pos;
         }
       },
       true
     );
   });
 
+  const choiceCode =
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
   /** @type { () => string } */
-  MT.pathTaken = () => {
-    const newState = State.active.variables;
-    if (State.turns < 2) {
-      return "";
+  MT.choicePath = () => {
+    /* Find last non-menu step */
+    let last = State.length - 1;
+    for (; last > 0; last--) {
+      const step = State.index(last);
+      const passage = Story.get(step.title);
+      if (!passage.tags.includes("is-menu")) break;
     }
 
-    let path = "";
+    let choices = "";
+    /** @type { string | undefined } */
+    let version;
+    /** @type { number | undefined } */
+    let rand0;
+    /** @type { number | undefined } */
+    let rand1;
 
-    return path;
-  }
+    for (let i = 0; i < last; i++) {
+      const step = State.index(i);
+      if (i === 0 && step.title === "g1a Title Screen") continue;
+
+      if (choices === "" && step.title !== "g1a Bound") {
+        console.error(`start of history is weird: ${step.title}`);
+        return "";
+      }
+
+      const passage = Story.get(step.title);
+      if (passage.tags.includes("is-menu")) {
+        console.error(`path includes menu at turn ${i} ${step.title}`);
+        return "";
+      }
+
+      const next = State.index(i + 1);
+      const choice = next.variables.g_choiceTaken;
+      if (choice == null) {
+        console.error(`path broken at turn ${i} ${step.title}`);
+        return "";
+      }
+      if (choice >= choiceCode.length) {
+        console.error(`large choice ${choice} at turn ${i} ${step.title}`);
+        return "";
+      }
+
+      choices += choiceCode.charAt(choice);
+
+      const vars = step.variables;
+
+      if (vars.g_mutated) {
+        console.error(`mutated state at turn ${i} ${step.title}`);
+        return "";
+      }
+
+      if (rand0 == null && vars.g_rand0 != null) {
+        rand0 = vars.g_rand0;
+        rand1 = vars.g_rand1;
+      }
+      if (version == null && vars.g_versionAtStart != null) {
+        version = vars.g_versionAtStart;
+      }
+    }
+
+    return `${version},${rand0},${rand1},${choices}`;
+  };
 })();
 /* twine-user-script #3: "g0a-Nero-Caged.js" */
 (() => {
@@ -1149,7 +1205,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;

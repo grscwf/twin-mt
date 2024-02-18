@@ -19,6 +19,18 @@ declare module "twine-sugarcube" {
     /** Turn that g_mtaCode was set. */
     g_mtaCodeTurn?: number;
 
+    /** True if state was manipulated with a debug tool. */
+    g_mutated?: boolean;
+
+    /** State for MT.rand */
+    g_rand0?: number;
+
+    /** State for MT.rand */
+    g_rand1?: number;
+
+    /** Story version at start of history */
+    g_versionAtStart?: string;
+
     /** True if player chose barbed instead of smooth */
     n_barbs?: true;
 

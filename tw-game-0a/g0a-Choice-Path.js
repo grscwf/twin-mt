@@ -9,8 +9,8 @@
     passages.addEventListener(
       "click",
       (ev) => {
-        const newState = State.active.variables;
-        delete newState.g_choiceTaken;
+        const vars = State.active.variables;
+        delete vars.g_choiceTaken;
 
         const target = /** @type {HTMLElement} */ (ev.target);
         if (target.dataset.passage == null) {
@@ -27,22 +27,78 @@
         if (pos === links.length) {
           MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
         } else {
-          newState.g_choiceTaken = pos;
+          vars.g_choiceTaken = pos;
         }
       },
       true
     );
   });
 
+  const choiceCode =
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
   /** @type { () => string } */
-  MT.pathTaken = () => {
-    const newState = State.active.variables;
-    if (State.turns < 2) {
-      return "";
+  MT.choicePath = () => {
+    /* Find last non-menu step */
+    let last = State.length - 1;
+    for (; last > 0; last--) {
+      const step = State.index(last);
+      const passage = Story.get(step.title);
+      if (!passage.tags.includes("is-menu")) break;
     }
 
-    let path = "";
+    let choices = "";
+    /** @type { string | undefined } */
+    let version;
+    /** @type { number | undefined } */
+    let rand0;
+    /** @type { number | undefined } */
+    let rand1;
 
-    return path;
-  }
+    for (let i = 0; i < last; i++) {
+      const step = State.index(i);
+      if (i === 0 && step.title === "g1a Title Screen") continue;
+
+      if (choices === "" && step.title !== "g1a Bound") {
+        console.error(`start of history is weird: ${step.title}`);
+        return "";
+      }
+
+      const passage = Story.get(step.title);
+      if (passage.tags.includes("is-menu")) {
+        console.error(`path includes menu at turn ${i} ${step.title}`);
+        return "";
+      }
+
+      const next = State.index(i + 1);
+      const choice = next.variables.g_choiceTaken;
+      if (choice == null) {
+        console.error(`path broken at turn ${i} ${step.title}`);
+        return "";
+      }
+      if (choice >= choiceCode.length) {
+        console.error(`large choice ${choice} at turn ${i} ${step.title}`);
+        return "";
+      }
+
+      choices += choiceCode.charAt(choice);
+
+      const vars = step.variables;
+
+      if (vars.g_mutated) {
+        console.error(`mutated state at turn ${i} ${step.title}`);
+        return "";
+      }
+
+      if (rand0 == null && vars.g_rand0 != null) {
+        rand0 = vars.g_rand0;
+        rand1 = vars.g_rand1;
+      }
+      if (version == null && vars.g_versionAtStart != null) {
+        version = vars.g_versionAtStart;
+      }
+    }
+
+    return `${version},${rand0},${rand1},${choices}`;
+  };
 })();
