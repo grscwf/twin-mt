@@ -660,7 +660,56 @@ $(document).on(':passagestart', function (ev) {
     });
   });
 });
-/* twine-user-script #2: "g0a-Nero-Caged.js" */
+/* twine-user-script #2: "g0a-Choice-Path.js" */
+(() => {
+  /** During navigation, set g_choiceTaken */
+  $(document).on(":storyready", () => {
+    const passages = $("#passages")[0];
+    if (passages == null) {
+      throw new Error("failed to find #passages?");
+    }
+
+    passages.addEventListener(
+      "click",
+      (ev) => {
+        const newState = State.active.variables;
+        delete newState.g_choiceTaken;
+
+        const target = /** @type {HTMLElement} */ (ev.target);
+        if (target.dataset.passage == null) {
+          return;
+        }
+
+        const links = $("#passages a[data-passage]");
+        let pos = 0;
+        for (; pos < links.length; pos++) {
+          if (links[pos] === target) {
+            break;
+          }
+        }
+        if (pos === links.length) {
+          MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
+        } else {
+          newState.g_choiceTaken = pos;
+        }
+      },
+      true
+    );
+  });
+
+  /** @type { () => string } */
+  MT.pathTaken = () => {
+    const newState = State.active.variables;
+    if (State.turns < 2) {
+      return "";
+    }
+
+    let path = "";
+
+    return path;
+  }
+})();
+/* twine-user-script #3: "g0a-Nero-Caged.js" */
 (() => {
   const BORDER = 0;
 
@@ -1076,7 +1125,7 @@ $(document).on(':passagestart', function (ev) {
     splitText,
   };
 })();
-/* twine-user-script #3: "g0boot-Hello.js" */
+/* twine-user-script #4: "g0boot-Hello.js" */
 /**
  * Hello world
  * @type { () => string }
@@ -1084,7 +1133,7 @@ $(document).on(':passagestart', function (ev) {
 function helloWorld() {
   return "world";
 }
-/* twine-user-script #4: "g0init-Debugging.js" */
+/* twine-user-script #5: "g0init-Debugging.js" */
 (() => {
   if (!setup.debug) return;
 
@@ -1100,7 +1149,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -17056,7 +17105,7 @@ MT.walks = [
       { t: &quot;n1cr Inhibition 3&quot; },
       { t: &quot;n1cr Ivex Bait&quot; },
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
-      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = 1&quot; },
+      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$n_trapChoice = 1&quot; },
       { t: &quot;n1cr Reject Fantasy 2&quot; },
       { t: &quot;n1cx Start Candle&quot; },
       { t: &quot;n1d Candle Lit 1&quot; },
@@ -17219,7 +17268,7 @@ MT.walks = [
       { t: &quot;n1cr Inhibition 3&quot; },
       { t: &quot;n1cr Ivex Bait&quot; },
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
-      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = 1&quot; },
+      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$n_trapChoice = 1&quot; },
       { t: &quot;n1cr Reject Fantasy 2&quot; },
       { t: &quot;n1cx Start Candle&quot; },
       { t: &quot;n1d Candle Lit 1&quot; },
@@ -18436,7 +18485,7 @@ MT.walks = [
       { t: &quot;n1s Guess Password&quot; },
       { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot; },
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
-      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = 1&quot; },
+      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$n_trapChoice = 1&quot; },
       { t: &quot;n1cr Reject Fantasy 2&quot; },
       { t: &quot;n1cx Start Candle&quot; },
       { t: &quot;n1d Candle Lit 1&quot; },
@@ -18578,7 +18627,7 @@ MT.walks = [
       { t: &quot;n1s Guess Password&quot; },
       { t: &quot;n1s Say Password&quot;, code: &quot;$n_passToTry = &#39;Password&#39;&quot; },
       { t: &quot;n1cr Ivex Trap (4,3)&quot; },
-      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$g_choice = 1&quot; },
+      { t: &quot;n1cr Reject Fantasy 1&quot;, code: &quot;$n_trapChoice = 1&quot; },
       { t: &quot;n1cr Reject Fantasy 2&quot; },
       { t: &quot;n1cx Start Candle&quot; },
       { t: &quot;n1d Candle Lit 1&quot; },
@@ -24593,28 +24642,28 @@ of Ivex if the panther fails to deduce this explanation himself.
 
 &lt;ul class=actions&gt;
   &lt;&lt;mt-seen $sn_trapChoices &amp; 1&gt;&gt;
-    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$g_choice = 1&quot;&gt;&gt;
+    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$n_trapChoice = 1&quot;&gt;&gt;
       &quot;That bounty hunter wasn&#39;t one of &lt;em&gt;ours&lt;/em&gt;.
       Our guild members never get more than a wanted poster with
       your picture on it...&quot;
     &lt;&lt;/mtl&gt;&gt;
   &lt;&lt;/mt-seen&gt;&gt;
   &lt;&lt;mt-seen $sn_trapChoices &amp; 2&gt;&gt;
-    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$g_choice = 2&quot;&gt;&gt;
+    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$n_trapChoice = 2&quot;&gt;&gt;
       &quot;I told you, we had a disagreement. I was sent to give
       him new orders, but he didn&#39;t believe me and became
       belligerent...&quot;
     &lt;&lt;/mtl&gt;&gt;
   &lt;&lt;/mt-seen&gt;&gt;
   &lt;&lt;mt-seen $sn_trapChoices &amp; 4&gt;&gt;
-    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$g_choice = 4&quot;&gt;&gt;
+    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$n_trapChoice = 4&quot;&gt;&gt;
       &quot;I&#39;m a messenger, not a bounty hunter. Why would I have a dossier
       to deliver a message? Running into that bounty hunter was a
       coincidence...&quot;
     &lt;&lt;/mtl&gt;&gt;
   &lt;&lt;/mt-seen&gt;&gt;
   &lt;&lt;mt-seen $sn_trapChoices &amp; 8&gt;&gt;
-    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$g_choice = 8&quot;&gt;&gt;
+    &lt;&lt;mtl [[n1cr Reject Fantasy 1]] &quot;$n_trapChoice = 8&quot;&gt;&gt;
       &quot;I didn&#39;t receive the instruction to recruit you until &lt;em&gt;after&lt;/em&gt;
       I found your dossier and described it to my superiors...&quot;
     &lt;&lt;/mtl&gt;&gt;
@@ -24681,19 +24730,19 @@ raise the subject again.
 &lt;&lt;script&gt;&gt;
   const V = State.variables;
   const T = State.temporary;
-  if (T.isTranscript &amp;&amp; !V.g_choice) {
-    V.g_choice = 1;
+  if (T.isTranscript &amp;&amp; !V.n_trapChoice) {
+    V.n_trapChoice = 1;
   }
-  switch (V.g_choice) {
+  switch (V.n_trapChoice) {
     case 1: T.pass = &quot;That Bounty Hunter&quot;; break;
     case 2: T.pass = &quot;I Told You&quot;; break;
     case 4: T.pass = &quot;I&#39;m A Messenger&quot;; break;
     case 8: T.pass = &quot;I Didn&#39;t Receive&quot;; break;
     default:
-      throw new Error(`Unexpected g_choice ${V.g_choice}`);
+      throw new Error(`Unexpected n_trapChoice ${V.n_trapChoice}`);
   }
   let tc = V.sn_trapChoices || 0;
-  tc = tc | V.g_choice;
+  tc = tc | V.n_trapChoice;
   MT.mdSet(&quot;sn_trapChoices&quot;, tc);
 &lt;&lt;/script&gt;&gt;
 
