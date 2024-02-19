@@ -1,19 +1,25 @@
 (() => {
-  /** During navigation, set g_choiceTaken */
   $(document).on(":storyready", () => {
     const passages = $("#passages")[0];
     if (passages == null) {
       throw new Error("failed to find #passages?");
     }
 
+    /** During navigation, set g_choiceTaken */
     passages.addEventListener(
       "click",
       (ev) => {
         const vars = State.active.variables;
         delete vars.g_choiceTaken;
 
-        const target = /** @type {HTMLElement} */ (ev.target);
-        if (target.dataset.passage == null) {
+        /* find the containing A element */
+        let target = /** @type {HTMLElement | null} */ (ev.target);
+        while (target != null && target.tagName !== 'A') {
+          target = target.parentElement;
+        }
+
+        /* ignore if not a link to a passage */
+        if (target == null || target.dataset.passage == null) {
           return;
         }
 
@@ -38,7 +44,7 @@
     "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   /** @type { () => string } */
-  MT.choicePath = () => {
+  function getPath() {
     /* Find last non-menu step */
     let last = State.length - 1;
     for (; last > 0; last--) {
@@ -100,5 +106,18 @@
     }
 
     return `${version},${rand0},${rand1},${choices}`;
+  }
+
+  /** @type { () => string } */
+  function getUrl() {
+    const url = new URL(location.href);
+    const path = getPath();
+    url.hash = `#p=${path}`;
+    return url.toString();
+  }
+
+  MT.choices = {
+    getPath,
+    getUrl,
   };
 })();

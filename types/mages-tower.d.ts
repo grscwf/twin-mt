@@ -4,6 +4,11 @@ declare global {
   const MT: Record<string, unknown> & {
     /** emit a diagnostic message */
     diag: (str) => void;
+
+    choices: {
+      getPath: () => string;
+      getUrl: () => string;
+    }
   };
 }
 
