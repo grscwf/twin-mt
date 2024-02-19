@@ -35,7 +35,7 @@
   });
 
   const choiceCode =
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   /** @type { () => string } */
   MT.choicePath = () => {

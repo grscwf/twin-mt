@@ -9,7 +9,6 @@ declare global {
 
 declare module "twine-sugarcube" {
   interface SugarCubeStoryVariables {
-
     /** Which choice was taken to go from previous turn to this turn. */
     g_choiceTaken?: number;
 
@@ -47,5 +46,9 @@ declare module "twine-sugarcube" {
 
     /** True when ?tester mode. */
     tester?: boolean;
+  }
+
+  interface StateAPI {
+    reset: () => void;
   }
 }
