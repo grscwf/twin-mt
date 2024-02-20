@@ -1,14 +1,19 @@
 import type { SugarCubeStoryVariables } from "twine-sugarcube";
 
 declare global {
-  const MT: Record<string, unknown> & {
-    /** emit a diagnostic message */
-    diag: (str) => void;
-
+  const MT: {
     choices: {
       getPath: () => string;
       getUrl: () => string;
     }
+
+    /** emit a diagnostic message */
+    diag: (message: string) => void;
+    /** emit a note */
+    note: (message: string, header?: string) => void;
+    /** emit a warning message */
+    warn: (message: string) => void;
+
   };
 }
 

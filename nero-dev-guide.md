@@ -188,7 +188,6 @@
     - roam can be interrupted by pressing the button again.
   - <kbd>ctrl-comma</kbd> is a shortcut for "back".
   - <kbd>ctrl-period</kbd> is a shortcut for "forw/rand".
-  - <kbd>ctrl-slash</kbd> is a shortcut for "roam".
   - Randomizer bias:
     - The randomizer can be controlled slightly by marking some links.
     - Add `//prefer` or `//avoid` to the code argument of an

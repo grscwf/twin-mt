@@ -662,51 +662,55 @@ $(document).on(':passagestart', function (ev) {
 });
 /* twine-user-script #2: "g0a-Choices-Path.js" */
 (() => {
-  $(document).on(":storyready", () => {
-    const passages = $("#passages")[0];
-    if (passages == null) {
-      throw new Error("failed to find #passages?");
-    }
-
-    /** During navigation, set g_choiceTaken */
-    passages.addEventListener(
-      "click",
-      (ev) => {
-        const vars = State.active.variables;
-        delete vars.g_choiceTaken;
-
-        /* find the containing A element */
-        let target = /** @type {HTMLElement | null} */ (ev.target);
-        while (target != null && target.tagName !== 'A') {
-          target = target.parentElement;
-        }
-
-        /* ignore if not a link to a passage */
-        if (target == null || target.dataset.passage == null) {
-          return;
-        }
-
-        const links = $("#passages a[data-passage]");
-        let pos = 0;
-        for (; pos < links.length; pos++) {
-          if (links[pos] === target) {
-            break;
-          }
-        }
-        if (pos === links.length) {
-          MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
-        } else {
-          vars.g_choiceTaken = pos;
-        }
-      },
-      true
-    );
-  });
-
   const choiceCode =
     "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  /** @type { () => string } */
+  /**
+   * On click, remember choice that was clicked.
+   * @type { (ev: MouseEvent) => void }
+   */
+  function onClick(ev) {
+    const vars = State.active.variables;
+    delete vars.g_choiceTaken;
+
+    /* find the containing A element */
+    let target = /** @type {HTMLElement | null} */ (ev.target);
+    while (target != null && target.tagName !== "A") {
+      target = target.parentElement;
+    }
+
+    /* ignore if not a link to a passage */
+    if (target == null || target.dataset.passage == null) {
+      return;
+    }
+
+    const links = $("#passages a[data-passage]");
+    let pos = 0;
+    for (; pos < links.length; pos++) {
+      if (links[pos] === target) {
+        break;
+      }
+    }
+    if (pos === links.length) {
+      MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
+    } else {
+      vars.g_choiceTaken = pos;
+    }
+  }
+
+  /** @type { (ev: KeyboardEvent) => void } */
+  function onKey(ev) {
+    if (ev.ctrlKey && ev.key === "'") {
+      const url = getUrl();
+      navigator.clipboard.writeText(url);
+      MT.note(url, "URL copied to clipboard");
+    }
+  }
+
+  /**
+   * Returns the choices path for the current session
+   * @type { () => string }
+   */
   function getPath() {
     /* Find last non-menu step */
     let last = State.length - 1;
@@ -768,16 +772,31 @@ $(document).on(':passagestart', function (ev) {
       }
     }
 
-    return `${version},${rand0},${rand1},${choices}`;
+    let title = State.index(last).title;
+    title = title.replace(/\W+/g, "-");
+
+    return `${version},${rand0},${rand1},${choices},${title}`;
   }
 
-  /** @type { () => string } */
+  /**
+   * Returns a URL that will replay the current session
+   * @type { () => string }
+   */
   function getUrl() {
     const url = new URL(location.href);
     const path = getPath();
     url.hash = `#p=${path}`;
     return url.toString();
   }
+
+  $(document).on(":storyready", () => {
+    const passages = $("#passages")[0];
+    if (passages == null) {
+      throw new Error("failed to find #passages?");
+    }
+    passages.addEventListener("click", onClick, true);
+    document.addEventListener("keydown", onKey);
+  });
 
   MT.choices = {
     getPath,
@@ -1224,7 +1243,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -9480,6 +9499,8 @@ function note(str, header) {
   return note;
 };
 
+MT.note = note;
+
 /** Add str as a warning. */
 MT.warn = (str) =&gt; {
   MT.hasWarnings = true;
@@ -13162,7 +13183,6 @@ function initRandomWalk() {
       .appendTo(outer);
     if (setup.debug) {
       $(&quot;&lt;a id=rw-roam&gt;&quot;)
-        .attr(&quot;title&quot;, &quot;&lt;ctrl-backslash&gt; roam&quot;)
         .toggleClass(&quot;rw-roaming&quot;, MT.roaming)
         .text(&quot;roam&quot;)
         .click(roamToggle)
@@ -13184,7 +13204,6 @@ function initRandomWalk() {
     if (/^(textarea|input|select)$/i.test(tag)) return;
     if (ev.key === &quot;,&quot;) return goBack();
     if (ev.key === &quot;.&quot;) return goForward();
-    if (ev.key === &quot;/&quot;) return roamToggle();
   });
 
   $(document).on(&quot;click&quot;, ev =&gt; {

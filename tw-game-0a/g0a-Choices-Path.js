@@ -1,49 +1,53 @@
 (() => {
-  $(document).on(":storyready", () => {
-    const passages = $("#passages")[0];
-    if (passages == null) {
-      throw new Error("failed to find #passages?");
-    }
-
-    /** During navigation, set g_choiceTaken */
-    passages.addEventListener(
-      "click",
-      (ev) => {
-        const vars = State.active.variables;
-        delete vars.g_choiceTaken;
-
-        /* find the containing A element */
-        let target = /** @type {HTMLElement | null} */ (ev.target);
-        while (target != null && target.tagName !== 'A') {
-          target = target.parentElement;
-        }
-
-        /* ignore if not a link to a passage */
-        if (target == null || target.dataset.passage == null) {
-          return;
-        }
-
-        const links = $("#passages a[data-passage]");
-        let pos = 0;
-        for (; pos < links.length; pos++) {
-          if (links[pos] === target) {
-            break;
-          }
-        }
-        if (pos === links.length) {
-          MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
-        } else {
-          vars.g_choiceTaken = pos;
-        }
-      },
-      true
-    );
-  });
-
   const choiceCode =
     "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  /** @type { () => string } */
+  /**
+   * On click, remember choice that was clicked.
+   * @type { (ev: MouseEvent) => void }
+   */
+  function onClick(ev) {
+    const vars = State.active.variables;
+    delete vars.g_choiceTaken;
+
+    /* find the containing A element */
+    let target = /** @type {HTMLElement | null} */ (ev.target);
+    while (target != null && target.tagName !== "A") {
+      target = target.parentElement;
+    }
+
+    /* ignore if not a link to a passage */
+    if (target == null || target.dataset.passage == null) {
+      return;
+    }
+
+    const links = $("#passages a[data-passage]");
+    let pos = 0;
+    for (; pos < links.length; pos++) {
+      if (links[pos] === target) {
+        break;
+      }
+    }
+    if (pos === links.length) {
+      MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
+    } else {
+      vars.g_choiceTaken = pos;
+    }
+  }
+
+  /** @type { (ev: KeyboardEvent) => void } */
+  function onKey(ev) {
+    if (ev.ctrlKey && ev.key === "'") {
+      const url = getUrl();
+      navigator.clipboard.writeText(url);
+      MT.note(url, "URL copied to clipboard");
+    }
+  }
+
+  /**
+   * Returns the choices path for the current session
+   * @type { () => string }
+   */
   function getPath() {
     /* Find last non-menu step */
     let last = State.length - 1;
@@ -105,16 +109,31 @@
       }
     }
 
-    return `${version},${rand0},${rand1},${choices}`;
+    let title = State.index(last).title;
+    title = title.replace(/\W+/g, "-");
+
+    return `${version},${rand0},${rand1},${choices},${title}`;
   }
 
-  /** @type { () => string } */
+  /**
+   * Returns a URL that will replay the current session
+   * @type { () => string }
+   */
   function getUrl() {
     const url = new URL(location.href);
     const path = getPath();
     url.hash = `#p=${path}`;
     return url.toString();
   }
+
+  $(document).on(":storyready", () => {
+    const passages = $("#passages")[0];
+    if (passages == null) {
+      throw new Error("failed to find #passages?");
+    }
+    passages.addEventListener("click", onClick, true);
+    document.addEventListener("keydown", onKey);
+  });
 
   MT.choices = {
     getPath,
