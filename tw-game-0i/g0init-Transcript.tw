@@ -129,7 +129,9 @@ function cleanHtml(jq, nextTitle, nextCode) {
     if (el.nodeName === "#text" && el.nodeValue.trim() === "") return true;
     if (el.nodeName === "A") {
       if (el.className === "caged-continue") return false;
-      if (/^\s*(Continue|Return)\s*$/.test(el.textContent)) return true;
+      const text = el.textContent.trim();
+      if (text === "Continue") return true;
+      if (text === "Return") return true;
     }
     return false;
   };
@@ -279,6 +281,19 @@ Macro.add("tran-cut-span", {
     const span = $("<span class=tran-cut-span>");
     span.wiki(this.payload[0].contents);
     $(this.output).append(span);
+  }
+});
+
+/**
+ * <<tran-skip>>...<</tran-skip>>
+ * Emit body only when *not* rendering transcript.
+ */
+Macro.add("tran-skip", {
+  tags: [],
+  handler: function() {
+    const mkp = State.temporary.isTranscript ? "" : this.payload[0].contents;
+    // this will add debug markers around the output
+    $(this.output).wiki(mkp);
   }
 });
 
