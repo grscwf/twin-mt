@@ -2,6 +2,8 @@ import type { SugarCubeStoryVariables } from "twine-sugarcube";
 
 declare global {
   const MT: {
+    caged: Record<string, unknown>;
+
     choices: {
       getPath: () => string;
       getUrl: () => string;

@@ -162,6 +162,7 @@
     }, 300);
 
     const advance = () => {
+      if (cur.n_cagedBlock == null) throw new Error("cagedBlock null?");
       if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
       } else {
@@ -308,6 +309,7 @@
       for (;;) {
         if (i >= spans.length) {
           filling = true;
+          inner.append(" ");
           inner.append($(renderedFill).clone().contents());
           spans = inner.find(".caged-word");
           if (i >= spans.length) {
