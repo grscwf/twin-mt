@@ -4,8 +4,8 @@ declare global {
   const MT: {
     caged: Record<string, unknown>;
 
-    choices: {
-      getPath: () => string;
+    chain: {
+      getCode: () => string;
       getUrl: () => string;
     }
 
@@ -58,6 +58,8 @@ declare module "twine-sugarcube" {
 
     /** True when ?tester mode. */
     tester?: boolean;
+
+    version: string;
   }
 
   interface StateAPI {

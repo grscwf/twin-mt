@@ -1,12 +1,23 @@
+/*
+ * A "chain" is a compact encoding of the choices the player made,
+ * along with some initial state, which should make it possible
+ * to reconstruct the player's state by replaying the choices.
+ * 
+ * Chains are intended to be sharable as URLs.
+ * 
+ * Replay will fail if any of the steps are nondeterministic,
+ * or if replay is done in the wrong version.
+ */
+
 (() => {
-  const choiceCode =
+  const chainCode =
     "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
   /**
    * On click, remember choice that was clicked.
    * @type { (ev: MouseEvent) => void }
    */
-  function onClick(ev) {
+  function rememberChoice(ev) {
     const vars = State.active.variables;
     delete vars.g_choiceTaken;
 
@@ -36,7 +47,7 @@
   }
 
   /** @type { (ev: KeyboardEvent) => void } */
-  function onKey(ev) {
+  function kbCopyChain(ev) {
     if (ev.ctrlKey && ev.key === "'") {
       const url = getUrl();
       navigator.clipboard.writeText(url);
@@ -45,10 +56,10 @@
   }
 
   /**
-   * Returns the choices path for the current session
+   * Returns the chain code for the current session
    * @type { () => string }
    */
-  function getPath() {
+  function getCode() {
     /* Find last non-menu step */
     let last = State.length - 1;
     for (; last > 0; last--) {
@@ -86,12 +97,12 @@
         console.error(`path broken at turn ${i} ${step.title}`);
         return "";
       }
-      if (choice >= choiceCode.length) {
+      if (choice >= chainCode.length) {
         console.error(`large choice ${choice} at turn ${i} ${step.title}`);
         return "";
       }
 
-      choices += choiceCode.charAt(choice);
+      choices += chainCode.charAt(choice);
 
       const vars = step.variables;
 
@@ -121,22 +132,58 @@
    */
   function getUrl() {
     const url = new URL(location.href);
-    const path = getPath();
-    url.hash = `#p=${path}`;
+    const chain = getCode();
+    url.hash = `#c=${chain}`;
     return url.toString();
   }
 
-  $(document).on(":storyready", () => {
+  /** @type { () => void } */
+  function replayUrl() {
+    const hash = location.hash;
+    const m = /[#;]c=([^;]+)/.exec(hash);
+    if (m == null) return;
+
+    const chain = /** @type { string } */ (m[1]);
+    history.pushState(null, "", location.pathname + location.search);
+
+    const parts = chain.split(/,/);
+    if (parts.length !== 5) {
+      MT.warn("Ignoring #c=, because it has the wrong number of parts.");
+      return;
+    }
+    const version = parts[0] || "";
+    const rand0 = parseInt(parts[1] || "0", 10);
+    const rand1 = parseInt(parts[2] || "0", 10);
+    const choices = parts[3] || "";
+    const title = parts[4] || "";
+
+    if (version !== setup.version) {
+      MT.warn("Ignoring #c=, because it has the wrong version.");
+      return;
+    }
+
+    // XXX goto start
+    // XXX set rng seed
+    // XXX traverse chain
+    // XXX warn if final destination wrong match
+    // XXX warn if version is a wip
+  }
+
+  function init() {
     const passages = $("#passages")[0];
     if (passages == null) {
       throw new Error("failed to find #passages?");
     }
-    passages.addEventListener("click", onClick, true);
-    document.addEventListener("keydown", onKey);
-  });
+    passages.addEventListener("click", rememberChoice, true);
+    document.addEventListener("keydown", kbCopyChain);
+    addEventListener("hashchange", replayUrl);
+    replayUrl();
+  }
 
-  MT.choices = {
-    getPath,
+  $(document).on(":storyready", init);
+
+  MT.chain = {
+    getCode,
     getUrl,
   };
 })();
