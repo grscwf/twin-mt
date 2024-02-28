@@ -665,9 +665,9 @@ $(document).on(':passagestart', function (ev) {
  * A "chain" is a compact encoding of the choices the player made,
  * along with some initial state, which should make it possible
  * to reconstruct the player's state by replaying the choices.
- * 
+ *
  * Chains are intended to be sharable as URLs.
- * 
+ *
  * Replay will fail if any of the steps are nondeterministic,
  * or if replay is done in the wrong version.
  */
@@ -675,6 +675,11 @@ $(document).on(':passagestart', function (ev) {
 (() => {
   const chainCode =
     "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  /** @type { (title: string) => string } */
+  function encodeTitle(title) {
+    return title.replace(/\W+/g, "-");
+  }
 
   /**
    * On click, remember choice that was clicked.
@@ -783,8 +788,7 @@ $(document).on(':passagestart', function (ev) {
       }
     }
 
-    let title = State.index(last).title;
-    title = title.replace(/\W+/g, "-");
+    const title = encodeTitle(State.index(last).title);
 
     return `${version},${rand0},${rand1},${choices},${title}`;
   }
@@ -796,14 +800,14 @@ $(document).on(':passagestart', function (ev) {
   function getUrl() {
     const url = new URL(location.href);
     const chain = getCode();
-    url.hash = `#c=${chain}`;
+    url.hash = `#chain=${chain}`;
     return url.toString();
   }
 
   /** @type { () => void } */
   function replayUrl() {
     const hash = location.hash;
-    const m = /[#;]c=([^;]+)/.exec(hash);
+    const m = /[#;]chain=([^;]+)/.exec(hash);
     if (m == null) return;
 
     const chain = /** @type { string } */ (m[1]);
@@ -811,7 +815,7 @@ $(document).on(':passagestart', function (ev) {
 
     const parts = chain.split(/,/);
     if (parts.length !== 5) {
-      MT.warn("Ignoring #c=, because it has the wrong number of parts.");
+      MT.warn("Ignoring #chain=, because it has the wrong number of parts.");
       return;
     }
     const version = parts[0] || "";
@@ -821,15 +825,34 @@ $(document).on(':passagestart', function (ev) {
     const title = parts[4] || "";
 
     if (version !== setup.version) {
-      MT.warn("Ignoring #c=, because it has the wrong version.");
+      MT.warn("Ignoring #chain=, because it has the wrong version.");
       return;
     }
 
-    // XXX goto start
-    // XXX set rng seed
-    // XXX traverse chain
-    // XXX warn if final destination wrong match
-    // XXX warn if version is a wip
+    const path = [];
+    for (const ch of choices) {
+      const i = chainCode.indexOf(ch);
+      path.push({ i });
+    }
+
+    console.log(`replaying ${chain}`);
+    MT.forgetWalkHistory();
+    State.reset();
+    State.variables.g_versionAtStart = setup.version;
+    State.variables.g_rand0 = rand0;
+    State.variables.g_rand1 = rand1;
+    Engine.play("g1a Bound");
+
+    const done = () => {
+      const here = encodeTitle(State.passage);
+      if (here !== title) {
+        MT.warn(
+          `#chain= seems broken. Expected to end at [${title}],` +
+            ` but ended at [${here}]`
+        );
+      }
+    };
+    MT.roamStart(path, done, true);
   }
 
   function init() {
@@ -1292,7 +1315,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="200,100" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13175,7 +13198,7 @@ function initRandomWalk() {
 
     /* skip comments in path */
     if (roamPath != null) {
-      while (roamPath.length &amp;&amp; roamPath[0].t == null) {
+      while (roamPath.length &amp;&amp; roamPath[0].t == null &amp;&amp; roamPath[0].i == null) {
         roamPath.shift();
       }
     }
@@ -13191,14 +13214,18 @@ function initRandomWalk() {
     if (roamPath != null) {
       const next = roamPath[0];
       const links = $(&quot;#story a[data-passage]&quot;);
-      const isStep = (el, step) =&gt; {
+      const isStep = (i, el, step) =&gt; {
+        if (step.i != null &amp;&amp; i === step.i) {
+          return true;
+        }
         const title = el.getAttribute(&quot;data-passage&quot;);
         const code = el.getAttribute(&quot;data-mta-code&quot;) || null;
         return title === step.t &amp;&amp;
           (code == null || step.code == null || code === step.code);
       };
-      for (const link of links) {
-        if (isStep(link, next)) {
+      for (let i = 0; i &lt; links.length; i++) {
+        const link = links[i];
+        if (isStep(i, link, next)) {
           roamPath.shift();
           $(link).addClass(&quot;random-walk-chosen&quot;);
           setTimeout(roamNext, 100);

@@ -2,9 +2,9 @@
  * A "chain" is a compact encoding of the choices the player made,
  * along with some initial state, which should make it possible
  * to reconstruct the player's state by replaying the choices.
- * 
+ *
  * Chains are intended to be sharable as URLs.
- * 
+ *
  * Replay will fail if any of the steps are nondeterministic,
  * or if replay is done in the wrong version.
  */
@@ -12,6 +12,11 @@
 (() => {
   const chainCode =
     "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  /** @type { (title: string) => string } */
+  function encodeTitle(title) {
+    return title.replace(/\W+/g, "-");
+  }
 
   /**
    * On click, remember choice that was clicked.
@@ -120,8 +125,7 @@
       }
     }
 
-    let title = State.index(last).title;
-    title = title.replace(/\W+/g, "-");
+    const title = encodeTitle(State.index(last).title);
 
     return `${version},${rand0},${rand1},${choices},${title}`;
   }
@@ -133,14 +137,14 @@
   function getUrl() {
     const url = new URL(location.href);
     const chain = getCode();
-    url.hash = `#c=${chain}`;
+    url.hash = `#chain=${chain}`;
     return url.toString();
   }
 
   /** @type { () => void } */
   function replayUrl() {
     const hash = location.hash;
-    const m = /[#;]c=([^;]+)/.exec(hash);
+    const m = /[#;]chain=([^;]+)/.exec(hash);
     if (m == null) return;
 
     const chain = /** @type { string } */ (m[1]);
@@ -148,7 +152,7 @@
 
     const parts = chain.split(/,/);
     if (parts.length !== 5) {
-      MT.warn("Ignoring #c=, because it has the wrong number of parts.");
+      MT.warn("Ignoring #chain=, because it has the wrong number of parts.");
       return;
     }
     const version = parts[0] || "";
@@ -158,15 +162,34 @@
     const title = parts[4] || "";
 
     if (version !== setup.version) {
-      MT.warn("Ignoring #c=, because it has the wrong version.");
+      MT.warn("Ignoring #chain=, because it has the wrong version.");
       return;
     }
 
-    // XXX goto start
-    // XXX set rng seed
-    // XXX traverse chain
-    // XXX warn if final destination wrong match
-    // XXX warn if version is a wip
+    const path = [];
+    for (const ch of choices) {
+      const i = chainCode.indexOf(ch);
+      path.push({ i });
+    }
+
+    console.log(`replaying ${chain}`);
+    MT.forgetWalkHistory();
+    State.reset();
+    State.variables.g_versionAtStart = setup.version;
+    State.variables.g_rand0 = rand0;
+    State.variables.g_rand1 = rand1;
+    Engine.play("g1a Bound");
+
+    const done = () => {
+      const here = encodeTitle(State.passage);
+      if (here !== title) {
+        MT.warn(
+          `#chain= seems broken. Expected to end at [${title}],` +
+            ` but ended at [${here}]`
+        );
+      }
+    };
+    MT.roamStart(path, done, true);
   }
 
   function init() {

@@ -7,15 +7,24 @@ declare global {
     chain: {
       getCode: () => string;
       getUrl: () => string;
-    }
+    };
 
     /** emit a diagnostic message */
     diag: (message: string) => void;
+
+    forgetWalkHistory: () => void;
+
     /** emit a note */
     note: (message: string, header?: string) => void;
+
+    roamStart: (
+      path: null | unknown[],
+      doneFn?: null | (() => void),
+      force?: null | boolean
+    ) => void;
+
     /** emit a warning message */
     warn: (message: string) => void;
-
   };
 }
 

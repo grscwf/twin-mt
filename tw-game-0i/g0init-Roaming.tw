@@ -365,7 +365,7 @@ function initRandomWalk() {
 
     /* skip comments in path */
     if (roamPath != null) {
-      while (roamPath.length && roamPath[0].t == null) {
+      while (roamPath.length && roamPath[0].t == null && roamPath[0].i == null) {
         roamPath.shift();
       }
     }
@@ -381,14 +381,18 @@ function initRandomWalk() {
     if (roamPath != null) {
       const next = roamPath[0];
       const links = $("#story a[data-passage]");
-      const isStep = (el, step) => {
+      const isStep = (i, el, step) => {
+        if (step.i != null && i === step.i) {
+          return true;
+        }
         const title = el.getAttribute("data-passage");
         const code = el.getAttribute("data-mta-code") || null;
         return title === step.t &&
           (code == null || step.code == null || code === step.code);
       };
-      for (const link of links) {
-        if (isStep(link, next)) {
+      for (let i = 0; i < links.length; i++) {
+        const link = links[i];
+        if (isStep(i, link, next)) {
           roamPath.shift();
           $(link).addClass("random-walk-chosen");
           setTimeout(roamNext, 100);
