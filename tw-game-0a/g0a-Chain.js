@@ -148,7 +148,7 @@
     if (m == null) return;
 
     const chain = /** @type { string } */ (m[1]);
-    history.pushState(null, "", location.pathname + location.search);
+    history.replaceState(null, "", location.pathname + location.search);
 
     const parts = chain.split(/,/);
     if (parts.length !== 5) {
