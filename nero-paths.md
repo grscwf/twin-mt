@@ -213,34 +213,32 @@ the 4th or 5th playthrough.
 ### 1st Floor Challenge Ending: Broken
 The challenge ending on the first floor is meant to be hard to reach,
 but not impossible.
-It requires understanding a few subtle things about Nero's paths
+It's hidden in the Archives until the player leaves the 1st floor with
+the mirror.
+Getting to the ending requires understanding a few subtle things
+about Nero's paths
 in order to do everything necessary within a limited amount of time.
 There are clues to it in various places in Nero's story,
-and the Archives will give subtle hints.
+and the Archives will give hints.
 
 <details>
   <summary>All the hints in the Archives</summary>
 
-- If the player has not yet unlocked a Tamed ending:
-  - "Another hint will appear after Nero has a disturbing dream..."
 - If the player has not yet unlocked the Caged Mild ending:
-  - "Another hint will appear after Nero gets stuck in a red glow..."
-- If the player has not yet escaped with the mirror:
-  - "Another hint will appear after Nero stops saying please..."
-- If the player has not yet noticed what Ivex forgot:
-  - "Does Nero know a spell that can escape Ivex's wand?"
-- If the player has not yet noticed the glitch:
-  - "Barbs or smooth... Is there a third choice?"
-- Final hint:
-  - "You know all the pieces of the puzzle.
-    Can Nero use his spell to escape Ivex's wand?"
+  - "Hints will appear after Nero gets stuck in a red glow."
+- 1. Nero has a spell that can escape Ivex's wand.
+- If the player has reached a point where Nero fails to escape the wand:
+  - 2. Does Ivex always neutralize Nero's spells?
+- If the player finds the path where Ivex forgets to neutralize Endgame,
+  but then finds the password while horny from the candle,
+  Ivex is extra paranoid and remembers to neutralize Endgame.
+  - 3. "Barbed or smooth... Is there a third choice?"
 
 </details>
 
 <details>
    <summary>Full description</summary>
 
-- You must have seen Mica already in other playthroughs.
 - Pick the neutral or abused start. (Do not cast Endgame).
 - Follow the dialog branches to becoming an apprentice.
 - When Ivex removes Nero's clothes, use the 3rd option.
