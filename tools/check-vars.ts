@@ -21,7 +21,6 @@ const varPatterns = [
   /\b(?:mdGetUncached|mdSet|mdDef\w+)\("(\w+)"/g,
   /\b(?:mdGetUncached|mdSet|mdDef\w+)\('(\w+)'/g,
   /\bState[.]metadata[.](?:delete|get|set)\("(\w+)"/g,
-  /[<]arc-barbs\s+(\w+)/g,
   /[<]arc-select\s+(\w+)/g,
   /[<]random-once\s+(\w+)/g,
   /[<]checkpoint-action\s+(\w+)/g,
