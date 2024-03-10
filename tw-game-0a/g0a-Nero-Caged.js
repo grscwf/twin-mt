@@ -15,6 +15,7 @@
    *   Within the text, ?iCock and ?nCock have special behavior.
    * <<nero-caged-fill>>
    *   Text that's repeated to fill the last block.
+   *   Can use randomness for variation.
    *   If omitted, fills with dots.
    * <<nero-caged-2 [wait]>>
    *   Text shown in bg box. "wait" means don't show until click.
@@ -280,7 +281,6 @@
       return { height: 0, blocks: [] };
     }
     let rendered = renderWithWordsMarked(text);
-    let renderedFill = renderWithWordsMarked(fill);
 
     const outer = $(`<div class="passage caged-hidden">`);
     $("#passages").addClass("caged-render").prepend(outer);
@@ -310,6 +310,7 @@
         if (i >= spans.length) {
           filling = true;
           inner.append(" ");
+          let renderedFill = renderWithWordsMarked(fill);
           inner.append($(renderedFill).clone().contents());
           spans = inner.find(".caged-word");
           if (i >= spans.length) {
@@ -395,6 +396,7 @@
         }
 
         range.deleteContents();
+        inner.find(".caged-optional").removeClass("caged-optional");
 
         prevLine = 0;
         prevLeft = 0;
