@@ -208,8 +208,14 @@
     });
 
     if (setup.debug) {
-      const skip = $("<div class=caged-skip>");
-      skip.html("&#x1f527; ctrl-click to skip the cock block");
+      const skip = $(
+        `<div class=caged-skip>
+          &#x1f527; <a>next block</a>
+        </div>`
+      );
+      skip.find("a").on("click", () => {
+        advance();
+      });
       skip.appendTo(out);
     }
   }
