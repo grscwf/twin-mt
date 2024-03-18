@@ -896,55 +896,41 @@ $(document).on(':passagestart', function (ev) {
    * <<nero-caged>>
    *   Text that's split into blocks.
    *   Within the text, ?iCock and ?nCock have special behavior.
-   * <<nero-caged-fill>>
-   *   Text that's repeated to fill the last block.
+   * <<nero-caged-fill [once]>>
+   *   Text that's used to fill the last block.
+   *   Will be repeated, unless "once".
    *   Can use randomness for variation.
    *   If omitted, fills with dots.
-   * <<nero-caged-2 [wait]>>
-   *   Text shown in bg box. "wait" means don't show until click.
-   * <<nero-caged-2-fill>>
-   *   Text repeated to fill bg box.
    * <</nero-caged>>
    */
   Macro.add("nero-caged", {
-    tags: ["nero-caged-fill", "nero-caged-2", "nero-caged-2-fill"],
+    tags: ["nero-caged-fill"],
     handler: function () {
       const [next] = this.args;
-
-      let cage = "";
+      let text = "";
       let fill = ". ";
-      let cage2 = "";
-      let fill2 = ". ";
-      let wait = false;
-
+      let once = false;
       for (const payload of this.payload) {
         switch (payload.name) {
           case "nero-caged":
-            cage = payload.contents.trim();
+            text = payload.contents.trim();
             break;
           case "nero-caged-fill":
             fill = payload.contents.trim();
-            break;
-          case "nero-caged-2":
-            cage2 = payload.contents.trim();
-            wait = payload.args[0] === "wait";
-            break;
-          case "nero-caged-2-fill":
-            fill2 = payload.contents.trim();
+            once = payload.args[1] === "once";
             break;
           default:
             throw new Error(`Unexpected nero-caged ${payload.name}`);
         }
       }
 
-      const split = splitText("caged-box", cage, fill, false);
-      const split2 = splitText("caged-box2", cage2, fill2, true);
+      const split = splitText(text, fill, once);
 
       if (State.temporary.isTranscript) {
-        renderTranscript(this.output, split, split2, wait);
+        renderTranscript(this.output, split);
       } else {
         const link = next.isLink ? next.link : next;
-        renderLive(this.output, split, link, split2, wait);
+        renderLive(this.output, split, link);
       }
     },
   });
@@ -962,8 +948,8 @@ $(document).on(':passagestart', function (ev) {
     return /** @type { HTMLElement } */ (jq[0]);
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, split2: SplitInfo, wait: boolean) => void } */
-  function renderTranscript(out, split, split2, wait) {
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo) => void } */
+  function renderTranscript(out, split) {
     const last = State.variables.n_cagedBlock ?? split.blocks.length - 1;
     for (let i = 0; i < last + 1; i++) {
       if (i !== 0) {
@@ -984,32 +970,16 @@ $(document).on(':passagestart', function (ev) {
       if (split.height) {
         cage.attr("style", `height: ${split.height}px`);
       }
-
-      if (i < split2.blocks.length) {
-        const cage2 = $(`<div class="caged-box2 caged-transcript">`);
-        cage2.appendTo(grid);
-        const block2 = /** @type { DocumentFragment } */ (split2.blocks[i]);
-        cage2.append($(block2).contents());
-        if (split2.height) {
-          cage2.attr("style", `height: ${split2.height}px`);
-        }
-      }
     }
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string, split2: SplitInfo, wait: boolean) => void } */
-  function renderLive(out, split, next, split2, wait) {
+  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
+  function renderLive(out, split, next) {
     const grid = $(`<div class="caged-grid">`).appendTo(out);
     const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
     box.appendTo(grid);
     if (split.height) {
       box.attr("style", `height: ${split.height}px`);
-    }
-
-    const box2 = $(`<div class="caged-box2 caged-fade-slow caged-fade-start">`);
-    box2.appendTo(grid);
-    if (split2.height) {
-      box2.attr("style", `height: ${split2.height}px`);
     }
 
     /** @type { (i: number) => void } */
@@ -1018,12 +988,6 @@ $(document).on(':passagestart', function (ev) {
       box.empty();
       box.append(split.blocks[i] || "");
       box.append("<a class=caged-continue>Continue</a>");
-
-      box2.empty();
-      if (i < split2.blocks.length) {
-        box2.append(split2.blocks[i] || "");
-        box2.toggleClass("caged-last", i === split2.blocks.length - 1);
-      }
     };
 
     /* Note: current history state, not active state */
@@ -1038,11 +1002,9 @@ $(document).on(':passagestart', function (ev) {
 
     if (cur.n_cagedBlock !== 0) {
       box.removeClass("caged-fade-slow");
-      box2.removeClass("caged-fade-slow");
     }
     setTimeout(() => {
       box.removeClass("caged-fade-start");
-      box2.removeClass("caged-fade-start");
     }, 300);
 
     const advance = () => {
@@ -1052,24 +1014,20 @@ $(document).on(':passagestart', function (ev) {
       } else {
         box.removeClass("caged-fade-fast caged-fade-slow");
         box.addClass("caged-fade-start");
-        box2.removeClass("caged-fade-fast caged-fade-slow");
-        box2.addClass("caged-fade-start");
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
         setTimeout(() => {
           box.addClass("caged-fade-fast");
-          box2.addClass("caged-fade-fast");
         }, 100);
         setTimeout(() => {
           box.removeClass("caged-fade-start");
-          box2.removeClass("caged-fade-start");
         }, 200);
       }
     };
 
     box.on("click", (e) => {
       let t = $(e.target);
-      // go up to an <a>
+      // find an enclosing <a>
       while (t.length && t.prop("tagName") !== "A") {
         t = t.parent();
       }
@@ -1163,9 +1121,9 @@ $(document).on(':passagestart', function (ev) {
 
   /**
    * Split text into segments that fit in caged-box.
-   * @type { (tag: string, text: string, fill: string, second: boolean) => SplitInfo }
+   * @type { (text: string, fill: string, once: boolean ) => SplitInfo }
    */
-  function splitText(tag, text, fill, second) {
+  function splitText(text, fill, once) {
     if (text.trim() === "") {
       return { height: 0, blocks: [] };
     }
@@ -1174,7 +1132,7 @@ $(document).on(':passagestart', function (ev) {
     const outer = $(`<div class="passage caged-hidden">`);
     $("#passages").addClass("caged-render").prepend(outer);
 
-    const inner = $(`<div class="${tag} caged-hidden">`);
+    const inner = $(`<div class="caged-box caged-hidden">`);
     inner.appendTo(outer);
     inner.append($(rendered).contents());
 
@@ -1190,57 +1148,58 @@ $(document).on(':passagestart', function (ev) {
         return { height, blocks: [block] };
       }
 
-      let prevLine = 0;
-      let prevLeft = 0;
-      let filling = false;
-      let spans = inner.find(".caged-word");
-      let i = 0;
+      let lineStart = 0;
+      let prevWordLeft = 0;
+      let usedFill = false;
+      let words = inner.find(".caged-word");
+      let current = 0;
+
       for (;;) {
-        if (i >= spans.length) {
-          filling = true;
+        // if we ran out of words, add more words from fill
+        if (current >= words.length && (!usedFill || !once)) {
+          usedFill = true;
           inner.append(" ");
-          let renderedFill = renderWithWordsMarked(fill);
+          const renderedFill = renderWithWordsMarked(fill);
           inner.append($(renderedFill).clone().contents());
-          spans = inner.find(".caged-word");
-          if (i >= spans.length) {
-            MT.diag(`nero-caged failed to add more fill`);
-            const block = document.createDocumentFragment();
-            inner.contents().appendTo(block);
-            blocks.push(block);
-            break;
-          }
-          continue;
+          words = inner.find(".caged-word");
         }
 
-        const span = /** @type { HTMLSpanElement } */ (spans[i]);
-        const rect = span.getBoundingClientRect();
+        // if we still don't have words, we're done
+        if (current >= words.length) {
+          const block = document.createDocumentFragment();
+          inner.contents().appendTo(block);
+          blocks.push(block);
+          break;
+        }
 
-        // if the box isn't full yet
+        // get position of current word
+        const word = /** @type { HTMLSpanElement } */ (words[current]);
+        const rect = word.getBoundingClientRect();
+
+        // if the box isn't full yet, go to the next word
         if (rect.bottom <= box.bottom - BORDER) {
-          // note, when a word is split, rect.left is at the second part
-          if (rect.left < prevLeft) {
-            prevLine = i;
+          // did we start a new line?
+          if (rect.left < prevWordLeft) {
+            lineStart = current;
           }
-          prevLeft = rect.left;
-          i++;
+          prevWordLeft = rect.left;
+          current++;
           continue;
         }
-
-        // We have a full box now
 
         // Get the precise height of the full box
-        const prevLineSpan = /** @type { HTMLElement } */ (spans[prevLine]);
-        const prevRect = prevLineSpan.getBoundingClientRect();
+        const lineStartWord = /** @type { HTMLElement } */ (words[lineStart]);
+        const lineStartRect = lineStartWord.getBoundingClientRect();
         if (height === 0) {
-          height = prevRect.bottom - box.top;
+          height = lineStartRect.bottom - box.top;
         }
 
         // Mark links in the last line as optional
-        for (let j = prevLine; j < i; j++) {
-          const span = /** @type { HTMLElement } */ (spans[j]);
-          const par = span.parentElement;
-          if (par != null && par.tagName === "A") {
-            par.className += " caged-optional";
+        for (let j = lineStart; j < current; j++) {
+          const word = /** @type { HTMLElement } */ (words[j]);
+          const parent = word.parentElement;
+          if (parent != null && parent.tagName === "A") {
+            parent.className += " caged-optional";
           }
         }
 
@@ -1249,36 +1208,31 @@ $(document).on(':passagestart', function (ev) {
         const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
         range.setStartBefore(first);
 
-        if (second) {
-          range.setEndAfter(span);
-        } else {
-          /** @type { Node } */
-          let end = span;
-          while (end.parentNode?.firstChild === end) {
-            end = end.parentNode;
-          }
-          range.setEndBefore(end);
+        /** @type { Node } */
+        let end = word;
+        while (end.parentNode?.firstChild === end) {
+          end = end.parentNode;
         }
+        range.setEndBefore(end);
 
         const block = range.cloneContents();
         blocks.push(block);
 
-        if (filling) {
+        if (usedFill) {
           break;
         }
 
         // Cut before the last line
-        range.setEndBefore(prevLineSpan);
+        range.setEndBefore(lineStartWord);
 
         // Try to find out exactly where the word break is
-        const word = prevLineSpan.textContent || "";
-        const chars = Array.from(word).map((c) =>
+        const chars = Array.from(lineStartWord.textContent || "").map((c) =>
           jqUnwrap($("<span>").text(c))
         );
-        $(prevLineSpan).empty().append(chars);
+        $(lineStartWord).empty().append(chars);
         for (const ch of chars) {
           const rect = ch.getBoundingClientRect();
-          if (rect.left === prevRect.left) {
+          if (rect.left === lineStartRect.left) {
             range.setEndBefore(ch);
             break;
           }
@@ -1287,10 +1241,10 @@ $(document).on(':passagestart', function (ev) {
         range.deleteContents();
         inner.find(".caged-optional").removeClass("caged-optional");
 
-        prevLine = 0;
-        prevLeft = 0;
-        spans = inner.find(".caged-word");
-        i = 0;
+        lineStart = 0;
+        prevWordLeft = 0;
+        words = inner.find(".caged-word");
+        current = 0;
       }
     } finally {
       $("#passages").removeClass("caged-render");
@@ -1352,7 +1306,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -51616,10 +51570,9 @@ The wolf lands hard on his tail with a yelp.
 
   His ass is sore
 
-&lt;&lt;nero-caged-fill&gt;&gt;
+&lt;&lt;nero-caged-fill once&gt;&gt;
 
   XXX
-  repeat here
 
 &lt;&lt;/nero-caged&gt;&gt;
 
