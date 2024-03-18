@@ -273,7 +273,7 @@
 
       for (;;) {
         // if we ran out of words, add more words from fill
-        if (current >= words.length && (!usedFill || !once)) {
+        if (current >= words.length && !usedFill && !once) {
           usedFill = true;
           inner.append(" ");
           const renderedFill = renderWithWordsMarked(fill);
