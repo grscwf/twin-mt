@@ -34,7 +34,7 @@
             break;
           case "nero-caged-fill":
             fill = payload.contents.trim();
-            once = payload.args[1] === "once";
+            once = payload.args[0] === "once";
             break;
           default:
             throw new Error(`Unexpected nero-caged ${payload.name}`);
@@ -206,8 +206,8 @@
      * @type { (text: string, el: HTMLElement) => void }
      */
     const appendWords = (text, el) => {
-      for (const part of text.split(/(\s+)/)) {
-        if (/\s/.test(part)) {
+      for (const part of text.split(/([ ]+)/)) {
+        if (/[ ]/.test(part)) {
           $(el).append(part);
         } else if (part !== "") {
           $("<span class=caged-word>").text(part).appendTo(el);
@@ -273,7 +273,7 @@
 
       for (;;) {
         // if we ran out of words, add more words from fill
-        if (current >= words.length && !usedFill && !once) {
+        if (current >= words.length && (!usedFill || !once)) {
           usedFill = true;
           inner.append(" ");
           const renderedFill = renderWithWordsMarked(fill);
