@@ -80,8 +80,20 @@
         cage.addClass("caged-last");
       }
 
+
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
+
+      // unlink shocks on last line.
+      cage.find("[data-shock].caged-optional").each((i, el) => {
+        $(el).replaceWith($(el).contents());
+      });
+
+      const shocks = cage.find("[data-shock]");
+      if (shocks.length) {
+        shakeWords(cage);
+      }
+
       cage.append("<a class=caged-continue>Continue</a>");
 
       if (split.height) {
@@ -104,6 +116,12 @@
       box.toggleClass("caged-last", i === split.blocks.length - 1);
       box.empty();
       box.append(split.blocks[i] || "");
+
+      // unlink shocks on last line (repeated in next block)
+      box.find("[data-shock].caged-optional").each((i, el) => {
+        $(el).replaceWith($(el).contents());
+      });
+
       box.append("<a class=caged-continue>Continue</a>");
     };
 
@@ -119,6 +137,7 @@
 
     if (cur.n_cagedBlock !== 0) {
       box.removeClass("caged-fade-slow");
+      box.addClass("caged-fade-fast");
     }
     setTimeout(() => {
       box.removeClass("caged-fade-start");
@@ -148,13 +167,25 @@
       while (t.length && t.prop("tagName") !== "A") {
         t = t.parent();
       }
-      if (t.hasClass("caged-cock")) {
+      const shock = t.attr("data-shock");
+      if (shock != null) {
+        e.preventDefault();
+        e.stopPropagation();
+        const n = +shock;
+        if (n > 0) {
+          doShocks(n, box);
+          t.attr("data-shock", "0");
+        }
+      } else if (t.hasClass("caged-cock")) {
         t.addClass("caged-touched");
       } else if (t.hasClass("caged-continue")) {
-        const open = box.find(
+        const cocks = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
-        if (open.length === 0 || (setup.debug && e.ctrlKey)) {
+        const shocks = box.find(
+          `[data-shock]:not([data-shock="0"])`
+        );
+        if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();
           advance();
@@ -176,6 +207,43 @@
       });
       skip.appendTo(out);
     }
+  }
+
+  /** @type { (n: number, box: JQuery<HTMLElement>) => void} */
+
+  function doShocks(n, box) {
+    box.removeClass("caged-fade-fast caged-fade-slow");
+    shockOn();
+
+    function shockOn() {
+      box.addClass("caged-shocking");
+      shakeWords(box);
+      n--;
+      setTimeout(shockOff, 100);
+    }
+    function shockOff() {
+      box.removeClass("caged-shocking");
+      if (n > 0) {
+        // avoid flashing faster than 3Hz
+        // https://www.w3.org/TR/WCAG21/#seizures-and-physical-reactions
+        setTimeout(shockOn, 400);
+      }
+    }
+  }
+
+  /** @type { (box: JQuery<HTMLElement>) => void } */
+  function shakeWords(box) {
+    const words = box.find(".caged-word");
+    words.each((_, el) => {
+      const dx = Math.floor(8 * Math.random()) / 4 - 1;
+      const dy = Math.floor(8 * Math.random()) / 4 - 1;
+      const rot = Math.floor(32 * Math.random()) / 4 - 4;
+      $(el).addClass("caged-shocked");
+      $(el).attr(
+        "style",
+        `top: ${dx}px; left: ${dy}px; transform: rotate(${rot}deg)`
+      );
+    });
   }
 
   /**
@@ -298,6 +366,7 @@
           // did we start a new line?
           if (rect.left < prevWordLeft) {
             lineStart = current;
+            word.className += " caged-split";
           }
           prevWordLeft = rect.left;
           current++;
@@ -311,7 +380,7 @@
           height = lineStartRect.bottom - box.top;
         }
 
-        // Mark links in the last line as optional
+        // Mark links on last line as optional
         for (let j = lineStart; j < current; j++) {
           const word = /** @type { HTMLElement } */ (words[j]);
           const parent = word.parentElement;

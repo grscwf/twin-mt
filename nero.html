@@ -501,20 +501,21 @@ meta-text {
 .caged-fade-start {
   color: #222;
 }
-.caged-fade-start a {
+.caged-fade-start a:not(#_#_#_#_#_) {
   opacity: 0;
 }
-.caged-fade-fast {
-  transition: color 1s;
+.caged-fade-fast,
+.caged-fade-fast a:not(#_#_#_#_#_) {
+  transition: color 1s, opacity 1s;
 }
-.caged-fade-slow {
-  transition: color 3s;
+.caged-fade-slow,
+.caged-fade-slow a:not(#_#_#_#_#_) {
+  transition: color 3s, opacity 3s;
 }
 
 /* special handling for the word cock */
 .caged-cock {
   border-radius: 4px;
-  transition: all 1s;
   word-break: normal;
 }
 .caged-transcript .caged-n-cock:not(#_#_#_#_#_),
@@ -558,7 +559,13 @@ meta-text {
   cursor: not-allowed;
 }
 
-.caged-flash .caged-cock:not(.caged-blocked) {
+.caged-cock,
+[data-shock] {
+  transition: color 1s;
+}
+
+.caged-flash .caged-cock:not(.caged-blocked),
+.caged-flash [data-shock]:not([data-shock="0"]) {
   color: #f00;
 }
 
@@ -600,6 +607,30 @@ body:has(.caged-render) #init-screen {
 /* shock links */
 a[data-shock] {
   word-break: normal;
+}
+
+.caged-transcript a[data-shock] {
+  background-color: rgb(92 39 152);
+  border-radius: 4px;
+  color: rgb(242 224 242 / 80%);
+  cursor: text;
+}
+
+a[data-shock="0"],
+a[data-shock="0"]:hover {
+  background-color: rgb(92 39 152);
+  border-radius: 4px;
+  color: rgb(242 224 242 / 80%);
+  cursor: text;
+}
+
+/* allow words that aren't split to be rotated */
+.caged-word:not(.caged-split) {
+  display: inline-block;
+}
+
+.caged-shocking {
+  color: rgb(189, 141, 244);
 }
 /* twine-user-stylesheet #3: "g0a-Templates.css" */
 .mt-cons {
@@ -968,8 +999,20 @@ $(document).on(':passagestart', function (ev) {
         cage.addClass("caged-last");
       }
 
+
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
+
+      // unlink shocks on last line.
+      cage.find("[data-shock].caged-optional").each((i, el) => {
+        $(el).replaceWith($(el).contents());
+      });
+
+      const shocks = cage.find("[data-shock]");
+      if (shocks.length) {
+        shakeWords(cage);
+      }
+
       cage.append("<a class=caged-continue>Continue</a>");
 
       if (split.height) {
@@ -992,6 +1035,12 @@ $(document).on(':passagestart', function (ev) {
       box.toggleClass("caged-last", i === split.blocks.length - 1);
       box.empty();
       box.append(split.blocks[i] || "");
+
+      // unlink shocks on last line (repeated in next block)
+      box.find("[data-shock].caged-optional").each((i, el) => {
+        $(el).replaceWith($(el).contents());
+      });
+
       box.append("<a class=caged-continue>Continue</a>");
     };
 
@@ -1007,6 +1056,7 @@ $(document).on(':passagestart', function (ev) {
 
     if (cur.n_cagedBlock !== 0) {
       box.removeClass("caged-fade-slow");
+      box.addClass("caged-fade-fast");
     }
     setTimeout(() => {
       box.removeClass("caged-fade-start");
@@ -1036,13 +1086,25 @@ $(document).on(':passagestart', function (ev) {
       while (t.length && t.prop("tagName") !== "A") {
         t = t.parent();
       }
-      if (t.hasClass("caged-cock")) {
+      const shock = t.attr("data-shock");
+      if (shock != null) {
+        e.preventDefault();
+        e.stopPropagation();
+        const n = +shock;
+        if (n > 0) {
+          doShocks(n, box);
+          t.attr("data-shock", "0");
+        }
+      } else if (t.hasClass("caged-cock")) {
         t.addClass("caged-touched");
       } else if (t.hasClass("caged-continue")) {
-        const open = box.find(
+        const cocks = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
-        if (open.length === 0 || (setup.debug && e.ctrlKey)) {
+        const shocks = box.find(
+          `[data-shock]:not([data-shock="0"])`
+        );
+        if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();
           advance();
@@ -1064,6 +1126,43 @@ $(document).on(':passagestart', function (ev) {
       });
       skip.appendTo(out);
     }
+  }
+
+  /** @type { (n: number, box: JQuery<HTMLElement>) => void} */
+
+  function doShocks(n, box) {
+    box.removeClass("caged-fade-fast caged-fade-slow");
+    shockOn();
+
+    function shockOn() {
+      box.addClass("caged-shocking");
+      shakeWords(box);
+      n--;
+      setTimeout(shockOff, 100);
+    }
+    function shockOff() {
+      box.removeClass("caged-shocking");
+      if (n > 0) {
+        // avoid flashing faster than 3Hz
+        // https://www.w3.org/TR/WCAG21/#seizures-and-physical-reactions
+        setTimeout(shockOn, 400);
+      }
+    }
+  }
+
+  /** @type { (box: JQuery<HTMLElement>) => void } */
+  function shakeWords(box) {
+    const words = box.find(".caged-word");
+    words.each((_, el) => {
+      const dx = Math.floor(8 * Math.random()) / 4 - 1;
+      const dy = Math.floor(8 * Math.random()) / 4 - 1;
+      const rot = Math.floor(32 * Math.random()) / 4 - 4;
+      $(el).addClass("caged-shocked");
+      $(el).attr(
+        "style",
+        `top: ${dx}px; left: ${dy}px; transform: rotate(${rot}deg)`
+      );
+    });
   }
 
   /**
@@ -1186,6 +1285,7 @@ $(document).on(':passagestart', function (ev) {
           // did we start a new line?
           if (rect.left < prevWordLeft) {
             lineStart = current;
+            word.className += " caged-split";
           }
           prevWordLeft = rect.left;
           current++;
@@ -1199,7 +1299,7 @@ $(document).on(':passagestart', function (ev) {
           height = lineStartRect.bottom - box.top;
         }
 
-        // Mark links in the last line as optional
+        // Mark links on last line as optional
         for (let j = lineStart; j < current; j++) {
           const word = /** @type { HTMLElement } */ (words[j]);
           const parent = word.parentElement;
@@ -1311,7 +1411,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -51438,7 +51538,7 @@ The wolf lands hard on his tail with a yelp.
   with a painful sensation that feels like
 &lt;&lt;/nero-caged&gt;&gt;
 
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="796" name="n9a Caged Harsh 5" tags="mt-draft" position="11800,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="796" name="n9a Caged Harsh 5" tags="mt-ready" position="11800,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;nero-caged [[n9a Caged Harsh 6]]&gt;&gt;
   Suddenly, the widest part of the gem
@@ -51643,38 +51743,38 @@ The wolf lands hard on his tail with a yelp.
   &lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
   suddenly becomes a loud, angry growl.
   Nero&#39;s body jerks awake.
-  Ivex&#39;s ?iCock is poking through the wall,
-  and the buzzing comes from the wand
-  gripping the panther&#39;s shaft.
-  The ?barbed head of the panther&#39;s ?iCock protrudes
-  out the end of the wand&#39;s attachment,
-  and a thread of pre-cum is dripping
-  from the tip.
-  Or maybe it&#39;s residual cum from the panther&#39;s earlier orgasm?
+
+  The sound comes from the tube of Ivex&#39;s wand,
+  which is now poking through the wall.
+  The tube reeks of sex.
+  It&#39;s clear that
+  the panther&#39;s ?iCock is still within it.
+  A thread of pre-cum is dripping
+  from the hole at the end of the tube.
+  Or perhaps it&#39;s residual cum from Ivex&#39;s earlier orgasm?
+
   Nero quickly catches the falling fluid with his tongue
   before it hits the floor.
   His muzzle follows the liquid up to its source,
-  and he ends up holding the vibrating ?iCock in his mouth.
+  and he ends up holding the end of the vibrating tube in his mouth.
 
-  &lt;&lt;if $n_barbs&gt;&gt;
-    The barbs scratch lightly against the surface of his tongue.
-  &lt;&lt;else&gt;&gt;
-    The smooth head glides on the saliva coating his tongue.
-  &lt;&lt;/if&gt;&gt;
-  It only takes a moment for the panther to climax
-  with a yowl as his ?iCock sprays
-  its warm seed inside the wolf&#39;s mouth.
-  The panther thrusts his ?iCock forward several times
-  as his shuddering orgasm pumps out all the cum he has left.
+  It only takes a moment for the panther to climax with a yowl,
+  and his ?iCock sprays
+  its warm seed out the tube to coat the inside the wolf&#39;s mouth.
+  The panther thrusts the tube forward several times
+  as his shuddering orgasm pumps out every last drop of cum.
 
   Nero swallows as much of it as he can
-  while his tongue is limited by the ?iCock and its
-  vibrating sheath in his mouth.
-  The taste of Ivex&#39;s sex lingers and fills the wolf&#39;s senses
-  more deeply than before.
+  while his tongue is limited by the vibrating sheath
+  that fills his mouth.
+  The taste of the panther&#39;s sex lingers and dominates the wolf&#39;s senses.
+  Nero can&#39;t escape it.
+  He can only struggle to endure and accept it.
 
   The vibration stops, and Ivex says, &quot;Clean it up.&quot;
-  Nero hesitantly strokes his tongue along the squishy
+  Nero hesitantly strokes his tongue along
+  
+  XXX the squishy
   surface of the wand&#39;s attachment.
   He wonders if the panther&#39;s ?iCock becomes as
   hyper-sensitive as his own after an orgasm.
