@@ -80,7 +80,6 @@
         cage.addClass("caged-last");
       }
 
-
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
 
@@ -91,7 +90,13 @@
 
       const shocks = cage.find("[data-shock]");
       if (shocks.length) {
-        shakeWords(cage);
+        let n = 0;
+        shocks.each((i, el) => {
+          if (el.dataset.shock != null) {
+            n += +el.dataset.shock;
+          }
+        });
+        shakeWords(cage, n);
       }
 
       cage.append("<a class=caged-continue>Continue</a>");
@@ -150,6 +155,10 @@
       } else {
         box.removeClass("caged-fade-fast caged-fade-slow");
         box.addClass("caged-fade-start");
+        if (box.attr("data-shocked") != null) {
+          // reset to 1, not 0
+          box.attr("data-shocked", 1);
+        }
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
         setTimeout(() => {
@@ -182,9 +191,7 @@
         const cocks = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
-        const shocks = box.find(
-          `[data-shock]:not([data-shock="0"])`
-        );
+        const shocks = box.find(`[data-shock]:not([data-shock="0"])`);
         if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();
@@ -213,12 +220,16 @@
 
   function doShocks(n, box) {
     box.removeClass("caged-fade-fast caged-fade-slow");
+
+    let shocked = +(box.attr("data-shocked") || "0");
     shockOn();
 
     function shockOn() {
       box.addClass("caged-shocking");
-      shakeWords(box);
       n--;
+      ++shocked;
+      box.attr("data-shocked", shocked);
+      shakeWords(box, shocked);
       setTimeout(shockOff, 100);
     }
     function shockOff() {
@@ -231,13 +242,14 @@
     }
   }
 
-  /** @type { (box: JQuery<HTMLElement>) => void } */
-  function shakeWords(box) {
+  /** @type { (box: JQuery<HTMLElement>, n: Number) => void } */
+  function shakeWords(box, n) {
     const words = box.find(".caged-word");
+    const f = Math.max(1, Math.min(1 + (n - 1) / 2, 3));
     words.each((_, el) => {
-      const dx = Math.floor(8 * Math.random()) / 4 - 1;
-      const dy = Math.floor(8 * Math.random()) / 4 - 1;
-      const rot = Math.floor(32 * Math.random()) / 4 - 4;
+      const dx = Math.floor(f * 8 * Math.random()) / 4 - f;
+      const dy = Math.floor(f * 8 * Math.random()) / 4 - f;
+      const rot = Math.floor(f * 16 * Math.random()) / 4 - 2 * f;
       $(el).addClass("caged-shocked");
       $(el).attr(
         "style",

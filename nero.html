@@ -632,6 +632,14 @@ a[data-shock="0"]:hover {
 .caged-shocking {
   color: rgb(189, 141, 244);
 }
+
+/* hack to make sure debug controls don't block links */
+@media (max-width: 30rem) {
+  #story:has(.caged-grid) #notes-button,
+  #story:has(.caged-grid) #random-walk {
+    right: -1.5rem;
+  }
+}
 /* twine-user-stylesheet #3: "g0a-Templates.css" */
 .mt-cons {
   font-size: 1.5rem;
@@ -999,7 +1007,6 @@ $(document).on(':passagestart', function (ev) {
         cage.addClass("caged-last");
       }
 
-
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
 
@@ -1010,7 +1017,13 @@ $(document).on(':passagestart', function (ev) {
 
       const shocks = cage.find("[data-shock]");
       if (shocks.length) {
-        shakeWords(cage);
+        let n = 0;
+        shocks.each((i, el) => {
+          if (el.dataset.shock != null) {
+            n += +el.dataset.shock;
+          }
+        });
+        shakeWords(cage, n);
       }
 
       cage.append("<a class=caged-continue>Continue</a>");
@@ -1069,6 +1082,10 @@ $(document).on(':passagestart', function (ev) {
       } else {
         box.removeClass("caged-fade-fast caged-fade-slow");
         box.addClass("caged-fade-start");
+        if (box.attr("data-shocked") != null) {
+          // reset to 1, not 0
+          box.attr("data-shocked", 1);
+        }
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
         setTimeout(() => {
@@ -1101,9 +1118,7 @@ $(document).on(':passagestart', function (ev) {
         const cocks = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
-        const shocks = box.find(
-          `[data-shock]:not([data-shock="0"])`
-        );
+        const shocks = box.find(`[data-shock]:not([data-shock="0"])`);
         if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();
@@ -1132,12 +1147,16 @@ $(document).on(':passagestart', function (ev) {
 
   function doShocks(n, box) {
     box.removeClass("caged-fade-fast caged-fade-slow");
+
+    let shocked = +(box.attr("data-shocked") || "0");
     shockOn();
 
     function shockOn() {
       box.addClass("caged-shocking");
-      shakeWords(box);
       n--;
+      ++shocked;
+      box.attr("data-shocked", shocked);
+      shakeWords(box, shocked);
       setTimeout(shockOff, 100);
     }
     function shockOff() {
@@ -1150,13 +1169,14 @@ $(document).on(':passagestart', function (ev) {
     }
   }
 
-  /** @type { (box: JQuery<HTMLElement>) => void } */
-  function shakeWords(box) {
+  /** @type { (box: JQuery<HTMLElement>, n: Number) => void } */
+  function shakeWords(box, n) {
     const words = box.find(".caged-word");
+    const f = Math.max(1, Math.min(1 + (n - 1) / 2, 3));
     words.each((_, el) => {
-      const dx = Math.floor(8 * Math.random()) / 4 - 1;
-      const dy = Math.floor(8 * Math.random()) / 4 - 1;
-      const rot = Math.floor(32 * Math.random()) / 4 - 4;
+      const dx = Math.floor(f * 8 * Math.random()) / 4 - f;
+      const dy = Math.floor(f * 8 * Math.random()) / 4 - f;
+      const rot = Math.floor(f * 16 * Math.random()) / 4 - 2 * f;
       $(el).addClass("caged-shocked");
       $(el).attr(
         "style",
@@ -1411,7 +1431,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -51573,7 +51593,7 @@ The wolf lands hard on his tail with a yelp.
   Receiving the gem was an excruciating ordeal,
   and he imagines it will feel equally terrible coming out.
 
-  Nero&#39;s apprehension is interrupted by a spray of dampness
+  Nero&#39;s rumination is interrupted by a spray of dampness
   on his backside and the scent of fresh cum.
   It&#39;s Ivex&#39;s cum, of course.
   
@@ -51625,9 +51645,13 @@ The wolf lands hard on his tail with a yelp.
   and does not get it all before the spot flashes purple
   and delivers four more sharp &lt;a data-shock=4&gt;shocks&lt;/a&gt; to his ass.
 
-  The wolf&#39;s thrashing spreads the cum that he had
-  picked up with his fur.
-  Nero realizes that he cannot keep the cell clean with just wiping.
+  The wolf screams and thrashes his limbs against the walls
+  of his tiny cell.
+  The thrashing spreads more of the cum that was soaked in his fur.
+  When Nero&#39;s eyes can focus again, he sees yellow splotches on
+  every surface of the cell.
+  He realizes with dismay that he cannot
+  keep the cell clean with just wiping.
   Unfortunately, he
   &lt;em class=nobr&gt;will&lt;/em&gt; have to &lt;em&gt;lick it up&lt;/em&gt;.
 
@@ -51638,8 +51662,10 @@ The wolf lands hard on his tail with a yelp.
   as much of the noxious panther&#39;s cum as he can
   before the shocks begin again.
 
-  There are five &lt;a data-shock=5&gt;shocks&lt;/a&gt; this time,
-  but Nero knows he&#39;s close to done.
+  There are five &lt;a data-shock=5&gt;shocks&lt;/a&gt; this time.
+  Familiarity does not make them easier to bear.
+  Nero&#39;s heart is racing in panic,
+  but he knows he&#39;s close to done.
   The difficult part is the cum stuck in the fur
   on his back in a place he can&#39;t reach.
   He just has to be careful to avoid touching his
@@ -51658,8 +51684,8 @@ The wolf lands hard on his tail with a yelp.
   to ride out the final barrage of
   &lt;a data-shock=4&gt;shocks&lt;/a&gt;.
 
-  It takes a few seconds to be sure
-  the shocks are finished.
+  It takes several huffing breaths
+  for the wolf to be certain the shocks are done.
   Nero collapses with relief,
   but he suddenly becomes alert when
   he &lt;em&gt;smells&lt;/em&gt; it.
@@ -51679,18 +51705,19 @@ The wolf lands hard on his tail with a yelp.
 
   He does not clean all of it up before the purple
   &lt;a data-shock=7&gt;shocks&lt;/a&gt; come again, seven of them this time.
-  The stimulation coaxes more cum that drips from the ceiling,
+  Nero&#39;s whole body trembles. His vision is shaky and blurry.
+  The stimulation has coaxed more cum that drips from the ceiling,
   but there&#39;s less than the previous round,
   and the wolf has become &lt;em&gt;efficient&lt;/em&gt;.
-  Nero licks and wipes all the remaining cum
+  This time he licks and wipes all the remaining cum
   from all the cell&#39;s surfaces
   before the shocks can begin again.
 
   He breathes relief and begins methodically licking up the cum
   that remains on his hands and other parts of his fur.
   There&#39;s no rush now, he just needs to get it done,
-  so he can finally relax, and rest,
-  without triggering the shocks again.
+  so he can finally relax, and rest in a position
+  that will not trigger the shocks again.
 
   His ass is sore and still full with the gem,
   but he&#39;s becoming accustomed to the way it
@@ -51699,10 +51726,12 @@ The wolf lands hard on his tail with a yelp.
   He doesn&#39;t know what will happen when the gem
   comes out of his ass, but it can stay there for now.
 
-  Nero gathers his body into a loose ball pressed
+  His throat feels dry. He&#39;s removed as much cum
+  from his body that he can.
+  Nero gathers himself into a loose ball pressed
   against the wall and tries to relax.
   One hand is clasped between his thighs,
-  and it automatically fondles the hard covering
+  and the arm presses on the hard covering
   at his crotch.
   His ?nCock still feels erect, and unsatisfied.
   The electric stimulation may have drained his cum,
@@ -51716,13 +51745,13 @@ The wolf lands hard on his tail with a yelp.
   As Nero&#39;s mind drifts toward sleep,
   he tries to be &lt;em&gt;analytical&lt;/em&gt; about his plight.
   Satisfying the panther&#39;s ?iCock is just
-  another problem that he can solve,
+  another problem that he can &lt;em&gt;solve&lt;/em&gt;,
   and it will likely be a step toward satisfying his own ?nCock.
   And escape.
   His hand automatically rubs at the covering on his
   crotch as he rehearses in his mind what he might
   need to do for Ivex&#39;s ?iCock,
-  all the things he remembers other people doing for his own ?nCock,
+  all the things he remembers others doing for his own ?nCock,
   which still aches with a need that&#39;s not urgent,
   not an &lt;em&gt;emergency&lt;/em&gt;,
   more like the dull throb of a toothache
@@ -51772,7 +51801,8 @@ The wolf lands hard on his tail with a yelp.
   His muzzle follows the liquid up to its source,
   and he ends up holding the end of the vibrating tube in his mouth.
 
-  It only takes a moment for the panther to climax with a yowl,
+  It&#39;s a weird sensation,
+  but it only takes a moment for the panther to climax with a yowl,
   and his ?iCock sprays
   its warm seed out the tube to coat the inside the wolf&#39;s mouth.
   The panther thrusts the tube forward several times
@@ -51790,17 +51820,18 @@ The wolf lands hard on his tail with a yelp.
   the squishy surface of the tube,
   then pulls his muzzle back so he can lick the edge of the tube&#39;s hole.
   Cum is coating the inner surface of the tube.
-  Nero cautiously inserts the tip of his tongue in the hole.
+  Nero cautiously inserts the tip of his tongue.
   He wonders if the panther&#39;s ?iCock becomes
   as hyper-sensitive as his own after an orgasm.
   The wolf&#39;s tongue gently makes contact
-  with the ?barbed tip of the panther&#39;s cock.
+  with the ?barbed tip of the panther&#39;s ?iCock.
   Ivex trembles a moment, but does not withdraw.
 
   Nero feels a touch on his own inaccessible ?nCock, somehow.
-  Fingers grip and stroke his ?nCock for a moment.
+  It feels like there are fingers
+  that grip and stroke his ?nCock for a moment.
   The feeling is ecstasy.
-  His body shudders with surprise.
+  His body shudders from the unexpected pleasure.
   He falls forward and takes the wand&#39;s tube deeper into his mouth,
   where it almost rams his throat.
   Nero suspects his throat will have to accept the panther&#39;s
@@ -51873,7 +51904,7 @@ The wolf lands hard on his tail with a yelp.
     The wolf&#39;s eyes are closed,
     his breathing is steady,
     but he is not asleep.
-    One hand is pressed against the hard shell that covers his crotch.
+    One hand is pressed against a hard shell that covers his crotch.
     His other hand is clasping a bit of purple crystal that
     protrudes from his ass.
   &lt;/em&gt;
@@ -51881,7 +51912,7 @@ The wolf lands hard on his tail with a yelp.
 
   &lt;em&gt;
     He does not move.
-    He&#39;s conserving his energy
+    He conserves his energy
     to be ready for whatever
     service he must perform
     or suffering he must endure
