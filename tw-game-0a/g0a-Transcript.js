@@ -150,7 +150,7 @@
   };
 
   MT.tranRender = (output) => {
-    MT.isRendering = true;
+    MT.stillRendering = true;
     const outer = $("<div id=tran-outer>").appendTo(output);
 
     const hist = MT.getHistory();
@@ -216,7 +216,7 @@
       const minutes = Math.round(words / 250);
       let stats = `${passages} pages, ${words} words, ~${minutes} minutes`;
       $("#tran-stats").text(`(${stats})`);
-      MT.isRendering = false;
+      MT.stillRendering = false;
     };
 
     renderLoop();

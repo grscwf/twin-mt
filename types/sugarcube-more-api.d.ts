@@ -10,3 +10,10 @@ declare module "twine-sugarcube" {
     reset: () => void;
   }
 }
+
+declare global {
+  interface JSON {
+    _real_parse?: typeof JSON.parse;
+    _real_stringify?: typeof JSON.stringify;
+  }
+}

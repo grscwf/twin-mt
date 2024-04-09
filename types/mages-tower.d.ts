@@ -21,10 +21,6 @@ declare global {
     /** Returns history without is-menu loops. */
     getHistory: () => StoryMoment[];
 
-
-    /** true when rendering transcript */
-    isRendering: boolean;
-
     /** emit a note */
     note: (message: string, header?: string) => void;
 
@@ -33,6 +29,9 @@ declare global {
       doneFn?: null | (() => void),
       force?: null | boolean
     ) => void;
+
+    /** True if an async renderer is still running. */
+    stillRendering: boolean;
 
     suppressErrors: (block: () => void) => void;
 
