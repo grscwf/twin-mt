@@ -2,6 +2,16 @@ import "twine-sugarcube";
 
 declare global {
   const MT: {
+    /**
+     * Creates a scratch state with _isArchive and _isTranscript true,
+     * evaluate script, then render passage to dest
+     */
+    arcRender: (
+      dest: DocumentFragment | HTMLElement,
+      passage: string,
+      script: string
+    ) => void;
+
     /** Returns number of words in text. */
     countWords: (text: string) => number;
 
@@ -19,8 +29,17 @@ declare global {
     /** Returns history without is-menu loops. */
     getHistory: () => StoryMoment[];
 
-    /** emit a note */
+    /** Returns all metadata. */
+    mdEntries: () => Array<[key: string, value: unknown]>;
+
+    /** Sets a metadata variable. */
+    mdSet: (varName: string, value: unknown) => void;
+
+    /** Emits a note. */
     note: (message: string, header?: string) => void;
+
+    /** Initializes $g_rand to a new state. */
+    randReset: () => void;
 
     roamStart: (
       path: null | unknown[],
@@ -38,6 +57,12 @@ declare global {
 
     /** Renders one passage with the given state to a new detached div. */
     tranRenderOne: (title: string, state: object) => JQuery<HtmlElement>;
+
+    /** Returns a Set of unlocked keys. */
+    unlockedSet: () => Set<string>;
+
+    /** Runs block with var tracing disabled. */
+    untraced: (block: () => void) => void;
 
     /** Emits a warning message. */
     warn: (message: string) => void;

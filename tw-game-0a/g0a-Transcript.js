@@ -1,12 +1,11 @@
 (() => {
   /**
-   * @typedef { { title?: string, code?: string } } NextLink
+   * @typedef {object} NextLink
+   * @prop {string} [title]
+   * @prop {string} [code]
    */
 
-  /**
-   * @param { JQuery } jq
-   * @param { NextLink } next
-   */
+  /** @type {(jq: JQuery, next: NextLink) => void} */
   function cleanHtml(jq, next) {
     jq.removeClass("passage-in");
     jq.find("[data-name=silently]").remove();
@@ -110,10 +109,10 @@
   }
 
   /**
-   * @param { string } title
-   * @param { number } turn
-   * @param { object } state
-   * @param { NextLink } next
+   * @arg { string } title
+   * @arg { number } turn
+   * @arg { object } state
+   * @arg { NextLink } next
    */
   function tranRenderInternal(title, state, turn, next) {
     State.clearTemporary();
@@ -135,6 +134,7 @@
     return div;
   }
 
+  /** Renders one passage with the given state to a new detached div. */
   MT.tranRenderOne = (title, state) => {
     const savedVars = State.active.variables;
     const savedTemp = Object.entries(State.temporary);
@@ -149,6 +149,7 @@
     }
   };
 
+  /** Renders current history to out. */
   MT.tranRender = (output) => {
     MT.stillRendering = true;
     const outer = $("<div id=tran-outer>").appendTo(output);
