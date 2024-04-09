@@ -1,8 +1,7 @@
 (() => {
   /**
-   * Create a scratch state with _isArchive === true
-   * and _isTranscript === true,
-   * evaluate script, then render passage to dest.
+   * Creates a scratch state with _isArchive and _isTranscript true,
+   * evaluate script, then render passage to dest
    */
   MT.arcRender = (dest, passage, script) => {
     MT.untraced(() => {

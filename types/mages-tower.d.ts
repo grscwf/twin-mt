@@ -70,6 +70,16 @@ declare global {
 }
 
 declare module "twine-sugarcube" {
+  interface SugarCubeSetupObject {
+    /** True when ?debug mode. */
+    debug?: boolean;
+
+    /** True when ?tester mode. */
+    tester?: boolean;
+
+    version: string;
+  }
+
   interface SugarCubeStoryVariables {
     /** Which choice was taken to go from previous turn to this turn. */
     g_choiceTaken?: number;
@@ -102,13 +112,11 @@ declare module "twine-sugarcube" {
     n_cagedBlockTurn?: number;
   }
 
-  interface SugarCubeSetupObject {
-    /** True when ?debug mode. */
-    debug?: boolean;
+  interface SugarCubeTemporaryVariables {
+    /** True if rendering passage as archives entry. */
+    isArchive?: boolean;
 
-    /** True when ?tester mode. */
-    tester?: boolean;
-
-    version: string;
+    /** True if rendering passage as transcript or archives entry. */
+    isTranscript?: boolean;
   }
 }
