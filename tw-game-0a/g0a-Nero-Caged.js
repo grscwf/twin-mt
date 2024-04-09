@@ -1,9 +1,6 @@
 (() => {
   const BORDER = 0;
 
-  // @ts-expect-error real_stringify
-  const repr = JSON._real_stringify || JSON.stringify;
-
   /** @typedef { { height: number, blocks: DocumentFragment[] } } SplitInfo */
 
   Template.add("iCock", `<a class="caged-cock caged-i-cock">cock</a>`);
@@ -451,10 +448,4 @@
 
     return { height, blocks };
   }
-
-  // exposed for console experimentation
-  MT.caged = {
-    renderWithWordsMarked,
-    splitText,
-  };
 })();

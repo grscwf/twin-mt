@@ -2,19 +2,17 @@ import "twine-sugarcube";
 
 declare global {
   const MT: {
-    caged: Record<string, unknown>;
-
-    chain: {
-      getCode: () => string;
-      getUrl: () => string;
-    };
-
+    /** Returns number of words in text. */
     countWords: (text: string) => number;
 
     /** emit a diagnostic message */
     diag: (message: string) => void;
 
+    /** Sets some enum vars expected to have non-null values. */
     enumInit: () => void;
+
+    /** Generic container for exposing functions for console experimentation */
+    exp: Record<string, unknown>;
 
     forgetWalkHistory: () => void;
 

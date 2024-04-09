@@ -20,7 +20,7 @@
 
   /**
    * On click, remember choice that was clicked.
-   * @type { (ev: MouseEvent) => void }
+   * @type {(ev: MouseEvent) => void}
    */
   function rememberChoice(ev) {
     const vars = State.active.variables;
@@ -51,7 +51,7 @@
     }
   }
 
-  /** @type { (ev: KeyboardEvent) => void } */
+  /** @type {(ev: KeyboardEvent) => void} */
   function kbCopyChain(ev) {
     if (ev.ctrlKey && ev.key === "'") {
       const url = getUrl();
@@ -61,8 +61,7 @@
   }
 
   /**
-   * Returns the chain code for the current session
-   * @type { () => string }
+   * @returns {string} The chain code for the current session.
    */
   function getCode() {
     /* Find last non-menu step */
@@ -74,11 +73,11 @@
     }
 
     let choices = "";
-    /** @type { string | undefined } */
+    /** @type {string | undefined} */
     let version;
-    /** @type { number | undefined } */
+    /** @type {number | undefined} */
     let rand0;
-    /** @type { number | undefined } */
+    /** @type {number | undefined} */
     let rand1;
 
     for (let i = 0; i < last; i++) {
@@ -131,8 +130,7 @@
   }
 
   /**
-   * Returns a URL that will replay the current session
-   * @type { () => string }
+   * @returns {string} A URL that will replay the current session.
    */
   function getUrl() {
     const url = new URL(location.href);
@@ -141,7 +139,7 @@
     return url.toString();
   }
 
-  /** @type { () => void } */
+  /** @returns {void} */
   function replayUrl() {
     const hash = location.hash;
     const m = /[#;]chain=([^;]+)/.exec(hash);
@@ -204,9 +202,4 @@
   }
 
   $(document).on(":storyready", init);
-
-  MT.chain = {
-    getCode,
-    getUrl,
-  };
 })();
