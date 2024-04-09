@@ -1,4 +1,4 @@
-import type { SugarCubeStoryVariables } from "twine-sugarcube";
+import "twine-sugarcube";
 
 declare global {
   const MT: {
@@ -9,10 +9,21 @@ declare global {
       getUrl: () => string;
     };
 
+    countWords: (text: string) => number;
+
     /** emit a diagnostic message */
     diag: (message: string) => void;
 
+    enumInit: () => void;
+
     forgetWalkHistory: () => void;
+
+    /** Returns history without is-menu loops. */
+    getHistory: () => StoryMoment[];
+
+
+    /** true when rendering transcript */
+    isRendering: boolean;
 
     /** emit a note */
     note: (message: string, header?: string) => void;
@@ -23,7 +34,15 @@ declare global {
       force?: null | boolean
     ) => void;
 
-    /** emit a warning message */
+    suppressErrors: (block: () => void) => void;
+
+    /** Renders current history to out. */
+    tranRender: (out: DocumentFragment | Element) => void;
+
+    /** Renders one passage with the given state to a new detached div. */
+    tranRenderOne: (title: string, state: object) => JQuery<HtmlElement>;
+
+    /** Emits a warning message. */
     warn: (message: string) => void;
   };
 }
@@ -69,9 +88,5 @@ declare module "twine-sugarcube" {
     tester?: boolean;
 
     version: string;
-  }
-
-  interface StateAPI {
-    reset: () => void;
   }
 }
