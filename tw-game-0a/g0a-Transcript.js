@@ -109,20 +109,20 @@
   }
 
   /**
-   * @arg { string } title
-   * @arg { number } turn
-   * @arg { object } state
-   * @arg { NextLink } next
+   * @arg {string} passage
+   * @arg {object} vars
+   * @arg {number} turn
+   * @arg {NextLink} next
    */
-  function tranRenderInternal(title, state, turn, next) {
+  function tranRenderInternal(passage, vars, turn, next) {
     State.clearTemporary();
     State.temporary.isTranscript = true;
-    State.temporary.tranPassage = title;
+    State.temporary.tranPassage = passage;
     State.temporary.tranTurn = turn;
-    State.active.variables = clone(state) || {};
+    State.active.variables = clone(vars) || {};
     MT.enumInit();
 
-    const text = Story.get(title).text;
+    const text = Story.get(passage).text;
     let div = $("<div class=tran-entry>");
     MT.suppressErrors(() => {
       div.wiki(text);

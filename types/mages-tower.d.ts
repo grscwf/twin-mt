@@ -12,6 +12,8 @@ declare global {
       script: string
     ) => void;
 
+    assert: (test: boolean, should: string) => asserts test;
+
     /** Returns number of words in text. */
     countWords: (text: string) => number;
 
@@ -40,6 +42,8 @@ declare global {
 
     /** Initializes $g_rand to a new state. */
     randReset: () => void;
+
+    revisitHere: (block: (state: SugarCubeStoryVariables) => void) => void;
 
     roamStart: (
       path: null | unknown[],
@@ -102,6 +106,11 @@ declare module "twine-sugarcube" {
     /** Story version at start of history */
     g_versionAtStart?: string;
 
+    n_afterAction?: string;
+    n_afterItch?: string;
+    n_afterLook?: string;
+    n_afterLookContinue?: string;
+
     /** True if player chose barbed instead of smooth */
     n_barbs?: true;
 
@@ -110,6 +119,16 @@ declare module "twine-sugarcube" {
 
     /** Turn that n_cagedBlock is for. */
     n_cagedBlockTurn?: number;
+
+    n_didSomeAction?: boolean;
+
+    n_lustTextPos?: number;
+
+    n_patienceAccel?: boolean;
+    n_patienceActions?: number;
+    n_patienceLooks?: number;
+    n_patiencePassage?: string;
+    n_patienceReturn?: number;
   }
 
   interface SugarCubeTemporaryVariables {

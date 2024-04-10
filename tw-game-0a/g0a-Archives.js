@@ -4,29 +4,27 @@
    * evaluate script, then render passage to dest
    */
   MT.arcRender = (dest, passage, script) => {
-    MT.untraced(() => {
-      const text = Story.get(passage).text;
-      // we can change the variables obj, but we can't change the temporaries obj
-      const savedVars = State.active.variables;
-      const savedTemp = Object.entries(State.temporary);
-      try {
-        State.active.variables = {};
-        MT.randReset();
-        State.clearTemporary();
-        State.temporary.isArchive = true;
-        State.temporary.isTranscript = true;
-        if (script != null) {
-          $(dest).wiki(`<<run ${script}>>`);
-        }
-        $(dest).wiki(text);
-      } finally {
-        State.active.variables = savedVars;
-        State.clearTemporary();
-        for (const [k, v] of savedTemp) {
-          State.temporary[k] = v;
-        }
+    const text = Story.get(passage).text;
+    // we can change the variables obj, but we can't change the temporaries obj
+    const savedVars = State.active.variables;
+    const savedTemp = Object.entries(State.temporary);
+    try {
+      State.active.variables = {};
+      MT.randReset();
+      State.clearTemporary();
+      State.temporary.isArchive = true;
+      State.temporary.isTranscript = true;
+      if (script != null) {
+        $(dest).wiki(`<<run ${script}>>`);
       }
-    });
+      $(dest).wiki(text);
+    } finally {
+      State.active.variables = savedVars;
+      State.clearTemporary();
+      for (const [k, v] of savedTemp) {
+        State.temporary[k] = v;
+      }
+    }
   };
 
   /**
@@ -50,7 +48,7 @@
     tags: [],
     handler: function () {
       const mkp = State.temporary.isArchive ? "" : this.payload[0]?.contents;
-      // this will add debug markers around the output
+      // This will add debug markers around the output
       $(this.output).wiki(mkp || "");
     },
   });
