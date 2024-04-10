@@ -16,4 +16,9 @@ declare global {
     _real_parse?: typeof JSON.parse;
     _real_stringify?: typeof JSON.stringify;
   }
+
+  const session: {
+    get: (key: string) => unknown;
+    set: (key: string, value: unknown) => void;
+  }
 }

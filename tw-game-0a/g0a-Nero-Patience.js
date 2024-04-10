@@ -159,7 +159,7 @@
       V.n_patienceReturn = 0;
 
       if (setup.debug) {
-        let debug = !!SugarCube.session.get("patience-debug");
+        let debug = !!session.get("patience-debug");
         const outer = $("<span class=patience-debug>")
           .appendTo(this.output)
           .toggleClass("patience-debug-show", debug);
@@ -168,7 +168,7 @@
           .appendTo(outer)
           .on("click", () => {
             debug = !debug;
-            SugarCube.session.set("patience-debug", debug);
+            session.set("patience-debug", debug);
             outer.toggleClass("patience-debug-show", debug);
           });
         $("<a>")
@@ -186,7 +186,7 @@
           $("<a>")
             .text(" (remind)")
             .appendTo(outer)
-            .click(() =>
+            .on("click", () =>
               MT.revisitHere((v0) => {
                 const V = State.variables;
                 V.g_mutated = true;
@@ -202,7 +202,7 @@
           $("<a>")
             .text(" (repeat)")
             .appendTo(outer)
-            .click(() =>
+            .on("click", () =>
               MT.revisitHere((v0) => {
                 const V = State.variables;
                 V.g_mutated = true;
