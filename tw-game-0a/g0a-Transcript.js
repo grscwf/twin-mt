@@ -1,16 +1,76 @@
 (() => {
   /**
-   * Renders current history.
-   * @type {() => HTMLElement}
+   * Renders current history to out, asynchronously.
+   * @type {(out: JQuery<HTMLElement>) => void}
    */
-  function renderHistory() {
-    const outer = document.createElement("div");
-    // XXX
-    return outer;
+  function renderHistory(out) {
+    MT.stillRendering = true;
+    const outer = $("<div id=tran-outer>").appendTo(out);
+
+    const hist = MT.getHistory();
+    let turn = 0;
+
+    const renderSome = () => {
+      const batch = 10;
+      const stop = Math.min(turn + batch, hist.length);
+
+      for (; turn < stop; turn++) {
+        const moment = hist[turn];
+
+        if (turn !== 0) {
+          $("<hr class=text-sep>").appendTo(outer);
+        }
+
+        /** @type { NextLink } */
+        const next = {};
+        if (turn + 1 < hist.length) {
+          next.title = hist[turn + 1].title;
+          const V = hist[turn + 1].variables;
+          if (V.g_mtaCodeTurn === turn + 1) {
+            next.code = V.g_mtaCode;
+          }
+        }
+
+        const div = renderPage({
+          title: moment.title,
+          vars: clone(moment.variables),
+          temps: { tranTurn: turn },
+          next,
+        });
+
+        if (setup.debug) {
+          $("<div class=tran-title>").text(moment.title).prependTo(div);
+        }
+
+        $(outer).append(div);
+      }
+    };
+
+    const renderLoop = () => {
+      renderSome();
+      if (turn < hist.length) {
+        setTimeout(renderLoop);
+      } else {
+        renderDone();
+      }
+    };
+
+    const renderDone = () => {
+      const words = MT.countWords($(outer).text());
+      const passages = hist.length;
+      const minutes = Math.round(words / 250);
+      let stats = `${passages} pages, ${words} words, ~${minutes} minutes`;
+      $("#tran-stats").text(`(${stats})`);
+      MT.stillRendering = false;
+    };
+
+    renderLoop();
   }
 
   /**
    * Renders a single page.
+   * Note, page.vars and page.temps are not cloned,
+   * so rendering a page can modify them.
    * @type {(page: TranscriptPage) => JQuery<HTMLElement>}
    */
   function renderPage(page) {
@@ -56,11 +116,6 @@
       Object.assign(State.temporary, savedTemp);
     }
   }
-
-  MT.tran = {
-    renderHistory,
-    renderPage,
-  };
 
   /** @type {(jq: JQuery, next: NextLink) => void} */
   function cleanHtml(jq, next) {
@@ -166,106 +221,6 @@
   }
 
   /**
-   * @arg {string} passage
-   * @arg {object} vars
-   * @arg {number} turn
-   * @arg {NextLink} next
-   */
-  function tranRenderInternal(passage, vars, turn, next) {
-    State.clearTemporary();
-    State.temporary.isTranscript = true;
-    State.temporary.tranPassage = passage;
-    State.temporary.tranTurn = turn;
-    State.active.variables = clone(vars) || {};
-    MT.enumInit();
-
-    const text = Story.get(passage).text;
-    let div = $("<div class=tran-entry>");
-    MT.suppressErrors(() => {
-      div.wiki(text);
-    });
-    // clone to remove event handlers
-    div = div.clone();
-    cleanHtml(div, next);
-
-    return div;
-  }
-
-  /** Renders current history to out. */
-  MT.tranRender = (output) => {
-    MT.stillRendering = true;
-    const outer = $("<div id=tran-outer>").appendTo(output);
-
-    const hist = MT.getHistory();
-    let turn = 0;
-
-    const renderSome = () => {
-      const batch = 10;
-      const stop = Math.min(turn + batch, hist.length);
-
-      const savedVars = State.active.variables;
-      const savedTemp = Object.entries(State.temporary);
-      try {
-        for (; turn < stop; turn++) {
-          const moment = hist[turn];
-
-          if (turn !== 0) {
-            $("<hr class=text-sep>").appendTo(outer);
-          }
-
-          /** @type { NextLink } */
-          const next = {};
-          if (turn + 1 < hist.length) {
-            next.title = hist[turn + 1].title;
-            const V = hist[turn + 1].variables;
-            if (V.g_mtaCodeTurn === turn + 1) {
-              next.code = V.g_mtaCode;
-            }
-          }
-          const div = tranRenderInternal(
-            moment.title,
-            moment.variables,
-            turn,
-            next
-          );
-
-          if (setup.debug) {
-            $("<div class=tran-title>").text(moment.title).prependTo(div);
-          }
-
-          $(outer).append(div);
-        }
-      } finally {
-        State.active.variables = savedVars;
-        State.clearTemporary();
-        for (const [k, v] of savedTemp) {
-          State.temporary[k] = v;
-        }
-      }
-    };
-
-    const renderLoop = () => {
-      renderSome();
-      if (turn < hist.length) {
-        setTimeout(renderLoop);
-      } else {
-        renderDone();
-      }
-    };
-
-    const renderDone = () => {
-      const words = MT.countWords($(outer).text());
-      const passages = hist.length;
-      const minutes = Math.round(words / 250);
-      let stats = `${passages} pages, ${words} words, ~${minutes} minutes`;
-      $("#tran-stats").text(`(${stats})`);
-      MT.stillRendering = false;
-    };
-
-    renderLoop();
-  };
-
-  /**
    * <<tran-cut link>>
    * <<tran-cut text link>>
    *
@@ -314,4 +269,9 @@
       $(this.output).wiki(mkp || "");
     },
   });
+
+  MT.tran = {
+    renderHistory,
+    renderPage,
+  };
 })();

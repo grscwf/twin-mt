@@ -748,6 +748,12 @@ a[data-shock="0"]:hover {
 .tran-elided {
   margin-left: .2em;
 }
+
+#tran-stats {
+  font-size: 12px;
+  margin-left: 1em;
+  vertical-align: center;
+}
 /* twine-user-stylesheet #7: "g0boot-Hello.css" */
 /* Hello world */
 .hello-world {
@@ -2076,17 +2082,77 @@ $(document).on(':passagestart', function (ev) {
 /* twine-user-script #9: "g0a-Transcript.js" */
 (() => {
   /**
-   * Renders current history.
-   * @type {() => HTMLElement}
+   * Renders current history to out, asynchronously.
+   * @type {(out: JQuery<HTMLElement>) => void}
    */
-  function renderHistory() {
-    const outer = document.createElement("div");
-    // XXX
-    return outer;
+  function renderHistory(out) {
+    MT.stillRendering = true;
+    const outer = $("<div id=tran-outer>").appendTo(out);
+
+    const hist = MT.getHistory();
+    let turn = 0;
+
+    const renderSome = () => {
+      const batch = 10;
+      const stop = Math.min(turn + batch, hist.length);
+
+      for (; turn < stop; turn++) {
+        const moment = hist[turn];
+
+        if (turn !== 0) {
+          $("<hr class=text-sep>").appendTo(outer);
+        }
+
+        /** @type { NextLink } */
+        const next = {};
+        if (turn + 1 < hist.length) {
+          next.title = hist[turn + 1].title;
+          const V = hist[turn + 1].variables;
+          if (V.g_mtaCodeTurn === turn + 1) {
+            next.code = V.g_mtaCode;
+          }
+        }
+
+        const div = renderPage({
+          title: moment.title,
+          vars: clone(moment.variables),
+          temps: { tranTurn: turn },
+          next,
+        });
+
+        if (setup.debug) {
+          $("<div class=tran-title>").text(moment.title).prependTo(div);
+        }
+
+        $(outer).append(div);
+      }
+    };
+
+    const renderLoop = () => {
+      renderSome();
+      if (turn < hist.length) {
+        setTimeout(renderLoop);
+      } else {
+        renderDone();
+      }
+    };
+
+    const renderDone = () => {
+      const words = MT.countWords($(outer).text());
+      const passages = hist.length;
+      const minutes = Math.round(words / 250);
+      let stats = `${passages} pages, ${words} words, ~${minutes} minutes`;
+      $("#tran-stats").text(`(${stats})`);
+      MT.stillRendering = false;
+    };
+
+    renderLoop();
   }
 
   /**
    * Renders a single page.
+   * Note, page.vars and page.temps are not cloned,
+   * so rendering a page can modify them.
    * @type {(page: TranscriptPage) => JQuery<HTMLElement>}
    */
   function renderPage(page) {
@@ -2132,11 +2198,6 @@ $(document).on(':passagestart', function (ev) {
       Object.assign(State.temporary, savedTemp);
     }
   }
-
-  MT.tran = {
-    renderHistory,
-    renderPage,
-  };
 
   /** @type {(jq: JQuery, next: NextLink) => void} */
   function cleanHtml(jq, next) {
@@ -2242,106 +2303,6 @@ $(document).on(':passagestart', function (ev) {
   }
 
   /**
-   * @arg {string} passage
-   * @arg {object} vars
-   * @arg {number} turn
-   * @arg {NextLink} next
-   */
-  function tranRenderInternal(passage, vars, turn, next) {
-    State.clearTemporary();
-    State.temporary.isTranscript = true;
-    State.temporary.tranPassage = passage;
-    State.temporary.tranTurn = turn;
-    State.active.variables = clone(vars) || {};
-    MT.enumInit();
-
-    const text = Story.get(passage).text;
-    let div = $("<div class=tran-entry>");
-    MT.suppressErrors(() => {
-      div.wiki(text);
-    });
-    // clone to remove event handlers
-    div = div.clone();
-    cleanHtml(div, next);
-
-    return div;
-  }
-
-  /** Renders current history to out. */
-  MT.tranRender = (output) => {
-    MT.stillRendering = true;
-    const outer = $("<div id=tran-outer>").appendTo(output);
-
-    const hist = MT.getHistory();
-    let turn = 0;
-
-    const renderSome = () => {
-      const batch = 10;
-      const stop = Math.min(turn + batch, hist.length);
-
-      const savedVars = State.active.variables;
-      const savedTemp = Object.entries(State.temporary);
-      try {
-        for (; turn < stop; turn++) {
-          const moment = hist[turn];
-
-          if (turn !== 0) {
-            $("<hr class=text-sep>").appendTo(outer);
-          }
-
-          /** @type { NextLink } */
-          const next = {};
-          if (turn + 1 < hist.length) {
-            next.title = hist[turn + 1].title;
-            const V = hist[turn + 1].variables;
-            if (V.g_mtaCodeTurn === turn + 1) {
-              next.code = V.g_mtaCode;
-            }
-          }
-          const div = tranRenderInternal(
-            moment.title,
-            moment.variables,
-            turn,
-            next
-          );
-
-          if (setup.debug) {
-            $("<div class=tran-title>").text(moment.title).prependTo(div);
-          }
-
-          $(outer).append(div);
-        }
-      } finally {
-        State.active.variables = savedVars;
-        State.clearTemporary();
-        for (const [k, v] of savedTemp) {
-          State.temporary[k] = v;
-        }
-      }
-    };
-
-    const renderLoop = () => {
-      renderSome();
-      if (turn < hist.length) {
-        setTimeout(renderLoop);
-      } else {
-        renderDone();
-      }
-    };
-
-    const renderDone = () => {
-      const words = MT.countWords($(outer).text());
-      const passages = hist.length;
-      const minutes = Math.round(words / 250);
-      let stats = `${passages} pages, ${words} words, ~${minutes} minutes`;
-      $("#tran-stats").text(`(${stats})`);
-      MT.stillRendering = false;
-    };
-
-    renderLoop();
-  };
-
-  /**
    * <<tran-cut link>>
    * <<tran-cut text link>>
    *
@@ -2390,6 +2351,11 @@ $(document).on(':passagestart', function (ev) {
       $(this.output).wiki(mkp || "");
     },
   });
+
+  MT.tran = {
+    renderHistory,
+    renderPage,
+  };
 })();
 /* twine-user-script #10: "g0boot-Hello.js" */
 /**
@@ -2415,7 +2381,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -21774,14 +21740,6 @@ hello some more
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="236" name="g1m Transcript" tags="is-menu" position="325,2675" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;style&gt;
-#tran-stats {
-  font-size: 12px;
-  margin-left: 1em;
-  vertical-align: center;
-}
-&lt;/style&gt;
-
 &lt;&lt;sticky-head&gt;&gt;
   &lt;div&gt;
     &lt;span class=ui-title&gt;Story Transcript&lt;/span&gt;
@@ -21789,11 +21747,11 @@ hello some more
   &lt;/div&gt;
 &lt;&lt;/sticky-head&gt;&gt;
 
-&lt;&lt;sticky-return&gt;&gt;
-
 &lt;&lt;script&gt;&gt;
-  MT.tranRender(output);
+  MT.tran.renderHistory(output);
 &lt;&lt;/script&gt;&gt;
+
+&lt;&lt;sticky-return&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="237" name="n0a Nero Ending Index" tags="mt-ready inclusion" position="650,1275" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;

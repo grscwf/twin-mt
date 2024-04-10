@@ -75,12 +75,16 @@ declare global {
     suppressErrors: (block: () => void) => void;
 
     tran: {
+      /**
+       * Renders a single page.
+       * Note, page.vars and page.temps are not cloned,
+       * so rendering a page can modify them.
+       */
       renderPage(page: TranscriptPage): JQuery<HTMLElement>;
-      renderHistory(): HTMLElement;
-    }
 
-    /** Renders current history to out. */
-    tranRender: (out: DocumentFragment | Element) => void;
+      /** Renders current history to out, asynchronously. */
+      renderHistory(out: JQuery<HTMLElement>): void;
+    };
 
     /** Returns a Set of unlocked keys. */
     unlockedSet: () => Set<string>;
