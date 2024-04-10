@@ -821,34 +821,6 @@ $(document).on(':passagestart', function (ev) {
 /* twine-user-script #2: "g0a-Archives.js" */
 (() => {
   /**
-   * Creates a scratch state with _isArchive and _isTranscript true,
-   * evaluate script, then render passage to dest
-   */
-  MT.arcRender = (dest, passage, script) => {
-    const text = Story.get(passage).text;
-    // we can change the variables obj, but we can't change the temporaries obj
-    const savedVars = State.active.variables;
-    const savedTemp = Object.entries(State.temporary);
-    try {
-      State.active.variables = {};
-      MT.randReset();
-      State.clearTemporary();
-      State.temporary.isArchive = true;
-      State.temporary.isTranscript = true;
-      if (script != null) {
-        $(dest).wiki(`<<run ${script}>>`);
-      }
-      $(dest).wiki(text);
-    } finally {
-      State.active.variables = savedVars;
-      State.clearTemporary();
-      for (const [k, v] of savedTemp) {
-        State.temporary[k] = v;
-      }
-    }
-  };
-
-  /**
    * <<arc-only>>...<</arc-only>>
    * Emit body only when rendering archive text.
    */
@@ -2371,7 +2343,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -16269,6 +16241,17 @@ const code = `
   $n_castEndgame = ${V.n_castEndgame};
 `;
 
+const vars = {
+  g_arcName: name,
+  g_rand0: 1636094642, /* arbitrary */
+  g_rand1: 173183867,
+  n_barbs: barbs,
+  n_castEndgame: V.n_castEndgame,
+};
+const temps = {
+  isArchive: true,
+};
+
 info.passages.forEach((passage, i) =&gt; {
   if (i !== 0) {
     $(&quot;&lt;hr class=text-sep&gt;&quot;).appendTo(output);
@@ -16276,7 +16259,12 @@ info.passages.forEach((passage, i) =&gt; {
   if (typeof passage === &quot;function&quot;) {
     passage = passage(arcEntry);
   }
-  MT.arcRender(output, passage, code);
+
+  MT.tran.renderPage({
+    title: passage,
+    vars,
+    temps,
+  }).appendTo(output);
 
   if (i + 1 &lt; info.passages.length) {
     let next = info.passages[i + 1];
