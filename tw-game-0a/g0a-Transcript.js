@@ -1,7 +1,7 @@
 (() => {
   /**
    * Renders current history to out, asynchronously.
-   * @type {(out: JQuery<HTMLElement>) => void}
+   * @type {(out: DocumentFragment | HTMLElement) => void}
    */
   function renderHistory(out) {
     MT.stillRendering = true;

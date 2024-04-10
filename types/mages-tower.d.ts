@@ -84,10 +84,10 @@ declare global {
       renderPage(page: TranscriptPage): JQuery<HTMLElement>;
 
       /** Renders current history to out, asynchronously. */
-      renderHistory(out: JQuery<HTMLElement>): void;
+      renderHistory(out: DocumentFragment | HTMLElement): void;
     };
 
-    /** Returns a Set of unlocked keys. */
+    /** Returns a Set of unlocked keywords. */
     unlockedSet: () => Set<string>;
 
     /** Runs block with var tracing disabled. */
