@@ -6,10 +6,15 @@ declare global {
     code?: string;
   };
 
+  /** Arguments for rendering a transcript page. */
   type TranscriptPage = {
+    /** Page to render. */
     title: string;
+    /** Variables to set before rendering. */
     vars?: SugarCubeStoryVariables;
+    /** Temporaries to set before rendering. */
     temps?: SugarCubeTemporaryVariables;
+    /** Next-page link to highlight. */
     next?: NextLink;
   };
 
@@ -75,11 +80,7 @@ declare global {
     suppressErrors: (block: () => void) => void;
 
     tran: {
-      /**
-       * Renders a single page.
-       * Note, page.vars and page.temps are not cloned,
-       * so rendering a page can modify them.
-       */
+      /** Renders a single page. */
       renderPage(page: TranscriptPage): JQuery<HTMLElement>;
 
       /** Renders current history to out, asynchronously. */

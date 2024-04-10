@@ -33,7 +33,7 @@
 
         const div = renderPage({
           title: moment.title,
-          vars: clone(moment.variables),
+          vars: moment.variables,
           temps: { tranTurn: turn },
           next,
         });
@@ -69,8 +69,6 @@
 
   /**
    * Renders a single page.
-   * Note, page.vars and page.temps are not cloned,
-   * so rendering a page can modify them.
    * @type {(page: TranscriptPage) => JQuery<HTMLElement>}
    */
   function renderPage(page) {
@@ -80,10 +78,10 @@
       State.temporary.tranPassage = page.title;
       State.temporary.tranTurn = 0;
       if (page.vars != null) {
-        Object.assign(State.active.variables, page.vars);
+        Object.assign(State.active.variables, clone(page.vars));
       }
       if (page.temps != null) {
-        Object.assign(State.temporary, page.temps);
+        Object.assign(State.temporary, clone(page.temps));
       }
       MT.enumInit();
 
