@@ -180,6 +180,7 @@
    */
   Macro.add("ending-bad", {
     handler: function () {
+      if (State.temporary.isArchive) return;
       const [text, metaVar] = this.args;
       emitEnding("bad", metaVar, `Bad Ending: ${text}`, this.output);
     },
@@ -193,6 +194,7 @@
    */
   Macro.add("ending-challenge", {
     handler: function () {
+      if (State.temporary.isArchive) return;
       const [text, metaVar] = this.args;
       emitEnding(
         "challenge",
@@ -211,6 +213,7 @@
    */
   Macro.add("ending-good", {
     handler: function () {
+      if (State.temporary.isArchive) return;
       const [text, metaVar] = this.args;
       emitEnding("good", metaVar, `Ending: ${text}`, this.output);
     },
