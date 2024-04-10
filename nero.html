@@ -1294,7 +1294,25 @@ $(document).on(':passagestart', function (ev) {
 
   $(document).on(":storyready", init);
 })();
-/* twine-user-script #4: "g0a-Nero-Caged.js" */
+/* twine-user-script #4: "g0a-JQuery.js" */
+(() => {
+  /**
+   * Returns the HTMLElement from a JQuery handle.
+   * Throws if the handle is not exactly one element.
+   * @type { (jq: JQuery) => HTMLElement }
+   */
+  MT.jqUnwrap = (jq) => {
+    if (jq.length !== 1) {
+      throw new Error(`tried to jqUnwrap length !== 1`);
+    }
+    const el = jq[0];
+    if (!(el instanceof HTMLElement)) {
+      throw new Error(`tried to jqUnwrap a non HTMLElement`);
+    }
+    return el;
+  };
+})();
+/* twine-user-script #5: "g0a-Nero-Caged.js" */
 (() => {
   const BORDER = 0;
 
@@ -1345,19 +1363,6 @@ $(document).on(':passagestart', function (ev) {
       }
     },
   });
-
-  /**
-   * Returns the HTMLElement from a JQuery handle.
-   * Throws if the handle is not exactly one element.
-   * @type { (jq: JQuery) => HTMLElement }
-   */
-  function jqUnwrap(jq) {
-    if (jq.length !== 1) {
-      console.log({ jq });
-      throw new Error(`jqUnwrap got length !== 1`);
-    }
-    return /** @type { HTMLElement } */ (jq[0]);
-  }
 
   /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo) => void } */
   function renderTranscript(out, split) {
@@ -1631,7 +1636,7 @@ $(document).on(':passagestart', function (ev) {
     const blocks = [];
     let height = 0;
     try {
-      const box = jqUnwrap(inner).getBoundingClientRect();
+      const box = MT.jqUnwrap(inner).getBoundingClientRect();
       if (box.width === 0) {
         MT.diag("failed to render in splitText");
         const block = document.createDocumentFragment();
@@ -1697,7 +1702,7 @@ $(document).on(':passagestart', function (ev) {
 
         const range = document.createRange();
 
-        const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
+        const first = /** @type { Node } */ (MT.jqUnwrap(inner).firstChild);
         range.setStartBefore(first);
 
         /** @type { Node } */
@@ -1719,7 +1724,7 @@ $(document).on(':passagestart', function (ev) {
 
         // Try to find out exactly where the word break is
         const chars = Array.from(lineStartWord.textContent || "").map((c) =>
-          jqUnwrap($("<span>").text(c))
+          MT.jqUnwrap($("<span>").text(c))
         );
         $(lineStartWord).empty().append(chars);
         for (const ch of chars) {
@@ -1746,7 +1751,7 @@ $(document).on(':passagestart', function (ev) {
     return { height, blocks };
   }
 })();
-/* twine-user-script #5: "g0a-Nero-Patience.js" */
+/* twine-user-script #6: "g0a-Nero-Patience.js" */
 (() => {
   /**
    * <<n1-patience $looks $actions>>
@@ -1995,7 +2000,7 @@ $(document).on(':passagestart', function (ev) {
     },
   });
 })();
-/* twine-user-script #6: "g0a-Scroll-Pos.js" */
+/* twine-user-script #7: "g0a-Scroll-Pos.js" */
 /**
  * Restore scroll pos when reloading page.
  */
@@ -2046,7 +2051,7 @@ $(document).on(':passagestart', function (ev) {
 
   scrollPosInit();
 })();
-/* twine-user-script #7: "g0a-Templates.js" */
+/* twine-user-script #8: "g0a-Templates.js" */
 (() => {
   Template.add("P", "<br><br>");
 
@@ -2068,13 +2073,70 @@ $(document).on(':passagestart', function (ev) {
 
   Template.add("testIcon", "&#x1f9ea;");
 })();
-/* twine-user-script #8: "g0a-Transcript.js" */
+/* twine-user-script #9: "g0a-Transcript.js" */
 (() => {
   /**
-   * @typedef {object} NextLink
-   * @prop {string} [title]
-   * @prop {string} [code]
+   * Renders current history.
+   * @type {() => HTMLElement}
    */
+  function renderHistory() {
+    const outer = document.createElement("div");
+    // XXX
+    return outer;
+  }
+
+  /**
+   * Renders a single page.
+   * @type {(page: TranscriptPage) => JQuery<HTMLElement>}
+   */
+  function renderPage(page) {
+    const out = $("<div class=tran-entry>");
+    withEmptyState(() => {
+      State.temporary.isTranscript = true;
+      State.temporary.tranPassage = page.title;
+      State.temporary.tranTurn = 0;
+      if (page.vars != null) {
+        Object.assign(State.active.variables, page.vars);
+      }
+      if (page.temps != null) {
+        Object.assign(State.temporary, page.temps);
+      }
+      MT.enumInit();
+
+      MT.suppressErrors(() => {
+        const text = Story.get(page.title).text;
+        $(out).wiki(text);
+      });
+    });
+    // clone to remove event handlers
+    const copy = out.clone();
+    cleanHtml(copy, page.next || {});
+    return copy;
+  }
+
+  /**
+   * Runs block with an empty SugarCube state.
+   * @type {(block: () => void) => void}
+   */
+  function withEmptyState(block) {
+    // We can replace variables, but we can't replace temporary
+    const savedVars = State.active.variables;
+    const savedTemp = { ...State.temporary };
+    try {
+      State.active.variables = {};
+      State.clearTemporary();
+      block();
+    } finally {
+      State.active.variables = savedVars;
+      State.clearTemporary();
+      Object.assign(State.temporary, savedTemp);
+    }
+  }
+
+  MT.tran = {
+    renderHistory,
+    renderPage,
+  };
 
   /** @type {(jq: JQuery, next: NextLink) => void} */
   function cleanHtml(jq, next) {
@@ -2205,21 +2267,6 @@ $(document).on(':passagestart', function (ev) {
     return div;
   }
 
-  /** Renders one passage with the given state to a new detached div. */
-  MT.tranRenderOne = (title, state) => {
-    const savedVars = State.active.variables;
-    const savedTemp = Object.entries(State.temporary);
-    try {
-      return tranRenderInternal(title, state, 0, {});
-    } finally {
-      State.active.variables = savedVars;
-      State.clearTemporary();
-      for (const [k, v] of savedTemp) {
-        State.temporary[k] = v;
-      }
-    }
-  };
-
   /** Renders current history to out. */
   MT.tranRender = (output) => {
     MT.stillRendering = true;
@@ -2344,7 +2391,7 @@ $(document).on(':passagestart', function (ev) {
     },
   });
 })();
-/* twine-user-script #9: "g0boot-Hello.js" */
+/* twine-user-script #10: "g0boot-Hello.js" */
 /**
  * Hello world
  * @type { () => string }
@@ -2352,7 +2399,7 @@ $(document).on(':passagestart', function (ev) {
 function helloWorld() {
   return "world";
 }
-/* twine-user-script #10: "g0init-Debugging.js" */
+/* twine-user-script #11: "g0init-Debugging.js" */
 (() => {
   if (!setup.debug) return;
 
@@ -2368,7 +2415,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -14734,9 +14781,9 @@ function gatherPassages() {
 
 function renderSeen(title, state, out) {
   out.empty();
-  const div = MT.tranRenderOne(title, state);
+  const div = MT.tran.renderPage({ title, vars: state });
   if (setup.debug) {
-    const plain = MT.tranRenderOne(title, null);
+    const plain = MT.tran.renderPage({ title });
     const clue = makeClue(plain);
     clue.wiki(&quot;?debugIcon &lt;hr&gt;&quot;).appendTo(out);
     $(&quot;&lt;div class=trail-info-title&gt;&quot;)
@@ -14757,7 +14804,7 @@ function renderSeen(title, state, out) {
 
 function renderUnseen(title, out) {
   out.empty();
-  const div = MT.tranRenderOne(title, null);
+  const div = MT.tran.renderPage({ title });
   const clue = makeClue(div);
   out.append(clue);
 

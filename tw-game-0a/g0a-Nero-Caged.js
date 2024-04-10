@@ -49,19 +49,6 @@
     },
   });
 
-  /**
-   * Returns the HTMLElement from a JQuery handle.
-   * Throws if the handle is not exactly one element.
-   * @type { (jq: JQuery) => HTMLElement }
-   */
-  function jqUnwrap(jq) {
-    if (jq.length !== 1) {
-      console.log({ jq });
-      throw new Error(`jqUnwrap got length !== 1`);
-    }
-    return /** @type { HTMLElement } */ (jq[0]);
-  }
-
   /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo) => void } */
   function renderTranscript(out, split) {
     const last = State.variables.n_cagedBlock ?? split.blocks.length - 1;
@@ -334,7 +321,7 @@
     const blocks = [];
     let height = 0;
     try {
-      const box = jqUnwrap(inner).getBoundingClientRect();
+      const box = MT.jqUnwrap(inner).getBoundingClientRect();
       if (box.width === 0) {
         MT.diag("failed to render in splitText");
         const block = document.createDocumentFragment();
@@ -400,7 +387,7 @@
 
         const range = document.createRange();
 
-        const first = /** @type { Node } */ (jqUnwrap(inner).firstChild);
+        const first = /** @type { Node } */ (MT.jqUnwrap(inner).firstChild);
         range.setStartBefore(first);
 
         /** @type { Node } */
@@ -422,7 +409,7 @@
 
         // Try to find out exactly where the word break is
         const chars = Array.from(lineStartWord.textContent || "").map((c) =>
-          jqUnwrap($("<span>").text(c))
+          MT.jqUnwrap($("<span>").text(c))
         );
         $(lineStartWord).empty().append(chars);
         for (const ch of chars) {

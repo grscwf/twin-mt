@@ -1,6 +1,18 @@
 import "twine-sugarcube";
 
 declare global {
+  type NextLink = {
+    title?: string;
+    code?: string;
+  };
+
+  type TranscriptPage = {
+    title: string;
+    vars?: SugarCubeStoryVariables;
+    temps?: SugarCubeTemporaryVariables;
+    next?: NextLink;
+  };
+
   const MT: {
     /**
      * Creates a scratch state with _isArchive and _isTranscript true,
@@ -31,6 +43,12 @@ declare global {
     /** Returns history without is-menu loops. */
     getHistory: () => StoryMoment[];
 
+    /**
+     * Returns the HTMLElement from a JQuery handle.
+     * Throws if the handle is not exactly one element.
+     */
+    jqUnwrap: (jq: JQuery) => HTMLElement;
+
     /** Returns all metadata. */
     mdEntries: () => Array<[key: string, value: unknown]>;
 
@@ -56,11 +74,13 @@ declare global {
 
     suppressErrors: (block: () => void) => void;
 
+    tran: {
+      renderPage(page: TranscriptPage): JQuery<HTMLElement>;
+      renderHistory(): HTMLElement;
+    }
+
     /** Renders current history to out. */
     tranRender: (out: DocumentFragment | Element) => void;
-
-    /** Renders one passage with the given state to a new detached div. */
-    tranRenderOne: (title: string, state: object) => JQuery<HtmlElement>;
 
     /** Returns a Set of unlocked keys. */
     unlockedSet: () => Set<string>;

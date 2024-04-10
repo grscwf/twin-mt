@@ -1,9 +1,66 @@
 (() => {
   /**
-   * @typedef {object} NextLink
-   * @prop {string} [title]
-   * @prop {string} [code]
+   * Renders current history.
+   * @type {() => HTMLElement}
    */
+  function renderHistory() {
+    const outer = document.createElement("div");
+    // XXX
+    return outer;
+  }
+
+  /**
+   * Renders a single page.
+   * @type {(page: TranscriptPage) => JQuery<HTMLElement>}
+   */
+  function renderPage(page) {
+    const out = $("<div class=tran-entry>");
+    withEmptyState(() => {
+      State.temporary.isTranscript = true;
+      State.temporary.tranPassage = page.title;
+      State.temporary.tranTurn = 0;
+      if (page.vars != null) {
+        Object.assign(State.active.variables, page.vars);
+      }
+      if (page.temps != null) {
+        Object.assign(State.temporary, page.temps);
+      }
+      MT.enumInit();
+
+      MT.suppressErrors(() => {
+        const text = Story.get(page.title).text;
+        $(out).wiki(text);
+      });
+    });
+    // clone to remove event handlers
+    const copy = out.clone();
+    cleanHtml(copy, page.next || {});
+    return copy;
+  }
+
+  /**
+   * Runs block with an empty SugarCube state.
+   * @type {(block: () => void) => void}
+   */
+  function withEmptyState(block) {
+    // We can replace variables, but we can't replace temporary
+    const savedVars = State.active.variables;
+    const savedTemp = { ...State.temporary };
+    try {
+      State.active.variables = {};
+      State.clearTemporary();
+      block();
+    } finally {
+      State.active.variables = savedVars;
+      State.clearTemporary();
+      Object.assign(State.temporary, savedTemp);
+    }
+  }
+
+  MT.tran = {
+    renderHistory,
+    renderPage,
+  };
 
   /** @type {(jq: JQuery, next: NextLink) => void} */
   function cleanHtml(jq, next) {
@@ -133,21 +190,6 @@
 
     return div;
   }
-
-  /** Renders one passage with the given state to a new detached div. */
-  MT.tranRenderOne = (title, state) => {
-    const savedVars = State.active.variables;
-    const savedTemp = Object.entries(State.temporary);
-    try {
-      return tranRenderInternal(title, state, 0, {});
-    } finally {
-      State.active.variables = savedVars;
-      State.clearTemporary();
-      for (const [k, v] of savedTemp) {
-        State.temporary[k] = v;
-      }
-    }
-  };
 
   /** Renders current history to out. */
   MT.tranRender = (output) => {
