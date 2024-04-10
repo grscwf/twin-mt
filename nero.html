@@ -1071,7 +1071,6 @@ $(document).on(':passagestart', function (ev) {
    * @arg {string} text
    * @arg {DocumentFragment | HTMLElement} output
    */
-
   function emitEnding(type, metaVar, text, output) {
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     if (metaVar == null || V[metaVar]) {
@@ -1086,13 +1085,6 @@ $(document).on(':passagestart', function (ev) {
       MT.mdSet(metaVar, true);
     }
   }
-
-  /** Returns a Set of unlocked keys. */
-  MT.unlockedSet = () => {
-    const entries = MT.mdEntries();
-    const truthy = entries.filter(([k, v]) => v).map(([k, v]) => k);
-    return new Set(truthy);
-  };
 })();
 /* twine-user-script #3: "g0a-Chain.js" */
 /*
@@ -2379,7 +2371,7 @@ function helloWorld() {
     });
   });
 })();
-</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -9350,7 +9342,7 @@ MT.mdEntries = () =&gt; {
   return State.metadata.entries() || [];
 };
 
-/** Returns an object-map of all metadata keys and values. */
+/** Returns an object-map of all metadata. */
 MT.mdRecord = () =&gt; {
   return Object.fromEntries(MT.mdEntries());
 };
@@ -13891,13 +13883,13 @@ Config.passages.descriptions = function() {
 }
 
 function countUnlocks() {
-  const unlocked = MT.unlockedSet();
+  const md = MT.mdRecord();
   let num = 0;
   let total = 0;
   const add = (keys) =&gt; {
     total += keys.length;
     for (const k of keys) {
-      if (unlocked.has(k)) num++;
+      if (md[k]) num++;
     }
   };
 
@@ -16369,9 +16361,9 @@ function lockpickUpdate() {
 }
 
 function countUnlocks() {
-  const unlocked = MT.unlockedSet();
+  const md = MT.mdRecord();
   const count = (keys, reveal) =&gt; {
-    const n = keys.filter(k =&gt; unlocked.has(k)).length;
+    const n = keys.filter(k =&gt; md[k]).length;
     const total = (reveal || T.lockpick) ? keys.length : &quot;?&quot;;
     return `${n} of ${total}`;
   };

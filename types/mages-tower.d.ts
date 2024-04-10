@@ -54,8 +54,11 @@ declare global {
      */
     jqUnwrap: (jq: JQuery) => HTMLElement;
 
-    /** Returns all metadata. */
+    /** Returns an array of all [key, value] metadata entries. */
     mdEntries: () => Array<[key: string, value: unknown]>;
+
+    /** Returns an object-map of all metadata. */
+    mdRecord: () => Record<string, unknown>;
 
     /** Sets a metadata variable. */
     mdSet: (varName: string, value: unknown) => void;
@@ -86,9 +89,6 @@ declare global {
       /** Renders current history to out, asynchronously. */
       renderHistory(out: DocumentFragment | HTMLElement): void;
     };
-
-    /** Returns a Set of unlocked keywords. */
-    unlockedSet: () => Set<string>;
 
     /** Runs block with var tracing disabled. */
     untraced: (block: () => void) => void;

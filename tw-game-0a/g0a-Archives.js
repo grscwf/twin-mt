@@ -250,7 +250,6 @@
    * @arg {string} text
    * @arg {DocumentFragment | HTMLElement} output
    */
-
   function emitEnding(type, metaVar, text, output) {
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     if (metaVar == null || V[metaVar]) {
@@ -265,11 +264,4 @@
       MT.mdSet(metaVar, true);
     }
   }
-
-  /** Returns a Set of unlocked keys. */
-  MT.unlockedSet = () => {
-    const entries = MT.mdEntries();
-    const truthy = entries.filter(([k, v]) => v).map(([k, v]) => k);
-    return new Set(truthy);
-  };
 })();
