@@ -54,6 +54,7 @@ async function needsBuild(rule: Rule, force: boolean) {
     log(`${rule.target} does not exist`);
     return true;
   }
+  // order of files doesn't matter for dep checking
   const patterns = rule.dirs.map((d) => `${d}/**`);
   const deps = await fastGlob(patterns);
   for (const dep of deps) {
@@ -77,7 +78,14 @@ async function needsBuild(rule: Rule, force: boolean) {
 }
 
 async function buildRule(rule: Rule): Promise<void> {
-  let dirs = await fastGlob(rule.dirs, { onlyFiles: false });
+  let dirs: string[] = [];
+
+  // glob each element individually, to preserve order.
+  for (const glob of rule.dirs) {
+    const list = await fastGlob(glob, { onlyFiles: false });
+    dirs.push(...list);
+  }
+
   if (rule.omit != null) {
     const omit = await fastGlob(rule.omit, { onlyFiles: false });
     dirs = dirs.filter((d) => !omit.includes(d));
