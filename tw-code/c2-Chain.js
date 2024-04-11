@@ -9,7 +9,7 @@
  * or if replay is done in the wrong version.
  */
 
-(() => {
+{
   const chainCode =
     "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -190,7 +190,7 @@
     MT.roamStart(path, done, true);
   }
 
-  function init() {
+  const chainInit = () => {
     const passages = $("#passages")[0];
     if (passages == null) {
       throw new Error("failed to find #passages?");
@@ -199,7 +199,7 @@
     document.addEventListener("keydown", kbCopyChain);
     addEventListener("hashchange", replayUrl);
     replayUrl();
-  }
+  };
 
-  $(document).on(":storyready", init);
-})();
+  $(document).on(":storyready", chainInit);
+}

@@ -1,50 +1,46 @@
-/**
- * Restore scroll pos when reloading page.
+/*
+ * Restores scroll pos when reloading page.
  */
 
-(() => {
-  const KEY = "scroll.pos";
+/** True if scrolling should wait (until an async renderer finishes). */
+MT.scrollWait = false;
 
-  const repr = JSON._real_stringify || JSON.stringify;
-  const parse = JSON._real_parse || JSON.parse;
+const SCROLL_KEY = "scroll.pos";
 
-  MT.stillRendering = false;
+const scrollRememberPos = () => {
+  const pos = {
+    turn: State.turns,
+    top: document.documentElement.scrollTop,
+  };
+  sessionStorage.setItem(SCROLL_KEY, MT.repr(pos));
+};
 
-  function rememberPos() {
-    const obj = {
-      turn: State.turns,
-      top: document.documentElement.scrollTop,
-    };
-    sessionStorage.setItem(KEY, repr(obj));
-  }
+const scrollRestorePos = () => {
+  const json = sessionStorage.getItem(SCROLL_KEY);
+  if (json == null) return;
 
-  function restorePos() {
-    const json = sessionStorage.getItem(KEY);
-    if (json == null) return;
-    const obj = parse(json);
-    if (obj.turn !== State.turns) return;
+  const pos = MT.jsonParse(json);
+  if (pos.turn !== State.turns) return;
 
-    const el = document.documentElement;
-    const doScroll = () => {
-      if (MT.stillRendering) {
-        setTimeout(doScroll, 100);
-      } else {
-        el.scrollTo({ top: obj.top, behavior: "smooth" });
-      }
-    };
-    if (obj.top < el.scrollHeight) {
-      doScroll();
+  const el = document.documentElement;
+
+  const doScroll = () => {
+    if (MT.scrollWait) {
+      setTimeout(doScroll, 200);
     } else {
-      setTimeout(doScroll, 500);
+      el.scrollTo({ top: pos.top, behavior: "smooth" });
     }
-  }
+  };
 
-  function scrollPosInit() {
-    // This is only useful when doing reload after an edit
-    if (!setup.debug) return;
-    document.addEventListener("scrollend", rememberPos);
-    $(document).on(":passageend", restorePos);
-  }
+  setTimeout(doScroll, 500);
+};
 
-  scrollPosInit();
-})();
+const scrollInit = () => {
+  // This is only useful when doing reload after an edit
+  if (!setup.debug) return;
+
+  document.addEventListener("scrollend", scrollRememberPos);
+  $(document).on(":passageend", scrollRestorePos);
+};
+
+scrollInit();

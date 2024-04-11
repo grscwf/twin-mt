@@ -15,7 +15,7 @@ export const rules: Rule[] = [
       "tw-game-*",
       "tw-nero-*",
       "tw-drekkar-*",
-      "tw-code",
+      "tw-code*",
 
       // last dir is where untwine will add new passages
       "tw-uncategorized",

@@ -1,15 +1,19 @@
-:: g0init Count Words [inclusion] {"position":"750,475","size":"100,100"}
-<<script>>
-
-MT.countWords = function(text) {
+/** @type {(text: string) => number} */
+MT.countWords = function (text) {
   const tokens = text.split(/(<[<].*?>>|<.*>)/);
-  let n = 0;
+
+  /** @type {(p: number, re: RegExp) => number} */
   const skipTo = (p, re) => {
-    while (p < tokens.length && !re.test(tokens[p])) ++p;
+    while (p < tokens.length && !re.test(tokens[p] || "")) {
+      ++p;
+    }
     return p;
   };
+
+  let n = 0;
   for (let p = 0; p < tokens.length; p++) {
-    const t = tokens[p].trim();
+    const token = tokens[p] || "";
+    const t = token.trim();
     if (t === "") {
       /* nothing */
     } else if (/^<?<script/.test(t)) {
@@ -21,10 +25,9 @@ MT.countWords = function(text) {
     } else if (t.startsWith("<")) {
       n += 1;
     } else {
-      const words = t.split(/[\s]+/).filter(w => /\w/.test(w) && w !== "?P");
+      const words = t.split(/[\s]+/).filter((w) => /\w/.test(w) && w !== "?P");
       n += words.length;
     }
   }
   return n;
-}
-<</script>>
+};

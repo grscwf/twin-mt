@@ -38,7 +38,7 @@ MT.enumInit = () => {
  * so that typo-ing an enum value will throw an error.
  * @type {(enumType: string, enumValueNames: string[]) => void}
  */
-const defineEnum = (enumType, enumValueNames) => {
+const enumDefine = (enumType, enumValueNames) => {
   MT.enums[enumType] = enumValueNames;
   const global = /** @type {Record<string, unknown>} */ (
     /** @type {unknown} */ (window)
@@ -50,13 +50,13 @@ const defineEnum = (enumType, enumValueNames) => {
  * Declare `valName` to be an enum of `enumType`
  * @type {(valName: string, enumType: string) => void}
  */
-const declareVarEnum = (valName, enumType) => {
+const enumDeclareVar = (valName, enumType) => {
   if (!MT.enums[enumType]) throw new Error(`No enum named ${enumType}`);
   MT.enumVars[valName] = enumType;
 };
 
 /* Nero magic phase. */
-defineEnum("MagicPhase", [
+enumDefine("MagicPhase", [
   "MP_beforeCast",
   "MP_triedMagic",
   "MP_wantDevice",
@@ -71,14 +71,14 @@ defineEnum("MagicPhase", [
   "MP_tapLost", // did connect to Sprite
 ]);
 
-declareVarEnum("n_magicPhase", "MagicPhase");
-declareVarEnum("n_magicPhaseReached", "MagicPhase");
+enumDeclareVar("n_magicPhase", "MagicPhase");
+enumDeclareVar("n_magicPhaseReached", "MagicPhase");
 
 /*
  * Places where Ivex has asked a question, and may be near enough to hear
  * Nero trying to talk to the Sprite.
  */
-defineEnum("IvexContext", [
+enumDefine("IvexContext", [
   "IC_distant",
   "IC_gone",
   "IC_guildName", // recruit > Skeptical
@@ -91,7 +91,7 @@ defineEnum("IvexContext", [
   "IC_whoSentYou", // candle horny > Light Squeeze, Heavy Squeeze
 ]);
 
-declareVarEnum("n_ivexContext", "IvexContext");
+enumDeclareVar("n_ivexContext", "IvexContext");
 
 // This should get run before most other :passagestart handlers
 $(document).on(":passagestart", MT.enumInit);

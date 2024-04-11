@@ -42,8 +42,11 @@
 /** Mage's Tower namespace. */
 const MT = {};
 
+/** Alias for JSON._real_parse. */
+// This uses ?: because using || will infect the docstring of MT (tsc bug)
+MT.jsonParse = JSON._real_parse ? JSON._real_parse : JSON.parse;
+
 /** Alias for JSON._real_stringify. */
-// this uses ?: because using || will infect the docstring of MT (tsc bug)
 MT.repr = JSON._real_stringify ? JSON._real_stringify : JSON.stringify;
 
 /** `window` as a extensible Record. */

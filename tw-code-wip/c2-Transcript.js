@@ -4,7 +4,7 @@
    * @type {(out: DocumentFragment | HTMLElement) => void}
    */
   function renderHistory(out) {
-    MT.stillRendering = true;
+    MT.scrollWait = true;
     const outer = $("<div id=tran-outer>").appendTo(out);
 
     const hist = MT.getHistory();
@@ -61,7 +61,7 @@
       const minutes = Math.round(words / 250);
       let stats = `${passages} pages, ${words} words, ~${minutes} minutes`;
       $("#tran-stats").text(`(${stats})`);
-      MT.stillRendering = false;
+      MT.scrollWait = false;
     };
 
     renderLoop();
@@ -268,8 +268,4 @@
     },
   });
 
-  MT.tran = {
-    renderHistory,
-    renderPage,
-  };
 })();

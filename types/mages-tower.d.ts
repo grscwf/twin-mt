@@ -74,24 +74,6 @@ declare global {
     /** Returns number of words in text. */
     countWords: (text: string) => number;
 
-    /** Sets some enum vars expected to have non-null values. */
-    enumInit: () => void;
-
-    /**
-     * Returns the symbolic name of `value` for an enum.
-     * `name` is either a var name or an enum name.
-     */
-    enumSymbol: (name: string, value: number) => string;
-
-    /** varName:string -> enumType:string */
-    enumVars: Record<string, string>;
-
-    /** enumType:string -> enumValueNames:string[] */
-    enums: Record<string, string[]>;
-
-    /** Generic container for exposing functions for console experimentation */
-    exp: Record<string, unknown>;
-
     fail: (str: string, context?: MacroContext) => void;
 
     forgetWalkHistory: () => void;
@@ -101,80 +83,6 @@ declare global {
 
     hasFails: boolean;
     hasWarnings: boolean;
-
-    /**
-     * Returns the HTMLElement from a JQuery handle.
-     * Throws if the handle is not exactly one element.
-     */
-    jqUnwrap: (jq: JQuery) => HTMLElement;
-
-    /** Deletes all metadata, except for IGNORED keys. */
-    mdClear: () => void;
-
-    /**
-     * Defines `key` to be UNSAVED metadata, which means:
-     * - it ISN'T stored in saved games.
-     * - it IS mirrored to State.variables.
-     * - it IS deleted by "clear metadata".
-     */
-    mdDefUnsaved: (key: string) => void;
-
-    /**
-     * Defines `key` to be SAVED metadata, which means;
-     * - it IS stored in saved games.
-     * - it IS mirrored to State.variables.
-     * - it IS deleted by "clear metadata".
-     * - loading a saved game will set its value from the saved game,
-     *   but only if it isn't already set.
-     */
-    mdDefSaved: (key: string) => void;
-
-    /**
-     * Defines `key` to be IGNORED metadata, which means:
-     * - it ISN'T stored in saved games.
-     * - it ISN'T mirrored to State.variables.
-     * - it ISN'T deleted by "clear metadata".
-     */
-    mdDefIgnored: (key: string) => void;
-
-    /** Returns an array of all [key, value] metadata entries. */
-    mdEntries: () => Array<[key: string, value: unknown]>;
-
-    /**
-     * Returns the value of metadata `key`.
-     *
-     * Note, each call will always decompress and deserialize
-     * all metadata from localStorage, so this is somewhat expensive.
-     *
-     * If you don't need the authoritative value, you can read the
-     * copy in State.variables (which might be out-of-date if the
-     * value was changed in another tab).
-     *
-     * If you want more than a few authoritative values at a time,
-     * use `MT.mdEntries` or `MT.mdRecord`.
-     */
-    mdGetUncached: (key: string) => unknown;
-
-    /**
-     * True if `key` is a known metadata key.
-     */
-    mdKnown: (key: string) => boolean;
-
-    /** Returns an object-map of all metadata. */
-    mdRecord: () => Record<string, unknown>;
-
-    /**
-     * Sets metadata `key` to `value`. Any false-y value will delete the key.
-     *
-     * Note, each call will always decompress and deserialize
-     * all metadata from localStorage, then reserialize and recompress
-     * back to localStorage. So this is very expensive, and SugarCube
-     * doesn't give us a way to batch multiple set operations
-     * (other than bypassing SugarCube and doing it ourselves.)
-     *
-     * When _isTranscript, will set state but not metadata.
-     */
-    mdSet: (varName: string, value: unknown) => void;
 
     message: (type: string, str: string, context?: MacroContext) => void;
     messages: string[];
@@ -197,9 +105,6 @@ declare global {
     ) => void;
 
     runsWithoutFail: (block: () => void) => boolean;
-
-    /** True if an async renderer is still running. */
-    stillRendering: boolean;
 
     suppressErrors: (block: () => void) => void;
 
@@ -226,8 +131,8 @@ declare module "twine-sugarcube" {
     /** True when ?debug mode. */
     debug?: boolean;
 
-    /** True when ?tester mode. */
-    tester?: boolean;
+    /** True when ?playtest mode. */
+    playtest?: boolean;
 
     version: string;
   }
