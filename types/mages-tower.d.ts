@@ -1,5 +1,36 @@
-import "twine-sugarcube";
+import type {
+  SugarCubeStoryVariables,
+  SugarCubeTemporaryVariables,
+} from "twine-sugarcube";
 
+/** Enums */
+declare global {
+  const MP_beforeCast: number;
+  const MP_triedMagic: number;
+  const MP_wantDevice: number;
+  const MP_wantName: number;
+  const MP_wantTouch: number;
+  const MP_wantPass: number;
+  const MP_onHold: number;
+  const MP_exitingHold: number;
+  const MP_contact: number;
+  const MP_lockedOut: number;
+  const MP_drained: number;
+  const MP_tapLost: number;
+
+  const IC_distant: number;
+  const IC_gone: number;
+  const IC_guildName: number;
+  const IC_mindControl: number;
+  const IC_explainTheft: number;
+  const IC_obeyMe: number;
+  const IC_lickPaw: number;
+  const IC_begForMe: number;
+  const IC_comfortable: number;
+  const IC_whoSentYou: number;
+}
+
+/** Types */
 declare global {
   type NextLink = {
     title?: string;
@@ -17,7 +48,10 @@ declare global {
     /** Next-page link to highlight. */
     next?: NextLink;
   };
+}
 
+/** The MT global */
+declare global {
   const MT: {
     /**
      * Creates a scratch state with _isArchive and _isTranscript true,
@@ -34,11 +68,26 @@ declare global {
     /** Returns number of words in text. */
     countWords: (text: string) => number;
 
-    /** emit a diagnostic message */
-    diag: (message: string) => void;
+    /** Queue a diag message. */
+    diag: (...args: unknown[]) => void;
+
+    /** Show pending diag messages. */
+    diagReport: () => void;
 
     /** Sets some enum vars expected to have non-null values. */
     enumInit: () => void;
+
+    /**
+     * Returns the symbolic name of `value` for an enum.
+     * `name` is either a var name or an enum name.
+     */
+    enumSymbol: (name: string, value: number) => string;
+
+    /** varName:string -> enumType:string */
+    enumVars: Record<string, string>;
+
+    /** enumType:string -> enumValueNames:string[] */
+    enums: Record<string, string[]>;
 
     /** Generic container for exposing functions for console experimentation */
     exp: Record<string, unknown>;
@@ -54,13 +103,72 @@ declare global {
      */
     jqUnwrap: (jq: JQuery) => HTMLElement;
 
+    /** Deletes all metadata, except for IGNORED keys. */
+    mdClear: () => void;
+
+    /**
+     * Defines `key` to be UNSAVED metadata, which means:
+     * - it ISN'T stored in saved games.
+     * - it IS mirrored to State.variables.
+     * - it IS deleted by "clear metadata".
+     */
+    mdDefUnsaved: (key: string) => void;
+
+    /**
+     * Defines `key` to be SAVED metadata, which means;
+     * - it IS stored in saved games.
+     * - it IS mirrored to State.variables.
+     * - it IS deleted by "clear metadata".
+     * - loading a saved game will set its value from the saved game,
+     *   but only if it isn't already set.
+     */
+    mdDefSaved: (key: string) => void;
+
+    /**
+     * Defines `key` to be IGNORED metadata, which means:
+     * - it ISN'T stored in saved games.
+     * - it ISN'T mirrored to State.variables.
+     * - it ISN'T deleted by "clear metadata".
+     */
+    mdDefIgnored: (key: string) => void;
+
     /** Returns an array of all [key, value] metadata entries. */
     mdEntries: () => Array<[key: string, value: unknown]>;
+
+    /**
+     * Returns the value of metadata `key`.
+     *
+     * Note, each call will always decompress and deserialize
+     * all metadata from localStorage, so this is somewhat expensive.
+     *
+     * If you don't need the authoritative value, you can read the
+     * copy in State.variables (which might be out-of-date if the
+     * value was changed in another tab).
+     *
+     * If you want more than a few authoritative values at a time,
+     * use `MT.mdEntries` or `MT.mdRecord`.
+     */
+    mdGetUncached: (key: string) => unknown;
+
+    /**
+     * True if `key` is a known metadata key.
+     */
+    mdKnown: (key: string) => boolean;
 
     /** Returns an object-map of all metadata. */
     mdRecord: () => Record<string, unknown>;
 
-    /** Sets a metadata variable. */
+    /**
+     * Sets metadata `key` to `value`. Any false-y value will delete the key.
+     *
+     * Note, each call will always decompress and deserialize
+     * all metadata from localStorage, then reserialize and recompress
+     * back to localStorage. So this is very expensive, and SugarCube
+     * doesn't give us a way to batch multiple set operations
+     * (other than bypassing SugarCube and doing it ourselves.)
+     *
+     * When _isTranscript, will set state but not metadata.
+     */
     mdSet: (varName: string, value: unknown) => void;
 
     /** Emits a note. */
@@ -92,6 +200,8 @@ declare global {
 
     /** Runs block with var tracing disabled. */
     untraced: (block: () => void) => void;
+
+    untracedVars?: () => SugarCubeStoryVariables;
 
     /** Emits a warning message. */
     warn: (message: string) => void;
@@ -147,7 +257,12 @@ declare module "twine-sugarcube" {
 
     n_didSomeAction?: boolean;
 
+    n_ivexContext?: number;
+
     n_lustTextPos?: number;
+
+    n_magicPhase?: number;
+    n_magicPhaseReached?: number;
 
     n_patienceAccel?: boolean;
     n_patienceActions?: number;
