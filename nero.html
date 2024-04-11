@@ -445,7 +445,7 @@ meta-text {
 .tran-entry hr {
   border-color: #555;
 }
-/* twine-user-stylesheet #2: "c0-Diag.css" */
+/* twine-user-stylesheet #2: "c1-Diag.css" */
 #mt-diag {
   background-color: #330;
   border: 1px solid #eaf54c;
@@ -453,7 +453,7 @@ meta-text {
   color: #eaf54c;
   padding: 0.5em;
 }
-/* twine-user-stylesheet #3: "c1-Archives.css" */
+/* twine-user-stylesheet #3: "c2-Archives.css" */
 .arc-disabled {
   opacity: 0.4;
   pointer-events: none;
@@ -498,7 +498,7 @@ meta-text {
   font-style: italic;
   font-weight: bold;
 }
-/* twine-user-stylesheet #4: "c1-Error-Message.css" */
+/* twine-user-stylesheet #4: "c2-Error-Message.css" */
 #EM-outer {
   position: fixed;
   bottom: 0;
@@ -545,7 +545,7 @@ a.EM-button:hover {
   margin-left: 1.5em;
   white-space: pre-line;
 }
-/* twine-user-stylesheet #5: "c1-Nero-Caged.css" */
+/* twine-user-stylesheet #5: "c2-Nero-Caged.css" */
 /*
  * Caged text. We try to be precise with layout despite not
  * really knowing what font is used. (It'll probably be Arial on desktops,
@@ -744,7 +744,7 @@ a[data-shock="0"]:hover {
     right: -1.5rem;
   }
 }
-/* twine-user-stylesheet #6: "c1-Nero-Patience.css" */
+/* twine-user-stylesheet #6: "c2-Nero-Patience.css" */
 .patience-label {
   cursor: pointer;
 }
@@ -752,14 +752,14 @@ a[data-shock="0"]:hover {
 .patience-debug:not(.patience-debug-show) > :not(.patience-label) {
   display: none;
 }
-/* twine-user-stylesheet #7: "c1-Templates.css" */
+/* twine-user-stylesheet #7: "c2-Templates.css" */
 .mt-cons {
   font-size: 1.5rem;
   font-weight: bold;
   line-height: 1;
   margin-bottom: 2rem;
 }
-/* twine-user-stylesheet #8: "c1-Transcript.css" */
+/* twine-user-stylesheet #8: "c2-Transcript.css" */
 
 #tran-outer a {
   color: #aac;
@@ -819,9 +819,6 @@ setup.version = "v2.0-nero-wip";
 Config.saves.id = 'sleth-mages-tower-2';
 Config.ui.stowBarInitially = !session.get("show-sidebar");
 
-/** globals for Mage's Tower */
-window.MT = {};
-
 // enable debug mode if URL has ?debug
 if (/[?&]debug\b/.test(location.search)) {
   Config.debug = true;
@@ -872,147 +869,202 @@ $(document).on(':passagestart', function (ev) {
     });
   });
 });
-/* twine-user-script #2: "c0-Diag.js" */
-(() => {
-  /** @type {string[]} */
-  const messages = [];
+/* twine-user-script #2: "c0-boot.js" */
+/*
+ * All .js files are concatenated together
+ * and evaluated within a SugarCube closure.
+ *
+ * This scope is *not* accessible to scripts within a passage.
+ * Anything needed by passages must be defined on a global.
+ *
+ * The goal of the following structure is
+ * to declare type-checked and docstring'ed modules in .js
+ * without needing .ts or .d.ts files.
+ *
+ * tsc has slightly weird rules about declaring literal objects in .js files.
+ *
+ * If we have a declaration assigned a literal `{}`:
+ *    const M = {};
+ *
+ * Then it can be augmented in the same scope.
+ *    M.p1 = ...;
+ *
+ * If M is top-level, the augmentation can be top-level in another file.
+ *
+ * Within the same file as M, augmentations can be in nested scopes,
+ * but not within closures:
+ *    { M.p2 = ...; }             // This works.
+ *    (() => { M.p3 = ...; })();  // This doesn't work.
+ *
+ * An augment can have a docstring.
+ *    /** p4 doc ...
+ *    M.p4 = ...;
+ *
+ * An augment does not copy the docstring of its initializer.
+ *    /** p5 doc ...
+ *    const p5 = ...;
+ *    M.p5 = p5;        // No docstring.
+ *
+ * @readonly does not work.
+ * 
+ * tsc will *not* complain about duplicate function definitions in
+ * separate files. So all top-level declarations should use "let" or "const".
+ */
 
-  /**
-   * Queue a diag message.
-   * @type {(...args: unknown[]) => void}
-   */
-  MT.diag = (...args) => {
-    console.log(args);
-    messages.push(
-      args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
-    );
-  };
+/** Mage's Tower namespace. */
+const MT = {};
 
-  /**
-   * Show pending diag messages.
-   * @type {() => void}
-   */
-  MT.diagReport = () => {
-    $("#mt-diag").remove();
-    if (messages.length) {
-      const div = $("<div id=mt-diag>").prependTo("#story");
-      for (const msg of messages) {
-        $("<div>").text(msg).appendTo(div);
-      }
+/** Alias for JSON._real_stringify. */
+// this uses ?: because using || will infect the docstring of MT (tsc bug)
+MT.repr = JSON._real_stringify ? JSON._real_stringify : JSON.stringify;
+
+/** `window` as a extensible Record. */
+MT.windowRec = /** @type {Record<string, unknown>} */ (
+  /** @type {unknown} */ (window)
+);
+
+// Publish MT as a global
+MT.windowRec.MT = MT;
+/* twine-user-script #3: "c1-Diag.js" */
+/** @type {string[]} */
+const diagMessages = [];
+
+/**
+ * Queue a diag message.
+ * @type {(...args: unknown[]) => void}
+ */
+MT.diag = (...args) => {
+  console.log(args);
+  diagMessages.push(
+    args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
+  );
+};
+
+/** Show pending diag messages. */
+MT.diagReport = () => {
+  $("#mt-diag").remove();
+  if (diagMessages.length) {
+    const div = $("<div id=mt-diag>").prependTo("#story");
+    for (const msg of diagMessages) {
+      $("<div>").text(msg).appendTo(div);
     }
-  };
-
-  /** Clear diag messages that were shown */
-  function diagClear() {
-    const div = $("#mt-diag");
-    if (div.length) {
-      div.remove();
-      messages.length = 0;
-    }
   }
+};
 
-  function diagInit() {
-    $(document).on(":passageinit", diagClear);
-    $(document).on(":passageend", MT.diagReport);
+/** Clear diag messages that were shown */
+const diagClear = () => {
+  const div = $("#mt-diag");
+  if (div.length) {
+    div.remove();
+    diagMessages.length = 0;
   }
+};
 
-  diagInit();
-})();
-/* twine-user-script #3: "c0-Enums.js" */
-(() => {
-  /** enumType:string -> enumValueNames:string[] */
-  MT.enums = {};
+const diagInit = () => {
+  $(document).on(":passageinit", diagClear);
+  $(document).on(":passageend", MT.diagReport);
+};
 
-  /** varName:string -> enumType:string */
-  MT.enumVars = {};
+diagInit();
+/* twine-user-script #4: "c1-Enums.js" */
+/**
+ * enumType:string -> enumValueNames:string[]
+ * @type {Record<string, string[]>}
+ */
+MT.enums = {};
 
-  /**
-   * Define an enum. Value names are added as window globals,
-   * so that typo-ing an enum value will throw an error.
-   * @type {(enumType: string, enumValueNames: string[]) => void}
-   */
-  function defineEnum(enumType, enumValueNames) {
-    MT.enums[enumType] = enumValueNames;
-    const global = /** @type {Record<string, unknown>} */ (
-      /** @type {unknown} */ (window)
-    );
-    enumValueNames.forEach((n, i) => (global[n] = i));
-  }
+/**
+ * varName:string -> enumType:string
+ * @type {Record<string, string>}
+ */
+MT.enumVars = {};
 
-  /**
-   * Declare `valName` to be an enum of `enumType`
-   * @type {(valName: string, enumType: string) => void}
-   */
-  function declareVarEnum(valName, enumType) {
-    if (!MT.enums[enumType]) throw new Error(`No enum named ${enumType}`);
-    MT.enumVars[valName] = enumType;
-  }
+/**
+ * Returns the symbolic name of `value` for an enum.
+ * `name` is either a var name or an enum name.
+ * @type {(name: string, value: number) => string}
+ */
+MT.enumSymbol = (name, value) => {
+  const en = MT.enums[MT.enumVars[name] || name];
+  return en == null ? String(value) : en[value] || String(value);
+};
 
-  /**
-   * Returns the symbolic name of `value` for an enum.
-   * `name` is either a var name or an enum name.
-   * @type {(name: string, value: number) => string}
-   */
-  MT.enumSymbol = (name, value) => {
-    const en = MT.enums[MT.enumVars[name] || name];
-    return en == null ? String(value) : en[value] || String(value);
-  };
+/**
+ * Initialize enums that are generally expected to be non-null.
+ * @type {() => void}
+ */
+MT.enumInit = () => {
+  MT.untraced(() => {
+    const V = State.variables;
+    if (!V.n_magicPhase) V.n_magicPhase = MP_beforeCast;
+    if (!V.n_magicPhaseReached) V.n_magicPhaseReached = MP_beforeCast;
+    if (!V.n_ivexContext) V.n_ivexContext = IC_distant;
+  });
+};
 
-  /* Nero magic phase. */
-  defineEnum("MagicPhase", [
-    "MP_beforeCast",
-    "MP_triedMagic",
-    "MP_wantDevice",
-    "MP_wantName",
-    "MP_wantTouch",
-    "MP_wantPass",
-    "MP_onHold",
-    "MP_exitingHold",
-    "MP_contact",
-    "MP_lockedOut",
-    "MP_drained", // had mageSight, but didn't connect to Sprite
-    "MP_tapLost", // did connect to Sprite
-  ]);
+/**
+ * Define an enum. Value names are added as window globals,
+ * so that typo-ing an enum value will throw an error.
+ * @type {(enumType: string, enumValueNames: string[]) => void}
+ */
+const defineEnum = (enumType, enumValueNames) => {
+  MT.enums[enumType] = enumValueNames;
+  const global = /** @type {Record<string, unknown>} */ (
+    /** @type {unknown} */ (window)
+  );
+  enumValueNames.forEach((n, i) => (global[n] = i));
+};
 
-  declareVarEnum("n_magicPhase", "MagicPhase");
-  declareVarEnum("n_magicPhaseReached", "MagicPhase");
+/**
+ * Declare `valName` to be an enum of `enumType`
+ * @type {(valName: string, enumType: string) => void}
+ */
+const declareVarEnum = (valName, enumType) => {
+  if (!MT.enums[enumType]) throw new Error(`No enum named ${enumType}`);
+  MT.enumVars[valName] = enumType;
+};
 
-  /*
-   * Places where Ivex has asked a question, and may be near enough to hear
-   * Nero trying to talk to the Sprite.
-   */
-  defineEnum("IvexContext", [
-    "IC_distant",
-    "IC_gone",
-    "IC_guildName", // recruit > Skeptical
-    "IC_mindControl", // recruit > Fascinated
-    "IC_explainTheft", // recruit > Ivex Trap
-    "IC_obeyMe", // collab > Ivex Demanding
-    "IC_lickPaw", // collab > Ivex Dominant
-    "IC_begForMe", // collab > Ivex Cruel
-    "IC_comfortable", // candle lit > Comfort Check
-    "IC_whoSentYou", // candle horny > Light Squeeze, Heavy Squeeze
-  ]);
+/* Nero magic phase. */
+defineEnum("MagicPhase", [
+  "MP_beforeCast",
+  "MP_triedMagic",
+  "MP_wantDevice",
+  "MP_wantName",
+  "MP_wantTouch",
+  "MP_wantPass",
+  "MP_onHold",
+  "MP_exitingHold",
+  "MP_contact",
+  "MP_lockedOut",
+  "MP_drained", // had mageSight, but didn't connect to Sprite
+  "MP_tapLost", // did connect to Sprite
+]);
 
-  declareVarEnum("n_ivexContext", "IvexContext");
+declareVarEnum("n_magicPhase", "MagicPhase");
+declareVarEnum("n_magicPhaseReached", "MagicPhase");
 
-  /**
-   * Initialize enums that are generally expected to be non-null.
-   * @type {() => void}
-   */
-  MT.enumInit = () => {
-    MT.untraced(() => {
-      const V = State.variables;
-      if (!V.n_magicPhase) V.n_magicPhase = MP_beforeCast;
-      if (!V.n_magicPhaseReached) V.n_magicPhaseReached = MP_beforeCast;
-      if (!V.n_ivexContext) V.n_ivexContext = IC_distant;
-    });
-  };
+/*
+ * Places where Ivex has asked a question, and may be near enough to hear
+ * Nero trying to talk to the Sprite.
+ */
+defineEnum("IvexContext", [
+  "IC_distant",
+  "IC_gone",
+  "IC_guildName", // recruit > Skeptical
+  "IC_mindControl", // recruit > Fascinated
+  "IC_explainTheft", // recruit > Ivex Trap
+  "IC_obeyMe", // collab > Ivex Demanding
+  "IC_lickPaw", // collab > Ivex Dominant
+  "IC_begForMe", // collab > Ivex Cruel
+  "IC_comfortable", // candle lit > Comfort Check
+  "IC_whoSentYou", // candle horny > Light Squeeze, Heavy Squeeze
+]);
 
-  // This should get run before most other :passagestart handlers
-  $(document).on(":passagestart", MT.enumInit);
-})();
-/* twine-user-script #4: "c0-Metadata.js" */
+declareVarEnum("n_ivexContext", "IvexContext");
+
+// This should get run before most other :passagestart handlers
+$(document).on(":passagestart", MT.enumInit);
+/* twine-user-script #5: "c1-Metadata.js" */
 (() => {
   /*
    * This module manages game metadata.
@@ -1245,7 +1297,7 @@ $(document).on(':passagestart', function (ev) {
 
   mdInit();
 })();
-/* twine-user-script #5: "c1-Archives.js" */
+/* twine-user-script #6: "c2-Archives.js" */
 (() => {
   /**
    * <<arc-only>>...<</arc-only>>
@@ -1488,7 +1540,7 @@ $(document).on(':passagestart', function (ev) {
     }
   }
 })();
-/* twine-user-script #6: "c1-Chain.js" */
+/* twine-user-script #7: "c2-Chain.js" */
 /*
  * A "chain" is a compact encoding of the choices the player made,
  * along with some initial state, which should make it possible
@@ -1694,7 +1746,7 @@ $(document).on(':passagestart', function (ev) {
 
   $(document).on(":storyready", init);
 })();
-/* twine-user-script #7: "c1-Debugging.js" */
+/* twine-user-script #8: "c2-Debugging.js" */
 (() => {
   if (!setup.debug) return;
 
@@ -1710,7 +1762,7 @@ $(document).on(':passagestart', function (ev) {
     });
   });
 })();
-/* twine-user-script #8: "c1-Error-Message.js" */
+/* twine-user-script #9: "c2-Error-Message.js" */
 (() => {
   /** @typedef {import("twine-sugarcube").MacroContext} MacroContext */
 
@@ -1880,25 +1932,23 @@ $(document).on(':passagestart', function (ev) {
     return note;
   }
 })();
-/* twine-user-script #9: "c1-JQuery.js" */
-(() => {
-  /**
-   * Returns the HTMLElement from a JQuery handle.
-   * Throws if the handle is not exactly one element.
-   * @type { (jq: JQuery) => HTMLElement }
-   */
-  MT.jqUnwrap = (jq) => {
-    if (jq.length !== 1) {
-      throw new Error(`tried to jqUnwrap length !== 1`);
-    }
-    const el = jq[0];
-    if (!(el instanceof HTMLElement)) {
-      throw new Error(`tried to jqUnwrap a non HTMLElement`);
-    }
-    return el;
-  };
-})();
-/* twine-user-script #10: "c1-Nero-Caged.js" */
+/* twine-user-script #10: "c2-JQuery.js" */
+/**
+ * Returns the HTMLElement from a JQuery handle.
+ * Throws if the handle is not exactly one element.
+ * @type { (jq: JQuery) => HTMLElement }
+ */
+MT.jqUnwrap = (jq) => {
+  if (jq.length !== 1) {
+    throw new Error(`tried to jqUnwrap length !== 1`);
+  }
+  const el = jq[0];
+  if (!(el instanceof HTMLElement)) {
+    throw new Error(`tried to jqUnwrap a non HTMLElement`);
+  }
+  return el;
+};
+/* twine-user-script #11: "c2-Nero-Caged.js" */
 (() => {
   const BORDER = 0;
 
@@ -2337,7 +2387,7 @@ $(document).on(':passagestart', function (ev) {
     return { height, blocks };
   }
 })();
-/* twine-user-script #11: "c1-Nero-Patience.js" */
+/* twine-user-script #12: "c2-Nero-Patience.js" */
 (() => {
   /**
    * <<n1-patience $looks $actions>>
@@ -2586,7 +2636,7 @@ $(document).on(':passagestart', function (ev) {
     },
   });
 })();
-/* twine-user-script #12: "c1-Scroll-Pos.js" */
+/* twine-user-script #13: "c2-Scroll-Pos.js" */
 /**
  * Restore scroll pos when reloading page.
  */
@@ -2637,7 +2687,7 @@ $(document).on(':passagestart', function (ev) {
 
   scrollPosInit();
 })();
-/* twine-user-script #13: "c1-Templates.js" */
+/* twine-user-script #14: "c2-Templates.js" */
 (() => {
   Template.add("P", "<br><br>");
 
@@ -2659,7 +2709,7 @@ $(document).on(':passagestart', function (ev) {
 
   Template.add("testIcon", "&#x1f9ea;");
 })();
-/* twine-user-script #14: "c1-Transcript.js" */
+/* twine-user-script #15: "c2-Transcript.js" */
 (() => {
   /**
    * Renders current history to out, asynchronously.
@@ -2935,7 +2985,7 @@ $(document).on(':passagestart', function (ev) {
     renderPage,
   };
 })();
-</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;

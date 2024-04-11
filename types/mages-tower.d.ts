@@ -53,7 +53,8 @@ declare global {
 
 /** The MT global */
 declare global {
-  const MT: {
+
+  const XMT: {
     /**
      * Creates a scratch state with _isArchive and _isTranscript true,
      * evaluate script, then render passage to dest
@@ -72,12 +73,6 @@ declare global {
 
     /** Returns number of words in text. */
     countWords: (text: string) => number;
-
-    /** Queue a diag message. */
-    diag: (...args: unknown[]) => void;
-
-    /** Show pending diag messages. */
-    diagReport: () => void;
 
     /** Sets some enum vars expected to have non-null values. */
     enumInit: () => void;
