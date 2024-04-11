@@ -2,12 +2,17 @@
  * SugarCube APIs that aren't declared in @types/twine-sugarcube
  */
 
-import "twine-sugarcube";
+import type {} from "twine-sugarcube";
 
 declare module "twine-sugarcube" {
   interface StateAPI {
     clearTemporary: () => void;
     reset: () => void;
+  }
+
+  interface MacroContext {
+    readonly displayName: string;
+    readonly source: string;
   }
 }
 
@@ -20,5 +25,5 @@ declare global {
   const session: {
     get: (key: string) => unknown;
     set: (key: string, value: unknown) => void;
-  }
+  };
 }

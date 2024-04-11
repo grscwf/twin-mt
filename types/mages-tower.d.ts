@@ -1,4 +1,5 @@
 import type {
+  MacroContext,
   SugarCubeStoryVariables,
   SugarCubeTemporaryVariables,
 } from "twine-sugarcube";
@@ -63,7 +64,11 @@ declare global {
       script: string
     ) => void;
 
-    assert: (test: boolean, should: string) => asserts test;
+    assert: (
+      test: boolean,
+      should: string,
+      context?: MacroContext
+    ) => asserts test;
 
     /** Returns number of words in text. */
     countWords: (text: string) => number;
@@ -92,10 +97,15 @@ declare global {
     /** Generic container for exposing functions for console experimentation */
     exp: Record<string, unknown>;
 
+    fail: (str: string, context?: MacroContext) => void;
+
     forgetWalkHistory: () => void;
 
     /** Returns history without is-menu loops. */
     getHistory: () => StoryMoment[];
+
+    hasFails: boolean;
+    hasWarnings: boolean;
 
     /**
      * Returns the HTMLElement from a JQuery handle.
@@ -171,8 +181,14 @@ declare global {
      */
     mdSet: (varName: string, value: unknown) => void;
 
+    message: (type: string, str: string, context?: MacroContext) => void;
+    messages: string[];
+
     /** Emits a note. */
-    note: (message: string, header?: string) => void;
+    note: (
+      message?: string,
+      header?: string
+    ) => JQuery<HTMLElement> | undefined;
 
     /** Initializes $g_rand to a new state. */
     randReset: () => void;
@@ -184,6 +200,8 @@ declare global {
       doneFn?: null | (() => void),
       force?: null | boolean
     ) => void;
+
+    runsWithoutFail: (block: () => void) => boolean;
 
     /** True if an async renderer is still running. */
     stillRendering: boolean;
@@ -199,7 +217,7 @@ declare global {
     };
 
     /** Runs block with var tracing disabled. */
-    untraced: (block: () => void) => void;
+    untraced: <T>(block: () => T) => T;
 
     untracedVars?: () => SugarCubeStoryVariables;
 
