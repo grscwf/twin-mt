@@ -13,15 +13,12 @@ export const rules: Rule[] = [
     dirs: [
       "tw-twine",
       "tw-game-*",
-      "tw-drekkar-*",
       "tw-nero-*",
+      "tw-drekkar-*",
+      "tw-code",
 
-      // this is where untwine will add new passages
-      // TODO: should be a separate property
+      // last dir is where untwine will add new passages
       "tw-uncategorized",
     ],
-
-    // Omit wip for release builds
-    // omit: ["tw-nero-3", "tw-nero-wip"],
   },
 ];
