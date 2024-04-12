@@ -1,4 +1,15 @@
 /**
+ * @typedef {(vars: Record<string, unknown>) => string} ConditionalPage
+ * @typedef {string | ConditionalPage} ArchivePage
+ *
+ * @typedef {object} ArchiveEntry
+ * @prop {string} [title]
+ * @prop {ArchivePage[]} [passages]
+ * 
+ * @typedef {Record<string, ArchiveEntry>} ArchiveMap
+ */
+
+/**
  * <<arc-only>>...<</arc-only>>
  * Emit body only when rendering archive text.
  */
@@ -232,4 +243,4 @@ const arcAnnounce = (type, metaVar, text, output) => {
     );
     MT.mdSet(metaVar, true);
   }
-}
+};

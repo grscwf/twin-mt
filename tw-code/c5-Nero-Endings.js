@@ -1,5 +1,4 @@
-
-/** @type {Record<string, Ending | {}>} */
+/** @type {ArchiveMap} */
 MT.neroEndings = {
   xn_Broken: {
     title: "Challenge Ending: Broken",
@@ -27,7 +26,7 @@ MT.neroEndings = {
       "n9a Broken C4",
       "n9a Broken C5",
       /* XXX */
-    ]
+    ],
   },
   xn_CagedHarsh: {
     title: "Bad Ending: Caged (Harsh)",
@@ -39,7 +38,7 @@ MT.neroEndings = {
       "n9a Caged Harsh 5",
       "n9a Caged Harsh 6",
       "n9a Caged Harsh End",
-    ]
+    ],
   },
   xn_CagedMild: {
     title: "Bad Ending: Caged (Mild)",
@@ -50,7 +49,7 @@ MT.neroEndings = {
       "n9a Caged Mild 4",
       "n9a Caged Mild 5",
       "n9a Caged Mild End",
-    ]
+    ],
   },
   xn_TamedHarsh: {
     title: "Bad Ending: Tamed (Harsh)",
@@ -67,7 +66,7 @@ MT.neroEndings = {
       "n9a Tamed Harsh 9",
       "n9a Tamed End 1",
       "n9a Tamed End 2",
-    ]
+    ],
   },
   xn_TamedMild: {
     title: "Bad Ending: Tamed (Mild)",
@@ -84,7 +83,7 @@ MT.neroEndings = {
       "n9a Tamed Mild 9",
       "n9a Tamed End 1",
       "n9a Tamed End 2",
-    ]
+    ],
   },
 
   // placeholders for unlock counting
@@ -93,7 +92,7 @@ MT.neroEndings = {
   xn_OverwhelmedMild: {},
   xn_OverwhelmedHarsh: {},
   xn_Wrecked: {},
-  
+
   xn_SatisfiedBlank: {},
   xn_SatisfiedMica: {},
   xn_SatisfiedPevhin: {},
@@ -104,4 +103,3 @@ MT.neroEndings = {
 for (const key of Object.keys(MT.neroEndings)) {
   MT.mdDefSaved(key);
 }
-

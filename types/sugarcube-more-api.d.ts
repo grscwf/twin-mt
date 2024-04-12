@@ -43,4 +43,10 @@ declare global {
   const storage: {
     _prefix: string;
   };
+
+  let saveAs: (
+    blob: unknown,
+    name: string,
+    opt: Record<string, unknown>
+  ) => void;
 }

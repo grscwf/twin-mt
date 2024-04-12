@@ -1,13 +1,8 @@
-:: g0init Nero Keywords [inclusion] {"position":"1550,1225","size":"100,100"}
-<<script>>
-
+/** @type {ArchiveMap} */
 MT.neroKeywords = {
   kn_Dream: {
     title: "Dream Crystals",
-    passages: [
-      "n1x Dream Crystals 1",
-      "n1x Dream Crystals 2",
-    ],
+    passages: ["n1x Dream Crystals 1", "n1x Dream Crystals 2"],
   },
 
   kn_Endgame: {
@@ -31,18 +26,12 @@ MT.neroKeywords = {
 
   kn_Itch: {
     title: "Superb Itch",
-    passages: [
-      "n1s Itch 1",
-      "n1s Itch 2",
-      "n1s Itch 3",
-    ],
+    passages: ["n1s Itch 1", "n1s Itch 2", "n1s Itch 3"],
   },
 
   kn_Ivex: {
     title: "Ivex (the Magnificent)",
-    passages: [
-      "n1cn Ivex Desc",
-    ],
+    passages: ["n1cn Ivex Desc"],
   },
 
   kn_Kelvin: {
@@ -60,74 +49,47 @@ MT.neroKeywords = {
 
   kn_Kopic: {
     title: "Kopic Wands",
-    passages: [
-      "n2x Kopic 1",
-      "n2x Kopic 2",
-      "n2x Kopic 3",
-    ],
+    passages: ["n2x Kopic 1", "n2x Kopic 2", "n2x Kopic 3"],
   },
 
   kn_Mica: {
     title: "Mica Teboren",
-    passages: [
-      "n1p Mica Extra 1",
-      "n1p Mica Extra 2",
-      "n1p Mica Extra 3",
-    ],
+    passages: ["n1p Mica Extra 1", "n1p Mica Extra 2", "n1p Mica Extra 3"],
   },
 
   kn_MindControlBasics: {
     title: "Mind Control (Basics)",
-    passages: [
-      "n1cr Mind Control",
-    ],
+    passages: ["n1cr Mind Control"],
   },
 
   kn_MindControlInhibition: {
     title: "Mind Control (Inhibition)",
-    passages: [
-      "n1cr Inhibition 1",
-      "n1cr Inhibition 2",
-    ],
+    passages: ["n1cr Inhibition 1", "n1cr Inhibition 2"],
   },
 
   kn_MindControlRepression: {
     title: "Mind Control (Repression)",
-    passages: [
-      "n1cr Repression 1",
-      "n1cr Repression 2",
-    ],
+    passages: ["n1cr Repression 1", "n1cr Repression 2"],
   },
 
   kn_MindControlSubstitution: {
     title: "Mind Control (Substitution)",
-    passages: [
-      "n1cr Substitution 1",
-      "n1cr Substitution 2",
-    ],
+    passages: ["n1cr Substitution 1", "n1cr Substitution 2"],
   },
 
   kn_Nackle: {
     title: "Nackle's Poltergeist Device",
-    passages: [
-      "n1x Nackle Info 1",
-      "n1x Nackle Info 2",
-    ],
+    passages: ["n1x Nackle Info 1", "n1x Nackle Info 2"],
   },
 
   kn_Oil: {
     title: "Oil of Dragons",
-    passages: [
-      "n1s Oil Info 1",
-      "n1s Oil Info 2",
-    ],
+    passages: ["n1s Oil Info 1", "n1s Oil Info 2"],
   },
 
   kn_Pearson: {
     title: "Pearson's Hangover Cantrip",
-    passages: [
-      "n1a Hangover Info",
-    ],
+    passages: ["n1a Hangover Info"],
   },
 
   kn_Pevhin: {
@@ -137,15 +99,12 @@ MT.neroKeywords = {
       "n1p Barbs Fast 4",
       "n1p Barbs Fast 5",
       "n1p Barbs Fast 6",
-    ]
+    ],
   },
 
   kn_Pyron: {
     title: "Pyron Nodes",
-    passages: [
-      "n1s Pyron Node 1",
-      "n1s Pyron Node 2",
-    ],
+    passages: ["n1s Pyron Node 1", "n1s Pyron Node 2"],
   },
 
   kn_Sprite: {
@@ -197,8 +156,8 @@ MT.neroKeywordList = () => {
 
   const keys = Object.keys(MT.neroKeywords);
   keys.sort((a, b) => {
-    const at = MT.neroKeywords[a].title;
-    const bt = MT.neroKeywords[b].title;
+    const at = MT.neroKeywords[a]?.title || "";
+    const bt = MT.neroKeywords[b]?.title || "";
     return at < bt ? -1 : at > bt ? +1 : 0;
   });
 
@@ -211,7 +170,7 @@ MT.neroKeywordList = () => {
     if (!revealAll && !mr[key]) continue;
     anyShown = true;
     mkp += `<<arc-ending ${mr[key]}`;
-    mkp += ` [\[${MT.neroKeywords[key].title}|g1m Archives Entry]]`;
+    mkp += ` [\[${MT.neroKeywords[key]?.title}|g1m Archives Entry]]`;
     mkp += ` "" "$g_arcChoice = { name: '${key}' }">>`;
     mkp += `<</arc-ending>>\n`;
   }
@@ -227,7 +186,7 @@ MT.neroKeywordList = () => {
  * If kwName is locked, set it to unlock at the next kw-announce.
  */
 Macro.add("kw-unlock-soon", {
-  handler: function() {
+  handler: function () {
     if (State.temporary.isArchive) return;
 
     const [key] = this.args;
@@ -236,14 +195,15 @@ Macro.add("kw-unlock-soon", {
       throw new Error(`kw-unlock-soon ${key} not found`);
     }
     const V = State.variables;
-    if (!State.variables[key]) {
+    const vars = /** @type {Record<string, unknown} */ (V);
+    if (!vars[key]) {
       if (V.n_kwAnnounce != null && V.n_kwAnnounce !== key) {
         throw new Error(`conflicting kwAnnounce ${key} ${V.n_kwAnnounce}`);
       }
       V.n_kwAnnounce = key;
       State.temporary.kwUnlocking = true;
     }
-  }
+  },
 });
 
 /**
@@ -251,7 +211,7 @@ Macro.add("kw-unlock-soon", {
  * If a kw unlock is pending, do it, and announce it.
  */
 Macro.add("kw-announce", {
-  handler: function() {
+  handler: function () {
     const V = State.variables;
     const key = V.n_kwAnnounce;
     if (key == null) return;
@@ -268,8 +228,9 @@ Macro.add("kw-announce", {
       `<meta-text>\
         The Archives have unlocked Keyword: ${kw.title}.\
       </meta-text>\
-      ?P`);
-  }
+      ?P`
+    );
+  },
 });
 
 function neroKeywordInit() {
@@ -286,5 +247,3 @@ function neroKeywordInit() {
 }
 
 neroKeywordInit();
-
-<</script>>\

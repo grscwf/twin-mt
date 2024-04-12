@@ -1,15 +1,16 @@
-:: g0init Saved Games [inclusion] {"position":"250,850","size":"100,100"}
-<<script>>
+/** @typedef {import("twine-sugarcube").Passage} Passage */
 
-/** Fix up the in-browser saved game title. */
-Config.passages.descriptions = function() {
-
+/**
+ * Fix up the in-browser saved game title.
+ * @type {(this: Passage) => string | null}
+ */
+Config.passages.descriptions = function () {
   // SugarCube sometimes gets a description for a passage other than
   // the current one. In that case, use its default excerpt.
-  if (this.title !== State.passage) return false;
+  if (this.title !== State.passage) return null;
 
   // For the current passage, use the rendered text, not the source text.
-  
+
   const doc = $(".passage").clone();
   doc.find("script, style").remove();
   doc.find("br").replaceWith(" ");
@@ -45,10 +46,12 @@ Config.passages.descriptions = function() {
   };
 }
 
+/** @type {() => [number, number]} */
 function countUnlocks() {
   const md = MT.mdRecord();
   let num = 0;
   let total = 0;
+  /** @type {(keys: string[]) => void} */
   const add = (keys) => {
     total += keys.length;
     for (const k of keys) {
@@ -62,5 +65,3 @@ function countUnlocks() {
 
   return [num, total];
 }
-
-<</script>>

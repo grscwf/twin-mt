@@ -179,6 +179,8 @@ declare module "twine-sugarcube" {
     /** Latest knot choice was yes. */
     mg_knotYes?: boolean;
 
+    mn_playerLeftStudyWithMirror?: boolean;
+
     n_afterAction?: string;
     n_afterItch?: string;
     n_afterLook?: string;
@@ -215,6 +217,8 @@ declare module "twine-sugarcube" {
     n_gravViewed?: boolean;
 
     n_ivexContext?: number;
+
+    n_kwAnnounce?: string;
 
     n_lustTextPos?: number;
 

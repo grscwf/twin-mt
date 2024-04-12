@@ -1,0 +1,89 @@
+
+/*
+ * The sticky panes are inside #story, outside #passage.
+ * We move sugarcube's #story margin to #passage,
+ * as padding instead of margin.
+ * (margin would add spacing above/below the sticky observer).
+ */
+ #story {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+#passages {
+  max-width: 45rem;
+  padding-bottom: 1.5em;
+  padding-top: 1.5em;
+}
+#ui-dialog {
+  max-width: 45rem;
+}
+
+/*
+ * Sticky panes, which may be empty, positioned for box-shadow.
+ * Should not have padding (messes up box-shadow position).
+ */
+#sticky-head,
+#sticky-tail {
+  background-color: #111;
+  margin: 0 auto;
+  position: sticky;
+  transition: box-shadow .2s;
+  /* cqw requires a recent browser, but failing is ok, just less pretty */
+  width: min(45rem, 100cqw - 5rem);
+  z-index: 40;
+}
+#sticky-head {
+  top: 0;
+}
+#sticky-tail {
+  bottom: 0;
+}
+
+/*
+ * Non-empty sticky panes should have a horizontal separator
+ */
+#sticky-head:has(> *),
+#sticky-tail:has(> *) {
+  border: 0 solid #333;
+}
+#sticky-head:has(> *) {
+  border-bottom-width: 1px;
+}
+#sticky-tail:has(> *) {
+  border-top-width: 1px;
+}
+
+/*
+ * box-shadow needs a non-zero box, so we add a before or after,
+ * with a size large enough for the box-shadow we want.
+ * the box needs to exist all the time, because adding/removing
+ * the box at the bottom can change the document height.
+ */
+#sticky-head::after,
+#sticky-tail::before {
+  content: "";
+  height: 40px;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  z-index: -1;
+}
+#sticky-head.shadow::after {
+  box-shadow: 0 10px 15px -10px rgba(150, 100, 0, 0.8);
+  margin-top: -40px;
+}
+#sticky-tail.shadow::before {
+  box-shadow: 0 -10px 15px -10px rgba(150, 100, 0, 0.8);
+}
+
+/* 0-height tail observer is unreliable, use 1px. (head is fine)*/
+#sticky-tail-obs {
+  height: 1px;
+}
+
+/*
+ * sticky-inner content should have top-bottom padding (not margin)
+ */
+.sticky-inner {
+  padding: 24px 0;
+}

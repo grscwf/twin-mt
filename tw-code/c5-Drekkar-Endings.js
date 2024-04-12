@@ -1,4 +1,4 @@
-/** @type {Record<string, Ending | {}>} */
+/** @type {ArchiveMap} */
 MT.drekkarEndings = {
   xd_EnthrallmentLion: {
     title: "Bad Ending: Enthrallment (Lion)",

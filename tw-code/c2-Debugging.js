@@ -17,6 +17,17 @@ const debugInit = () => {
   // Enable history controls when playtest (or debug)
   Config.history.controls = setup.playtest;
 
+  // images workaround for local testing
+  if (
+    location.protocol === "file:" &&
+    /-[0-9a-f]{12}\.html$|[/]Twine[/]Stories[/]/.test(location.pathname)
+  ) {
+    // base for html images (this happens too late for css images)
+    $("head").prepend('<base href="https://magestower.slethstories.com/">');
+    // add file-url class for css
+    $("html").addClass("file-url");
+  }
+
   if (setup.debug) {
     // start with debug view off
     setTimeout(() => DebugView.disable());
