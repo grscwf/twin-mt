@@ -9,10 +9,10 @@ const histIgnore = ["g1a Title Screen"];
  * True if title is a menu passage
  * @type {(title: string) => boolean}
  */
-function histIsMenu(title) {
+const histIsMenu = (title) => {
   const passage = Story.get(title);
   return passage.tags.includes("is-menu");
-}
+};
 
 /** Pops history to last story passage. */
 MT.popToStory = () => {

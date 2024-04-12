@@ -1,7 +1,4 @@
-:: g0init Validate [inclusion] {"position":"250,1100","size":"100,100"}
-<<script>>
-
-function initValidate() {
+const verifyInit = () => {
   $(document).on(":passageend", () => {
     MT.untraced(() => {
       for (const [k, v] of Object.entries(State.variables)) {
@@ -11,8 +8,6 @@ function initValidate() {
       }
     });
   });
-}
+};
 
-initValidate();
-
-<</script>>
+verifyInit();

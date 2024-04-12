@@ -181,7 +181,7 @@ Macro.add("ending-bad", {
   handler: function () {
     if (State.temporary.isArchive) return;
     const [text, metaVar] = this.args;
-    emitEnding("bad", metaVar, `Bad Ending: ${text}`, this.output);
+    arcAnnounce("bad", metaVar, `Bad Ending: ${text}`, this.output);
   },
 });
 
@@ -195,7 +195,7 @@ Macro.add("ending-challenge", {
   handler: function () {
     if (State.temporary.isArchive) return;
     const [text, metaVar] = this.args;
-    emitEnding("challenge", metaVar, `Challenge Ending: ${text}`, this.output);
+    arcAnnounce("challenge", metaVar, `Challenge Ending: ${text}`, this.output);
   },
 });
 
@@ -209,7 +209,7 @@ Macro.add("ending-good", {
   handler: function () {
     if (State.temporary.isArchive) return;
     const [text, metaVar] = this.args;
-    emitEnding("good", metaVar, `Ending: ${text}`, this.output);
+    arcAnnounce("good", metaVar, `Ending: ${text}`, this.output);
   },
 });
 
@@ -219,7 +219,7 @@ Macro.add("ending-good", {
  * @arg {string} text
  * @arg {DocumentFragment | HTMLElement} output
  */
-function emitEnding(type, metaVar, text, output) {
+const arcAnnounce = (type, metaVar, text, output) => {
   const V = /** @type {Record<string, unknown>} */ (State.variables);
   if (metaVar == null || V[metaVar]) {
     $(output).append(`<span class="ending-${type}">${text}</span>`);

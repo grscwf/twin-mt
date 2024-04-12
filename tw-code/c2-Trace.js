@@ -1,4 +1,3 @@
-MT.trace = traceNewContext();
 
 /** @typedef {import("twine-sugarcube").SugarCubeStoryVariables} SugarCubeStoryVariables */
 
@@ -6,7 +5,7 @@ MT.trace = traceNewContext();
 let traceUnproxiedVars = null;
 const traceBrand = Symbol("VarTraceBrand");
 
-function traceNewContext() {
+const traceNewContext = () => {
   return {
     withinInclude: false,
     wasDeleted: new Set(),
@@ -15,6 +14,8 @@ function traceNewContext() {
     wasTopRead: new Set(),
   };
 }
+
+MT.trace = traceNewContext();
 
 Macro.add("var-trace-ignore", {
   tags: [],

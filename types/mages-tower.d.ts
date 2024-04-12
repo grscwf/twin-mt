@@ -218,6 +218,8 @@ declare module "twine-sugarcube" {
 
     n_lustTextPos?: number;
 
+    n_mageSight?: boolean;
+
     n_magicPhase?: number;
     n_magicPhaseReached?: number;
 

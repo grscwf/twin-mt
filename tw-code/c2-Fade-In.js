@@ -1,89 +1,3 @@
-:: g0init Fade-In [inclusion] {"position":"375,600","size":"100,100"}
-<<append head>><style>
-  /* <span> for each fade-in section */
-  .fade-in,
-  .fade-in .sprite-q {
-    transition: all .4s ease-in;
-  }
-  .fade-in img {
-    transition: all .4s ease-in;
-  }
-
-  /*
-   * Hide text. Note: using opacity or filter here will make it impossible
-   * to have links visible (child filter cannot override parent).
-   * The :not clause gives this rule a high CSS specificity, making this
-   * more likely to override complex selectors elsewhere.
-   */
-  .fade-in-hidden:not(#_#_#_#_#_),
-  .fade-in-hidden:not(#_#_#_#_#_) * {
-    background-image: unset;
-    color: rgba(0, 0, 0, 0);
-    pointer-events: none;
-    text-decoration-color: rgba(0, 0, 0, 0);
-  }
-
-  /* Hide media. */
-  .fade-in-hidden:not(#_#_#_#_#_) img,
-  .fade-in-hidden:not(#_#_#_#_#_) video {
-    opacity: 0;
-  }
-
-  /* actions list image */
-  .fade-in-hidden:not(#_#_#_#_#_) li::before {
-    background-image: unset;
-  }
-
-  /* Block-out hidden links. */
-  .fade-in-hidden:not(#_#_#_#_#_) a {
-    background-color: #222;
-    border-radius: 4px;
-    color: rgba(0, 0, 0, 0);
-    pointer-events: auto;
-  }
-  .fade-in-hidden:not(#_#_#_#_#_) a:hover {
-    background-color: #333;
-    color: rgba(0, 0, 0, 0);
-  }
-
-  /* Put pulsing dots at the section that will be revealed next. */
-  .fade-in-next:not(#_#_#_#_#_)::before {
-    animation: 0.5s 1s ease-in-out alternate both infinite fade-in-blink;
-    color: #fff;
-    content: ". . .";
-    cursor: pointer;
-    display: inline-block;
-    font-weight: bold;
-    pointer-events: auto;
-    position: absolute;
-  }
-  @keyframes fade-in-blink {
-    from { opacity: 0.4; }
-    to { opacity: 1; }
-  }
-
-  .fade-in-no-dots.fade-in-next:not(#_#_#_#_#_)::before {
-    content: "";
-  }
-
-  .fade-in-no-pulse.fade-in-next:not(#_#_#_#_#_)::before {
-    animation: none;
-    opacity: 0.6;
-  }
-
-  /* Absorb clicks for a small amount of time after fade-in. */
-  .fade-in-absorb:not(#_#_#_#_#_),
-  .fade-in-absorb:not(#_#_#_#_#_) *,
-  .fade-in-absorb:not(#_#_#_#_#_) *:hover {
-    cursor: wait;
-  }
-  .fade-in-absorb:not(#_#_#_#_#_) a,
-  .fade-in-absorb:not(#_#_#_#_#_) a:hover {
-    color: rgb(100, 100, 100, 1);
-  }
-</style><</append>>
-
-<<script>>
 /*
  * Sometimes a player will click with intent to skip, but fade-in will
  * happen almost at the same time, and the click will land after the
@@ -91,7 +5,7 @@
  * follows it. So we absorb clicks a small amount of time after
  * automatic fade-in.
  */
-const absorbMsec = 500;
+const fadeAbsorbMsec = 500;
 
 /**
  * This description assumes you're using the default style.
@@ -114,16 +28,19 @@ const absorbMsec = 500;
  */
 Macro.add("fade-in", {
   tags: ["fade-next"],
-  handler: function() {
+  handler: function () {
     const noDots = this.args.includes("no-dots");
     const noPulse = this.args.includes("no-pulse");
     const clickAnywhere = this.args.includes("click-anywhere");
 
+    /** @type {Array<[delay: number, span: JQuery<HTMLElement>]>} */
     const queue = [];
-    let timeout = null;
-    let absorbing = false;
 
-    const skipAll = ev => {
+    /** @type {number | null} */
+    let timeout = null;
+
+    /** @type {(ev: MouseEvent) => void} */
+    const skipAll = (ev) => {
       // note, this assumes passage only has one fade-in
       const absorb = $("#story .fade-in-absorb");
       if (absorb.length) {
@@ -134,7 +51,7 @@ Macro.add("fade-in", {
 
       const hidden = $("#story .fade-in-hidden");
       if (!hidden.length) {
-        $("#story")[0].removeEventListener("click", skipAll, true);
+        MT.jqUnwrap($("#story")).removeEventListener("click", skipAll, true);
         return;
       }
 
@@ -142,39 +59,44 @@ Macro.add("fade-in", {
       hidden.addClass("fade-in-absorb");
       setTimeout(() => {
         hidden.removeClass("fade-in-absorb");
-        $("#story")[0].removeEventListener("click", skipAll, true);
-      }, absorbMsec);
+        MT.jqUnwrap($("#story")).removeEventListener("click", skipAll, true);
+      }, fadeAbsorbMsec);
       queue.length = 0;
     };
 
     if (clickAnywhere) {
-      $("#story")[0].addEventListener("click", skipAll, true);
+      MT.jqUnwrap($("#story")).addEventListener("click", skipAll, true);
     }
 
     const next = () => {
       if (timeout != null) clearTimeout(timeout);
       if (queue.length === 0) return;
+      MT.assert(queue[0] != null, "queue element should != null");
       const [delay, span] = queue[0];
       span.addClass("fade-in-next");
       timeout = setTimeout(() => {
         if (span.hasClass("fade-in-hidden")) {
           span.addClass("fade-in-absorb");
-          setTimeout(() => span.removeClass("fade-in-absorb"), absorbMsec);
+          setTimeout(() => span.removeClass("fade-in-absorb"), fadeAbsorbMsec);
         }
         span.removeClass("fade-in-hidden fade-in-next");
-        if (queue.length && queue[0][1] === span) {
+        if (queue[0] != null && queue[0][1] === span) {
           queue.shift();
           next();
         }
       }, delay);
     };
 
-    const skipTo = jq => {
-      const pos = queue.findIndex(q => q[1] === jq);
+    /** @type {(jq: JQuery<HTMLElement>) => void}  */
+    const skipTo = (jq) => {
+      const pos = queue.findIndex((q) => q[1] === jq);
       if (pos < 0) return;
       for (let i = 0; i <= pos; i++) {
-        const span = queue.shift()[1];
-        span.removeClass("fade-in-hidden fade-in-next");
+        if (queue[0] != null) {
+          const span = queue[0][1];
+          span.removeClass("fade-in-hidden fade-in-next");
+        }
+        queue.shift();
       }
       next();
     };
@@ -183,6 +105,7 @@ Macro.add("fade-in", {
 
     for (let i = 0; i < this.payload.length; i++) {
       const section = this.payload[i];
+      MT.assert(section != null, "section should != null");
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
       if (MT.roaming || T.isTranscript) delay = 0;
@@ -196,11 +119,14 @@ Macro.add("fade-in", {
       if (T.isTranscript) {
         if (i < this.payload.length - 1) {
           const br = span.find("br").get(-1);
-          $(br).replaceWith("<hr class=time-sep>");
+          if (br != null) {
+            $(br).replaceWith("<hr class=time-sep>");
+          }
         }
       }
 
-      const hurry = ev => {
+      /** @type {(ev: MouseEvent) => void} */
+      const hurry = (ev) => {
         if (span.hasClass("fade-in-absorb")) {
           ev.preventDefault();
           ev.stopPropagation();
@@ -211,18 +137,17 @@ Macro.add("fade-in", {
           span.addClass("fade-in-absorb");
           setTimeout(() => {
             span.removeClass("fade-in-absorb");
-            span[0].removeEventListener("click", hurry, true);
-          }, absorbMsec);
+            MT.jqUnwrap(span).removeEventListener("click", hurry, true);
+          }, fadeAbsorbMsec);
           skipTo(span);
         } else {
-          span[0].removeEventListener("click", hurry, true);
+          MT.jqUnwrap(span).removeEventListener("click", hurry, true);
         }
       };
-      span[0].addEventListener("click", hurry, true);
+      MT.jqUnwrap(span).addEventListener("click", hurry, true);
       queue.push([delay, span]);
     }
 
     setTimeout(next);
-  }
+  },
 });
-<</script>>

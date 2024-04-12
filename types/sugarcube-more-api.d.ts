@@ -5,6 +5,10 @@
 import type { StoryMoment } from "twine-sugarcube";
 
 declare module "twine-sugarcube" {
+  interface EngineAPI {
+    minDomActionDelay: number;
+  }
+
   interface MacroContext {
     readonly displayName: string;
     readonly source: string;
@@ -27,8 +31,16 @@ declare global {
     _real_stringify?: typeof JSON.stringify;
   }
 
+  const Util: {
+    fromCssTime: (time: string) => number;
+  };
+
   const session: {
     get: (key: string) => unknown;
     set: (key: string, value: unknown) => void;
+  };
+
+  const storage: {
+    _prefix: string;
   };
 }
