@@ -253,6 +253,7 @@ declare module "twine-sugarcube" {
 
     n_opportunist?: boolean;
 
+    n_passFound?: string;
     n_passTried?: string;
 
     n_patienceAccel?: boolean;

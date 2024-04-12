@@ -1,37 +1,27 @@
-:: g0init Nero Password [inclusion] {"position":"1425,1350","size":"100,100"}
-<<append head>><style>
-#passages:not(.pw-debug-show) .pw-debug > :not(.pw-label) {
-  display: none;
-}
-span.debug:has(> .pw-debug) + wbr + span.debug > .pw-debug > .pw-label {
-  display: none;
-}
-
-</style><</append>>
-<<script>>
 const sayPassword = "n1s Say Password";
 
-window.PW_621 = "621";
-window.PW_blood = "Blood";
-window.PW_carpe = "Carpe Diem";
-window.PW_fuckToy = "Fuck Toy 9000";
-window.PW_hunter = "Hunter Too";
-window.PW_ivex = "Ivex the Magnificent";
-window.PW_ivy = "Ivy";
-window.PW_lance = "Lance Rockhard";
-window.PW_liskov = "Caverns of Liskov";
-window.PW_luminance = "Caverns of Luminance";
-window.PW_password = "Password";
-window.PW_ransamaran = "Ransamaran Ivory";
-window.PW_red = "Red";
-window.PW_too = "T-O-O";
-window.PW_uramos = "Uramos";
+const PW_621 = MT.windowRec.PW_621 = "621";
+const PW_blood = MT.windowRec.PW_blood = "Blood";
+const PW_carpe = MT.windowRec.PW_carpe = "Carpe Diem";
+const PW_fuckToy = MT.windowRec.PW_fuckToy = "Fuck Toy 9000";
+const PW_hunter = MT.windowRec.PW_hunter = "Hunter Too";
+const PW_ivex = MT.windowRec.PW_ivex = "Ivex the Magnificent";
+const PW_ivy = MT.windowRec.PW_ivy = "Ivy";
+const PW_lance = MT.windowRec.PW_lance = "Lance Rockhard";
+const PW_liskov = MT.windowRec.PW_liskov = "Caverns of Liskov";
+const PW_luminance = MT.windowRec.PW_luminance = "Caverns of Luminance";
+const PW_password = MT.windowRec.PW_password = "Password";
+const PW_ransamaran = MT.windowRec.PW_ransamaran = "Ransamaran Ivory";
+const PW_red = MT.windowRec.PW_red = "Red";
+const PW_too = MT.windowRec.PW_too = "T-O-O";
+const PW_uramos = MT.windowRec.PW_uramos = "Uramos";
 
 /*
  * Passwords starting with "#" are from mf-pass.
  * Everything else should either be in basicPasswords or otherPasswords.
  */
 
+/** @type {Record<string, string>} */
 MT.basicPasswords = {};
 {
   const bp = MT.basicPasswords;
@@ -40,6 +30,7 @@ MT.basicPasswords = {};
   bp[PW_password] = "a common password";
 }
 
+/** @type {Record<string, string>} */
 MT.otherPasswords = {};
 {
   const op = MT.otherPasswords;
@@ -75,6 +66,7 @@ MT.otherPasswords = {};
 };
 
 /* Sprite responses spell out numbers and letters. */
+/** @type {Record<string, string>} */
 const passSprite = {};
 {
   const ps = passSprite;
@@ -84,6 +76,7 @@ const passSprite = {};
 }
 
 /* Sprite has a few special wrong-password messages */
+/** @type {Record<string, string>} */
 const oldPasswords = {};
 {
   const op = oldPasswords;
@@ -111,10 +104,10 @@ Macro.add("pw-found", {
       throw new Error(`pw-found ${pw} undeclared password`);
     }
     const V = State.variables;
-    const found = JSON.parse(V.n_passFound || "[]");
+    const found = MT.jsonParse(V.n_passFound || "[]");
     if (!found.includes(pw)) {
       found.push(pw);
-      V.n_passFound = JSON.stringify(found);
+      V.n_passFound = MT.repr(found);
     }
   }
 });
@@ -151,7 +144,7 @@ Macro.add("pw-suggest", {
       if (p.name === "pw-fail") continue;
       const [pw] = p.args;
       if (MT.otherPasswords[pw] == null) {
-        throw new Error(`${payload.name} ${pw} undeclared password`);
+        throw new Error(`${p.name} ${pw} undeclared password`);
       }
     }
 
@@ -185,7 +178,7 @@ Macro.add("pw-suggest", {
 
     if (allFailed) {
       const p = this.payload.find(p => p.name === "pw-fail");
-      if (p !== null) $(this.output).wiki(p.contents);
+      if (p !== null) $(this.output).wiki(p?.contents || "");
     }
 
     if (setup.debug) {
@@ -283,5 +276,3 @@ Template.add("sprBadPass", () => {
   }
   return mkp;
 });
-
-<</script>>
