@@ -251,6 +251,8 @@ declare module "twine-sugarcube" {
     n_mirrorBroken?: boolean;
     n_mirrorMagicKnown?: boolean;
 
+    n_notesOrigin?: string;
+
     n_opportunist?: boolean;
 
     n_passFound?: string;

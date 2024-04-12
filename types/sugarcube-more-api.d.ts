@@ -16,6 +16,8 @@ declare module "twine-sugarcube" {
 
   interface StateAPI {
     clearTemporary: () => void;
+    deltaDecode: (hist: StoryMoment[]) => StoryMoment[];
+    deltaEncode: (hist: StoryMoment[]) => StoryMoment[];
     history: StoryMoment[];
     reset: () => void;
   }
@@ -50,4 +52,9 @@ declare global {
     name: string,
     opt: Record<string, unknown>
   ) => void;
+
+  const LZString: {
+    decompressFromUTF16: (str: string) => string;
+    compressToUTF16: (str: string) => string;
+  };
 }
