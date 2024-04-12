@@ -1,6 +1,3 @@
-:: g0init Random Once [inclusion] {"position":"375,725","size":"100,100"}
-<<script>>
-
 /**
  * <<random-once seenVar>>
  * <<ro-choice>>
@@ -11,14 +8,15 @@
  *     placeholder for deleted choice, to avoid breaking saved games
  * <</random-once>>
  */
-Macro.delete("random-once");
 Macro.add("random-once", {
   tags: ["ro-choice"],
-  handler: function() {
+  handler: function () {
     const [seenVar] = this.args;
+
+    /** @type {Set<number>} */
     const valid = new Set();
     for (let i = 1; i < this.payload.length; i++) {
-      const cond = this.payload[i].args.full;
+      const cond = this.payload[i]?.args.full || "";
       if (cond === "" || eval(cond)) {
         valid.add(i);
       }
@@ -29,25 +27,25 @@ Macro.add("random-once", {
       return;
     }
 
-    const V = State.variables;
-    let seen = JSON.parse(V[seenVar] || "[]");
+    const vars = /** @type {Record<string, string>} */ (State.variables);
+    /** @type {number[]} */
+    let seen = JSON.parse(vars[seenVar] || "[]");
 
     let avail = new Set(valid);
-    seen.forEach(i => avail.delete(i));
+    seen.forEach((i) => avail.delete(i));
 
     if (avail.size === 0) {
       avail = new Set(valid);
       if (avail.size > 1 && seen.length > 0) {
-        avail.delete(seen[seen.length - 1]);
+        avail.delete(seen[seen.length - 1] || -1);
       }
       seen = [];
     }
 
     const choice = MT.pick(avail);
     seen.push(choice);
-    V[seenVar] = JSON.stringify(seen);
+    vars[seenVar] = JSON.stringify(seen);
 
-    $(this.output).wiki(this.payload[choice].contents);
-  }
+    $(this.output).wiki(this.payload[choice]?.contents || "");
+  },
 });
-<</script>>\

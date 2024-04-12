@@ -1,39 +1,8 @@
-:: g0init Seen [inclusion] {"position":"625,850","size":"100,100"}
-<<append head>><style>
-
-.mt-seen-true a {
-  color: #ddcc99;
-}
-.mt-seen-true a:hover {
-  color: #aa9966;
-}
-
-ul.actions .mt-seen-true li::before {
-  filter: saturate(20%);
-}
-
-.debugging .mt-seen-false a {
-  text-decoration: underline dashed #f66;
-}
-
-.debugging .mt-seen-todo a {
-  text-decoration: underline wavy #882;
-}
-
-/* make true visible in transcript */
-.debugging .tran-entry .mt-seen-true a {
-  text-decoration: underline dashed #393;
-}
-
-</style><</append>>
-
-<<script>>
-
 /**
  * <<mt-seen $boolean>>
  *   ...
  * <</mt-seen>>
- * 
+ *
  * Wrap contents with a <span class="mt-seen-X">
  * where X is either "true" or "false"
  * depending on $boolean.
@@ -43,14 +12,15 @@ ul.actions .mt-seen-true li::before {
 Macro.add("mt-seen", {
   tags: [],
   skipArgs: true,
-  handler: function() {
+  handler: function () {
     const expr = this.args.raw;
-    const cond = /^todo$/i.test(expr) ? "todo"
+    const cond = /^todo$/i.test(expr)
+      ? "todo"
       : !!MT.untraced(() => Scripting.evalTwineScript(expr));
     const outer = $("<span>").appendTo(this.output);
     outer.addClass(`mt-seen-${cond}`);
-    outer.wiki(this.payload[0].contents);
-  }
+    outer.wiki(this.payload[0]?.contents || "");
+  },
 });
 
 MT.mdDefUnsaved("sn_barbsSkip");
@@ -79,5 +49,3 @@ MT.neroResetObjectDim = () => {
   delete V.n_dimWand;
   delete V.n_dimWindow;
 };
-
-<</script>>

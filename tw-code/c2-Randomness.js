@@ -68,7 +68,7 @@ MT.randReset = () => {
 
 /**
  * Returns a random item from list (which can be a Set).
- * @type {<T>(list: T[]) => T}
+ * @type {<T>(list: T[] | Set<T>) => T}
  */
 MT.pick = (list) => {
   if (list instanceof Set) list = Array.from(list);

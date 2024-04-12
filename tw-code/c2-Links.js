@@ -1,24 +1,8 @@
-:: g0init Links [inclusion] {"position":"625,600","size":"100,100"}
-<<append head>><style>
-
-.mtl-denied::before {
-  filter: grayscale();
-}
-.mtl-denied .mtl-action {
-  color: #999;
-  text-decoration: line-through;
-  text-decoration-color: #999;
-  text-decoration-thickness: 1px;
-}
-.mtl-denied .mtl-reason {
-  color: #999;
-  margin-left: 0.5em;
-  font-style: italic;
-}
-
-</style><</append>>
-
-<<script>>
+/**
+ * @typedef {object} SugarCubeLink
+ * @prop {boolean} isLink
+ * @prop {string} [link]
+ */
 
 /**
  * <<mta $link [$code]>>
@@ -32,12 +16,11 @@
  */
 Macro.add("mta", {
   tags: [],
-  handler: function() {
+  handler: function () {
     const [link, code] = this.args;
-    const text = this.payload[0].contents;
-    $(makeLink(link, code, text))
-      .appendTo(this.output);
-  }
+    const text = this.payload[0]?.contents || "";
+    $(makeLink(link, code, text)).appendTo(this.output);
+  },
 });
 
 /**
@@ -49,12 +32,11 @@ Macro.add("mta", {
  */
 Macro.add("mtl", {
   tags: [],
-  handler: function() {
+  handler: function () {
     const [link, code] = this.args;
-    const text = this.payload[0].contents;
-    $("<li>").append(makeLink(link, code, text))
-      .appendTo(this.output);
-  }
+    const text = this.payload[0]?.contents || "";
+    $("<li>").append(makeLink(link, code, text)).appendTo(this.output);
+  },
 });
 
 /**
@@ -67,14 +49,13 @@ Macro.add("mtl", {
  */
 Macro.add("mtl-if", {
   tags: [],
-  handler: function() {
+  handler: function () {
     const [expr, link, reason] = this.args;
-    const text = this.payload[0].contents;
-    const bool = typeof expr === 'boolean' ? expr
-      : Scripting.evalTwineScript(expr);
+    const text = this.payload[0]?.contents || "";
+    const bool =
+      typeof expr === "boolean" ? expr : Scripting.evalTwineScript(expr);
     if (bool) {
-      $("<li>").append(makeLink(link, null, text))
-        .appendTo(this.output);
+      $("<li>").append(makeLink(link, null, text)).appendTo(this.output);
     } else {
       const li = $("<li class=mtl-denied>").appendTo(this.output);
       $("<span class=mtl-action>").wiki(text.trim()).appendTo(li);
@@ -82,7 +63,7 @@ Macro.add("mtl-if", {
         $("<span class=mtl-reason>").text(`(${reason})`).appendTo(li);
       }
     }
-  }
+  },
 });
 
 /**
@@ -91,16 +72,22 @@ Macro.add("mtl-if", {
  * Show an unavailable action.
  */
 Macro.add("mtl-denied", {
-  handler: function() {
+  handler: function () {
     const [text, reason] = this.args;
     const li = $("<li class=mtl-denied>").appendTo(this.output);
     $("<span class=mtl-action>").wiki(text.trim()).appendTo(li);
     if (reason != null && reason !== "") {
       $("<span class=mtl-reason>").text(`(${reason})`).appendTo(li);
     }
-  }
+  },
 });
 
+/**
+ * @arg {SugarCubeLink | string} link
+ * @arg {string | null | undefined} code
+ * @arg {string} text
+ *
+ */
 function makeLink(link, code, text) {
   const el = document.createDocumentFragment();
   const dest = linkTitle(link);
@@ -119,11 +106,14 @@ function makeLink(link, code, text) {
   return el;
 }
 
+/** @type {(link: SugarCubeLink | string) => string} */
 function linkTitle(link) {
-  if (link.isLink) return link.link;
+  if (typeof link !== "string" && link.isLink && link.link != null) {
+    return link.link;
+  }
   const str = String(link);
   const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
-  return m == null ? str : m[1];
+  return m == null ? str : m[1] || "";
 }
 
 /**
@@ -140,18 +130,19 @@ function linkTitle(link) {
  */
 Macro.add("mta-no-loop", {
   tags: [],
-  handler: function() {
+  handler: function () {
     const [link] = this.args;
     const dest = linkTitle(link);
-    const text = this.payload[0].contents;
+    const text = this.payload[0]?.contents || "";
     if (recentlyViewed(dest)) {
       $(this.output).wiki(text);
     } else {
       $(this.output).append(makeLink(link, null, text));
     }
-  }
+  },
 });
 
+/** @type {(name: string) => boolean} */
 function recentlyViewed(name) {
   const T = State.temporary;
   const limit = MT.untracedGet("n_patiencePassage");
@@ -173,7 +164,7 @@ function recentlyViewed(name) {
  * in history.
  */
 Macro.add("return-before", {
-  handler: function() {
+  handler: function () {
     if (State.temporary.isTranscript) return;
 
     let [from] = this.args;
@@ -183,36 +174,34 @@ Macro.add("return-before", {
 
     const hist = State.history;
     let i = State.length - 1;
-    while (i >= 0 && hist[i].title !== from) {
+    while (i >= 0 && hist[i]?.title !== from) {
       i--;
     }
     if (i < 1) {
       throw new Error(`return-before failed for ${from}`);
     }
 
-    const dest = hist[i - 1].title;
-    $(this.output).wiki(
-      `<<mta [\[${dest}]]>>Return<</mta>>`
-    );
-  }
+    const dest = hist[i - 1]?.title;
+    $(this.output).wiki(`<<mta [\[${dest}]]>>Return<</mta>>`);
+  },
 });
-
 
 Template.add("gswLiam", () => {
   const fix = () => {
-      const em = $("#gsw-liam")[0];
-      if (em == null) return;
-      const ma = $("#gsw-au")[0];
-      // cspell:disable-next-line
-      const a = atob('eEBtYWlsdG86');
-      const b = a.slice(2);
-      const c = ma.textContent.toLowerCase();
-      const d = a[1];
-      const e = em.attributes.id.value[0];
-      const f = a.slice(2, 6);
-      const url = `${b}${c}wolf${d}${e}${f}.com`;
-      em.href = url;
-      em.textContent = `e${f}`;
+    const em = document.getElementById("gsw-liam");
+    if (em == null) return;
+    if (!(em instanceof HTMLAnchorElement)) return;
+    const ma = $("#gsw-au")[0];
+    // cspell:disable-next-line
+    const a = atob("eEBtYWlsdG86");
+    const b = a.slice(2);
+    const c = ma?.textContent?.toLowerCase();
+    const d = a[1];
+    const e = em.getAttribute("id");
+    const f = a.slice(2, 6);
+    const url = `${b}${c}wolf${d}${e}${f}.com`;
+    em.href = url;
+    em.textContent = `e${f}`;
   };
 
   if (!State.temporary.isArchive) {
@@ -221,9 +210,8 @@ Template.add("gswLiam", () => {
     });
   }
 
-  const mkp = `<a id="gsw-liam" target="_blank"`
-    + ` class="link-external" rel="noreferrer"></a>`;
+  const mkp =
+    `<a id="gsw-liam" target="_blank"` +
+    ` class="link-external" rel="noreferrer"></a>`;
   return mkp;
 });
-
-<</script>>

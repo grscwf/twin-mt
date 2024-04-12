@@ -53,7 +53,6 @@ declare global {
 
 /** The MT global */
 declare global {
-
   const XMT: {
     /**
      * Creates a scratch state with _isArchive and _isTranscript true,
@@ -138,7 +137,6 @@ declare module "twine-sugarcube" {
   }
 
   interface SugarCubeStoryVariables {
-
     /** Brand for var tracing. */
     _trace?: Symbol;
 
@@ -149,10 +147,14 @@ declare module "twine-sugarcube" {
     /** Which choice was taken to go from previous turn to this turn. */
     g_choiceTaken?: number;
 
-    /** When player clicks on a link with code, g_mtaCode is set to that code. */
+    /**
+     * When player clicks on a link with a code,
+     * g_mtaCode is set to that code.
+     * This is to disambiguate multiple links to the same passage.
+     */
     g_mtaCode?: string;
 
-    /** Turn that g_mtaCode was set. */
+    /** Turn that set g_mtaCode. */
     g_mtaCodeTurn?: number;
 
     /** True if state was manipulated with a debug tool. */
@@ -205,6 +207,25 @@ declare module "twine-sugarcube" {
     n_castYounger?: boolean;
 
     n_didSomeAction?: boolean;
+
+    n_dimBookcases?: boolean;
+    n_dimBooks?: boolean;
+    n_dimBottle?: boolean;
+    n_dimCabinets?: boolean;
+    n_dimCoins?: boolean;
+    n_dimCross?: boolean;
+    n_dimDesk?: boolean;
+    n_dimGlobe?: boolean;
+    n_dimGrav?: boolean;
+    n_dimKnife?: boolean;
+    n_dimMap?: boolean;
+    n_dimMirror?: boolean;
+    n_dimPainting?: boolean;
+    n_dimPenguin?: boolean;
+    n_dimStudy?: boolean;
+    n_dimWall?: boolean;
+    n_dimWand?: boolean;
+    n_dimWindow?: boolean;
 
     n_free?: boolean;
 

@@ -195,7 +195,7 @@ Macro.add("kw-unlock-soon", {
       throw new Error(`kw-unlock-soon ${key} not found`);
     }
     const V = State.variables;
-    const vars = /** @type {Record<string, unknown} */ (V);
+    const vars = /** @type {Record<string, unknown>} */ (V);
     if (!vars[key]) {
       if (V.n_kwAnnounce != null && V.n_kwAnnounce !== key) {
         throw new Error(`conflicting kwAnnounce ${key} ${V.n_kwAnnounce}`);
