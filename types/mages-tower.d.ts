@@ -142,6 +142,10 @@ declare module "twine-sugarcube" {
     /** Brand for var tracing. */
     _trace?: Symbol;
 
+    /** Not yet used. */
+    d_knot?: boolean;
+    d_knotChoiceMade?: boolean;
+
     /** Which choice was taken to go from previous turn to this turn. */
     g_choiceTaken?: number;
 
@@ -163,13 +167,29 @@ declare module "twine-sugarcube" {
     /** Story version at start of history */
     g_versionAtStart?: string;
 
+    /** Latest barbs choice was no. */
+    mg_barbsNo?: boolean;
+
+    /** Latest barbs choice was yes. */
+    mg_barbsYes?: boolean;
+
+    /** Latest knot choice was no. */
+    mg_knotNo?: boolean;
+
+    /** Latest knot choice was yes. */
+    mg_knotYes?: boolean;
+
     n_afterAction?: string;
     n_afterItch?: string;
     n_afterLook?: string;
     n_afterLookContinue?: string;
 
+    /** True if next passage should announce barbs choice. */
+    n_announceBarbsSoon?: boolean;
+
     /** True if player chose barbed instead of smooth */
     n_barbs?: true;
+    n_barbsChoiceMade?: boolean;
 
     /** Current block shown by nero-caged. */
     n_cagedBlock?: number;
@@ -177,7 +197,22 @@ declare module "twine-sugarcube" {
     /** Turn that n_cagedBlock is for. */
     n_cagedBlockTurn?: number;
 
+    n_castEndgame?: boolean;
+    n_castItch?: boolean;
+    n_castOil?: boolean;
+    n_castYounger?: boolean;
+
     n_didSomeAction?: boolean;
+
+    n_free?: boolean;
+
+    n_glitched?: boolean;
+
+    n_globeAskedHorny?: boolean;
+    n_globeViewed?: boolean;
+
+    n_gravKnown?: boolean;
+    n_gravViewed?: boolean;
 
     n_ivexContext?: number;
 
@@ -186,11 +221,22 @@ declare module "twine-sugarcube" {
     n_magicPhase?: number;
     n_magicPhaseReached?: number;
 
+    n_mirrorBroken?: boolean;
+    n_mirrorMagicKnown?: boolean;
+
+    n_opportunist?: boolean;
+
+    n_passTried?: string;
+
     n_patienceAccel?: boolean;
     n_patienceActions?: number;
     n_patienceLooks?: number;
     n_patiencePassage?: string;
     n_patienceReturn?: number;
+
+    n_spriteQuiet?: boolean;
+
+    n_struggleKnown?: boolean;
   }
 
   interface SugarCubeTemporaryVariables {

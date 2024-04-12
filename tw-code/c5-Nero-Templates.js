@@ -1,38 +1,3 @@
-:: g0init Nero Templates [inclusion] {"position":"1175,1475","size":"100,100"}
-<<append head>><style>
-
-.master-quiet {
-  font-size: 18px;
-  font-weight: bold;
-  position: relative;
-  text-transform: uppercase;
-  top: 1px;
-}
-.nero-blank {
-  color: rgba(0, 0, 0, 0);
-  font-family: monospace;
-  user-select: none;
-}
-.nero-blank-c {
-  background-color: #333;
-  letter-spacing: 1px;
-  margin-right: 1px;
-}
-.nero-blank .glitch-c:not(#_#_#_#_),
-.nero-blank .glitch-v:not(#_#_#_#_) {
-  background-color: #333;
-  color: rgba(0, 0, 0, 0);
-}
-
-.sprite-squish {
-  letter-spacing: -1px;
-  margin-right: .1em;
-  word-spacing: -2px;
-}
-
-</style><</append>>
-
-<<script>>
 
 Template.add("blank",
   "<span class=nero-blank>" +
@@ -41,7 +6,8 @@ Template.add("blank",
     "</span>" +
   "</span>");
 
-function master(p1, p2) {
+/** @type {(p1: string, p2: string) => string} */
+const neroMaster = (p1, p2) => {
   const V = State.variables;
   const name = V.n_opportunist ? "An Opportunist" : "Master";
   if (V.n_spriteQuiet) {
@@ -50,10 +16,10 @@ function master(p1, p2) {
     return `${name}${p1}`;
   }
 }
-Template.add("master", () => master(".", "!"));
-Template.add("masterN", () => master("", ""));
-Template.add("masterQ", () => master("?", "!?"));
-Template.add("masterX", () => master("!", "!"));
+Template.add("master", () => neroMaster(".", "!"));
+Template.add("masterN", () => neroMaster("", ""));
+Template.add("masterQ", () => neroMaster("?", "!?"));
+Template.add("masterX", () => neroMaster("!", "!"));
 
 Template.add("spell", () => {
   const V = State.variables;
@@ -87,7 +53,7 @@ Template.add("crystals", () => {
 });
 
 Template.add("globe", () => {
-  const V = state.variables;
+  const V = State.variables;
   return V.n_globeViewed || V.n_globeAskedHorny
     ? "snow globe" : "arcane globe";
 });
@@ -135,5 +101,3 @@ Template.add("sprHoldStop", () => {
   }
   return mkp;
 });
-
-<</script>>

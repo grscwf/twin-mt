@@ -1,6 +1,5 @@
-:: g0init Nero Endings [inclusion] {"position":"1300,1225","size":"100,100"}
-<<script>>
 
+/** @type {Record<string, Ending | {}>} */
 MT.neroEndings = {
   xn_Broken: {
     title: "Challenge Ending: Broken",
@@ -106,4 +105,3 @@ for (const key of Object.keys(MT.neroEndings)) {
   MT.mdDefSaved(key);
 }
 
-<</script>>

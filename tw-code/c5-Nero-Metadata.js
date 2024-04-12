@@ -1,6 +1,3 @@
-:: g0init Nero Metadata [inclusion] {"position":"1175,1350","size":"100,100"}
-<<script>>
-
 // archive selections
 MT.mdDefUnsaved("mn_arcBarbs");
 MT.mdDefUnsaved("mn_arcCagedVariant");
@@ -18,5 +15,3 @@ MT.mdDefUnsaved("mn_brokenTooSlow");
 
 MT.mdDefUnsaved("mn_playerLeftStudyNoMirror");
 MT.mdDefUnsaved("mn_playerLeftStudyWithMirror");
-
-<</script>>

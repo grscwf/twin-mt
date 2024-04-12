@@ -1,6 +1,3 @@
-:: g0init Nero Misfire [inclusion] {"position":"1300,1350","size":"100,100"}
-<<script>>
-
 /**
  * <<mf-please>>
  *   $text
@@ -10,26 +7,27 @@
  *
  * Nero has said something with "please", and the Sprite misinterprets
  * it as a command. Emits $text.
- * 
+ *
  * If Sprite is inactive or waiting for a password, emits $otherText instead.
  */
 Macro.add("mf-please", {
   tags: ["mf-else"],
-  handler: function() {
+  handler: function () {
     const V = MT.untracedVars();
+    MT.assert(V.n_magicPhase != null, "magicPhase should != null");
     let ready = true;
     ready = ready && V.n_magicPhase >= MP_wantDevice;
     ready = ready && V.n_magicPhase < MP_drained;
     ready = ready && MP_wantPass !== V.n_magicPhase;
     if (ready) {
-      $(this.output).wiki(this.payload[0].contents);
+      $(this.output).wiki(this.payload[0]?.contents || "");
     } else {
       const pl = this.payload[1];
       if (pl != null && pl.name === "mf-else") {
         $(this.output).wiki(pl.contents);
       }
     }
-  }
+  },
 });
 
 /**
@@ -41,12 +39,12 @@ Macro.add("mf-please", {
  *
  * Nero has said something that the Sprite misinterprets as a password.
  * This starts that process, emits text from the Sprite, and then $moreText.
- * 
+ *
  * If Sprite is not asking for a password, emits $otherText instead.
  */
 Macro.add("mf-pass", {
   tags: ["mf-else"],
-  handler: function() {
+  handler: function () {
     const [pw] = this.args;
     const V = State.variables;
     if (pw == null || pw === "" || MP_wantPass !== V.n_magicPhase) {
@@ -68,11 +66,10 @@ Macro.add("mf-pass", {
     mkp += ` <span class=sprite-q>"Hm, that password doesn't sound right`;
     mkp += ` either, ?master`;
     mkp += ` Please hold while I double-check it, ?master"</span>`;
-    mkp += this.payload[0].contents;
+    mkp += this.payload[0]?.contents || "";
     mkp += ` <</nobr>>`;
     $(this.output).wiki(mkp);
     // for gathering stats in random-walks
     console.log(`mf-pass ${pw}`);
-  }
+  },
 });
-<</script>>
