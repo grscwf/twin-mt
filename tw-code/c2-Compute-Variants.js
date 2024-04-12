@@ -1,112 +1,84 @@
-:: g0init Compute Variants [inclusion] {"position":"625,475","size":"100,100"}
-<<append head>><style>
+/**
+ * @typedef {object} CompRender
+ * @prop {HTMLElement} dom
+ * @prop {string} text
+ * @prop {Array<{ obj: Record<string, unknown>, json: string }>} pairs
+ */
 
-.cv-state {
-  color: #39f;
-  font-family: monospace;
-  font-size: 11px;
-  margin-left: 1em;
-  text-indent: -1em;
-}
-.cv-states {
-  margin-bottom: .5em;
-}
-.cv-true {
-  color: #6a6;
-}
-.cv-false {
-  color: #c88;
-}
-.cv-enum {
-  color: #88c;
-}
-.cv-diff-a {
-  outline: 2px dotted #c44;
-}
-.cv-diff-b {
-  outline: 2px dotted #090;
-}
-.cv-diff-a.cv-diff-b {
-  outline: 2px dotted #990;
-}
-.cv-busy {
-  background-color: #330;
-  color: #993;
-  font-weight: bold;
-}
+/** @type {Set<string>} */
+let cvIgnore = new Set();
 
-</style><</append>>
-
-<<script>>
-
-let ignore = new Set();
-let tryVars = {};
+/** @type {Record<string, unknown[]>} */
+let cvTryVars = {};
 
 // We assume a null var is a boolean and try `true` is a value.
 // These vars might be null, but `true` is not valid.
-const nonbooleans = new Set([
-  "n_passFound",
-  "n_passTried",
-  "n_upset",
-]);
+const cvNonBooleans = new Set(["n_passFound", "n_passTried", "n_upset"]);
+
+$(document).on(":passagestart", () => {
+  cvIgnore = new Set();
+  cvTryVars = {};
+});
 
 Macro.add("cv-ignore", {
-  handler: function() {
+  handler: function () {
     for (let vn of this.args) {
-      vn = vn.replace(/^\$/, '');
-      ignore.add(vn);
+      vn = vn.replace(/^\$/, "");
+      cvIgnore.add(vn);
     }
-  }
+  },
 });
 
 Macro.add("cv-try", {
-  handler: function() {
+  handler: function () {
     const [vn] = this.args;
-    tryVars[vn] = this.args.slice(1);
-  }
-})
-
-$(document).on(":passagestart", () => {
-  ignore = new Set();
-  tryVars = {};
+    cvTryVars[vn] = this.args.slice(1);
+  },
 });
 
-MT.computeVariants = function() {
+MT.computeVariants = function () {
   const statEl = $(".var-info-compute");
   statEl.addClass("cv-busy");
 
-  const beginState = clone(State.current.variables);
-  const nowState = clone(State.active.variables);
-  const nowTemps = clone(State.temporary);
+  const beginState = /** @type {Record<string, unknown>} */ (
+    clone(State.current.variables)
+  );
+  const nowState = /** @type {Record<string, unknown>} */ (
+    clone(State.active.variables)
+  );
+  const nowTemps = /** @type {Record<string, unknown>} */ (
+    clone(State.temporary)
+  );
 
   // ignore vars that weren't boolean-ish
   for (const k of Object.keys(beginState)) {
     if (beginState[k] != null && typeof beginState[k] !== "boolean") {
-      ignore.add(k);
+      cvIgnore.add(k);
     }
   }
   // ignore vars that aren't currently boolean-ish
   for (const k of Object.keys(nowState)) {
     if (nowState[k] != null && typeof nowState[k] !== "boolean") {
-      ignore.add(k);
+      cvIgnore.add(k);
     }
   }
   // ignore vars that can be null but are not boolean
-  nonbooleans.forEach(vn => ignore.add(vn));
+  cvNonBooleans.forEach((vn) => cvIgnore.add(vn));
   // ignore vars that can be null but are enums
-  Object.keys(MT.enumVars).forEach(vn => ignore.add(vn));
+  Object.keys(MT.enumVars).forEach((vn) => cvIgnore.add(vn));
 
+  /** @type {Array<Record<string, unknown>>} */
   const done = [];
 
   const usedSet = new Set(MT.trace.wasRead);
 
-  ignore.forEach(vn => usedSet.delete(vn));
+  cvIgnore.forEach((vn) => usedSet.delete(vn));
 
   // if a flag has an expectation for this section, limit to that value
   const sect = MT.sectHere();
   const expect = MT.sectExpect(sect);
-  usedSet.forEach(vn => {
-    if (vn in expect) tryVars[vn] = [expect[vn]];
+  usedSet.forEach((vn) => {
+    if (vn in expect) cvTryVars[vn] = [expect[vn]];
   });
 
   const todo = [beginState];
@@ -114,6 +86,7 @@ MT.computeVariants = function() {
   // for state and vp pointing into usedList,
   // add new todo states that flip every value from vp to the end.
   // at this point, usedList is only boolean-ish values
+  /** @type {(state: Record<string, unknown>, vp: number) => void} */
   const addRecursive = (state, vp) => {
     if (usedList.length <= vp) return;
     const vn = usedList[vp];
@@ -126,15 +99,15 @@ MT.computeVariants = function() {
   addRecursive(beginState, 0);
 
   // for every var with explicit values to try, add states for them all
-  Object.keys(tryVars).forEach(vn => {
-    const [first, ...rest] = tryVars[vn];
+  Object.entries(cvTryVars).forEach(([vn, vals]) => {
+    const [first, ...rest] = vals;
     if (!usedSet.has(vn)) usedSet.add(vn);
-    ignore.delete(vn);
-    todo.forEach(t => {
+    cvIgnore.delete(vn);
+    todo.forEach((t) => {
       t[vn] = first;
     });
     for (const val of rest) {
-      [...todo].forEach(t0 => {
+      [...todo].forEach((t0) => {
         const t1 = clone(t0);
         t1[vn] = val;
         todo.push(t1);
@@ -150,7 +123,9 @@ MT.computeVariants = function() {
   // Note, this can get confused by nondeterministic rng.
 
   const passageText = Story.get(State.passage).text;
-  const renders = [];
+  /** @type {Record<string, CompRender>} */
+  const renders = {};
+  /** @type {string[]} */
   const messages = [];
 
   let checked = 0;
@@ -159,11 +134,12 @@ MT.computeVariants = function() {
   const getValid = () => {
     for (let i = 0; i < 100; i++) {
       if (todo.length === 0) return null;
-      const state = todo.pop();
+      const state = todo.pop() || {};
       done.push(state);
       checked++;
-      const ok = MT.checkSectionState(state, sect, true, usedSet)
-        && MT.checkState(state, usedSet, false);
+      const ok =
+        MT.checkSectionState(state, sect, true, usedSet) &&
+        MT.checkState(state, usedSet, false);
       if (ok) return state;
     }
     return null;
@@ -184,19 +160,19 @@ MT.computeVariants = function() {
     const ok = MT.runsWithoutFail(() => output.wiki(passageText));
     MT.traceStop();
 
-    MT.trace.wasRead.forEach(vn => {
+    MT.trace.wasRead.forEach((vn) => {
       if (usedSet.has(vn)) return;
-      if (ignore.has(vn)) return;
+      if (cvIgnore.has(vn)) return;
       if (usedSet.size >= 15) {
         messages.push(`ignoring var ${vn} (max 15)`);
-        ignore.add(vn);
+        cvIgnore.add(vn);
         return;
       }
       usedSet.add(vn);
       if (state[vn] == null || typeof state[vn] === "boolean") {
         if (!(vn in expect)) {
           // add the inverse value to the todo list
-          [...done, ...todo].forEach(st1 => {
+          [...done, ...todo].forEach((st1) => {
             const st2 = clone(st1);
             st2[vn] = !st2[vn];
             todo.push(st2);
@@ -207,12 +183,15 @@ MT.computeVariants = function() {
 
     if (!ok) return;
 
-    const usedThisTime = [...MT.trace.wasRead].filter(vn => !ignore.has(vn)).sort();
-    const dom = output[0];
+    const usedThisTime = [...MT.trace.wasRead]
+      .filter((vn) => !cvIgnore.has(vn))
+      .sort();
+    const dom = MT.jqUnwrap(output);
     const html = dom.innerHTML;
     const text = dom.innerText;
-    renders[html] || (renders[html] = { dom, text, states: [] });
-    renders[html].states.push(objSelect(state, usedThisTime));
+    const render = renders[html] || (renders[html] = { dom, text, pairs: [] });
+    const used = objSelect(state, usedThisTime);
+    render.pairs.push({ obj: used, json: MT.repr(used) });
   };
 
   const finish = () => {
@@ -220,19 +199,15 @@ MT.computeVariants = function() {
 
     const varsUsed = [...usedSet].sort();
     const variants = Object.values(renders);
-    variants.forEach(r => {
-      const map = {};
-      r.states.forEach(obj => {
-        const json = JSON._real_stringify(obj);
-        map[json] = obj;
-      });
-      r.states = Object.entries(map).map(([json, obj]) => ({ json, obj }));
-      r.states.sort((a, b) => a.json < b.json ? -1 : a.json > b.json ? +1 : 0);
+    variants.forEach((r) => {
+      r.pairs.sort((a, b) =>
+        a.json < b.json ? -1 : a.json > b.json ? +1 : 0
+      );
     });
     variants.sort((a, b) => {
       // sorting by json puts false before true, which is good
-      const aj = a.states[0].json;
-      const bj = b.states[0].json;
+      const aj = a.pairs[0]?.json || "";
+      const bj = b.pairs[0]?.json || "";
       return aj < bj ? -1 : aj > bj ? +1 : 0;
     });
     const pos = $("#passages");
@@ -241,24 +216,26 @@ MT.computeVariants = function() {
     $("<div>").appendTo(sum)
       .text(`${variants.length} variants, ${checked} states checked, ${tried} states tried,
         ${varsUsed.length} vars`);
-    messages.forEach(m => $("<div>").text(m).appendTo(sum));
+    messages.forEach((m) => $("<div>").text(m).appendTo(sum));
     for (const variant of variants) {
       pos.append("<hr>");
       const outer = $("<div class=cv-states>").appendTo(pos);
-      variant.states.forEach(st => {
+      variant.pairs.forEach((pair) => {
         const inner = $("<div class=cv-state>").appendTo(outer);
-        for (const vn of Object.keys(st.obj)) {
-          const val = st.obj[vn];
+        for (const vn of Object.keys(pair.obj)) {
+          const val = pair.obj[vn];
           if (val === false) {
             $(`<span class="cv-var cv-false">`).text(vn).appendTo(inner);
           } else if (val === true) {
             $(`<span class="cv-var cv-true">`).text(vn).appendTo(inner);
           } else if (MT.enumVars[vn] != null) {
-            const sym = MT.enums[MT.enumVars[vn]][val] || `${vn}=${val}`;
+            const sym = MT.enumSymbol(vn, val);
             $(`<span class="cv-var cv-enum">`).text(sym).appendTo(inner);
           } else {
-            const str = JSON._real_stringify(val);
-            $(`<span class="cv-var cv-other">`).text(`${vn}=${str}`).appendTo(inner);
+            const str = MT.repr(val);
+            $(`<span class="cv-var cv-other">`)
+              .text(`${vn}=${str}`)
+              .appendTo(inner);
           }
           $(inner).append(" ");
         }
@@ -291,11 +268,13 @@ MT.computeVariants = function() {
     }
   };
   tryNext();
-}
+};
 
+/** @type {(obj: Record<string, unknown>, keys: string[]) => Record<string, unknown>} */
 function objSelect(obj, keys) {
+  /** @type {Record<string, unknown>} */
   const result = {};
-  keys.forEach(k => result[k] = obj[k] || false);
+  keys.forEach((k) => (result[k] = obj[k] || false));
   return result;
 }
 
@@ -306,6 +285,7 @@ function highlightDiffs() {
   }
 }
 
+/** @type {(x: Node | null | undefined, y: Node | null | undefined) => void} */
 function diff(x, y) {
   if (x == null) {
     mark(y, 2);
@@ -327,6 +307,7 @@ function diff(x, y) {
   }
 }
 
+/** @type {(node: Node | null | undefined, c: number) => void} */
 function mark(node, c) {
   if (node != null && node.nodeType != Node.ELEMENT_NODE) {
     node = node.parentElement;
@@ -335,4 +316,3 @@ function mark(node, c) {
     $(node).addClass(c === 1 ? "cv-diff-a" : "cv-diff-b");
   }
 }
-<</script>>

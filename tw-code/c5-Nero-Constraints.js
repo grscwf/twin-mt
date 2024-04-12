@@ -1,9 +1,13 @@
-:: g0init Nero Constraints [inclusion] {"position":"1175,1225","size":"100,100"}
-<<script>>
+/**
+ * @typedef {object} Constraint
+ * @prop {Record<string, unknown>} implies
+ */
 
 // - Flags are booleans where null or undefined is equivalent to false.
 // - "implies" are constraints on other vars when the flag is true.
 //   - The constraints can be any type of value, not just flags.
+
+/** @type {Record<string, Constraint>} */
 const flags = {
   n_abused: {
     implies: {
@@ -17,7 +21,7 @@ const flags = {
       n_free: true,
       n_mageSight: true,
       n_tooClever: true,
-    }
+    },
   },
 
   n_booksLanced: {
@@ -26,32 +30,32 @@ const flags = {
       n_free: true,
       n_mageSight: true,
       n_tooClever: true,
-    }
+    },
   },
   n_booksPileBurned: {
     implies: {
       n_bookcasesLanced: true,
       n_wandExploded: true,
-    }
+    },
   },
   n_booksShredsBurned: {
     implies: {
       n_booksLanced: true,
       n_wandExploded: true,
-    }
+    },
   },
 
   n_cabinetsLanced: {
     implies: {
       n_free: true,
       n_tooClever: true,
-    }
+    },
   },
   n_cabinetsUnderViewed: {
     implies: {
       n_free: true,
       n_penguinCoinDropped: true,
-    }
+    },
   },
 
   n_candleHorny: {
@@ -83,26 +87,25 @@ const flags = {
     },
   },
 
-
   n_coinsInBook: {
     implies: {
       n_coinsInPorn: false,
       n_coinsLanced: true,
       n_mageSight: true,
-    }
+    },
   },
   n_coinsInPorn: {
     implies: {
       n_coinsInBook: false,
       n_coinsLanced: true,
       n_mageSight: true,
-    }
+    },
   },
   n_coinsLanced: {
     implies: {
       n_free: true,
       n_mageSight: true,
-    }
+    },
   },
 
   n_deskBurned: {
@@ -113,7 +116,7 @@ const flags = {
   n_deskSearchedAgain: {
     implies: {
       n_deskSearched: true,
-    }
+    },
   },
 
   n_extraHorny: {
@@ -137,16 +140,15 @@ const flags = {
     },
   },
 
-
   n_gravAsked: {
     implies: {
       n_gravViewed: true,
-    }
+    },
   },
   n_gravViewed: {
     implies: {
       n_gravNoticed: true,
-    }
+    },
   },
 
   n_ivexGone: {
@@ -194,7 +196,7 @@ const flags = {
       n_naked: true,
       n_tooClever: true,
       n_windowBroken: true,
-    }
+    },
   },
 
   n_mirrorBroken: {
@@ -209,7 +211,7 @@ const flags = {
   n_mirrorMagicKnown: {
     implies: {
       n_mirrorViewed: true,
-    }
+    },
   },
   n_mirrorTaken: {
     implies: {
@@ -227,7 +229,7 @@ const flags = {
       n_mirrorMagicKnown: true,
       n_mirrorViewed: true,
       n_mirrorWasTapped: true,
-    }
+    },
   },
   n_mirrorWasTapped: {
     implies: {
@@ -246,19 +248,19 @@ const flags = {
       n_mageSight: true,
       n_wandExploded: true,
       n_windowBroken: true,
-    }
+    },
   },
   n_paintingHasBill: {
     implies: {
       n_paintingLanced: true,
-    }
+    },
   },
   n_paintingLanced: {
     implies: {
       n_candleLit: false,
       n_mageSight: true,
       n_windowBroken: true,
-    }
+    },
   },
 
   n_pawed: {
@@ -266,20 +268,20 @@ const flags = {
       n_extraHorny: true,
     },
   },
-  
+
   n_penguinFlown: {
     implies: {
       n_free: true,
       n_mageSight: true,
       n_tooClever: true,
-    }
+    },
   },
   n_penguinTorn: {
     implies: {
       n_free: true,
       n_mageSight: true,
       n_tooClever: true,
-    }
+    },
   },
 
   n_pornLanced: {
@@ -288,12 +290,12 @@ const flags = {
       n_booksSearched: true,
       n_free: true,
       n_tooClever: true,
-    }
+    },
   },
   n_roomFlipped: {
     implies: {
       n_naked: true,
-    }
+    },
   },
 
   n_subby: {
@@ -334,7 +336,7 @@ const flags = {
       n_tooClever: true,
       n_wandTubeShot: true,
       n_windowBroken: true,
-    }
+    },
   },
   n_wandRanAway: {
     implies: {
@@ -357,7 +359,7 @@ const flags = {
     implies: {
       n_tooClever: true,
       n_wandRanAway: false,
-    }
+    },
   },
   n_wandUsed: {
     implies: {
@@ -371,16 +373,17 @@ const flags = {
     implies: {
       n_candleLit: false,
       n_mageSight: true,
-    }
+    },
   },
 };
 
 function checkFlags() {
   if (!setup.playtest) return;
-  Object.keys(flags).forEach(x => {
+  Object.keys(flags).forEach((x) => {
     // check contrapositive
-    Object.keys(flags[x].implies).forEach(y => {
-      if (flags[x].implies[y] === false) {
+    const imp = flags[x]?.implies || {};
+    Object.keys(imp).forEach((y) => {
+      if (imp[y] === false) {
         const yf = flags[y];
         if (yf == null || yf.implies == null || yf.implies[x] !== false) {
           MT.diag(`Warning: missing contrapositive: ${x} implies !${y}`);
@@ -392,6 +395,7 @@ function checkFlags() {
 
 checkFlags();
 
+/** @type {Record<string, Record<number, Record<string, unknown>>>} */
 const enumImplies = {
   n_magicPhase: {
     [MP_beforeCast]: {
@@ -626,37 +630,47 @@ const enumImplies = {
     },
     [MP_tapLost]: {
       impossible: true,
-    }
+    },
   },
-}
+};
 
-MT.checkState = (state, used, interactive, active) => {
+/**
+ * @arg {Record<string, unknown>} state
+ * @arg {Set<string>} used
+ * @arg {boolean} interactive
+ * @arg {Record<string, unknown>} [activeState]
+ */
+MT.checkState = (state, used, interactive, activeState) => {
   // Check flags
   for (const x of Object.keys(flags)) {
-
     // Ignore flag if it's been deleted
-    if (active && !(x in active)) continue;
+    if (activeState && !(x in activeState)) continue;
 
     // Check implications for true flags
     if (!state[x]) continue;
     if (used && !used.has(x)) continue;
-    for (const y of Object.keys(flags[x].implies)) {
+    const imp = flags[x]?.implies || {};
+    for (const y of Object.keys(imp)) {
       if (used && !used.has(y)) continue;
       const val = state[y] == null ? false : state[y];
-      const exp = flags[x].implies[y];
+      const exp = imp[y];
       if (val !== exp) {
         if (!interactive) return false;
-        const expStr = typeof exp !== "boolean" ? `${y} === ${exp}` : exp ? y : `!${y}`;
+        const expStr =
+          typeof exp !== "boolean" ? `${y} === ${exp}` : exp ? y : `!${y}`;
         MT.fail(
-          `${x} === ${state[x]} should imply ${expStr}; currently, ${y} === ${state[y]}`);
+          `${x} === ${state[x]} should imply ${expStr}; currently, ${y} === ${state[y]}`
+        );
       }
     }
   }
 
   // Check enum implications
   for (const x of Object.keys(enumImplies)) {
-    const xVal = state[x] == null ? "null" : state[x];
-    const rules = enumImplies[x][xVal];
+    const imp = enumImplies[x] || {};
+    const xVal = state[x];
+    if (typeof xVal !== "number") continue;
+    const rules = imp[xVal];
     if (rules == null) continue;
     if (rules.impossible) {
       if (!interactive) return false;
@@ -671,10 +685,12 @@ MT.checkState = (state, used, interactive, active) => {
       const exp = rules[y];
       if (val !== exp) {
         if (!interactive) return false;
-        const expStr = typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
+        const expStr =
+          typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
         const sVal = MT.enumSymbol(x, state[x]);
         MT.fail(
-          `${x} === ${sVal} should imply ${expStr}; currently, ${y} === ${state[y]}`);
+          `${x} === ${sVal} should imply ${expStr}; currently, ${y} === ${state[y]}`
+        );
       }
     }
   }
@@ -687,9 +703,12 @@ const checkConstraints = () => {
   return MT.untraced(() => {
     /* note: current (incoming) state, not active state */
     return MT.checkState(
-      State.current.variables, MT.trace.wasRead, true, State.active.variables);
+      /** @type {Record<string, unknown>} */ (State.current.variables),
+      MT.trace.wasRead,
+      true,
+      /** @type {Record<string, unknown>} */ (State.active.variables)
+    );
   });
 };
 
 $(document).on(":passageend", checkConstraints);
-<</script>>

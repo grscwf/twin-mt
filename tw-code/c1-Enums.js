@@ -13,11 +13,13 @@ MT.enumVars = {};
 /**
  * Returns the symbolic name of `value` for an enum.
  * `name` is either a var name or an enum name.
- * @type {(name: string, value: number) => string}
+ * @type {(name: string, value: unknown) => string}
  */
 MT.enumSymbol = (name, value) => {
   const en = MT.enums[MT.enumVars[name] || name];
-  return en == null ? String(value) : en[value] || String(value);
+  return (
+    (en != null && typeof value === "number" && en[value]) || `${name}=${value}`
+  );
 };
 
 /**

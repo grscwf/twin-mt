@@ -1,6 +1,3 @@
-:: g0init Sections [inclusion] {"position":"500,850","size":"100,100"}
-<<script>>
-
 // Passages are grouped into sections by a prefix code in their title.
 // - Prefix should start with a lowercase letter, followed by a number,
 //   followed by more lowercase numbers.
@@ -10,11 +7,11 @@
 //   search for all occurrences of a passage title.
 
 /** Passages that don't have a section code prefix */
-const specialTitles = new Set([
+const sectSpecial = new Set([
   // Twee special passages
   "Story JavaScript",
   "Story Stylesheet",
-  
+
   // Twine special passages
   "StoryAuthor",
   "StoryBanner",
@@ -38,8 +35,14 @@ const specialTitles = new Set([
 //   - A regex means, passage should use the state var only if its text
 //     matches that regex.
 
-const sectionDefs = {
+/**
+ * @typedef {object} SectDef
+ * @prop {Record<string, unknown>} [expect]
+ * @prop {Record<string, boolean | RegExp>} [notable]
+ */
 
+/** @type {Record<string, SectDef>} */
+const sectDefs = {
   // Passages loaded after g0boot, during StoryInit
   g0init: {},
 
@@ -83,7 +86,7 @@ const sectionDefs = {
   n1a: {
     notable: {
       n_mageSight: true,
-    }
+    },
   },
 
   // Nero convo, neutral mood
@@ -92,7 +95,7 @@ const sectionDefs = {
       n_abused: true,
       n_mageSight: true,
       n_naked: true,
-    }
+    },
   },
 
   // Nero convo, Ivex receptive
@@ -104,7 +107,7 @@ const sectionDefs = {
       n_abused: true,
       n_mageSight: true,
       n_naked: true,
-    }
+    },
   },
 
   // Nero convo, subby mood
@@ -117,7 +120,7 @@ const sectionDefs = {
     notable: {
       // n_abused: subby usually dominates
       n_mageSight: true,
-    }
+    },
   },
 
   // Nero convo, transition to candle
@@ -131,7 +134,7 @@ const sectionDefs = {
       n_naked: true,
       n_subby: true,
       n_tough: true,
-    }
+    },
   },
 
   // Nero candle lit
@@ -146,9 +149,9 @@ const sectionDefs = {
       n_naked: true,
       n_subby: true,
       n_tough: true,
-    }
+    },
   },
-  
+
   // Nero candle horny
   n1e: {
     expect: {
@@ -162,14 +165,14 @@ const sectionDefs = {
       n_mageSight: true,
       n_subby: true,
       n_tough: true,
-    }
+    },
   },
 
   // Nero being clever
   n1f: {
     expect: {
       n_naked: true,
-    }
+    },
   },
 
   // Nero barbs choice
@@ -177,7 +180,7 @@ const sectionDefs = {
     expect: {
       n_candleHorny: false,
       n_mageSight: false,
-    }
+    },
   },
 
   // Nero magic/sprite
@@ -189,7 +192,7 @@ const sectionDefs = {
       // make sure Ivex is wearing mask when candle lit
       n_candleLit: /ivex/im,
       n_ivexGone: true,
-    }
+    },
   },
 
   // Nero looking
@@ -203,7 +206,7 @@ const sectionDefs = {
       n_mageSight: true,
       n_free: true,
       n_ivexGone: true,
-    }
+    },
   },
 
   // Nero horny looking
@@ -216,7 +219,7 @@ const sectionDefs = {
     notable: {
       n_mageSight: true,
       n_ivexGone: true,
-    }
+    },
   },
 
   // Nero 1F alone intro
@@ -230,7 +233,7 @@ const sectionDefs = {
     },
     notable: {
       n_mageSight: true,
-    }
+    },
   },
 
   // Nero alone with candle
@@ -243,7 +246,7 @@ const sectionDefs = {
     },
     notable: {
       n_mageSight: true,
-    }
+    },
   },
 
   // Nero escaping cross
@@ -255,7 +258,7 @@ const sectionDefs = {
     },
     notable: {
       n_mageSight: true,
-    }
+    },
   },
 
   // Nero free on 1F
@@ -269,7 +272,7 @@ const sectionDefs = {
       n_mageSight: true,
       n_extraHorny: true,
       n_tooClever: true,
-    }
+    },
   },
 
   // Nero looking while free
@@ -283,7 +286,7 @@ const sectionDefs = {
       n_mageSight: true,
       n_extraHorny: true,
       n_tooClever: true,
-    }
+    },
   },
 
   // Nero using wand
@@ -297,7 +300,7 @@ const sectionDefs = {
       n_mageSight: true,
       n_extraHorny: true,
       n_tooClever: true,
-    }
+    },
   },
 
   // Nero 2F sketch
@@ -310,7 +313,7 @@ const sectionDefs = {
     notable: {
       n_mageSight: true,
       n_extraHorny: true,
-    }
+    },
   },
 
   // Nero 1F endings
@@ -330,42 +333,54 @@ const sectionDefs = {
   other: {},
 };
 
-/** Returns section name of passageTitle. */
-const sectOf = (passageTitle) => {
+/**
+ * Returns section name of passageTitle.
+ * @type {(title: string) => string}
+ */
+const sectOf = (title) => {
   const re = /^([a-z][a-z0-9]+)[- ]/;
-  const m = re.exec(passageTitle);
-  return m ? m[1] : "other";
+  const m = re.exec(title);
+  return (m && m[1]) || "other";
 };
 
 /** Returns section name of current passage. */
 MT.sectHere = () => sectOf(State.passage);
 
-/** Returns expected state in sect. */
-MT.sectExpect = (sect) => sectionDefs[sect].expect;
+/**
+ * Returns expected state in sect
+ * @type {(sect: string) => Record<string, unknown>}
+ */
+MT.sectExpect = (sect) => sectDefs[sect]?.expect || {};
 
+/**
+ * @type {(vname: string) => unknown}
+ */
 MT.varExpect = (vname) => {
   const sect = MT.sectHere();
-  if (!sectionDefs[sect]) return null;
-  const expect = sectionDefs[sect].expect || {};
+  if (!sectDefs[sect]) return null;
+  const expect = sectDefs[sect]?.expect || {};
   return expect[vname];
 };
 
+/**
+ * @type {(sect: string, vname: string) => boolean}
+ */
 MT.isNotable = (sect, vname) => {
-  if (!sectionDefs[sect]) return null;
-  const notable = sectionDefs[sect].notable;
+  if (!sectDefs[sect]) return false;
+  const notable = sectDefs[sect]?.notable;
   if (!notable) return false;
   const exp = notable[vname];
   if (exp instanceof RegExp) {
     const text = Story.get(State.passage).text;
     return exp.test(text);
   }
-  return exp;
+  return exp || false;
 };
 
 MT.allNotable = () => {
   const sect = MT.sectHere();
-  if (!sectionDefs[sect]) return [];
-  const notable = sectionDefs[sect].notable;
+  if (!sectDefs[sect]) return [];
+  const notable = sectDefs[sect]?.notable;
   if (!notable) return [];
   const result = [];
   let text = null;
@@ -381,25 +396,25 @@ MT.allNotable = () => {
 };
 
 /** Validates sectionDefs and passage titles. */
-function checkSections() {
+const sectCheckAll = () => {
   if (!setup.debug) return;
 
   // Verify every passage title has a valid section tag.
   const sectsUsed = new Set();
-  for (const p of Story.lookup()) {
+  for (const p of Story.lookupWith(() => true)) {
     const sect = sectOf(p.title);
-    if (!sectionDefs[sect] && !sectsUsed.has(sect)) {
+    if (!sectDefs[sect] && !sectsUsed.has(sect)) {
       MT.diag(`Warning: [\[${p.title}]] section ${sect} not defined`);
     }
     sectsUsed.add(sect);
 
-    if (sect === "other" && !specialTitles.has(p.title)) {
+    if (sect === "other" && !sectSpecial.has(p.title)) {
       MT.diag(`Warning: [\[${p.title}]] should have a section code`);
     }
   }
 
   // Verify all section tags are used.
-  for (const sect of Object.keys(sectionDefs)) {
+  for (const sect of Object.keys(sectDefs)) {
     if (!sectsUsed.has(sect)) {
       MT.diag(`Warning: section ${sect} is never used`);
     }
@@ -407,18 +422,24 @@ function checkSections() {
 
   // Verify sectionDefs have a sensible structure
   const expectedKeys = ["expect", "notable"];
-  for (const [sect, def] of Object.entries(sectionDefs)) {
-    const typos = Object.keys(def).filter(k => expectedKeys.indexOf(k) < 0);
+  for (const [sect, def] of Object.entries(sectDefs)) {
+    const typos = Object.keys(def).filter((k) => expectedKeys.indexOf(k) < 0);
     if (typos.length) {
       MT.diag(`Warning: sectionDefs.${sect} has unknown keys [${typos}]`);
     }
   }
-}
+};
 
-/** Verifies stateObj is correct for sectName. */
+/**
+ * Verifies stateObj is correct for sectName.
+ * @arg {Record<string, unknown>} stateObj
+ * @arg {string} sectName
+ * @arg {boolean} quietly
+ * @arg {Set<string>} [onlySet]
+ */
 MT.checkSectionState = (stateObj, sectName, quietly, onlySet) => {
-  if (!sectionDefs[sectName]) return;
-  const expect = sectionDefs[sectName].expect;
+  if (!sectDefs[sectName]) return;
+  const expect = sectDefs[sectName]?.expect;
   if (!expect) return true;
   let allOk = true;
   for (const [vn, val] of Object.entries(expect)) {
@@ -431,17 +452,15 @@ MT.checkSectionState = (stateObj, sectName, quietly, onlySet) => {
     }
   }
   return allOk;
-}
+};
 
 /** Verifies current state is correct at current location. */
-function checkSectionStateHere() {
+const sectCheckHere = () => {
   // Note, incoming state, not modified state.
-  const s0 = State.current.variables;
+  const s0 = /** @type {Record<string, unknown>} */ (State.current.variables);
   const sect = MT.sectHere();
   MT.checkSectionState(s0, sect, false);
-}
+};
 
-checkSections();
-$(document).on(":passageend", checkSectionStateHere);
-
-<</script>>
+sectCheckAll();
+$(document).on(":passageend", sectCheckHere);
