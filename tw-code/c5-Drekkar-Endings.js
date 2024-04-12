@@ -1,6 +1,13 @@
-:: g0init Drekkar Endings [inclusion] {"position":"1175,1925","size":"100,100"}
-<<script>>
+/**
+ * @typedef {(vars: Record<string, unknown>) => string} ConditionalPage
+ * @typedef {string | ConditionalPage} EndingPage
+ * 
+ * @typedef {object} Ending
+ * @prop {string} title
+ * @prop {EndingPage[]} passages
+ */
 
+/** @type {Record<string, Ending | {}>} */
 MT.drekkarEndings = {
   xd_EnthrallmentLion: {
     title: "Bad Ending: Enthrallment (Lion)",
@@ -66,9 +73,9 @@ MT.drekkarEndings = {
       "d9b Ivex Torture 2",
       "d9b Easy Way",
       "d9b Resistance",
-      o => o.freeze ? "d9b Ice 1" : "d9b Shock 1",
-      o => o.freeze ? "d9b Ice 2" : "d9b Shock 2",
-      o => o.freeze ? "d9b Ice 3" : "d9b Shock 3",
+      (o) => (o.freeze ? "d9b Ice 1" : "d9b Shock 1"),
+      (o) => (o.freeze ? "d9b Ice 2" : "d9b Shock 2"),
+      (o) => (o.freeze ? "d9b Ice 3" : "d9b Shock 3"),
       "d9b Extra Torture",
       "d9b Compliant End",
     ],
@@ -80,9 +87,9 @@ MT.drekkarEndings = {
       "d9b Ivex Torture 2",
       "d9b Hard Way",
       "d9b Defiance",
-      o => o.freeze ? "d9b Ice 1" : "d9b Shock 1",
-      o => o.freeze ? "d9b Ice 2" : "d9b Shock 2",
-      o => o.freeze ? "d9b Ice 3" : "d9b Shock 3",
+      (o) => (o.freeze ? "d9b Ice 1" : "d9b Shock 1"),
+      (o) => (o.freeze ? "d9b Ice 2" : "d9b Shock 2"),
+      (o) => (o.freeze ? "d9b Ice 3" : "d9b Shock 3"),
       "d9b Extra Torture",
       "d9b Defiant End",
     ],
@@ -143,5 +150,3 @@ MT.drekkarEndings = {
 for (const key of Object.keys(MT.drekkarEndings)) {
   MT.mdDefSaved(key);
 }
-
-<</script>>

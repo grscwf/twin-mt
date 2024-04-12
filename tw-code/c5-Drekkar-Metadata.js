@@ -1,10 +1,5 @@
-:: g0init Drekkar [inclusion] {"position":"1050,1925","size":"100,100"}
-<<script>>
-
 // archive selections
 MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-
-<</script>>
