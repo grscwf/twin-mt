@@ -54,13 +54,13 @@ type Usages = {
   locs: Record<string, Location[]>;
 };
 
-let positions: Record<string, string> = {};
+type Positions = Record<string, string>;
 
 export async function main() {
-  positions = {};
+  const positions: Positions = {};
   const decls = await readDecls(declsFile);
   const nero = rules.find((r) => r.target === "nero.html")!;
-  const usages = await scanDirs(nero.dirs);
+  const usages = await scanDirs(nero.dirs, positions);
   report(decls, usages);
 }
 
@@ -86,17 +86,17 @@ async function readDecls(fname: string) {
   return decls;
 }
 
-async function scanDirs(dirs: string[]) {
+async function scanDirs(dirs: string[], positions: Positions) {
   const patterns = dirs.map((d) => `${d}/**/*.tw`);
   const files = await fastGlob(patterns);
   const usages: Usages = { locs: {} };
   for (const f of files) {
-    await scanFile(f, usages);
+    await scanFile(f, usages, positions);
   }
   return usages;
 }
 
-async function scanFile(fname: string, usages: Usages) {
+async function scanFile(fname: string, usages: Usages, positions: Positions) {
   const text = await fsp.readFile(fname, "utf8");
   const m = new RegExp(headerRE).exec(text);
   const title = m == null ? "" : m[1]!;

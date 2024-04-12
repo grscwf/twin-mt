@@ -1,5 +1,8 @@
-:: g0init Migrate [inclusion] {"position":"875,600","size":"100,100"}
-<<script>>
+/*
+ * Migrates data from saved games and saved session to current version.
+ * Currently, this mostly just deletes obsolete data.
+ * Sketch of full migration at bottom.
+ */
 
 function warnUnknownMetadata() {
   for (const [k, v] of MT.mdEntries()) {
@@ -20,17 +23,19 @@ function deleteOldStorage() {
 
 function migrateMetadata() {
   const rec = MT.mdRecord();
+  /** @type {(from: string, to: string) => void} */
   const rename = (from, to) => {
     if (rec[from] != null && rec[to] == null) {
       State.metadata.set(to, rec[from]);
       State.metadata.delete(from);
     }
   };
-  const remove = name => {
+  /** @type {(name: string) => void} */
+  const remove = (name) => {
     if (rec[name] != null) {
       State.metadata.delete(name);
     }
-  }
+  };
 
   remove("mg_trail");
   remove("mg_notesNoTrailTimes");
@@ -62,24 +67,27 @@ function checkSessionVersion() {
   const ver = State.variables.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
   MT.diag(
-    `Warning: Current session is from a different version of the game.`
-    + ` Some things may not work correctly.`
-    + ` ("${ver}" !== "${setup.version}")`);
+    `Warning: Current session is from a different version of the game.` +
+      ` Some things may not work correctly.` +
+      ` ("${ver}" !== "${setup.version}")`
+  );
   MT.diagReport();
 }
 
+/** @type {(save: import("twine-sugarcube").SaveObject) => void} */
 function checkSaveVersion(save) {
   // g_versionAtStart is set by Title Screen, so it's not in the
   // first state, but it will be in the second.
   if (save.state.history.length < 2) return;
-  const V = save.state.history[1].variables || {};
+  const V = save.state.history[1]?.variables || {};
   const ver = V.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
   $(document).one(":passagestart", () => {
     MT.diag(
-      `Warning: Saved game is from a different version of the game.`
-      + ` Some things may not work correctly.`
-      + ` ("${ver}" !== "${setup.version}")`);
+      `Warning: Saved game is from a different version of the game.` +
+        ` Some things may not work correctly.` +
+        ` ("${ver}" !== "${setup.version}")`
+    );
   });
 }
 
@@ -90,7 +98,7 @@ function migrateInit() {
   // has to be run late, after all the mdDef* calls
   $(document).on(":storyready", warnUnknownMetadata);
 
-  Save.onLoad.add(save => checkSaveVersion(save));
+  Save.onLoad.add((save) => checkSaveVersion(save));
   $(document).on(":storyready", checkSessionVersion);
 }
 
@@ -112,7 +120,7 @@ migrateInit();
  * Current session needs to be fixed in an init script, before it's loaded.
  * - session.get("state") is a compact snapshot. see below.
  * - fix it, and write it back with session.set("state", state);
- * 
+ *
  * Fixing a snapshot named `state`
  * - expanded snapshot has state.history
  * - compact snapshot has state.delta
@@ -121,5 +129,3 @@ migrateInit();
  *   - fix moment.title (passage name)
  *   - fix var names in moment.variables
  */
-
-<</script>>

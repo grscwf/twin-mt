@@ -36,6 +36,7 @@ declare global {
   };
 
   const session: {
+    delete: (key: string) => void;
     get: (key: string) => unknown;
     set: (key: string, value: unknown) => void;
   };
