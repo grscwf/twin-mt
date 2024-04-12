@@ -138,6 +138,10 @@ declare module "twine-sugarcube" {
   }
 
   interface SugarCubeStoryVariables {
+
+    /** Brand for var tracing. */
+    _trace?: Symbol;
+
     /** Which choice was taken to go from previous turn to this turn. */
     g_choiceTaken?: number;
 

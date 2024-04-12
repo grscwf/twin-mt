@@ -268,4 +268,8 @@
     },
   });
 
+  MT.tran = {
+    renderHistory,
+    renderPage,
+  };
 })();
