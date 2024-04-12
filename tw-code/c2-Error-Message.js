@@ -114,14 +114,14 @@ const emMessage = (type, str, context) => {
 
 /**
  * @arg {boolean | null | undefined} val
- * @arg {string} str
+ * @arg {string} should
  * @arg {MacroContext} [context]
  * @returns {asserts val}
  */
 
-MT.assert = (val, str, context) => {
+MT.assert = (val, should, context) => {
   if (val) return;
-  MT.fail(str, context);
+  MT.fail(should, context);
 };
 
 Macro.add("em-assert", {
@@ -129,7 +129,7 @@ Macro.add("em-assert", {
   handler: function () {
     if (State.temporary.isTranscript) return;
     const val = MT.untraced(() => eval(this.args.full));
-    MT.assert(val, `expected: ${this.args.raw}`, this);
+    MT.assert(val, `should be true: ${this.args.raw}`, this);
   },
 });
 

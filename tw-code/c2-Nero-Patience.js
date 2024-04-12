@@ -191,8 +191,8 @@
                 const V = State.variables;
                 V.g_mutated = true;
                 V.n_patiencePassage = here;
-                V.n_patienceActions = Math.max(2, v0.n_patienceActions);
-                V.n_patienceLooks = Math.max(2, v0.n_patienceLooks);
+                V.n_patienceActions = Math.max(2, v0.n_patienceActions || 0);
+                V.n_patienceLooks = Math.max(2, v0.n_patienceLooks || 0);
                 V.n_patienceReturn = 1;
                 V.n_lustTextPos = Math.min(v0.n_lustTextPos || 0, 4);
               })
@@ -207,8 +207,8 @@
                 const V = State.variables;
                 V.g_mutated = true;
                 V.n_patiencePassage = here;
-                V.n_patienceActions = Math.max(2, v0.n_patienceActions);
-                V.n_patienceLooks = Math.max(2, v0.n_patienceLooks);
+                V.n_patienceActions = Math.max(2, v0.n_patienceActions || 0);
+                V.n_patienceLooks = Math.max(2, v0.n_patienceLooks || 0);
                 V.n_patienceReturn = 2;
                 V.n_lustTextPos = Math.min(v0.n_lustTextPos || 0, 4);
               })

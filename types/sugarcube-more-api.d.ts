@@ -2,7 +2,7 @@
  * SugarCube APIs that aren't declared in @types/twine-sugarcube
  */
 
-import type {} from "twine-sugarcube";
+import type { StoryMoment } from "twine-sugarcube";
 
 declare module "twine-sugarcube" {
   interface MacroContext {
@@ -12,6 +12,7 @@ declare module "twine-sugarcube" {
 
   interface StateAPI {
     clearTemporary: () => void;
+    history: StoryMoment[];
     reset: () => void;
   }
 }

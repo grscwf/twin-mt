@@ -1,15 +1,15 @@
-:: g0init History [inclusion] {"position":"500,600","size":"100,100"}
-<<script>>
+/** @typedef {import("twine-sugarcube").StoryMoment} StoryMoment */
 
 /* We need to keep entire history, for transcript and checkpoints. */
 Config.history.maxStates = 100000;
 
-const histIgnore = [
-  "g1a Title Screen",
-];
+const histIgnore = ["g1a Title Screen"];
 
-/** True if title is a menu passage */
-function isMenu(title) {
+/**
+ * True if title is a menu passage
+ * @type {(title: string) => boolean}
+ */
+function histIsMenu(title) {
   const passage = Story.get(title);
   return passage.tags.includes("is-menu");
 }
@@ -18,34 +18,39 @@ function isMenu(title) {
 MT.popToStory = () => {
   const hist = State.history;
   let pos = State.length - 1;
-  while (pos > 0 && isMenu(hist[pos].title)) {
+  while (pos > 0 && histIsMenu(hist[pos]?.title || "")) {
     pos--;
   }
   Engine.goTo(pos);
 };
 
-/** Returns history without is-menu loops. */
+/**
+ * Returns history without is-menu loops.
+ * @type {() => StoryMoment[]}
+ */
 MT.getHistory = () => {
+  /** @type {StoryMoment[]} */
   const result = [];
 
   const hist = State.history;
   for (let i = 0, n = hist.length; i < n; i++) {
-    const title = hist[i].title;
+    const moment = hist[i];
+    MT.assert(moment != null, "moment should != null");
+
+    const title = moment.title;
     if (histIgnore.includes(title)) continue;
-    if (isMenu(title)) continue;
+    if (histIsMenu(title)) continue;
 
     // if previous passage is a menu passage
-    if (i > 0 && isMenu(hist[i - 1].title)) {
+    if (i > 0 && histIsMenu(hist[i - 1]?.title || "")) {
       // and we're returning to the same passage
-      if (result.length > 0 && result[result.length - 1].title === title) {
+      if (result.length > 0 && result[result.length - 1]?.title === title) {
         // skip this one too
         continue;
       }
     }
 
-    result.push(hist[i]);
+    result.push(moment);
   }
   return result;
 };
-
-<</script>>
