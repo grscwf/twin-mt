@@ -22,7 +22,9 @@ $(document).on(":passagestart", () => {
 
 Macro.add("cv-ignore", {
   handler: function () {
-    for (let vn of this.args) {
+    const varNames = /** @type {string[]} */ (this.args);
+
+    for (let vn of varNames) {
       vn = vn.replace(/^\$/, "");
       cvIgnore.add(vn);
     }
@@ -31,8 +33,10 @@ Macro.add("cv-ignore", {
 
 Macro.add("cv-try", {
   handler: function () {
-    const [vn] = this.args;
-    cvTryVars[vn] = this.args.slice(1);
+    const vn = /** @type {string} */ (this.args[0]);
+    const vals = /** @type {unknown[]} */ (this.args.slice(1));
+
+    cvTryVars[vn] = vals;
   },
 });
 
@@ -200,9 +204,7 @@ MT.computeVariants = function () {
     const varsUsed = [...usedSet].sort();
     const variants = Object.values(renders);
     variants.forEach((r) => {
-      r.pairs.sort((a, b) =>
-        a.json < b.json ? -1 : a.json > b.json ? +1 : 0
-      );
+      r.pairs.sort((a, b) => (a.json < b.json ? -1 : a.json > b.json ? +1 : 0));
     });
     variants.sort((a, b) => {
       // sorting by json puts false before true, which is good
@@ -276,14 +278,14 @@ const objSelect = (obj, keys) => {
   const result = {};
   keys.forEach((k) => (result[k] = obj[k] || false));
   return result;
-}
+};
 
 const highlightDiffs = () => {
   const passages = $(".passage");
   for (let i = passages.length - 1; i > 0; i--) {
     diff(passages[i - 1], passages[i]);
   }
-}
+};
 
 /** @type {(x: Node | null | undefined, y: Node | null | undefined) => void} */
 const diff = (x, y) => {
@@ -305,7 +307,7 @@ const diff = (x, y) => {
       mark(y.childNodes[i], 2);
     }
   }
-}
+};
 
 /** @type {(node: Node | null | undefined, c: number) => void} */
 const mark = (node, c) => {
@@ -315,4 +317,4 @@ const mark = (node, c) => {
   if (node != null) {
     $(node).addClass(c === 1 ? "cv-diff-a" : "cv-diff-b");
   }
-}
+};

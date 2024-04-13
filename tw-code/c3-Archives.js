@@ -51,11 +51,8 @@ Macro.add("arc-skip", {
 Macro.add("arc-select", {
   tags: ["arc-option"],
   handler: function () {
-    /** @type {string} */
-    const varname = this.args[0];
-
-    /** @type {string} */
-    const label = this.args[1];
+    const varname = /** @type {string} */ (this.args[0]);
+    const label = /** @type {string} */ (this.args[1]);
 
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     const T = State.temporary;
@@ -135,17 +132,10 @@ Macro.add("arc-select", {
 Macro.add("arc-ending", {
   tags: ["arc-variants"],
   handler: function () {
-    /** @type {boolean} */
-    const enabled = this.args[0];
-
-    /** @type {SugarCubeLink | string} */
-    const link = this.args[1];
-
-    /** @type {string | null | undefined} */
-    let offText = this.args[2];
-
-    /** @type {string | null | undefined} */
-    let setter = this.args[3];
+    const enabled = /** @type {boolean} */ (this.args[0]);
+    const link = /** @type {SugarCubeLink | string} */ (this.args[1]);
+    let offText = /** @type {string | null | undefined} */ (this.args[2]);
+    let setter = /** @type {string | null | undefined} */ (this.args[3]);
 
     const T = State.temporary;
     const unlocked = enabled || T.lockpick;
@@ -181,8 +171,7 @@ Macro.add("arc-ending", {
  */
 Macro.add("arc-set-barbs", {
   handler: function () {
-    /** @type {string} */
-    const vname = this.args[0];
+    const vname = /** @type {string} */ (this.args[0]);
 
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     if (V[vname] == null) {
@@ -199,8 +188,10 @@ Macro.add("arc-set-barbs", {
  */
 Macro.add("ending-bad", {
   handler: function () {
+    const text = /** @type {string} */ (this.args[0]);
+    const metaVar = /** @type {string} */ (this.args[1]);
+
     if (State.temporary.isArchive) return;
-    const [text, metaVar] = this.args;
     arcAnnounce("bad", metaVar, `Bad Ending: ${text}`, this.output);
   },
 });
@@ -213,8 +204,10 @@ Macro.add("ending-bad", {
  */
 Macro.add("ending-challenge", {
   handler: function () {
+    const text = /** @type {string} */ (this.args[0]);
+    const metaVar = /** @type {string} */ (this.args[1]);
+
     if (State.temporary.isArchive) return;
-    const [text, metaVar] = this.args;
     arcAnnounce("challenge", metaVar, `Challenge Ending: ${text}`, this.output);
   },
 });
@@ -227,8 +220,11 @@ Macro.add("ending-challenge", {
  */
 Macro.add("ending-good", {
   handler: function () {
+    /** @type {string} */
+    const text = /** @type {string} */ (this.args[0]);
+    const metaVar = /** @type {string} */ (this.args[1]);
+
     if (State.temporary.isArchive) return;
-    const [text, metaVar] = this.args;
     arcAnnounce("good", metaVar, `Ending: ${text}`, this.output);
   },
 });

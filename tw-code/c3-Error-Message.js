@@ -125,9 +125,12 @@ MT.assert = (val, should, ctx) => {
 Macro.add("em-assert", {
   skipArgs: true,
   handler: function () {
+    const expr = this.args.full;
+    const rawExpr = this.args.raw;
+
     if (State.temporary.isTranscript) return;
-    const val = MT.untraced(() => eval(this.args.full));
-    MT.assert(val, `should be true: ${this.args.raw}`, this);
+    const val = MT.untraced(() => eval(expr));
+    MT.assert(val, `should be true: ${rawExpr}`, this);
   },
 });
 

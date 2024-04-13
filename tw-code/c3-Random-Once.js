@@ -11,10 +11,12 @@
 Macro.add("random-once", {
   tags: ["ro-choice"],
   handler: function () {
-    const [seenVar] = this.args;
+    /** @type {string} */
+    const seenVar = this.args[0];
 
     /** @type {Set<number>} */
     const valid = new Set();
+
     for (let i = 1; i < this.payload.length; i++) {
       const cond = this.payload[i]?.args.full || "";
       if (cond === "" || eval(cond)) {
@@ -28,6 +30,7 @@ Macro.add("random-once", {
     }
 
     const vars = /** @type {Record<string, string>} */ (State.variables);
+
     /** @type {number[]} */
     let seen = JSON.parse(vars[seenVar] || "[]");
 

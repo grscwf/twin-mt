@@ -15,10 +15,13 @@ const barbsAnnounce = (dest) => {
 
 Macro.add("barbs-announce", {
   handler: function () {
+    /** @type {string} */
+    const when = this.args[0];
+
     if (State.temporary.isArchive) return;
     if (this.args.length !== 1) throw new Error("expected 1 arg");
     const V = State.variables;
-    switch (this.args[0]) {
+    switch (when) {
       case "now":
         barbsAnnounce(this.output);
         break;
@@ -29,7 +32,7 @@ Macro.add("barbs-announce", {
         if (V.n_announceBarbsSoon) barbsAnnounce(this.output);
         break;
       default:
-        throw new Error(`Unexpected arg ${this.args[0]}`);
+        throw new Error(`Unexpected arg ${when}`);
     }
   },
 });

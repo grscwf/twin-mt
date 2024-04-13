@@ -10,7 +10,9 @@
  */
 Macro.add("checkpoint-save", {
   handler: function () {
-    const [varName, desc] = this.args;
+    const varName = /** @type {string} */ (this.args[0]);
+    const desc = /** @type {string} */ (this.args[1]);
+
     let mkp = `<meta-text>Checkpoint: ${desc}</meta-text>`;
     mkp += `?P`;
     $(this.output).wiki(mkp);
@@ -25,7 +27,8 @@ Macro.add("checkpoint-save", {
  */
 Macro.add("checkpoint-action", {
   handler: function () {
-    const [varName] = this.args;
+    const varName = /** @type {string}*/ (this.args[0]);
+
     const vars = /** @type {Record<string, unknown>} */ (State.variables);
     const cp = /** @type {Checkpoint} */ (vars[varName]);
     if (cp == null) return;
@@ -51,7 +54,8 @@ Macro.add("checkpoint-action", {
  */
 Macro.add("checkpoint-load", {
   handler: function () {
-    const [varName] = this.args;
+    const varName = /** @type {string} */ (this.args[0]);
+
     const vars = /** @type {Record<string, unknown>} */ (State.variables);
     const cp = /** @type {Checkpoint} */ (vars[varName]);
     const lost = State.turns - State.length;

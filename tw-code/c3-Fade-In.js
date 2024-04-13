@@ -29,9 +29,11 @@ const fadeAbsorbMsec = 500;
 Macro.add("fade-in", {
   tags: ["fade-next"],
   handler: function () {
-    const noDots = this.args.includes("no-dots");
-    const noPulse = this.args.includes("no-pulse");
-    const clickAnywhere = this.args.includes("click-anywhere");
+    const opts = /** @type {string[]} */ (this.args.slice(1));
+
+    const noDots = opts.includes("no-dots");
+    const noPulse = opts.includes("no-pulse");
+    const clickAnywhere = opts.includes("click-anywhere");
 
     /** @type {Array<[delay: number, span: JQuery<HTMLElement>]>} */
     const queue = [];
@@ -106,9 +108,14 @@ Macro.add("fade-in", {
     for (let i = 0; i < this.payload.length; i++) {
       const section = this.payload[i];
       MT.assert(section != null, "section should != null");
+
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
-      if (MT.roaming || T.isTranscript) delay = 0;
+
+      if (MT.roaming || T.isTranscript) {
+        delay = 0;
+      }
+
       const span = $("<span>")
         .addClass("fade-in fade-in-hidden")
         .toggleClass("fade-in-no-dots", noDots)

@@ -6,7 +6,10 @@
  */
 Macro.add("arousal-bar", {
   handler: function () {
-    const [prev, cur, pulse] = this.args;
+    const prev = /** @type {number} */ (this.args[0]);
+    const cur = /** @type {number} */ (this.args[1]);
+    const pulse = /** @type {string} */ (this.args[2]);
+
     const outer = $(`<div class=arousal-bg>`).appendTo(this.output);
     const bar = $(`<div class=arousal-bar>`).appendTo(outer);
     bar.addClass(`arousal-${pulse}`);

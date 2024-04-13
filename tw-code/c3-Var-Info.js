@@ -101,7 +101,9 @@ Macro.add("vi-ignore-if", {
   handler: function () {
     if (State.temporary.isTranscript) return;
     for (let p = 0; p < this.args.length - 1; p++) {
+      /** @type {string} */
       const cvar = this.args[p];
+
       if (MT.varExpect(cvar) != null) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }

@@ -11,7 +11,9 @@
 Macro.add("mta", {
   tags: [],
   handler: function () {
-    const [link, code] = this.args;
+    const link = /** @type {SugarCubeLink | string} */ (this.args[0]);
+    const code = /** @type {string | null | undefined} */ (this.args[1]);
+
     const text = this.payload[0]?.contents || "";
     $(makeLink(link, code, text)).appendTo(this.output);
   },
@@ -27,7 +29,9 @@ Macro.add("mta", {
 Macro.add("mtl", {
   tags: [],
   handler: function () {
-    const [link, code] = this.args;
+    const link = /** @type {SugarCubeLink | string} */ (this.args[0]);
+    const code = /** @type {string | null | undefined} */ (this.args[1]);
+
     const text = this.payload[0]?.contents || "";
     $("<li>").append(makeLink(link, code, text)).appendTo(this.output);
   },
@@ -44,10 +48,16 @@ Macro.add("mtl", {
 Macro.add("mtl-if", {
   tags: [],
   handler: function () {
-    const [expr, link, reason] = this.args;
+    const expr = /** @type {boolean | string} */ (this.args[0]);
+    const link = /** @type {SugarCubeLink | string} */ (this.args[1]);
+    const reason = /** @type {string | null | undefined} */ (this.args[2]);
+
     const text = this.payload[0]?.contents || "";
     const bool =
-      typeof expr === "boolean" ? expr : Scripting.evalTwineScript(expr);
+      typeof expr === "boolean"
+        ? expr
+        : /** @type {unknown} */ (Scripting.evalTwineScript(expr));
+
     if (bool) {
       $("<li>").append(makeLink(link, null, text)).appendTo(this.output);
     } else {

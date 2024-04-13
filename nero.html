@@ -2428,11 +2428,8 @@ Macro.add("arc-skip", {
 Macro.add("arc-select", {
   tags: ["arc-option"],
   handler: function () {
-    /** @type {string} */
-    const varname = this.args[0];
-
-    /** @type {string} */
-    const label = this.args[1];
+    const varname = /** @type {string} */ (this.args[0]);
+    const label = /** @type {string} */ (this.args[1]);
 
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     const T = State.temporary;
@@ -2512,17 +2509,10 @@ Macro.add("arc-select", {
 Macro.add("arc-ending", {
   tags: ["arc-variants"],
   handler: function () {
-    /** @type {boolean} */
-    const enabled = this.args[0];
-
-    /** @type {SugarCubeLink | string} */
-    const link = this.args[1];
-
-    /** @type {string | null | undefined} */
-    let offText = this.args[2];
-
-    /** @type {string | null | undefined} */
-    let setter = this.args[3];
+    const enabled = /** @type {boolean} */ (this.args[0]);
+    const link = /** @type {SugarCubeLink | string} */ (this.args[1]);
+    let offText = /** @type {string | null | undefined} */ (this.args[2]);
+    let setter = /** @type {string | null | undefined} */ (this.args[3]);
 
     const T = State.temporary;
     const unlocked = enabled || T.lockpick;
@@ -2558,8 +2548,7 @@ Macro.add("arc-ending", {
  */
 Macro.add("arc-set-barbs", {
   handler: function () {
-    /** @type {string} */
-    const vname = this.args[0];
+    const vname = /** @type {string} */ (this.args[0]);
 
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     if (V[vname] == null) {
@@ -2576,8 +2565,10 @@ Macro.add("arc-set-barbs", {
  */
 Macro.add("ending-bad", {
   handler: function () {
+    const text = /** @type {string} */ (this.args[0]);
+    const metaVar = /** @type {string} */ (this.args[1]);
+
     if (State.temporary.isArchive) return;
-    const [text, metaVar] = this.args;
     arcAnnounce("bad", metaVar, `Bad Ending: ${text}`, this.output);
   },
 });
@@ -2590,8 +2581,10 @@ Macro.add("ending-bad", {
  */
 Macro.add("ending-challenge", {
   handler: function () {
+    const text = /** @type {string} */ (this.args[0]);
+    const metaVar = /** @type {string} */ (this.args[1]);
+
     if (State.temporary.isArchive) return;
-    const [text, metaVar] = this.args;
     arcAnnounce("challenge", metaVar, `Challenge Ending: ${text}`, this.output);
   },
 });
@@ -2604,8 +2597,11 @@ Macro.add("ending-challenge", {
  */
 Macro.add("ending-good", {
   handler: function () {
+    /** @type {string} */
+    const text = /** @type {string} */ (this.args[0]);
+    const metaVar = /** @type {string} */ (this.args[1]);
+
     if (State.temporary.isArchive) return;
-    const [text, metaVar] = this.args;
     arcAnnounce("good", metaVar, `Ending: ${text}`, this.output);
   },
 });
@@ -2639,7 +2635,10 @@ const arcAnnounce = (type, metaVar, text, output) => {
  */
 Macro.add("arousal-bar", {
   handler: function () {
-    const [prev, cur, pulse] = this.args;
+    const prev = /** @type {number} */ (this.args[0]);
+    const cur = /** @type {number} */ (this.args[1]);
+    const pulse = /** @type {string} */ (this.args[2]);
+
     const outer = $(`<div class=arousal-bg>`).appendTo(this.output);
     const bar = $(`<div class=arousal-bar>`).appendTo(outer);
     bar.addClass(`arousal-${pulse}`);
@@ -2870,7 +2869,9 @@ Macro.add("arousal-bar", {
  */
 Macro.add("checkpoint-save", {
   handler: function () {
-    const [varName, desc] = this.args;
+    const varName = /** @type {string} */ (this.args[0]);
+    const desc = /** @type {string} */ (this.args[1]);
+
     let mkp = `<meta-text>Checkpoint: ${desc}</meta-text>`;
     mkp += `?P`;
     $(this.output).wiki(mkp);
@@ -2885,7 +2886,8 @@ Macro.add("checkpoint-save", {
  */
 Macro.add("checkpoint-action", {
   handler: function () {
-    const [varName] = this.args;
+    const varName = /** @type {string}*/ (this.args[0]);
+
     const vars = /** @type {Record<string, unknown>} */ (State.variables);
     const cp = /** @type {Checkpoint} */ (vars[varName]);
     if (cp == null) return;
@@ -2911,7 +2913,8 @@ Macro.add("checkpoint-action", {
  */
 Macro.add("checkpoint-load", {
   handler: function () {
-    const [varName] = this.args;
+    const varName = /** @type {string} */ (this.args[0]);
+
     const vars = /** @type {Record<string, unknown>} */ (State.variables);
     const cp = /** @type {Checkpoint} */ (vars[varName]);
     const lost = State.turns - State.length;
@@ -2951,7 +2954,9 @@ $(document).on(":passagestart", () => {
 
 Macro.add("cv-ignore", {
   handler: function () {
-    for (let vn of this.args) {
+    const varNames = /** @type {string[]} */ (this.args);
+
+    for (let vn of varNames) {
       vn = vn.replace(/^\$/, "");
       cvIgnore.add(vn);
     }
@@ -2960,8 +2965,10 @@ Macro.add("cv-ignore", {
 
 Macro.add("cv-try", {
   handler: function () {
-    const [vn] = this.args;
-    cvTryVars[vn] = this.args.slice(1);
+    const vn = /** @type {string} */ (this.args[0]);
+    const vals = /** @type {unknown[]} */ (this.args.slice(1));
+
+    cvTryVars[vn] = vals;
   },
 });
 
@@ -3129,9 +3136,7 @@ MT.computeVariants = function () {
     const varsUsed = [...usedSet].sort();
     const variants = Object.values(renders);
     variants.forEach((r) => {
-      r.pairs.sort((a, b) =>
-        a.json < b.json ? -1 : a.json > b.json ? +1 : 0
-      );
+      r.pairs.sort((a, b) => (a.json < b.json ? -1 : a.json > b.json ? +1 : 0));
     });
     variants.sort((a, b) => {
       // sorting by json puts false before true, which is good
@@ -3205,14 +3210,14 @@ const objSelect = (obj, keys) => {
   const result = {};
   keys.forEach((k) => (result[k] = obj[k] || false));
   return result;
-}
+};
 
 const highlightDiffs = () => {
   const passages = $(".passage");
   for (let i = passages.length - 1; i > 0; i--) {
     diff(passages[i - 1], passages[i]);
   }
-}
+};
 
 /** @type {(x: Node | null | undefined, y: Node | null | undefined) => void} */
 const diff = (x, y) => {
@@ -3234,7 +3239,7 @@ const diff = (x, y) => {
       mark(y.childNodes[i], 2);
     }
   }
-}
+};
 
 /** @type {(node: Node | null | undefined, c: number) => void} */
 const mark = (node, c) => {
@@ -3244,7 +3249,7 @@ const mark = (node, c) => {
   if (node != null) {
     $(node).addClass(c === 1 ? "cv-diff-a" : "cv-diff-b");
   }
-}
+};
 /* twine-user-script #13: "c3-Count-Words.js" */
 /** @type {(text: string) => number} */
 MT.countWords = function (text) {
@@ -3497,9 +3502,12 @@ MT.assert = (val, should, ctx) => {
 Macro.add("em-assert", {
   skipArgs: true,
   handler: function () {
+    const expr = this.args.full;
+    const rawExpr = this.args.raw;
+
     if (State.temporary.isTranscript) return;
-    const val = MT.untraced(() => eval(this.args.full));
-    MT.assert(val, `should be true: ${this.args.raw}`, this);
+    const val = MT.untraced(() => eval(expr));
+    MT.assert(val, `should be true: ${rawExpr}`, this);
   },
 });
 
@@ -3584,9 +3592,11 @@ const fadeAbsorbMsec = 500;
 Macro.add("fade-in", {
   tags: ["fade-next"],
   handler: function () {
-    const noDots = this.args.includes("no-dots");
-    const noPulse = this.args.includes("no-pulse");
-    const clickAnywhere = this.args.includes("click-anywhere");
+    const opts = /** @type {string[]} */ (this.args.slice(1));
+
+    const noDots = opts.includes("no-dots");
+    const noPulse = opts.includes("no-pulse");
+    const clickAnywhere = opts.includes("click-anywhere");
 
     /** @type {Array<[delay: number, span: JQuery<HTMLElement>]>} */
     const queue = [];
@@ -3661,9 +3671,14 @@ Macro.add("fade-in", {
     for (let i = 0; i < this.payload.length; i++) {
       const section = this.payload[i];
       MT.assert(section != null, "section should != null");
+
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
-      if (MT.roaming || T.isTranscript) delay = 0;
+
+      if (MT.roaming || T.isTranscript) {
+        delay = 0;
+      }
+
       const span = $("<span>")
         .addClass("fade-in fade-in-hidden")
         .toggleClass("fade-in-no-dots", noDots)
@@ -3796,7 +3811,9 @@ MT.jqUnwrap = (jq) => {
 Macro.add("mta", {
   tags: [],
   handler: function () {
-    const [link, code] = this.args;
+    const link = /** @type {SugarCubeLink | string} */ (this.args[0]);
+    const code = /** @type {string | null | undefined} */ (this.args[1]);
+
     const text = this.payload[0]?.contents || "";
     $(makeLink(link, code, text)).appendTo(this.output);
   },
@@ -3812,7 +3829,9 @@ Macro.add("mta", {
 Macro.add("mtl", {
   tags: [],
   handler: function () {
-    const [link, code] = this.args;
+    const link = /** @type {SugarCubeLink | string} */ (this.args[0]);
+    const code = /** @type {string | null | undefined} */ (this.args[1]);
+
     const text = this.payload[0]?.contents || "";
     $("<li>").append(makeLink(link, code, text)).appendTo(this.output);
   },
@@ -3829,10 +3848,16 @@ Macro.add("mtl", {
 Macro.add("mtl-if", {
   tags: [],
   handler: function () {
-    const [expr, link, reason] = this.args;
+    const expr = /** @type {boolean | string} */ (this.args[0]);
+    const link = /** @type {SugarCubeLink | string} */ (this.args[1]);
+    const reason = /** @type {string | null | undefined} */ (this.args[2]);
+
     const text = this.payload[0]?.contents || "";
     const bool =
-      typeof expr === "boolean" ? expr : Scripting.evalTwineScript(expr);
+      typeof expr === "boolean"
+        ? expr
+        : /** @type {unknown} */ (Scripting.evalTwineScript(expr));
+
     if (bool) {
       $("<li>").append(makeLink(link, null, text)).appendTo(this.output);
     } else {
@@ -4305,10 +4330,12 @@ MT.pathName = (path) => {
 Macro.add("random-once", {
   tags: ["ro-choice"],
   handler: function () {
-    const [seenVar] = this.args;
+    /** @type {string} */
+    const seenVar = this.args[0];
 
     /** @type {Set<number>} */
     const valid = new Set();
+
     for (let i = 1; i < this.payload.length; i++) {
       const cond = this.payload[i]?.args.full || "";
       if (cond === "" || eval(cond)) {
@@ -4322,6 +4349,7 @@ Macro.add("random-once", {
     }
 
     const vars = /** @type {Record<string, string>} */ (State.variables);
+
     /** @type {number[]} */
     let seen = JSON.parse(vars[seenVar] || "[]");
 
@@ -4437,14 +4465,14 @@ let revisitTop = null;
 
 /**
  * Runs block and reloads current page.
- * @type {(block: (state: SugarCubeStoryVariables) => void) => void}
+ * @type {(block: (oldState: SugarCubeStoryVariables) => void) => void}
  */
 MT.revisitHere = (block) => {
   MT.traceStop();
   revisitTop = $("html").prop("scrollTop");
-  const active = State.active.variables;
+  const oldActive = State.active.variables;
   State.active.variables = clone(State.current.variables);
-  block && block(active);
+  block && block(oldActive);
   Engine.play(State.passage);
   $("html").addClass("revisit-here");
 };
@@ -6954,7 +6982,9 @@ Macro.add("vi-ignore-if", {
   handler: function () {
     if (State.temporary.isTranscript) return;
     for (let p = 0; p < this.args.length - 1; p++) {
+      /** @type {string} */
       const cvar = this.args[p];
+
       if (MT.varExpect(cvar) != null) {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
@@ -10815,10 +10845,13 @@ const barbsAnnounce = (dest) => {
 
 Macro.add("barbs-announce", {
   handler: function () {
+    /** @type {string} */
+    const when = this.args[0];
+
     if (State.temporary.isArchive) return;
     if (this.args.length !== 1) throw new Error("expected 1 arg");
     const V = State.variables;
-    switch (this.args[0]) {
+    switch (when) {
       case "now":
         barbsAnnounce(this.output);
         break;
@@ -10829,7 +10862,7 @@ Macro.add("barbs-announce", {
         if (V.n_announceBarbsSoon) barbsAnnounce(this.output);
         break;
       default:
-        throw new Error(`Unexpected arg ${this.args[0]}`);
+        throw new Error(`Unexpected arg ${when}`);
     }
   },
 });
@@ -13358,7 +13391,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
