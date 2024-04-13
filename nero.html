@@ -450,12 +450,47 @@ meta-text {
   border-color: #555;
 }
 /* twine-user-stylesheet #2: "c1-Diag.css" */
-#mt-diag {
-  background-color: #330;
-  border: 1px solid #eaf54c;
+#diag-outer {
+  align-items: center;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  line-height: 1.5;
+  margin: 12px 0;
+  pointer-events: none;
+  position: fixed;
+  text-align: center;
+  width: 100%;
+  z-index: 999991;
+}
+
+.diag-box {
+  background-color: #cc4;
   border-radius: 4px;
-  color: #eaf54c;
-  padding: 0.5em;
+  color: #000;
+  font-size: 12px;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  pointer-events: auto;
+  text-align: left;
+  word-break: break-word;
+}
+
+.diag-close,
+.diag-debug {
+  color: #55f;
+  float: right;
+  font-size: 10px;
+  font-weight: bold;
+  margin-right: -2px;
+  margin-top: 2px;
+  padding-left: 8px;
+}
+
+.diag-trace {
+  display: block;
+  white-space: pre-line;
 }
 /* twine-user-stylesheet #3: "c3-Archives.css" */
 .arc-disabled {
@@ -1846,7 +1881,7 @@ const MT = {};
 MT.jsonParse = JSON._real_parse ? JSON._real_parse : JSON.parse;
 
 /** Alias for JSON._real_stringify. */
-MT.repr = JSON._real_stringify ? JSON._real_stringify : JSON.stringify;
+MT.json = JSON._real_stringify ? JSON._real_stringify : JSON.stringify;
 
 /** `window` as a extensible Record. */
 MT.windowRec = /** @type {Record<string, unknown>} */ (
@@ -1871,43 +1906,144 @@ MT.windowRec.MT = MT;
  * @prop {string} [text]
  */
 /* twine-user-script #4: "c1-Diag.js" */
-/** @type {string[]} */
-const diagMessages = [];
+/*
+ * Show diag messages in boxes that can be dismissed.
+ *
+ * Structure is
+ *   <div id="diag-outer">
+ *     <div class="diag-box diag-box-${type}>
+ *       <div class="diag-item"> ... </div>
+ *       <div class="diag-item"> ... </div>
+ *     </div>
+ *     ...
+ *   </div>
+ *
+ * Consecutive messages of the same type will be in the same box.
+ */
 
 /**
- * Queue a diag message.
- * @type {(...args: unknown[]) => void}
+ * @typedef {object} DiagMessage
+ * @prop {string} [type]
+ * @prop {string} [text]
+ * @prop {unknown[]} [values]
+ * @prop {MacroContext} [context]
+ * @prop {boolean} [showDebug]
+ */
+
+MT.diagHasProblem = false;
+MT.diagMessages = /** @type {DiagMessage[]} */ ([]);
+
+let diagCapture = false;
+let diagDebugStop = false;
+let diagSuppress = false;
+let diagWasSeen = false;
+
+const diagProblemTypes = ["fail", "warn"];
+
+/**
+ * Show a diagnostic.
+ * @arg {unknown[]} args
  */
 MT.diag = (...args) => {
-  console.log(args);
-  diagMessages.push(
-    args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ")
-  );
+  diagEmit({ type: "diag", values: args });
 };
 
-/** Show pending diag messages. */
-MT.diagReport = () => {
-  $("#mt-diag").remove();
-  if (diagMessages.length) {
-    const div = $("<div id=mt-diag>").prependTo("#story");
-    for (const msg of diagMessages) {
-      $("<div>").text(msg).appendTo(div);
+/** @type {(diag: DiagMessage) => void} */
+const diagEmit = (diag) => {
+  if (diagSuppress) return;
+
+  console.log(diag);
+
+  const type = diag.type || "diag";
+  if (diagProblemTypes.includes(type)) {
+    MT.diagHasProblem = true;
+  }
+
+  if (diagDebugStop) {
+    debugger;
+    diagDebugStop = false;
+  }
+
+  if (diagCapture) {
+    MT.diagMessages.push(diag);
+    return;
+  }
+
+  let outer = $("#diag-outer");
+  if (!outer.length) {
+    outer = $(`<div id="diag-outer">`).appendTo("#story");
+  }
+
+  let box = $(outer).last();
+  let addButtons = false;
+  if (!box.length || !box.hasClass(`diag-box-${type}`)) {
+    box = $(`<div class="diag-box diag-box-${type}">`).appendTo(outer);
+    addButtons = true;
+  }
+
+  let item = $(`<div class="diag-item">`).appendTo(box);
+
+  if (addButtons) {
+    $(`<a class="diag-close">[close]</a>`)
+      .on("click", () => {
+        box.remove();
+      })
+      .appendTo(item);
+    if (diag.showDebug && setup.playtest) {
+      $(`<a class="diag-debug">[debug]</a>`)
+        .on("click", () => {
+          diagDebugStop = true;
+          Engine.play(State.passage, true);
+        })
+        .appendTo(item);
     }
   }
+
+  if (diag.text) {
+    $(`<span class="diag-text">`).text(diag.text).appendTo(item);
+  }
+
+  if (diag.values) {
+    for (const val of diag.values) {
+      const str = val == null ? String(val) : MT.json(val);
+      $(`<span class="diag-value">`).text(str).appendTo(item);
+    }
+  }
+
+  if (diag.context) {
+    $(`<span class="diag-context">`)
+      .text(diagBacktrace(diag.context))
+      .appendTo(item);
+  }
 };
 
-/** Clear diag messages that were shown */
-const diagClear = () => {
-  const div = $("#mt-diag");
-  if (div.length) {
-    div.remove();
-    diagMessages.length = 0;
+/** @type {(context: MacroContext | null | undefined) => string} */
+const diagBacktrace = (context) => {
+  let trace = "";
+  while (context != null) {
+    if (context.displayName === "include") {
+      trace += context.source + "\n";
+    }
+    context = /** @type {MacroContext | null | undefined} */ (context.parent);
   }
+  return trace;
 };
 
 const diagInit = () => {
-  $(document).on(":passageinit", diagClear);
-  $(document).on(":passageend", MT.diagReport);
+  $(document).on(":passageinit", () => {
+    if (diagWasSeen) {
+      $("#diag-outer").remove();
+      MT.diagHasProblem = false;
+      MT.diagMessages = [];
+      diagCapture = false;
+      diagDebugStop = false;
+      diagSuppress = false;
+      diagWasSeen = false;
+    }
+  });
+  $(document).on(":passageend", () => {
+    diagWasSeen = true;
+  });
 };
 
 diagInit();
@@ -2255,7 +2391,6 @@ const warnUnknownMetadata = () => {
       MT.diag("Warning: unknown metadata:", k);
     }
   }
-  MT.diagReport();
 }
 
 const deleteOldStorage = () => {
@@ -2316,7 +2451,6 @@ const checkSessionVersion = () => {
       ` Some things may not work correctly.` +
       ` ("${ver}" !== "${setup.version}")`
   );
-  MT.diagReport();
 }
 
 /** @type {(save: import("twine-sugarcube").SaveObject) => void} */
@@ -2923,7 +3057,6 @@ Macro.add("checkpoint-load", {
         `Sorry! Checkpoint: ${cp.desc} (turn ${cp.turn})` +
           ` is no longer in the history`
       );
-      MT.diagReport();
     } else {
       Engine.goTo(cp.turn - lost - 1);
     }
@@ -3127,7 +3260,7 @@ MT.computeVariants = function () {
     const text = dom.innerText;
     const render = renders[html] || (renders[html] = { dom, text, pairs: [] });
     const used = objSelect(state, usedThisTime);
-    render.pairs.push({ obj: used, json: MT.repr(used) });
+    render.pairs.push({ obj: used, json: MT.json(used) });
   };
 
   const finish = () => {
@@ -3166,7 +3299,7 @@ MT.computeVariants = function () {
             const sym = MT.enumSymbol(vn, val);
             $(`<span class="cv-var cv-enum">`).text(sym).appendTo(inner);
           } else {
-            const str = MT.repr(val);
+            const str = MT.json(val);
             $(`<span class="cv-var cv-other">`)
               .text(`${vn}=${str}`)
               .appendTo(inner);
@@ -3385,7 +3518,7 @@ let emDebugStop = false;
 let emSuppress = false;
 
 $(document).on(":passagestart", () => {
-  $("#EM-outer").remove();
+  // $("#EM-outer").remove();
   MT.hasFails = false;
   MT.hasWarnings = false;
   MT.messages = [];
@@ -3493,7 +3626,6 @@ const emMessage = (type, str, ctx) => {
  * @arg {MacroContext} [ctx]
  * @returns {asserts val}
  */
-
 MT.assert = (val, should, ctx) => {
   if (val) return;
   MT.fail(should, ctx);
@@ -4639,7 +4771,7 @@ const roamNext = () => {
   }
 
   /* stop on problem */
-  if (MT.hasFails || MT.hasWarnings || $(".error-view").length) {
+  if (MT.diagHasProblem || MT.hasFails || MT.hasWarnings) {
     console.log("stopping on problem");
     return roamStop();
   }
@@ -5028,7 +5160,7 @@ const scrollRememberPos = () => {
     turn: State.turns,
     top: document.documentElement.scrollTop,
   };
-  sessionStorage.setItem(SCROLL_KEY, MT.repr(pos));
+  sessionStorage.setItem(SCROLL_KEY, MT.json(pos));
 };
 
 const scrollRestorePos = () => {
@@ -5979,7 +6111,7 @@ const renderSeen = (title, state, out) => {
     for (const v of read) {
       obj[v] = state[v];
     }
-    const json = MT.repr(obj, null, "  ");
+    const json = MT.json(obj, null, "  ");
     $("<div class=trail-info-state>").text(json).appendTo(out);
   }
 };
@@ -6451,7 +6583,7 @@ const saveCurrentTrail = () => {
     tipRand1: tipVars.g_rand1 || 0,
     lzState,
   };
-  localStorage.setItem(key, MT.repr(activeCache));
+  localStorage.setItem(key, MT.json(activeCache));
 };
 
 /**
@@ -6488,7 +6620,7 @@ const savePackedTrails = (packed) => {
     }
   }
 
-  const str = LZString.compressToUTF16(MT.repr(compact));
+  const str = LZString.compressToUTF16(MT.json(compact));
   localStorage.setItem("trail.packed", str);
   packedCache.str = str;
   packedCache.obj = packed;
@@ -12712,7 +12844,7 @@ Macro.add("pw-found", {
     const found = MT.jsonParse(V.n_passFound || "[]");
     if (!found.includes(pw)) {
       found.push(pw);
-      V.n_passFound = MT.repr(found);
+      V.n_passFound = MT.json(found);
     }
   }
 });
@@ -13391,7 +13523,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;

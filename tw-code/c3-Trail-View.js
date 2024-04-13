@@ -136,7 +136,7 @@ const renderSeen = (title, state, out) => {
     for (const v of read) {
       obj[v] = state[v];
     }
-    const json = MT.repr(obj, null, "  ");
+    const json = MT.json(obj, null, "  ");
     $("<div class=trail-info-state>").text(json).appendTo(out);
   }
 };

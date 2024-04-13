@@ -10,7 +10,6 @@ const warnUnknownMetadata = () => {
       MT.diag("Warning: unknown metadata:", k);
     }
   }
-  MT.diagReport();
 }
 
 const deleteOldStorage = () => {
@@ -71,7 +70,6 @@ const checkSessionVersion = () => {
       ` Some things may not work correctly.` +
       ` ("${ver}" !== "${setup.version}")`
   );
-  MT.diagReport();
 }
 
 /** @type {(save: import("twine-sugarcube").SaveObject) => void} */

@@ -12,7 +12,7 @@ const scrollRememberPos = () => {
     turn: State.turns,
     top: document.documentElement.scrollTop,
   };
-  sessionStorage.setItem(SCROLL_KEY, MT.repr(pos));
+  sessionStorage.setItem(SCROLL_KEY, MT.json(pos));
 };
 
 const scrollRestorePos = () => {

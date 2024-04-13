@@ -64,7 +64,6 @@ Macro.add("checkpoint-load", {
         `Sorry! Checkpoint: ${cp.desc} (turn ${cp.turn})` +
           ` is no longer in the history`
       );
-      MT.diagReport();
     } else {
       Engine.goTo(cp.turn - lost - 1);
     }

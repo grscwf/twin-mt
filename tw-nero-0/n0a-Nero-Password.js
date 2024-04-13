@@ -107,7 +107,7 @@ Macro.add("pw-found", {
     const found = MT.jsonParse(V.n_passFound || "[]");
     if (!found.includes(pw)) {
       found.push(pw);
-      V.n_passFound = MT.repr(found);
+      V.n_passFound = MT.json(found);
     }
   }
 });

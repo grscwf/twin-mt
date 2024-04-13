@@ -146,7 +146,7 @@ const roamNext = () => {
   }
 
   /* stop on problem */
-  if (MT.hasFails || MT.hasWarnings || $(".error-view").length) {
+  if (MT.diagHasProblem || MT.hasFails || MT.hasWarnings) {
     console.log("stopping on problem");
     return roamStop();
   }

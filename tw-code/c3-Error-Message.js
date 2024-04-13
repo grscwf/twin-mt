@@ -8,7 +8,7 @@ let emDebugStop = false;
 let emSuppress = false;
 
 $(document).on(":passagestart", () => {
-  $("#EM-outer").remove();
+  // $("#EM-outer").remove();
   MT.hasFails = false;
   MT.hasWarnings = false;
   MT.messages = [];
@@ -116,7 +116,6 @@ const emMessage = (type, str, ctx) => {
  * @arg {MacroContext} [ctx]
  * @returns {asserts val}
  */
-
 MT.assert = (val, should, ctx) => {
   if (val) return;
   MT.fail(should, ctx);

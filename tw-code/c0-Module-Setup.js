@@ -47,7 +47,7 @@ const MT = {};
 MT.jsonParse = JSON._real_parse ? JSON._real_parse : JSON.parse;
 
 /** Alias for JSON._real_stringify. */
-MT.repr = JSON._real_stringify ? JSON._real_stringify : JSON.stringify;
+MT.json = JSON._real_stringify ? JSON._real_stringify : JSON.stringify;
 
 /** `window` as a extensible Record. */
 MT.windowRec = /** @type {Record<string, unknown>} */ (

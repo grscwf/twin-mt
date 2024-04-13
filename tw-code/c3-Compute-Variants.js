@@ -195,7 +195,7 @@ MT.computeVariants = function () {
     const text = dom.innerText;
     const render = renders[html] || (renders[html] = { dom, text, pairs: [] });
     const used = objSelect(state, usedThisTime);
-    render.pairs.push({ obj: used, json: MT.repr(used) });
+    render.pairs.push({ obj: used, json: MT.json(used) });
   };
 
   const finish = () => {
@@ -234,7 +234,7 @@ MT.computeVariants = function () {
             const sym = MT.enumSymbol(vn, val);
             $(`<span class="cv-var cv-enum">`).text(sym).appendTo(inner);
           } else {
-            const str = MT.repr(val);
+            const str = MT.json(val);
             $(`<span class="cv-var cv-other">`)
               .text(`${vn}=${str}`)
               .appendTo(inner);

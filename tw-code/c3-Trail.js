@@ -179,7 +179,7 @@ const saveCurrentTrail = () => {
     tipRand1: tipVars.g_rand1 || 0,
     lzState,
   };
-  localStorage.setItem(key, MT.repr(activeCache));
+  localStorage.setItem(key, MT.json(activeCache));
 };
 
 /**
@@ -216,7 +216,7 @@ const savePackedTrails = (packed) => {
     }
   }
 
-  const str = LZString.compressToUTF16(MT.repr(compact));
+  const str = LZString.compressToUTF16(MT.json(compact));
   localStorage.setItem("trail.packed", str);
   packedCache.str = str;
   packedCache.obj = packed;
