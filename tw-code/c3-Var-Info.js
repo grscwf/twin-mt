@@ -1,169 +1,3 @@
-:: g0init Var Info [inclusion] {"position":"375,1100","size":"100,100"}
-<<append head>><style>
-.revisit-here,
-.revisit-here * {
-  transition: none !important;
-}
-
-.var-info {
-  background-color: #111;
-  color: #999;
-  cursor: default;
-  font-size: 12px;
-  line-height: 14px;
-  padding: 4px 0;
-}
-
-.var-info-label,
-.var-info-button-outer {
-  border: 1px solid transparent;
-  border-radius: 4px;
-  display: inline-block;
-  margin-bottom: 2px;
-  padding: 2px 4px;
-  text-align: center;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.var-info-label {
-  color: #666;
-  cursor: pointer;
-  margin-left: -4px;
-  margin-right: 8px;
-}
-.var-info-label:hover {
-  background-color: #222;
-}
-
-.var-info-hidden > span:not(.var-info-show) {
-  display: none;
-}
-.var-info-hidden:not(.var-info-to-do) > .var-info-label::after {
-  content: "\2713"; /* checkmark */
-  margin-left: .5em;
-}
-.var-info-hidden.var-info-to-do > .var-info-label::after {
-  content: "\1f6a7"; /* construction */
-}
-
-.var-info-separator {
-  margin: 0 16px;
-}
-
-.var-info-compute {
-  margin-right: 1em;
-}
-.var-info-compute:hover {
-  background-color: #333;
-}
-
-.var-info-button-outer {
-  min-width: 4em;
-  position: relative;
-}
-
-.var-info-passage {
-  user-select: all;
-  white-space: nowrap;
-}
-
-.var-info-notable {
-  font-weight: bold;
-}
-.var-info-ignored {
-  border: 1px dashed #882;
-  font-style: italic;
-  font-weight: normal;
-}
-.var-info-always {
-  font-weight: normal;
-  opacity: 0.6;
-}
-
-.var-info-to-do::after {
-  content: "\1f6a7"; /* construction */
-}
-.var-info-was-written::before {
-  content: "\2191"; /* up arrow */
-  padding-right: 1px;
-}
-.var-info-was-read::after {
-  content: "\2193"; /* down arrow */
-  padding-left: 1px;
-}
-.var-info-was-read.var-info-to-do::after {
-  content: "\2193\1f6a7"; /* down arrow, construction */
-  padding-left: 1px;
-}
-
-.var-info-was-deleted:not(.var-info-was-written) {
-  opacity: 0.5;
-  text-decoration: line-through;
-}
-
-.var-info-can-change {
-  border-color: #666;
-  cursor: pointer;
-}
-.var-info-can-change:hover {
-  border-color: #ccc;
-}
-
-.var-info-can-change.var-info-notable {
-  border-color: #996;
-}
-.var-info-can-change.var-info-notable:hover {
-  border-color: #ddc;
-}
-
-.var-info-boolean-false {
-  color: #c88;
-}
-.var-info-boolean-true {
-  color: #6a6;
-}
-
-.var-info-enum {
-  color: #88c;
-}
-.var-info-number .var-info-button-label,
-.var-info-enum .var-info-button-label {
-  pointer-events: none;
-}
-.var-info-button-left,
-.var-info-button-right {
-  border: 1px solid #666;
-  border-radius: 4px;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  width: 50%;
-}
-.var-info-button-left:hover,
-.var-info-button-right:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-.var-info-button-left {
-  border-right: 0;
-  left: 0;
-}
-.var-info-button-right {
-  border-left: 0;
-  right: 0;
-}
-
-.var-info-value {
-  background-color: #033;
-  display: inline-block;
-  max-width: 3em;
-  overflow-x: clip;
-}
-
-</style><</append>>
-
-<<script>>
-
 const alwaysConditional = new Set();
 const alwaysVars = new Map();
 const ignoreVars = new Set();
@@ -174,15 +8,17 @@ $(document).on(":passagestart", () => {
   ignoreVars.clear();
 });
 
-function withinInclude(ctx) {
-  for (; ctx != null; ctx = ctx.parent) {
+/** @type {(ctx: MacroContext) => boolean} */
+const withinInclude = (ctx) => {
+  for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
     if (ctx.displayName === "include") return true;
   }
   return false;
-}
+};
 
+/** @type {(ctx: MacroContext) => boolean} */
 function withinCondition(ctx) {
-  for (; ctx != null; ctx = ctx.parent) {
+  for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
     if (ctx.displayName === "if") return true;
     if (ctx.displayName === "switch") return true;
   }
@@ -191,7 +27,7 @@ function withinCondition(ctx) {
 
 /** <<vi-always varname value [reason]>> */
 Macro.add("vi-always", {
-  handler: function() {
+  handler: function () {
     if (State.temporary.isTranscript) return;
     const [vname, exp] = this.args;
     if (MT.varExpect(vname) != null && !withinInclude(this)) {
@@ -200,7 +36,8 @@ Macro.add("vi-always", {
     const actual = MT.untracedGet(vname);
     if (exp !== actual && !(exp === false && actual == null)) {
       // force a traced read, so it can be toggled
-      const read = State.variables[vname];
+      const vars = /** @type {Record<string, unknown>} */ (State.variables);
+      const read = vars[vname];
       MT.fail(`vi-always ${vname} ${exp}, but actual value is ${read}`);
       return;
     }
@@ -208,12 +45,12 @@ Macro.add("vi-always", {
     if (withinCondition(this)) {
       alwaysConditional.add(vname);
     }
-  }
+  },
 });
 
 /** <<vi-always-if cond-var varname value [reason]>> */
 Macro.add("vi-always-if", {
-  handler: function() {
+  handler: function () {
     if (State.temporary.isTranscript) return;
     const [cond, vname, exp] = this.args;
     const sect = MT.sectHere();
@@ -224,9 +61,11 @@ Macro.add("vi-always-if", {
       const actual = MT.untracedGet(vname);
       if (exp !== actual && !(exp === false && actual == null)) {
         // force a traced read, so it can be toggled
-        const read = State.variables[vname];
+        const vars = /** @type {Record<string, unknown>} */ (State.variables);
+        const read = vars[vname];
         MT.fail(
-          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`);
+          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`
+        );
         return;
       }
       alwaysVars.set(vname, exp);
@@ -234,12 +73,12 @@ Macro.add("vi-always-if", {
         alwaysConditional.add(vname);
       }
     }
-  }
+  },
 });
 
 /** <<vi-ignore var1 ...>> */
 Macro.add("vi-ignore", {
-  handler: function() {
+  handler: function () {
     if (State.temporary.isTranscript) return;
     for (const vn of this.args) {
       if (MT.varExpect(vn) != null) {
@@ -247,17 +86,17 @@ Macro.add("vi-ignore", {
       }
       ignoreVars.add(vn);
     }
-  }
+  },
 });
 
 /**
-  * <<vi-ignore-if var1 var2 ...>>
-  * If var1 is true, ignore remaining vars.
-  * If var2 is true, ignore remaining vars.
-  * etc.
-  */
+ * <<vi-ignore-if var1 var2 ...>>
+ * If var1 is true, ignore remaining vars.
+ * If var2 is true, ignore remaining vars.
+ * etc.
+ */
 Macro.add("vi-ignore-if", {
-  handler: function() {
+  handler: function () {
     if (State.temporary.isTranscript) return;
     for (let p = 0; p < this.args.length - 1; p++) {
       const cvar = this.args[p];
@@ -265,17 +104,19 @@ Macro.add("vi-ignore-if", {
         MT.warn(`vi-ignore-if ${cvar} is unnecessary`);
       }
       if (MT.untracedGet(cvar)) {
-        this.args.slice(p + 1).forEach(vn => ignoreVars.add(vn));
+        this.args.slice(p + 1).forEach((vn) => ignoreVars.add(vn));
       }
     }
-  }
+  },
 });
 
-const str = val => val == null ? String(val) : JSON.stringify(val);
+/** @type {(val: unknown) => string} */
+const str = (val) => (val == null ? String(val) : JSON.stringify(val));
 
+/** @type {(vname: string) => JQuery<HTMLElement>} */
 function varButton(vname) {
-  const V = MT.untracedVars();
-  const v0 = State.current.variables;
+  const V = /** @type {Record<string, unknown>} */ (MT.untracedVars());
+  const v0 = /** @type {Record<string, unknown>} */ (State.current.variables);
 
   const outer = $("<span class=var-info-button-outer>");
   let tags = "";
@@ -325,24 +166,30 @@ function varButton(vname) {
   }
 
   // assume undeclared is boolean
-  const vtype = MT.enumVars[vname] || (vname in V ? typeof V[vname] : "boolean");
+  const vtype =
+    MT.enumVars[vname] || (vname in V ? typeof V[vname] : "boolean");
 
   const enumList = MT.enums[vtype];
   if (enumList != null) {
     outer.addClass("var-info-enum");
-    const sym = enumList[V[vname] || 0];
-    const sameType = Object.values(MT.enumVars).filter(t => t === vtype).length;
+    const sym = enumList[+(V[vname] || 0)];
+    const sameType = Object.values(MT.enumVars).filter(
+      (t) => t === vtype
+    ).length;
     label.text(sym != null ? sym : vname + "=" + jval);
     const n = enumList.length;
     if (MT.trace.wasRead.has(vname)) {
-      const val0 = v0[vname] || 0;
+      const val0 = +(v0[vname] || 0);
       if (0 < val0) {
         $("<span>")
           .addClass("var-info-button-left var-info-can-change")
           .appendTo(outer)
           .on("click", () => {
             MT.revisitHere(() => {
-              State.variables[vname] = val0 - 1;
+              const vars = /** @type {Record<string, unknown>} */ (
+                State.variables
+              );
+              vars[vname] = val0 - 1;
               State.variables.g_mutated = true;
             });
           });
@@ -353,7 +200,10 @@ function varButton(vname) {
           .appendTo(outer)
           .on("click", () => {
             MT.revisitHere(() => {
-              State.variables[vname] = val0 + 1;
+              const vars = /** @type {Record<string, unknown>} */ (
+                State.variables
+              );
+              vars[vname] = val0 + 1;
               State.variables.g_mutated = true;
             });
           });
@@ -369,13 +219,16 @@ function varButton(vname) {
     label.append("=");
     $("<span class=var-info-value>").text(jval).appendTo(label);
     if (MT.trace.wasRead.has(vname)) {
-      const val0 = v0[vname] || 0;
+      const val0 = +(v0[vname] || 0);
       $("<span>")
         .addClass("var-info-button-left var-info-can-change")
         .appendTo(outer)
         .on("click", () => {
           MT.revisitHere(() => {
-            State.variables[vname] = val0 - 1;
+            const vars = /** @type {Record<string, unknown>} */ (
+              State.variables
+            );
+            vars[vname] = val0 - 1;
             State.variables.g_mutated = true;
           });
         });
@@ -384,7 +237,10 @@ function varButton(vname) {
         .appendTo(outer)
         .on("click", () => {
           MT.revisitHere(() => {
-            State.variables[vname] = val0 + 1;
+            const vars = /** @type {Record<string, unknown>} */ (
+              State.variables
+            );
+            vars[vname] = val0 + 1;
             State.variables.g_mutated = true;
           });
         });
@@ -403,7 +259,10 @@ function varButton(vname) {
           if (MT.mdKnown(vname)) {
             MT.mdSet(vname, val);
           } else {
-            State.variables[vname] = val;
+            const vars = /** @type {Record<string, unknown>} */ (
+              State.variables
+            );
+            vars[vname] = val;
           }
           State.variables.g_mutated = true;
         });
@@ -439,7 +298,7 @@ function initVarInfo() {
     const branchy = $("#passages a[data-passage]").length > 1;
     if (branchy) State.current.variables.g_branchy = true;
 
-    MT.trace.wasTopRead.forEach(vn => {
+    MT.trace.wasTopRead.forEach((vn) => {
       if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
         const c = alwaysVars.get(vn);
         MT.warn(`vi-always ${vn} ${c}, but var was read`);
@@ -452,18 +311,20 @@ function initVarInfo() {
 
     const notable = MT.allNotable();
     const to_do = notable.filter(
-      vn => !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn));
+      (vn) =>
+        !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn)
+    );
     if (to_do.length && !MT.isDraft()) {
       MT.warn(`non-draft passage has unused notable vars: ${to_do}`);
     }
-    
+
     if (!setup.debug) return;
 
     const touched = new Set();
-    MT.trace.wasRead.forEach(v => touched.add(v));
-    MT.trace.wasSet.forEach(v => touched.add(v));
-    MT.trace.wasDeleted.forEach(v => touched.add(v));
-    notable.forEach(f => touched.add(f));
+    MT.trace.wasRead.forEach((v) => touched.add(v));
+    MT.trace.wasSet.forEach((v) => touched.add(v));
+    MT.trace.wasDeleted.forEach((v) => touched.add(v));
+    notable.forEach((f) => touched.add(f));
 
     $(".var-info").remove();
     const outer = $("<div class=var-info>");
@@ -486,23 +347,28 @@ function initVarInfo() {
       .appendTo(outer)
       .click(() => MT.computeVariants());
 
-
     if (touched.size) {
       const el = $("<span class=var-info-touched>").appendTo(outer);
-      [...touched].sort().forEach(v => varButton(v).appendTo(el));
+      [...touched].sort().forEach((v) => varButton(v).appendTo(el));
     }
 
     $("<span class=var-info-separator>").text("||").appendTo(outer);
-    $(`<span class="var-info-passage var-info-show">`).text(State.passage).appendTo(outer);
+    $(`<span class="var-info-passage var-info-show">`)
+      .text(State.passage)
+      .appendTo(outer);
 
     const sizes = MT.computeSizes();
-    $(`<span class="var-info-separator var-info-show">`).text("||").appendTo(outer);
-    $(`<span class="var-info-sizes var-info-show">`).text(sizes)
-      .attr("title",
-        "Storage size estimate in bytes\n"
-        + "ss = sessionStorage (current tab)\n"
-        + "ls = localStorage (shared by tabs)\n"
-        + "md = SugarCube metadata (within localStorage)\n"
+    $(`<span class="var-info-separator var-info-show">`)
+      .text("||")
+      .appendTo(outer);
+    $(`<span class="var-info-sizes var-info-show">`)
+      .text(sizes)
+      .attr(
+        "title",
+        "Storage size estimate in bytes\n" +
+          "ss = sessionStorage (current tab)\n" +
+          "ls = localStorage (shared by tabs)\n" +
+          "md = SugarCube metadata (within localStorage)\n"
       )
       .appendTo(outer);
 
@@ -511,5 +377,3 @@ function initVarInfo() {
 }
 
 initVarInfo();
-
-<</script>>

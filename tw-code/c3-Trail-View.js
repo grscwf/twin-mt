@@ -1,6 +1,12 @@
-:: g0init Trail View [inclusion] {"position":"375,975","size":"100,100"}
-<<script>>
+/**
+ * @typedef {object} SectInfo
+ * @prop {string} [use]
+ * @prop {boolean} [alwaysShow]
+ * @prop {string} [preamble]
+ * @prop {string} [title]
+ */
 
+/** @type {Record<string, SectInfo>} */
 const sectInfo = {
   n0a: {
     use: "n9a",
@@ -66,19 +72,23 @@ const sectInfo = {
   },
 };
 
-const repr = JSON._real_stringify || JSON.stringify;
-
-/** Ordered list of section names */
+/**
+ * Ordered list of section names
+ * @type {string[]}
+ */
 const sectNames = [];
 
-/** Record of section name -> array of titles */
+/**
+ * Record of section name -> array of titles
+ * @type {Record<string, string[]>}
+ */
 const sections = {};
 
 /** expose state for easier debugging */
-MT.trailView = { sectNames, sections }
+MT.trailView = { sectNames, sections };
 
 function gatherPassages() {
-  const all = Story.lookup();
+  const all = Story.lookupWith(() => true);
   for (const p of all) {
     if (p.tags.includes("inclusion")) continue;
     if (p.tags.includes("is-menu")) continue;
@@ -88,47 +98,50 @@ function gatherPassages() {
     if (m == null) continue;
 
     let sect = m[0];
-    if (sectInfo[sect] == null) {
-      MT.diag(`Warning: no sectInfo for ${sect}`);
-    }
-    if (sectInfo[sect].use != null) {
-      sect = sectInfo[sect].use;
+    let info = sectInfo[sect];
+    MT.assert(info != null, "");
+
+    if (info.use != null) {
+      sect = info.use;
+      info = sectInfo[sect];
+      MT.assert(info != null, "");
+      MT.assert(info.use == null, "sectInfo.use should not chain");
     }
 
-    sections[sect] ||= [];
-    sections[sect].push(p.title);
+    (sections[sect] ||= []).push(p.title);
   }
 
-  sectNames.push(... Object.keys(sections).sort());
+  sectNames.push(...Object.keys(sections).sort());
 
   for (const titles of Object.values(sections)) {
     titles.sort();
   }
 }
 
-function renderSeen(title, state, out) {
+/** @type {(title: string, state: Record<string, unknown>, out: JQuery<HTMLElement>) => void} */
+const renderSeen = (title, state, out) => {
   out.empty();
   const div = MT.tran.renderPage({ title, vars: state });
   if (setup.debug) {
     const plain = MT.tran.renderPage({ title });
     const clue = makeClue(plain);
     clue.wiki("?debugIcon <hr>").appendTo(out);
-    $("<div class=trail-info-title>")
-      .wiki(`?debugIcon ${title}`)
-      .appendTo(out);
+    $("<div class=trail-info-title>").wiki(`?debugIcon ${title}`).appendTo(out);
   }
   out.append(div);
   if (setup.debug) {
-    const read = JSON.parse(state.g_varsRead || "[]");
+    const read = JSON.parse(/** @type {string} */ (state.g_varsRead || "[]"));
+    /** @type {Record<string, unknown>} */
     const obj = {};
     for (const v of read) {
       obj[v] = state[v];
     }
-    const json = repr(obj, null, "  ");
+    const json = MT.repr(obj, null, "  ");
     $("<div class=trail-info-state>").text(json).appendTo(out);
   }
-}
+};
 
+/** @type {(title: string, out: JQuery<HTMLElement>) => void} */
 function renderUnseen(title, out) {
   out.empty();
   const div = MT.tran.renderPage({ title });
@@ -144,15 +157,16 @@ function renderUnseen(title, out) {
   }
 }
 
+/** @type {(div: JQuery<HTMLElement>) => JQuery<HTMLElement>} */
 function makeClue(div) {
   const hasCut = div.find("#clue-cut").length !== 0;
   let wordsLeft = hasCut ? 100 : 10;
-  const trim = node => {
+  /** @type {(node: Node) => void} */
+  const trim = (node) => {
     if (wordsLeft <= 0) {
-      node.parentNode.removeChild(node);
-
+      node.parentNode?.removeChild(node);
     } else if (node.nodeType === 3 /* text */) {
-      const words = node.nodeValue.split(/\s+/);
+      const words = node.nodeValue?.split(/\s+/) || [];
       let n = words.length;
       if (n > 0 && words[n - 1] === "") n -= 1;
       if (n > 0 && words[0] === "") n -= 1;
@@ -161,30 +175,28 @@ function makeClue(div) {
         if (words[0] === "") wordsLeft += 1;
         const phrase = words.slice(0, wordsLeft).join(" ");
         const textNode = document.createTextNode(phrase);
-        node.parentNode.replaceChild(textNode, node);
+        node.parentNode?.replaceChild(textNode, node);
       }
       wordsLeft -= n;
-
-    } else if (node.nodeType === 1 /* element*/) {
+    } else if (node instanceof HTMLElement) {
       if (node.tagName === "B" && node.getAttribute("id") === "clue-cut") {
         wordsLeft = 0;
       } else if (/^(BR|HR)/.test(node.tagName)) {
-        node.parentNode.removeChild(node);
+        node.parentNode?.removeChild(node);
       } else if (/^(STYLE)$/.test(node.tagName)) {
         return;
       } else {
         const kids = Array.from(node.childNodes);
-        kids.forEach(kid => trim(kid));
+        kids.forEach((kid) => trim(kid));
       }
-
     } else {
-      node.parentNode.removeChild(node);
+      node.parentNode?.removeChild(node);
     }
   };
   const copy = div.clone();
   copy.find("meta-text").remove();
   copy.find(".clue-remove").remove();
-  trim(copy[0]);
+  trim(MT.jqUnwrap(copy));
   copy.addClass("trail-info-unseen");
   copy.append("...");
   return copy;
@@ -193,7 +205,7 @@ function makeClue(div) {
 function lastNonMenuPassage() {
   const hist = State.history;
   for (let i = hist.length - 1; i >= 0; i--) {
-    const title = hist[i].title;
+    const title = hist[i]?.title || "";
     const passage = Story.get(title);
     if (!passage.tags.includes("is-menu")) {
       return title;
@@ -202,35 +214,45 @@ function lastNonMenuPassage() {
   return null;
 }
 
+/** @type {(out: JQuery<HTMLElement>) => void} */
 MT.trailViewRender = (out) => {
-  const current = new Set(State.history.map(m => m.title));
+  const current = new Set(State.history.map((m) => m.title));
   const recent = new Set();
   const older = new Set();
+  /** @type {Record<string, SugarCubeStoryVariables>} */
   const snapshots = {};
 
   const packed = MT.getPackedTrails();
   for (const trail of packed) {
     MT.expandTrail(trail);
-    for (const step of trail.history) {
+    for (const step of trail.history || []) {
       older.add(step.title);
       snapshots[step.title] = step.variables;
     }
   }
 
+  /** @type {(title: string, out: JQuery<HTMLElement>) => void} */
   const renderInfo = (title, out) => {
     if (current.has(title)) {
-      const moment = State.history.findLast(m => m.title === title);
-      renderSeen(title, moment.variables, out);
-
+      const moments = State.history.filter((m) => m.title === title);
+      const moment = moments.pop();
+      if (moment != null) {
+        renderSeen(
+          title,
+          /** @type {Record<string, unknown>} */ (moment.variables),
+          out
+        );
+      }
     } else if (recent.has(title) || older.has(title)) {
-      renderSeen(title, snapshots[title], out);
-
+      const state = /** @type {Record<string, unknown>} */ (snapshots[title]);
+      renderSeen(title, state, out);
     } else {
       renderUnseen(title, out);
     }
   };
 
-  const select = target => {
+  /** @type {(target: JQuery<HTMLElement>) => void} */
+  const select = (target) => {
     if (target == null || !target.length) return;
 
     $(".trail-selected").removeClass("trail-selected");
@@ -242,16 +264,16 @@ MT.trailViewRender = (out) => {
     }
     info.appendTo(target.parent());
 
-    const title = target.attr("data-title");
+    const title = target.attr("data-title") || "";
     renderInfo(title, info);
     session.set("trail-sel", title);
 
     const win = $(window);
-    const winTop = win.scrollTop();
-    const winBot = winTop + win.height();
-    const top = target.offset().top;
+    const winTop = win.scrollTop() || 0;
+    const winBot = winTop + (win.height() || 0);
+    const top = target.offset()?.top || 0;
     if (top < winTop + 10 || top > winBot - 120) {
-      target[0].scrollIntoView({ block: "center" });
+      target[0]?.scrollIntoView({ block: "center" });
     }
   };
 
@@ -261,7 +283,8 @@ MT.trailViewRender = (out) => {
     session.delete("trail-sel");
   };
 
-  const onKeyDown = ev => {
+  /** @type {(ev: JQuery.KeyboardEventBase) => void} */
+  const onKeyDown = (ev) => {
     let sel = $(".trail-selected");
     switch (ev.key) {
       case "ArrowUp": {
@@ -273,7 +296,7 @@ MT.trailViewRender = (out) => {
         if (t.length) {
           const kids = t.find(".trail-item");
           pos = Math.min(pos, kids.length && kids.length - 1);
-          t = $(kids[pos]);
+          t = $(/** @type {HTMLElement} */ (kids[pos]));
         }
         select(t);
         break;
@@ -287,7 +310,7 @@ MT.trailViewRender = (out) => {
         if (t.length) {
           const kids = t.find(".trail-item");
           pos = Math.min(pos, kids.length && kids.length - 1);
-          t = $(kids[pos]);
+          t = $(/** @type {HTMLElement} */ (kids[pos]));
         }
         select(t);
         break;
@@ -330,7 +353,8 @@ MT.trailViewRender = (out) => {
     $(document).off("keydown", onKeyDown);
   });
 
-  const onClick = ev => {
+  /** @type {(ev: JQuery.MouseEventBase) => void} */
+  const onClick = (ev) => {
     const target = $(ev.target);
     if (target.hasClass("trail-selected")) {
       deselect();
@@ -341,20 +365,18 @@ MT.trailViewRender = (out) => {
 
   const here = lastNonMenuPassage();
 
-
   let hasRecent = false;
   let hasOlder = false;
   for (const sect of sectNames) {
-    if (sectInfo[sect].preamble) {
-      $(`<div class=trail-preamble>`)
-        .text(sectInfo[sect].preamble)
-        .appendTo(out);
+    const info = sectInfo[sect];
+    MT.assert(info != null, "");
+    if (info.preamble != null) {
+      $(`<div class=trail-preamble>`).text(info.preamble).appendTo(out);
     }
     const group = $(`<div class=trail-group>`).appendTo(out);
-    const groupTitle = $(`<div class=trail-group-title>`)
-      .appendTo(group);
+    const groupTitle = $(`<div class=trail-group-title>`).appendTo(group);
     let anyKnown = false;
-    for (const title of sections[sect]) {
+    for (const title of sections[sect] || []) {
       const item = $(`<div class=trail-item>`)
         .toggleClass("trail-current", current.has(title))
         .toggleClass("trail-recent", recent.has(title))
@@ -373,14 +395,16 @@ MT.trailViewRender = (out) => {
       hasOlder ||= older.has(title);
       anyKnown ||= current.has(title) || recent.has(title) || older.has(title);
     }
-    if (anyKnown || sectInfo[sect].alwaysShow) {
-      groupTitle.text(sectInfo[sect].title)
-        .addClass("trail-group-title-known");
+    if (anyKnown || info.alwaysShow) {
+      groupTitle.text(info.title || "").addClass("trail-group-title-known");
     } else if (setup.debug) {
-      groupTitle.text(sectInfo[sect].title).wiki("?debugIcon")
+      groupTitle
+        .text(info.title || "")
+        .wiki("?debugIcon")
         .addClass("trail-group-title-debug");
     } else if (false) {
-      groupTitle.text(sectInfo[sect].title.replace(/./g, "?"))
+      groupTitle
+        .text(info?.title?.replace(/./g, "?") || "")
         .addClass("trail-group-title-unknown");
     } else {
       group.remove();
@@ -402,5 +426,3 @@ function trailViewInit() {
 }
 
 trailViewInit();
-
-<</script>>

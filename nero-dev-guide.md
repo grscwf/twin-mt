@@ -322,22 +322,11 @@
     - This is partly for organization, but it's also for asserting state
       within a section. For example, within `n1d`,
       no matter where we are or how we got there, `n_naked` should be true.
-  - Descriptions of each section are in the passage `g0init Sections`.
+  - Descriptions of each section are in `c3-Sections.js`.
 - If a script or style is only used by a single passage, it's usually inlined
   in the passage.
 - Large scripts used by a single passage are usually extracted to a
   a side passage with a direct `<<include>>`
-- Scripts and styles used by multiple passages are in `g0boot` or `g0init`
-  passages that are at the top left of the story-graph.
-  - At StoryInit, all `g0boot` passages are loaded in arbitrary order,
-    then all `g0init` passages are loaded in arbitrary order.
-  - These passages unfortunately do not get syntax-highlighting in Twine.
-    (It's fine in vscode with T3LT.)
-  - The main reason these are split out is because it's awkward to work with
-    very large passages in Twine.
-  - It's also helpful to bundle related javascript and stylesheets together.
-  - It also seems like editing "Story Javascript" has a much higher risk of
-    triggering the overlapping-save bug in Twine.
 - Special passage tags:
   - `mt-sketch` - Passage is a vague sketch.
   - `mt-draft` - Passage is an incomplete draft.

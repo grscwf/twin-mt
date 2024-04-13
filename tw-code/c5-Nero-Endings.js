@@ -103,3 +103,11 @@ MT.neroEndings = {
 for (const key of Object.keys(MT.neroEndings)) {
   MT.mdDefSaved(key);
 }
+
+// archive selections
+MT.mdDefUnsaved("mn_arcBarbs");
+MT.mdDefUnsaved("mn_arcCagedVariant");
+MT.mdDefUnsaved("mn_arcHuntedVariant");
+MT.mdDefUnsaved("mn_arcOverwhelmedVariant");
+MT.mdDefUnsaved("mn_arcSatisfiedVariant");
+MT.mdDefUnsaved("mn_arcTamedVariant");

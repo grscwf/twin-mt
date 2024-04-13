@@ -1,6 +1,6 @@
 const validSigns = ["mt-ready", "mt-draft", "mt-sketch"];
 
-/** @type {(title: string) => string | null} */
+/** @type {(title?: string) => string | null} */
 MT.signOf = (title) => {
   const tags = Story.get(title || State.passage).tags;
   for (const sign of validSigns) {
@@ -9,7 +9,7 @@ MT.signOf = (title) => {
   return null;
 };
 
-/** @type {(title: string) => boolean} */
+/** @type {(title?: string) => boolean} */
 MT.isDraft = (title) => {
   const sign = MT.signOf(title);
   return sign === "mt-draft" || sign === "mt-sketch";

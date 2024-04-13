@@ -1,11 +1,3 @@
-// archive selections
-MT.mdDefUnsaved("mn_arcBarbs");
-MT.mdDefUnsaved("mn_arcCagedVariant");
-MT.mdDefUnsaved("mn_arcHuntedVariant");
-MT.mdDefUnsaved("mn_arcOverwhelmedVariant");
-MT.mdDefUnsaved("mn_arcSatisfiedVariant");
-MT.mdDefUnsaved("mn_arcTamedVariant");
-
 // things the player has done, which affect hints
 // these are not saved, because player might load someone else's saved game
 

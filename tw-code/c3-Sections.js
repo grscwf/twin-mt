@@ -43,9 +43,6 @@ const sectSpecial = new Set([
 
 /** @type {Record<string, SectDef>} */
 const sectDefs = {
-  // Passages loaded after g0boot, during StoryInit
-  g0init: {},
-
   // Story opening passages
   g1a: {},
 

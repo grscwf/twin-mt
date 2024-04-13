@@ -144,6 +144,9 @@ declare module "twine-sugarcube" {
     d_knot?: boolean;
     d_knotChoiceMade?: boolean;
 
+    /** Passage has branches. */
+    g_branchy?: boolean;
+
     /** Which choice was taken to go from previous turn to this turn. */
     g_choiceTaken?: number;
 
@@ -168,6 +171,9 @@ declare module "twine-sugarcube" {
 
     /** Story version at start of history */
     g_versionAtStart?: string;
+
+    /** Vars that were read while rendering current passage. */
+    g_varsRead?: string;
 
     /** Latest barbs choice was no. */
     mg_barbsNo?: boolean;
