@@ -51,84 +51,10 @@ declare global {
   };
 }
 
-/** The MT global */
-declare global {
-  const XMT: {
-    /**
-     * Creates a scratch state with _isArchive and _isTranscript true,
-     * evaluate script, then render passage to dest
-     */
-    arcRender: (
-      dest: DocumentFragment | HTMLElement,
-      passage: string,
-      script: string
-    ) => void;
-
-    assert: (
-      test: boolean,
-      should: string,
-      context?: MacroContext
-    ) => asserts test;
-
-    /** Returns number of words in text. */
-    countWords: (text: string) => number;
-
-    fail: (str: string, context?: MacroContext) => void;
-
-    forgetWalkHistory: () => void;
-
-    /** Returns history without is-menu loops. */
-    getHistory: () => StoryMoment[];
-
-    hasFails: boolean;
-    hasWarnings: boolean;
-
-    message: (type: string, str: string, context?: MacroContext) => void;
-    messages: string[];
-
-    /** Emits a note. */
-    note: (
-      message?: string,
-      header?: string
-    ) => JQuery<HTMLElement> | undefined;
-
-    /** Initializes $g_rand to a new state. */
-    randReset: () => void;
-
-    revisitHere: (block: (state: SugarCubeStoryVariables) => void) => void;
-
-    roamStart: (
-      path: null | unknown[],
-      doneFn?: null | (() => void),
-      force?: null | boolean
-    ) => void;
-
-    runsWithoutFail: (block: () => void) => boolean;
-
-    suppressErrors: (block: () => void) => void;
-
-    tran: {
-      /** Renders a single page. */
-      renderPage(page: TranscriptPage): JQuery<HTMLElement>;
-
-      /** Renders current history to out, asynchronously. */
-      renderHistory(out: DocumentFragment | HTMLElement): void;
-    };
-
-    /** Runs block with var tracing disabled. */
-    untraced: <T>(block: () => T) => T;
-
-    untracedVars?: () => SugarCubeStoryVariables;
-
-    /** Emits a warning message. */
-    warn: (message: string) => void;
-  };
-}
-
 declare module "twine-sugarcube" {
   interface SugarCubeSetupObject {
     /** True when ?debug mode. */
-    debug?: boolean;
+    debug?: unknown;
 
     /** True when ?playtest mode. */
     playtest?: boolean;
@@ -273,6 +199,8 @@ declare module "twine-sugarcube" {
     n_spriteQuiet?: boolean;
 
     n_struggleKnown?: boolean;
+
+    xd_IvexPunishment?: boolean;
   }
 
   interface SugarCubeTemporaryVariables {

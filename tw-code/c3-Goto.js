@@ -1,31 +1,34 @@
-:: g1m Goto Script [inclusion] {"position":"250,2025","size":"100,100"}
-<<script>>
+MT.goto = {};
 
-State.temporary.listWalks = () => {
-  const walks = MT.walks;
+MT.goto.list = () => {
+  const walks = MT.gotoPaths;
   const current = MT.getPath();
   let mkp = "<<nobr>>";
   for (let i = 0; i < walks.length; i++) {
-    if (typeof walks[i] === "string") {
+    const walk = walks[i];
+    MT.assert(walk != null, "");
+
+    if (typeof walk === "string") {
       mkp += `<div class="walk-header">${walks[i]}</div>`;
       continue;
     }
 
-    const addSeg = (ch, type, opts) => {
-      const note = opts.note ? " walk-choice-note" : "";
-      if (opts.width != null) {
+    /** @type {(ch: string, type: string, step: GotoStep) => void} */
+    const addSeg = (ch, type, step) => {
+      const note = step.note ? " walk-choice-note" : "";
+      if (step.width != null) {
         mkp += `<span class=walk-sp>`;
-        mkp += `<span class="walk-sp-w${note}">> ${opts.width}</span>`;
+        mkp += `<span class="walk-sp-w${note}">> ${step.width}</span>`;
       }
       mkp += `<span class="walk-choice walk-choice-${type}${note}">`;
       mkp += `<<link "> ${ch}">>`;
-      mkp += `<<run _doWalk(${i}, "${ch}")>>`;
+      mkp += `<<run MT.goto.doWalk(${i}, "${ch}")>>`;
       mkp += `<</link>>`;
-      if (opts.width != null) mkp += `</span>`;
+      if (step.width != null) mkp += `</span>`;
       mkp += `</span> `;
     };
 
-    const path = walks[i].path;
+    const path = walk.path;
     const [pn, cn] = MT.commonPathLengths(path, current);
 
     mkp += `<div class=walk-path>`;
@@ -38,11 +41,11 @@ State.temporary.listWalks = () => {
       /* all of current is on path */
       let ppn = pn;
       /* sometimes choice marker is an empty segment. */
-      if (ppn !== 0 && path[ppn].choice != null) {
-        while (ppn < path.length - 1 && path[ppn].choice != null) ppn++;
+      if (ppn !== 0 && path[ppn]?.choice != null) {
+        while (ppn < path.length - 1 && path[ppn]?.choice != null) ppn++;
       }
       /* find finished choice in path */
-      while (ppn > 1 && path[ppn].choice == null) ppn--;
+      while (ppn > 1 && path[ppn]?.choice == null) ppn--;
       for (const st of path.slice(0, ppn)) {
         if (st.choice != null) addSeg(st.choice, "past", st);
       }
@@ -55,7 +58,7 @@ State.temporary.listWalks = () => {
         if (st.choice != null) addSeg(st.choice, "disjoint", st);
       }
     }
-    const len = path.filter(st => st.t != null).length;
+    const len = path.filter((st) => st.t != null).length;
     mkp += `<span class=walk-path-len>[${len}]</span>`;
     mkp += `</div>`;
   }
@@ -63,47 +66,33 @@ State.temporary.listWalks = () => {
   return mkp;
 };
 
-function getPathChoice(path, ch) {
+/** @type {(steps: GotoStep[], ch: string) => GotoStep[]} */
+const getPathChoice = (steps, ch) => {
   const result = [];
   let seen = false;
-  for (const step of path) {
+  for (const step of steps) {
     if (step.choice != null && seen) break;
     result.push(step);
     if (step.choice != null) seen = step.choice === ch;
   }
   return result;
-}
+};
 
-function setVars(vars) {
-  if (vars != null) {
-    for (const vn of Object.keys(vars)) {
-      State.variables[vn] = vars[vn];
-    }
-  }
-}
-
-function setMeta(meta) {
-  if (meta != null) {
-    for (const vn of Object.keys(meta)) {
-      MT.mdSet(vn, meta[vn]);
-    }
-  }
-}
-
-State.temporary.doWalk = (i, ch) => {
+/** @type {(i: number, ch: string) => void} */
+MT.goto.doWalk = (i, ch) => {
   MT.forgetWalkHistory();
-  const walk = MT.walks[i];
+  const walk = MT.gotoPaths[i];
+  MT.assert(walk != null, "");
+  MT.assert(typeof walk !== "string", "");
   const force = !!$("#walk-force").prop("checked");
   const path = getPathChoice(walk.path, ch);
   State.reset();
   State.variables.g_versionAtStart = setup.version;
   Engine.play("g1a Bound");
-  setMeta(walk.meta);
-  setVars(walk.vars);
   MT.roamStart(path, null, force);
 };
 
-State.temporary.reWalk = () => {
+MT.goto.reWalk = () => {
   const path = MT.getPath();
   const force = !!$("#walk-force").prop("checked");
   MT.forgetWalkHistory();
@@ -113,33 +102,35 @@ State.temporary.reWalk = () => {
   MT.roamStart(path, null, force);
 };
 
-State.temporary.showCurrentPath = () => {
+MT.goto.showCurrentPath = () => {
   const path = MT.getPath();
   const js = MT.pathToJs(path);
   $("#walk-current-path").val(`// current path [${path.length}]\n${js}`);
 };
 
-State.temporary.walkAll = () => {
-  const walks = MT.walks;
+MT.goto.walkAll = () => {
+  const walks = MT.gotoPaths;
   const force = !!$("#walk-force").prop("checked");
   let i = 0;
   const t0 = Date.now();
   const startNext = () => {
     const t1 = Date.now();
-    while (i < walks.length && walks[i].path == null) i++;
+    while (i < walks.length && typeof walks[i] === "string") {
+      i++;
+    }
     if (i >= walks.length) {
       const dt = Date.now() - t0;
       console.log(`done walkAll in ${dt / 1000}s`);
       return;
     }
     const walk = walks[i++];
+    MT.assert(typeof walk !== "string", "");
+    MT.assert(walk != null, "");
     console.log(`Starting ${MT.pathName(walk.path)}`);
     MT.forgetWalkHistory();
     State.reset();
     State.variables.g_versionAtStart = setup.version;
     Engine.play("g1a Bound");
-    setMeta(walk.meta);
-    setVars(walk.vars);
     const done = () => {
       const dt = Date.now() - t1;
       console.log(`done path in ${dt / 1000}s`);
@@ -148,15 +139,19 @@ State.temporary.walkAll = () => {
     MT.roamStart(walk.path, done, force);
   };
   startNext();
-}
+};
 
-$(document).one(":passagedisplay", () => {
-  const force = session.get("walk-force");
-  const el = $("#walk-force");
-  el.prop("checked", force);
-  el.on("input", () => {
-    session.set("walk-force", !!el.prop("checked"))
-  })
-});
+MT.goto.init = () => {
+  if (State.temporary.isTranscript) return;
 
-<</script>>\
+  $(document).one(":passagedisplay", () => {
+    const force = session.get("walk-force") || false;
+    const el = $("#walk-force");
+    el.prop("checked", force);
+    el.on("input", () => {
+      session.set("walk-force", !!el.prop("checked"));
+    });
+
+    MT.goto.showCurrentPath();
+  });
+};

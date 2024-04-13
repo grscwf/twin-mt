@@ -1,19 +1,33 @@
-:: g1m Goto Paths [inclusion] {"position":"375,1900","size":"100,100"}
-<<script>>
+
+/**
+ * @typedef {object} GotoStep
+ * @prop {string} [choice]
+ * @prop {string} [t]
+ * @prop {string} [code]
+ * @prop {boolean} [note]
+ * @prop {string} [width]
+ * 
+ * @typedef {{ path: GotoStep[] }} GotoPath
+ */
+
 /*
  * "choice" elements:
  * - generally, the node before a "choice" has a meaningful choice.
  * - the node after a "choice" is one of those choices.
  * - the "choice" name should be short and meaningful.
  * - selecting a "choice" will follow the path up to the next choice.
- * 
+ *
  * When there are paths that are similar except for a a choice:
  * - using "width" will display the choice with that width,
  *   which will align the paths.
  * - "note" will bold the choice, making it easier to see which
  *   choices are different.
  */
-MT.walks = [
+
+/**
+ * @type {Array<string | GotoPath>}
+ */
+MT.gotoPaths = [
   "<hr><span class=walk-sec-title>Drekkar</span>",
   {
     path: [
@@ -52,7 +66,7 @@ MT.walks = [
       { t: "d2a Snuff Candle Free" },
       { choice: "free" },
       { t: "d3a Escape Start" },
-    ]
+    ],
   },
   {
     path: [
@@ -89,7 +103,7 @@ MT.walks = [
       { t: "d2a Free Himself" },
       { choice: "free" },
       { t: "d3a Escape Start" },
-    ]
+    ],
   },
 
   "<hr><span class=walk-sec-title>Nero 1F Bad Endings</span>",
@@ -268,7 +282,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused" },
       { t: "n1a Feign Sleep 1" },
@@ -358,7 +372,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused" },
       { t: "n1a Feign Sleep 1" },
@@ -453,7 +467,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -609,12 +623,12 @@ MT.walks = [
       { t: "n2f Paw Off Forever 6" },
       { choice: "caged-mild", note: true },
       { t: "n9a Caged Mild 1" },
-    ]
+    ],
   },
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -628,7 +642,7 @@ MT.walks = [
       { t: "n1p Barbs Slow 2n2" },
       { t: "n1p Barbs Slow 4" },
       { t: "n1p Barbs Slow 5" },
-      { choice: "barbed" , note: true, width: "smooth" },
+      { choice: "barbed", note: true, width: "smooth" },
       { t: "n1p Barbs Slow 6y1" },
       { t: "n1p Barbs Slow 6y2" },
       { t: "n1p Barbs Slow End" },
@@ -766,14 +780,14 @@ MT.walks = [
       { t: "n2y Wand Finish C1" },
       { t: "n9a Caged Harsh 1" },
       /* XXX */
-    ]
+    ],
   },
 
   "collab > glitch > endgame > ask-wand > clever > use-wand > broken",
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused" },
       { t: "n1a Feign Sleep 1" },
@@ -935,7 +949,7 @@ MT.walks = [
       { t: "n9a Broken C4" },
 
       /* XXX */
-    ]
+    ],
   },
 
   "collab > endgame > ask-wand > clever (too slow)",
@@ -1198,7 +1212,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "chatty", width: "abused", note: true },
       { t: "n1a Hello 1" },
@@ -1304,7 +1318,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked", width: "abused > itch + naked", note: true },
       { t: "n1a Endgame 1" },
@@ -1405,7 +1419,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused", note: true },
       { t: "n1a Feign Sleep 1" },
@@ -1497,7 +1511,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "chatty", width: "abused", note: true },
       { t: "n1a Hello 1" },
@@ -1592,7 +1606,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -1708,12 +1722,12 @@ MT.walks = [
       { t: "n2f Last Chance" },
       { t: "n2f Leave" },
       { t: "n0a Second Floor WIP" },
-    ]
+    ],
   },
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -1834,14 +1848,14 @@ MT.walks = [
       { t: "n2f Last Chance" },
       { t: "n2f Leave" },
       { t: "n0a Second Floor WIP" },
-    ]
+    ],
   },
 
   "recruit > younger > mica > clever > leave",
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused", note: true },
       { t: "n1a Feign Sleep 1" },
@@ -1978,12 +1992,12 @@ MT.walks = [
       { t: "n2f Last Chance" },
       { t: "n2f Leave" },
       { t: "n0a Second Floor WIP" },
-    ]
+    ],
   },
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "chatty", width: "abused", note: true },
       { t: "n1a Hello 1" },
@@ -2120,14 +2134,14 @@ MT.walks = [
       { t: "n2f Last Chance" },
       { t: "n2f Leave" },
       { t: "n0a Second Floor WIP" },
-    ]
+    ],
   },
 
   "collab > younger > mica > horny > clever > leave",
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused", note: true },
       { t: "n1a Feign Sleep 1" },
@@ -2287,12 +2301,12 @@ MT.walks = [
       { t: "n2f Last Chance" },
       { t: "n2f Leave" },
       { t: "n0a Second Floor WIP" },
-    ]
+    ],
   },
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "chatty", width: "abused", note: true },
       { t: "n1a Hello 1" },
@@ -2452,14 +2466,14 @@ MT.walks = [
       { t: "n2f Last Chance" },
       { t: "n2f Leave" },
       { t: "n0a Second Floor WIP" },
-    ]
+    ],
   },
 
   "<hr><span class=walk-sec-title>Nero 1F Glitch Paths</span>",
 
   "subby > glitch > tap-before-cast > clever",
-  { path:
-    [
+  {
+    path: [
       { choice: "Nero" },
       { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
@@ -2646,7 +2660,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "chatty" },
       { t: "n1a Hello 1" },
@@ -2726,7 +2740,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -2855,7 +2869,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -2966,7 +2980,7 @@ MT.walks = [
       { t: "n2f Last Chance" },
       { t: "n2f Leave" },
       { t: "n0a Second Floor WIP" },
-    ]
+    ],
   },
 
   "<hr><span class=walk-sec-title>Nero 1F Subby Paths</span>",
@@ -2974,7 +2988,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused", note: true },
       { t: "n1a Feign Sleep 1" },
@@ -2999,13 +3013,13 @@ MT.walks = [
       { t: "n1cr Subby Deep 2" },
       { t: "n1cr Subby Deep 3" },
       { t: "n1p Barbs Slow 1" },
-    ]
+    ],
   },
 
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "chatty", width: "abused", note: true },
       { t: "n1a Hello 1" },
@@ -3029,7 +3043,7 @@ MT.walks = [
       { t: "n1cr Subby Deep 2" },
       { t: "n1cr Subby Deep 3" },
       { t: "n1p Barbs Slow 1" },
-    ]
+    ],
   },
 
   "",
@@ -3037,7 +3051,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused", note: true },
       { t: "n1a Feign Sleep 1" },
@@ -3084,13 +3098,13 @@ MT.walks = [
       { t: "n1cs Bonding 1" },
       { t: "n1cs Bonding 2" },
       { t: "n1cs Ivex Dominant (3,2)" },
-    ]
+    ],
   },
 
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "chatty", width: "abused", note: true },
       { t: "n1a Hello 1" },
@@ -3137,7 +3151,7 @@ MT.walks = [
       { t: "n1cs Bonding 1" },
       { t: "n1cs Bonding 2" },
       { t: "n1cs Ivex Dominant (3,2)" },
-    ]
+    ],
   },
 
   "",
@@ -3145,7 +3159,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -3186,12 +3200,12 @@ MT.walks = [
       { t: "n1cs Bonding 1" },
       { t: "n1cs Bonding 2" },
       { t: "n1cs Ivex Dominant (3,2)" },
-    ]
+    ],
   },
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -3226,12 +3240,12 @@ MT.walks = [
       { t: "n1cs Bonding 1" },
       { t: "n1cs Bonding 2" },
       { t: "n1cs Ivex Dominant (3,2)" },
-    ]
+    ],
   },
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "endgame + naked" },
       { t: "n1a Endgame 1" },
@@ -3270,7 +3284,7 @@ MT.walks = [
       { t: "n1cs Bonding 1" },
       { t: "n1cs Bonding 2" },
       { t: "n1cs Ivex Dominant (3,2)" },
-    ]
+    ],
   },
 
   "<hr><span class=walk-sec-title>Nero 1F Look Paths</span>",
@@ -3278,7 +3292,7 @@ MT.walks = [
   {
     path: [
       { choice: "Nero" },
-      { t: "g1a Choose Character"},
+      { t: "g1a Choose Character" },
       { t: "n1a Nero Start" },
       { choice: "abused" },
       { t: "n1a Feign Sleep 1" },
@@ -3355,6 +3369,5 @@ MT.walks = [
       { t: "n1x Wand" },
       { t: "n1cr Ivex Fascinated (4,3)" },
     ],
-  }
+  },
 ];
-<</script>>\

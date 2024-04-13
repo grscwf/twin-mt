@@ -69,7 +69,7 @@ const hasTodo = () => {
 
 /**
  * @arg {RoamStep[] | null} [path]
- * @arg {() => void} [doneFn]
+ * @arg {(() => void) | null} [doneFn]
  * @arg {boolean} [force]
  */
 const roamStart = (path, doneFn, force) => {
