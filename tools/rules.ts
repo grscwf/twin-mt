@@ -12,10 +12,10 @@ export const rules: Rule[] = [
     target: "nero.html",
     dirs: [
       "tw-twine",
+      "tw-code*",
       "tw-game-*",
       "tw-nero-*",
       "tw-drekkar-*",
-      "tw-code*",
 
       // last dir is where untwine will add new passages
       "tw-uncategorized",
