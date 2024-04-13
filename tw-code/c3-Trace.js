@@ -1,6 +1,3 @@
-
-/** @typedef {import("twine-sugarcube").SugarCubeStoryVariables} SugarCubeStoryVariables */
-
 /** @type {null | SugarCubeStoryVariables} */
 let traceUnproxiedVars = null;
 const traceBrand = Symbol("VarTraceBrand");
@@ -13,7 +10,7 @@ const traceNewContext = () => {
     wasSet: new Set(),
     wasTopRead: new Set(),
   };
-}
+};
 
 MT.trace = traceNewContext();
 
@@ -100,7 +97,7 @@ MT.untracedVars = () => {
 /**
  * Run block without tracing any variables during its execution.
  * @type {<T>(block: () => T) => T}
-  */
+ */
 MT.untraced = (block) => {
   if (traceUnproxiedVars == null) return block();
   const proxy = State.active.variables;

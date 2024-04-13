@@ -1,5 +1,3 @@
-/** @typedef {import("twine-sugarcube").Passage} Passage */
-
 /**
  * Fix up the in-browser saved game title.
  * @type {(this: Passage) => string | null}
@@ -64,4 +62,4 @@ const countUnlocks = () => {
   add(Object.keys(MT.neroKeywords));
 
   return [num, total];
-}
+};

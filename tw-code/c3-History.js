@@ -1,4 +1,3 @@
-/** @typedef {import("twine-sugarcube").StoryMoment} StoryMoment */
 
 /* We need to keep entire history, for transcript and checkpoints. */
 Config.history.maxStates = 100000;

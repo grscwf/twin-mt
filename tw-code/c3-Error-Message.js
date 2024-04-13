@@ -1,5 +1,3 @@
-/** @typedef {import("twine-sugarcube").MacroContext} MacroContext */
-
 MT.hasFails = false;
 MT.hasWarnings = false;
 
