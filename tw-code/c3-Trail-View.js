@@ -87,7 +87,7 @@ const sections = {};
 /** expose state for easier debugging */
 MT.trailView = { sectNames, sections };
 
-function gatherPassages() {
+const gatherPassages = () => {
   const all = Story.lookupWith(() => true);
   for (const p of all) {
     if (p.tags.includes("inclusion")) continue;
@@ -142,7 +142,7 @@ const renderSeen = (title, state, out) => {
 };
 
 /** @type {(title: string, out: JQuery<HTMLElement>) => void} */
-function renderUnseen(title, out) {
+const renderUnseen = (title, out) => {
   out.empty();
   const div = MT.tran.renderPage({ title });
   const clue = makeClue(div);
@@ -158,7 +158,7 @@ function renderUnseen(title, out) {
 }
 
 /** @type {(div: JQuery<HTMLElement>) => JQuery<HTMLElement>} */
-function makeClue(div) {
+const makeClue = (div) => {
   const hasCut = div.find("#clue-cut").length !== 0;
   let wordsLeft = hasCut ? 100 : 10;
   /** @type {(node: Node) => void} */
@@ -202,7 +202,7 @@ function makeClue(div) {
   return copy;
 }
 
-function lastNonMenuPassage() {
+const lastNonMenuPassage = () => {
   const hist = State.history;
   for (let i = hist.length - 1; i >= 0; i--) {
     const title = hist[i]?.title || "";
@@ -420,7 +420,7 @@ MT.trailViewRender = (out) => {
   }
 };
 
-function trailViewInit() {
+const trailViewInit = () => {
   if (!setup.playtest) return;
   gatherPassages();
 }

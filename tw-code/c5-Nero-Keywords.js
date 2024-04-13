@@ -233,7 +233,7 @@ Macro.add("kw-announce", {
   },
 });
 
-function neroKeywordInit() {
+const neroKeywordInit = () => {
   Object.keys(MT.neroKeywords).map(MT.mdDefSaved);
 
   $(document).on(":passageend", () => {

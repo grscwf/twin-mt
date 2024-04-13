@@ -17,7 +17,7 @@ const withinInclude = (ctx) => {
 };
 
 /** @type {(ctx: MacroContext) => boolean} */
-function withinCondition(ctx) {
+const withinCondition = (ctx) => {
   for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
     if (ctx.displayName === "if") return true;
     if (ctx.displayName === "switch") return true;
@@ -114,7 +114,7 @@ Macro.add("vi-ignore-if", {
 const str = (val) => (val == null ? String(val) : JSON.stringify(val));
 
 /** @type {(vname: string) => JQuery<HTMLElement>} */
-function varButton(vname) {
+const varButton = (vname) => {
   const V = /** @type {Record<string, unknown>} */ (MT.untracedVars());
   const v0 = /** @type {Record<string, unknown>} */ (State.current.variables);
 
@@ -278,7 +278,7 @@ function varButton(vname) {
   return outer;
 }
 
-function initVarInfo() {
+const initVarInfo = () => {
   if (!setup.playtest) return;
 
   $(document).on(":passagestart", () => {

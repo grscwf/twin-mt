@@ -188,7 +188,7 @@ const saveCurrentTrail = () => {
  *
  * @type {(packed: SlimTrail[]) => void}
  */
-function savePackedTrails(packed) {
+const savePackedTrails = (packed) => {
   const compact = [];
   for (const trail of packed) {
     if (trail.delta == null) {

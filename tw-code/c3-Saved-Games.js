@@ -47,7 +47,7 @@ Config.passages.descriptions = function () {
 }
 
 /** @type {() => [number, number]} */
-function countUnlocks() {
+const countUnlocks = () => {
   const md = MT.mdRecord();
   let num = 0;
   let total = 0;

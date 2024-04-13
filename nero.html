@@ -2081,7 +2081,7 @@ metaInit();
  * Sketch of full migration at bottom.
  */
 
-function warnUnknownMetadata() {
+const warnUnknownMetadata = () => {
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
       MT.diag("Warning: unknown metadata:", k);
@@ -2090,7 +2090,7 @@ function warnUnknownMetadata() {
   MT.diagReport();
 }
 
-function deleteOldStorage() {
+const deleteOldStorage = () => {
   session.delete("mt-log-1");
   sessionStorage.removeItem("tabId");
   localStorage.removeItem("vp-1");
@@ -2098,7 +2098,7 @@ function deleteOldStorage() {
   localStorage.removeItem("tabIdLeases");
 }
 
-function migrateMetadata() {
+const migrateMetadata = () => {
   const rec = MT.mdRecord();
   /** @type {(from: string, to: string) => void} */
   const rename = (from, to) => {
@@ -2130,7 +2130,7 @@ function migrateMetadata() {
   rename("notes", "mi_notes");
 }
 
-function migrateNotes() {
+const migrateNotes = () => {
   const original = State.metadata.get("mi_notes") || "";
   let fixed = original;
   // migrate [passage] to [page]
@@ -2140,7 +2140,7 @@ function migrateNotes() {
   }
 }
 
-function checkSessionVersion() {
+const checkSessionVersion = () => {
   const ver = State.variables.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
   MT.diag(
@@ -2152,7 +2152,7 @@ function checkSessionVersion() {
 }
 
 /** @type {(save: import("twine-sugarcube").SaveObject) => void} */
-function checkSaveVersion(save) {
+const checkSaveVersion = (save) => {
   // g_versionAtStart is set by Title Screen, so it's not in the
   // first state, but it will be in the second.
   if (save.state.history.length < 2) return;
@@ -2168,7 +2168,7 @@ function checkSaveVersion(save) {
   });
 }
 
-function migrateInit() {
+const migrateInit = () => {
   deleteOldStorage();
   migrateMetadata();
   migrateNotes();
@@ -3023,14 +3023,14 @@ MT.computeVariants = function () {
 };
 
 /** @type {(obj: Record<string, unknown>, keys: string[]) => Record<string, unknown>} */
-function objSelect(obj, keys) {
+const objSelect = (obj, keys) => {
   /** @type {Record<string, unknown>} */
   const result = {};
   keys.forEach((k) => (result[k] = obj[k] || false));
   return result;
 }
 
-function highlightDiffs() {
+const highlightDiffs = () => {
   const passages = $(".passage");
   for (let i = passages.length - 1; i > 0; i--) {
     diff(passages[i - 1], passages[i]);
@@ -3038,7 +3038,7 @@ function highlightDiffs() {
 }
 
 /** @type {(x: Node | null | undefined, y: Node | null | undefined) => void} */
-function diff(x, y) {
+const diff = (x, y) => {
   if (x == null) {
     mark(y, 2);
   } else if (y == null) {
@@ -3060,7 +3060,7 @@ function diff(x, y) {
 }
 
 /** @type {(node: Node | null | undefined, c: number) => void} */
-function mark(node, c) {
+const mark = (node, c) => {
   if (node != null && node.nodeType != Node.ELEMENT_NODE) {
     node = node.parentElement;
   }
@@ -3698,7 +3698,7 @@ Macro.add("mtl-denied", {
  * @arg {string} text
  *
  */
-function makeLink(link, code, text) {
+const makeLink = (link, code, text) => {
   const el = document.createDocumentFragment();
   const dest = linkTitle(link);
   const destRepr = JSON.stringify(String(dest));
@@ -3717,7 +3717,7 @@ function makeLink(link, code, text) {
 }
 
 /** @type {(link: SugarCubeLink | string) => string} */
-function linkTitle(link) {
+const linkTitle = (link) => {
   if (typeof link !== "string" && link.isLink && link.link != null) {
     return link.link;
   }
@@ -3753,7 +3753,7 @@ Macro.add("mta-no-loop", {
 });
 
 /** @type {(name: string) => boolean} */
-function recentlyViewed(name) {
+const recentlyViewed = (name) => {
   const T = State.temporary;
   const limit = MT.untracedGet("n_patiencePassage");
   const max = 20;
@@ -4800,7 +4800,7 @@ Config.passages.descriptions = function () {
 }
 
 /** @type {() => [number, number]} */
-function countUnlocks() {
+const countUnlocks = () => {
   const md = MT.mdRecord();
   let num = 0;
   let total = 0;
@@ -5461,7 +5461,7 @@ Macro.add("sticky-return-and", {
   }
 });
 
-function stickyInit() {
+const stickyInit = () => {
   $(document).on(":passageinit", () => {
     MT.autoStow();
     $("#sticky-head").remove();
@@ -5738,7 +5738,7 @@ const sections = {};
 /** expose state for easier debugging */
 MT.trailView = { sectNames, sections };
 
-function gatherPassages() {
+const gatherPassages = () => {
   const all = Story.lookupWith(() => true);
   for (const p of all) {
     if (p.tags.includes("inclusion")) continue;
@@ -5793,7 +5793,7 @@ const renderSeen = (title, state, out) => {
 };
 
 /** @type {(title: string, out: JQuery<HTMLElement>) => void} */
-function renderUnseen(title, out) {
+const renderUnseen = (title, out) => {
   out.empty();
   const div = MT.tran.renderPage({ title });
   const clue = makeClue(div);
@@ -5809,7 +5809,7 @@ function renderUnseen(title, out) {
 }
 
 /** @type {(div: JQuery<HTMLElement>) => JQuery<HTMLElement>} */
-function makeClue(div) {
+const makeClue = (div) => {
   const hasCut = div.find("#clue-cut").length !== 0;
   let wordsLeft = hasCut ? 100 : 10;
   /** @type {(node: Node) => void} */
@@ -5853,7 +5853,7 @@ function makeClue(div) {
   return copy;
 }
 
-function lastNonMenuPassage() {
+const lastNonMenuPassage = () => {
   const hist = State.history;
   for (let i = hist.length - 1; i >= 0; i--) {
     const title = hist[i]?.title || "";
@@ -6071,7 +6071,7 @@ MT.trailViewRender = (out) => {
   }
 };
 
-function trailViewInit() {
+const trailViewInit = () => {
   if (!setup.playtest) return;
   gatherPassages();
 }
@@ -6268,7 +6268,7 @@ const saveCurrentTrail = () => {
  *
  * @type {(packed: SlimTrail[]) => void}
  */
-function savePackedTrails(packed) {
+const savePackedTrails = (packed) => {
   const compact = [];
   for (const trail of packed) {
     if (trail.delta == null) {
@@ -6689,7 +6689,7 @@ const withinInclude = (ctx) => {
 };
 
 /** @type {(ctx: MacroContext) => boolean} */
-function withinCondition(ctx) {
+const withinCondition = (ctx) => {
   for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
     if (ctx.displayName === "if") return true;
     if (ctx.displayName === "switch") return true;
@@ -6786,7 +6786,7 @@ Macro.add("vi-ignore-if", {
 const str = (val) => (val == null ? String(val) : JSON.stringify(val));
 
 /** @type {(vname: string) => JQuery<HTMLElement>} */
-function varButton(vname) {
+const varButton = (vname) => {
   const V = /** @type {Record<string, unknown>} */ (MT.untracedVars());
   const v0 = /** @type {Record<string, unknown>} */ (State.current.variables);
 
@@ -6950,7 +6950,7 @@ function varButton(vname) {
   return outer;
 }
 
-function initVarInfo() {
+const initVarInfo = () => {
   if (!setup.playtest) return;
 
   $(document).on(":passagestart", () => {
@@ -8117,7 +8117,7 @@ const flags = {
   },
 };
 
-function checkFlags() {
+const checkFlags = () => {
   if (!setup.playtest) return;
   Object.keys(flags).forEach((x) => {
     // check contrapositive
@@ -8871,7 +8871,7 @@ Macro.add("kw-announce", {
   },
 });
 
-function neroKeywordInit() {
+const neroKeywordInit = () => {
   Object.keys(MT.neroKeywords).map(MT.mdDefSaved);
 
   $(document).on(":passageend", () => {
@@ -9623,7 +9623,7 @@ Template.add("sprHoldStop", () => {
     V.n_magicPhase = MP_exitingHold;
   }
   return mkp;
-});</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+});</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;

@@ -377,7 +377,7 @@ const flags = {
   },
 };
 
-function checkFlags() {
+const checkFlags = () => {
   if (!setup.playtest) return;
   Object.keys(flags).forEach((x) => {
     // check contrapositive

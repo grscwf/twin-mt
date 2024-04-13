@@ -271,14 +271,14 @@ MT.computeVariants = function () {
 };
 
 /** @type {(obj: Record<string, unknown>, keys: string[]) => Record<string, unknown>} */
-function objSelect(obj, keys) {
+const objSelect = (obj, keys) => {
   /** @type {Record<string, unknown>} */
   const result = {};
   keys.forEach((k) => (result[k] = obj[k] || false));
   return result;
 }
 
-function highlightDiffs() {
+const highlightDiffs = () => {
   const passages = $(".passage");
   for (let i = passages.length - 1; i > 0; i--) {
     diff(passages[i - 1], passages[i]);
@@ -286,7 +286,7 @@ function highlightDiffs() {
 }
 
 /** @type {(x: Node | null | undefined, y: Node | null | undefined) => void} */
-function diff(x, y) {
+const diff = (x, y) => {
   if (x == null) {
     mark(y, 2);
   } else if (y == null) {
@@ -308,7 +308,7 @@ function diff(x, y) {
 }
 
 /** @type {(node: Node | null | undefined, c: number) => void} */
-function mark(node, c) {
+const mark = (node, c) => {
   if (node != null && node.nodeType != Node.ELEMENT_NODE) {
     node = node.parentElement;
   }

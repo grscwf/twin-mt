@@ -88,7 +88,7 @@ Macro.add("mtl-denied", {
  * @arg {string} text
  *
  */
-function makeLink(link, code, text) {
+const makeLink = (link, code, text) => {
   const el = document.createDocumentFragment();
   const dest = linkTitle(link);
   const destRepr = JSON.stringify(String(dest));
@@ -107,7 +107,7 @@ function makeLink(link, code, text) {
 }
 
 /** @type {(link: SugarCubeLink | string) => string} */
-function linkTitle(link) {
+const linkTitle = (link) => {
   if (typeof link !== "string" && link.isLink && link.link != null) {
     return link.link;
   }
@@ -143,7 +143,7 @@ Macro.add("mta-no-loop", {
 });
 
 /** @type {(name: string) => boolean} */
-function recentlyViewed(name) {
+const recentlyViewed = (name) => {
   const T = State.temporary;
   const limit = MT.untracedGet("n_patiencePassage");
   const max = 20;

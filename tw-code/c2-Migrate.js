@@ -4,7 +4,7 @@
  * Sketch of full migration at bottom.
  */
 
-function warnUnknownMetadata() {
+const warnUnknownMetadata = () => {
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
       MT.diag("Warning: unknown metadata:", k);
@@ -13,7 +13,7 @@ function warnUnknownMetadata() {
   MT.diagReport();
 }
 
-function deleteOldStorage() {
+const deleteOldStorage = () => {
   session.delete("mt-log-1");
   sessionStorage.removeItem("tabId");
   localStorage.removeItem("vp-1");
@@ -21,7 +21,7 @@ function deleteOldStorage() {
   localStorage.removeItem("tabIdLeases");
 }
 
-function migrateMetadata() {
+const migrateMetadata = () => {
   const rec = MT.mdRecord();
   /** @type {(from: string, to: string) => void} */
   const rename = (from, to) => {
@@ -53,7 +53,7 @@ function migrateMetadata() {
   rename("notes", "mi_notes");
 }
 
-function migrateNotes() {
+const migrateNotes = () => {
   const original = State.metadata.get("mi_notes") || "";
   let fixed = original;
   // migrate [passage] to [page]
@@ -63,7 +63,7 @@ function migrateNotes() {
   }
 }
 
-function checkSessionVersion() {
+const checkSessionVersion = () => {
   const ver = State.variables.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
   MT.diag(
@@ -75,7 +75,7 @@ function checkSessionVersion() {
 }
 
 /** @type {(save: import("twine-sugarcube").SaveObject) => void} */
-function checkSaveVersion(save) {
+const checkSaveVersion = (save) => {
   // g_versionAtStart is set by Title Screen, so it's not in the
   // first state, but it will be in the second.
   if (save.state.history.length < 2) return;
@@ -91,7 +91,7 @@ function checkSaveVersion(save) {
   });
 }
 
-function migrateInit() {
+const migrateInit = () => {
   deleteOldStorage();
   migrateMetadata();
   migrateNotes();

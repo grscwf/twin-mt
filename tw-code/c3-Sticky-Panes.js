@@ -35,7 +35,7 @@ Macro.add("sticky-return-and", {
   }
 });
 
-function stickyInit() {
+const stickyInit = () => {
   $(document).on(":passageinit", () => {
     MT.autoStow();
     $("#sticky-head").remove();
