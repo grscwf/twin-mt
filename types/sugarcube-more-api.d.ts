@@ -1,5 +1,5 @@
 /*
- * SugarCube APIs that aren't declared in @types/twine-sugarcube
+ * SugarCube APIs we use that aren't declared in @types/twine-sugarcube
  */
 
 import type { StoryMoment } from "twine-sugarcube";
@@ -12,6 +12,7 @@ declare module "twine-sugarcube" {
   interface MacroContext {
     readonly displayName: string;
     readonly source: string;
+    // TODO: parent should be MacroContext, not object
   }
 
   interface StateAPI {

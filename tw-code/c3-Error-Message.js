@@ -77,26 +77,26 @@ MT.warn = (str) => {
 
 /**
  * Add str as a new error-message assertion failure.
- * @type {(str: string, context?: MacroContext) => void}
+ * @type {(str: string, ctx?: MacroContext) => void}
  */
-MT.fail = (str, context) => {
+MT.fail = (str, ctx) => {
   MT.hasFails = true;
-  emMessage("fail", str, context);
+  emMessage("fail", str, ctx);
 };
 
 /**
  * @arg {string} type
  * @arg {string} str
- * @arg {MacroContext} [context]
+ * @arg {MacroContext} [ctx]
  */
-const emMessage = (type, str, context) => {
+const emMessage = (type, str, ctx) => {
   if (emSuppress) return;
   if (emDebugStop) {
     debugger;
     emDebugStop = false;
   }
   MT.messages.push(`${type}: ${str}`);
-  const trace = emBacktrace(context);
+  const trace = emBacktrace(ctx);
   if (trace != null && trace !== "") {
     MT.messages.push(trace);
   }
@@ -113,13 +113,13 @@ const emMessage = (type, str, context) => {
 /**
  * @arg {boolean | null | undefined} val
  * @arg {string} should
- * @arg {MacroContext} [context]
+ * @arg {MacroContext} [ctx]
  * @returns {asserts val}
  */
 
-MT.assert = (val, should, context) => {
+MT.assert = (val, should, ctx) => {
   if (val) return;
-  MT.fail(should, context);
+  MT.fail(should, ctx);
 };
 
 Macro.add("em-assert", {
@@ -136,10 +136,11 @@ Macro.add("em-assert", {
  */
 const emBacktrace = (ctx) => {
   let trace = "";
-  for (; ctx != null; ctx = /** @type {MacroContext | null} */ (ctx.parent)) {
+  while (ctx != null) {
     if (ctx.displayName === "include") {
       trace += ctx.source + "\n";
     }
+    ctx = /** @type {MacroContext | null | undefined} */ (ctx.parent);
   }
   return trace;
 };

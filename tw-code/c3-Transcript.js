@@ -1,3 +1,20 @@
+/**
+ * @typedef {object} NextLink
+ * @prop {string} [title]
+ * @prop {string} [code]
+ *
+ * @typedef {object} TranscriptPage
+ *    Args for rendering a transcript page.
+ * @prop {string} title
+ *    Page to render.
+ * @prop {SugarCubeStoryVariables} [vars]
+ *    Vars to set before rendering.
+ * @prop {SugarCubeTemporaryVariables} [temps]
+ *    Temps to set before rendering.
+ * @prop {NextLink} [next]
+ *    Next-page link to highlight.
+ */
+
 MT.tran = {};
 
 /**
@@ -23,7 +40,7 @@ MT.tran.renderHistory = (out) => {
         $("<hr class=text-sep>").appendTo(outer);
       }
 
-      /** @type { NextLink } */
+      /** @type {NextLink} */
       const next = {};
       if (turn + 1 < hist.length) {
         next.title = hist[turn + 1]?.title || "";

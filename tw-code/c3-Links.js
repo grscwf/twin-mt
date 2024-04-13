@@ -1,10 +1,4 @@
 /**
- * @typedef {object} SugarCubeLink
- * @prop {boolean} isLink
- * @prop {string} [link]
- */
-
-/**
  * <<mta $link [$code]>>
  *   $text
  * <</mta>>
@@ -104,7 +98,7 @@ const makeLink = (link, code, text) => {
     $(el).find("a").attr("data-mta-code", code);
   }
   return el;
-}
+};
 
 /** @type {(link: SugarCubeLink | string) => string} */
 const linkTitle = (link) => {
@@ -114,7 +108,7 @@ const linkTitle = (link) => {
   const str = String(link);
   const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
   return m == null ? str : m[1] || "";
-}
+};
 
 /**
  * <<mta-no-loop $link>>
@@ -155,7 +149,7 @@ const recentlyViewed = (name) => {
     if (past.title === name) return true;
   }
   return false;
-}
+};
 
 /**
  * <<return-before $fromPassage>>

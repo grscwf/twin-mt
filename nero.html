@@ -1861,6 +1861,14 @@ MT.windowRec.MT = MT;
  * @typedef {import("twine-sugarcube").Passage} Passage
  * @typedef {import("twine-sugarcube").StoryMoment} StoryMoment
  * @typedef {import("twine-sugarcube").SugarCubeStoryVariables} SugarCubeStoryVariables
+ * @typedef {import("twine-sugarcube").SugarCubeTemporaryVariables} SugarCubeTemporaryVariables
+ */
+
+/**
+ * @typedef {object} SugarCubeLink
+ * @prop {boolean} isLink
+ * @prop {string} [link]
+ * @prop {string} [text]
  */
 /* twine-user-script #4: "c1-Diag.js" */
 /** @type {string[]} */
@@ -2374,7 +2382,7 @@ migrateInit();
  * @typedef {object} ArchiveEntry
  * @prop {string} [title]
  * @prop {ArchivePage[]} [passages]
- * 
+ *
  * @typedef {Record<string, ArchiveEntry>} ArchiveMap
  */
 
@@ -2420,10 +2428,11 @@ Macro.add("arc-skip", {
 Macro.add("arc-select", {
   tags: ["arc-option"],
   handler: function () {
-    if (this.args.length !== 2) {
-      throw new Error("expected arc-select args: varname label");
-    }
-    const [varname, label] = this.args;
+    /** @type {string} */
+    const varname = this.args[0];
+
+    /** @type {string} */
+    const label = this.args[1];
 
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     const T = State.temporary;
@@ -2503,16 +2512,22 @@ Macro.add("arc-select", {
 Macro.add("arc-ending", {
   tags: ["arc-variants"],
   handler: function () {
-    if (this.args.length < 2 || this.args.length > 4) {
-      throw new Error(
-        "expected arc-endings args: boolean link [disabledText [setter]]"
-      );
-    }
-    let [enabled, link, offText, setter] = this.args;
+    /** @type {boolean} */
+    const enabled = this.args[0];
+
+    /** @type {SugarCubeLink | string} */
+    const link = this.args[1];
+
+    /** @type {string | null | undefined} */
+    let offText = this.args[2];
+
+    /** @type {string | null | undefined} */
+    let setter = this.args[3];
+
     const T = State.temporary;
     const unlocked = enabled || T.lockpick;
-    const isLink = typeof link === "object" && link.isLink;
-    offText = offText || (isLink ? link.text : link);
+    const isLink = typeof link !== "string";
+    offText = offText || (isLink ? link.text || "" : link);
     setter = setter || "";
 
     const outer = $("<div class=arc-ending>").appendTo(this.output);
@@ -2543,7 +2558,9 @@ Macro.add("arc-ending", {
  */
 Macro.add("arc-set-barbs", {
   handler: function () {
-    const [vname] = this.args;
+    /** @type {string} */
+    const vname = this.args[0];
+
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     if (V[vname] == null) {
       MT.mdSet(vname, V["n_barbs"] ? "y" : "n");
@@ -3432,26 +3449,26 @@ MT.warn = (str) => {
 
 /**
  * Add str as a new error-message assertion failure.
- * @type {(str: string, context?: MacroContext) => void}
+ * @type {(str: string, ctx?: MacroContext) => void}
  */
-MT.fail = (str, context) => {
+MT.fail = (str, ctx) => {
   MT.hasFails = true;
-  emMessage("fail", str, context);
+  emMessage("fail", str, ctx);
 };
 
 /**
  * @arg {string} type
  * @arg {string} str
- * @arg {MacroContext} [context]
+ * @arg {MacroContext} [ctx]
  */
-const emMessage = (type, str, context) => {
+const emMessage = (type, str, ctx) => {
   if (emSuppress) return;
   if (emDebugStop) {
     debugger;
     emDebugStop = false;
   }
   MT.messages.push(`${type}: ${str}`);
-  const trace = emBacktrace(context);
+  const trace = emBacktrace(ctx);
   if (trace != null && trace !== "") {
     MT.messages.push(trace);
   }
@@ -3468,13 +3485,13 @@ const emMessage = (type, str, context) => {
 /**
  * @arg {boolean | null | undefined} val
  * @arg {string} should
- * @arg {MacroContext} [context]
+ * @arg {MacroContext} [ctx]
  * @returns {asserts val}
  */
 
-MT.assert = (val, should, context) => {
+MT.assert = (val, should, ctx) => {
   if (val) return;
-  MT.fail(should, context);
+  MT.fail(should, ctx);
 };
 
 Macro.add("em-assert", {
@@ -3491,10 +3508,11 @@ Macro.add("em-assert", {
  */
 const emBacktrace = (ctx) => {
   let trace = "";
-  for (; ctx != null; ctx = /** @type {MacroContext | null} */ (ctx.parent)) {
+  while (ctx != null) {
     if (ctx.displayName === "include") {
       trace += ctx.source + "\n";
     }
+    ctx = /** @type {MacroContext | null | undefined} */ (ctx.parent);
   }
   return trace;
 };
@@ -3766,12 +3784,6 @@ MT.jqUnwrap = (jq) => {
 };
 /* twine-user-script #22: "c3-Links.js" */
 /**
- * @typedef {object} SugarCubeLink
- * @prop {boolean} isLink
- * @prop {string} [link]
- */
-
-/**
  * <<mta $link [$code]>>
  *   $text
  * <</mta>>
@@ -3871,7 +3883,7 @@ const makeLink = (link, code, text) => {
     $(el).find("a").attr("data-mta-code", code);
   }
   return el;
-}
+};
 
 /** @type {(link: SugarCubeLink | string) => string} */
 const linkTitle = (link) => {
@@ -3881,7 +3893,7 @@ const linkTitle = (link) => {
   const str = String(link);
   const m = /^\[\[(?:[^|]+\|)?([^|]+)\]\]$/.exec(str);
   return m == null ? str : m[1] || "";
-}
+};
 
 /**
  * <<mta-no-loop $link>>
@@ -3922,7 +3934,7 @@ const recentlyViewed = (name) => {
     if (past.title === name) return true;
   }
   return false;
-}
+};
 
 /**
  * <<return-before $fromPassage>>
@@ -6553,6 +6565,23 @@ const trailInit = () => {
 
 trailInit();
 /* twine-user-script #41: "c3-Transcript.js" */
+/**
+ * @typedef {object} NextLink
+ * @prop {string} [title]
+ * @prop {string} [code]
+ *
+ * @typedef {object} TranscriptPage
+ *    Args for rendering a transcript page.
+ * @prop {string} title
+ *    Page to render.
+ * @prop {SugarCubeStoryVariables} [vars]
+ *    Vars to set before rendering.
+ * @prop {SugarCubeTemporaryVariables} [temps]
+ *    Temps to set before rendering.
+ * @prop {NextLink} [next]
+ *    Next-page link to highlight.
+ */
+
 MT.tran = {};
 
 /**
@@ -6578,7 +6607,7 @@ MT.tran.renderHistory = (out) => {
         $("<hr class=text-sep>").appendTo(outer);
       }
 
-      /** @type { NextLink } */
+      /** @type {NextLink} */
       const next = {};
       if (turn + 1 < hist.length) {
         next.title = hist[turn + 1]?.title || "";
@@ -6832,22 +6861,24 @@ $(document).on(":passagestart", () => {
   ignoreVars.clear();
 });
 
-/** @type {(ctx: MacroContext) => boolean} */
+/** @type {(ctx: MacroContext | null | undefined) => boolean} */
 const withinInclude = (ctx) => {
-  for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
+  while (ctx != null) {
     if (ctx.displayName === "include") return true;
+    ctx = /** @type {MacroContext | null | undefined} */ (ctx.parent);
   }
   return false;
 };
 
-/** @type {(ctx: MacroContext) => boolean} */
+/** @type {(ctx: MacroContext | null | undefined) => boolean} */
 const withinCondition = (ctx) => {
-  for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
+  while (ctx != null) {
     if (ctx.displayName === "if") return true;
     if (ctx.displayName === "switch") return true;
+    ctx = /** @type {MacroContext | null | undefined} */ (ctx.parent);
   }
   return false;
-}
+};
 
 /** <<vi-always varname value [reason]>> */
 Macro.add("vi-always", {
@@ -7100,7 +7131,7 @@ const varButton = (vname) => {
   $("<span class=var-info-value>").text(jval).appendTo(label);
   outer.addClass("var-info-misc");
   return outer;
-}
+};
 
 const initVarInfo = () => {
   if (!setup.playtest) return;
@@ -7198,7 +7229,7 @@ const initVarInfo = () => {
 
     if (to_do.length) outer.addClass("var-info-to-do");
   });
-}
+};
 
 initVarInfo();
 /* twine-user-script #43: "c3-Verify-State.js" */
@@ -13327,7 +13358,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;

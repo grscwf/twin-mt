@@ -8,22 +8,24 @@ $(document).on(":passagestart", () => {
   ignoreVars.clear();
 });
 
-/** @type {(ctx: MacroContext) => boolean} */
+/** @type {(ctx: MacroContext | null | undefined) => boolean} */
 const withinInclude = (ctx) => {
-  for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
+  while (ctx != null) {
     if (ctx.displayName === "include") return true;
+    ctx = /** @type {MacroContext | null | undefined} */ (ctx.parent);
   }
   return false;
 };
 
-/** @type {(ctx: MacroContext) => boolean} */
+/** @type {(ctx: MacroContext | null | undefined) => boolean} */
 const withinCondition = (ctx) => {
-  for (; ctx != null; ctx = /** @type {MacroContext} */ (ctx.parent)) {
+  while (ctx != null) {
     if (ctx.displayName === "if") return true;
     if (ctx.displayName === "switch") return true;
+    ctx = /** @type {MacroContext | null | undefined} */ (ctx.parent);
   }
   return false;
-}
+};
 
 /** <<vi-always varname value [reason]>> */
 Macro.add("vi-always", {
@@ -276,7 +278,7 @@ const varButton = (vname) => {
   $("<span class=var-info-value>").text(jval).appendTo(label);
   outer.addClass("var-info-misc");
   return outer;
-}
+};
 
 const initVarInfo = () => {
   if (!setup.playtest) return;
@@ -374,6 +376,6 @@ const initVarInfo = () => {
 
     if (to_do.length) outer.addClass("var-info-to-do");
   });
-}
+};
 
 initVarInfo();

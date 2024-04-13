@@ -5,7 +5,7 @@
  * @typedef {object} ArchiveEntry
  * @prop {string} [title]
  * @prop {ArchivePage[]} [passages]
- * 
+ *
  * @typedef {Record<string, ArchiveEntry>} ArchiveMap
  */
 
@@ -51,10 +51,11 @@ Macro.add("arc-skip", {
 Macro.add("arc-select", {
   tags: ["arc-option"],
   handler: function () {
-    if (this.args.length !== 2) {
-      throw new Error("expected arc-select args: varname label");
-    }
-    const [varname, label] = this.args;
+    /** @type {string} */
+    const varname = this.args[0];
+
+    /** @type {string} */
+    const label = this.args[1];
 
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     const T = State.temporary;
@@ -134,16 +135,22 @@ Macro.add("arc-select", {
 Macro.add("arc-ending", {
   tags: ["arc-variants"],
   handler: function () {
-    if (this.args.length < 2 || this.args.length > 4) {
-      throw new Error(
-        "expected arc-endings args: boolean link [disabledText [setter]]"
-      );
-    }
-    let [enabled, link, offText, setter] = this.args;
+    /** @type {boolean} */
+    const enabled = this.args[0];
+
+    /** @type {SugarCubeLink | string} */
+    const link = this.args[1];
+
+    /** @type {string | null | undefined} */
+    let offText = this.args[2];
+
+    /** @type {string | null | undefined} */
+    let setter = this.args[3];
+
     const T = State.temporary;
     const unlocked = enabled || T.lockpick;
-    const isLink = typeof link === "object" && link.isLink;
-    offText = offText || (isLink ? link.text : link);
+    const isLink = typeof link !== "string";
+    offText = offText || (isLink ? link.text || "" : link);
     setter = setter || "";
 
     const outer = $("<div class=arc-ending>").appendTo(this.output);
@@ -174,7 +181,9 @@ Macro.add("arc-ending", {
  */
 Macro.add("arc-set-barbs", {
   handler: function () {
-    const [vname] = this.args;
+    /** @type {string} */
+    const vname = this.args[0];
+
     const V = /** @type {Record<string, unknown>} */ (State.variables);
     if (V[vname] == null) {
       MT.mdSet(vname, V["n_barbs"] ? "y" : "n");

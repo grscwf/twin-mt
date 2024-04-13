@@ -1,5 +1,4 @@
 import type {
-  MacroContext,
   SugarCubeStoryVariables,
   SugarCubeTemporaryVariables,
 } from "twine-sugarcube";
@@ -29,26 +28,6 @@ declare global {
   const IC_begForMe: number;
   const IC_comfortable: number;
   const IC_whoSentYou: number;
-}
-
-/** Types */
-declare global {
-  type NextLink = {
-    title?: string;
-    code?: string;
-  };
-
-  /** Arguments for rendering a transcript page. */
-  type TranscriptPage = {
-    /** Page to render. */
-    title: string;
-    /** Variables to set before rendering. */
-    vars?: SugarCubeStoryVariables;
-    /** Temporaries to set before rendering. */
-    temps?: SugarCubeTemporaryVariables;
-    /** Next-page link to highlight. */
-    next?: NextLink;
-  };
 }
 
 declare module "twine-sugarcube" {
