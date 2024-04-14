@@ -68,6 +68,7 @@ declare module "twine-sugarcube" {
     /** True if state was manipulated with a debug tool. */
     g_mutated?: boolean;
 
+    /** Set by Notes Popup for Notes Single. */
     g_notesOrigin?: string;
 
     /** State for MT.rand */
@@ -188,5 +189,8 @@ declare module "twine-sugarcube" {
 
     /** True if rendering passage as transcript or archives entry. */
     isTranscript?: boolean;
+
+    /** Set by Notes button for Notes Popup. */
+    notesOrigin?: string;
   }
 }

@@ -145,11 +145,10 @@ const pointerDown = () => {
 };
 
 const openPopup = () => {
-  const V = State.variables;
   const T = State.temporary;
-  V.g_notesOrigin = State.passage;
+  T.notesOrigin = State.passage;
   if (T.notesVariant != null) {
-    V.g_notesOrigin += " - " + T.notesVariant;
+    T.notesOrigin += " - " + T.notesVariant;
   }
   const popupText = Story.get("g1m Notes Popup").text;
   Dialog.setup("");
