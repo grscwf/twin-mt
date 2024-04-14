@@ -95,8 +95,8 @@ Macro.add("mtl-denied", {
 const makeLink = (link, code, text) => {
   const el = document.createDocumentFragment();
   const dest = linkTitle(link);
-  const destRepr = JSON.stringify(String(dest));
-  const textRepr = JSON.stringify(String(text).trim());
+  const destRepr = dest === "" ? "" : MT.json(String(dest));
+  const textRepr = MT.json(String(text).trim());
 
   let body = "";
   if (code != null && code !== "") {
