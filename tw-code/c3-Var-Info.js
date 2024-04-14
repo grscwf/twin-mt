@@ -40,7 +40,7 @@ Macro.add("vi-always", {
       // force a traced read, so it can be toggled
       const vars = /** @type {Record<string, unknown>} */ (State.variables);
       const read = vars[vname];
-      MT.fail(`vi-always ${vname} ${exp}, but actual value is ${read}`);
+      MT.error(`${vname} should be ${exp}, actual value ${read}`);
       return;
     }
     alwaysVars.set(vname, exp);
@@ -55,7 +55,6 @@ Macro.add("vi-always-if", {
   handler: function () {
     if (State.temporary.isTranscript) return;
     const [cond, vname, exp] = this.args;
-    const sect = MT.sectHere();
     if (MT.varExpect(vname) != null && !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
@@ -65,9 +64,7 @@ Macro.add("vi-always-if", {
         // force a traced read, so it can be toggled
         const vars = /** @type {Record<string, unknown>} */ (State.variables);
         const read = vars[vname];
-        MT.fail(
-          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`
-        );
+        MT.error(`${cond} ${vname} should be ${exp}; actual value ${read}`);
         return;
       }
       alwaysVars.set(vname, exp);

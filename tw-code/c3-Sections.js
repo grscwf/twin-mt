@@ -401,19 +401,19 @@ const sectCheckAll = () => {
   for (const p of Story.lookupWith(() => true)) {
     const sect = sectOf(p.title);
     if (!sectDefs[sect] && !sectsUsed.has(sect)) {
-      MT.diag(`Warning: [\[${p.title}]] section ${sect} not defined`);
+      MT.warn(`[\[${p.title}]] section ${sect} not defined`);
     }
     sectsUsed.add(sect);
 
     if (sect === "other" && !sectSpecial.has(p.title)) {
-      MT.diag(`Warning: [\[${p.title}]] should have a section code`);
+      MT.warn(`[\[${p.title}]] should have a section code`);
     }
   }
 
   // Verify all section tags are used.
   for (const sect of Object.keys(sectDefs)) {
     if (!sectsUsed.has(sect)) {
-      MT.diag(`Warning: section ${sect} is never used`);
+      MT.warn(`Section ${sect} is never used`);
     }
   }
 
@@ -422,7 +422,7 @@ const sectCheckAll = () => {
   for (const [sect, def] of Object.entries(sectDefs)) {
     const typos = Object.keys(def).filter((k) => expectedKeys.indexOf(k) < 0);
     if (typos.length) {
-      MT.diag(`Warning: sectionDefs.${sect} has unknown keys [${typos}]`);
+      MT.warn(`sectionDefs.${sect} has unknown keys [${typos}]`);
     }
   }
 };
@@ -445,7 +445,7 @@ MT.checkSectionState = (stateObj, sectName, quietly, onlySet) => {
     if (!ok) {
       if (quietly) return false;
       allOk = false;
-      MT.fail(`${vn} should be ${val} in ${sectName}, not ${stateObj[vn]}`);
+      MT.error(`${vn} should be ${val} in ${sectName}, not ${stateObj[vn]}`);
     }
   }
   return allOk;

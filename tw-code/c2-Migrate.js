@@ -7,10 +7,10 @@
 const warnUnknownMetadata = () => {
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
-      MT.diag("Warning: unknown metadata:", k);
+      MT.warn(`Unknown metadata ${k}`);
     }
   }
-}
+};
 
 const deleteOldStorage = () => {
   session.delete("mt-log-1");
@@ -18,7 +18,7 @@ const deleteOldStorage = () => {
   localStorage.removeItem("vp-1");
   localStorage.removeItem("vp-marks-enabled");
   localStorage.removeItem("tabIdLeases");
-}
+};
 
 const migrateMetadata = () => {
   const rec = MT.mdRecord();
@@ -50,7 +50,7 @@ const migrateMetadata = () => {
 
   rename("mg_notesNoTrail", "mi_notesNoTrail");
   rename("notes", "mi_notes");
-}
+};
 
 const migrateNotes = () => {
   const original = State.metadata.get("mi_notes") || "";
@@ -60,17 +60,17 @@ const migrateNotes = () => {
   if (fixed !== original) {
     State.metadata.set("mi_notes", fixed);
   }
-}
+};
 
 const checkSessionVersion = () => {
   const ver = State.variables.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
-  MT.diag(
-    `Warning: Current session is from a different version of the game.` +
+  MT.warn(
+    `Current session is from a different version of the game.` +
       ` Some things may not work correctly.` +
       ` ("${ver}" !== "${setup.version}")`
   );
-}
+};
 
 /** @type {(save: import("twine-sugarcube").SaveObject) => void} */
 const checkSaveVersion = (save) => {
@@ -81,13 +81,13 @@ const checkSaveVersion = (save) => {
   const ver = V.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
   $(document).one(":passagestart", () => {
-    MT.diag(
-      `Warning: Saved game is from a different version of the game.` +
+    MT.warn(
+      `Saved game is from a different version of the game.` +
         ` Some things may not work correctly.` +
         ` ("${ver}" !== "${setup.version}")`
     );
   });
-}
+};
 
 const migrateInit = () => {
   deleteOldStorage();
@@ -98,7 +98,7 @@ const migrateInit = () => {
 
   Save.onLoad.add((save) => checkSaveVersion(save));
   $(document).on(":storyready", checkSessionVersion);
-}
+};
 
 migrateInit();
 

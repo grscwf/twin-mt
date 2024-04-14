@@ -45,7 +45,7 @@
       }
     }
     if (pos === links.length) {
-      MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
+      MT.warn(`Missed g_choiceTaken [${target.innerText}]`);
     } else {
       vars.g_choiceTaken = pos;
     }
@@ -56,7 +56,7 @@
     if (ev.ctrlKey && ev.key === "'") {
       const url = getUrl();
       navigator.clipboard.writeText(url);
-      MT.diag("URL copied to clipboard", url);
+      MT.note(`URL copied to clipboard: ${url}`);
     }
   }
 

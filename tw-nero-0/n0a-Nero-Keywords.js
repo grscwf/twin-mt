@@ -241,7 +241,7 @@ const neroKeywordInit = () => {
     const isMenu = tags().includes("is-menu");
     const kwAnnounce = MT.untracedGet("n_kwAnnounce");
     if (!T.kwUnlocking && kwAnnounce != null && !isMenu) {
-      MT.fail(`missing kw-announce for ${kwAnnounce}`);
+      MT.error(`missing kw-announce for ${kwAnnounce}`);
     }
   });
 }

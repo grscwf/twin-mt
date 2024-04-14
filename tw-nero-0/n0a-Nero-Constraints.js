@@ -386,7 +386,7 @@ const checkFlags = () => {
       if (imp[y] === false) {
         const yf = flags[y];
         if (yf == null || yf.implies == null || yf.implies[x] !== false) {
-          MT.diag(`Warning: missing contrapositive: ${x} implies !${y}`);
+          MT.warn(`Missing contrapositive: ${x} implies !${y}`);
         }
       }
     });
@@ -658,7 +658,7 @@ MT.checkState = (state, used, interactive, activeState) => {
         if (!interactive) return false;
         const expStr =
           typeof exp !== "boolean" ? `${y} === ${exp}` : exp ? y : `!${y}`;
-        MT.fail(
+        MT.error(
           `${x} === ${state[x]} should imply ${expStr}; currently, ${y} === ${state[y]}`
         );
       }
@@ -675,7 +675,7 @@ MT.checkState = (state, used, interactive, activeState) => {
     if (rules.impossible) {
       if (!interactive) return false;
       const sVal = MT.enumSymbol(x, state[x]);
-      MT.fail(`${x} === ${sVal} should be impossible`);
+      MT.error(`${x} === ${sVal} should be impossible`);
       continue;
     }
     if (used && !used.has(x)) continue;
@@ -688,7 +688,7 @@ MT.checkState = (state, used, interactive, activeState) => {
         const expStr =
           typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
         const sVal = MT.enumSymbol(x, state[x]);
-        MT.fail(
+        MT.error(
           `${x} === ${sVal} should imply ${expStr}; currently, ${y} === ${state[y]}`
         );
       }

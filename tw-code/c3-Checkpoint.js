@@ -60,7 +60,7 @@ Macro.add("checkpoint-load", {
     const cp = /** @type {Checkpoint} */ (vars[varName]);
     const lost = State.turns - State.length;
     if (cp.turn < lost) {
-      MT.diag(
+      MT.warn(
         `Sorry! Checkpoint: ${cp.desc} (turn ${cp.turn})` +
           ` is no longer in the history`
       );

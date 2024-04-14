@@ -32,24 +32,19 @@ let diagWasSeen = false;
 
 const diagProblemTypes = ["fail"];
 
-/**
- * Show a generic diag message.
- * @arg {unknown[]} args
- */
-MT.diag = (...args) => {
-  if (typeof args[0] === "string") {
-    diagEmit({ type: "diag", text: args[0], values: args.slice(1) });
-  } else {
-    diagEmit({ type: "diag", values: args });
-  }
+/** @type {Record<string, string>} */
+const diagTitles = {
+  error: "Error",
+  note: "Note",
+  warn: "Warning",
 };
 
 /**
- * Show a fail message.
- * @type {(text: string, context?: MacroContext) => void}
+ * Show a note.
+ * @type {(text: string) => void}
  */
-MT.fail = (text, context) => {
-  diagEmit({ type: "fail", text, context, showDebug: true });
+MT.note = (text) => {
+  diagEmit({ type: "note", text });
 };
 
 /**
@@ -61,18 +56,29 @@ MT.warn = (text) => {
 };
 
 /**
+ * Show an error message.
+ * @type {(text: string, context?: MacroContext) => void}
+ */
+MT.error = (text, context) => {
+  diagEmit({ type: "error", text, context, showDebug: true });
+};
+
+/**
+ * If val is falsy, show an assertion failure and throw an error.
  * @arg {boolean | null | undefined} val
  * @arg {string} should
  * @arg {MacroContext} [context]
- * @returns {asserts val}
+ * @return {asserts val}
  */
 MT.assert = (val, should, context) => {
-  if (val) return;
-  MT.fail(should, context);
-  throw new Error(`Assertion failed: ${should}`);
+  if (!val) {
+    const text = `Assertion failed: ${should}`;
+    MT.error(text, context);
+    throw new Error(text);
+  }
 };
 
-Macro.add("em-assert", {
+Macro.add("mt-assert", {
   skipArgs: true,
   handler: function () {
     const expr = this.args.full;
@@ -147,26 +153,24 @@ const diagEmit = (diag) => {
   let addButtons = false;
   if (!box.length || !box.hasClass(`diag-box-${type}`)) {
     box = $(`<div class="diag-box diag-box-${type}">`).appendTo(outer);
-    addButtons = true;
-  }
-
-  let item = $(`<div class="diag-item">`).appendTo(box);
-
-  if (addButtons) {
+    const title = diagTitles[type] || "Note";
+    $(`<span class="diag-title">`).text(title).appendTo(box);
     $(`<a class="diag-close">[close]</a>`)
       .on("click", () => {
         box.remove();
       })
-      .appendTo(item);
+      .appendTo(box);
     if (diag.showDebug && setup.playtest) {
       $(`<a class="diag-debug">[debug]</a>`)
         .on("click", () => {
           diagDebugStop = true;
           Engine.play(State.passage, true);
         })
-        .appendTo(item);
+        .appendTo(box);
     }
   }
+
+  let item = $(`<div class="diag-item">`).appendTo(box);
 
   if (diag.text) {
     $(`<span class="diag-text">`).text(diag.text).appendTo(item);

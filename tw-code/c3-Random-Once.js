@@ -24,10 +24,7 @@ Macro.add("random-once", {
       }
     }
 
-    if (valid.size === 0) {
-      MT.fail(`random-once should have valid choices`);
-      return;
-    }
+    MT.assert(valid.size > 0, "random-once should have valid choices");
 
     const vars = /** @type {Record<string, string>} */ (State.variables);
 

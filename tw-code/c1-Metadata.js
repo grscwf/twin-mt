@@ -29,7 +29,7 @@ const metaKnownKeys = {};
  */
 const metaWarnUnknownKey = (key) => {
   if (!(key in metaKnownKeys)) {
-    MT.diag(`Warning: unknown metadata key ${key}`);
+    MT.warn(`Unknown metadata key ${key}`);
     return true;
   }
   return false;
@@ -41,7 +41,7 @@ const metaWarnUnknownKey = (key) => {
  */
 const metaWarnKnownKey = (key) => {
   if (key in metaKnownKeys) {
-    MT.diag(`Warning: metadata key ${key} already exists.`);
+    MT.warn(`Metadata key ${key} already exists.`);
     return true;
   }
   return false;
@@ -182,9 +182,7 @@ const metaReadFromSave = (save) => {
   }
   metaCopyToVars();
   if (unlocks) {
-    $(document).one(":passagestart", () => {
-      MT.diag("Note: The Archives have unlocked some more entries.");
-    });
+    MT.note("The Archives have unlocked some more entries.");
   }
 };
 

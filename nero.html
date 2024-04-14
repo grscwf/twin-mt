@@ -471,10 +471,16 @@ meta-text {
   color: #000;
   font-size: 12px;
   margin-bottom: 8px;
+  max-width: 30em;
   padding: 4px 8px;
   pointer-events: auto;
   text-align: left;
+  white-space: pre-line;
   word-break: break-word;
+}
+
+.diag-title {
+  font-weight: bold;
 }
 
 .diag-close,
@@ -490,7 +496,6 @@ meta-text {
 
 .diag-trace {
   display: block;
-  white-space: pre-line;
 }
 /* twine-user-stylesheet #3: "c3-Archives.css" */
 .arc-disabled {
@@ -1893,24 +1898,19 @@ let diagWasSeen = false;
 
 const diagProblemTypes = ["fail"];
 
-/**
- * Show a generic diag message.
- * @arg {unknown[]} args
- */
-MT.diag = (...args) => {
-  if (typeof args[0] === "string") {
-    diagEmit({ type: "diag", text: args[0], values: args.slice(1) });
-  } else {
-    diagEmit({ type: "diag", values: args });
-  }
+/** @type {Record<string, string>} */
+const diagTitles = {
+  error: "Error",
+  note: "Note",
+  warn: "Warning",
 };
 
 /**
- * Show a fail message.
- * @type {(text: string, context?: MacroContext) => void}
+ * Show a note.
+ * @type {(text: string) => void}
  */
-MT.fail = (text, context) => {
-  diagEmit({ type: "fail", text, context, showDebug: true });
+MT.note = (text) => {
+  diagEmit({ type: "note", text });
 };
 
 /**
@@ -1922,18 +1922,29 @@ MT.warn = (text) => {
 };
 
 /**
+ * Show an error message.
+ * @type {(text: string, context?: MacroContext) => void}
+ */
+MT.error = (text, context) => {
+  diagEmit({ type: "error", text, context, showDebug: true });
+};
+
+/**
+ * If val is falsy, show an assertion failure and throw an error.
  * @arg {boolean | null | undefined} val
  * @arg {string} should
  * @arg {MacroContext} [context]
- * @returns {asserts val}
+ * @return {asserts val}
  */
 MT.assert = (val, should, context) => {
-  if (val) return;
-  MT.fail(should, context);
-  throw new Error(`Assertion failed: ${should}`);
+  if (!val) {
+    const text = `Assertion failed: ${should}`;
+    MT.error(text, context);
+    throw new Error(text);
+  }
 };
 
-Macro.add("em-assert", {
+Macro.add("mt-assert", {
   skipArgs: true,
   handler: function () {
     const expr = this.args.full;
@@ -2008,26 +2019,24 @@ const diagEmit = (diag) => {
   let addButtons = false;
   if (!box.length || !box.hasClass(`diag-box-${type}`)) {
     box = $(`<div class="diag-box diag-box-${type}">`).appendTo(outer);
-    addButtons = true;
-  }
-
-  let item = $(`<div class="diag-item">`).appendTo(box);
-
-  if (addButtons) {
+    const title = diagTitles[type] || "Note";
+    $(`<span class="diag-title">`).text(title).appendTo(box);
     $(`<a class="diag-close">[close]</a>`)
       .on("click", () => {
         box.remove();
       })
-      .appendTo(item);
+      .appendTo(box);
     if (diag.showDebug && setup.playtest) {
       $(`<a class="diag-debug">[debug]</a>`)
         .on("click", () => {
           diagDebugStop = true;
           Engine.play(State.passage, true);
         })
-        .appendTo(item);
+        .appendTo(box);
     }
   }
+
+  let item = $(`<div class="diag-item">`).appendTo(box);
 
   if (diag.text) {
     $(`<span class="diag-text">`).text(diag.text).appendTo(item);
@@ -2209,7 +2218,7 @@ const metaKnownKeys = {};
  */
 const metaWarnUnknownKey = (key) => {
   if (!(key in metaKnownKeys)) {
-    MT.diag(`Warning: unknown metadata key ${key}`);
+    MT.warn(`Unknown metadata key ${key}`);
     return true;
   }
   return false;
@@ -2221,7 +2230,7 @@ const metaWarnUnknownKey = (key) => {
  */
 const metaWarnKnownKey = (key) => {
   if (key in metaKnownKeys) {
-    MT.diag(`Warning: metadata key ${key} already exists.`);
+    MT.warn(`Metadata key ${key} already exists.`);
     return true;
   }
   return false;
@@ -2362,9 +2371,7 @@ const metaReadFromSave = (save) => {
   }
   metaCopyToVars();
   if (unlocks) {
-    $(document).one(":passagestart", () => {
-      MT.diag("Note: The Archives have unlocked some more entries.");
-    });
+    MT.note("The Archives have unlocked some more entries.");
   }
 };
 
@@ -2418,10 +2425,10 @@ metaInit();
 const warnUnknownMetadata = () => {
   for (const [k, v] of MT.mdEntries()) {
     if (!MT.mdKnown(k)) {
-      MT.diag("Warning: unknown metadata:", k);
+      MT.warn(`Unknown metadata ${k}`);
     }
   }
-}
+};
 
 const deleteOldStorage = () => {
   session.delete("mt-log-1");
@@ -2429,7 +2436,7 @@ const deleteOldStorage = () => {
   localStorage.removeItem("vp-1");
   localStorage.removeItem("vp-marks-enabled");
   localStorage.removeItem("tabIdLeases");
-}
+};
 
 const migrateMetadata = () => {
   const rec = MT.mdRecord();
@@ -2461,7 +2468,7 @@ const migrateMetadata = () => {
 
   rename("mg_notesNoTrail", "mi_notesNoTrail");
   rename("notes", "mi_notes");
-}
+};
 
 const migrateNotes = () => {
   const original = State.metadata.get("mi_notes") || "";
@@ -2471,17 +2478,17 @@ const migrateNotes = () => {
   if (fixed !== original) {
     State.metadata.set("mi_notes", fixed);
   }
-}
+};
 
 const checkSessionVersion = () => {
   const ver = State.variables.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
-  MT.diag(
-    `Warning: Current session is from a different version of the game.` +
+  MT.warn(
+    `Current session is from a different version of the game.` +
       ` Some things may not work correctly.` +
       ` ("${ver}" !== "${setup.version}")`
   );
-}
+};
 
 /** @type {(save: import("twine-sugarcube").SaveObject) => void} */
 const checkSaveVersion = (save) => {
@@ -2492,13 +2499,13 @@ const checkSaveVersion = (save) => {
   const ver = V.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
   $(document).one(":passagestart", () => {
-    MT.diag(
-      `Warning: Saved game is from a different version of the game.` +
+    MT.warn(
+      `Saved game is from a different version of the game.` +
         ` Some things may not work correctly.` +
         ` ("${ver}" !== "${setup.version}")`
     );
   });
-}
+};
 
 const migrateInit = () => {
   deleteOldStorage();
@@ -2509,7 +2516,7 @@ const migrateInit = () => {
 
   Save.onLoad.add((save) => checkSaveVersion(save));
   $(document).on(":storyready", checkSessionVersion);
-}
+};
 
 migrateInit();
 
@@ -2862,7 +2869,7 @@ Macro.add("arousal-bar", {
       }
     }
     if (pos === links.length) {
-      MT.diag(`warning: missed g_choiceTaken [${target.innerText}]`);
+      MT.warn(`Missed g_choiceTaken [${target.innerText}]`);
     } else {
       vars.g_choiceTaken = pos;
     }
@@ -2873,7 +2880,7 @@ Macro.add("arousal-bar", {
     if (ev.ctrlKey && ev.key === "'") {
       const url = getUrl();
       navigator.clipboard.writeText(url);
-      MT.diag("URL copied to clipboard", url);
+      MT.note(`URL copied to clipboard: ${url}`);
     }
   }
 
@@ -3083,7 +3090,7 @@ Macro.add("checkpoint-load", {
     const cp = /** @type {Checkpoint} */ (vars[varName]);
     const lost = State.turns - State.length;
     if (cp.turn < lost) {
-      MT.diag(
+      MT.warn(
         `Sorry! Checkpoint: ${cp.desc} (turn ${cp.turn})` +
           ` is no longer in the history`
       );
@@ -4320,10 +4327,7 @@ Macro.add("random-once", {
       }
     }
 
-    if (valid.size === 0) {
-      MT.fail(`random-once should have valid choices`);
-      return;
-    }
+    MT.assert(valid.size > 0, "random-once should have valid choices");
 
     const vars = /** @type {Record<string, string>} */ (State.variables);
 
@@ -5441,19 +5445,19 @@ const sectCheckAll = () => {
   for (const p of Story.lookupWith(() => true)) {
     const sect = sectOf(p.title);
     if (!sectDefs[sect] && !sectsUsed.has(sect)) {
-      MT.diag(`Warning: [\[${p.title}]] section ${sect} not defined`);
+      MT.warn(`[\[${p.title}]] section ${sect} not defined`);
     }
     sectsUsed.add(sect);
 
     if (sect === "other" && !sectSpecial.has(p.title)) {
-      MT.diag(`Warning: [\[${p.title}]] should have a section code`);
+      MT.warn(`[\[${p.title}]] should have a section code`);
     }
   }
 
   // Verify all section tags are used.
   for (const sect of Object.keys(sectDefs)) {
     if (!sectsUsed.has(sect)) {
-      MT.diag(`Warning: section ${sect} is never used`);
+      MT.warn(`Section ${sect} is never used`);
     }
   }
 
@@ -5462,7 +5466,7 @@ const sectCheckAll = () => {
   for (const [sect, def] of Object.entries(sectDefs)) {
     const typos = Object.keys(def).filter((k) => expectedKeys.indexOf(k) < 0);
     if (typos.length) {
-      MT.diag(`Warning: sectionDefs.${sect} has unknown keys [${typos}]`);
+      MT.warn(`sectionDefs.${sect} has unknown keys [${typos}]`);
     }
   }
 };
@@ -5485,7 +5489,7 @@ MT.checkSectionState = (stateObj, sectName, quietly, onlySet) => {
     if (!ok) {
       if (quietly) return false;
       allOk = false;
-      MT.fail(`${vn} should be ${val} in ${sectName}, not ${stateObj[vn]}`);
+      MT.error(`${vn} should be ${val} in ${sectName}, not ${stateObj[vn]}`);
     }
   }
   return allOk;
@@ -6898,7 +6902,7 @@ Macro.add("vi-always", {
       // force a traced read, so it can be toggled
       const vars = /** @type {Record<string, unknown>} */ (State.variables);
       const read = vars[vname];
-      MT.fail(`vi-always ${vname} ${exp}, but actual value is ${read}`);
+      MT.error(`${vname} should be ${exp}, actual value ${read}`);
       return;
     }
     alwaysVars.set(vname, exp);
@@ -6913,7 +6917,6 @@ Macro.add("vi-always-if", {
   handler: function () {
     if (State.temporary.isTranscript) return;
     const [cond, vname, exp] = this.args;
-    const sect = MT.sectHere();
     if (MT.varExpect(vname) != null && !withinInclude(this)) {
       MT.warn(`vi-always-if ${cond} ${vname} is unnecessary`);
     }
@@ -6923,9 +6926,7 @@ Macro.add("vi-always-if", {
         // force a traced read, so it can be toggled
         const vars = /** @type {Record<string, unknown>} */ (State.variables);
         const read = vars[vname];
-        MT.fail(
-          `vi-always-if ${cond} ${vname} ${exp}, but actual value is ${read}`
-        );
+        MT.error(`${cond} ${vname} should be ${exp}; actual value ${read}`);
         return;
       }
       alwaysVars.set(vname, exp);
@@ -11218,7 +11219,7 @@ MT.mdDefUnsaved("mg_knotYes");
     try {
       const box = MT.jqUnwrap(inner).getBoundingClientRect();
       if (box.width === 0) {
-        MT.diag("failed to render in splitText");
+        MT.warn("Failed to render in splitText.");
         const block = document.createDocumentFragment();
         $(rendered).contents().appendTo(block);
         return { height, blocks: [block] };
@@ -11720,7 +11721,7 @@ const checkFlags = () => {
       if (imp[y] === false) {
         const yf = flags[y];
         if (yf == null || yf.implies == null || yf.implies[x] !== false) {
-          MT.diag(`Warning: missing contrapositive: ${x} implies !${y}`);
+          MT.warn(`Missing contrapositive: ${x} implies !${y}`);
         }
       }
     });
@@ -11992,7 +11993,7 @@ MT.checkState = (state, used, interactive, activeState) => {
         if (!interactive) return false;
         const expStr =
           typeof exp !== "boolean" ? `${y} === ${exp}` : exp ? y : `!${y}`;
-        MT.fail(
+        MT.error(
           `${x} === ${state[x]} should imply ${expStr}; currently, ${y} === ${state[y]}`
         );
       }
@@ -12009,7 +12010,7 @@ MT.checkState = (state, used, interactive, activeState) => {
     if (rules.impossible) {
       if (!interactive) return false;
       const sVal = MT.enumSymbol(x, state[x]);
-      MT.fail(`${x} === ${sVal} should be impossible`);
+      MT.error(`${x} === ${sVal} should be impossible`);
       continue;
     }
     if (used && !used.has(x)) continue;
@@ -12022,7 +12023,7 @@ MT.checkState = (state, used, interactive, activeState) => {
         const expStr =
           typeof exp !== "boolean" ? `$[y} === ${exp}` : exp ? y : `!${y}`;
         const sVal = MT.enumSymbol(x, state[x]);
-        MT.fail(
+        MT.error(
           `${x} === ${sVal} should imply ${expStr}; currently, ${y} === ${state[y]}`
         );
       }
@@ -12473,7 +12474,7 @@ const neroKeywordInit = () => {
     const isMenu = tags().includes("is-menu");
     const kwAnnounce = MT.untracedGet("n_kwAnnounce");
     if (!T.kwUnlocking && kwAnnounce != null && !isMenu) {
-      MT.fail(`missing kw-announce for ${kwAnnounce}`);
+      MT.error(`missing kw-announce for ${kwAnnounce}`);
     }
   });
 }
@@ -13368,7 +13369,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -15730,7 +15731,7 @@ He&#39;s still bound to the wooden contraption, and now his head is feeling even
 [[Continue|n1a Endgame 3]]
 &lt;&lt;/fade-in&gt;&gt;
 
-&lt;&lt;em-assert !$n_mirrorTapped&gt;&gt;
+&lt;&lt;mt-assert !$n_mirrorTapped&gt;&gt;
 &lt;&lt;run
   delete $n_dimCross;
   delete $n_dimDesk;
@@ -16841,7 +16842,7 @@ He shakes his head, nods, but then shakes his head again.
 
 /* If timing is adjusted to allow wantTouch before receptive,
    then several &quot;ask ivex&quot; passages need to be revised. */
-&lt;&lt;em-assert $n_magicPhase &lt; MP_wantTouch&gt;&gt;
+&lt;&lt;mt-assert $n_magicPhase &lt; MP_wantTouch&gt;&gt;
 
 &lt;&lt;n1-patience 4 3&gt;&gt;
   Ivex (the Magnificent) speaks. &quot;Again I ask. Who sent you?&quot;
@@ -16861,7 +16862,7 @@ He shakes his head, nods, but then shakes his head again.
 &lt;&lt;include &quot;n1x Actions&quot;&gt;&gt;
 
 &lt;ul class=actions&gt;
-  &lt;&lt;em-assert !$n_subby &amp;&amp; !$n_tough&gt;&gt;
+  &lt;&lt;mt-assert !$n_subby &amp;&amp; !$n_tough&gt;&gt;
 
   &lt;&lt;mtl [[n1cn Charm]]&gt;&gt;
     &lt;&lt;if $n_abused&gt;&gt;
@@ -16886,7 +16887,7 @@ He shakes his head, nods, but then shakes his head again.
   $n_magicAction
 &lt;/ul&gt;
 
-&lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+&lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
 &lt;&lt;set $n_ivexContext = IC_distant&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="62" name="n1cn Glitched Guild 1" tags="mt-ready" position="3225,3800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
@@ -17151,8 +17152,8 @@ He does not know what to do next.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="68" name="n1cn Ivex Desc" tags="mt-ready" position="1775,3175" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n_abused n_naked&gt;&gt;
-&lt;&lt;em-assert !$n_abused || !$n_naked&gt;&gt;
-&lt;&lt;em-assert $n_magicPhase &lt;= MP_triedMagic&gt;&gt;
+&lt;&lt;mt-assert !$n_abused || !$n_naked&gt;&gt;
+&lt;&lt;mt-assert $n_magicPhase &lt;= MP_triedMagic&gt;&gt;
 
 Ivex is a large black panther, unusually beefy for the species.
 Panthers tend to be smaller felines,
@@ -17219,7 +17220,7 @@ Not that Nero would ever tell that to his
 &lt;&lt;n1-warn&gt;&gt;
   /* If timing is adjusted to allow wantTouch before receptive,
   then several &quot;ask ivex&quot; passages need to be revised. */
-  &lt;&lt;em-assert $n_magicPhase &lt; MP_wantTouch&gt;&gt;
+  &lt;&lt;mt-assert $n_magicPhase &lt; MP_wantTouch&gt;&gt;
 
   Ivex sneers. &quot;Do you think you&#39;re my equal?&quot;
 &lt;&lt;n1-insist&gt;&gt;
@@ -17252,13 +17253,13 @@ Not that Nero would ever tell that to his
   $n_magicAction
 &lt;/ul&gt;
 
-&lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+&lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
 &lt;&lt;set $n_afterItch = &quot;&lt;&lt;mta &#39;n1cx Start Candle&#39;&gt;&gt;Continue&lt;&lt;/mta&gt;&gt;&quot;&gt;&gt;
 &lt;&lt;set $n_ivexContext = IC_distant&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="70" name="n1cn Ivex Intro 1" tags="mt-ready" position="1775,3325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n_abused n_naked&gt;&gt;
-&lt;&lt;em-assert !$n_abused || !$n_naked&gt;&gt;
+&lt;&lt;mt-assert !$n_abused || !$n_naked&gt;&gt;
 
 &lt;&lt;kw-announce&gt;&gt;
 
@@ -17348,7 +17349,7 @@ I really hope you make the right choice.&quot;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="71" name="n1cn Ivex Intro 2" tags="mt-ready" position="1900,3325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n_abused n_naked&gt;&gt;
-&lt;&lt;em-assert !$n_abused || !$n_naked&gt;&gt;
+&lt;&lt;mt-assert !$n_abused || !$n_naked&gt;&gt;
 
 &quot;There must be some mistake,&quot;
 &lt;&lt;if $n_abused&gt;&gt;
@@ -17374,7 +17375,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 [[Continue|n1cn Ivex Intro 3]]</tw-passagedata><tw-passagedata pid="72" name="n1cn Ivex Intro 3" tags="mt-ready" position="2025,3325" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n_abused n_naked&gt;&gt;
-&lt;&lt;em-assert !($n_abused &amp;&amp; $n_naked)&gt;&gt;
+&lt;&lt;mt-assert !($n_abused &amp;&amp; $n_naked)&gt;&gt;
 
 &lt;&lt;if $n_abused&gt;&gt;
   Nero mentally checks off one step in his strategic map.
@@ -17437,7 +17438,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;n1-warn&gt;&gt;
   /* If timing is adjusted to allow wantTouch before receptive,
   then several &quot;ask ivex&quot; passages need to be revised. */
-  &lt;&lt;em-assert $n_magicPhase &lt; MP_wantTouch&gt;&gt;
+  &lt;&lt;mt-assert $n_magicPhase &lt; MP_wantTouch&gt;&gt;
 
   Ivex asks in a flat tone of voice,
   &quot;What makes you think I would accept you as my superior?&quot;
@@ -17452,7 +17453,7 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
 &lt;&lt;include &quot;n1x Actions&quot;&gt;&gt;
 
 &lt;ul class=actions&gt;
-  &lt;&lt;em-assert !$n_subby &amp;&amp; !$n_tough&gt;&gt;
+  &lt;&lt;mt-assert !$n_subby &amp;&amp; !$n_tough&gt;&gt;
 
   &lt;&lt;mtl-if $n_abused [[n1cn Support Group 1]] &quot;too confident&quot;&gt;&gt;
     &quot;No, that isn&#39;t what I meant!&quot;
@@ -17473,13 +17474,13 @@ Ivex throws the paper into the air and makes a gesture, causing it to burst into
   $n_magicAction
 &lt;/ul&gt;
 
-&lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+&lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
 &lt;&lt;set $n_afterItch = &quot;&lt;&lt;mta &#39;n1cx Start Candle&#39;&gt;&gt;Continue&lt;&lt;/mta&gt;&gt;&quot;&gt;&gt;
 &lt;&lt;set $n_ivexContext = IC_distant&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="74" name="n1cn Rebuff" tags="mt-ready big-mood" position="2275,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n_abused n_naked&gt;&gt;
-&lt;&lt;em-assert !$n_subby &amp;&amp; !$n_tough&gt;&gt;
+&lt;&lt;mt-assert !$n_subby &amp;&amp; !$n_tough&gt;&gt;
 
 &lt;&lt;if $n_abused&gt;&gt;
   Nero lets out a soft growl. His brutally abused balls argue against
@@ -18455,7 +18456,7 @@ to make a simple mistake.
 [[Continue|n1cr Ivex Bait]]
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="94" name="n1cr Ivex Bait" tags="mt-ready" position="4375,4025" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_abused n_mageSight&gt;&gt;
-&lt;&lt;em-assert !$n_tough&gt;&gt;
+&lt;&lt;mt-assert !$n_tough&gt;&gt;
 
 Ivex stops pacing and approaches the
 &lt;&lt;= $n_naked ? &quot;naked&quot; : &quot;bound&quot;&gt;&gt; wolf.
@@ -18639,7 +18640,7 @@ of Ivex if the panther fails to deduce this explanation himself.
   $n_magicAction
 &lt;/ul&gt;
 
-&lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+&lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
 &lt;&lt;set $n_ivexContext = $n_ivexNear ? IC_guildName : IC_distant&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="98" name="n1cr Ivex Trap (4,3)" tags="mt-ready" position="4550,3975" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_abused n_mageSight n_naked&gt;&gt;
@@ -19645,7 +19646,7 @@ apprentice? Enough of these mind games...&quot;
 
 &lt;&lt;n1-patience 4 3&gt;&gt;
   /* using vi-always will complain about the n_ivexNear read below */
-  &lt;&lt;em-assert $n_ivexNear&gt;&gt;
+  &lt;&lt;mt-assert $n_ivexNear&gt;&gt;
   Ivex removes his hand from the wolf&#39;s muzzle and uses his palm
   to lightly slap the wolf&#39;s balls.
   &lt;&lt;if $n_abused&gt;&gt;
@@ -20299,7 +20300,7 @@ Nero can&#39;t help cringing and shivering anyway.
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="134" name="n1cs Plead Reason 1" tags="mt-ready" position="5025,2700" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
-&lt;&lt;em-assert !$n_abused || $n_tough&gt;&gt;
+&lt;&lt;mt-assert !$n_abused || $n_tough&gt;&gt;
 
 &lt;&lt;if $n_ivexGrabbing&gt;&gt;
   &lt;&lt;if $n_tough&gt;&gt;
@@ -20979,7 +20980,7 @@ But of course he&#39;ll have to breathe eventually. No point delaying the inevit
 &lt;&lt;vi-always n_naked true&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
 &lt;&lt;vi-ignore-if n_subby n_tough n_abused&gt;&gt;
-&lt;&lt;em-assert $n_ivexNear&gt;&gt;
+&lt;&lt;mt-assert $n_ivexNear&gt;&gt;
 
 &lt;&lt;barbs-announce maybe&gt;&gt;
 
@@ -21878,7 +21879,7 @@ disappears with a &lt;em&gt;fwoosh&lt;/em&gt;.
   $n_magicAction
 &lt;/ul&gt;
 
-&lt;&lt;em-assert $n_ivexNear&gt;&gt;
+&lt;&lt;mt-assert $n_ivexNear&gt;&gt;
 &lt;&lt;set $n_ivexContext = IC_whoSentYou&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="159" name="n1e Light Squeeze (1,1)" tags="mt-ready" position="7125,3400" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_ivexNear true&gt;&gt;
@@ -21915,7 +21916,7 @@ disappears with a &lt;em&gt;fwoosh&lt;/em&gt;.
   $n_magicAction
 &lt;/ul&gt;
 
-&lt;&lt;em-assert $n_ivexNear&gt;&gt;
+&lt;&lt;mt-assert $n_ivexNear&gt;&gt;
 &lt;&lt;set $n_ivexContext = IC_whoSentYou&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="160" name="n1e Pull" tags="mt-ready" position="7375,3450" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
@@ -23879,7 +23880,7 @@ Incredulous, Nero says the phrase out loud. &quot;Carpe dick?&quot;
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="212" name="n1f Clever X1" tags="mt-ready section-start" position="9275,4100" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
-&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
+&lt;&lt;mt-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;if $n_tooCleverHarsh&gt;&gt;
   &lt;&lt;checkpoint-save n_checkpoint1 &quot;Password Revelation (Harsh)&quot;&gt;&gt;
@@ -25589,7 +25590,7 @@ What does &lt;em&gt;that&lt;/em&gt; mean?
 [[Continue|n1s Cast Itch 3]]
 &lt;&lt;/fade-in&gt;&gt;
 
-&lt;&lt;em-assert !$n_mirrorTapped&gt;&gt;
+&lt;&lt;mt-assert !$n_mirrorTapped&gt;&gt;
 &lt;&lt;run
   delete $n_dimCross;
   delete $n_dimDesk;
@@ -26155,7 +26156,7 @@ He raises an arm and snaps his fingers...
 ?P
 &lt;&lt;mta &quot;n1p Barbs Slow 1&quot;&gt;&gt;Continue&lt;&lt;/mta&gt;&gt;
 
-&lt;&lt;em-assert !$n_mirrorTapped&gt;&gt;
+&lt;&lt;mt-assert !$n_mirrorTapped&gt;&gt;
 &lt;&lt;run
   delete $n_dimCross;
   delete $n_dimDesk;
@@ -26641,7 +26642,7 @@ if (T.toTry.length === 0) {
 }
 T.toTry.sort();
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="277" name="n1s Help Device" tags="mt-ready" position="4525,775" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;em-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
+&lt;&lt;mt-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
   $n_candleHorny ? &quot;whines&quot; :
@@ -26697,11 +26698,11 @@ T.toTry.sort();
 
 &lt;&lt;switch $n_ivexContext&gt;&gt;
 &lt;&lt;case `IC_gone`&gt;&gt;
-  &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+  &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   /* nothing */
 &lt;&lt;case `IC_distant`&gt;&gt;
-  &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+  &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   /* nothing, already mentioned above */
 &lt;&lt;case `IC_guildName`&gt;&gt;
@@ -26786,7 +26787,7 @@ $n_afterAction
 &lt;&lt;set $n_rememberPlease = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="278" name="n1s Help Touch" tags="mt-ready" position="4775,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_rememberPlease true&gt;&gt;
-&lt;&lt;em-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
+&lt;&lt;mt-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
 
 &lt;&lt;run
   _speaks =
@@ -26809,11 +26810,11 @@ Nero _speaks to the Sprite, &quot;Please, help!&quot;
 
 &lt;&lt;switch $n_ivexContext&gt;&gt;
 &lt;&lt;case `IC_gone`&gt;&gt;
-  &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+  &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   /* nothing */
 &lt;&lt;case `IC_distant`&gt;&gt;
-  &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+  &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   ?P
   Ivex sees the wolf whispering. &quot;What are you mumbling about now?&quot;
@@ -26931,7 +26932,7 @@ $n_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="279" name="n1s Impatient" tags="mt-ready" position="5100,800" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_magicPhase `MP_onHold`&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
-&lt;&lt;em-assert !$n_candleHorny || $n_ivexNear || $n_ivexGone&gt;&gt;
+&lt;&lt;mt-assert !$n_candleHorny || $n_ivexNear || $n_ivexGone&gt;&gt;
 
 &lt;&lt;run
   if (!$n_holdPhase) {
@@ -26952,11 +26953,11 @@ $n_afterAction
 
   &lt;&lt;switch $n_ivexContext&gt;&gt;
   &lt;&lt;case `IC_gone`&gt;&gt;
-    &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+    &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     /* nothing */
   &lt;&lt;case `IC_distant`&gt;&gt;
-    &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+    &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     ?P
     Ivex notices. &quot;What did you say? You must speak louder!&quot;
@@ -27040,11 +27041,11 @@ $n_afterAction
 
   &lt;&lt;switch $n_ivexContext&gt;&gt;
   &lt;&lt;case `IC_gone`&gt;&gt;
-    &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+    &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     /* nothing */
   &lt;&lt;case `IC_distant`&gt;&gt;
-    &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+    &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     ?P
     Ivex is adjusting his pants at the crotch
@@ -27110,11 +27111,11 @@ $n_afterAction
 
   &lt;&lt;switch $n_ivexContext&gt;&gt;
   &lt;&lt;case `IC_gone`&gt;&gt;
-    &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+    &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     /* nothing */
   &lt;&lt;case `IC_distant`&gt;&gt;
-    &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+    &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     ?P
     Ivex twitches an ear, but otherwise shows no sign of
@@ -27166,11 +27167,11 @@ $n_afterAction
 
   &lt;&lt;switch $n_ivexContext&gt;&gt;
   &lt;&lt;case `IC_gone`&gt;&gt;
-    &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+    &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     /* nothing */
   &lt;&lt;case `IC_distant`&gt;&gt;
-    &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+    &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
     &lt;&lt;vi-ignore n_candleLit&gt;&gt;
     ?P
     Ivex notices the whispering, but does not respond.
@@ -27947,7 +27948,7 @@ gifted the base axiom to Rowsmutter after the rabbit proved to be a good lay.
 &lt;&lt;vi-always n_magicPhase `MP_lockedOut`&gt;&gt;
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
-&lt;&lt;em-assert !$n_candleHorny || $n_ivexNear || $n_ivexGone&gt;&gt;
+&lt;&lt;mt-assert !$n_candleHorny || $n_ivexNear || $n_ivexGone&gt;&gt;
 
 &lt;&lt;include [[n1s Locked Out Script]]&gt;&gt;
 
@@ -28139,7 +28140,7 @@ $n_afterAction
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore n_ivexReceptive&gt;&gt;
-&lt;&lt;em-assert !$n_candleHorny&gt;&gt;
+&lt;&lt;mt-assert !$n_candleHorny&gt;&gt;
 
 Pyron nodes are flat, square-ish crystals that have become
 a common substrate for the preparation and storage
@@ -28184,7 +28185,7 @@ Oftentimes it is not.
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore n_ivexReceptive&gt;&gt;
-&lt;&lt;em-assert !$n_candleHorny&gt;&gt;
+&lt;&lt;mt-assert !$n_candleHorny&gt;&gt;
 
 Traditional magic mirrors are delicate and fickle,
 more an artifact of prestige and legends than a practical
@@ -28225,7 +28226,7 @@ Usually the images chosen are pornographic.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="295" name="n1s Say Device 1" tags="mt-ready" position="4400,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
-&lt;&lt;em-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
+&lt;&lt;mt-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
   $n_candleHorny ? &quot;murmurs&quot; :
@@ -28287,11 +28288,11 @@ Usually the images chosen are pornographic.
 
 &lt;&lt;switch $n_ivexContext&gt;&gt;
 &lt;&lt;case `IC_gone`&gt;&gt;
-  &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+  &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   /* nothing */
 &lt;&lt;case `IC_distant`&gt;&gt;
-  &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+  &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   ?P
   Ivex notices the whispering. &quot;What was that you said?&quot;
@@ -28364,7 +28365,7 @@ $n_afterAction
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="296" name="n1s Say Lance" tags="mt-ready" position="4650,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
-&lt;&lt;em-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
+&lt;&lt;mt-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
 
 &lt;&lt;cv-ignore n_spriteQuiet&gt;&gt; /* trivial variation */
 &lt;&lt;cv-ignore n_opportunist&gt;&gt; /* trivial variation */
@@ -28386,11 +28387,11 @@ $n_afterAction
 
 &lt;&lt;switch $n_ivexContext&gt;&gt;
 &lt;&lt;case `IC_gone`&gt;&gt;
-  &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+  &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   /* nothing */
 &lt;&lt;case `IC_distant`&gt;&gt;
-  &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+  &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   ?P
   Ivex does not seem to notice.
@@ -28521,8 +28522,8 @@ $n_afterAction
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 
 &lt;&lt;set _numTried = JSON.parse($n_passTried || &quot;[]&quot;).length&gt;&gt;
-&lt;&lt;em-assert _numTried &gt;= 1&gt;&gt;
-&lt;&lt;em-assert _numTried &lt;= 3&gt;&gt;
+&lt;&lt;mt-assert _numTried &gt;= 1&gt;&gt;
+&lt;&lt;mt-assert _numTried &lt;= 3&gt;&gt;
 
 &lt;&lt;run
   if (_isTranscript &amp;&amp; !$n_ivexContext) {
@@ -28593,12 +28594,12 @@ $n_afterAction
 
 &lt;&lt;switch $n_ivexContext&gt;&gt;
 &lt;&lt;case `IC_gone`&gt;&gt;
-  &lt;&lt;em-assert $n_ivexGone&gt;&gt;
+  &lt;&lt;mt-assert $n_ivexGone&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   /* nothing */
 
 &lt;&lt;case `IC_distant`&gt;&gt;
-  &lt;&lt;em-assert !$n_ivexNear&gt;&gt;
+  &lt;&lt;mt-assert !$n_ivexNear&gt;&gt;
   &lt;&lt;vi-ignore n_candleLit&gt;&gt;
   ?P
   Ivex seems to notice the whispering, but he merely shakes his head.
@@ -28780,7 +28781,7 @@ $n_afterAction
 &lt;&lt;vi-always n_candleHorny true&gt;&gt;
 
 /* mage-sight before cast will get cast action, not scan */
-&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
+&lt;&lt;mt-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;if !$n_ivexGone&gt;&gt;
   Nero scans the room, searching for any magic or energy that he can
@@ -28846,7 +28847,7 @@ $n_afterAction
 &lt;&lt;vi-always n_mageSight true&gt;&gt;
 
 /* mage-sight before cast will get cast action, not scan */
-&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
+&lt;&lt;mt-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;if !$n_scanned&gt;&gt;
   Nero scans the magic of the room.
@@ -29373,8 +29374,8 @@ careless with his security...
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore n_ivexReceptive&gt;&gt;
 &lt;&lt;vi-always n_candleHorny false&gt;&gt;
-&lt;&lt;em-assert !$n_opportunist&gt;&gt;
-&lt;&lt;em-assert !$n_spriteQuiet&gt;&gt;
+&lt;&lt;mt-assert !$n_opportunist&gt;&gt;
+&lt;&lt;mt-assert !$n_spriteQuiet&gt;&gt;
 
 &lt;&lt;kw-announce&gt;&gt;
 
@@ -29414,8 +29415,8 @@ the messages you didn&#39;t understand,
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 &lt;&lt;vi-ignore n_ivexReceptive&gt;&gt;
 &lt;&lt;vi-always n_candleHorny false&gt;&gt;
-&lt;&lt;em-assert !$n_opportunist&gt;&gt;
-&lt;&lt;em-assert !$n_spriteQuiet&gt;&gt;
+&lt;&lt;mt-assert !$n_opportunist&gt;&gt;
+&lt;&lt;mt-assert !$n_spriteQuiet&gt;&gt;
 
 A bell sound reverberates
 &lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
@@ -29448,8 +29449,8 @@ that I&#39;m unlikely to say to any of my subjects, ?master&quot;&lt;/span&gt;
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n_ivexReceptive&gt;&gt;
 &lt;&lt;vi-always n_candleHorny false&gt;&gt;
-&lt;&lt;em-assert !$n_opportunist&gt;&gt;
-&lt;&lt;em-assert !$n_spriteQuiet&gt;&gt;
+&lt;&lt;mt-assert !$n_opportunist&gt;&gt;
+&lt;&lt;mt-assert !$n_spriteQuiet&gt;&gt;
 
 Nero is amused that Ivex has not changed the Sprite&#39;s word of command
 to something other than &quot;Please&quot;.
@@ -29491,7 +29492,7 @@ But it&#39;s definitely an improvement over being just
 &lt;&lt;= MT.neroDidCast() ? &quot;helplessly&quot; : &quot;&quot;&gt;&gt;
 bound to
 &lt;&lt;if $n_ivexGone&gt;&gt;
-  &lt;&lt;em-assert $n_candleLit&gt;&gt;
+  &lt;&lt;mt-assert $n_candleLit&gt;&gt;
   a wooden cross, staring at that flickering red candle.
 &lt;&lt;else&gt;&gt;
   a wooden cross for the pleasures of this perverted panther.
@@ -29515,7 +29516,7 @@ $n_afterAction
 &lt;&lt;vi-always n_mirrorTaken false&gt;&gt;
 
 /* mage-sight before cast will get cast action, not scan */
-&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
+&lt;&lt;mt-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;if $n_candleHorny&gt;&gt;
   &lt;&lt;random-once n_mageSightHorny1&gt;&gt;
@@ -30193,7 +30194,7 @@ still call it Kelvin&#39;s Escape, with a laugh.
 &lt;&lt;vi-always n_magicPhase `MP_wantPass`&gt;&gt;
 &lt;&lt;vi-ignore n_candleLit&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
-&lt;&lt;em-assert !$n_candleHorny || $n_ivexNear || $n_ivexGone&gt;&gt;
+&lt;&lt;mt-assert !$n_candleHorny || $n_ivexNear || $n_ivexGone&gt;&gt;
 
 Unexpectedly, the Sprite whispers,
 &lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
@@ -31016,7 +31017,7 @@ Such as:
   At wantName, need name to go to wantTouch.
   If learned name from horny ask, ivex is gone.
 --&gt;
-&lt;&lt;em-assert !$n_bottleAskedHorny || $n_ivexGone&gt;&gt;
+&lt;&lt;mt-assert !$n_bottleAskedHorny || $n_ivexGone&gt;&gt;
 
 &lt;&lt;if $n_ivexGone&gt;&gt;
   Nero suspects that Ivex would have been eager
@@ -31142,8 +31143,8 @@ Such as:
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="330" name="n1x Cabinets" tags="mt-ready" position="5975,275" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 
-&lt;&lt;em-assert $n_mageSight &amp;&amp; $n_free ? $n_tooClever : true&gt;&gt;
-&lt;&lt;em-assert $n_cabinetsMageSight &amp;&amp; !$n_free ? $n_mageSight : true&gt;&gt;
+&lt;&lt;mt-assert $n_mageSight &amp;&amp; $n_free ? $n_tooClever : true&gt;&gt;
+&lt;&lt;mt-assert $n_cabinetsMageSight &amp;&amp; !$n_free ? $n_mageSight : true&gt;&gt;
 
 &lt;&lt;if $n_mageSight&gt;&gt;
   Against the walls of the room are several cabinets that
@@ -31869,7 +31870,7 @@ Well, however the cross is installed,
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="336" name="n1x Cross Free" tags="mt-ready inclusion" position="7125,2625" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_candleLit false&gt;&gt;
 &lt;&lt;vi-always n_ivexGone true&gt;&gt;
-&lt;&lt;em-assert !!$n_mageSight !== !!$n_deskBurned&gt;&gt;
+&lt;&lt;mt-assert !!$n_mageSight !== !!$n_deskBurned&gt;&gt;
 
 &lt;&lt;set _desk =
   $n_deskCleared ? &quot;grandiose desk&quot;
@@ -32524,7 +32525,7 @@ formed into any shape that can be imagined.
 &lt;&lt;vi-always n_ivexGone false&gt;&gt;
 
 /* can&#39;t get to wantPass without having been receptive for touch */
-&lt;&lt;em-assert $n_ivexWasReceptive&gt;&gt;
+&lt;&lt;mt-assert $n_ivexWasReceptive&gt;&gt;
 
 Ivex seems responsive enough right now. But Nero still hesitates.
 What question is best for obtaining the information he wants?
@@ -33118,8 +33119,8 @@ Unless the panther&#39;s energy source is enormous!
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="350" name="n1x Grav" tags="mt-ready" position="7675,1325" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_free false&gt;&gt;
 &lt;&lt;vi-always n_gravNoticed true&gt;&gt;
-&lt;&lt;em-assert !$n_gravAsked || $n_gravViewed&gt;&gt;
-&lt;&lt;em-assert !$n_gravKnown || $n_gravViewed&gt;&gt;
+&lt;&lt;mt-assert !$n_gravAsked || $n_gravViewed&gt;&gt;
+&lt;&lt;mt-assert !$n_gravKnown || $n_gravViewed&gt;&gt;
 
 &lt;&lt;cv-try n_magicPhase
   `MP_beforeCast` `MP_contact` `MP_tapLost`&gt;&gt;
@@ -35027,7 +35028,7 @@ With demonstrations.
 
 &lt;&lt;vi-always n_paintingKnown false&gt;&gt;
 
-&lt;&lt;em-assert MT.passWanted() || MP_wantTouch === $n_magicPhase&gt;&gt;
+&lt;&lt;mt-assert MT.passWanted() || MP_wantTouch === $n_magicPhase&gt;&gt;
 
 &lt;&lt;if MT.passWanted()&gt;&gt;
   The simplest way to trick Ivex into revealing the pantheress&#39;s
@@ -35153,7 +35154,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
   }
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="376" name="n1x Painting WantPass" tags="mt-ready inclusion" position="6625,825" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;em-assert !$n_free&gt;&gt;
+&lt;&lt;mt-assert !$n_free&gt;&gt;
 
 &lt;&lt;if $n_paintingKnown&gt;&gt;
   She seems... unsettlingly important to Ivex.
@@ -35173,7 +35174,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="377" name="n1x Painting WantTouch" tags="mt-ready inclusion" position="6625,650" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;if $n_paintingHoleTried&gt;&gt;
-  &lt;&lt;em-assert $n_paintingKnown&gt;&gt;
+  &lt;&lt;mt-assert $n_paintingKnown&gt;&gt;
   Fortunately, her mouth
   &lt;&lt;= $n_free ? &quot;didn&#39;t&quot; : &quot;doesn&#39;t&quot;&gt;&gt;
   seem to be the hole that the Sprite
@@ -35199,7 +35200,7 @@ a portrait of Ivy? I love her! She&#39;s my favorite artist.&quot;
 
 &lt;&lt;else&gt;&gt;
   &lt;!-- no opportunity to ask before this --&gt;
-  &lt;&lt;em-assert !$n_paintingKnown&gt;&gt;
+  &lt;&lt;mt-assert !$n_paintingKnown&gt;&gt;
 
   The wolf has a wild thought.
   Could it be that the portrait&#39;s mouth
@@ -36770,7 +36771,7 @@ And it&#39;s unlikely the wand will help him escape.
 &lt;&lt;vi-always n_ivexGone false&gt;&gt;
 &lt;&lt;cv-ignore n_opportunist n_spriteQuiet&gt;&gt; /* trivial variation */
 
-&lt;&lt;em-assert MP_wantTouch === $n_magicPhase&gt;&gt;
+&lt;&lt;mt-assert MP_wantTouch === $n_magicPhase&gt;&gt;
 
 Nero dramatically swivels his head toward
 &lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
@@ -37344,7 +37345,7 @@ on the wall.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="405" name="n1y Horny Globe 2" tags="mt-ready" position="6500,2550" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_globeAskedHorny true&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
-&lt;&lt;em-assert MT.passWanted()&gt;&gt;
+&lt;&lt;mt-assert MT.passWanted()&gt;&gt;
 
 Not far from the
 &lt;&lt;mta-no-loop [[n1y Horny Knife]]&gt;&gt;letter opener&lt;&lt;/mta-no-loop&gt;&gt;
@@ -38730,7 +38731,7 @@ He breathes deeply of lightly smoky air, and suddenly remembers.
 
 &lt;&lt;switch $n_lustTextPos&gt;&gt;
 &lt;&lt;case 1&gt;&gt;
-  &lt;&lt;em-assert !$n_candleHorny&gt;&gt;
+  &lt;&lt;mt-assert !$n_candleHorny&gt;&gt;
   /* 0,0 */
   Nero&#39;s cock is uncomfortably erect from his earlier exposure to Ivex&#39;s
   _candle, and the spicy scent is starting to dominate the air again.
@@ -38772,7 +38773,7 @@ He breathes deeply of lightly smoky air, and suddenly remembers.
   &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;case 3&gt;&gt;
-  &lt;&lt;em-assert $n_candleHorny&gt;&gt;
+  &lt;&lt;mt-assert $n_candleHorny&gt;&gt;
   /* 2,0 or 1,1 */
   &lt;&lt;if !$n_lustPointed&gt;&gt;
     _pointing
@@ -38794,7 +38795,7 @@ He breathes deeply of lightly smoky air, and suddenly remembers.
   &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;case 4&gt;&gt;
-  &lt;&lt;em-assert $n_candleHorny&gt;&gt;
+  &lt;&lt;mt-assert $n_candleHorny&gt;&gt;
   /* 3,0 or 2,1 */
   Nero stretches his head down as far as he can, extends his tongue
   as far as he can toward his
@@ -38809,7 +38810,7 @@ He breathes deeply of lightly smoky air, and suddenly remembers.
   But the thread breaks.
 
 &lt;&lt;case 5&gt;&gt;
-  &lt;&lt;em-assert $n_candleHorny&gt;&gt;
+  &lt;&lt;mt-assert $n_candleHorny&gt;&gt;
   /* 3,1 */
   Nero whines at his
   &lt;span class=arousal-3&gt;powerful&lt;/span&gt;
@@ -38827,7 +38828,7 @@ He breathes deeply of lightly smoky air, and suddenly remembers.
   and keeps licking at it, eager for more.
 
 &lt;&lt;case 6&gt;&gt;
-  &lt;&lt;em-assert $n_candleHorny&gt;&gt;
+  &lt;&lt;mt-assert $n_candleHorny&gt;&gt;
   /* 4,? or ?,2 -&gt; 4,2 */
   The bulging of Nero&#39;s throbbing
   &lt;&lt;= MT.impliedKnot() ? &quot;red&quot; : &quot;stiff&quot;&gt;&gt;
@@ -38857,7 +38858,7 @@ He breathes deeply of lightly smoky air, and suddenly remembers.
   the signal that will release them.
 
 &lt;&lt;case 7&gt;&gt;
-  &lt;&lt;em-assert $n_candleHorny&gt;&gt;
+  &lt;&lt;mt-assert $n_candleHorny&gt;&gt;
   /* 5,? or ?,3 */
   Nero&#39;s mind is flooded with
   &lt;span class=&quot;arousal-5&quot;&gt;overwhelming&lt;/span&gt;
@@ -38964,7 +38965,7 @@ There&#39;s only one sensible course of action now.
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="436" name="n2b Struggle Fail" tags="mt-ready" position="9675,3375" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_candleHorny true&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
-&lt;&lt;em-assert !$n_gravNoticed || !$n_mageSight&gt;&gt;
+&lt;&lt;mt-assert !$n_gravNoticed || !$n_mageSight&gt;&gt;
 
 The wolf&#39;s limbs are chafed and bruised from rubbing
 against the leather straps.
@@ -39554,9 +39555,9 @@ loses his energy tap!
 &lt;&lt;vi-always n_mageSight true&gt;&gt;
 &lt;&lt;vi-always n_mirrorTapped true&gt;&gt;
 
-&lt;&lt;em-assert MP_onHold !== $n_magicPhase&gt;&gt;
-&lt;&lt;em-assert MP_exitingHold !== $n_magicPhase&gt;&gt;
-&lt;&lt;em-assert MP_lockedOut !== $n_magicPhase&gt;&gt;
+&lt;&lt;mt-assert MP_onHold !== $n_magicPhase&gt;&gt;
+&lt;&lt;mt-assert MP_exitingHold !== $n_magicPhase&gt;&gt;
+&lt;&lt;mt-assert MP_lockedOut !== $n_magicPhase&gt;&gt;
 
 &lt;&lt;cv-ignore n_opportunist&gt;&gt; /* trivial difference */
 &lt;&lt;cv-try n_magicPhase `MP_wantTouch` `MP_wantPass`&gt;&gt;
@@ -39741,7 +39742,7 @@ and then he starts the work of setting himself free.
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="453" name="n2c Use Knife 2" tags="mt-ready section-start" position="10925,3525" size="100,200">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight&gt;&gt;
-&lt;&lt;em-assert MT.neroDidCast()&gt;&gt;
+&lt;&lt;mt-assert MT.neroDidCast()&gt;&gt;
 
 &lt;&lt;checkpoint-save n_checkpoint2 &quot;Cutting Loose&quot;&gt;&gt;
 
@@ -40322,7 +40323,7 @@ His stiff cock leads the way. The wolf follows. The door closes behind him.
 &gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="460" name="n2f Paw Off Forever 1" tags="mt-ready" position="11850,3500" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_mageSight n_extraHorny n_tooClever&gt;&gt;
-&lt;&lt;em-assert $n_pawed || $n_wandUsed&gt;&gt;
+&lt;&lt;mt-assert $n_pawed || $n_wandUsed&gt;&gt;
 
 Nero
 &lt;&lt;if $n_mirrorTaken&gt;&gt;

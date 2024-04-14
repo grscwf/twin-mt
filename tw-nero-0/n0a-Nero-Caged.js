@@ -323,7 +323,7 @@
     try {
       const box = MT.jqUnwrap(inner).getBoundingClientRect();
       if (box.width === 0) {
-        MT.diag("failed to render in splitText");
+        MT.warn("Failed to render in splitText.");
         const block = document.createDocumentFragment();
         $(rendered).contents().appendTo(block);
         return { height, blocks: [block] };
