@@ -45,7 +45,7 @@ MT.notesPopupInit = () => {
   }
 
   function restoreSession() {
-    const origin = V.n_notesOrigin;
+    const origin = V.g_notesOrigin;
     MT.nonNull(origin, "notesOrigin");
     T.savedVal = MT.notesGet(origin);
     T.editVal = noteStore.getItem("notes-single:" + origin) || T.savedVal;
@@ -66,7 +66,7 @@ MT.notesPopupInit = () => {
 
   /** @type {(val: string, overwrite?: boolean) => void} */
   function saveValue(val, overwrite) {
-    const origin = V.n_notesOrigin;
+    const origin = V.g_notesOrigin;
     MT.nonNull(origin, "notesOrigin");
     T.editVal = val;
     if (overwrite || !T.hasConflict) {

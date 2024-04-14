@@ -68,6 +68,8 @@ declare module "twine-sugarcube" {
     /** True if state was manipulated with a debug tool. */
     g_mutated?: boolean;
 
+    g_notesOrigin?: string;
+
     /** State for MT.rand */
     g_rand0?: number;
 
@@ -161,8 +163,6 @@ declare module "twine-sugarcube" {
 
     n_mirrorBroken?: boolean;
     n_mirrorMagicKnown?: boolean;
-
-    n_notesOrigin?: string;
 
     n_opportunist?: boolean;
 
