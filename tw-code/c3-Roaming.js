@@ -55,8 +55,8 @@ MT.forgetWalkHistory = () => {
 
 /** @type {(el: HTMLElement) => string} */
 const idOf = (el) => {
-  const title = $(el).attr("data-passage");
-  const code = $(el).attr("data-mta-code");
+  const title = $(el).attr("data-passage") || "";
+  const code = $(el).attr("data-mta-code") || "";
   return `${title}/${code}`;
 };
 
@@ -185,11 +185,11 @@ const roamNext = () => {
       if (step.i != null && i === step.i) {
         return true;
       }
-      const title = el.getAttribute("data-passage");
-      const code = el.getAttribute("data-mta-code") || null;
+      const title = el.getAttribute("data-passage") || "";
+      const code = el.getAttribute("data-mta-code") || "";
       return (
         title === step.t &&
-        (code == null || step.code == null || code === step.code)
+        (code === "" || step.code == null || code === step.code)
       );
     };
     for (let i = 0; i < links.length; i++) {

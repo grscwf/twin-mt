@@ -257,33 +257,32 @@ const diagBacktrace = (context) => {
   return trace;
 };
 
-/** @type {number | null} */
-let diagMarkTimeout = null;
-
-const diagMarkSeen = () => {
-  if (diagMarkTimeout != null) {
-    clearTimeout(diagMarkTimeout);
-  }
-  diagMarkTimeout = setTimeout(() => {
-    diagWasSeen = true;
-    diagMarkTimeout = setTimeout(() => {
-      diagWasSeen = false;
-      diagMarkTimeout = null;
-    }, 500);
-  }, 200);
+const diagClear = () => {
+  $("#diag-outer").remove();
+  MT.diagHasError = false;
+  MT.diagHasWarning = false;
+  MT.diagMessages = [];
+  diagQuiet = false;
+  diagDebugStop = false;
+  diagVeryQuiet = false;
+  diagWasSeen = false;
 };
 
 $(document).on(":passageinit", () => {
   if (diagWasSeen) {
-    $("#diag-outer").remove();
-    MT.diagHasError = false;
-    MT.diagHasWarning = false;
-    MT.diagMessages = [];
-    diagQuiet = false;
-    diagDebugStop = false;
-    diagVeryQuiet = false;
-    diagWasSeen = false;
+    diagClear();
   }
 });
 
-$(document).on(":passageend", diagMarkSeen);
+$(document).on(":passageend", () => {
+  diagWasSeen = true;
+});
+
+// Clear diag when player clicks on a passage link
+document.getElementById("story")?.addEventListener("click", (ev) => {
+  const el = /** @type {Node} */ (ev.target);
+  const a = $(el).closest("a");
+  if (a.length && a.attr("data-passage") != null) {
+    diagClear();
+  }
+}, true);
