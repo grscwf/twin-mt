@@ -1418,7 +1418,33 @@ ul.actions .mt-seen-true li::before {
   white-space: pre-wrap;
   width: calc(100% - 2em);
 }
-/* twine-user-stylesheet #19: "n0a-Nero-Caged.css" */
+/* twine-user-stylesheet #19: "g1m-Notes-Popup.css" */
+.NP-subtitle {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 0 0 0.5em 0;
+}
+
+#NP-input {
+  min-width: 10em;
+  width: calc(100% - 1em);
+}
+
+.NP-conflict-hidden {
+  display: none;
+}
+
+.NP-conflict-important {
+  color: #fe9;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+#NP-footer a {
+  display: inline-block;
+  margin-top: 0.5em;
+}
+/* twine-user-stylesheet #20: "n0a-Nero-Caged.css" */
 /*
  * Caged text. We try to be precise with layout despite not
  * really knowing what font is used. (It'll probably be Arial on desktops,
@@ -1617,7 +1643,7 @@ a[data-shock="0"]:hover {
     right: -1.5rem;
   }
 }
-/* twine-user-stylesheet #20: "n0a-Nero-Glitch.css" */
+/* twine-user-stylesheet #21: "n0a-Nero-Glitch.css" */
 
 #glitch-1 {
   white-space: nowrap;
@@ -1715,7 +1741,7 @@ a[data-shock="0"]:hover {
     opacity: .6;
   }
 }
-/* twine-user-stylesheet #21: "n0a-Nero-Password.css" */
+/* twine-user-stylesheet #22: "n0a-Nero-Password.css" */
 #passages:not(.pw-debug-show) .pw-debug > :not(.pw-label) {
   display: none;
 }
@@ -1723,7 +1749,7 @@ a[data-shock="0"]:hover {
 span.debug:has(> .pw-debug) + wbr + span.debug > .pw-debug > .pw-label {
   display: none;
 }
-/* twine-user-stylesheet #22: "n0a-Nero-Patience.css" */
+/* twine-user-stylesheet #23: "n0a-Nero-Patience.css" */
 .patience-label {
   cursor: pointer;
 }
@@ -1731,7 +1757,7 @@ span.debug:has(> .pw-debug) + wbr + span.debug > .pw-debug > .pw-label {
 .patience-debug:not(.patience-debug-show) > :not(.patience-label) {
   display: none;
 }
-/* twine-user-stylesheet #23: "n0a-Nero-Taming.css" */
+/* twine-user-stylesheet #24: "n0a-Nero-Taming.css" */
 .tame-word {
   transition: all 2s ease-in;
   background-color: #111;
@@ -1764,7 +1790,7 @@ span.debug:has(> .pw-debug) + wbr + span.debug > .pw-debug > .pw-label {
 .tame-unhide {
   opacity: 1;
 }
-/* twine-user-stylesheet #24: "n0a-Nero-Templates.css" */
+/* twine-user-stylesheet #25: "n0a-Nero-Templates.css" */
 .master-quiet {
   font-size: 18px;
   font-weight: bold;
@@ -10836,7 +10862,110 @@ MT.goto.init = () => {
     MT.goto.showCurrentPath();
   });
 };
-/* twine-user-script #45: "n0a-Nero-Barbs.js" */
+/* twine-user-script #45: "g1m-Notes-Popup.js" */
+MT.notesPopupInit = () => {
+  const T = State.temporary;
+  const V = State.variables;
+  const noteStore = window.sessionStorage;
+
+  T.savedVal = "";
+  T.editVal = "";
+  T.hasConflict = false;
+
+  $(document).one(":dialogopening", () => {
+    $("#NP-input").on("input", onInput);
+    restoreSession();
+    appendSelected();
+    appendMessages();
+    uiUpdate();
+  });
+
+  $(document).one(":dialogopened", () => {
+    $("#NP-input").trigger("focus");
+  });
+
+  /** @type {(text: string) => void} */
+  function appendQuoted(text) {
+    text = text.trim();
+    if (text === "") return;
+    const q = text.replace(/^/gm, "-> ") + "\n";
+    let val = T.editVal.trim();
+    if (val !== "" && val.slice(-1) !== "\n") {
+      val += "\n";
+    }
+    val += q;
+    $("#NP-input").val(val);
+    saveValue(val);
+  }
+
+  function appendSelected() {
+    if (MT.selectedText == null || MT.selectedText === "") return;
+    appendQuoted(MT.selectedText);
+  }
+  function appendMessages() {
+    const msgs = MT.diagGetMessages();
+    if (msgs != null) {
+      appendQuoted(msgs.join("\n") + "\n");
+    }
+  }
+
+  function restoreSession() {
+    const origin = V.n_notesOrigin;
+    MT.nonNull(origin, "notesOrigin");
+    T.savedVal = MT.notesGet(origin);
+    T.editVal = noteStore.getItem("notes-single:" + origin) || T.savedVal;
+    $("#NP-input").val(T.editVal);
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+  }
+
+  function uiUpdate() {
+    $("#NP-conflict").toggleClass("NP-conflict-hidden", !T.hasConflict);
+  }
+
+  function onInput() {
+    const input = /** @type {HTMLTextAreaElement} */ (
+      document.getElementById("NP-input")
+    );
+    saveValue(input.value, false);
+  }
+
+  /** @type {(val: string, overwrite?: boolean) => void} */
+  function saveValue(val, overwrite) {
+    const origin = V.n_notesOrigin;
+    MT.nonNull(origin, "notesOrigin");
+    T.editVal = val;
+    if (overwrite || !T.hasConflict) {
+      T.savedVal = MT.notesTryReplace(origin, T.savedVal, T.editVal);
+    }
+    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
+    const key = "notes-single:" + origin;
+    if (T.hasConflict) {
+      noteStore.setItem(key, val);
+    } else {
+      noteStore.removeItem(key);
+    }
+    uiUpdate();
+  }
+
+  T.addCurrentState = () => {
+    const wasRead = [...MT.trace.wasRead].sort();
+    const vars = /** @type {Record<string, unknown>} */ (
+      State.current.variables
+    );
+    /** @type {Record<string, unknown>} */
+    const obj = {};
+    for (const vn of wasRead) {
+      const val = vars[vn];
+      if (val != null) obj[vn] = val;
+    }
+    const json = JSON.stringify(obj);
+    const text = `enterState = ${json}`;
+    const newVal = T.editVal + "\n" + text;
+    $("#NP-input").val(newVal);
+    saveValue(newVal, false);
+  };
+};
+/* twine-user-script #46: "n0a-Nero-Barbs.js" */
 /** @arg {DocumentFragment | HTMLElement} dest */
 const barbsAnnounce = (dest) => {
   const V = State.variables;
@@ -10924,7 +11053,7 @@ MT.mdDefUnsaved("mg_barbsNo");
 MT.mdDefUnsaved("mg_barbsYes");
 MT.mdDefUnsaved("mg_knotNo");
 MT.mdDefUnsaved("mg_knotYes");
-/* twine-user-script #46: "n0a-Nero-Caged.js" */
+/* twine-user-script #47: "n0a-Nero-Caged.js" */
 (() => {
   const BORDER = 0;
 
@@ -11363,7 +11492,7 @@ MT.mdDefUnsaved("mg_knotYes");
     return { height, blocks };
   }
 })();
-/* twine-user-script #47: "n0a-Nero-Constraints.js" */
+/* twine-user-script #48: "n0a-Nero-Constraints.js" */
 /**
  * @typedef {object} Constraint
  * @prop {Record<string, unknown>} implies
@@ -12078,7 +12207,7 @@ const checkConstraints = () => {
 };
 
 $(document).on(":passageend", checkConstraints);
-/* twine-user-script #48: "n0a-Nero-Endings.js" */
+/* twine-user-script #49: "n0a-Nero-Endings.js" */
 /** @type {ArchiveMap} */
 MT.neroEndings = {
   xn_Broken: {
@@ -12192,7 +12321,7 @@ MT.mdDefUnsaved("mn_arcHuntedVariant");
 MT.mdDefUnsaved("mn_arcOverwhelmedVariant");
 MT.mdDefUnsaved("mn_arcSatisfiedVariant");
 MT.mdDefUnsaved("mn_arcTamedVariant");
-/* twine-user-script #49: "n0a-Nero-Glitch.js" */
+/* twine-user-script #50: "n0a-Nero-Glitch.js" */
 const barbGlitch = [
   `<span class=glitch-switch>\
     <div class=glitch-switch-1>barbed</div>\
@@ -12261,7 +12390,7 @@ const glitchText = (textNode, g, speed) => {
   }
   return g;
 }
-/* twine-user-script #50: "n0a-Nero-Keywords.js" */
+/* twine-user-script #51: "n0a-Nero-Keywords.js" */
 /** @type {ArchiveMap} */
 MT.neroKeywords = {
   kn_Dream: {
@@ -12504,7 +12633,7 @@ $(document).on(":passageend", () => {
     MT.error(`missing kw-announce for ${kwAnnounce}`);
   }
 });
-/* twine-user-script #51: "n0a-Nero-Magic.js" */
+/* twine-user-script #52: "n0a-Nero-Magic.js" */
 /** True if Nero has cast a spell. */
 MT.neroDidCast = () => {
   const V = State.variables;
@@ -12518,7 +12647,7 @@ MT.neroDidCast = () => {
       V.n_castYounger)
   );
 };
-/* twine-user-script #52: "n0a-Nero-Metadata.js" */
+/* twine-user-script #53: "n0a-Nero-Metadata.js" */
 // things the player has done, which affect hints
 // these are not saved, because player might load someone else's saved game
 
@@ -12528,7 +12657,7 @@ MT.mdDefUnsaved("mn_brokenTooSlow");
 
 MT.mdDefUnsaved("mn_playerLeftStudyNoMirror");
 MT.mdDefUnsaved("mn_playerLeftStudyWithMirror");
-/* twine-user-script #53: "n0a-Nero-Misfire.js" */
+/* twine-user-script #54: "n0a-Nero-Misfire.js" */
 /**
  * <<mf-please>>
  *   $text
@@ -12604,7 +12733,7 @@ Macro.add("mf-pass", {
     console.log(`mf-pass ${pw}`);
   },
 });
-/* twine-user-script #54: "n0a-Nero-Password.js" */
+/* twine-user-script #55: "n0a-Nero-Password.js" */
 const sayPassword = "n1s Say Password";
 
 const PW_621 = MT.windowRec.PW_621 = "621";
@@ -12883,7 +13012,7 @@ Template.add("sprBadPass", () => {
   }
   return mkp;
 });
-/* twine-user-script #55: "n0a-Nero-Patience.js" */
+/* twine-user-script #56: "n0a-Nero-Patience.js" */
 (() => {
   /**
    * <<n1-patience $looks $actions>>
@@ -13133,14 +13262,14 @@ Template.add("sprBadPass", () => {
     },
   });
 })();
-/* twine-user-script #56: "n0a-Nero-Taming.js" */
+/* twine-user-script #57: "n0a-Nero-Taming.js" */
 MT.startTaming = () => {
   if (!State.temporary.isTranscript) {
     const passage = $(".passage");
     setTimeout(() => passage.addClass("tame-fade"), 200);
   }
 };
-/* twine-user-script #57: "n0a-Nero-Templates.js" */
+/* twine-user-script #58: "n0a-Nero-Templates.js" */
 
 Template.add("blank",
   "<span class=nero-blank>" +
@@ -13244,7 +13373,7 @@ Template.add("sprHoldStop", () => {
   }
   return mkp;
 });
-/* twine-user-script #58: "d0a-Drekkar-Endings.js" */
+/* twine-user-script #59: "d0a-Drekkar-Endings.js" */
 /** @type {ArchiveMap} */
 MT.drekkarEndings = {
   xd_EnthrallmentLion: {
@@ -13394,7 +13523,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -14729,136 +14858,31 @@ if (!State.temporary.isTranscript) {
 &lt;/div&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="g1m Notes Popup" tags="inclusion" position="400,2525" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;script&gt;&gt;
-  const T = State.temporary;
-  const V = State.variables;
-  const noteStore = window.sessionStorage;
 
-  T.savedVal = &quot;&quot;;
-  T.editVal = &quot;&quot;;
-  T.hasConflict = false;
+&lt;&lt;run MT.notesPopupInit()&gt;&gt;
 
-  $(document).one(&quot;:dialogopening&quot;, () =&gt; {
-    $(&quot;#NP-input&quot;).on(&quot;input&quot;, onInput);
-    restoreSession();
-    appendSelected();
-    appendMessages();
-    uiUpdate();
-  });
-
-  $(document).one(&quot;:dialogopened&quot;, () =&gt; {
-    $(&quot;#NP-input&quot;).focus();
-  });
-
-  function appendQuoted(text) {
-    text = text.trim();
-    if (text === &quot;&quot;) return;
-    const q = text.replace(/^/gm, &quot;-&gt; &quot;) + &quot;\n&quot;;
-    let val = T.editVal.trim();
-    if (val !== &quot;&quot; &amp;&amp; val.slice(-1) !== &quot;\n&quot;) {
-      val += &quot;\n&quot;;
-    }
-    val += q;
-    $(&quot;#NP-input&quot;).val(val);
-    saveValue(val);
-  }
-
-  function appendSelected() {
-    if (MT.selectedText == null || MT.selectedText === &quot;&quot;) return;
-    appendQuoted(MT.selectedText);
-  }
-  function appendMessages() {
-    const msgs = MT.diagGetMessages();
-    if (msgs != null) {
-      appendQuoted(msgs.join(&quot;\n&quot;) + &quot;\n&quot;);
-    }
-  }
-
-  function restoreSession() {
-    T.savedVal = MT.notesGet(V.n_notesOrigin);
-    T.editVal = noteStore.getItem(&quot;notes-single:&quot; + V.n_notesOrigin)
-      || T.savedVal;
-    $(&quot;#NP-input&quot;).val(T.editVal);
-    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-  }
-
-  function uiUpdate() {
-    $(&quot;#NP-conflict&quot;).toggleClass(&quot;NP-conflict-hidden&quot;, !T.hasConflict);
-  }
-
-  function onInput(ev) {
-    saveValue($(&quot;#NP-input&quot;).val(), false);
-  }
-
-  function saveValue(val, overwrite) {
-    T.editVal = val;
-    if (overwrite || !T.hasConflict) {
-      T.savedVal = MT.notesTryReplace(V.n_notesOrigin, T.savedVal, T.editVal);
-    }
-    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-    const key = &quot;notes-single:&quot; + V.n_notesOrigin;
-    if (T.hasConflict) {
-      noteStore.setItem(key, val);
-    } else {
-      noteStore.removeItem(key);
-    }
-    uiUpdate();
-  }
-
-  T.addCurrentState = () =&gt; {
-    const wasRead = [...MT.trace.wasRead].sort();
-    const obj = {};
-    for (const vn of wasRead) {
-      const val = State.current.variables[vn];
-      if (val != null) obj[vn] = val;
-    }
-    const json = JSON.stringify(obj);
-    const text = `enterState = ${json}`;
-    const newVal = T.editVal + &quot;\n&quot; + text;
-    $(&quot;#NP-input&quot;).val(newVal);
-    saveValue(newVal, false);
-  }
-&lt;&lt;/script&gt;&gt;
-&lt;style&gt;
-  .NP-subtitle {
-    font-size: 1.1em;
-    font-weight: bold;
-    margin: 0 0 0.5em 0;
-  }
-  #NP-input {
-    min-width: 10em;
-    width: calc(100% - 1em);
-  }
-  .NP-conflict-hidden {
-    display: none;
-  }
-  .NP-conflict-important {
-    color: #fe9;
-    font-size: 1.1em;
-    font-weight: bold;
-  }
-  #ui-dialog-body a {
-    display: inline-block;
-    margin-top: .5em;
-  }
-&lt;/style&gt;
-&lt;div class=NP-subtitle&gt;
-    Notes for [page $n_notesOrigin]
+&lt;div class=&quot;NP-subtitle&quot;&gt;
+  Notes for [page $n_notesOrigin]
 &lt;/div&gt;
-&lt;textarea id=NP-input rows=&quot;8&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
-&lt;br&gt;
-&lt;div id=NP-conflict&gt;
-  &lt;div class=NP-conflict-important&gt;
+
+&lt;textarea id=&quot;NP-input&quot; rows=&quot;8&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
+
+&lt;div id=&quot;NP-conflict&quot;&gt;
+  &lt;div class=&quot;NP-conflict-important&quot;&gt;
     Notes for this page has an edit conflict!
   &lt;/div&gt;
   [[See conflict|g1m Notes Single][Dialog.close()]]
 &lt;/div&gt;
-&lt;&lt;link &quot;Append a summary of the current state&quot;&gt;&gt;
-  &lt;&lt;run _addCurrentState()&gt;&gt;
-&lt;&lt;/link&gt;&gt;
-&lt;br&gt;
-[[View all notes|g1m Notes All][Dialog.close()]]
-&lt;br&gt;
+
+&lt;div id=&quot;NP-footer&quot;&gt;
+  &lt;&lt;link &quot;Append a summary of the current state&quot;&gt;&gt;
+    &lt;&lt;run _addCurrentState()&gt;&gt;
+  &lt;&lt;/link&gt;&gt;
+
+  &lt;br&gt;
+  [[View all notes|g1m Notes All][Dialog.close()]]
+&lt;/div&gt;
+
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="g1m Notes Single" tags="is-menu" position="275,2525" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;sticky-return&gt;&gt;
 
