@@ -13,6 +13,7 @@ Macro.add("arousal-bar", {
     const outer = $(`<div class=arousal-bg>`).appendTo(this.output);
     const bar = $(`<div class=arousal-bar>`).appendTo(outer);
     bar.addClass(`arousal-${pulse}`);
+
     if (State.temporary.isTranscript) {
       bar.css({ width: cur + "%" });
     } else {

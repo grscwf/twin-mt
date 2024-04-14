@@ -29,9 +29,9 @@ Macro.add("arc-only", {
 Macro.add("arc-skip", {
   tags: [],
   handler: function () {
-    const mkp = State.temporary.isArchive ? "" : this.payload[0]?.contents;
-    // This will add debug markers around the output
-    $(this.output).wiki(mkp || "");
+    if (!State.temporary.isArchive) {
+      $(this.output).wiki(this.payload[0]?.contents || "");
+    }
   },
 });
 

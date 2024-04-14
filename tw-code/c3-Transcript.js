@@ -34,7 +34,7 @@ MT.tran.renderHistory = (out) => {
 
     for (; turn < stop; turn++) {
       const moment = hist[turn];
-      MT.nonNull(moment, `history at turn ${turn}`)
+      MT.nonNull(moment, `history at turn ${turn}`);
 
       if (turn !== 0) {
         $("<hr class=text-sep>").appendTo(outer);
@@ -108,6 +108,10 @@ MT.tran.renderPage = (page) => {
       const text = Story.get(page.title).text;
       $(out).wiki(text);
     });
+    const msgs = MT.diagGetMessages();
+    if (msgs != null) {
+      $(`<div class="tran-diag">`).text(msgs.join("\n")).prependTo(out);
+    }
   });
   // clone to remove event handlers
   const copy = out.clone();
@@ -141,6 +145,7 @@ const tranCleanHtml = (jq, next) => {
   jq.find(".debug").replaceWith(function () {
     return $(this).contents();
   });
+  jq.find(".error-toggle").remove();
   jq.find(".fade-in-absorb").removeClass("fade-in-absorb");
   jq.find(".fade-in-hidden").removeClass("fade-in-hidden");
   jq.find(".glitch-fading-in").removeClass("glitch-fading-in");
@@ -278,8 +283,8 @@ Macro.add("tran-cut-span", {
 Macro.add("tran-skip", {
   tags: [],
   handler: function () {
-    const mkp = State.temporary.isTranscript ? "" : this.payload[0]?.contents;
-    // this will add debug markers around the output
-    $(this.output).wiki(mkp || "");
+    if (!State.temporary.isTranscript) {
+      $(this.output).wiki(this.payload[0]?.contents || "");
+    }
   },
 });

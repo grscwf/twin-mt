@@ -1195,6 +1195,14 @@ ul.actions .mt-seen-true li::before {
   margin-left: 1em;
   vertical-align: center;
 }
+
+.tran-diag {
+  background-color: #cc4;
+  border-radius: 4px;
+  color: #000;
+  margin-bottom: 4px;
+  padding: 4px 8px;
+}
 /* twine-user-stylesheet #17: "c3-Var-Info.css" */
 .var-info {
   background-color: #111;
@@ -1977,7 +1985,8 @@ Macro.add("mt-assert", {
     const expr = this.args.full;
     const rawExpr = this.args.raw;
 
-    if (State.temporary.isTranscript) return;
+    if (State.temporary.isArchive) return;
+
     const val = MT.untraced(() => eval(expr));
     MT.assert(val, `(${rawExpr}) should be true`, this);
   },
@@ -2009,7 +2018,7 @@ MT.diagQuietly = (block) => {
 
 /**
  * Runs block, suppressing messages.
- * Returns true if there were no fail messages.
+ * Returns true if there were no error messages.
  * @type {(block: () => void) => boolean}
  */
 MT.diagSucceeds = (block) => {
@@ -2029,6 +2038,26 @@ MT.diagSucceeds = (block) => {
     diagVeryQuiet = saveVeryQuiet;
   }
 };
+
+/** @type {() => string[] | null} */
+MT.diagGetMessages = () => {
+  if (MT.diagMessages.length === 0) return null;
+
+  /** @type {string[]} */
+  const messages = [];
+  for (const diag of MT.diagMessages) {
+    let msg = diag.type || "note";
+    msg += ": ";
+    msg += diag.text || "";
+    if (diag.values) {
+      for (const val of diag.values) {
+        msg += val == null ? String(val) : MT.json(val);
+      }
+    }
+    messages.push(msg);
+  }
+  return messages;
+}
 
 /** @type {(diag: DiagMessage) => void} */
 const diagEmit = (diag) => {
@@ -2614,9 +2643,9 @@ Macro.add("arc-only", {
 Macro.add("arc-skip", {
   tags: [],
   handler: function () {
-    const mkp = State.temporary.isArchive ? "" : this.payload[0]?.contents;
-    // This will add debug markers around the output
-    $(this.output).wiki(mkp || "");
+    if (!State.temporary.isArchive) {
+      $(this.output).wiki(this.payload[0]?.contents || "");
+    }
   },
 });
 
@@ -2847,6 +2876,7 @@ Macro.add("arousal-bar", {
     const outer = $(`<div class=arousal-bg>`).appendTo(this.output);
     const bar = $(`<div class=arousal-bar>`).appendTo(outer);
     bar.addClass(`arousal-${pulse}`);
+
     if (State.temporary.isTranscript) {
       bar.css({ width: cur + "%" });
     } else {
@@ -6047,6 +6077,7 @@ const makeClue = (div) => {
   const copy = div.clone();
   copy.find("meta-text").remove();
   copy.find(".clue-remove").remove();
+  copy.find(".tran-diag").remove();
   trim(MT.jqUnwrap(copy));
   copy.addClass("trail-info-unseen");
   copy.append("...");
@@ -6636,7 +6667,7 @@ MT.tran.renderHistory = (out) => {
 
     for (; turn < stop; turn++) {
       const moment = hist[turn];
-      MT.nonNull(moment, `history at turn ${turn}`)
+      MT.nonNull(moment, `history at turn ${turn}`);
 
       if (turn !== 0) {
         $("<hr class=text-sep>").appendTo(outer);
@@ -6710,6 +6741,10 @@ MT.tran.renderPage = (page) => {
       const text = Story.get(page.title).text;
       $(out).wiki(text);
     });
+    const msgs = MT.diagGetMessages();
+    if (msgs != null) {
+      $(`<div class="tran-diag">`).text(msgs.join("\n")).prependTo(out);
+    }
   });
   // clone to remove event handlers
   const copy = out.clone();
@@ -6743,6 +6778,7 @@ const tranCleanHtml = (jq, next) => {
   jq.find(".debug").replaceWith(function () {
     return $(this).contents();
   });
+  jq.find(".error-toggle").remove();
   jq.find(".fade-in-absorb").removeClass("fade-in-absorb");
   jq.find(".fade-in-hidden").removeClass("fade-in-hidden");
   jq.find(".glitch-fading-in").removeClass("glitch-fading-in");
@@ -6880,9 +6916,9 @@ Macro.add("tran-cut-span", {
 Macro.add("tran-skip", {
   tags: [],
   handler: function () {
-    const mkp = State.temporary.isTranscript ? "" : this.payload[0]?.contents;
-    // this will add debug markers around the output
-    $(this.output).wiki(mkp || "");
+    if (!State.temporary.isTranscript) {
+      $(this.output).wiki(this.payload[0]?.contents || "");
+    }
   },
 });
 /* twine-user-script #41: "c3-Var-Info.js" */
@@ -12947,7 +12983,7 @@ Template.add("sprBadPass", () => {
             insistText = payload.contents;
             break;
           default:
-            MT.fail(`BUG: n1-patience ${payload.name}`);
+            MT.fail(`BUG: n1-patience ${payload.name}`, this);
         }
       }
       if (actions === 1) {
@@ -13039,7 +13075,7 @@ Template.add("sprBadPass", () => {
             $(this.output).wiki(repeatText);
             break;
           default:
-            MT.fail(`BUG: patienceReturn ${V.n_patienceReturn}`);
+            MT.fail(`BUG: patienceReturn ${V.n_patienceReturn}`, this);
         }
       }
       V.n_patienceReturn = 0;
@@ -13393,7 +13429,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -14765,10 +14801,9 @@ $(document).one(&quot;:passagedisplay&quot;, render);
     appendQuoted(MT.selectedText);
   }
   function appendMessages() {
-    if (MT.diagMessages.length) {
-      for (const diag of MT.diagMessages) {
-        appendQuoted(MT.json(diag) + &quot;\n&quot;);
-      }
+    const msgs = MT.diagGetMessages();
+    if (msgs != null) {
+      appendQuoted(msgs.join(&quot;\n&quot;) + &quot;\n&quot;);
     }
   }
 

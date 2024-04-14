@@ -196,6 +196,7 @@ const makeClue = (div) => {
   const copy = div.clone();
   copy.find("meta-text").remove();
   copy.find(".clue-remove").remove();
+  copy.find(".tran-diag").remove();
   trim(MT.jqUnwrap(copy));
   copy.addClass("trail-info-unseen");
   copy.append("...");

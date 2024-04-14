@@ -111,7 +111,8 @@ Macro.add("mt-assert", {
     const expr = this.args.full;
     const rawExpr = this.args.raw;
 
-    if (State.temporary.isTranscript) return;
+    if (State.temporary.isArchive) return;
+
     const val = MT.untraced(() => eval(expr));
     MT.assert(val, `(${rawExpr}) should be true`, this);
   },
@@ -143,7 +144,7 @@ MT.diagQuietly = (block) => {
 
 /**
  * Runs block, suppressing messages.
- * Returns true if there were no fail messages.
+ * Returns true if there were no error messages.
  * @type {(block: () => void) => boolean}
  */
 MT.diagSucceeds = (block) => {
@@ -163,6 +164,26 @@ MT.diagSucceeds = (block) => {
     diagVeryQuiet = saveVeryQuiet;
   }
 };
+
+/** @type {() => string[] | null} */
+MT.diagGetMessages = () => {
+  if (MT.diagMessages.length === 0) return null;
+
+  /** @type {string[]} */
+  const messages = [];
+  for (const diag of MT.diagMessages) {
+    let msg = diag.type || "note";
+    msg += ": ";
+    msg += diag.text || "";
+    if (diag.values) {
+      for (const val of diag.values) {
+        msg += val == null ? String(val) : MT.json(val);
+      }
+    }
+    messages.push(msg);
+  }
+  return messages;
+}
 
 /** @type {(diag: DiagMessage) => void} */
 const diagEmit = (diag) => {
