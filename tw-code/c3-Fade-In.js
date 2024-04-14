@@ -73,7 +73,7 @@ Macro.add("fade-in", {
     const next = () => {
       if (timeout != null) clearTimeout(timeout);
       if (queue.length === 0) return;
-      MT.assert(queue[0] != null, "queue element should != null");
+      MT.nonNull(queue[0], "queue element");
       const [delay, span] = queue[0];
       span.addClass("fade-in-next");
       timeout = setTimeout(() => {
@@ -107,7 +107,7 @@ Macro.add("fade-in", {
 
     for (let i = 0; i < this.payload.length; i++) {
       const section = this.payload[i];
-      MT.assert(section != null, "section should != null");
+      MT.nonNull(section, "section");
 
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);

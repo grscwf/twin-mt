@@ -6,7 +6,7 @@ MT.goto.list = () => {
   let mkp = "<<nobr>>";
   for (let i = 0; i < walks.length; i++) {
     const walk = walks[i];
-    MT.assert(walk != null, "");
+    MT.nonNull(walk, `walk step ${i}`);
 
     if (typeof walk === "string") {
       mkp += `<div class="walk-header">${walks[i]}</div>`;
@@ -82,7 +82,7 @@ const getPathChoice = (steps, ch) => {
 MT.goto.doWalk = (i, ch) => {
   MT.forgetWalkHistory();
   const walk = MT.gotoPaths[i];
-  MT.assert(walk != null, "");
+  MT.nonNull(walk, `walk step ${i}`);
   MT.assert(typeof walk !== "string", "");
   const force = !!$("#walk-force").prop("checked");
   const path = getPathChoice(walk.path, ch);
@@ -124,8 +124,8 @@ MT.goto.walkAll = () => {
       return;
     }
     const walk = walks[i++];
+    MT.nonNull(walk, `walk step ${i - 1}`);
     MT.assert(typeof walk !== "string", "");
-    MT.assert(walk != null, "");
     console.log(`Starting ${MT.pathName(walk.path)}`);
     MT.forgetWalkHistory();
     State.reset();

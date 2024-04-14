@@ -129,7 +129,7 @@ const isDiverged = () => {
 
 /** Pack current active trail and assign a new trailId */
 const packStaleActive = () => {
-  MT.assert(activeCache != null, "");
+  MT.nonNull(activeCache, "activeCache");
   packSomeTrails([activeCache]);
   const key = `trail.active.${trailId}`;
   localStorage.removeItem(key);
@@ -160,7 +160,7 @@ const saveCurrentTrail = () => {
   if (tip <= 0) return;
 
   const moment = State.history[tip];
-  MT.assert(moment != null, "");
+  MT.nonNull(moment, `history at tip ${tip}`);
 
   const tipTitle = moment.title;
   const tipVars = moment.variables;
@@ -194,7 +194,7 @@ const savePackedTrails = (packed) => {
     if (trail.delta == null) {
       if (trail.history == null) {
         MT.expandTrail(trail);
-        MT.assert(trail.history != null, "");
+        MT.nonNull(trail.history, "trail.history");
       }
       trail.delta = State.deltaEncode(trail.history);
     }
@@ -288,7 +288,6 @@ const packStaleTrails = () => {
     }
   }
   for (const key of keys) {
-    MT.assert(key != null, "");
     const trail = /** @type {SlimTrail} */ (
       MT.jsonParse(localStorage.getItem(key) || "{}")
     );

@@ -44,25 +44,25 @@
         repeatText,
         warnText,
         insistText;
-      for (const p of this.payload) {
-        switch (p.name) {
+      for (const payload of this.payload) {
+        switch (payload.name) {
           case "n1-patience":
-            firstText = p.contents;
+            firstText = payload.contents;
             break;
           case "n1-remind":
-            remindText = p.contents;
+            remindText = payload.contents;
             break;
           case "n1-repeat":
-            repeatText = p.contents;
+            repeatText = payload.contents;
             break;
           case "n1-warn":
-            warnText = p.contents;
+            warnText = payload.contents;
             break;
           case "n1-insist":
-            insistText = p.contents;
+            insistText = payload.contents;
             break;
           default:
-            throw new Error(`bug n1-patience ${p.name}`);
+            throw new Error(`bug n1-patience ${payload.name}`);
         }
       }
       if (actions === 1) {
@@ -70,7 +70,7 @@
         MT.assert(looks === 1, "actions === 1 should have looks === 1");
       }
       if (actions > 2) {
-        MT.assert(repeatText != null, "should have n1-repeat");
+        MT.nonNull(repeatText, "n1-repeat");
       } else {
         MT.assert(repeatText == null, "should NOT have n1-repeat");
       }
@@ -79,13 +79,13 @@
         MT.assert(actions === 1, "looks === 1 should have actions === 1");
       }
       if (looks > 2) {
-        MT.assert(remindText != null, "should have n1-remind");
+        MT.nonNull(remindText, "n1-remind");
       } else {
         MT.assert(remindText == null, "should NOT have n1-remind");
       }
 
-      MT.assert(warnText != null, "should have n1-warn");
-      MT.assert(insistText != null, "should have n1-insist");
+      MT.nonNull(warnText, "n1-warn");
+      MT.nonNull(insistText, "n1-insist");
 
       const V = State.variables;
       const T = State.temporary;
@@ -97,17 +97,20 @@
         V.n_patienceActions = actions;
         V.n_patiencePassage = here;
         V.n_patienceReturn = 0;
-      } else if (V.n_patienceReturn === 1) {
+      }
+
+      MT.nonNull(V.n_patienceLooks, "n_patienceLooks");
+      MT.nonNull(V.n_patienceActions, "n_patienceActions");
+      MT.nonNull(V.n_patienceReturn, "n_patienceReturn");
+
+      if (V.n_patienceReturn === 1) {
         // Return from look
-        MT.assert(V.n_patienceLooks != null, "patienceLooks should be set");
         V.n_patienceLooks--;
       } else if (V.n_patienceReturn === 2) {
         // Return from action
-        MT.assert(V.n_patienceActions != null, "patienceActions should be set");
         V.n_patienceActions--;
         V.n_didSomeAction = true;
       }
-      MT.assert(V.n_patienceReturn != null, "patienceReturn should be set");
       T.patienceAdvanced = V.n_patienceReturn > 0;
 
       // lose patience immediately
@@ -117,8 +120,6 @@
       }
       delete V.n_patienceAccel;
 
-      MT.assert(V.n_patienceLooks != null, "patienceLooks should be set");
-      MT.assert(V.n_patienceActions != null, "patienceActions should be set");
       T.patience = Math.min(V.n_patienceLooks, V.n_patienceActions);
 
       // At warn state, only allow 1 more look or action.
@@ -145,11 +146,11 @@
             $(this.output).wiki(firstText);
             break;
           case 1:
-            MT.assert(remindText != null, "remindText is missing");
+            MT.nonNull(remindText, "remindText");
             $(this.output).wiki(remindText);
             break;
           case 2:
-            MT.assert(repeatText != null, "repeatText is missing");
+            MT.nonNull(repeatText, "repeatText");
             $(this.output).wiki(repeatText);
             break;
           default:

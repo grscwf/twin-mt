@@ -53,7 +53,9 @@ const enumDefine = (enumType, enumValueNames) => {
  * @type {(valName: string, enumType: string) => void}
  */
 const enumDeclareVar = (valName, enumType) => {
-  if (!MT.enums[enumType]) throw new Error(`No enum named ${enumType}`);
+  if (!MT.enums[enumType]) {
+    throw new Error(`No enum named ${enumType}`);
+  }
   MT.enumVars[valName] = enumType;
 };
 

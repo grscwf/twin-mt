@@ -99,13 +99,13 @@ const gatherPassages = () => {
 
     let sect = m[0];
     let info = sectInfo[sect];
-    MT.assert(info != null, "");
+    MT.nonNull(info, `sectInfo[${sect}]`);
 
     if (info.use != null) {
       sect = info.use;
       info = sectInfo[sect];
-      MT.assert(info != null, "");
-      MT.assert(info.use == null, "sectInfo.use should not chain");
+      MT.nonNull(info, `sectInfo[${sect}]`);
+      MT.assert(info.use == null, `sectInfo[${sect}].use should not chain`);
     }
 
     (sections[sect] ||= []).push(p.title);
@@ -369,7 +369,7 @@ MT.trailViewRender = (out) => {
   let hasOlder = false;
   for (const sect of sectNames) {
     const info = sectInfo[sect];
-    MT.assert(info != null, "");
+    MT.nonNull(info, `sectInfo[${sect}]`);
     if (info.preamble != null) {
       $(`<div class=trail-preamble>`).text(info.preamble).appendTo(out);
     }

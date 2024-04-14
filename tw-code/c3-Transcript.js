@@ -34,7 +34,7 @@ MT.tran.renderHistory = (out) => {
 
     for (; turn < stop; turn++) {
       const moment = hist[turn];
-      MT.assert(moment != null, "moment should != null");
+      MT.nonNull(moment, `history at turn ${turn}`)
 
       if (turn !== 0) {
         $("<hr class=text-sep>").appendTo(outer);

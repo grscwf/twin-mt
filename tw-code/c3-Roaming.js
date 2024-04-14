@@ -146,7 +146,7 @@ const roamNext = () => {
   }
 
   /* stop on problem */
-  if (MT.diagHasProblem) {
+  if (MT.diagHasWarning || MT.diagHasError) {
     console.log("stopping on problem");
     return roamStop();
   }
@@ -178,7 +178,7 @@ const roamNext = () => {
   /* follow path */
   if (roamPath != null) {
     const next = roamPath[0];
-    MT.assert(next != null, "");
+    MT.nonNull(next, "next roamPath");
     const links = $("#story a[data-passage]");
     /** @type {(i: number, el: HTMLElement, step: RoamStep) => boolean} */
     const isStep = (i, el, step) => {
@@ -194,7 +194,7 @@ const roamNext = () => {
     };
     for (let i = 0; i < links.length; i++) {
       const link = links[i];
-      MT.assert(link != null, "");
+      MT.nonNull(link, "link");
       if (isStep(i, link, next)) {
         roamPath.shift();
         $(link).addClass("random-walk-chosen");
@@ -306,7 +306,7 @@ const goRandom = (isManual) => {
 
     const rand = Math.floor(avail.length * Math.random());
     pick = avail[rand];
-    MT.assert(pick != null, "!= null");
+    MT.nonNull(pick, "random pick");
     const code = $(pick).attr("data-mta-code");
     const avoid = code != null && code.includes("//avoid");
     if (!isManual && avoid && Math.random() < 0.9) {
@@ -369,7 +369,7 @@ const roamInit = () => {
     roamIgnoreFuture = false;
 
     const moment = State.history[State.length];
-    MT.assert(moment != null, "");
+    MT.nonNull(moment, "current moment");
     const next = moment.title;
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {

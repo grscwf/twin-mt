@@ -22,15 +22,14 @@
  * @prop {boolean} [showDebug]
  */
 
-MT.diagHasProblem = false;
+MT.diagHasError = false;
+MT.diagHasWarning = false;
 MT.diagMessages = /** @type {DiagMessage[]} */ ([]);
 
 let diagDebugStop = false;
 let diagQuiet = false;
 let diagVeryQuiet = false;
 let diagWasSeen = false;
-
-const diagProblemTypes = ["fail"];
 
 /** @type {Record<string, string>} */
 const diagTitles = {
@@ -52,6 +51,7 @@ MT.note = (text) => {
  * @type {(text: string) => void}
  */
 MT.warn = (text) => {
+  MT.diagHasWarning = true;
   diagEmit({ type: "warn", text });
 };
 
@@ -60,12 +60,13 @@ MT.warn = (text) => {
  * @type {(text: string, context?: MacroContext) => void}
  */
 MT.error = (text, context) => {
+  MT.diagHasError = true;
   diagEmit({ type: "error", text, context, showDebug: true });
 };
 
 /**
  * If val is falsy, show an assertion failure and throw an error.
- * @arg {boolean | null | undefined} val
+ * @arg {boolean} val
  * @arg {string} should
  * @arg {MacroContext} [context]
  * @return {asserts val}
@@ -77,6 +78,18 @@ MT.assert = (val, should, context) => {
     throw new Error(text);
   }
 };
+
+/**
+ * Asserts val is non-null
+ * @template T
+ * @arg {T} val
+ * @arg {string} name
+ * @arg {MacroContext} [context]
+ * @return {asserts val is NonNullable<T>}
+ */
+MT.nonNull = (val, name, context) => {
+  MT.assert(val != null, `${name} should not be null`, context);
+}
 
 Macro.add("mt-assert", {
   skipArgs: true,
@@ -95,12 +108,12 @@ Macro.add("mt-assert", {
  * @type {(block: () => void) => void}
  */
 MT.diagQuietly = (block) => {
-  const save = diagQuiet;
+  const saveQuiet = diagQuiet;
   try {
     diagQuiet = true;
     block();
   } finally {
-    diagQuiet = save;
+    diagQuiet = saveQuiet;
   }
 };
 
@@ -110,28 +123,25 @@ MT.diagQuietly = (block) => {
  * @type {(block: () => void) => boolean}
  */
 MT.diagSucceeds = (block) => {
-  const saveHasProblem = MT.diagHasProblem;
+  const saveHasError = MT.diagHasError;
+  const saveHasWarning = MT.diagHasWarning;
   const saveVeryQuiet = diagVeryQuiet;
   try {
-    MT.diagHasProblem = false;
+    MT.diagHasError = false;
     diagVeryQuiet = true;
     block();
-    return !MT.diagHasProblem;
+    return !MT.diagHasError;
   } catch (e) {
     return false;
   } finally {
-    MT.diagHasProblem = saveHasProblem;
+    MT.diagHasError = saveHasError;
+    MT.diagHasWarning = saveHasWarning;
     diagVeryQuiet = saveVeryQuiet;
   }
 };
 
 /** @type {(diag: DiagMessage) => void} */
 const diagEmit = (diag) => {
-  const type = diag.type || "diag";
-  if (diagProblemTypes.includes(type)) {
-    MT.diagHasProblem = true;
-  }
-
   if (diagVeryQuiet) return;
 
   console.log(diag);
@@ -149,8 +159,8 @@ const diagEmit = (diag) => {
     outer = $(`<div id="diag-outer">`).appendTo("#story");
   }
 
+  const type = diag.type || "note";
   let box = $(outer).last();
-  let addButtons = false;
   if (!box.length || !box.hasClass(`diag-box-${type}`)) {
     box = $(`<div class="diag-box diag-box-${type}">`).appendTo(outer);
     const title = diagTitles[type] || "Note";
@@ -206,7 +216,8 @@ const diagInit = () => {
   $(document).on(":passageinit", () => {
     if (diagWasSeen) {
       $("#diag-outer").remove();
-      MT.diagHasProblem = false;
+      MT.diagHasError = false;
+      MT.diagHasWarning = false;
       MT.diagMessages = [];
       diagQuiet = false;
       diagDebugStop = false;

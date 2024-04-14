@@ -1888,15 +1888,14 @@ MT.windowRec.MT = MT;
  * @prop {boolean} [showDebug]
  */
 
-MT.diagHasProblem = false;
+MT.diagHasError = false;
+MT.diagHasWarning = false;
 MT.diagMessages = /** @type {DiagMessage[]} */ ([]);
 
 let diagDebugStop = false;
 let diagQuiet = false;
 let diagVeryQuiet = false;
 let diagWasSeen = false;
-
-const diagProblemTypes = ["fail"];
 
 /** @type {Record<string, string>} */
 const diagTitles = {
@@ -1918,6 +1917,7 @@ MT.note = (text) => {
  * @type {(text: string) => void}
  */
 MT.warn = (text) => {
+  MT.diagHasWarning = true;
   diagEmit({ type: "warn", text });
 };
 
@@ -1926,12 +1926,13 @@ MT.warn = (text) => {
  * @type {(text: string, context?: MacroContext) => void}
  */
 MT.error = (text, context) => {
+  MT.diagHasError = true;
   diagEmit({ type: "error", text, context, showDebug: true });
 };
 
 /**
  * If val is falsy, show an assertion failure and throw an error.
- * @arg {boolean | null | undefined} val
+ * @arg {boolean} val
  * @arg {string} should
  * @arg {MacroContext} [context]
  * @return {asserts val}
@@ -1943,6 +1944,18 @@ MT.assert = (val, should, context) => {
     throw new Error(text);
   }
 };
+
+/**
+ * Asserts val is non-null
+ * @template T
+ * @arg {T} val
+ * @arg {string} name
+ * @arg {MacroContext} [context]
+ * @return {asserts val is NonNullable<T>}
+ */
+MT.nonNull = (val, name, context) => {
+  MT.assert(val != null, `${name} should not be null`, context);
+}
 
 Macro.add("mt-assert", {
   skipArgs: true,
@@ -1961,12 +1974,12 @@ Macro.add("mt-assert", {
  * @type {(block: () => void) => void}
  */
 MT.diagQuietly = (block) => {
-  const save = diagQuiet;
+  const saveQuiet = diagQuiet;
   try {
     diagQuiet = true;
     block();
   } finally {
-    diagQuiet = save;
+    diagQuiet = saveQuiet;
   }
 };
 
@@ -1976,28 +1989,25 @@ MT.diagQuietly = (block) => {
  * @type {(block: () => void) => boolean}
  */
 MT.diagSucceeds = (block) => {
-  const saveHasProblem = MT.diagHasProblem;
+  const saveHasError = MT.diagHasError;
+  const saveHasWarning = MT.diagHasWarning;
   const saveVeryQuiet = diagVeryQuiet;
   try {
-    MT.diagHasProblem = false;
+    MT.diagHasError = false;
     diagVeryQuiet = true;
     block();
-    return !MT.diagHasProblem;
+    return !MT.diagHasError;
   } catch (e) {
     return false;
   } finally {
-    MT.diagHasProblem = saveHasProblem;
+    MT.diagHasError = saveHasError;
+    MT.diagHasWarning = saveHasWarning;
     diagVeryQuiet = saveVeryQuiet;
   }
 };
 
 /** @type {(diag: DiagMessage) => void} */
 const diagEmit = (diag) => {
-  const type = diag.type || "diag";
-  if (diagProblemTypes.includes(type)) {
-    MT.diagHasProblem = true;
-  }
-
   if (diagVeryQuiet) return;
 
   console.log(diag);
@@ -2015,8 +2025,8 @@ const diagEmit = (diag) => {
     outer = $(`<div id="diag-outer">`).appendTo("#story");
   }
 
+  const type = diag.type || "note";
   let box = $(outer).last();
-  let addButtons = false;
   if (!box.length || !box.hasClass(`diag-box-${type}`)) {
     box = $(`<div class="diag-box diag-box-${type}">`).appendTo(outer);
     const title = diagTitles[type] || "Note";
@@ -2072,7 +2082,8 @@ const diagInit = () => {
   $(document).on(":passageinit", () => {
     if (diagWasSeen) {
       $("#diag-outer").remove();
-      MT.diagHasProblem = false;
+      MT.diagHasError = false;
+      MT.diagHasWarning = false;
       MT.diagMessages = [];
       diagQuiet = false;
       diagDebugStop = false;
@@ -2142,7 +2153,9 @@ const enumDefine = (enumType, enumValueNames) => {
  * @type {(valName: string, enumType: string) => void}
  */
 const enumDeclareVar = (valName, enumType) => {
-  if (!MT.enums[enumType]) throw new Error(`No enum named ${enumType}`);
+  if (!MT.enums[enumType]) {
+    throw new Error(`No enum named ${enumType}`);
+  }
   MT.enumVars[valName] = enumType;
 };
 
@@ -3620,7 +3633,7 @@ Macro.add("fade-in", {
     const next = () => {
       if (timeout != null) clearTimeout(timeout);
       if (queue.length === 0) return;
-      MT.assert(queue[0] != null, "queue element should != null");
+      MT.nonNull(queue[0], "queue element");
       const [delay, span] = queue[0];
       span.addClass("fade-in-next");
       timeout = setTimeout(() => {
@@ -3654,7 +3667,7 @@ Macro.add("fade-in", {
 
     for (let i = 0; i < this.payload.length; i++) {
       const section = this.payload[i];
-      MT.assert(section != null, "section should != null");
+      MT.nonNull(section, "section");
 
       let delay = Util.fromCssTime(section.args[0]);
       delay = Math.max(delay, Engine.minDomActionDelay);
@@ -3746,7 +3759,7 @@ MT.getHistory = () => {
   const hist = State.history;
   for (let i = 0, n = hist.length; i < n; i++) {
     const moment = hist[i];
-    MT.assert(moment != null, "moment should != null");
+    MT.nonNull(moment, "moment");
 
     const title = moment.title;
     if (histIgnore.includes(title)) continue;
@@ -4253,8 +4266,8 @@ MT.commonPathLengths = (p, q) => {
   while (pi < p.length && qi < q.length) {
     const ps = p[pi];
     const qs = q[qi];
-    MT.assert(ps != null, "");
-    MT.assert(qs != null, "");
+    MT.nonNull(ps, "path step ps");
+    MT.nonNull(qs, "path step qs");
     if (ps.t == null) {
       pi++;
     } else if (qs.t == null) {
@@ -4620,7 +4633,7 @@ const roamNext = () => {
   }
 
   /* stop on problem */
-  if (MT.diagHasProblem) {
+  if (MT.diagHasWarning || MT.diagHasError) {
     console.log("stopping on problem");
     return roamStop();
   }
@@ -4652,7 +4665,7 @@ const roamNext = () => {
   /* follow path */
   if (roamPath != null) {
     const next = roamPath[0];
-    MT.assert(next != null, "");
+    MT.nonNull(next, "next roamPath");
     const links = $("#story a[data-passage]");
     /** @type {(i: number, el: HTMLElement, step: RoamStep) => boolean} */
     const isStep = (i, el, step) => {
@@ -4668,7 +4681,7 @@ const roamNext = () => {
     };
     for (let i = 0; i < links.length; i++) {
       const link = links[i];
-      MT.assert(link != null, "");
+      MT.nonNull(link, "link");
       if (isStep(i, link, next)) {
         roamPath.shift();
         $(link).addClass("random-walk-chosen");
@@ -4780,7 +4793,7 @@ const goRandom = (isManual) => {
 
     const rand = Math.floor(avail.length * Math.random());
     pick = avail[rand];
-    MT.assert(pick != null, "!= null");
+    MT.nonNull(pick, "random pick");
     const code = $(pick).attr("data-mta-code");
     const avoid = code != null && code.includes("//avoid");
     if (!isManual && avoid && Math.random() < 0.9) {
@@ -4843,7 +4856,7 @@ const roamInit = () => {
     roamIgnoreFuture = false;
 
     const moment = State.history[State.length];
-    MT.assert(moment != null, "");
+    MT.nonNull(moment, "current moment");
     const next = moment.title;
     const chosen = $("#passages .random-walk-chosen");
     if (chosen.length === 1) {
@@ -5923,13 +5936,13 @@ const gatherPassages = () => {
 
     let sect = m[0];
     let info = sectInfo[sect];
-    MT.assert(info != null, "");
+    MT.nonNull(info, `sectInfo[${sect}]`);
 
     if (info.use != null) {
       sect = info.use;
       info = sectInfo[sect];
-      MT.assert(info != null, "");
-      MT.assert(info.use == null, "sectInfo.use should not chain");
+      MT.nonNull(info, `sectInfo[${sect}]`);
+      MT.assert(info.use == null, `sectInfo[${sect}].use should not chain`);
     }
 
     (sections[sect] ||= []).push(p.title);
@@ -6193,7 +6206,7 @@ MT.trailViewRender = (out) => {
   let hasOlder = false;
   for (const sect of sectNames) {
     const info = sectInfo[sect];
-    MT.assert(info != null, "");
+    MT.nonNull(info, `sectInfo[${sect}]`);
     if (info.preamble != null) {
       $(`<div class=trail-preamble>`).text(info.preamble).appendTo(out);
     }
@@ -6382,7 +6395,7 @@ const isDiverged = () => {
 
 /** Pack current active trail and assign a new trailId */
 const packStaleActive = () => {
-  MT.assert(activeCache != null, "");
+  MT.nonNull(activeCache, "activeCache");
   packSomeTrails([activeCache]);
   const key = `trail.active.${trailId}`;
   localStorage.removeItem(key);
@@ -6413,7 +6426,7 @@ const saveCurrentTrail = () => {
   if (tip <= 0) return;
 
   const moment = State.history[tip];
-  MT.assert(moment != null, "");
+  MT.nonNull(moment, `history at tip ${tip}`);
 
   const tipTitle = moment.title;
   const tipVars = moment.variables;
@@ -6447,7 +6460,7 @@ const savePackedTrails = (packed) => {
     if (trail.delta == null) {
       if (trail.history == null) {
         MT.expandTrail(trail);
-        MT.assert(trail.history != null, "");
+        MT.nonNull(trail.history, "trail.history");
       }
       trail.delta = State.deltaEncode(trail.history);
     }
@@ -6541,7 +6554,6 @@ const packStaleTrails = () => {
     }
   }
   for (const key of keys) {
-    MT.assert(key != null, "");
     const trail = /** @type {SlimTrail} */ (
       MT.jsonParse(localStorage.getItem(key) || "{}")
     );
@@ -6610,7 +6622,7 @@ MT.tran.renderHistory = (out) => {
 
     for (; turn < stop; turn++) {
       const moment = hist[turn];
-      MT.assert(moment != null, "moment should != null");
+      MT.nonNull(moment, `history at turn ${turn}`)
 
       if (turn !== 0) {
         $("<hr class=text-sep>").appendTo(outer);
@@ -10656,7 +10668,7 @@ MT.goto.list = () => {
   let mkp = "<<nobr>>";
   for (let i = 0; i < walks.length; i++) {
     const walk = walks[i];
-    MT.assert(walk != null, "");
+    MT.nonNull(walk, `walk step ${i}`);
 
     if (typeof walk === "string") {
       mkp += `<div class="walk-header">${walks[i]}</div>`;
@@ -10732,7 +10744,7 @@ const getPathChoice = (steps, ch) => {
 MT.goto.doWalk = (i, ch) => {
   MT.forgetWalkHistory();
   const walk = MT.gotoPaths[i];
-  MT.assert(walk != null, "");
+  MT.nonNull(walk, `walk step ${i}`);
   MT.assert(typeof walk !== "string", "");
   const force = !!$("#walk-force").prop("checked");
   const path = getPathChoice(walk.path, ch);
@@ -10774,8 +10786,8 @@ MT.goto.walkAll = () => {
       return;
     }
     const walk = walks[i++];
+    MT.nonNull(walk, `walk step ${i - 1}`);
     MT.assert(typeof walk !== "string", "");
-    MT.assert(walk != null, "");
     console.log(`Starting ${MT.pathName(walk.path)}`);
     MT.forgetWalkHistory();
     State.reset();
@@ -12521,7 +12533,7 @@ Macro.add("mf-please", {
   tags: ["mf-else"],
   handler: function () {
     const V = MT.untracedVars();
-    MT.assert(V.n_magicPhase != null, "magicPhase should != null");
+    MT.nonNull(V.n_magicPhase, "magicPhase");
     let ready = true;
     ready = ready && V.n_magicPhase >= MP_wantDevice;
     ready = ready && V.n_magicPhase < MP_drained;
@@ -12906,25 +12918,25 @@ Template.add("sprBadPass", () => {
         repeatText,
         warnText,
         insistText;
-      for (const p of this.payload) {
-        switch (p.name) {
+      for (const payload of this.payload) {
+        switch (payload.name) {
           case "n1-patience":
-            firstText = p.contents;
+            firstText = payload.contents;
             break;
           case "n1-remind":
-            remindText = p.contents;
+            remindText = payload.contents;
             break;
           case "n1-repeat":
-            repeatText = p.contents;
+            repeatText = payload.contents;
             break;
           case "n1-warn":
-            warnText = p.contents;
+            warnText = payload.contents;
             break;
           case "n1-insist":
-            insistText = p.contents;
+            insistText = payload.contents;
             break;
           default:
-            throw new Error(`bug n1-patience ${p.name}`);
+            throw new Error(`bug n1-patience ${payload.name}`);
         }
       }
       if (actions === 1) {
@@ -12932,7 +12944,7 @@ Template.add("sprBadPass", () => {
         MT.assert(looks === 1, "actions === 1 should have looks === 1");
       }
       if (actions > 2) {
-        MT.assert(repeatText != null, "should have n1-repeat");
+        MT.nonNull(repeatText, "n1-repeat");
       } else {
         MT.assert(repeatText == null, "should NOT have n1-repeat");
       }
@@ -12941,13 +12953,13 @@ Template.add("sprBadPass", () => {
         MT.assert(actions === 1, "looks === 1 should have actions === 1");
       }
       if (looks > 2) {
-        MT.assert(remindText != null, "should have n1-remind");
+        MT.nonNull(remindText, "n1-remind");
       } else {
         MT.assert(remindText == null, "should NOT have n1-remind");
       }
 
-      MT.assert(warnText != null, "should have n1-warn");
-      MT.assert(insistText != null, "should have n1-insist");
+      MT.nonNull(warnText, "n1-warn");
+      MT.nonNull(insistText, "n1-insist");
 
       const V = State.variables;
       const T = State.temporary;
@@ -12959,17 +12971,20 @@ Template.add("sprBadPass", () => {
         V.n_patienceActions = actions;
         V.n_patiencePassage = here;
         V.n_patienceReturn = 0;
-      } else if (V.n_patienceReturn === 1) {
+      }
+
+      MT.nonNull(V.n_patienceLooks, "n_patienceLooks");
+      MT.nonNull(V.n_patienceActions, "n_patienceActions");
+      MT.nonNull(V.n_patienceReturn, "n_patienceReturn");
+
+      if (V.n_patienceReturn === 1) {
         // Return from look
-        MT.assert(V.n_patienceLooks != null, "patienceLooks should be set");
         V.n_patienceLooks--;
       } else if (V.n_patienceReturn === 2) {
         // Return from action
-        MT.assert(V.n_patienceActions != null, "patienceActions should be set");
         V.n_patienceActions--;
         V.n_didSomeAction = true;
       }
-      MT.assert(V.n_patienceReturn != null, "patienceReturn should be set");
       T.patienceAdvanced = V.n_patienceReturn > 0;
 
       // lose patience immediately
@@ -12979,8 +12994,6 @@ Template.add("sprBadPass", () => {
       }
       delete V.n_patienceAccel;
 
-      MT.assert(V.n_patienceLooks != null, "patienceLooks should be set");
-      MT.assert(V.n_patienceActions != null, "patienceActions should be set");
       T.patience = Math.min(V.n_patienceLooks, V.n_patienceActions);
 
       // At warn state, only allow 1 more look or action.
@@ -13007,11 +13020,11 @@ Template.add("sprBadPass", () => {
             $(this.output).wiki(firstText);
             break;
           case 1:
-            MT.assert(remindText != null, "remindText is missing");
+            MT.nonNull(remindText, "remindText");
             $(this.output).wiki(remindText);
             break;
           case 2:
-            MT.assert(repeatText != null, "repeatText is missing");
+            MT.nonNull(repeatText, "repeatText");
             $(this.output).wiki(repeatText);
             break;
           default:
@@ -13369,7 +13382,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;

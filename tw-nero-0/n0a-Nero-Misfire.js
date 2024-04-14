@@ -14,7 +14,7 @@ Macro.add("mf-please", {
   tags: ["mf-else"],
   handler: function () {
     const V = MT.untracedVars();
-    MT.assert(V.n_magicPhase != null, "magicPhase should != null");
+    MT.nonNull(V.n_magicPhase, "magicPhase");
     let ready = true;
     ready = ready && V.n_magicPhase >= MP_wantDevice;
     ready = ready && V.n_magicPhase < MP_drained;

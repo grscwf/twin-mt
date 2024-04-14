@@ -34,7 +34,7 @@ MT.getHistory = () => {
   const hist = State.history;
   for (let i = 0, n = hist.length; i < n; i++) {
     const moment = hist[i];
-    MT.assert(moment != null, "moment should != null");
+    MT.nonNull(moment, "moment");
 
     const title = moment.title;
     if (histIgnore.includes(title)) continue;

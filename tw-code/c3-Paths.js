@@ -58,8 +58,8 @@ MT.commonPathLengths = (p, q) => {
   while (pi < p.length && qi < q.length) {
     const ps = p[pi];
     const qs = q[qi];
-    MT.assert(ps != null, "");
-    MT.assert(qs != null, "");
+    MT.nonNull(ps, "path step ps");
+    MT.nonNull(qs, "path step qs");
     if (ps.t == null) {
       pi++;
     } else if (qs.t == null) {
