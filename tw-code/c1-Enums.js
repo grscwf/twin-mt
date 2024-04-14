@@ -26,7 +26,7 @@ MT.enumSymbol = (name, value) => {
  * Initialize enums that are generally expected to be non-null.
  * @type {() => void}
  */
-MT.enumInit = () => {
+MT.enumSetDefaults = () => {
   MT.untraced(() => {
     const V = State.variables;
     if (!V.n_magicPhase) V.n_magicPhase = MP_beforeCast;
@@ -98,4 +98,4 @@ enumDefine("IvexContext", [
 enumDeclareVar("n_ivexContext", "IvexContext");
 
 // This should get run before most other :passagestart handlers
-$(document).on(":passagestart", MT.enumInit);
+$(document).on(":passagestart", MT.enumSetDefaults);

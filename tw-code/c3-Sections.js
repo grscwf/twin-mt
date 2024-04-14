@@ -460,4 +460,5 @@ const sectCheckHere = () => {
 };
 
 sectCheckAll();
+
 $(document).on(":passageend", sectCheckHere);

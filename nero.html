@@ -2058,7 +2058,7 @@ MT.diagGetMessages = () => {
     messages.push(msg);
   }
   return messages;
-}
+};
 
 /** @type {(diag: DiagMessage) => void} */
 const diagEmit = (diag) => {
@@ -2132,25 +2132,22 @@ const diagBacktrace = (context) => {
   return trace;
 };
 
-const diagInit = () => {
-  $(document).on(":passageinit", () => {
-    if (diagWasSeen) {
-      $("#diag-outer").remove();
-      MT.diagHasError = false;
-      MT.diagHasWarning = false;
-      MT.diagMessages = [];
-      diagQuiet = false;
-      diagDebugStop = false;
-      diagVeryQuiet = false;
-      diagWasSeen = false;
-    }
-  });
-  $(document).on(":passageend", () => {
-    diagWasSeen = true;
-  });
-};
+$(document).on(":passageinit", () => {
+  if (diagWasSeen) {
+    $("#diag-outer").remove();
+    MT.diagHasError = false;
+    MT.diagHasWarning = false;
+    MT.diagMessages = [];
+    diagQuiet = false;
+    diagDebugStop = false;
+    diagVeryQuiet = false;
+    diagWasSeen = false;
+  }
+});
 
-diagInit();
+$(document).on(":passageend", () => {
+  diagWasSeen = true;
+});
 /* twine-user-script #5: "c1-Enums.js" */
 /**
  * enumType:string -> enumValueNames:string[]
@@ -2180,7 +2177,7 @@ MT.enumSymbol = (name, value) => {
  * Initialize enums that are generally expected to be non-null.
  * @type {() => void}
  */
-MT.enumInit = () => {
+MT.enumSetDefaults = () => {
   MT.untraced(() => {
     const V = State.variables;
     if (!V.n_magicPhase) V.n_magicPhase = MP_beforeCast;
@@ -2252,7 +2249,7 @@ enumDefine("IvexContext", [
 enumDeclareVar("n_ivexContext", "IvexContext");
 
 // This should get run before most other :passagestart handlers
-$(document).on(":passagestart", MT.enumInit);
+$(document).on(":passagestart", MT.enumSetDefaults);
 /* twine-user-script #6: "c1-Metadata.js" */
 /*
  * This module manages game metadata.
@@ -2475,13 +2472,9 @@ const metaCopyToVars = () => {
   }
 };
 
-const metaInit = () => {
-  Save.onLoad.add(metaReadFromSave);
-  Save.onSave.add(metaWriteToSave);
-  $(document).on(":passageinit", metaCopyToVars);
-};
-
-metaInit();
+Save.onLoad.add(metaReadFromSave);
+Save.onSave.add(metaWriteToSave);
+$(document).on(":passageinit", metaCopyToVars);
 /* twine-user-script #7: "c2-Migrate.js" */
 /*
  * Migrates data from saved games and saved session to current version.
@@ -2565,27 +2558,22 @@ const checkSaveVersion = (save) => {
   const V = save.state.history[1]?.variables || {};
   const ver = V.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
-  $(document).one(":passagestart", () => {
-    MT.warn(
-      `Saved game is from a different version of the game.` +
-        ` Some things may not work correctly.` +
-        ` ("${ver}" !== "${setup.version}")`
-    );
-  });
+  MT.warn(
+    `Saved game is from a different version of the game.` +
+      ` Some things may not work correctly.` +
+      ` ("${ver}" !== "${setup.version}")`
+  );
 };
 
-const migrateInit = () => {
-  deleteOldStorage();
-  migrateMetadata();
-  migrateNotes();
-  // has to be run late, after all the mdDef* calls
-  $(document).on(":storyready", warnUnknownMetadata);
+deleteOldStorage();
+migrateMetadata();
+migrateNotes();
 
-  Save.onLoad.add((save) => checkSaveVersion(save));
-  $(document).on(":storyready", checkSessionVersion);
-};
+// has to be run late, after all the mdDef* calls
+$(document).on(":storyready", warnUnknownMetadata);
 
-migrateInit();
+Save.onLoad.add((save) => checkSaveVersion(save));
+$(document).on(":storyready", checkSessionVersion);
 
 /*
  * Sketch of general saved-data migration.
@@ -3517,58 +3505,54 @@ MT.countWords = function (text) {
   return n;
 };
 /* twine-user-script #14: "c3-Debugging.js" */
-const debugInit = () => {
-  setup.debug = false;
-  setup.playtest = false;
+setup.debug = false;
+setup.playtest = false;
 
-  // Enable debug mode if URL has ?debug
-  if (/[?&]debug\b/.test(location.search)) {
-    Config.debug = true;
-    setup.debug = true;
-    setup.playtest = true;
-  }
+// Enable debug mode if URL has ?debug
+if (/[?&]debug\b/.test(location.search)) {
+  Config.debug = true;
+  setup.debug = true;
+  setup.playtest = true;
+}
 
-  // Enable playtest mode if URL has ?playtest or ?tester
-  if (/[?&](playtest|tester)\b/.test(location.search)) {
-    setup.playtest = true;
-  }
+// Enable playtest mode if URL has ?playtest or ?tester
+if (/[?&](playtest|tester)\b/.test(location.search)) {
+  setup.playtest = true;
+}
 
-  // Enable history controls when playtest (or debug)
-  Config.history.controls = setup.playtest;
+// Enable history controls when playtest (or debug)
+Config.history.controls = setup.playtest;
 
-  // images workaround for local testing
-  if (
-    location.protocol === "file:" &&
-    /-[0-9a-f]{12}\.html$|[/]Twine[/]Stories[/]/.test(location.pathname)
-  ) {
-    // base for html images (this happens too late for css images)
-    $("head").prepend('<base href="https://magestower.slethstories.com/">');
-    // add file-url class for css
-    $("html").addClass("file-url");
-  }
+// images workaround for local testing
+if (
+  location.protocol === "file:" &&
+  /-[0-9a-f]{12}\.html$|[/]Twine[/]Stories[/]/.test(location.pathname)
+) {
+  // base for html images (this happens too late for css images)
+  $("head").prepend('<base href="https://magestower.slethstories.com/">');
+  // add file-url class for css
+  $("html").addClass("file-url");
+}
 
-  if (setup.debug) {
-    // start with debug view off
-    setTimeout(() => DebugView.disable());
+if (setup.debug) {
+  // start with debug view off
+  setTimeout(() => DebugView.disable());
 
-    // add debugging class for css
-    $("html").addClass("debugging");
+  // add debugging class for css
+  $("html").addClass("debugging");
 
-    // SugarCube debug mode puts passage source in title hover text,
-    // which is useless and distracting for long sources. Remove it.
-    $(document).on(":passagedisplay", () => {
-      $("span.debug").each((i, el) => {
-        const title = el.title ?? "";
-        if (title.includes("\n") || title.length > 30) {
-          el.removeAttribute("title");
-          el.removeAttribute("aria-label");
-        }
-      });
+  // SugarCube debug mode puts passage source in title hover text,
+  // which is useless and distracting for long sources. Remove it.
+  $(document).on(":passagedisplay", () => {
+    $("span.debug").each((i, el) => {
+      const title = el.title ?? "";
+      if (title.includes("\n") || title.length > 30) {
+        el.removeAttribute("title");
+        el.removeAttribute("aria-label");
+      }
     });
-  }
-};
-
-debugInit();
+  });
+}
 /* twine-user-script #15: "c3-Draft-Sign.js" */
 const validSigns = ["mt-ready", "mt-draft", "mt-sketch"];
 
@@ -4184,10 +4168,10 @@ const removeSection = (name, text) => {
   return result;
 };
 
-/** 
+/**
  * If page note is old, overwrite it with val,
  * then returns the note (either val or conflict)
- * 
+ *
  * @type {(pageName: string, old: string, val: string) => string}
  */
 MT.notesTryReplace = (pageName, old, val) => {
@@ -4204,7 +4188,7 @@ MT.notesTryReplace = (pageName, old, val) => {
 // capture selection before click deselects it
 const pointerDown = () => {
   MT.selectedText = getSelection()?.toString().trim() || "";
-}
+};
 
 const openPopup = () => {
   const V = State.variables;
@@ -4217,7 +4201,7 @@ const openPopup = () => {
   Dialog.setup("");
   Dialog.wiki(popupText);
   Dialog.open();
-}
+};
 
 const renderButton = () => {
   $("#notes-button").remove();
@@ -4230,24 +4214,21 @@ const renderButton = () => {
   const line2 = $("<div>").attr("id", "notes-line-2").appendTo(outer);
   $("<span>").attr("id", "notes-count").appendTo(line2);
   updateStatus();
-}
+};
 
 const updateStatus = () => {
   const st = getStats(State.passage);
   $("#notes-button").toggleClass("notes-has-note", st.hasNoteHere);
   $("#notes-button").toggleClass("notes-non-zero", st.count > 0);
   $("#notes-count").text(`${st.count}`);
-}
+};
 
-const initNotes = () => {
-  MT.mdDefIgnored("mi_notes");
-  MT.mdDefIgnored("mi_notesNoTrail");
+MT.mdDefIgnored("mi_notes");
+MT.mdDefIgnored("mi_notesNoTrail");
 
-  if (!setup.playtest) return;
+if (setup.playtest) {
   $(document).on(":passagedisplay", renderButton);
 }
-
-initNotes();
 /* twine-user-script #23: "c3-Paths.js" */
 /*
  * This module is about traversable paths.
@@ -4937,19 +4918,19 @@ const roamInit = () => {
     $("<a>")
       .attr("title", "<ctrl-comma> backward")
       .text("back")
-      .click(goBack)
+      .on("click", goBack)
       .appendTo(outer);
     if (setup.debug) {
       $("<a id=rw-roam>")
         .toggleClass("rw-roaming", MT.roaming)
         .text("roam")
-        .click(roamToggle)
+        .on("click", roamToggle)
         .appendTo(outer);
     }
     $("<a id=rw-forw>")
       .attr("title", "<ctrl-period> forward or random")
       .text("forw")
-      .click(goForward)
+      .on("click", goForward)
       .appendTo(outer);
     updateLabel();
   });
@@ -4964,8 +4945,8 @@ const roamInit = () => {
     if (ev.key === ".") return goForward();
   });
 
-  // Click somewhere on  page, cancel selection
-  $(document.documentElement).on("click", (ev) => {
+  // Click somewhere on page, cancel selection
+  $("html").on("click", (ev) => {
     if (MT.roaming) return;
     if (ev.target == null) return;
     if (ev.target.tagName === "A") return;
@@ -5050,6 +5031,16 @@ const countUnlocks = () => {
 
   return [num, total];
 };
+
+$(document).on(":passageend", () => {
+  MT.untraced(() => {
+    for (const [k, v] of Object.entries(State.variables)) {
+      if (Array.isArray(v)) {
+        MT.warn(`${k} is an array (will not be delta encoded)`);
+      }
+    }
+  });
+});
 /* twine-user-script #30: "c3-Scroll-Pos.js" */
 /*
  * Restores scroll pos when reloading page.
@@ -5088,15 +5079,11 @@ const scrollRestorePos = () => {
   setTimeout(doScroll, 500);
 };
 
-const scrollInit = () => {
-  // This is only useful when doing reload after an edit
-  if (!setup.debug) return;
-
+// This is only useful when doing reload after an edit
+if (setup.debug) {
   document.addEventListener("scrollend", scrollRememberPos);
   $(document).on(":passageend", scrollRestorePos);
-};
-
-scrollInit();
+}
 /* twine-user-script #31: "c3-Sections.js" */
 // Passages are grouped into sections by a prefix code in their title.
 // - Prefix should start with a lowercase letter, followed by a number,
@@ -5560,6 +5547,7 @@ const sectCheckHere = () => {
 };
 
 sectCheckAll();
+
 $(document).on(":passageend", sectCheckHere);
 /* twine-user-script #32: "c3-Seen.js" */
 /**
@@ -5620,52 +5608,47 @@ MT.autoStow = () => {
   }
 };
 
-const sidebarInit = () => {
-  $("#ui-bar-body").append(`
-    <div id="ui-bar-footer">
-      <span>
-        <a class=footer-element target="_blank" rel="noreferrer"
-          href="https://www.patreon.com/sleth"
-          ><img alt="Patreon" src="images/pa_logo.png" height="30"></a>
+$("#ui-bar-body").append(`
+  <div id="ui-bar-footer">
+    <span>
+      <a class="footer-element" target="_blank" rel="noreferrer"
+        href="https://www.patreon.com/sleth"
+        ><img alt="Patreon" src="images/pa_logo.png" height="30"></a>
 
-        <a class=footer-element target="_blank" rel="noreferrer"
-          href="https://twitter.com/slethwulf"
-          ><img alt="Twitter" src="images/tw_logo.png" height="30"></a>
+      <a class="footer-element" target="_blank" rel="noreferrer"
+        href="https://twitter.com/slethwulf"
+        ><img alt="Twitter" src="images/tw_logo.png" height="30"></a>
 
-        <a class=footer-element target="_blank" rel="noreferrer"
-          href="https://www.furaffinity.net/user/sleth/"
-          ><img alt="FurAffinity" src="images/fa_logo.png" height="30"></a>
+      <a class="footer-element" target="_blank" rel="noreferrer"
+        href="https://www.furaffinity.net/user/sleth/"
+        ><img alt="FurAffinity" src="images/fa_logo.png" height="30"></a>
 
-        <a class=footer-element target="_blank" rel="noreferrer"
-          href="https://sleth.sofurry.com/"
-          ><img alt="SoFurry" src="images/sf_logo.png" height="30"></a>
-      </span>
-    </div>
-  `);
+      <a class="footer-element" target="_blank" rel="noreferrer"
+        href="https://sleth.sofurry.com/"
+        ><img alt="SoFurry" src="images/sf_logo.png" height="30"></a>
+    </span>
+  </div>
+`);
 
-  Config.ui.stowBarInitially = !session.get("show-sidebar");
+Config.ui.stowBarInitially = !session.get("show-sidebar");
 
-  $(document).on(":passagestart", function (ev) {
-    $("#ui-bar-toggle").on("click", () => {
-      setTimeout(() => {
-        session.set("show-sidebar", !UIBar.isStowed());
-      });
+$(document).on(":passagestart", () => {
+  $("#ui-bar-toggle").on("click", () => {
+    setTimeout(() => {
+      session.set("show-sidebar", !UIBar.isStowed());
     });
   });
-};
-
-sidebarInit();
+});
 /* twine-user-script #34: "c3-Sticky-Panes.js" */
-
 Macro.add("sticky-head", {
   tags: [],
-  handler: function() {
+  handler: function () {
     let inner = $("#sticky-head .sticky-inner");
     if (inner.length === 0) {
       inner = $("<div class=sticky-inner>").appendTo("#sticky-head");
     }
     inner.wiki(this.payload[0]?.contents || "");
-  }
+  },
 });
 
 /** @type {(and?: string) => void} */
@@ -5674,57 +5657,45 @@ const stickyReturn = (and) => {
   if (inner.length === 0) {
     inner = $("<div class=sticky-inner>").appendTo("#sticky-tail");
   }
-  inner.wiki(`<<link "Return to the game">><<run MT.popToStory()>><</link>>`)
+  inner.wiki(`<<link "Return to the game">><<run MT.popToStory()>><</link>>`);
   if (and != null && and !== "") {
     inner.wiki(and);
   }
-}
+};
 
 Macro.add("sticky-return", {
-  handler: function() {
+  handler: function () {
     stickyReturn();
-  }
+  },
 });
 
 Macro.add("sticky-return-and", {
   tags: [],
-  handler: function() {
+  handler: function () {
     stickyReturn(this.payload[0]?.contents || "");
-  }
+  },
 });
 
-const stickyInit = () => {
-  $(document).on(":passageinit", () => {
-    MT.autoStow();
-    $("#sticky-head").remove();
-    $("#sticky-head-obs").remove();
-    const headDiv =
-      $("<div id=sticky-head>")
-      .prependTo("#story");
-    const headObsDiv =
-      $("<div id=sticky-head-obs>")
-      .prependTo("#story");
-    const headObs = new IntersectionObserver(([e]) => {
-      headDiv.toggleClass("shadow", !e?.isIntersecting);
-    });
-    headObs.observe(MT.jqUnwrap(headObsDiv));
-
-    $("#sticky-tail").remove();
-    $("#sticky-tail-obs").remove();
-    const tailDiv = 
-      $("<div id=sticky-tail>")
-      .appendTo("#story");
-    const tailObsDiv =
-      $("<div id=sticky-tail-obs>")
-      .appendTo("#story");
-    const tailObs = new IntersectionObserver(([e]) => {
-      tailDiv.toggleClass("shadow", !e?.isIntersecting);
-    });
-    tailObs.observe(MT.jqUnwrap(tailObsDiv));
+$(document).on(":passageinit", () => {
+  MT.autoStow();
+  $("#sticky-head").remove();
+  $("#sticky-head-obs").remove();
+  const headDiv = $("<div id=sticky-head>").prependTo("#story");
+  const headObsDiv = $("<div id=sticky-head-obs>").prependTo("#story");
+  const headObs = new IntersectionObserver(([e]) => {
+    headDiv.toggleClass("shadow", !e?.isIntersecting);
   });
-}
+  headObs.observe(MT.jqUnwrap(headObsDiv));
 
-stickyInit();
+  $("#sticky-tail").remove();
+  $("#sticky-tail-obs").remove();
+  const tailDiv = $("<div id=sticky-tail>").appendTo("#story");
+  const tailObsDiv = $("<div id=sticky-tail-obs>").appendTo("#story");
+  const tailObs = new IntersectionObserver(([e]) => {
+    tailDiv.toggleClass("shadow", !e?.isIntersecting);
+  });
+  tailObs.observe(MT.jqUnwrap(tailObsDiv));
+});
 /* twine-user-script #35: "c3-Storage.js" */
 
 MT.computeSizes = () => {
@@ -6232,7 +6203,7 @@ MT.trailViewRender = (out) => {
   };
 
   $(document).on("keydown", onKeyDown);
-  $(document).on(":passageinit", () => {
+  $(document).one(":passageinit", () => {
     $(document).off("keydown", onKeyDown);
   });
 
@@ -6532,7 +6503,7 @@ const savePackedTrails = (packed) => {
   localStorage.setItem("trail.packed", str);
   packedCache.str = str;
   packedCache.obj = packed;
-}
+};
 
 /**
  * If trail has delta or state, expands in-place to history.
@@ -6622,15 +6593,13 @@ const packActiveTrail = () => {
   localStorage.removeItem(key);
 };
 
-const trailInit = () => {
-  if (!setup.playtest) return;
+if (setup.playtest) {
   claimOldTrail();
   packStaleTrails();
+
   $(document).on(":passageend", saveCurrentTrail);
   $(document).on(":enginerestart", packActiveTrail);
-};
-
-trailInit();
+}
 /* twine-user-script #40: "c3-Transcript.js" */
 /**
  * @typedef {object} NextLink
@@ -6736,7 +6705,7 @@ MT.tran.renderPage = (page) => {
     if (page.temps != null) {
       Object.assign(State.temporary, clone(page.temps));
     }
-    MT.enumInit();
+    MT.enumSetDefaults();
 
     MT.diagQuietly(() => {
       const text = Story.get(page.title).text;
@@ -7204,120 +7173,104 @@ const varButton = (vname) => {
   return outer;
 };
 
-const initVarInfo = () => {
-  if (!setup.playtest) return;
+const varRememberAndRender = () => {
+  MT.traceStop();
 
+  // Save list of vars read to entry state (not active state)
+  delete State.variables.g_varsRead;
+  const read = Array.from(MT.trace.wasRead).sort();
+  if (read.length) State.current.variables.g_varsRead = JSON.stringify(read);
+
+  // Save whether current passage has branches
+  delete State.current.variables.g_branchy;
+  const branchy = $("#passages a[data-passage]").length > 1;
+  if (branchy) State.current.variables.g_branchy = true;
+
+  MT.trace.wasTopRead.forEach((vn) => {
+    if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
+      const c = alwaysVars.get(vn);
+      MT.warn(`vi-always ${vn} ${c}, but var was read`);
+    }
+    const exp = MT.varExpect(vn);
+    if (exp != null) {
+      MT.warn(`${vn} always ${exp} in this section, but var was read`);
+    }
+  });
+
+  const notable = MT.allNotable();
+  const to_do = notable.filter(
+    (vn) =>
+      !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn)
+  );
+  if (to_do.length && !MT.isDraft()) {
+    MT.warn(`non-draft passage has unused notable vars: ${to_do}`);
+  }
+
+  if (!setup.debug) return;
+
+  const touched = new Set();
+  MT.trace.wasRead.forEach((v) => touched.add(v));
+  MT.trace.wasSet.forEach((v) => touched.add(v));
+  MT.trace.wasDeleted.forEach((v) => touched.add(v));
+  notable.forEach((f) => touched.add(f));
+
+  $(".var-info").remove();
+  const outer = $("<div class=var-info>");
+
+  outer.prependTo("#sticky-head");
+
+  let show = session.get("var-info-show");
+  outer.toggleClass("var-info-hidden", !show);
+
+  $(`<span class="var-info-label var-info-show">`)
+    .text("var-info")
+    .appendTo(outer)
+    .click(() => {
+      show = !show;
+      session.set("var-info-show", show);
+      outer.toggleClass("var-info-hidden", !show);
+    });
+
+  $("<span class=var-info-compute>[compute variants]</span>")
+    .appendTo(outer)
+    .click(() => MT.computeVariants());
+
+  if (touched.size) {
+    const el = $("<span class=var-info-touched>").appendTo(outer);
+    [...touched].sort().forEach((v) => varButton(v).appendTo(el));
+  }
+
+  $("<span class=var-info-separator>").text("||").appendTo(outer);
+  $(`<span class="var-info-passage var-info-show">`)
+    .text(State.passage)
+    .appendTo(outer);
+
+  const sizes = MT.computeSizes();
+  $(`<span class="var-info-separator var-info-show">`)
+    .text("||")
+    .appendTo(outer);
+  $(`<span class="var-info-sizes var-info-show">`)
+    .text(sizes)
+    .attr(
+      "title",
+      "Storage size estimate in bytes\n" +
+        "ss = sessionStorage (current tab)\n" +
+        "ls = localStorage (shared by tabs)\n" +
+        "md = SugarCube metadata (within localStorage)\n"
+    )
+    .appendTo(outer);
+
+  if (to_do.length) outer.addClass("var-info-to-do");
+};
+
+if (setup.playtest) {
   $(document).on(":passagestart", () => {
     MT.traceStart();
   });
 
-  $(document).on(":passageend", () => {
-    MT.traceStop();
-
-    // Save list of vars read to entry state (not active state)
-    delete State.variables.g_varsRead;
-    const read = Array.from(MT.trace.wasRead).sort();
-    if (read.length) State.current.variables.g_varsRead = JSON.stringify(read);
-
-    // Save whether current passage has branches
-    delete State.current.variables.g_branchy;
-    const branchy = $("#passages a[data-passage]").length > 1;
-    if (branchy) State.current.variables.g_branchy = true;
-
-    MT.trace.wasTopRead.forEach((vn) => {
-      if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
-        const c = alwaysVars.get(vn);
-        MT.warn(`vi-always ${vn} ${c}, but var was read`);
-      }
-      const exp = MT.varExpect(vn);
-      if (exp != null) {
-        MT.warn(`${vn} always ${exp} in this section, but var was read`);
-      }
-    });
-
-    const notable = MT.allNotable();
-    const to_do = notable.filter(
-      (vn) =>
-        !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn)
-    );
-    if (to_do.length && !MT.isDraft()) {
-      MT.warn(`non-draft passage has unused notable vars: ${to_do}`);
-    }
-
-    if (!setup.debug) return;
-
-    const touched = new Set();
-    MT.trace.wasRead.forEach((v) => touched.add(v));
-    MT.trace.wasSet.forEach((v) => touched.add(v));
-    MT.trace.wasDeleted.forEach((v) => touched.add(v));
-    notable.forEach((f) => touched.add(f));
-
-    $(".var-info").remove();
-    const outer = $("<div class=var-info>");
-
-    outer.prependTo("#sticky-head");
-
-    let show = session.get("var-info-show");
-    outer.toggleClass("var-info-hidden", !show);
-
-    $(`<span class="var-info-label var-info-show">`)
-      .text("var-info")
-      .appendTo(outer)
-      .click(() => {
-        show = !show;
-        session.set("var-info-show", show);
-        outer.toggleClass("var-info-hidden", !show);
-      });
-
-    $("<span class=var-info-compute>[compute variants]</span>")
-      .appendTo(outer)
-      .click(() => MT.computeVariants());
-
-    if (touched.size) {
-      const el = $("<span class=var-info-touched>").appendTo(outer);
-      [...touched].sort().forEach((v) => varButton(v).appendTo(el));
-    }
-
-    $("<span class=var-info-separator>").text("||").appendTo(outer);
-    $(`<span class="var-info-passage var-info-show">`)
-      .text(State.passage)
-      .appendTo(outer);
-
-    const sizes = MT.computeSizes();
-    $(`<span class="var-info-separator var-info-show">`)
-      .text("||")
-      .appendTo(outer);
-    $(`<span class="var-info-sizes var-info-show">`)
-      .text(sizes)
-      .attr(
-        "title",
-        "Storage size estimate in bytes\n" +
-          "ss = sessionStorage (current tab)\n" +
-          "ls = localStorage (shared by tabs)\n" +
-          "md = SugarCube metadata (within localStorage)\n"
-      )
-      .appendTo(outer);
-
-    if (to_do.length) outer.addClass("var-info-to-do");
-  });
-};
-
-initVarInfo();
-/* twine-user-script #42: "c3-Verify-State.js" */
-const verifyInit = () => {
-  $(document).on(":passageend", () => {
-    MT.untraced(() => {
-      for (const [k, v] of Object.entries(State.variables)) {
-        if (Array.isArray(v)) {
-          MT.warn(`${k} is an array (will not be delta encoded)`);
-        }
-      }
-    });
-  });
-};
-
-verifyInit();
-/* twine-user-script #43: "g1a-Title-Screen.js" */
+  $(document).on(":passageend", varRememberAndRender);
+}
+/* twine-user-script #42: "g1a-Title-Screen.js" */
 MT.titleInit = () => {
   const V = State.variables;
   const T = State.temporary;
@@ -7336,7 +7289,7 @@ MT.titleContentWarning = () => {
   Dialog.wiki("<<include [[g1a Content Warning]]>>");
   Dialog.open();
 };
-/* twine-user-script #44: "g1m-Goto-Paths.js" */
+/* twine-user-script #43: "g1m-Goto-Paths.js" */
 
 /**
  * @typedef {object} GotoStep
@@ -10710,7 +10663,7 @@ MT.gotoPaths = [
     ],
   },
 ];
-/* twine-user-script #45: "g1m-Goto.js" */
+/* twine-user-script #44: "g1m-Goto.js" */
 MT.goto = {};
 
 MT.goto.list = () => {
@@ -10868,7 +10821,7 @@ MT.goto.init = () => {
     MT.goto.showCurrentPath();
   });
 };
-/* twine-user-script #46: "n0a-Nero-Barbs.js" */
+/* twine-user-script #45: "n0a-Nero-Barbs.js" */
 /** @arg {DocumentFragment | HTMLElement} dest */
 const barbsAnnounce = (dest) => {
   const V = State.variables;
@@ -10956,7 +10909,7 @@ MT.mdDefUnsaved("mg_barbsNo");
 MT.mdDefUnsaved("mg_barbsYes");
 MT.mdDefUnsaved("mg_knotNo");
 MT.mdDefUnsaved("mg_knotYes");
-/* twine-user-script #47: "n0a-Nero-Caged.js" */
+/* twine-user-script #46: "n0a-Nero-Caged.js" */
 (() => {
   const BORDER = 0;
 
@@ -11395,7 +11348,7 @@ MT.mdDefUnsaved("mg_knotYes");
     return { height, blocks };
   }
 })();
-/* twine-user-script #48: "n0a-Nero-Constraints.js" */
+/* twine-user-script #47: "n0a-Nero-Constraints.js" */
 /**
  * @typedef {object} Constraint
  * @prop {Record<string, unknown>} implies
@@ -12110,7 +12063,7 @@ const checkConstraints = () => {
 };
 
 $(document).on(":passageend", checkConstraints);
-/* twine-user-script #49: "n0a-Nero-Endings.js" */
+/* twine-user-script #48: "n0a-Nero-Endings.js" */
 /** @type {ArchiveMap} */
 MT.neroEndings = {
   xn_Broken: {
@@ -12224,7 +12177,7 @@ MT.mdDefUnsaved("mn_arcHuntedVariant");
 MT.mdDefUnsaved("mn_arcOverwhelmedVariant");
 MT.mdDefUnsaved("mn_arcSatisfiedVariant");
 MT.mdDefUnsaved("mn_arcTamedVariant");
-/* twine-user-script #50: "n0a-Nero-Glitch.js" */
+/* twine-user-script #49: "n0a-Nero-Glitch.js" */
 const barbGlitch = [
   `<span class=glitch-switch>\
     <div class=glitch-switch-1>barbed</div>\
@@ -12293,7 +12246,7 @@ const glitchText = (textNode, g, speed) => {
   }
   return g;
 }
-/* twine-user-script #51: "n0a-Nero-Keywords.js" */
+/* twine-user-script #50: "n0a-Nero-Keywords.js" */
 /** @type {ArchiveMap} */
 MT.neroKeywords = {
   kn_Dream: {
@@ -12526,21 +12479,17 @@ Macro.add("kw-announce", {
   },
 });
 
-const neroKeywordInit = () => {
-  Object.keys(MT.neroKeywords).map(MT.mdDefSaved);
+Object.keys(MT.neroKeywords).map(MT.mdDefSaved);
 
-  $(document).on(":passageend", () => {
-    const T = State.temporary;
-    const isMenu = tags().includes("is-menu");
-    const kwAnnounce = MT.untracedGet("n_kwAnnounce");
-    if (!T.kwUnlocking && kwAnnounce != null && !isMenu) {
-      MT.error(`missing kw-announce for ${kwAnnounce}`);
-    }
-  });
-}
-
-neroKeywordInit();
-/* twine-user-script #52: "n0a-Nero-Magic.js" */
+$(document).on(":passageend", () => {
+  const T = State.temporary;
+  const isMenu = tags().includes("is-menu");
+  const kwAnnounce = MT.untracedGet("n_kwAnnounce");
+  if (!T.kwUnlocking && kwAnnounce != null && !isMenu) {
+    MT.error(`missing kw-announce for ${kwAnnounce}`);
+  }
+});
+/* twine-user-script #51: "n0a-Nero-Magic.js" */
 /** True if Nero has cast a spell. */
 MT.neroDidCast = () => {
   const V = State.variables;
@@ -12554,7 +12503,7 @@ MT.neroDidCast = () => {
       V.n_castYounger)
   );
 };
-/* twine-user-script #53: "n0a-Nero-Metadata.js" */
+/* twine-user-script #52: "n0a-Nero-Metadata.js" */
 // things the player has done, which affect hints
 // these are not saved, because player might load someone else's saved game
 
@@ -12564,7 +12513,7 @@ MT.mdDefUnsaved("mn_brokenTooSlow");
 
 MT.mdDefUnsaved("mn_playerLeftStudyNoMirror");
 MT.mdDefUnsaved("mn_playerLeftStudyWithMirror");
-/* twine-user-script #54: "n0a-Nero-Misfire.js" */
+/* twine-user-script #53: "n0a-Nero-Misfire.js" */
 /**
  * <<mf-please>>
  *   $text
@@ -12640,7 +12589,7 @@ Macro.add("mf-pass", {
     console.log(`mf-pass ${pw}`);
   },
 });
-/* twine-user-script #55: "n0a-Nero-Password.js" */
+/* twine-user-script #54: "n0a-Nero-Password.js" */
 const sayPassword = "n1s Say Password";
 
 const PW_621 = MT.windowRec.PW_621 = "621";
@@ -12919,7 +12868,7 @@ Template.add("sprBadPass", () => {
   }
   return mkp;
 });
-/* twine-user-script #56: "n0a-Nero-Patience.js" */
+/* twine-user-script #55: "n0a-Nero-Patience.js" */
 (() => {
   /**
    * <<n1-patience $looks $actions>>
@@ -13169,14 +13118,14 @@ Template.add("sprBadPass", () => {
     },
   });
 })();
-/* twine-user-script #57: "n0a-Nero-Taming.js" */
+/* twine-user-script #56: "n0a-Nero-Taming.js" */
 MT.startTaming = () => {
   if (!State.temporary.isTranscript) {
     const passage = $(".passage");
     setTimeout(() => passage.addClass("tame-fade"), 200);
   }
 };
-/* twine-user-script #58: "n0a-Nero-Templates.js" */
+/* twine-user-script #57: "n0a-Nero-Templates.js" */
 
 Template.add("blank",
   "<span class=nero-blank>" +
@@ -13280,7 +13229,7 @@ Template.add("sprHoldStop", () => {
   }
   return mkp;
 });
-/* twine-user-script #59: "d0a-Drekkar-Endings.js" */
+/* twine-user-script #58: "d0a-Drekkar-Endings.js" */
 /** @type {ArchiveMap} */
 MT.drekkarEndings = {
   xd_EnthrallmentLion: {
@@ -13430,7 +13379,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -14358,7 +14307,9 @@ function render() {
   showPassages(dest, neroInfo);
   MT.signPassage();
 };
-$(document).one(&quot;:passagedisplay&quot;, render);
+if (!State.temporary.isTranscript) {
+  $(document).one(&quot;:passagedisplay&quot;, render);
+}
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="15" name="g1m Goto" tags="is-menu" position="250,1900" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -24350,7 +24301,7 @@ State.temporary.reveal = () =&gt; {
 	setTimeout(() =&gt; $(&quot;#glitch-2&quot;).removeClass(&quot;glitch-fading-in&quot;));
 	setTimeout(() =&gt; $(&quot;#glitch-2&quot;).addClass(&quot;glitch-fading-out&quot;), 100);
 };
-if (MT.roaming) {
+if (!State.temporary.isTranscript &amp;&amp; MT.roaming) {
 	$(document).one(&quot;:passagedisplay&quot;, State.temporary.reveal);
 }
 &lt;&lt;/script&gt;&gt;
@@ -26852,9 +26803,6 @@ $n_afterAction
     $n_candleHorny ? &quot;whines&quot; :
     $n_ivexGone ? &quot;speaks&quot; :
     &quot;whispers&quot;;
-  if (_isTranscript &amp;&amp; !$n_ivexContext) {
-    $n_ivexContext = IC_gone;
-  }
 &gt;&gt;
 
 &lt;&lt;if $n_helpDeviceAsked &amp;&amp; !$n_candleHorny&gt;&gt;
@@ -26995,9 +26943,6 @@ $n_afterAction
 &lt;&lt;run
   if (!$n_holdPhase) {
     $n_holdPhase = 1;
-  }
-  if (_isTranscript &amp;&amp; !$n_ivexContext) {
-    $n_ivexContext = IC_gone;
   }
 &gt;&gt;
 
@@ -28582,12 +28527,6 @@ $n_afterAction
 &lt;&lt;set _numTried = JSON.parse($n_passTried || &quot;[]&quot;).length&gt;&gt;
 &lt;&lt;mt-assert _numTried &gt;= 1&gt;&gt;
 &lt;&lt;mt-assert _numTried &lt;= 3&gt;&gt;
-
-&lt;&lt;run
-  if (_isTranscript &amp;&amp; !$n_ivexContext) {
-    $n_ivexContext = IC_gone;
-  }
-&gt;&gt;
 
 &lt;&lt;if $n_candleHorny&gt;&gt;
   &lt;&lt;switch _numTried&gt;&gt;

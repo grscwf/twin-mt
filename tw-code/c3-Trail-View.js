@@ -350,7 +350,7 @@ MT.trailViewRender = (out) => {
   };
 
   $(document).on("keydown", onKeyDown);
-  $(document).on(":passageinit", () => {
+  $(document).one(":passageinit", () => {
     $(document).off("keydown", onKeyDown);
   });
 

@@ -230,17 +230,13 @@ Macro.add("kw-announce", {
   },
 });
 
-const neroKeywordInit = () => {
-  Object.keys(MT.neroKeywords).map(MT.mdDefSaved);
+Object.keys(MT.neroKeywords).map(MT.mdDefSaved);
 
-  $(document).on(":passageend", () => {
-    const T = State.temporary;
-    const isMenu = tags().includes("is-menu");
-    const kwAnnounce = MT.untracedGet("n_kwAnnounce");
-    if (!T.kwUnlocking && kwAnnounce != null && !isMenu) {
-      MT.error(`missing kw-announce for ${kwAnnounce}`);
-    }
-  });
-}
-
-neroKeywordInit();
+$(document).on(":passageend", () => {
+  const T = State.temporary;
+  const isMenu = tags().includes("is-menu");
+  const kwAnnounce = MT.untracedGet("n_kwAnnounce");
+  if (!T.kwUnlocking && kwAnnounce != null && !isMenu) {
+    MT.error(`missing kw-announce for ${kwAnnounce}`);
+  }
+});

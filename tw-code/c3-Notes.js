@@ -122,10 +122,10 @@ const removeSection = (name, text) => {
   return result;
 };
 
-/** 
+/**
  * If page note is old, overwrite it with val,
  * then returns the note (either val or conflict)
- * 
+ *
  * @type {(pageName: string, old: string, val: string) => string}
  */
 MT.notesTryReplace = (pageName, old, val) => {
@@ -142,7 +142,7 @@ MT.notesTryReplace = (pageName, old, val) => {
 // capture selection before click deselects it
 const pointerDown = () => {
   MT.selectedText = getSelection()?.toString().trim() || "";
-}
+};
 
 const openPopup = () => {
   const V = State.variables;
@@ -155,7 +155,7 @@ const openPopup = () => {
   Dialog.setup("");
   Dialog.wiki(popupText);
   Dialog.open();
-}
+};
 
 const renderButton = () => {
   $("#notes-button").remove();
@@ -168,21 +168,18 @@ const renderButton = () => {
   const line2 = $("<div>").attr("id", "notes-line-2").appendTo(outer);
   $("<span>").attr("id", "notes-count").appendTo(line2);
   updateStatus();
-}
+};
 
 const updateStatus = () => {
   const st = getStats(State.passage);
   $("#notes-button").toggleClass("notes-has-note", st.hasNoteHere);
   $("#notes-button").toggleClass("notes-non-zero", st.count > 0);
   $("#notes-count").text(`${st.count}`);
-}
+};
 
-const initNotes = () => {
-  MT.mdDefIgnored("mi_notes");
-  MT.mdDefIgnored("mi_notesNoTrail");
+MT.mdDefIgnored("mi_notes");
+MT.mdDefIgnored("mi_notesNoTrail");
 
-  if (!setup.playtest) return;
+if (setup.playtest) {
   $(document).on(":passagedisplay", renderButton);
 }
-
-initNotes();

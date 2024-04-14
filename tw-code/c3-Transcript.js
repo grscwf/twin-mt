@@ -102,7 +102,7 @@ MT.tran.renderPage = (page) => {
     if (page.temps != null) {
       Object.assign(State.temporary, clone(page.temps));
     }
-    MT.enumInit();
+    MT.enumSetDefaults();
 
     MT.diagQuietly(() => {
       const text = Story.get(page.title).text;

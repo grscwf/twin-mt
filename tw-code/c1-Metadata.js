@@ -219,10 +219,6 @@ const metaCopyToVars = () => {
   }
 };
 
-const metaInit = () => {
-  Save.onLoad.add(metaReadFromSave);
-  Save.onSave.add(metaWriteToSave);
-  $(document).on(":passageinit", metaCopyToVars);
-};
-
-metaInit();
+Save.onLoad.add(metaReadFromSave);
+Save.onSave.add(metaWriteToSave);
+$(document).on(":passageinit", metaCopyToVars);

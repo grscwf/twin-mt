@@ -220,7 +220,7 @@ const savePackedTrails = (packed) => {
   localStorage.setItem("trail.packed", str);
   packedCache.str = str;
   packedCache.obj = packed;
-}
+};
 
 /**
  * If trail has delta or state, expands in-place to history.
@@ -310,12 +310,10 @@ const packActiveTrail = () => {
   localStorage.removeItem(key);
 };
 
-const trailInit = () => {
-  if (!setup.playtest) return;
+if (setup.playtest) {
   claimOldTrail();
   packStaleTrails();
+
   $(document).on(":passageend", saveCurrentTrail);
   $(document).on(":enginerestart", packActiveTrail);
-};
-
-trailInit();
+}

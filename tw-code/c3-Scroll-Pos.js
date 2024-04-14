@@ -35,12 +35,8 @@ const scrollRestorePos = () => {
   setTimeout(doScroll, 500);
 };
 
-const scrollInit = () => {
-  // This is only useful when doing reload after an edit
-  if (!setup.debug) return;
-
+// This is only useful when doing reload after an edit
+if (setup.debug) {
   document.addEventListener("scrollend", scrollRememberPos);
   $(document).on(":passageend", scrollRestorePos);
-};
-
-scrollInit();
+}

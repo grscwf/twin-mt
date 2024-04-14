@@ -80,27 +80,22 @@ const checkSaveVersion = (save) => {
   const V = save.state.history[1]?.variables || {};
   const ver = V.g_versionAtStart || "unknown version";
   if (ver === setup.version) return;
-  $(document).one(":passagestart", () => {
-    MT.warn(
-      `Saved game is from a different version of the game.` +
-        ` Some things may not work correctly.` +
-        ` ("${ver}" !== "${setup.version}")`
-    );
-  });
+  MT.warn(
+    `Saved game is from a different version of the game.` +
+      ` Some things may not work correctly.` +
+      ` ("${ver}" !== "${setup.version}")`
+  );
 };
 
-const migrateInit = () => {
-  deleteOldStorage();
-  migrateMetadata();
-  migrateNotes();
-  // has to be run late, after all the mdDef* calls
-  $(document).on(":storyready", warnUnknownMetadata);
+deleteOldStorage();
+migrateMetadata();
+migrateNotes();
 
-  Save.onLoad.add((save) => checkSaveVersion(save));
-  $(document).on(":storyready", checkSessionVersion);
-};
+// has to be run late, after all the mdDef* calls
+$(document).on(":storyready", warnUnknownMetadata);
 
-migrateInit();
+Save.onLoad.add((save) => checkSaveVersion(save));
+$(document).on(":storyready", checkSessionVersion);
 
 /*
  * Sketch of general saved-data migration.

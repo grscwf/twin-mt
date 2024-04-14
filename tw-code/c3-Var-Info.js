@@ -279,102 +279,100 @@ const varButton = (vname) => {
   return outer;
 };
 
-const initVarInfo = () => {
-  if (!setup.playtest) return;
+const varRememberAndRender = () => {
+  MT.traceStop();
 
+  // Save list of vars read to entry state (not active state)
+  delete State.variables.g_varsRead;
+  const read = Array.from(MT.trace.wasRead).sort();
+  if (read.length) State.current.variables.g_varsRead = JSON.stringify(read);
+
+  // Save whether current passage has branches
+  delete State.current.variables.g_branchy;
+  const branchy = $("#passages a[data-passage]").length > 1;
+  if (branchy) State.current.variables.g_branchy = true;
+
+  MT.trace.wasTopRead.forEach((vn) => {
+    if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
+      const c = alwaysVars.get(vn);
+      MT.warn(`vi-always ${vn} ${c}, but var was read`);
+    }
+    const exp = MT.varExpect(vn);
+    if (exp != null) {
+      MT.warn(`${vn} always ${exp} in this section, but var was read`);
+    }
+  });
+
+  const notable = MT.allNotable();
+  const to_do = notable.filter(
+    (vn) =>
+      !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn)
+  );
+  if (to_do.length && !MT.isDraft()) {
+    MT.warn(`non-draft passage has unused notable vars: ${to_do}`);
+  }
+
+  if (!setup.debug) return;
+
+  const touched = new Set();
+  MT.trace.wasRead.forEach((v) => touched.add(v));
+  MT.trace.wasSet.forEach((v) => touched.add(v));
+  MT.trace.wasDeleted.forEach((v) => touched.add(v));
+  notable.forEach((f) => touched.add(f));
+
+  $(".var-info").remove();
+  const outer = $("<div class=var-info>");
+
+  outer.prependTo("#sticky-head");
+
+  let show = session.get("var-info-show");
+  outer.toggleClass("var-info-hidden", !show);
+
+  $(`<span class="var-info-label var-info-show">`)
+    .text("var-info")
+    .appendTo(outer)
+    .click(() => {
+      show = !show;
+      session.set("var-info-show", show);
+      outer.toggleClass("var-info-hidden", !show);
+    });
+
+  $("<span class=var-info-compute>[compute variants]</span>")
+    .appendTo(outer)
+    .click(() => MT.computeVariants());
+
+  if (touched.size) {
+    const el = $("<span class=var-info-touched>").appendTo(outer);
+    [...touched].sort().forEach((v) => varButton(v).appendTo(el));
+  }
+
+  $("<span class=var-info-separator>").text("||").appendTo(outer);
+  $(`<span class="var-info-passage var-info-show">`)
+    .text(State.passage)
+    .appendTo(outer);
+
+  const sizes = MT.computeSizes();
+  $(`<span class="var-info-separator var-info-show">`)
+    .text("||")
+    .appendTo(outer);
+  $(`<span class="var-info-sizes var-info-show">`)
+    .text(sizes)
+    .attr(
+      "title",
+      "Storage size estimate in bytes\n" +
+        "ss = sessionStorage (current tab)\n" +
+        "ls = localStorage (shared by tabs)\n" +
+        "md = SugarCube metadata (within localStorage)\n"
+    )
+    .appendTo(outer);
+
+  if (to_do.length) outer.addClass("var-info-to-do");
+};
+
+if (setup.playtest) {
   $(document).on(":passagestart", () => {
     MT.traceStart();
   });
 
-  $(document).on(":passageend", () => {
-    MT.traceStop();
-
-    // Save list of vars read to entry state (not active state)
-    delete State.variables.g_varsRead;
-    const read = Array.from(MT.trace.wasRead).sort();
-    if (read.length) State.current.variables.g_varsRead = JSON.stringify(read);
-
-    // Save whether current passage has branches
-    delete State.current.variables.g_branchy;
-    const branchy = $("#passages a[data-passage]").length > 1;
-    if (branchy) State.current.variables.g_branchy = true;
-
-    MT.trace.wasTopRead.forEach((vn) => {
-      if (alwaysVars.has(vn) && !alwaysConditional.has(vn)) {
-        const c = alwaysVars.get(vn);
-        MT.warn(`vi-always ${vn} ${c}, but var was read`);
-      }
-      const exp = MT.varExpect(vn);
-      if (exp != null) {
-        MT.warn(`${vn} always ${exp} in this section, but var was read`);
-      }
-    });
-
-    const notable = MT.allNotable();
-    const to_do = notable.filter(
-      (vn) =>
-        !ignoreVars.has(vn) && !alwaysVars.has(vn) && !MT.trace.wasRead.has(vn)
-    );
-    if (to_do.length && !MT.isDraft()) {
-      MT.warn(`non-draft passage has unused notable vars: ${to_do}`);
-    }
-
-    if (!setup.debug) return;
-
-    const touched = new Set();
-    MT.trace.wasRead.forEach((v) => touched.add(v));
-    MT.trace.wasSet.forEach((v) => touched.add(v));
-    MT.trace.wasDeleted.forEach((v) => touched.add(v));
-    notable.forEach((f) => touched.add(f));
-
-    $(".var-info").remove();
-    const outer = $("<div class=var-info>");
-
-    outer.prependTo("#sticky-head");
-
-    let show = session.get("var-info-show");
-    outer.toggleClass("var-info-hidden", !show);
-
-    $(`<span class="var-info-label var-info-show">`)
-      .text("var-info")
-      .appendTo(outer)
-      .click(() => {
-        show = !show;
-        session.set("var-info-show", show);
-        outer.toggleClass("var-info-hidden", !show);
-      });
-
-    $("<span class=var-info-compute>[compute variants]</span>")
-      .appendTo(outer)
-      .click(() => MT.computeVariants());
-
-    if (touched.size) {
-      const el = $("<span class=var-info-touched>").appendTo(outer);
-      [...touched].sort().forEach((v) => varButton(v).appendTo(el));
-    }
-
-    $("<span class=var-info-separator>").text("||").appendTo(outer);
-    $(`<span class="var-info-passage var-info-show">`)
-      .text(State.passage)
-      .appendTo(outer);
-
-    const sizes = MT.computeSizes();
-    $(`<span class="var-info-separator var-info-show">`)
-      .text("||")
-      .appendTo(outer);
-    $(`<span class="var-info-sizes var-info-show">`)
-      .text(sizes)
-      .attr(
-        "title",
-        "Storage size estimate in bytes\n" +
-          "ss = sessionStorage (current tab)\n" +
-          "ls = localStorage (shared by tabs)\n" +
-          "md = SugarCube metadata (within localStorage)\n"
-      )
-      .appendTo(outer);
-
-    if (to_do.length) outer.addClass("var-info-to-do");
-  });
-};
-
-initVarInfo();
+  $(document).on(":passageend", varRememberAndRender);
+}

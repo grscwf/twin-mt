@@ -183,7 +183,7 @@ MT.diagGetMessages = () => {
     messages.push(msg);
   }
   return messages;
-}
+};
 
 /** @type {(diag: DiagMessage) => void} */
 const diagEmit = (diag) => {
@@ -257,22 +257,19 @@ const diagBacktrace = (context) => {
   return trace;
 };
 
-const diagInit = () => {
-  $(document).on(":passageinit", () => {
-    if (diagWasSeen) {
-      $("#diag-outer").remove();
-      MT.diagHasError = false;
-      MT.diagHasWarning = false;
-      MT.diagMessages = [];
-      diagQuiet = false;
-      diagDebugStop = false;
-      diagVeryQuiet = false;
-      diagWasSeen = false;
-    }
-  });
-  $(document).on(":passageend", () => {
-    diagWasSeen = true;
-  });
-};
+$(document).on(":passageinit", () => {
+  if (diagWasSeen) {
+    $("#diag-outer").remove();
+    MT.diagHasError = false;
+    MT.diagHasWarning = false;
+    MT.diagMessages = [];
+    diagQuiet = false;
+    diagDebugStop = false;
+    diagVeryQuiet = false;
+    diagWasSeen = false;
+  }
+});
 
-diagInit();
+$(document).on(":passageend", () => {
+  diagWasSeen = true;
+});

@@ -407,19 +407,19 @@ const roamInit = () => {
     $("<a>")
       .attr("title", "<ctrl-comma> backward")
       .text("back")
-      .click(goBack)
+      .on("click", goBack)
       .appendTo(outer);
     if (setup.debug) {
       $("<a id=rw-roam>")
         .toggleClass("rw-roaming", MT.roaming)
         .text("roam")
-        .click(roamToggle)
+        .on("click", roamToggle)
         .appendTo(outer);
     }
     $("<a id=rw-forw>")
       .attr("title", "<ctrl-period> forward or random")
       .text("forw")
-      .click(goForward)
+      .on("click", goForward)
       .appendTo(outer);
     updateLabel();
   });
@@ -434,8 +434,8 @@ const roamInit = () => {
     if (ev.key === ".") return goForward();
   });
 
-  // Click somewhere on  page, cancel selection
-  $(document.documentElement).on("click", (ev) => {
+  // Click somewhere on page, cancel selection
+  $("html").on("click", (ev) => {
     if (MT.roaming) return;
     if (ev.target == null) return;
     if (ev.target.tagName === "A") return;
