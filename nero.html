@@ -3943,9 +3943,9 @@ const makeLink = (link, code, text) => {
     body = `<<run $g_mtaCode = ${codeRepr}; $g_mtaCodeTurn = ${State.turns}; ${code}>>`;
   }
   $(el).wiki(`<<link ${textRepr} ${destRepr}>>${body}<</link>>`);
-  if (code != null && code !== "") {
-    $(el).find("a").attr("data-mta-code", code);
-  }
+  $(el)
+    .find("a")
+    .attr("data-mta-code", code || "");
   return el;
 };
 
@@ -4567,7 +4567,7 @@ let roamLoop = 0;
 /** @type {RoamStep[] | null | undefined} */
 let roamPath = null;
 
-const roamDelay = 50;
+let roamDelay = 50;
 const maxLoop = 5;
 
 MT.roaming = false;
@@ -4595,11 +4595,13 @@ const hasTodo = () => {
  * @arg {RoamStep[] | null} [path]
  * @arg {(() => void) | null} [doneFn]
  * @arg {boolean} [force]
+ * @arg {number} [delay]
  */
-const roamStart = (path, doneFn, force) => {
+const roamStart = (path, doneFn, force, delay) => {
   roamPath = path;
   roamDoneFn = doneFn;
   roamForce = force || false;
+  roamDelay = delay || 50;
 
   $("#rw-roam").addClass("rw-roaming");
   MT.roaming = true;
@@ -4831,8 +4833,8 @@ const goRandom = (isManual) => {
     const rand = Math.floor(avail.length * Math.random());
     pick = avail[rand];
     MT.nonNull(pick, "random pick");
-    const code = $(pick).attr("data-mta-code");
-    const avoid = code != null && code.includes("//avoid");
+    const code = $(pick).attr("data-mta-code") || "";
+    const avoid = code !== "" && code.includes("//avoid");
     if (!isManual && avoid && Math.random() < 0.9) {
       const title = $(pick).attr("data-passage");
       console.log(`avoiding ${title}`);
@@ -10768,7 +10770,7 @@ MT.goto.doWalk = (i, ch) => {
   State.reset();
   State.variables.g_versionAtStart = setup.version;
   Engine.play("g1a Bound");
-  MT.roamStart(path, null, force);
+  MT.roamStart(path, null, force, 1);
 };
 
 MT.goto.reWalk = () => {
@@ -13392,7 +13394,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -15323,9 +15325,13 @@ and then starts screaming.
   &lt;&lt;run MT.note(&quot;hello&quot;)&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
+&lt;br&gt;
 &lt;&lt;mta &quot;&quot; &quot;MT.note(&#39;hmmm&#39;)&quot;&gt;&gt;
   hmm
-&lt;&lt;/mta&gt;&gt;</tw-passagedata><tw-passagedata pid="24" name="g1m Test 2" tags="" position="375,2825" size="100,100">tmp is _tmp
+&lt;&lt;/mta&gt;&gt;
+
+&lt;br&gt;
+[[sometimes|g1m Test 2][MT.note(&quot;some crimes&quot;)]]</tw-passagedata><tw-passagedata pid="24" name="g1m Test 2" tags="" position="375,2825" size="100,100">tmp is _tmp
 
 [[g1m Test 1]]</tw-passagedata><tw-passagedata pid="25" name="g1m Test fade-in" tags="" position="250,2950" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;fade-in 0s&gt;&gt;

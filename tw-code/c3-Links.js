@@ -104,9 +104,9 @@ const makeLink = (link, code, text) => {
     body = `<<run $g_mtaCode = ${codeRepr}; $g_mtaCodeTurn = ${State.turns}; ${code}>>`;
   }
   $(el).wiki(`<<link ${textRepr} ${destRepr}>>${body}<</link>>`);
-  if (code != null && code !== "") {
-    $(el).find("a").attr("data-mta-code", code);
-  }
+  $(el)
+    .find("a")
+    .attr("data-mta-code", code || "");
   return el;
 };
 

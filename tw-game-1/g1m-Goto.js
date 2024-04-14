@@ -89,7 +89,7 @@ MT.goto.doWalk = (i, ch) => {
   State.reset();
   State.variables.g_versionAtStart = setup.version;
   Engine.play("g1a Bound");
-  MT.roamStart(path, null, force);
+  MT.roamStart(path, null, force, 1);
 };
 
 MT.goto.reWalk = () => {

@@ -43,7 +43,7 @@ let roamLoop = 0;
 /** @type {RoamStep[] | null | undefined} */
 let roamPath = null;
 
-const roamDelay = 50;
+let roamDelay = 50;
 const maxLoop = 5;
 
 MT.roaming = false;
@@ -71,11 +71,13 @@ const hasTodo = () => {
  * @arg {RoamStep[] | null} [path]
  * @arg {(() => void) | null} [doneFn]
  * @arg {boolean} [force]
+ * @arg {number} [delay]
  */
-const roamStart = (path, doneFn, force) => {
+const roamStart = (path, doneFn, force, delay) => {
   roamPath = path;
   roamDoneFn = doneFn;
   roamForce = force || false;
+  roamDelay = delay || 50;
 
   $("#rw-roam").addClass("rw-roaming");
   MT.roaming = true;
@@ -307,8 +309,8 @@ const goRandom = (isManual) => {
     const rand = Math.floor(avail.length * Math.random());
     pick = avail[rand];
     MT.nonNull(pick, "random pick");
-    const code = $(pick).attr("data-mta-code");
-    const avoid = code != null && code.includes("//avoid");
+    const code = $(pick).attr("data-mta-code") || "";
+    const avoid = code !== "" && code.includes("//avoid");
     if (!isManual && avoid && Math.random() < 0.9) {
       const title = $(pick).attr("data-passage");
       console.log(`avoiding ${title}`);
