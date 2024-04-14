@@ -1,6 +1,7 @@
 /**
  * @typedef {import("twine-sugarcube").MacroContext} MacroContext
  * @typedef {import("twine-sugarcube").Passage} Passage
+ * @typedef {import("twine-sugarcube").SaveObject} SaveObject
  * @typedef {import("twine-sugarcube").StoryMoment} StoryMoment
  * @typedef {import("twine-sugarcube").SugarCubeStoryVariables} SugarCubeStoryVariables
  * @typedef {import("twine-sugarcube").SugarCubeTemporaryVariables} SugarCubeTemporaryVariables

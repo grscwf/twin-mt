@@ -72,7 +72,7 @@ const checkSessionVersion = () => {
   );
 };
 
-/** @type {(save: import("twine-sugarcube").SaveObject) => void} */
+/** @type {(save: SaveObject) => void} */
 const checkSaveVersion = (save) => {
   // g_versionAtStart is set by Title Screen, so it's not in the
   // first state, but it will be in the second.

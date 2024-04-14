@@ -168,7 +168,7 @@ MT.mdClear = () => {
 
 /**
  * Merges metadata from `save` into current metadata.
- * @type {(save: import("twine-sugarcube").SaveObject) => void}
+ * @type {(save: SaveObject) => void}
  */
 const metaReadFromSave = (save) => {
   if (!save.metadata) return;
@@ -188,7 +188,7 @@ const metaReadFromSave = (save) => {
 
 /**
  * Adds current metadata to `save`.
- * @type {(save: import("twine-sugarcube").SaveObject) => void}
+ * @type {(save: SaveObject) => void}
  */
 const metaWriteToSave = (save) => {
   save.metadata ||= {};
