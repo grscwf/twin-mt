@@ -205,7 +205,7 @@ const diagEmit = (diag) => {
   }
 
   const type = diag.type || "note";
-  let box = $(outer).last();
+  let box = $(outer).find(".diag-box").last();
   if (!box.length || !box.hasClass(`diag-box-${type}`)) {
     box = $(`<div class="diag-box diag-box-${type}">`).appendTo(outer);
     const title = diagTitles[type] || "Note";
@@ -257,6 +257,22 @@ const diagBacktrace = (context) => {
   return trace;
 };
 
+/** @type {number | null} */
+let diagMarkTimeout = null;
+
+const diagMarkSeen = () => {
+  if (diagMarkTimeout != null) {
+    clearTimeout(diagMarkTimeout);
+  }
+  diagMarkTimeout = setTimeout(() => {
+    diagWasSeen = true;
+    diagMarkTimeout = setTimeout(() => {
+      diagWasSeen = false;
+      diagMarkTimeout = null;
+    }, 500);
+  }, 200);
+};
+
 $(document).on(":passageinit", () => {
   if (diagWasSeen) {
     $("#diag-outer").remove();
@@ -270,6 +286,4 @@ $(document).on(":passageinit", () => {
   }
 });
 
-$(document).on(":passageend", () => {
-  diagWasSeen = true;
-});
+$(document).on(":passageend", diagMarkSeen);
