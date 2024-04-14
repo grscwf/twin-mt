@@ -191,10 +191,7 @@
   }
 
   const chainInit = () => {
-    const passages = $("#passages")[0];
-    if (passages == null) {
-      throw new Error("failed to find #passages?");
-    }
+    const passages = MT.jqUnwrap($("#passages"));
     passages.addEventListener("click", rememberChoice, true);
     document.addEventListener("keydown", kbCopyChain);
     addEventListener("hashchange", replayUrl);

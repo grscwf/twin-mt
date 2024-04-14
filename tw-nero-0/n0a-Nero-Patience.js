@@ -62,7 +62,7 @@
             insistText = payload.contents;
             break;
           default:
-            throw new Error(`bug n1-patience ${payload.name}`);
+            MT.fail(`BUG: n1-patience ${payload.name}`);
         }
       }
       if (actions === 1) {
@@ -154,7 +154,7 @@
             $(this.output).wiki(repeatText);
             break;
           default:
-            throw new Error(`bug: patienceReturn ${V.n_patienceReturn}`);
+            MT.fail(`BUG: patienceReturn ${V.n_patienceReturn}`);
         }
       }
       V.n_patienceReturn = 0;

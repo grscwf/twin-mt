@@ -4,12 +4,8 @@
  * @type { (jq: JQuery) => HTMLElement }
  */
 MT.jqUnwrap = (jq) => {
-  if (jq.length !== 1) {
-    throw new Error(`tried to jqUnwrap length !== 1`);
-  }
+  MT.assert(jq.length === 1, "jqUnwrap should get single element");
   const el = jq[0];
-  if (!(el instanceof HTMLElement)) {
-    throw new Error(`tried to jqUnwrap a non HTMLElement`);
-  }
+  MT.assert(el instanceof HTMLElement, "jqUnwrap should get HTMLElement");
   return el;
 };

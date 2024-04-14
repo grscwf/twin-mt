@@ -101,7 +101,7 @@ Macro.add("pw-found", {
   handler: function() {
     const [pw] = this.args;
     if (MT.otherPasswords[pw] == null) {
-      throw new Error(`pw-found ${pw} undeclared password`);
+      MT.fail(`pw-found ${pw} undeclared password`, this);
     }
     const V = State.variables;
     const found = MT.jsonParse(V.n_passFound || "[]");
@@ -144,7 +144,7 @@ Macro.add("pw-suggest", {
       if (p.name === "pw-fail") continue;
       const [pw] = p.args;
       if (MT.otherPasswords[pw] == null) {
-        throw new Error(`${p.name} ${pw} undeclared password`);
+        MT.fail(`${p.name} ${pw} undeclared password`, this);
       }
     }
 
@@ -272,7 +272,7 @@ Template.add("sprBadPass", () => {
       mkp += " You have no more tries";
       break;
     default:
-      throw new Error(`unexpected passTried ${V.n_passTried}`);
+      MT.fail(`unexpected passTried ${V.n_passTried}`);
   }
   return mkp;
 });

@@ -87,9 +87,6 @@ Macro.add("arc-select", {
 
     let hint = null;
     for (const ch of choices) {
-      if (ch.args.length !== 3) {
-        throw new Error("expected choice args: value text boolean");
-      }
       const value = String(ch.args[0]);
       const text = ch.args[1];
       const enabled = ch.args[2];

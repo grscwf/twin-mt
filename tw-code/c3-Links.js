@@ -181,9 +181,7 @@ Macro.add("return-before", {
     while (i >= 0 && hist[i]?.title !== from) {
       i--;
     }
-    if (i < 1) {
-      throw new Error(`return-before failed for ${from}`);
-    }
+    MT.assert(i > 0, `return-before should work at ${from}`);
 
     const dest = hist[i - 1]?.title;
     $(this.output).wiki(`<<mta [\[${dest}]]>>Return<</mta>>`);

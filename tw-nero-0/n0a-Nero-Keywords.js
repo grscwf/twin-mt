@@ -191,14 +191,13 @@ Macro.add("kw-unlock-soon", {
 
     const [key] = this.args;
     const kw = MT.neroKeywords[key];
-    if (kw == null) {
-      throw new Error(`kw-unlock-soon ${key} not found`);
-    }
+    MT.nonNull(kw, `kw-unlock-soon ${key}`, this);
+
     const V = State.variables;
     const vars = /** @type {Record<string, unknown>} */ (V);
     if (!vars[key]) {
       if (V.n_kwAnnounce != null && V.n_kwAnnounce !== key) {
-        throw new Error(`conflicting kwAnnounce ${key} ${V.n_kwAnnounce}`);
+        MT.fail(`conflicting kwAnnounce ${key} ${V.n_kwAnnounce}`, this);
       }
       V.n_kwAnnounce = key;
       State.temporary.kwUnlocking = true;
@@ -218,9 +217,7 @@ Macro.add("kw-announce", {
 
     delete V.n_kwAnnounce;
     const kw = MT.neroKeywords[key];
-    if (kw == null) {
-      throw new Error(`kw-announce ${key} not found`);
-    }
+    MT.nonNull(kw, `kw-announce ${key}`, this);
 
     MT.mdSet(key, true);
 

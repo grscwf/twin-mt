@@ -1931,6 +1931,19 @@ MT.error = (text, context) => {
 };
 
 /**
+ * Show an error message and throw an error.
+ * This is better than using throw directly,
+ * because it sets `MT.diagHasError`.
+ * (SugarCube sometimes captures and renders errors,
+ * so we can't reliably tell "does running this throw an error")
+ * @type {(text: string, context?: MacroContext) => never}
+ */
+MT.fail = (text, context) => {
+  MT.error(text, context);
+  throw new Error(text);
+};
+
+/**
  * If val is falsy, show an assertion failure and throw an error.
  * @arg {boolean} val
  * @arg {string} should
@@ -1939,9 +1952,7 @@ MT.error = (text, context) => {
  */
 MT.assert = (val, should, context) => {
   if (!val) {
-    const text = `Assertion failed: ${should}`;
-    MT.error(text, context);
-    throw new Error(text);
+    MT.fail(`Assertion failed: ${should}`, context);
   }
 };
 
@@ -1955,8 +1966,11 @@ MT.assert = (val, should, context) => {
  */
 MT.nonNull = (val, name, context) => {
   MT.assert(val != null, `${name} should not be null`, context);
-}
+};
 
+/**
+ * <<mt-assert (some js expression)>>
+ */
 Macro.add("mt-assert", {
   skipArgs: true,
   handler: function () {
@@ -1966,6 +1980,16 @@ Macro.add("mt-assert", {
     if (State.temporary.isTranscript) return;
     const val = MT.untraced(() => eval(expr));
     MT.assert(val, `(${rawExpr}) should be true`, this);
+  },
+});
+
+/**
+ * <<mt-fail some message>>
+ */
+Macro.add("mt-fail", {
+  handler: function () {
+    const text = this.args.join(" ");
+    MT.fail(text, this);
   },
 });
 
@@ -2154,7 +2178,7 @@ const enumDefine = (enumType, enumValueNames) => {
  */
 const enumDeclareVar = (valName, enumType) => {
   if (!MT.enums[enumType]) {
-    throw new Error(`No enum named ${enumType}`);
+    MT.fail(`No enum named ${enumType}`);
   }
   MT.enumVars[valName] = enumType;
 };
@@ -2648,9 +2672,6 @@ Macro.add("arc-select", {
 
     let hint = null;
     for (const ch of choices) {
-      if (ch.args.length !== 3) {
-        throw new Error("expected choice args: value text boolean");
-      }
       const value = String(ch.args[0]);
       const text = ch.args[1];
       const enabled = ch.args[2];
@@ -3028,10 +3049,7 @@ Macro.add("arousal-bar", {
   }
 
   const chainInit = () => {
-    const passages = $("#passages")[0];
-    if (passages == null) {
-      throw new Error("failed to find #passages?");
-    }
+    const passages = MT.jqUnwrap($("#passages"));
     passages.addEventListener("click", rememberChoice, true);
     document.addEventListener("keydown", kbCopyChain);
     addEventListener("hashchange", replayUrl);
@@ -3785,13 +3803,9 @@ MT.getHistory = () => {
  * @type { (jq: JQuery) => HTMLElement }
  */
 MT.jqUnwrap = (jq) => {
-  if (jq.length !== 1) {
-    throw new Error(`tried to jqUnwrap length !== 1`);
-  }
+  MT.assert(jq.length === 1, "jqUnwrap should get single element");
   const el = jq[0];
-  if (!(el instanceof HTMLElement)) {
-    throw new Error(`tried to jqUnwrap a non HTMLElement`);
-  }
+  MT.assert(el instanceof HTMLElement, "jqUnwrap should get HTMLElement");
   return el;
 };
 /* twine-user-script #21: "c3-Links.js" */
@@ -3978,9 +3992,7 @@ Macro.add("return-before", {
     while (i >= 0 && hist[i]?.title !== from) {
       i--;
     }
-    if (i < 1) {
-      throw new Error(`return-before failed for ${from}`);
-    }
+    MT.assert(i > 0, `return-before should work at ${from}`);
 
     const dest = hist[i - 1]?.title;
     $(this.output).wiki(`<<mta [\[${dest}]]>>Return<</mta>>`);
@@ -5793,9 +5805,11 @@ MT.traceStart = () => {
 
 /** Stop tracing. */
 MT.traceStop = () => {
-  if ((State.active.variables._trace || traceBrand) !== traceBrand) {
-    throw new Error("Multiple instances of Trace in conflict.");
-  }
+  const brand = State.active.variables._trace;
+  MT.assert(
+    brand == null || brand === traceBrand,
+    "Multiple instances of Trace in conflict."
+  );
   if (traceUnproxiedVars != null) {
     State.active.variables = traceUnproxiedVars;
     traceUnproxiedVars = null;
@@ -10839,7 +10853,7 @@ Macro.add("barbs-announce", {
     const when = this.args[0];
 
     if (State.temporary.isArchive) return;
-    if (this.args.length !== 1) throw new Error("expected 1 arg");
+
     const V = State.variables;
     switch (when) {
       case "now":
@@ -10852,7 +10866,7 @@ Macro.add("barbs-announce", {
         if (V.n_announceBarbsSoon) barbsAnnounce(this.output);
         break;
       default:
-        throw new Error(`Unexpected arg ${when}`);
+        MT.fail(`Unexpected arg ${when}`, this);
     }
   },
 });
@@ -10864,7 +10878,7 @@ MT.impliedKnot = () => {
 
   // make sure we're ambiguous before player makes a barb choice
   if (!T.isTranscript && !V.n_barbsChoiceMade) {
-    throw new Error("knot indeterminate");
+    MT.fail("knot indeterminate");
   }
 
   // if player has expressed a knot choice in Drekkar, use it.
@@ -10886,7 +10900,7 @@ MT.impliedBarbs = () => {
 
   // make sure we're ambiguous before player makes a knot choice
   if (!T.isTranscript && !V.d_knotChoiceMade) {
-    throw new Error("barbs indeterminate");
+    MT.fail("barbs indeterminate");
   }
 
   // if player has expressed a barbs choice in Nero, use it.
@@ -10942,7 +10956,7 @@ MT.mdDefUnsaved("mg_knotYes");
             once = payload.args[0] === "once";
             break;
           default:
-            throw new Error(`Unexpected nero-caged ${payload.name}`);
+            MT.fail(`Unexpected nero-caged ${payload.name}`, this);
         }
       }
 
@@ -11041,7 +11055,7 @@ MT.mdDefUnsaved("mg_knotYes");
     }, 300);
 
     const advance = () => {
-      if (cur.n_cagedBlock == null) throw new Error("cagedBlock null?");
+      MT.nonNull(cur.n_cagedBlock, "cagedBlock");
       if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
       } else {
@@ -12436,14 +12450,13 @@ Macro.add("kw-unlock-soon", {
 
     const [key] = this.args;
     const kw = MT.neroKeywords[key];
-    if (kw == null) {
-      throw new Error(`kw-unlock-soon ${key} not found`);
-    }
+    MT.nonNull(kw, `kw-unlock-soon ${key}`, this);
+
     const V = State.variables;
     const vars = /** @type {Record<string, unknown>} */ (V);
     if (!vars[key]) {
       if (V.n_kwAnnounce != null && V.n_kwAnnounce !== key) {
-        throw new Error(`conflicting kwAnnounce ${key} ${V.n_kwAnnounce}`);
+        MT.fail(`conflicting kwAnnounce ${key} ${V.n_kwAnnounce}`, this);
       }
       V.n_kwAnnounce = key;
       State.temporary.kwUnlocking = true;
@@ -12463,9 +12476,7 @@ Macro.add("kw-announce", {
 
     delete V.n_kwAnnounce;
     const kw = MT.neroKeywords[key];
-    if (kw == null) {
-      throw new Error(`kw-announce ${key} not found`);
-    }
+    MT.nonNull(kw, `kw-announce ${key}`, this);
 
     MT.mdSet(key, true);
 
@@ -12696,7 +12707,7 @@ Macro.add("pw-found", {
   handler: function() {
     const [pw] = this.args;
     if (MT.otherPasswords[pw] == null) {
-      throw new Error(`pw-found ${pw} undeclared password`);
+      MT.fail(`pw-found ${pw} undeclared password`, this);
     }
     const V = State.variables;
     const found = MT.jsonParse(V.n_passFound || "[]");
@@ -12739,7 +12750,7 @@ Macro.add("pw-suggest", {
       if (p.name === "pw-fail") continue;
       const [pw] = p.args;
       if (MT.otherPasswords[pw] == null) {
-        throw new Error(`${p.name} ${pw} undeclared password`);
+        MT.fail(`${p.name} ${pw} undeclared password`, this);
       }
     }
 
@@ -12867,7 +12878,7 @@ Template.add("sprBadPass", () => {
       mkp += " You have no more tries";
       break;
     default:
-      throw new Error(`unexpected passTried ${V.n_passTried}`);
+      MT.fail(`unexpected passTried ${V.n_passTried}`);
   }
   return mkp;
 });
@@ -12936,7 +12947,7 @@ Template.add("sprBadPass", () => {
             insistText = payload.contents;
             break;
           default:
-            throw new Error(`bug n1-patience ${payload.name}`);
+            MT.fail(`BUG: n1-patience ${payload.name}`);
         }
       }
       if (actions === 1) {
@@ -13028,7 +13039,7 @@ Template.add("sprBadPass", () => {
             $(this.output).wiki(repeatText);
             break;
           default:
-            throw new Error(`bug: patienceReturn ${V.n_patienceReturn}`);
+            MT.fail(`BUG: patienceReturn ${V.n_patienceReturn}`);
         }
       }
       V.n_patienceReturn = 0;
@@ -13163,7 +13174,7 @@ Template.add("spell", () => {
   } else if (V.n_castYounger) {
     return "Younger's Escape";
   } else {
-    throw new Error("bug: cast an unknown spell?");
+    MT.fail("Cast an unknown spell?");
   }
 });
 
@@ -13382,7 +13393,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13614,7 +13625,7 @@ const info =
   MT.neroKeywords[name];
 
 if (info == null || info.title == null) {
-  throw new Error(`Unknown archive entry ${name}`);
+  MT.fail(`Unknown archive entry ${name}`);
 }
 
 let title = info.title;
@@ -18790,7 +18801,7 @@ raise the subject again.
     case 4: T.pass = &quot;I&#39;m A Messenger&quot;; break;
     case 8: T.pass = &quot;I Didn&#39;t Receive&quot;; break;
     default:
-      throw new Error(`Unexpected n_trapChoice ${V.n_trapChoice}`);
+      MT.fail(`Unexpected n_trapChoice ${V.n_trapChoice}`);
   }
   let tc = V.sn_trapChoices || 0;
   tc = tc | V.n_trapChoice;
@@ -26560,7 +26571,7 @@ fully charged. And maybe another second if his bladder is full.
     &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`unexpected passTried ${$n_passTried}`)&gt;&gt;
+    &lt;&lt;mt-fail unexpected passTried $n_passTried&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
@@ -26650,9 +26661,7 @@ for (const pw of JSON.parse(V.n_passFound || &quot;[]&quot;)) {
     T.toTry.push(pw);
   }
 }
-if (T.toTry.length === 0) {
-  throw new Error(`bug: ran out of passwords to try?`);
-}
+MT.assert(T.toTry.length &gt; 0, &quot;should have passwords to try&quot;);
 T.toTry.sort();
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="277" name="n1s Help Device" tags="mt-ready" position="4525,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;mt-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
@@ -26760,7 +26769,7 @@ T.toTry.sort();
   Ivex laughs beneath his grinning mask.
   &quot;I am the only one who can help you now.&quot;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+  &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -26871,7 +26880,7 @@ Nero _speaks to the Sprite, &quot;Please, help!&quot;
   Ivex squeezes the wolf&#39;s balls gently.
   &quot;The candle &lt;em&gt;is&lt;/em&gt; helping you. Can you feel it?&quot;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+  &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -27015,7 +27024,7 @@ $n_afterAction
     Ivex leans in close and speaks softly in Nero&#39;s ear.
     &quot;Who. Sent. You.&quot;
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+    &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 
   &lt;&lt;set $n_spriteQuiet = true&gt;&gt;
@@ -27099,7 +27108,7 @@ $n_afterAction
     Ivex snorts through his mask. &quot;Do you even &lt;em&gt;remember&lt;/em&gt;
     now who sent you?&quot;
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+    &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 
   ?P
@@ -27150,7 +27159,7 @@ $n_afterAction
     &quot;That&#39;s an interesting reaction to my candle.
     Are you seeing strange colors as well?&quot;
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+    &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 
   ?P
@@ -27223,7 +27232,7 @@ $n_afterAction
     Ivex chuckles in his mask. &quot;This is just the start
     of the candle&#39;s effects. Soon you will be begging for more.&quot;&quot;
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+    &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 
   ?P
@@ -27233,7 +27242,7 @@ $n_afterAction
   Nero is relieved, but then the Sprite says,
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`BUG: impatient holdPhase ${$n_holdPhase}`)&gt;&gt;
+  &lt;&lt;mt-fail BUG: impatient holdPhase $n_holdPhase&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;span class=sprite-q&gt;&quot;?sprBadPass remaining, ?master&quot;&lt;/span&gt;
@@ -27330,7 +27339,7 @@ $n_afterAction
   [[Continue|n1s Pass Failed]]
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unexpected passTried ${$n_passTried}`)&gt;&gt;
+  &lt;&lt;mt-fail BUG: Unexpected passTried $n_passTried&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 /* n_magicPhase is set above */
@@ -27771,7 +27780,7 @@ gifted the base axiom to Rowsmutter after the rabbit proved to be a good lay.
   &lt;&lt;set _action = &quot;ENOUGH!&quot;&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`BUG: on hold ${$n_holdPhase}`);&gt;&gt;
+  &lt;&lt;mt-fail BUG: on hold $n_holdPhase&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;if _patience &gt; 0&gt;&gt;
@@ -27932,7 +27941,7 @@ gifted the base axiom to Rowsmutter after the rabbit proved to be a good lay.
     &lt;&lt;/if&gt;&gt;
 
   &lt;&lt;default&gt;&gt;
-    &lt;&lt;run throw new Error(`BUG passTried ${$n_passTried}`)&gt;&gt;
+    &lt;&lt;mt-fail BUG: passTried $n_passTried&gt;&gt;
   &lt;&lt;/switch&gt;&gt;
 
   &lt;&lt;run
@@ -28123,7 +28132,7 @@ And unfortunately, the horse cock,
       mkp += &quot; but Nero already knows plenty of possibilities to try.&quot;;
       break;
     default:
-      throw new Error(`unexpected length ${a.length}`);
+      MT.fail(`unexpected length ${a.length}`);
   }
 
   return mkp;
@@ -28329,7 +28338,7 @@ Usually the images chosen are pornographic.
   Ivex laughs beneath his grinning mask.
   &quot;Already eager to feel the power of my device?&quot;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+  &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -28429,7 +28438,7 @@ $n_afterAction
   &quot;You seem obsessed with that horse cock.
   Do you want a closer look?&quot;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+  &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -28722,7 +28731,7 @@ $n_afterAction
   &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unhandled ivexContext ${$n_ivexContext}`)&gt;&gt;
+  &lt;&lt;mt-fail unhandled ivexContext $n_ivexContext&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -29276,7 +29285,7 @@ while she still breathes, and sometimes moans with ecstasy.
   &lt;&lt;include [[n1s Locked Out]]&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`BUG: sprite magicPhase ${$n_magicPhase}`)&gt;&gt;
+  &lt;&lt;mt-fail BUG: sprite magicPhase $n_magicPhase&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;run
@@ -29928,7 +29937,7 @@ $n_afterAction
   &lt;&lt;/if&gt;&gt;
 
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`bug: passTried length ${$n_passTried}`)&gt;&gt;
+  &lt;&lt;mt-fail BUG: passTried length $n_passTried&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;run
@@ -38199,7 +38208,7 @@ const looks = Math.max(V.n_patienceLooks, 0);
 
 const compute = (looks, actions) =&gt; {
   if (looks &gt; 6) {
-    throw new Error(`BUG: compute arousal looks ${looks}`);
+    MT.fail(`BUG: compute arousal looks ${looks}`);
   } else if (actions === 0 || looks === 0) {
     return 100;
   } else if (looks === 1 || actions === 1) {
@@ -38212,7 +38221,7 @@ const compute = (looks, actions) =&gt; {
   } else if (actions === 3) {
     return 84 - (looks - 2) * 15;
   } else {
-    throw new Error(`BUG: compute arousal looks ${looks} actions ${actions}`);
+    MT.fail(`BUG: compute arousal looks ${looks} actions ${actions}`);
   }
 }
 
@@ -38902,7 +38911,7 @@ He breathes deeply of lightly smoky air, and suddenly remembers.
   to make a clever plan that will set him free.
   
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`BUG lust text ${$n_lustTextPos}`)&gt;&gt;
+  &lt;&lt;mt-fail BUG: lust text $n_lustTextPos&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;\</tw-passagedata><tw-passagedata pid="434" name="n2b Stop Fire" tags="mt-ready" position="10650,3425" size="100,100">&lt;&lt;nobr&gt;&gt;
@@ -39958,7 +39967,7 @@ He drops the letter opener with confidence.
   &lt;&lt;set $n_patienceLooks = 2&gt;&gt;
   &lt;&lt;set $n_patienceActions = 2&gt;&gt;
 &lt;&lt;n1-insist&gt;&gt;
-  &lt;&lt;run throw new Error(&quot;free action bug&quot;) &gt;&gt;
+  &lt;&lt;mt-fail BUG: free action&gt;&gt;
 &lt;&lt;/n1-patience&gt;&gt;
 
 ?P
@@ -47897,7 +47906,7 @@ The mental chaos becomes overwhelming. The wolf passes out.
 &lt;&lt;case mild&gt;&gt;
   &lt;&lt;ending-bad &quot;Tamed (Mild)&quot; xn_TamedMild&gt;&gt;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`Unknown ending variant ${$n_endingVariant}`)&gt;&gt;
+  &lt;&lt;mt-fail Unknown ending variant $n_endingVariant&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;arc-set-barbs mn_arcBarbs&gt;&gt;
@@ -51368,10 +51377,10 @@ Time keeps passing, each day a new set of orders with some being worse and some 
 &lt;&lt;case lion&gt;&gt;
   &lt;&lt;ending-bad &quot;Enthrallment (Lion)&quot; xd_EnthrallmentLion&gt;&gt;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`Unknown ending variant ${$d_endingVariant}`)&gt;&gt;
+  &lt;&lt;mt-fail Unknown ending variant $d_endingVariant&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
-  ?P
+?P
 Drekkar became Ivex&#39;s thrall.
 
 ?P
@@ -51538,7 +51547,7 @@ There&#39;s little the wolf can do. Inside him, his rage swells. He can try hard
 &lt;&lt;case forceful&gt;&gt;
   &lt;&lt;ending-bad &quot;Extraction (Forceful)&quot; xd_ExtractionForceful&gt;&gt;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`Unknown ending variant ${$d_endingVariant}`)&gt;&gt;
+  &lt;&lt;mt-fail Unknown ending variant $d_endingVariant&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -52471,7 +52480,7 @@ Drekkar shakes his hand, letting out muffled pleas and complaints against it, bu
 &lt;&lt;case shock&gt;&gt;
   &lt;&lt;ending-bad &quot;Interrogation (Shock)&quot; xd_InterrogationShock&gt;&gt;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`Unknown ending spell ${$d_endingSpell}`)&gt;&gt;
+  &lt;&lt;mt-fail Unknown ending spell $d_endingSpell&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 &lt;&lt;switch $d_endingVariant&gt;&gt;
@@ -52480,7 +52489,7 @@ Drekkar shakes his hand, letting out muffled pleas and complaints against it, bu
 &lt;&lt;case rough&gt;&gt;
   &lt;&lt;ending-bad &quot;Interrogation (Rough)&quot; xd_InterrogationRough&gt;&gt;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`Unknown ending variant ${$d_endingVariant}`);&gt;&gt;
+  &lt;&lt;mt-fail Unknown ending variant $d_endingVariant&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 ?P
@@ -54702,7 +54711,7 @@ Drekkar just smiles. He has something he can fuck on the way if he needs to.
 &lt;&lt;case punish&gt;&gt;
   &lt;&lt;ending-good &quot;Punishment&quot; xd_IvexPunishment&gt;&gt;
 &lt;&lt;default&gt;&gt;
-  &lt;&lt;run throw new Error(`unknown ending variant ${$d_endingVariant}`)&gt;&gt;
+  &lt;&lt;mt-fail Unknown ending variant $d_endingVariant&gt;&gt;
 &lt;&lt;/switch&gt;&gt;
 
 This is it. You&#39;ve escaped the Mage&#39;s Tower and (maybe) given the mage some rightful reckoning for all he&#39;s done! Good job!

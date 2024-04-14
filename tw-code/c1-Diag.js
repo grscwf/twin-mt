@@ -65,6 +65,19 @@ MT.error = (text, context) => {
 };
 
 /**
+ * Show an error message and throw an error.
+ * This is better than using throw directly,
+ * because it sets `MT.diagHasError`.
+ * (SugarCube sometimes captures and renders errors,
+ * so we can't reliably tell "does running this throw an error")
+ * @type {(text: string, context?: MacroContext) => never}
+ */
+MT.fail = (text, context) => {
+  MT.error(text, context);
+  throw new Error(text);
+};
+
+/**
  * If val is falsy, show an assertion failure and throw an error.
  * @arg {boolean} val
  * @arg {string} should
@@ -73,9 +86,7 @@ MT.error = (text, context) => {
  */
 MT.assert = (val, should, context) => {
   if (!val) {
-    const text = `Assertion failed: ${should}`;
-    MT.error(text, context);
-    throw new Error(text);
+    MT.fail(`Assertion failed: ${should}`, context);
   }
 };
 
@@ -89,8 +100,11 @@ MT.assert = (val, should, context) => {
  */
 MT.nonNull = (val, name, context) => {
   MT.assert(val != null, `${name} should not be null`, context);
-}
+};
 
+/**
+ * <<mt-assert (some js expression)>>
+ */
 Macro.add("mt-assert", {
   skipArgs: true,
   handler: function () {
@@ -100,6 +114,16 @@ Macro.add("mt-assert", {
     if (State.temporary.isTranscript) return;
     const val = MT.untraced(() => eval(expr));
     MT.assert(val, `(${rawExpr}) should be true`, this);
+  },
+});
+
+/**
+ * <<mt-fail some message>>
+ */
+Macro.add("mt-fail", {
+  handler: function () {
+    const text = this.args.join(" ");
+    MT.fail(text, this);
   },
 });
 

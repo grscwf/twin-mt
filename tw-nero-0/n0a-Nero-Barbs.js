@@ -19,7 +19,7 @@ Macro.add("barbs-announce", {
     const when = this.args[0];
 
     if (State.temporary.isArchive) return;
-    if (this.args.length !== 1) throw new Error("expected 1 arg");
+
     const V = State.variables;
     switch (when) {
       case "now":
@@ -32,7 +32,7 @@ Macro.add("barbs-announce", {
         if (V.n_announceBarbsSoon) barbsAnnounce(this.output);
         break;
       default:
-        throw new Error(`Unexpected arg ${when}`);
+        MT.fail(`Unexpected arg ${when}`, this);
     }
   },
 });
@@ -44,7 +44,7 @@ MT.impliedKnot = () => {
 
   // make sure we're ambiguous before player makes a barb choice
   if (!T.isTranscript && !V.n_barbsChoiceMade) {
-    throw new Error("knot indeterminate");
+    MT.fail("knot indeterminate");
   }
 
   // if player has expressed a knot choice in Drekkar, use it.
@@ -66,7 +66,7 @@ MT.impliedBarbs = () => {
 
   // make sure we're ambiguous before player makes a knot choice
   if (!T.isTranscript && !V.d_knotChoiceMade) {
-    throw new Error("barbs indeterminate");
+    MT.fail("barbs indeterminate");
   }
 
   // if player has expressed a barbs choice in Nero, use it.

@@ -32,7 +32,7 @@ Template.add("spell", () => {
   } else if (V.n_castYounger) {
     return "Younger's Escape";
   } else {
-    throw new Error("bug: cast an unknown spell?");
+    MT.fail("Cast an unknown spell?");
   }
 });
 

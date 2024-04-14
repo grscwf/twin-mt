@@ -67,9 +67,11 @@ MT.traceStart = () => {
 
 /** Stop tracing. */
 MT.traceStop = () => {
-  if ((State.active.variables._trace || traceBrand) !== traceBrand) {
-    throw new Error("Multiple instances of Trace in conflict.");
-  }
+  const brand = State.active.variables._trace;
+  MT.assert(
+    brand == null || brand === traceBrand,
+    "Multiple instances of Trace in conflict."
+  );
   if (traceUnproxiedVars != null) {
     State.active.variables = traceUnproxiedVars;
     traceUnproxiedVars = null;

@@ -34,7 +34,7 @@
             once = payload.args[0] === "once";
             break;
           default:
-            throw new Error(`Unexpected nero-caged ${payload.name}`);
+            MT.fail(`Unexpected nero-caged ${payload.name}`, this);
         }
       }
 
@@ -133,7 +133,7 @@
     }, 300);
 
     const advance = () => {
-      if (cur.n_cagedBlock == null) throw new Error("cagedBlock null?");
+      MT.nonNull(cur.n_cagedBlock, "cagedBlock");
       if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
       } else {
