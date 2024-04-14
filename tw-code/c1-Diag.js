@@ -18,47 +18,124 @@
  * @prop {string} [type]
  * @prop {string} [text]
  * @prop {unknown[]} [values]
- * @prop {MacroContext} [context]
+ * @prop {MacroContext | null | undefined} [context]
  * @prop {boolean} [showDebug]
  */
 
 MT.diagHasProblem = false;
 MT.diagMessages = /** @type {DiagMessage[]} */ ([]);
 
-let diagCapture = false;
 let diagDebugStop = false;
-let diagSuppress = false;
+let diagQuiet = false;
+let diagVeryQuiet = false;
 let diagWasSeen = false;
 
-const diagProblemTypes = ["fail", "warn"];
+const diagProblemTypes = ["fail"];
 
 /**
- * Show a diagnostic.
+ * Show a generic diag message.
  * @arg {unknown[]} args
  */
 MT.diag = (...args) => {
-  diagEmit({ type: "diag", values: args });
+  if (typeof args[0] === "string") {
+    diagEmit({ type: "diag", text: args[0], values: args.slice(1) });
+  } else {
+    diagEmit({ type: "diag", values: args });
+  }
+};
+
+/**
+ * Show a fail message.
+ * @type {(text: string, context?: MacroContext) => void}
+ */
+MT.fail = (text, context) => {
+  diagEmit({ type: "fail", text, context, showDebug: true });
+};
+
+/**
+ * Show a warning message.
+ * @type {(text: string) => void}
+ */
+MT.warn = (text) => {
+  diagEmit({ type: "warn", text });
+};
+
+/**
+ * @arg {boolean | null | undefined} val
+ * @arg {string} should
+ * @arg {MacroContext} [context]
+ * @returns {asserts val}
+ */
+MT.assert = (val, should, context) => {
+  if (val) return;
+  MT.fail(should, context);
+  throw new Error(`Assertion failed: ${should}`);
+};
+
+Macro.add("em-assert", {
+  skipArgs: true,
+  handler: function () {
+    const expr = this.args.full;
+    const rawExpr = this.args.raw;
+
+    if (State.temporary.isTranscript) return;
+    const val = MT.untraced(() => eval(expr));
+    MT.assert(val, `(${rawExpr}) should be true`, this);
+  },
+});
+
+/**
+ * Runs block, capturing messages without displaying them.
+ * @type {(block: () => void) => void}
+ */
+MT.diagQuietly = (block) => {
+  const save = diagQuiet;
+  try {
+    diagQuiet = true;
+    block();
+  } finally {
+    diagQuiet = save;
+  }
+};
+
+/**
+ * Runs block, suppressing messages.
+ * Returns true if there were no fail messages.
+ * @type {(block: () => void) => boolean}
+ */
+MT.diagSucceeds = (block) => {
+  const saveHasProblem = MT.diagHasProblem;
+  const saveVeryQuiet = diagVeryQuiet;
+  try {
+    MT.diagHasProblem = false;
+    diagVeryQuiet = true;
+    block();
+    return !MT.diagHasProblem;
+  } catch (e) {
+    return false;
+  } finally {
+    MT.diagHasProblem = saveHasProblem;
+    diagVeryQuiet = saveVeryQuiet;
+  }
 };
 
 /** @type {(diag: DiagMessage) => void} */
 const diagEmit = (diag) => {
-  if (diagSuppress) return;
-
-  console.log(diag);
-
   const type = diag.type || "diag";
   if (diagProblemTypes.includes(type)) {
     MT.diagHasProblem = true;
   }
 
+  if (diagVeryQuiet) return;
+
+  console.log(diag);
+  MT.diagMessages.push(diag);
+
+  if (diagQuiet) return;
+
   if (diagDebugStop) {
     debugger;
     diagDebugStop = false;
-  }
-
-  if (diagCapture) {
-    MT.diagMessages.push(diag);
-    return;
   }
 
   let outer = $("#diag-outer");
@@ -127,9 +204,9 @@ const diagInit = () => {
       $("#diag-outer").remove();
       MT.diagHasProblem = false;
       MT.diagMessages = [];
-      diagCapture = false;
+      diagQuiet = false;
       diagDebugStop = false;
-      diagSuppress = false;
+      diagVeryQuiet = false;
       diagWasSeen = false;
     }
   });

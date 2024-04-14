@@ -146,7 +146,7 @@ const roamNext = () => {
   }
 
   /* stop on problem */
-  if (MT.diagHasProblem || MT.hasFails || MT.hasWarnings) {
+  if (MT.diagHasProblem) {
     console.log("stopping on problem");
     return roamStop();
   }

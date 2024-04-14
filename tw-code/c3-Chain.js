@@ -56,7 +56,7 @@
     if (ev.ctrlKey && ev.key === "'") {
       const url = getUrl();
       navigator.clipboard.writeText(url);
-      MT.note(url, "URL copied to clipboard");
+      MT.diag("URL copied to clipboard", url);
     }
   }
 

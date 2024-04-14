@@ -104,7 +104,7 @@ MT.tran.renderPage = (page) => {
     }
     MT.enumInit();
 
-    MT.suppressErrors(() => {
+    MT.diagQuietly(() => {
       const text = Story.get(page.title).text;
       $(out).wiki(text);
     });

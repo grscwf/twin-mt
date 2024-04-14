@@ -34,9 +34,9 @@ Macro.add("cv-ignore", {
 Macro.add("cv-try", {
   handler: function () {
     const vn = /** @type {string} */ (this.args[0]);
-    const vals = /** @type {unknown[]} */ (this.args.slice(1));
+    const values = /** @type {unknown[]} */ (this.args.slice(1));
 
-    cvTryVars[vn] = vals;
+    cvTryVars[vn] = values;
   },
 });
 
@@ -103,8 +103,8 @@ MT.computeVariants = function () {
   addRecursive(beginState, 0);
 
   // for every var with explicit values to try, add states for them all
-  Object.entries(cvTryVars).forEach(([vn, vals]) => {
-    const [first, ...rest] = vals;
+  Object.entries(cvTryVars).forEach(([vn, values]) => {
+    const [first, ...rest] = values;
     if (!usedSet.has(vn)) usedSet.add(vn);
     cvIgnore.delete(vn);
     todo.forEach((t) => {
@@ -161,7 +161,7 @@ MT.computeVariants = function () {
 
     const output = $("<div class=passage>");
     MT.traceStart();
-    const ok = MT.runsWithoutFail(() => output.wiki(passageText));
+    const ok = MT.diagSucceeds(() => output.wiki(passageText));
     MT.traceStop();
 
     MT.trace.wasRead.forEach((vn) => {
