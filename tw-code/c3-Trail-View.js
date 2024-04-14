@@ -70,6 +70,9 @@ const sectInfo = {
   n9a: {
     title: "Endings",
   },
+  n9b: {
+    title: "Broken",
+  },
 };
 
 /**
@@ -116,7 +119,7 @@ const gatherPassages = () => {
   for (const titles of Object.values(sections)) {
     titles.sort();
   }
-}
+};
 
 /** @type {(title: string, state: Record<string, unknown>, out: JQuery<HTMLElement>) => void} */
 const renderSeen = (title, state, out) => {
@@ -155,7 +158,7 @@ const renderUnseen = (title, out) => {
       .append(div)
       .appendTo(out);
   }
-}
+};
 
 /** @type {(div: JQuery<HTMLElement>) => JQuery<HTMLElement>} */
 const makeClue = (div) => {
@@ -201,7 +204,7 @@ const makeClue = (div) => {
   copy.addClass("trail-info-unseen");
   copy.append("...");
   return copy;
-}
+};
 
 const lastNonMenuPassage = () => {
   const hist = State.history;
@@ -213,7 +216,7 @@ const lastNonMenuPassage = () => {
     }
   }
   return null;
-}
+};
 
 /** @type {(out: JQuery<HTMLElement>) => void} */
 MT.trailViewRender = (out) => {
@@ -424,6 +427,6 @@ MT.trailViewRender = (out) => {
 const trailViewInit = () => {
   if (!setup.playtest) return;
   gatherPassages();
-}
+};
 
 trailViewInit();

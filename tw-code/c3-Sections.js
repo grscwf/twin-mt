@@ -320,6 +320,10 @@ const sectDefs = {
     },
   },
 
+  // Nero 1F broken ending
+  n9b: {
+  },
+
   // Nero 2F endings
   n9e: {},
 
