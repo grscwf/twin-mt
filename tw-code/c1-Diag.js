@@ -129,16 +129,21 @@ Macro.add("mt-fail", {
 });
 
 /**
- * Runs block, capturing messages without displaying them.
- * @type {(block: () => void) => void}
+ * Runs block without displaying diag messages,
+ * and returns the messages captured.
+ * @type {(block: () => void) => string[] | null}
  */
 MT.diagQuietly = (block) => {
   const saveQuiet = diagQuiet;
+  const saveMessages = MT.diagMessages;
   try {
     diagQuiet = true;
+    MT.diagMessages = [];
     block();
+    return MT.diagGetMessages();
   } finally {
     diagQuiet = saveQuiet;
+    MT.diagMessages = saveMessages;
   }
 };
 

@@ -103,10 +103,13 @@ MT.untracedVars = () => {
 MT.untraced = (block) => {
   if (traceUnproxiedVars == null) return block();
   const proxy = State.active.variables;
-  State.active.variables = traceUnproxiedVars;
+  const saveUnproxied = traceUnproxiedVars;
   try {
+    State.active.variables = saveUnproxied;
+    traceUnproxiedVars = null;
     return block();
   } finally {
     State.active.variables = proxy;
+    traceUnproxiedVars = saveUnproxied;
   }
 };

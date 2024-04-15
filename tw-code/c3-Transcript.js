@@ -104,11 +104,10 @@ MT.tran.renderPage = (page) => {
     }
     MT.enumSetDefaults();
 
-    MT.diagQuietly(() => {
+    const msgs = MT.diagQuietly(() => {
       const text = Story.get(page.title).text;
       $(out).wiki(text);
     });
-    const msgs = MT.diagGetMessages();
     if (msgs != null) {
       $(`<div class="tran-diag">`).text(msgs.join("\n")).prependTo(out);
     }
@@ -124,18 +123,20 @@ MT.tran.renderPage = (page) => {
  * @type {(block: () => void) => void}
  */
 const tranWithEmptyState = (block) => {
-  // We can replace variables, but we can't replace temporary
-  const savedVars = State.active.variables;
-  const savedTemp = { ...State.temporary };
-  try {
-    State.active.variables = {};
-    State.clearTemporary();
-    block();
-  } finally {
-    State.active.variables = savedVars;
-    State.clearTemporary();
-    Object.assign(State.temporary, savedTemp);
-  }
+  MT.untraced(() => {
+    // We can replace variables, but we can't replace temporary
+    const savedVars = State.active.variables;
+    const savedTemp = { ...State.temporary };
+    try {
+      State.active.variables = {};
+      State.clearTemporary();
+      block();
+    } finally {
+      State.active.variables = savedVars;
+      State.clearTemporary();
+      Object.assign(State.temporary, savedTemp);
+    }
+  });
 };
 
 /** @type {(jq: JQuery, next: NextLink) => void} */
