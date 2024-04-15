@@ -25,7 +25,6 @@ MT.neroEndings = {
       "n9b Broken C3",
       "n9b Broken C4",
       "n9b Broken C5",
-      /* XXX */
     ],
   },
   xn_CagedHarsh: {

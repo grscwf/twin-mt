@@ -1,4 +1,3 @@
-
 /**
  * @typedef {object} GotoStep
  * @prop {string} [choice]
@@ -6,7 +5,7 @@
  * @prop {string} [code]
  * @prop {boolean} [note]
  * @prop {string} [width]
- * 
+ *
  * @typedef {{ path: GotoStep[] }} GotoPath
  */
 
@@ -779,7 +778,6 @@ MT.gotoPaths = [
       { t: "n2y Wand Finish B3" },
       { t: "n2y Wand Finish C1" },
       { t: "n9a Caged Harsh 1" },
-      /* XXX */
     ],
   },
 
@@ -947,8 +945,6 @@ MT.gotoPaths = [
       { t: "n9b Broken C2" },
       { t: "n9b Broken C3" },
       { t: "n9b Broken C4" },
-
-      /* XXX */
     ],
   },
 
