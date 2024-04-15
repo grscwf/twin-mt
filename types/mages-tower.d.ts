@@ -52,6 +52,13 @@ declare module "twine-sugarcube" {
     /** Passage has branches. */
     g_branchy?: boolean;
 
+    g_arcChoice?: {
+      name: string;
+      barbs?: boolean;
+      freeze?: boolean;
+    };
+    g_arcName?: string;
+
     /** Which choice was taken to go from previous turn to this turn. */
     g_choiceTaken?: number;
 
@@ -106,7 +113,7 @@ declare module "twine-sugarcube" {
     n_announceBarbsSoon?: boolean;
 
     /** True if player chose barbed instead of smooth */
-    n_barbs?: true;
+    n_barbs?: boolean | undefined;
     n_barbsChoiceMade?: boolean;
 
     /** Current block shown by nero-caged. */
@@ -115,7 +122,7 @@ declare module "twine-sugarcube" {
     /** Turn that n_cagedBlock is for. */
     n_cagedBlockTurn?: number;
 
-    n_castEndgame?: boolean;
+    n_castEndgame?: boolean | undefined;
     n_castItch?: boolean;
     n_castOil?: boolean;
     n_castYounger?: boolean;

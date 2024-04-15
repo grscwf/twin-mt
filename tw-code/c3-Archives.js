@@ -246,3 +246,76 @@ const arcAnnounce = (type, metaVar, text, output) => {
     MT.mdSet(metaVar, true);
   }
 };
+
+/** @type {(output: DocumentFragment | HTMLElement) => void} */
+MT.arcRender = (output) => {
+  const T = State.temporary;
+  const V = State.variables;
+
+  const arcEntry = V.g_arcChoice;
+  MT.nonNull(arcEntry, "arcEntry");
+
+  const { name, barbs, freeze } = arcEntry;
+
+  T.notesVariant = name;
+
+  const info =
+    MT.drekkarEndings[name] || MT.neroEndings[name] || MT.neroKeywords[name];
+
+  if (info == null || info.title == null) {
+    MT.fail(`Unknown archive entry ${name}`);
+  }
+
+  let title = info.title;
+  title = title.replace(/%barbs\b/, barbs ? "Barbed" : "Smooth");
+  title = title.replace(/%freeze\b/, freeze ? "Freeze" : "Shock");
+
+  $(output).wiki(
+    `<<sticky-head>>` +
+      `<div class=ui-title>${title}</div>` +
+      `<</sticky-head>>`
+  );
+
+  /** @type {SugarCubeStoryVariables} */
+  const vars = {
+    g_arcName: name,
+    g_rand0: 1636094642 /* arbitrary */,
+    g_rand1: 173183867,
+    n_barbs: barbs,
+    n_castEndgame: V.n_castEndgame,
+  };
+  const temps = {
+    isArchive: true,
+  };
+
+  const passages = info.passages;
+    MT.nonNull(passages, `passages for ${name}`);
+  passages.forEach((passage, i) => {
+    if (i !== 0) {
+      $("<hr class=text-sep>").appendTo(output);
+    }
+    if (typeof passage === "function") {
+      passage = passage(arcEntry);
+    }
+
+    MT.tran
+      .renderPage({
+        title: passage,
+        vars,
+        temps,
+      })
+      .appendTo(output);
+
+    if (i + 1 < passages.length) {
+      let next = passages[i + 1];
+      if (typeof next === "function") {
+        next = next(arcEntry);
+      }
+      MT.nonNull(next, "next passage");
+      const text = Story.get(passage).text;
+      if (!text.includes(next)) {
+        MT.warn(`[\[${passage}]] does not link to [\[${next}]]`);
+      }
+    }
+  });
+};

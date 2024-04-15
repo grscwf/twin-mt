@@ -2888,6 +2888,79 @@ const arcAnnounce = (type, metaVar, text, output) => {
     MT.mdSet(metaVar, true);
   }
 };
+
+/** @type {(output: DocumentFragment | HTMLElement) => void} */
+MT.arcRender = (output) => {
+  const T = State.temporary;
+  const V = State.variables;
+
+  const arcEntry = V.g_arcChoice;
+  MT.nonNull(arcEntry, "arcEntry");
+
+  const { name, barbs, freeze } = arcEntry;
+
+  T.notesVariant = name;
+
+  const info =
+    MT.drekkarEndings[name] || MT.neroEndings[name] || MT.neroKeywords[name];
+
+  if (info == null || info.title == null) {
+    MT.fail(`Unknown archive entry ${name}`);
+  }
+
+  let title = info.title;
+  title = title.replace(/%barbs\b/, barbs ? "Barbed" : "Smooth");
+  title = title.replace(/%freeze\b/, freeze ? "Freeze" : "Shock");
+
+  $(output).wiki(
+    `<<sticky-head>>` +
+      `<div class=ui-title>${title}</div>` +
+      `<</sticky-head>>`
+  );
+
+  /** @type {SugarCubeStoryVariables} */
+  const vars = {
+    g_arcName: name,
+    g_rand0: 1636094642 /* arbitrary */,
+    g_rand1: 173183867,
+    n_barbs: barbs,
+    n_castEndgame: V.n_castEndgame,
+  };
+  const temps = {
+    isArchive: true,
+  };
+
+  const passages = info.passages;
+    MT.nonNull(passages, `passages for ${name}`);
+  passages.forEach((passage, i) => {
+    if (i !== 0) {
+      $("<hr class=text-sep>").appendTo(output);
+    }
+    if (typeof passage === "function") {
+      passage = passage(arcEntry);
+    }
+
+    MT.tran
+      .renderPage({
+        title: passage,
+        vars,
+        temps,
+      })
+      .appendTo(output);
+
+    if (i + 1 < passages.length) {
+      let next = passages[i + 1];
+      if (typeof next === "function") {
+        next = next(arcEntry);
+      }
+      MT.nonNull(next, "next passage");
+      const text = Story.get(passage).text;
+      if (!text.includes(next)) {
+        MT.warn(`[\[${passage}]] does not link to [\[${next}]]`);
+      }
+    }
+  });
+};
 /* twine-user-script #9: "c3-Arousal-Bar.js" */
 /**
  * <<arousal-bar $prev $cur $pulse>>
@@ -13529,7 +13602,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -13746,70 +13819,7 @@ or are not enjoyable for you, proceed only at your own discretion.
 &lt;&lt;/sticky-return-and&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
-
-const T = State.temporary;
-const V = State.variables;
-
-const arcEntry = V.g_arcChoice;
-const { name, barbs, freeze } = arcEntry;
-
-T.notesVariant = name;
-
-const info =
-  MT.drekkarEndings[name] ||
-  MT.neroEndings[name] ||
-  MT.neroKeywords[name];
-
-if (info == null || info.title == null) {
-  MT.fail(`Unknown archive entry ${name}`);
-}
-
-let title = info.title;
-title = title.replace(/%barbs\b/, barbs ? &quot;Barbed&quot; : &quot;Smooth&quot;);
-title = title.replace(/%freeze\b/, freeze ? &quot;Freeze&quot; : &quot;Shock&quot;);
-
-$(output).wiki(
-  `&lt;&lt;sticky-head&gt;&gt;`
-  + `&lt;div class=ui-title&gt;${title}&lt;/div&gt;`
-  + `&lt;&lt;/sticky-head&gt;&gt;`);
-
-const vars = {
-  g_arcName: name,
-  g_rand0: 1636094642, /* arbitrary */
-  g_rand1: 173183867,
-  n_barbs: barbs,
-  n_castEndgame: V.n_castEndgame,
-};
-const temps = {
-  isArchive: true,
-};
-
-info.passages.forEach((passage, i) =&gt; {
-  if (i !== 0) {
-    $(&quot;&lt;hr class=text-sep&gt;&quot;).appendTo(output);
-  }
-  if (typeof passage === &quot;function&quot;) {
-    passage = passage(arcEntry);
-  }
-
-  MT.tran.renderPage({
-    title: passage,
-    vars,
-    temps,
-  }).appendTo(output);
-
-  if (i + 1 &lt; info.passages.length) {
-    let next = info.passages[i + 1];
-    if (typeof next === &quot;function&quot;) {
-      next = next(arcEntry);
-    }
-    const text = Story.get(passage).text;
-    if (!text.includes(next)) {
-      MT.warn(`[\[${passage}]] does not link to [\[${next}]]`);
-    }
-  }
-});
-
+  MT.arcRender(output);
 &lt;&lt;/script&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="10" name="g1m Archives Lock" tags="inclusion" position="375,1450" size="100,100">&lt;&lt;nobr&gt;&gt;

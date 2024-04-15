@@ -7,70 +7,7 @@
 <</sticky-return-and>>
 
 <<script>>
-
-const T = State.temporary;
-const V = State.variables;
-
-const arcEntry = V.g_arcChoice;
-const { name, barbs, freeze } = arcEntry;
-
-T.notesVariant = name;
-
-const info =
-  MT.drekkarEndings[name] ||
-  MT.neroEndings[name] ||
-  MT.neroKeywords[name];
-
-if (info == null || info.title == null) {
-  MT.fail(`Unknown archive entry ${name}`);
-}
-
-let title = info.title;
-title = title.replace(/%barbs\b/, barbs ? "Barbed" : "Smooth");
-title = title.replace(/%freeze\b/, freeze ? "Freeze" : "Shock");
-
-$(output).wiki(
-  `<<sticky-head>>`
-  + `<div class=ui-title>${title}</div>`
-  + `<</sticky-head>>`);
-
-const vars = {
-  g_arcName: name,
-  g_rand0: 1636094642, /* arbitrary */
-  g_rand1: 173183867,
-  n_barbs: barbs,
-  n_castEndgame: V.n_castEndgame,
-};
-const temps = {
-  isArchive: true,
-};
-
-info.passages.forEach((passage, i) => {
-  if (i !== 0) {
-    $("<hr class=text-sep>").appendTo(output);
-  }
-  if (typeof passage === "function") {
-    passage = passage(arcEntry);
-  }
-
-  MT.tran.renderPage({
-    title: passage,
-    vars,
-    temps,
-  }).appendTo(output);
-
-  if (i + 1 < info.passages.length) {
-    let next = info.passages[i + 1];
-    if (typeof next === "function") {
-      next = next(arcEntry);
-    }
-    const text = Story.get(passage).text;
-    if (!text.includes(next)) {
-      MT.warn(`[\[${passage}]] does not link to [\[${next}]]`);
-    }
-  }
-});
-
+  MT.arcRender(output);
 <</script>>
 
 <</nobr>>
