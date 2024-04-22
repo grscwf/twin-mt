@@ -1,5 +1,5 @@
 (() => {
-  const BORDER = 0;
+  const CAGED_BORDER = 0;
 
   /** @typedef { { height: number, blocks: DocumentFragment[] } } SplitInfo */
 
@@ -104,7 +104,10 @@
     const renderBlock = (i) => {
       box.toggleClass("caged-last", i === split.blocks.length - 1);
       box.empty();
-      box.append(split.blocks[i] || "");
+      const block = split.blocks[i];
+      if (block != null) {
+        $(block).clone().appendTo(box);
+      }
 
       // unlink shocks on last line (repeated in next block)
       box.find("[data-shock].caged-optional").each((i, el) => {
@@ -112,6 +115,8 @@
       });
 
       box.append("<a class=caged-continue>Continue</a>");
+
+      MT.scrollSavePos();
     };
 
     /* Note: current history state, not active state */
@@ -132,7 +137,28 @@
       box.removeClass("caged-fade-start");
     }, 300);
 
-    const advance = () => {
+    const goPrev = () => {
+      if (cur.n_cagedBlock == null || cur.n_cagedBlock === 0) {
+        Engine.backward();
+      } else {
+        box.removeClass("caged-fade-fast caged-fade-slow");
+        box.addClass("caged-fade-start");
+        if (box.attr("data-shocked") != null) {
+          // reset to 1, not 0
+          box.attr("data-shocked", 1);
+        }
+        cur.n_cagedBlock--;
+        renderBlock(cur.n_cagedBlock);
+        setTimeout(() => {
+          box.addClass("caged-fade-fast");
+        }, 100);
+        setTimeout(() => {
+          box.removeClass("caged-fade-start");
+        }, 200);
+      }
+    };
+
+    const goNext = () => {
       MT.nonNull(cur.n_cagedBlock, "cagedBlock");
       if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
@@ -179,7 +205,7 @@
         if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();
-          advance();
+          goNext();
         } else {
           box.addClass("caged-flash");
           setTimeout(() => box.removeClass("caged-flash"), 500);
@@ -190,11 +216,17 @@
     if (setup.debug) {
       const skip = $(
         `<div class=caged-skip>
-          &#x1f527; <a>next block</a>
-        </div>`
+          <a id="caged-prev">prev block</a>
+          &#x1f527;
+          <a id="caged-next">next block</a>
+        </div>
+        <`
       );
-      skip.find("a").on("click", () => {
-        advance();
+      skip.find("a#caged-prev").on("click", () => {
+        goPrev();
+      });
+      skip.find("a#caged-next").on("click", () => {
+        goNext();
       });
       skip.appendTo(out);
     }
@@ -358,7 +390,7 @@
         const rect = word.getBoundingClientRect();
 
         // if the box isn't full yet, go to the next word
-        if (rect.bottom <= box.bottom - BORDER) {
+        if (rect.bottom <= box.bottom - CAGED_BORDER) {
           // did we start a new line?
           if (rect.left < prevWordLeft) {
             lineStart = current;

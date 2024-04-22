@@ -5174,38 +5174,59 @@ MT.scrollWait = false;
 
 const SCROLL_KEY = "scroll.pos";
 
-const scrollRememberPos = () => {
+let scrollPending = false;
+
+MT.scrollSavePos = () => {
+  if (!setup.debug) return;
+
   const pos = {
     turn: State.turns,
     top: document.documentElement.scrollTop,
+    cagedBlock: State.current.variables.n_cagedBlock,
   };
   sessionStorage.setItem(SCROLL_KEY, MT.json(pos));
 };
 
-const scrollRestorePos = () => {
+/** @arg {boolean} scroll */
+MT.scrollLoadPos = (scroll) => {
+  if (!setup.debug) return;
+
   const json = sessionStorage.getItem(SCROLL_KEY);
   if (json == null) return;
 
   const pos = MT.jsonParse(json);
   if (pos.turn !== State.turns) return;
 
+  if (pos.cagedBlock == null) {
+    delete State.current.variables.n_cagedBlock;
+    delete State.current.variables.n_cagedBlockTurn;
+  } else {
+    State.current.variables.n_cagedBlock = pos.cagedBlock;
+    State.current.variables.n_cagedBlockTurn = pos.turn;
+  }
+
+  if (!scroll) return;
+
   const el = document.documentElement;
 
   const doScroll = () => {
-    if (MT.scrollWait) {
+    if (MT.scrollWait && !scrollPending) {
       setTimeout(doScroll, 200);
     } else {
+      scrollPending = false;
       el.scrollTo({ top: pos.top, behavior: "smooth" });
     }
   };
 
+  scrollPending = true;
   setTimeout(doScroll, 500);
 };
 
 // This is only useful when doing reload after an edit
 if (setup.debug) {
-  document.addEventListener("scrollend", scrollRememberPos);
-  $(document).on(":passageend", scrollRestorePos);
+  document.addEventListener("scrollend", MT.scrollSavePos);
+  $(document).on(":passageend", () => MT.scrollLoadPos(true));
+  $(document).on(":passagestart", () => MT.scrollLoadPos(false));
 }
 /* twine-user-script #31: "c3-Sections.js" */
 // Passages are grouped into sections by a prefix code in their title.
@@ -11144,7 +11165,7 @@ MT.mdDefUnsaved("mg_knotNo");
 MT.mdDefUnsaved("mg_knotYes");
 /* twine-user-script #47: "n0a-Nero-Caged.js" */
 (() => {
-  const BORDER = 0;
+  const CAGED_BORDER = 0;
 
   /** @typedef { { height: number, blocks: DocumentFragment[] } } SplitInfo */
 
@@ -11249,7 +11270,10 @@ MT.mdDefUnsaved("mg_knotYes");
     const renderBlock = (i) => {
       box.toggleClass("caged-last", i === split.blocks.length - 1);
       box.empty();
-      box.append(split.blocks[i] || "");
+      const block = split.blocks[i];
+      if (block != null) {
+        $(block).clone().appendTo(box);
+      }
 
       // unlink shocks on last line (repeated in next block)
       box.find("[data-shock].caged-optional").each((i, el) => {
@@ -11257,6 +11281,8 @@ MT.mdDefUnsaved("mg_knotYes");
       });
 
       box.append("<a class=caged-continue>Continue</a>");
+
+      MT.scrollSavePos();
     };
 
     /* Note: current history state, not active state */
@@ -11277,7 +11303,28 @@ MT.mdDefUnsaved("mg_knotYes");
       box.removeClass("caged-fade-start");
     }, 300);
 
-    const advance = () => {
+    const goPrev = () => {
+      if (cur.n_cagedBlock == null || cur.n_cagedBlock === 0) {
+        Engine.backward();
+      } else {
+        box.removeClass("caged-fade-fast caged-fade-slow");
+        box.addClass("caged-fade-start");
+        if (box.attr("data-shocked") != null) {
+          // reset to 1, not 0
+          box.attr("data-shocked", 1);
+        }
+        cur.n_cagedBlock--;
+        renderBlock(cur.n_cagedBlock);
+        setTimeout(() => {
+          box.addClass("caged-fade-fast");
+        }, 100);
+        setTimeout(() => {
+          box.removeClass("caged-fade-start");
+        }, 200);
+      }
+    };
+
+    const goNext = () => {
       MT.nonNull(cur.n_cagedBlock, "cagedBlock");
       if (cur.n_cagedBlock === split.blocks.length - 1) {
         Engine.play(next);
@@ -11324,7 +11371,7 @@ MT.mdDefUnsaved("mg_knotYes");
         if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();
-          advance();
+          goNext();
         } else {
           box.addClass("caged-flash");
           setTimeout(() => box.removeClass("caged-flash"), 500);
@@ -11335,11 +11382,17 @@ MT.mdDefUnsaved("mg_knotYes");
     if (setup.debug) {
       const skip = $(
         `<div class=caged-skip>
-          &#x1f527; <a>next block</a>
-        </div>`
+          <a id="caged-prev">prev block</a>
+          &#x1f527;
+          <a id="caged-next">next block</a>
+        </div>
+        <`
       );
-      skip.find("a").on("click", () => {
-        advance();
+      skip.find("a#caged-prev").on("click", () => {
+        goPrev();
+      });
+      skip.find("a#caged-next").on("click", () => {
+        goNext();
       });
       skip.appendTo(out);
     }
@@ -11503,7 +11556,7 @@ MT.mdDefUnsaved("mg_knotYes");
         const rect = word.getBoundingClientRect();
 
         // if the box isn't full yet, go to the next word
-        if (rect.bottom <= box.bottom - BORDER) {
+        if (rect.bottom <= box.bottom - CAGED_BORDER) {
           // did we start a new line?
           if (rect.left < prevWordLeft) {
             lineStart = current;
@@ -13611,7 +13664,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -45446,8 +45499,8 @@ and escape.
   until Ivex chooses to stimulate it.
   Nero tries to find a loophole.
   He tries to find some way to bypass or remove the device,
-  but with his own power depleted,
-  he has no hope of deconstructing the magic of the device.
+  but with his own magic power depleted,
+  he has no hope of deconstructing the spells in the device.
 
   The only tool he has is his bare fingers,
   which keep probing at the surface covering
@@ -45474,18 +45527,21 @@ and escape.
   A muffled laugh comes from outside the cell in response.
   The confining pressure on his ?nCock disappears.
   Something then strokes gently up and down his shaft.
-  It feels like fingers are spreading his pre-cum
-  with a touch as light as being kissed by air.
+  It feels like a finger is spreading his pre-cum
+  all over the sensitive skin of his ?nCock,
+  with a touch that&#39;s so light,
+  it&#39;s almost like being kissed by the air.
 
   Nero thrusts his hips to try to rub his ?nCock
-  more vigorously against the teasing touch,
-  to no avail.
-  Nothing he does can be felt by his ?nCock.
-  It&#39;s entirely under Ivex&#39;s control.
+  more vigorously against the sensual teasing touch.
+  It does not work.
+  No movement he makes has any effect that can be felt by his ?nCock.
+  Whatever the device has done to his crotch,
+  his ?nCock is entirely under Ivex&#39;s control.
 
   The panther&#39;s erect ?iCock emerges again through
   the featureless wall of the cell,
-  near the wolf&#39;s muzzle.
+  at a point near the wolf&#39;s muzzle.
 
   Nero turns his head and looks away,
   but he cannot stop himself from
