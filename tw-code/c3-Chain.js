@@ -133,8 +133,7 @@
    * @returns {string} A URL that will replay the current session.
    */
   function getUrl() {
-    const href = location.href.startsWith("file:") ? "https://grscwf.github.io/twin-mt/nero.html" : location.href;
-    let url = new URL(href);
+    let url = new URL(location.href);
     const chain = getCode();
     url.hash = `#chain=${chain}`;
     return url.toString();
