@@ -135,6 +135,8 @@
     }
     setTimeout(() => {
       box.removeClass("caged-fade-start");
+      setTimeout(() => box.removeClass("caged-fade-fast"), 1000);
+      setTimeout(() => box.removeClass("caged-fade-slow"), 3000);
     }, 300);
 
     const goPrev = () => {
@@ -149,11 +151,10 @@
         }
         cur.n_cagedBlock--;
         renderBlock(cur.n_cagedBlock);
-        setTimeout(() => {
-          box.addClass("caged-fade-fast");
-        }, 100);
+        setTimeout(() => box.addClass("caged-fade-fast"), 100);
         setTimeout(() => {
           box.removeClass("caged-fade-start");
+          setTimeout(() => box.removeClass("caged-fade-fast"), 1000);
         }, 200);
       }
     };
@@ -171,11 +172,10 @@
         }
         cur.n_cagedBlock++;
         renderBlock(cur.n_cagedBlock);
-        setTimeout(() => {
-          box.addClass("caged-fade-fast");
-        }, 100);
+        setTimeout(() => box.addClass("caged-fade-fast"), 100);
         setTimeout(() => {
           box.removeClass("caged-fade-start");
+          setTimeout(() => box.removeClass("caged-fade-fast"), 1000);
         }, 200);
       }
     };

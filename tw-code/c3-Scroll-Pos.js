@@ -32,9 +32,6 @@ MT.scrollLoadPos = (scroll) => {
   if (pos.turn === State.turns && pos.cagedBlock != null) {
     State.current.variables.n_cagedBlock = pos.cagedBlock;
     State.current.variables.n_cagedBlockTurn = pos.turn;
-  } else {
-    delete State.current.variables.n_cagedBlock;
-    delete State.current.variables.n_cagedBlockTurn;
   }
 
   if (pos.turn === State.turns && scroll) {
