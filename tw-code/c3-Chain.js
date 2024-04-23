@@ -133,7 +133,8 @@
    * @returns {string} A URL that will replay the current session.
    */
   function getUrl() {
-    const url = new URL(location.href);
+    const href = location.href.startsWith("file:") ? "https://grscwf.github.io/twin-mt/nero.html" : location.href;
+    let url = new URL(href);
     const chain = getCode();
     url.hash = `#chain=${chain}`;
     return url.toString();
@@ -174,9 +175,9 @@
     MT.forgetWalkHistory();
     State.reset();
     State.variables.g_versionAtStart = setup.version;
+    Engine.play("g1a Bound");
     State.variables.g_rand0 = rand0;
     State.variables.g_rand1 = rand1;
-    Engine.play("g1a Bound");
 
     const done = () => {
       const here = encodeTitle(State.passage);

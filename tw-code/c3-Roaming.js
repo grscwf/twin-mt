@@ -204,7 +204,7 @@ const roamNext = () => {
         return;
       }
     }
-    MT.warn(`Broken path: ${JSON.stringify(next)}`);
+    MT.warn(`Broken path: ${JSON.stringify({next, roamPath})}`);
     return roamStop();
   }
 
