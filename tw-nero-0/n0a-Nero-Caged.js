@@ -7,7 +7,7 @@
   Template.add("nCock", `<a class="caged-cock caged-n-cock">cock</a>`);
 
   /**
-   * <<nero-caged>>
+   * <<nero-caged $next [slow]>>
    *   Text that's split into blocks.
    *   Within the text, ?iCock and ?nCock have special behavior.
    * <<nero-caged-fill [once]>>
@@ -20,7 +20,8 @@
   Macro.add("nero-caged", {
     tags: ["nero-caged-fill"],
     handler: function () {
-      const [next] = this.args;
+      const next = /** @type {SugarCubeLink | string} */ (this.args[0]);
+      const slow = this.args[1] === "slow";
       let text = "";
       let fill = ". ";
       let once = false;
@@ -43,8 +44,9 @@
       if (State.temporary.isTranscript) {
         renderTranscript(this.output, split);
       } else {
-        const link = next.isLink ? next.link : next;
-        renderLive(this.output, split, link);
+        const link = typeof next === "string" ? next : next.link;
+        MT.nonNull(link, "nero-caged link");
+        renderLive(this.output, split, link, slow);
       }
     },
   });
@@ -91,10 +93,16 @@
     }
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
-  function renderLive(out, split, next) {
+  /**
+   * @arg {DocumentFragment | HTMLElement} out
+   * @arg {SplitInfo} split
+   * @arg {string} next
+   * @arg {boolean} slow
+   * @returns {void}
+   */
+  function renderLive(out, split, next, slow) {
     const grid = $(`<div class="caged-grid">`).appendTo(out);
-    const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
+    const box = $(`<div class="caged-box caged-fade-start">`);
     box.appendTo(grid);
     if (split.height) {
       box.attr("style", `height: ${split.height}px`);
@@ -129,10 +137,10 @@
 
     renderBlock(cur.n_cagedBlock);
 
-    if (cur.n_cagedBlock !== 0) {
-      box.removeClass("caged-fade-slow");
-      box.addClass("caged-fade-fast");
-    }
+    box.addClass(
+      slow && cur.n_cagedBlock === 0 ? "caged-fade-slow" : "caged-fade-fast"
+    );
+
     setTimeout(() => {
       box.removeClass("caged-fade-start");
       setTimeout(() => box.removeClass("caged-fade-fast"), 1000);

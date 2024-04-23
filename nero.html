@@ -3054,9 +3054,9 @@ Macro.add("arousal-bar", {
   /** @type {(ev: KeyboardEvent) => void} */
   function kbCopyChain(ev) {
     if (ev.ctrlKey && ev.key === "'") {
-      const url = getUrl();
-      navigator.clipboard.writeText(url);
-      MT.note(`URL copied to clipboard: ${url}`);
+      const code = "#" + getCode();
+      navigator.clipboard.writeText(code);
+      MT.note(`Chain copied to clipboard: ${code}`);
     }
   }
 
@@ -11169,7 +11169,7 @@ MT.mdDefUnsaved("mg_knotYes");
   Template.add("nCock", `<a class="caged-cock caged-n-cock">cock</a>`);
 
   /**
-   * <<nero-caged>>
+   * <<nero-caged $next [slow]>>
    *   Text that's split into blocks.
    *   Within the text, ?iCock and ?nCock have special behavior.
    * <<nero-caged-fill [once]>>
@@ -11182,7 +11182,8 @@ MT.mdDefUnsaved("mg_knotYes");
   Macro.add("nero-caged", {
     tags: ["nero-caged-fill"],
     handler: function () {
-      const [next] = this.args;
+      const next = /** @type {SugarCubeLink | string} */ (this.args[0]);
+      const slow = this.args[1] === "slow";
       let text = "";
       let fill = ". ";
       let once = false;
@@ -11205,8 +11206,9 @@ MT.mdDefUnsaved("mg_knotYes");
       if (State.temporary.isTranscript) {
         renderTranscript(this.output, split);
       } else {
-        const link = next.isLink ? next.link : next;
-        renderLive(this.output, split, link);
+        const link = typeof next === "string" ? next : next.link;
+        MT.nonNull(link, "nero-caged link");
+        renderLive(this.output, split, link, slow);
       }
     },
   });
@@ -11253,10 +11255,16 @@ MT.mdDefUnsaved("mg_knotYes");
     }
   }
 
-  /** @type { (out: DocumentFragment | HTMLElement, split: SplitInfo, next: string) => void } */
-  function renderLive(out, split, next) {
+  /**
+   * @arg {DocumentFragment | HTMLElement} out
+   * @arg {SplitInfo} split
+   * @arg {string} next
+   * @arg {boolean} slow
+   * @returns {void}
+   */
+  function renderLive(out, split, next, slow) {
     const grid = $(`<div class="caged-grid">`).appendTo(out);
-    const box = $(`<div class="caged-box caged-fade-slow caged-fade-start">`);
+    const box = $(`<div class="caged-box caged-fade-start">`);
     box.appendTo(grid);
     if (split.height) {
       box.attr("style", `height: ${split.height}px`);
@@ -11291,10 +11299,10 @@ MT.mdDefUnsaved("mg_knotYes");
 
     renderBlock(cur.n_cagedBlock);
 
-    if (cur.n_cagedBlock !== 0) {
-      box.removeClass("caged-fade-slow");
-      box.addClass("caged-fade-fast");
-    }
+    box.addClass(
+      slow && cur.n_cagedBlock === 0 ? "caged-fade-slow" : "caged-fade-fast"
+    );
+
     setTimeout(() => {
       box.removeClass("caged-fade-start");
       setTimeout(() => box.removeClass("caged-fade-fast"), 1000);
@@ -13660,7 +13668,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -45228,7 +45236,7 @@ and escape.
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="567" name="n9a Caged Mild 2" tags="mt-ready" position="12850,3475" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;nero-caged [[n9a Caged Mild 3]]&gt;&gt;
+&lt;&lt;nero-caged [[n9a Caged Mild 3]] slow&gt;&gt;
   As Nero wakes, before his eyes even open,
   &lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
   the first thing he notices is the walls
@@ -45327,7 +45335,7 @@ and escape.
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="568" name="n9a Caged Mild 3" tags="mt-ready" position="12975,3475" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;nero-caged [[n9a Caged Mild 4]]&gt;&gt;
+&lt;&lt;nero-caged [[n9a Caged Mild 4]] slow&gt;&gt;
   When Nero regains his wits, the first thing he notices
   &lt;b id=&quot;clue-cut&quot;&gt;&lt;/b&gt;
   is a scent stronger than the lingering candle smoke.
@@ -45382,18 +45390,18 @@ and escape.
   When he closes his fingers around
   the firm meat of the ?iCock,
   he feels another
-  encouraging stroke on his own ?nCock,
+  stroke on his own ?nCock,
   and the wolf begins the tedious chore of
   stroking the panther to orgasm.
 
   The pre-cum is not enough lubrication.
   Nero adds spit to his paw to make it
   glide smoothly up and down the shaft
-  of the panther&#39;s ?iCock.
+  of the panther&#39;s erect ?iCock.
   The wolf feels a
   soft caress on his own ?nCock,
   encouraging him to continue
-  stroking up and down the panther&#39;s ?iCock,
+  stroking up and down the panther&#39;s erect ?iCock,
   and when the touch on his ?nCock stops,
   he changes his grip
   on the panther&#39;s ?iCock until the
@@ -45455,7 +45463,7 @@ and escape.
   Nero has never done that before,
   and he does not want to start now.
   He turns away and curls up on the floor
-  of the small cell he&#39;s in,
+  of the small cell,
   burying his face in his paws.
 
   He feels a &lt;em&gt;slap&lt;/em&gt; on the tip of his ?nCock,
@@ -45469,7 +45477,7 @@ and escape.
   A feral part of the wolf struggles with unquenched desire.
   Would it really be so bad to lick and suck
   the panther&#39;s ?iCock?
-  It&#39;s just another chore that many people have done before.
+  It&#39;s just another chore that many have done before.
   Nobody would blame him for doing whatever
   it is he needs to do,
   in order to ... satisfy his own ?nCock?
@@ -45494,8 +45502,8 @@ and escape.
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="570" name="n9a Caged Mild 5" tags="mt-ready" position="13225,3475" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;nero-caged [[n9a Caged Mild 6]]&gt;&gt;
-  When the candle&#39;s haze of lust clears from Nero&#39;s mind,
+&lt;&lt;nero-caged [[n9a Caged Mild 6]] slow&gt;&gt;
+  When the candle&#39;s erotic fog clears from Nero&#39;s mind,
   &lt;b class=clue-cut&gt;&lt;/b&gt;
   his rational brain can&#39;t stop thinking about
   his horny, trapped ?nCock.
@@ -45519,7 +45527,7 @@ and escape.
   The wolf has made arcane chastity devices before,
   and while the magic of this one is unfamiliar,
   he has little doubt the construction is as solid as
-  any that he&#39;s created himself.
+  any that he&#39;s made himself.
 
   Still, his fingers probe uselessly at the edges of the device,
   and he keeps striking the surface with his palm,
@@ -45581,63 +45589,63 @@ and escape.
   and Nero feels again the spicy fumes from one of
   Ivex&#39;s red candles.
   This time the smoke feels like a trail that will lead him
-  to satisfaction of some deep, yearning desire.
+  to satisfaction of some urgent, yearning desire.
   He breathes in deeply through his nose and
-  exhales hot breath out his muzzle
-  which drools with hunger and lust.
+  exhales hot breath out a muzzle
+  that drools with hunger and lust.
 
   The scent of sex is everywhere,
   but his nose tells him it&#39;s strongest
   at the nearby ?iCock.
   It isn&#39;t his own ?nCock,
-  but his horny mind doesn&#39;t really understand the difference.
+  but his horny mind doesn&#39;t really care about the difference.
   He rubs his face against the ?iCock,
   trying to absorb its erotic essence into his fur
   with a primal understanding that bathing in the
-  pheromones of his lusty partner
+  pheromones of this lusty member
   will somehow fulfill the unspoken promises of his own ?nCock
-  and his hormones telling him the path to satisfaction
+  with his hormones telling him the path to satisfaction
   is marked with the scent of the ?iCock
   rubbing its pheromones into the fur of his face
   with the promise that absorbing the lust of this fierce partner
   will inflame and satisfy the desire he feels
   leaking out his own ?nCock,
   oozing with the same passion that drips from the
-  panther&#39;s ?iCock as the wolf rubs his face and his fur
+  panther&#39;s ?iCock as the wolf rubs his face and fur
   into the odor of sex that
-  fills the cell and promises to
+  fills the cell with a promise to
 
 &lt;&lt;nero-caged-fill&gt;&gt;
   lead his ?nCock to satisfaction of the desire that
   drips from its unreachable tip in the same way that
   the panther&#39;s ?iCock oozes pre-cum that the wolf
-  rubs into his face and fur as the odor of sex
-  fills the cell and promises to
+  rubs into his face and fur to fill the cell with
+  the odor of sex that promises to
 
 &lt;&lt;/nero-caged&gt;&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="571" name="n9a Caged Mild 6" tags="mt-ready" position="13255,3475" size="100,100">&lt;&lt;nobr&gt;&gt;
 
-&lt;&lt;nero-caged [[n9a Caged Mild End]]&gt;&gt;
-  Nero awakens alone in his cell.
+&lt;&lt;nero-caged [[n9a Caged Mild End]] slow&gt;&gt;
+  Nero awakens in his cell, alone.
   &lt;b class=clue-cut&gt;&lt;/b&gt;
   He does not remember everything that happened when
   the candle&#39;s lust overwhelmed him,
   but he can still smell the residue of sex in his fur,
   reminding him that his own ?nCock is still trapped,
-  and unsatisfied.
-  As he tries to groom the sticky mess out of his fur,
+  still unsatisfied.
+  As he tries to groom the sticky messes out of his fur,
   the wolf realizes he&#39;s already made a choice.
   His ?nCock has made the choice for him.
   He does not feel hunger or thirst
   (and a part of him worries
-  that Ivex has used a parasitic sustenance spell),
+  that Ivex has applied a parasitic sustenance spell),
   but his ?nCock&#39;s need is stronger than any
   hunger he&#39;s ever experienced before.
 
   And unlike hunger, this deprivation of his ?nCock
   will not make him weak or starve him to death.
-  The unsatisfied lust of his ?nCock can continue forever,
+  The craving of his ?nCock can continue forever,
   &lt;em&gt;will&lt;/em&gt; continue forever, unless he satisfies
   Ivex&#39;s ?iCock.
   This thought should bring despair,
@@ -45653,31 +45661,33 @@ and escape.
 
   But right now, he knows what to do.
   He calls to mind memories of other people&#39;s
-  mouths and tongues on his ?nCock.
+  mouths worshipping his ?nCock.
 
   He&#39;s ready, he wants to be ready.
   Is Ivex watching?
   Nero positions his body to show his willingness
-  to satisfy the panther&#39;s ?iCock.
-  The wolf imagines in his mind,
+  to pleasure the panther&#39;s ?iCock.
+  The wolf imagines in his mind and
   rehearses with his tongue what will happen.
   He licks and sucks his own fingers
-  to learn the positioning and pressure of gentle pleasure.
+  to become familiar with the positioning
+  and pressure of reverent pleasure.
   The taste of the panther that remains in his fur is...
   not terrible.
   It&#39;s become lodged in the wolf&#39;s mind as another
-  chord in the symphony of sexual scents that are everywhere now.
+  chord in the symphony of sexual scents that
+  have permeated his world now.
   The musk of the panther is dominant, of course,
   but it&#39;s thoroughly intermixed with the wolf&#39;s own sweat
-  and fragrances of unsatisfied desire.
+  and fragrances of unfulfilled desire.
 
-  Nero&#39;s mind teases him with images of his own trapped ?nCock
+  Nero&#39;s mind teases himself with images of his own trapped ?nCock
   as he considers the best way to approach the
   &lt;&lt;= $n_barbs ? &quot;barbed tip&quot; : &quot;smooth head&quot;&gt;&gt;
   of the panther&#39;s ?iCock
-  with a touch and tease with his tongue that will
-  be skilled enough to persuade Ivex to stroke the wolf&#39;s own ?nCock
-  in appreciation, which throbs with desire
+  with a touch and tease of his tongue that will
+  be skilled enough to persuade Ivex to stroke the wolf&#39;s own ?nCock,
+  which throbs with desire
   as Nero continues in his imagination to lick
   the panther&#39;s
   &lt;&lt;= $n_barbs ? &quot;barbed&quot; : &quot;smooth&quot;&gt;&gt; ?iCock

@@ -54,9 +54,9 @@
   /** @type {(ev: KeyboardEvent) => void} */
   function kbCopyChain(ev) {
     if (ev.ctrlKey && ev.key === "'") {
-      const url = getUrl();
-      navigator.clipboard.writeText(url);
-      MT.note(`URL copied to clipboard: ${url}`);
+      const code = "#" + getCode();
+      navigator.clipboard.writeText(code);
+      MT.note(`Chain copied to clipboard: ${code}`);
     }
   }
 
