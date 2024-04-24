@@ -284,10 +284,14 @@ $(document).on(":passageend", () => {
 });
 
 // Clear diag when player clicks on a passage link
-document.getElementById("story")?.addEventListener("click", (ev) => {
-  const el = /** @type {Node} */ (ev.target);
-  const a = $(el).closest("a");
-  if (a.length && a.attr("data-passage") != null) {
-    diagClear();
-  }
-}, true);
+document.getElementById("story")?.addEventListener(
+  "click",
+  (ev) => {
+    const el = /** @type {Node} */ (ev.target);
+    const a = $(el).closest("a");
+    if (a.length && a.attr("data-passage") != null) {
+      diagClear();
+    }
+  },
+  true
+);
