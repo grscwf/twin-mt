@@ -3013,197 +3013,197 @@ Macro.add("arousal-bar", {
  * or if replay is done in the wrong version.
  */
 
-{
-  const chainCode =
-    "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const chainCode =
+  "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  /** @type { (title: string) => string } */
-  function encodeTitle(title) {
-    return title.replace(/\W+/g, "-");
+/** @type { (title: string) => string } */
+const chainNormalizeTitle = (title) => {
+  return title.replace(/\W+/g, "-");
+};
+
+/**
+ * On click, remember choice that was clicked.
+ * @type {(ev: MouseEvent) => void}
+ */
+const chainRememberChoice = (ev) => {
+  const vars = State.active.variables;
+  delete vars.g_choiceTaken;
+
+  /* find the containing A element */
+  let target = /** @type {HTMLElement | null} */ (ev.target);
+  while (target != null && target.tagName !== "A") {
+    target = target.parentElement;
   }
 
-  /**
-   * On click, remember choice that was clicked.
-   * @type {(ev: MouseEvent) => void}
-   */
-  function rememberChoice(ev) {
-    const vars = State.active.variables;
-    delete vars.g_choiceTaken;
+  /* ignore if not a link to a passage */
+  if (target == null || target.dataset.passage == null) {
+    return;
+  }
 
-    /* find the containing A element */
-    let target = /** @type {HTMLElement | null} */ (ev.target);
-    while (target != null && target.tagName !== "A") {
-      target = target.parentElement;
+  const links = $("#passages a[data-passage]");
+  let pos = 0;
+  for (; pos < links.length; pos++) {
+    if (links[pos] === target) {
+      break;
+    }
+  }
+  if (pos === links.length) {
+    MT.warn(`Missed g_choiceTaken [${target.innerText}]`);
+  } else {
+    vars.g_choiceTaken = pos;
+  }
+};
+
+/** @type {(ev: KeyboardEvent) => void} */
+const chainKbCopy = (ev) => {
+  if (ev.ctrlKey && ev.key === "'") {
+    const isFile = location.protocol === "file";
+    const label = isFile ? "Chain" : "URL";
+    const value = isFile ? "#" + chainGetCode() : chainGetUrl();
+    navigator.clipboard.writeText(value);
+    MT.note(`${label} copied to clipboard: ${value}`);
+  }
+};
+
+/**
+ * @returns {string} The chain code for the current session.
+ */
+const chainGetCode = () => {
+  /* Find last non-menu step */
+  let last = State.length - 1;
+  for (; last > 0; last--) {
+    const step = State.index(last);
+    const passage = Story.get(step.title);
+    if (!passage.tags.includes("is-menu")) break;
+  }
+
+  let choices = "";
+  /** @type {string | undefined} */
+  let version;
+  /** @type {number | undefined} */
+  let rand0;
+  /** @type {number | undefined} */
+  let rand1;
+
+  for (let i = 0; i < last; i++) {
+    const step = State.index(i);
+    if (i === 0 && step.title === "g1a Title Screen") continue;
+
+    if (choices === "" && step.title !== "g1a Bound") {
+      console.error(`start of history is weird: ${step.title}`);
+      return "";
     }
 
-    /* ignore if not a link to a passage */
-    if (target == null || target.dataset.passage == null) {
-      return;
+    const passage = Story.get(step.title);
+    if (passage.tags.includes("is-menu")) {
+      console.error(`path includes menu at turn ${i} ${step.title}`);
+      return "";
     }
 
-    const links = $("#passages a[data-passage]");
-    let pos = 0;
-    for (; pos < links.length; pos++) {
-      if (links[pos] === target) {
-        break;
-      }
+    const next = State.index(i + 1);
+    const choice = next.variables.g_choiceTaken;
+    if (choice == null) {
+      console.error(`path broken at turn ${i} ${step.title}`);
+      return "";
     }
-    if (pos === links.length) {
-      MT.warn(`Missed g_choiceTaken [${target.innerText}]`);
-    } else {
-      vars.g_choiceTaken = pos;
+    if (choice >= chainCode.length) {
+      console.error(`large choice ${choice} at turn ${i} ${step.title}`);
+      return "";
+    }
+
+    choices += chainCode.charAt(choice);
+
+    const vars = step.variables;
+
+    if (vars.g_mutated) {
+      console.error(`mutated state at turn ${i} ${step.title}`);
+      return "";
+    }
+
+    if (rand0 == null && vars.g_rand0 != null) {
+      rand0 = vars.g_rand0;
+      rand1 = vars.g_rand1;
+    }
+    if (version == null && vars.g_versionAtStart != null) {
+      version = vars.g_versionAtStart;
     }
   }
 
-  /** @type {(ev: KeyboardEvent) => void} */
-  function kbCopyChain(ev) {
-    if (ev.ctrlKey && ev.key === "'") {
-      const code = "#" + getCode();
-      navigator.clipboard.writeText(code);
-      MT.note(`Chain copied to clipboard: ${code}`);
-    }
+  const title = chainNormalizeTitle(State.index(last).title);
+
+  return `${version},${rand0},${rand1},${choices},${title}`;
+};
+
+/**
+ * @returns {string} A URL that will replay the current session.
+ */
+const chainGetUrl = () => {
+  let url = new URL(location.href);
+  const chain = chainGetCode();
+  url.hash = `#chain=${chain}`;
+  return url.toString();
+};
+
+/** @returns {void} */
+const chainReplayUrl = () => {
+  const hash = location.hash;
+  const m = /[#;]chain=([^;]+)/.exec(hash);
+  if (m == null) return;
+
+  const chain = /** @type { string } */ (m[1]);
+  history.replaceState(null, "", location.pathname + location.search);
+
+  const parts = chain.split(/,/);
+  if (parts.length !== 5) {
+    MT.warn("Ignoring #chain=, because it has the wrong number of parts.");
+    return;
+  }
+  const version = parts[0] || "";
+  const rand0 = parseInt(parts[1] || "0", 10);
+  const rand1 = parseInt(parts[2] || "0", 10);
+  const choices = parts[3] || "";
+  const title = parts[4] || "";
+
+  if (version !== setup.version) {
+    MT.warn("Ignoring #chain=, because it has the wrong version.");
+    return;
   }
 
-  /**
-   * @returns {string} The chain code for the current session.
-   */
-  function getCode() {
-    /* Find last non-menu step */
-    let last = State.length - 1;
-    for (; last > 0; last--) {
-      const step = State.index(last);
-      const passage = Story.get(step.title);
-      if (!passage.tags.includes("is-menu")) break;
-    }
-
-    let choices = "";
-    /** @type {string | undefined} */
-    let version;
-    /** @type {number | undefined} */
-    let rand0;
-    /** @type {number | undefined} */
-    let rand1;
-
-    for (let i = 0; i < last; i++) {
-      const step = State.index(i);
-      if (i === 0 && step.title === "g1a Title Screen") continue;
-
-      if (choices === "" && step.title !== "g1a Bound") {
-        console.error(`start of history is weird: ${step.title}`);
-        return "";
-      }
-
-      const passage = Story.get(step.title);
-      if (passage.tags.includes("is-menu")) {
-        console.error(`path includes menu at turn ${i} ${step.title}`);
-        return "";
-      }
-
-      const next = State.index(i + 1);
-      const choice = next.variables.g_choiceTaken;
-      if (choice == null) {
-        console.error(`path broken at turn ${i} ${step.title}`);
-        return "";
-      }
-      if (choice >= chainCode.length) {
-        console.error(`large choice ${choice} at turn ${i} ${step.title}`);
-        return "";
-      }
-
-      choices += chainCode.charAt(choice);
-
-      const vars = step.variables;
-
-      if (vars.g_mutated) {
-        console.error(`mutated state at turn ${i} ${step.title}`);
-        return "";
-      }
-
-      if (rand0 == null && vars.g_rand0 != null) {
-        rand0 = vars.g_rand0;
-        rand1 = vars.g_rand1;
-      }
-      if (version == null && vars.g_versionAtStart != null) {
-        version = vars.g_versionAtStart;
-      }
-    }
-
-    const title = encodeTitle(State.index(last).title);
-
-    return `${version},${rand0},${rand1},${choices},${title}`;
+  const path = [];
+  for (const ch of choices) {
+    const i = chainCode.indexOf(ch);
+    path.push({ i });
   }
 
-  /**
-   * @returns {string} A URL that will replay the current session.
-   */
-  function getUrl() {
-    let url = new URL(location.href);
-    const chain = getCode();
-    url.hash = `#chain=${chain}`;
-    return url.toString();
-  }
+  console.log(`replaying ${chain}`);
+  MT.forgetWalkHistory();
+  State.reset();
+  State.variables.g_versionAtStart = setup.version;
+  Engine.play("g1a Bound");
+  State.variables.g_rand0 = rand0;
+  State.variables.g_rand1 = rand1;
 
-  /** @returns {void} */
-  function replayUrl() {
-    const hash = location.hash;
-    const m = /[#;]chain=([^;]+)/.exec(hash);
-    if (m == null) return;
-
-    const chain = /** @type { string } */ (m[1]);
-    history.replaceState(null, "", location.pathname + location.search);
-
-    const parts = chain.split(/,/);
-    if (parts.length !== 5) {
-      MT.warn("Ignoring #chain=, because it has the wrong number of parts.");
-      return;
+  const done = () => {
+    const here = chainNormalizeTitle(State.passage);
+    if (here !== title) {
+      MT.warn(
+        `#chain= seems broken. Expected to end at [${title}],` +
+          ` but ended at [${here}]`
+      );
     }
-    const version = parts[0] || "";
-    const rand0 = parseInt(parts[1] || "0", 10);
-    const rand1 = parseInt(parts[2] || "0", 10);
-    const choices = parts[3] || "";
-    const title = parts[4] || "";
-
-    if (version !== setup.version) {
-      MT.warn("Ignoring #chain=, because it has the wrong version.");
-      return;
-    }
-
-    const path = [];
-    for (const ch of choices) {
-      const i = chainCode.indexOf(ch);
-      path.push({ i });
-    }
-
-    console.log(`replaying ${chain}`);
-    MT.forgetWalkHistory();
-    State.reset();
-    State.variables.g_versionAtStart = setup.version;
-    Engine.play("g1a Bound");
-    State.variables.g_rand0 = rand0;
-    State.variables.g_rand1 = rand1;
-
-    const done = () => {
-      const here = encodeTitle(State.passage);
-      if (here !== title) {
-        MT.warn(
-          `#chain= seems broken. Expected to end at [${title}],` +
-            ` but ended at [${here}]`
-        );
-      }
-    };
-    MT.roamStart(path, done, true);
-  }
-
-  const chainInit = () => {
-    const passages = MT.jqUnwrap($("#passages"));
-    passages.addEventListener("click", rememberChoice, true);
-    document.addEventListener("keydown", kbCopyChain);
-    addEventListener("hashchange", replayUrl);
-    replayUrl();
   };
+  MT.roamStart(path, done, true);
+};
 
-  $(document).on(":storyready", chainInit);
-}
+const chainInit = () => {
+  const passages = MT.jqUnwrap($("#passages"));
+  passages.addEventListener("click", chainRememberChoice, true);
+  document.addEventListener("keydown", chainKbCopy);
+  addEventListener("hashchange", chainReplayUrl);
+  chainReplayUrl();
+};
+
+$(document).on(":storyready", chainInit);
 /* twine-user-script #11: "c3-Checkpoint.js" */
 /**
  * @typedef {object} Checkpoint
@@ -13672,7 +13672,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
