@@ -11,6 +11,7 @@ let scrollPending = false;
 
 MT.scrollSavePos = () => {
   if (!setup.debug) return;
+  if (State.current == null) return;
 
   const pos = {
     turn: State.turns,
