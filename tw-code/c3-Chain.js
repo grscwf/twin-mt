@@ -5,8 +5,11 @@
  *
  * Chains are intended to be sharable as URLs.
  *
- * Replay will fail if any of the steps are nondeterministic,
- * or if replay is done in the wrong version.
+ * Replay may fail if any of these are true:
+ * - the story version is different.
+ * - a step is nondeterministic.
+ * - a passage dynamically adds or removes links
+ *   (instead of using css to hide/show them).
  */
 
 const chainCode =
@@ -53,7 +56,7 @@ const chainRememberChoice = (ev) => {
 /** @type {(ev: KeyboardEvent) => void} */
 const chainKbCopy = (ev) => {
   if (ev.ctrlKey && ev.key === "'") {
-    const isFile = location.protocol === "file";
+    const isFile = location.protocol === "file:";
     const label = isFile ? "Chain" : "URL";
     const value = isFile ? "#" + chainGetCode() : chainGetUrl();
     navigator.clipboard.writeText(value);
@@ -86,25 +89,23 @@ const chainGetCode = () => {
     if (i === 0 && step.title === "g1a Title Screen") continue;
 
     if (choices === "" && step.title !== "g1a Bound") {
-      console.error(`start of history is weird: ${step.title}`);
-      return "";
+      MT.fail(`Can't chain: start of history is weird: ${step.title}`);
     }
 
     const passage = Story.get(step.title);
     if (passage.tags.includes("is-menu")) {
-      console.error(`path includes menu at turn ${i} ${step.title}`);
-      return "";
+      MT.fail(`Can't chain: unexpected menu at turn ${i} ${step.title}`);
     }
 
     const next = State.index(i + 1);
     const choice = next.variables.g_choiceTaken;
     if (choice == null) {
-      console.error(`path broken at turn ${i} ${step.title}`);
-      return "";
+      MT.fail(`Can't chain: no choiceTaken at turn ${i} ${step.title}`);
     }
     if (choice >= chainCode.length) {
-      console.error(`large choice ${choice} at turn ${i} ${step.title}`);
-      return "";
+      MT.fail(
+        `Can't chain: choice ${choice} too large at turn ${i} ${step.title}`
+      );
     }
 
     choices += chainCode.charAt(choice);
@@ -112,8 +113,7 @@ const chainGetCode = () => {
     const vars = step.variables;
 
     if (vars.g_mutated) {
-      console.error(`mutated state at turn ${i} ${step.title}`);
-      return "";
+      MT.fail(`Can't chain: state mutated at turn ${i} ${step.title}`);
     }
 
     if (rand0 == null && vars.g_rand0 != null) {
@@ -183,12 +183,70 @@ const chainReplayUrl = () => {
     const here = chainNormalizeTitle(State.passage);
     if (here !== title) {
       MT.warn(
-        `#chain= seems broken. Expected to end at [${title}],` +
-          ` but ended at [${here}]`
+        `#chain= seems broken. Expected to end at [${title}], not [${here}]`
       );
     }
   };
   MT.roamStart(path, done, true);
+};
+
+/** Check for dynamic passage rendering that might break chai-url. */
+const chainObserverInit = () => {
+  if (!setup.playtest) return;
+
+  /** @type {(node: Node) => boolean} */
+  const isPassageLink = (node) => {
+    if (node instanceof HTMLAnchorElement) {
+      const passage = node.getAttribute("data-passage");
+      return passage != null && passage !== "";
+    }
+    return false;
+  };
+
+  /** @type {(nodes: NodeList) => boolean} */
+  const hasPassageLink = (nodes) => {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = /** @type {Node} */ (nodes[i]);
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (isPassageLink(node)) {
+          return true;
+        }
+        if (node.hasChildNodes() && hasPassageLink(node.childNodes)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const observer = new MutationObserver((changes) => {
+    changes.forEach((change) => {
+      console.log(change);
+      if (hasPassageLink(change.addedNodes)) {
+        MT.warn("Passage dynamically added a link (chain-url may fail).");
+      }
+      if (hasPassageLink(change.removedNodes)) {
+        MT.warn("Passage dynamically removed a link (chain-url may fail).");
+      }
+      if (change.attributeName === "data-passage") {
+        MT.warn("Passage dynamically changes link (chain-url may fail).");
+      }
+    });
+  });
+
+  $(document).on(":passageend", () => {
+    if (tags().includes("is-menu")) return;
+
+    observer.observe(MT.jqUnwrap($("#passages .passage")), {
+      attributeFilter: ["data-passage"],
+      attributes: true,
+      childList: true,
+      subtree: true,
+    });
+  });
+  $(document).on(":passageinit", () => {
+    observer.disconnect();
+  });
 };
 
 const chainInit = () => {
@@ -200,3 +258,5 @@ const chainInit = () => {
 };
 
 $(document).on(":storyready", chainInit);
+
+chainObserverInit();
