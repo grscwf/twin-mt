@@ -99,25 +99,21 @@ async function untwineOne(htmlFile: string) {
     const re1 = /(^[/][*] twine-user-(?:script|stylesheet) .*?\r?\n)/gm;
     const parts = passage.split(re1);
     const re2 = /twine-user-(?:script|stylesheet) #\d+: "(.*?)"/;
-    // First section should be the main Story JavaScript or Stylesheet
-    {
-      const m = re2.exec(parts[1]!);
-      const title = m![1]!;
-      if (!/^Story (JavaScript|Stylesheet)$/.test(title)) {
-        throw new Error(`Unexpected joined structure ${parts[0]}`);
-      }
-      // attach twine header to that section
-      maybeWrite(title, parts[0]! + parts[2]!);
-    }
-    // rest are individual files
-    for (let i = 3; i < parts.length; i += 2) {
+
+    for (let i = 1; i < parts.length; i += 2) {
       const head = parts[i]!;
-      const body = parts[i + 1]!;
+      let body = parts[i + 1]!;
       const m = re2.exec(head);
       if (m == null) {
         throw new Error(`couldn't parse header? ${repr(head[0])}`);
       }
       const title = m[1]!;
+
+      if (/^Story (JavaScript|Stylesheet)$/.test(title)) {
+        // attach twine header to that section
+        body = parts[0]! + body;
+      }
+
       maybeWrite(title, body);
     }
   };
