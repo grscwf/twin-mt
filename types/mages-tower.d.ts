@@ -188,6 +188,12 @@ declare module "twine-sugarcube" {
     n_struggleKnown?: boolean;
 
     xd_IvexPunishment?: boolean;
+
+    xn_Broken?: boolean;
+    xn_CagedHarsh?: boolean;
+    xn_CagedMild?: boolean;
+    xn_TamedHarsh?: boolean;
+    xn_TamedMild?: boolean;
   }
 
   interface SugarCubeTemporaryVariables {

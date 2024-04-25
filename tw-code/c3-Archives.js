@@ -289,7 +289,7 @@ MT.arcRender = (output) => {
   };
 
   const passages = info.passages;
-    MT.nonNull(passages, `passages for ${name}`);
+  MT.nonNull(passages, `passages for ${name}`);
   passages.forEach((passage, i) => {
     if (i !== 0) {
       $("<hr class=text-sep>").appendTo(output);
@@ -318,4 +318,95 @@ MT.arcRender = (output) => {
       }
     }
   });
+};
+
+const lockpickSetup = () => {
+  const T = State.temporary;
+  if (!setup.debug) return;
+  T.lockpick = setup.debug && session.get("arc-lockpick");
+  $(document).one(":passagedisplay", () => {
+    const el = $("#arc-lockpick");
+    el.prop("checked", T.lockpick);
+    el.on("input", lockpickUpdate);
+  });
+};
+
+const lockpickUpdate = () => {
+  const el = $("#arc-lockpick");
+  const val = !!el.prop("checked");
+  session.set("arc-lockpick", val);
+  MT.revisitHere();
+};
+
+const arcCountUnlocks = () => {
+  const T = State.temporary;
+  const V = State.variables;
+
+  const md = MT.mdRecord();
+  /** @type {(keys: string[], reveal: boolean | undefined) => string} */
+  const count = (keys, reveal) => {
+    const n = keys.filter((k) => md[k]).length;
+    const total = reveal || T.lockpick ? keys.length : "?";
+    return `${n} of ${total}`;
+  };
+
+  T.drekkarEndingsUnlocked = count(
+    Object.keys(MT.drekkarEndings),
+    V.xd_IvexPunishment
+  );
+  T.neroEndingsUnlocked = count(
+    Object.keys(MT.neroEndings),
+    V.mn_playerLeftStudyWithMirror
+  );
+  T.neroKeywordsUnlocked = count(
+    Object.keys(MT.neroKeywords),
+    V.mn_playerLeftStudyWithMirror
+  );
+};
+
+MT.arcPageSetup = () => {
+  const sessionKey = "arc-open";
+
+  const T = State.temporary;
+  const V = State.variables;
+
+  T.anyNero =
+    V.xn_Broken ||
+    V.xn_CagedHarsh ||
+    V.xn_CagedMild ||
+    V.xn_TamedHarsh ||
+    V.xn_TamedMild;
+
+  /** @type {(which: string) => void} */
+  T.open = (which) => {
+    $(".arc-closable").removeClass("arc-open");
+    $(".arc-switch").text("(show)");
+    $(`.arc-closable-${which}`).addClass("arc-open");
+    $(`.arc-switch-${which}`).text("(hide)");
+  };
+
+  /** @type {(which: string) => void} */
+  T.toggle = (which) => {
+    const now = session.get(sessionKey);
+    const next = now === which ? "none" : which;
+    session.set(sessionKey, next);
+    T.open(next);
+  };
+
+  /** @type {(which: string) => string} */
+  T.switch = (which) => {
+    let mkp =
+      `<a class="arc-switch arc-switch-${which}"` +
+      ` onclick="SugarCube.State.temporary.toggle('${which}')"` +
+      `>(show)</a>`;
+    return mkp;
+  };
+
+  $(document).one(":passagedisplay", () => {
+    const state = session.get(sessionKey);
+    T.open(state || "intro");
+  });
+
+  lockpickSetup();
+  arcCountUnlocks();
 };

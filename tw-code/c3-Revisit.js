@@ -3,7 +3,7 @@ let revisitTop = null;
 
 /**
  * Runs block and reloads current page.
- * @type {(block: (oldState: SugarCubeStoryVariables) => void) => void}
+ * @type {(block?: (oldState: SugarCubeStoryVariables) => void) => void}
  */
 MT.revisitHere = (block) => {
   MT.traceStop();
