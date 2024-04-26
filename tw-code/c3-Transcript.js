@@ -22,7 +22,6 @@ MT.tran = {};
  * @type {(out: DocumentFragment | HTMLElement) => void}
  */
 MT.tran.renderHistory = (out) => {
-  MT.scrollWait = true;
   const outer = $("<div id=tran-outer>").appendTo(out);
 
   const hist = MT.getHistory();
@@ -62,6 +61,12 @@ MT.tran.renderHistory = (out) => {
       }
 
       $(outer).append(div);
+
+      // caged render is slow
+      if (div.find(".caged-box").length) {
+        turn++;
+        return;
+      }
     }
   };
 
@@ -83,6 +88,7 @@ MT.tran.renderHistory = (out) => {
     MT.scrollWait = false;
   };
 
+  MT.scrollWait = true;
   renderLoop();
 };
 

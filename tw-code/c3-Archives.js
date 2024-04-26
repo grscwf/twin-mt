@@ -252,6 +252,8 @@ MT.arcRender = (output) => {
   const T = State.temporary;
   const V = State.variables;
 
+  const outer = $("<div id=arc-entry-outer>").appendTo(output);
+
   const arcEntry = V.g_arcChoice;
   MT.nonNull(arcEntry, "arcEntry");
 
@@ -290,34 +292,62 @@ MT.arcRender = (output) => {
 
   const passages = info.passages;
   MT.nonNull(passages, `passages for ${name}`);
-  passages.forEach((passage, i) => {
-    if (i !== 0) {
-      $("<hr class=text-sep>").appendTo(output);
-    }
-    if (typeof passage === "function") {
-      passage = passage(arcEntry);
-    }
 
-    MT.tran
-      .renderPage({
-        title: passage,
+  /** @type {(step: number) => string} */
+  const getTitle = (step) => {
+    const passage = passages[step];
+    MT.nonNull(passage, `passages[${step}]`);
+    if (typeof passage === "function") {
+      return passage(arcEntry);
+    } else {
+      return passage;
+    }
+  };
+
+  let step = 0;
+
+  const renderSome = () => {
+    const batch = 10;
+    const limit = Math.min(passages.length, step + batch);
+
+    for (; step < limit; step++) {
+      if (step !== 0) {
+        $("<hr class=text-sep>").appendTo(outer);
+      }
+      const title = getTitle(step);
+      const div = MT.tran.renderPage({
+        title,
         vars,
         temps,
-      })
-      .appendTo(output);
+      });
+      div.appendTo(outer);
 
-    if (i + 1 < passages.length) {
-      let next = passages[i + 1];
-      if (typeof next === "function") {
-        next = next(arcEntry);
+      if (step + 1 < passages.length) {
+        const next = getTitle(step + 1);
+        const text = Story.get(title).text;
+        if (!text.includes(next)) {
+          MT.warn(`[\[${title}]] does not link to [\[${next}]]`);
+        }
       }
-      MT.nonNull(next, "next passage");
-      const text = Story.get(passage).text;
-      if (!text.includes(next)) {
-        MT.warn(`[\[${passage}]] does not link to [\[${next}]]`);
+
+      // caged render is slow
+      if (div.find(".caged-box").length) {
+        step++;
+        return;
       }
     }
-  });
+  };
+
+  const renderLoop = () => {
+    renderSome();
+    if (step < passages.length) {
+      setTimeout(renderLoop);
+    } else {
+      MT.scrollWait = false;
+    }
+  };
+
+  renderLoop();
 };
 
 const lockpickSetup = () => {
