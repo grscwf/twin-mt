@@ -1,118 +1,30 @@
 :: g1m Notes Single [is-menu] {"position":"250,2300","size":"100,100"}
 <<nobr>>
+
+<<run MT.notesSingleSetup()>>
+
 <<sticky-return-and>>
   <span class=mt-vsep>||</span>
   [[View all notes|g1m Notes All]]
 <</sticky-return-and>>
 
-<<script>>
-  const T = State.temporary;
-  const V = State.variables;
-  const noteStore = window.sessionStorage;
-
-  T.savedVal = "";
-  T.editVal = "";
-  T.hasConflict = false;
-
-  $(document).one(":passagedisplay", () => {
-    $("#notes-input").on("input", onInput);
-    $("#notes-delete").click(confirmDelete);
-    $("#notes-lose").click(confirmLose);
-    $("#notes-force").click(confirmOverwrite);
-    restoreSession();
-    uiUpdate();
-  });
-
-  function restoreSession() {
-    T.savedVal = MT.notesGet(V.g_notesOrigin);
-    T.editVal = noteStore.getItem("notes-single:" + V.g_notesOrigin)
-      || T.savedVal;
-    $("#notes-input").val(T.editVal);
-    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-  }
-
-  function uiUpdate() {
-    $("#notes-conflict").toggleClass("notes-has-conflict", T.hasConflict);
-    if (T.hasConflict) $("#notes-conflict textarea").val(T.savedVal);
-    const hasData = T.savedVal.trimEnd() !== "" || T.editVal.trimEnd() !== "";
-    $("#notes-delete").prop("disabled", !hasData || T.hasConflict);
-  }
-
-  function onInput(ev) {
-    saveValue($("#notes-input").val(), false);
-  }
-
-  function overwriteValue(val) {
-    $("#notes-input").val(val);
-    saveValue(val, true);
-  }
-
-  function saveValue(val, overwrite) {
-    T.editVal = val;
-    if (overwrite || !T.hasConflict) {
-      T.savedVal = MT.notesTryReplace(V.g_notesOrigin, T.savedVal, T.editVal);
-    }
-    T.hasConflict = T.savedVal.trimEnd() !== T.editVal.trimEnd();
-    const key = "notes-single:" + V.g_notesOrigin;
-    if (T.hasConflict) {
-      noteStore.setItem(key, val);
-    } else {
-      noteStore.removeItem(key);
-    }
-    uiUpdate();
-  }
-
-  T.doDelete = () => overwriteValue("");
-  function confirmDelete() {
-    Dialog.setup("Confirm Delete");
-    Dialog.wiki(`<<nobr>>
-      Are you sure you want to delete this note?
-      ?P
-      <<button Delete>><<run Dialog.close(); _doDelete()>><</button>>
-      <</nobr>>
-    `);;
-    Dialog.open();
-  }
-
-  T.doLose = () => overwriteValue(T.savedVal);
-  function confirmLose() {
-    Dialog.setup("Confirm Lose Edits");
-    Dialog.wiki(`<<nobr>>
-      Are you sure you want to lose your edits and revert to the conflicting value?
-      ?P
-      <<button "Lose edits">><<run Dialog.close(); _doLose()>><</button>>
-      <</nobr>>
-    `);;
-    Dialog.open();
-  }
-
-  T.doOverwrite = () => overwriteValue(T.editVal);
-  function confirmOverwrite() {
-    Dialog.setup("Confirm Overwrite Conflict");
-    Dialog.wiki(`<<nobr>>
-      Are you sure you want to overwrite the conflicting value with your edits?
-      ?P
-      <<button "Overwrite conflict">><<run Dialog.close(); _doOverwrite()>><</button>>
-      <</nobr>>
-    `);
-    Dialog.open();
-  }
-<</script>>
-
 <div class=ui-subtitle>
-    Notes for [page $g_notesOrigin]
+  Notes for [page $g_notesOrigin]
 </div>
+
 <textarea id="notes-input" placeholder="Enter text here"></textarea>
+
 <div class=notes-buttons>
   <button id="notes-delete">Delete note</button>
 </div>
 
 <div id="notes-conflict">
-    <div class=notes-buttons>
-        <button id="notes-lose">Lose edits &#x21d1;</button>
-        <button id="notes-force">&#x21d3; Overwrite conflict</button>
-    </div>
-    <div class=ui-subtitle>Local storage has a conflicting value:</div>
-    <textarea disabled></textarea>
+  <div class=notes-buttons>
+    <button id="notes-lose">Lose edits &#x21d1;</button>
+    <button id="notes-force">&#x21d3; Overwrite conflict</button>
+  </div>
+  <div class=ui-subtitle>Local storage has a conflicting value:</div>
+  <textarea disabled></textarea>
 </div>
+
 <</nobr>>
