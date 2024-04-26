@@ -122,6 +122,12 @@ async function scanFile(fname: string, usages: Usages, positions: Positions) {
   // might be faster to match whole text then find lno of matches,
   // but this is fast enough for the size of this project.
   lines.forEach((line, lno) => {
+    // Fast traversal requires links with code to use <<mta>>
+    const linkRe = /\[\[[^[]+\]\[/;
+    if (linkRe.test(line)) {
+      console.log(`${fname}:${lno}: [[link][code]] should use <<mta>> instead`);
+    }
+
     // quick hack to ignore varNames in comments
     if (/^\s*(?:\/[/*]|[*])/.test(line)) return;
 
