@@ -208,8 +208,8 @@ function report(decls: Declarations, usages: Usages) {
   // }
 }
 
-function showUsages(vnames: string[], usages: Usages) {
-  for (const vn of Array.from(vnames).sort()) {
+function showUsages(varNames: string[], usages: Usages) {
+  for (const vn of Array.from(varNames).sort()) {
     const locs = usages.locs[vn];
     if (locs == null) {
       console.log(`  ${vn} (no usages)`);

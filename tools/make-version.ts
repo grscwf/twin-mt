@@ -10,7 +10,7 @@ import { runP } from "./lib";
 import fsP from "fs/promises";
 
 const top = `${__dirname}/..`;
-const storyJS = `${top}/tw-twine/Story-JavaScript.tw`;
+const versionJS = `${top}/tw-code/c0-Game-Version.js`;
 
 async function main(argv: string[]) {
   const program = new Command()
@@ -24,10 +24,10 @@ async function main(argv: string[]) {
     throw new Error(`checkout is not clean`);
   }
 
-  const text = await fsP.readFile(storyJS, "utf-8");
+  const text = await fsP.readFile(versionJS, "utf-8");
   const m = /(setup\.version = ")(.+)"/.exec(text);
   if (m == null) {
-    throw new Error(`Couldn't find version in ${storyJS}`);
+    throw new Error(`Couldn't find version in ${versionJS}`);
   }
 
   const oldVersion = m[2]!;
@@ -47,7 +47,7 @@ async function main(argv: string[]) {
     + version
     + text.slice(m.index + m[0].length - 1);
 
-  await fsP.writeFile(storyJS, newText);
+  await fsP.writeFile(versionJS, newText);
   await runP(`ts-node ${top}/tools/tw-to-html.ts`)
 
   await runP(`git commit -am "${version}"`, { echo: true });
@@ -57,7 +57,7 @@ async function main(argv: string[]) {
     await runP(`ts-node ${top}/tools/deploy.ts`, { echo: true });
   }
 
-  await fsP.writeFile(storyJS, text);
+  await fsP.writeFile(versionJS, text);
   await runP(`ts-node ${top}/tools/tw-to-html.ts`)
   await runP(`git commit -am "Revert to ${oldVersion}"`, { echo: true });
   if (opts.push) {
