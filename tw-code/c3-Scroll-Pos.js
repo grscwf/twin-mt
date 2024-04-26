@@ -7,7 +7,8 @@ MT.scrollWait = false;
 
 const SCROLL_KEY = "scroll.pos";
 
-let scrollPending = false;
+/** @type {number | null} */
+let scrollTimeout = null;
 
 MT.scrollSavePos = () => {
   if (!setup.debug) return;
@@ -36,17 +37,19 @@ MT.scrollLoadPos = (scroll) => {
   }
 
   if (pos.turn === State.turns && scroll) {
+    if (scrollTimeout != null) {
+      clearTimeout(scrollTimeout);
+    }
     const el = document.documentElement;
     const doScroll = () => {
-      if (MT.scrollWait && !scrollPending) {
-        setTimeout(doScroll, 200);
+      if (MT.scrollWait) {
+        scrollTimeout = setTimeout(doScroll, 200);
       } else {
-        scrollPending = false;
         el.scrollTo({ top: pos.top, behavior: "smooth" });
+        scrollTimeout = null;
       }
     };
-    scrollPending = true;
-    setTimeout(doScroll, 500);
+    scrollTimeout = setTimeout(doScroll, 500);
   }
 };
 
