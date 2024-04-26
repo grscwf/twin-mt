@@ -9,10 +9,10 @@ MT.selectedText = "";
 MT.notesGetAll = () => State.metadata.get("mi_notes") || "";
 
 /** @type {(val: string) => void} */
-const setAll = (val) => State.metadata.set("mi_notes", val);
+const notesSetAll = (val) => State.metadata.set("mi_notes", val);
 
 /** @type {(pageName: string) => { count: number, hasNoteHere: boolean }} */
-const getStats = (pageName) => {
+const notesGetStats = (pageName) => {
   let count = 0;
   let hasNoteHere = false;
   const nFull = "\n" + MT.notesGetAll();
@@ -28,8 +28,8 @@ MT.notesTryReplaceAll = (old, val) => {
   const cur = MT.notesGetAll().trimEnd();
   if (old.trimEnd() !== cur) return cur;
   val = val.trimEnd();
-  setAll(val);
-  updateStatus();
+  notesSetAll(val);
+  notesUpdateStatus();
   return val;
 };
 
@@ -66,7 +66,7 @@ MT.notesCleanup = (text) => {
 /**
  * @type {(pageName: string, text: string) => SplitResult}
  */
-const splitAt = (pageName, text) => {
+const notesSplitAt = (pageName, text) => {
   let nText = "\n" + text;
   if (nText.slice(-1) !== "\n") nText += "\n";
   const nHeader = `\n[page ${pageName}]\n`;
@@ -92,14 +92,14 @@ const splitAt = (pageName, text) => {
 /** @type {(pageName: string) => string} */
 MT.notesGet = (pageName) => {
   const full = MT.notesGetAll();
-  const split = splitAt(pageName, full);
+  const split = notesSplitAt(pageName, full);
   return split.body;
 };
 
 /** @type {(text: string) => string} */
 MT.notesUnwrap = (text) => {
-  text = removeSection("version", text);
-  text = removeSection("player trail", text);
+  text = notesRemoveSection("version", text);
+  text = notesRemoveSection("player trail", text);
   text = text.trim();
   if (text.startsWith("[preamble]")) {
     text = text.slice("[preamble]".length).trim();
@@ -108,7 +108,7 @@ MT.notesUnwrap = (text) => {
 };
 
 /** @type {(name: string, text: string) => string} */
-const removeSection = (name, text) => {
+const notesRemoveSection = (name, text) => {
   const re = new RegExp(`^\\[${name}\\]`, "m");
   const m = re.exec(text);
   if (m == null) return text;
@@ -130,21 +130,21 @@ const removeSection = (name, text) => {
  */
 MT.notesTryReplace = (pageName, old, val) => {
   const full = MT.notesGetAll();
-  const sp = splitAt(pageName, full);
+  const sp = notesSplitAt(pageName, full);
   if (sp.body !== old.trimEnd()) return sp.body;
   const replace = /\S/.test(val) ? sp.header + val.trimEnd() + "\n\n" : "";
   const next = sp.before + replace + sp.after;
-  setAll(next);
-  updateStatus();
+  notesSetAll(next);
+  notesUpdateStatus();
   return val.trimEnd();
 };
 
 // capture selection before click deselects it
-const pointerDown = () => {
+const notesPointerDown = () => {
   MT.selectedText = getSelection()?.toString().trim() || "";
 };
 
-const openPopup = () => {
+const notesOpenPopup = () => {
   const T = State.temporary;
   T.notesOrigin = State.passage;
   if (T.notesVariant != null) {
@@ -156,21 +156,21 @@ const openPopup = () => {
   Dialog.open();
 };
 
-const renderButton = () => {
+const notesRenderButton = () => {
   $("#notes-button").remove();
   const outer = $("<div>")
     .attr("id", "notes-button")
-    .on("pointerdown", pointerDown)
-    .on("click", openPopup)
+    .on("pointerdown", notesPointerDown)
+    .on("click", notesOpenPopup)
     .appendTo("#story");
   $("<div>").attr("id", "notes-line-1").text("notes").appendTo(outer);
   const line2 = $("<div>").attr("id", "notes-line-2").appendTo(outer);
   $("<span>").attr("id", "notes-count").appendTo(line2);
-  updateStatus();
+  notesUpdateStatus();
 };
 
-const updateStatus = () => {
-  const st = getStats(State.passage);
+const notesUpdateStatus = () => {
+  const st = notesGetStats(State.passage);
   $("#notes-button").toggleClass("notes-has-note", st.hasNoteHere);
   $("#notes-button").toggleClass("notes-non-zero", st.count > 0);
   $("#notes-count").text(`${st.count}`);
@@ -180,5 +180,5 @@ MT.mdDefIgnored("mi_notes");
 MT.mdDefIgnored("mi_notesNoTrail");
 
 if (setup.playtest) {
-  $(document).on(":passagedisplay", renderButton);
+  $(document).on(":passagedisplay", notesRenderButton);
 }

@@ -51,7 +51,7 @@ declare global {
   let saveAs: (
     blob: unknown,
     name: string,
-    opt: Record<string, unknown>
+    opt?: Record<string, unknown>
   ) => void;
 
   const LZString: {

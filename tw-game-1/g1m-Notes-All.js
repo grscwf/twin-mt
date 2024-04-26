@@ -1,29 +1,25 @@
-:: g1m Notes All Script [inclusion] {"position":"425,2100","size":"100,100"}
-<<script>>
+MT.notesAllSetup = () => {
   const T = State.temporary;
-  const V = State.variables;
   const noteStore = window.sessionStorage;
-
-  const repr = JSON._real_stringify || JSON.stringify;
 
   T.savedVal = "";
   T.editVal = "";
   T.hasConflict = false;
 
-  T.canShare = navigator.canShare
-    && navigator.canShare({ title: "1", text: "2" });
+  T.canShare =
+    navigator.canShare && navigator.canShare({ title: "1", text: "2" });
 
   $(document).one(":passagedisplay", () => {
     $("#notes-input").on("input", onInput);
-    $("#notes-copy").click(copyToClipboard);
-    $("#notes-clean").click(confirmClean);
-    $("#notes-delete").click(confirmDelete);
-    $("#notes-lose").click(confirmLose);
-    $("#notes-overwrite").click(confirmOverwrite);
-    $("#notes-save").click(saveToFile);
-    $("#notes-load").click(loadFromFile);
-    $("#notes-load-file").on("change", loadFilePicked);
-    $("#notes-share").prop("disabled", T.canShare).click(doShare);
+    $("#notes-copy").on("click", copyToClipboard);
+    $("#notes-clean").on("click", confirmClean);
+    $("#notes-delete").on("click", confirmDelete);
+    $("#notes-lose").on("click", confirmLose);
+    $("#notes-overwrite").on("click", confirmOverwrite);
+    $("#notes-save").on("click", saveToFile);
+    $("#notes-load").on("click", loadFromFile);
+    $("#notes-load-file").on("change", ev => loadFilePicked(ev.target));
+    $("#notes-share").prop("disabled", T.canShare).on("click", doShare);
     $("input[name=notes-add-trail]").on("change", toggleTrail);
     restoreSession();
     uiUpdate();
@@ -72,15 +68,19 @@
     let render = "[\n";
     for (let i = 0, n = State.length; i < n; i++) {
       const step = State.history[i];
-      render += `  { t: ${repr(step.title)}`;
+      MT.nonNull(step, `step ${i}`);
+      render += `  { t: ${MT.json(step.title)}`;
+      /** @type {string[]} */
       const read = JSON.parse(step.variables.g_varsRead || "[]");
+      /** @type {Record<string, unknown>} */
       const obj = {};
       for (const v of read) {
-        obj[v] = step.variables[v];
+        const vars = /** @type {Record<string, unknown>} */ (step.variables);
+        obj[v] = vars[v];
       }
-      const json = repr(obj);
+      const json = MT.json(obj);
       if (json !== "{}") {
-        render += `, vars: ${repr(obj)}`;
+        render += `, vars: ${MT.json(obj)}`;
       }
       render += " },\n";
     }
@@ -89,14 +89,18 @@
   }
 
   function onInput() {
-    saveValue($("#notes-input").val(), false);
+    const val = $("#notes-input").val();
+    MT.assert(typeof val === "string", "notes-input not a string?");
+    saveValue(val, false);
   }
 
+  /** @type {(val: string) => void} */
   function overwriteValue(val) {
     $("#notes-input").val(val);
     saveValue(val, true);
   }
 
+  /** @type {(val: string, overwrite: boolean) => void} */
   function saveValue(val, overwrite) {
     T.editVal = val;
     if (overwrite || !T.hasConflict) {
@@ -203,7 +207,7 @@
   function saveToFile() {
     const fname = makeTitle();
     const text = getText();
-    const blob = new Blob([text], { type: 'text/plain;charset=UTF-8' });
+    const blob = new Blob([text], { type: "text/plain;charset=UTF-8" });
     /* saveAs is from filesaver.js, bundled with sugarcube-2 */
     saveAs(blob, fname);
   }
@@ -211,15 +215,21 @@
   function loadFromFile() {
     $("#notes-load-file").click();
   }
-  function loadFilePicked(ev) {
+
+  /** @type {(target: HTMLElement) => void} */
+  function loadFilePicked(target) {
     const reader = new FileReader();
     $(reader).one("loadend", () => {
       if (reader.error) throw reader.error;
       let text = reader.result;
+      MT.assert(typeof text === "string", "non-string from file?");
       text = MT.notesUnwrap(text);
       overwriteValue(text);
     });
-    const file = ev.target.files[0];
+    MT.assert(target instanceof HTMLInputElement, "loadFilePicked bug?");
+    MT.nonNull(target.files, "target.files");
+    const file = target.files[0];
+    MT.nonNull(file, "target.files[0]");
     reader.readAsText(file);
   }
 
@@ -234,4 +244,4 @@
     const hidden = $("#notes-detail").hasClass("mt-hidden");
     $("#notes-switch").text(hidden ? "(show intro)" : "(hide intro)");
   };
-<</script>>\
+};
