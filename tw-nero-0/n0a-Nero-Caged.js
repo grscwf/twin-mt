@@ -5,6 +5,7 @@
 
   Template.add("iCock", `<a class="caged-cock caged-i-cock">cock</a>`);
   Template.add("nCock", `<a class="caged-cock caged-n-cock">cock</a>`);
+  Template.add("nCum", '<span class="caged-cum">cum</span>');
 
   /**
    * <<nero-caged $next [slow]>>
@@ -69,11 +70,6 @@
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
 
-      // unlink shocks on last line.
-      cage.find("[data-shock].caged-optional").each((i, el) => {
-        $(el).replaceWith($(el).contents());
-      });
-
       const shocks = cage.find("[data-shock]");
       if (shocks.length) {
         let n = 0;
@@ -117,11 +113,6 @@
         $(block).clone().appendTo(box);
       }
 
-      // unlink shocks on last line (repeated in next block)
-      box.find("[data-shock].caged-optional").each((i, el) => {
-        $(el).replaceWith($(el).contents());
-      });
-
       box.append("<a class=caged-continue>Continue</a>");
 
       MT.scrollSavePos();
@@ -134,6 +125,10 @@
     }
     cur.n_cagedBlockTurn = State.turns;
     cur.n_cagedBlock ??= 0;
+
+    if (cur.n_cagedBlock >= split.blocks.length) {
+      cur.n_cagedBlock = split.blocks.length - 1;
+    }
 
     renderBlock(cur.n_cagedBlock);
 
@@ -209,7 +204,9 @@
         const cocks = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
-        const shocks = box.find(`[data-shock]:not([data-shock="0"])`);
+        const shocks = box.find(
+          `[data-shock]:not([data-shock="0"]:not(.caged-optional))`
+        );
         if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();

@@ -1679,7 +1679,7 @@ ul.actions .mt-seen-true li::before {
   font-size: 1rem;
   grid-column: 1;
   grid-row: 1;
-  height: min(70vh - 5em, 35em);
+  height: min(70vh - 5em, 30em);
   padding: 4px 8px;
   width: min(90vw - 5em, 20em);
 }
@@ -1728,8 +1728,10 @@ ul.actions .mt-seen-true li::before {
   transition: color 3s, opacity 3s;
 }
 
-/* special handling for the word cock */
-.caged-cock {
+/* special handling for keywords */
+
+.caged-cock,
+[data-shock] {
   border-radius: 4px;
   word-break: normal;
 }
@@ -3609,7 +3611,6 @@ const chainObserverInit = () => {
 
   const observer = new MutationObserver((changes) => {
     changes.forEach((change) => {
-      console.log(change);
       if (hasPassageLink(change.addedNodes)) {
         MT.warn("Passage dynamically added a link (chain-url may fail).");
       }
@@ -11924,6 +11925,7 @@ MT.mdDefUnsaved("mg_knotYes");
 
   Template.add("iCock", `<a class="caged-cock caged-i-cock">cock</a>`);
   Template.add("nCock", `<a class="caged-cock caged-n-cock">cock</a>`);
+  Template.add("nCum", '<span class="caged-cum">cum</span>');
 
   /**
    * <<nero-caged $next [slow]>>
@@ -11988,11 +11990,6 @@ MT.mdDefUnsaved("mg_knotYes");
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
 
-      // unlink shocks on last line.
-      cage.find("[data-shock].caged-optional").each((i, el) => {
-        $(el).replaceWith($(el).contents());
-      });
-
       const shocks = cage.find("[data-shock]");
       if (shocks.length) {
         let n = 0;
@@ -12036,11 +12033,6 @@ MT.mdDefUnsaved("mg_knotYes");
         $(block).clone().appendTo(box);
       }
 
-      // unlink shocks on last line (repeated in next block)
-      box.find("[data-shock].caged-optional").each((i, el) => {
-        $(el).replaceWith($(el).contents());
-      });
-
       box.append("<a class=caged-continue>Continue</a>");
 
       MT.scrollSavePos();
@@ -12053,6 +12045,10 @@ MT.mdDefUnsaved("mg_knotYes");
     }
     cur.n_cagedBlockTurn = State.turns;
     cur.n_cagedBlock ??= 0;
+
+    if (cur.n_cagedBlock >= split.blocks.length) {
+      cur.n_cagedBlock = split.blocks.length - 1;
+    }
 
     renderBlock(cur.n_cagedBlock);
 
@@ -12128,7 +12124,9 @@ MT.mdDefUnsaved("mg_knotYes");
         const cocks = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
-        const shocks = box.find(`[data-shock]:not([data-shock="0"])`);
+        const shocks = box.find(
+          `[data-shock]:not([data-shock="0"]:not(.caged-optional))`
+        );
         if (cocks.length === 0 && shocks.length === 0) {
           e.preventDefault();
           e.stopPropagation();
@@ -14426,7 +14424,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="init" color="blue"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -45130,11 +45128,11 @@ pink-ish glow becomes blindingly bright.
 
 When the panther mage finishes his incantation,
 &lt;clue-cut/&gt;
-the bright pink light suddenly stops
+the bright pink light suddenly disappears
 with a sound that resembles a distant door slamming shut.
-Ivex pulls the wand off the wolf&#39;s crotch.
 
 ?P
+Ivex pulls the wand off the wolf&#39;s crotch.
 Nero feels relief, until he realizes
 that the wand has left a rigid covering on his crotch
 where his cock and balls should be.
@@ -45143,8 +45141,10 @@ where his cock and balls should be.
 He paws at the strange material. &quot;What have you done?&quot;
 The arcane creation hugs his crotch tightly.
 There does not seem to be much space beneath it,
-but the wolf can still feel his cock straining and erect,
-yearning for stimulation. He just can&#39;t &lt;em&gt;touch&lt;/em&gt; it.
+but the wolf can still feel his cock bulging,
+straining against confinement,
+yearning for stimulation.
+He just can&#39;t &lt;em&gt;touch&lt;/em&gt; it.
 
 ?P
 Ivex chuckles. &quot;Do not worry.
@@ -45152,7 +45152,7 @@ I will keep your cock safe for you.&quot;
 
 ?P
 Before Nero has a chance to ask what that means,
-the panther mutters a few words and touches the side of the desk.
+the panther speaks an arcane word and touches the side of the desk.
 The surface Nero is sitting on disappears.
 He falls, &lt;em&gt;into&lt;/em&gt; the desk.
 
@@ -45165,35 +45165,35 @@ The wolf lands hard on his tail with a yelp.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="559" name="n9a Caged Harsh 3" tags="mt-ready" position="11550,2150" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;nero-caged [[n9a Caged Harsh 4]]&gt;&gt;
-  The small cell is not tall enough
+  The small cell is not large enough
   &lt;clue-cut/&gt;
   for the wolf to stand up or lie down straight.
   Nero does not know how long he&#39;s there.
   Nothing marks the passage of time.
-  A soft white glow from the floor shows the
+  A soft white glow from the floor illuminates the
   hopelessness of his situation.
   He alternates between
   testing the walls and testing the covering
   on his ?nCock.
   It&#39;s pointless effort.
-  There&#39;s nothing to find,
-  nothing to try that he hasn&#39;t already tried,
+  There&#39;s nothing he can find,
+  nothing he can try that he hasn&#39;t already tried,
   but his ?nCock keeps urging him to seek release.
-  The wolf has nothing else to do,
-  nothing to keep him distracted from
-  the unsatisfiable horniness of his ?nCock.
 
   He rubs his hand
   along the featureless walls of the cell,
   but his fingers do not feel any flaw
   that he can use to escape,
   and he does not find any gap in the device at his crotch
-  that will let him touch his ?nCock.
-  He growls and reconsiders what spells he will cast
-  as soon as he has power again:
-  magic to attack or defend or distract.
-  Certainly not magic to release or stimulate his ?nCock.
-  He reviews and rejects every spell that he knows
+  that will allow him to touch his ?nCock.
+  He growls and considers again what spells he will cast
+  as soon as he regains even a little bit of arcane energy.
+  He will use magic to attack or defend or distract.
+  It will need to be quick.
+  There will not be time for magic
+  that will release or stimulate his ?nCock.
+  Nero reviews all the spells he could cast
+  and rejects every spell
   that will &lt;em&gt;not&lt;/em&gt; defeat the panther
   and &lt;em&gt;only&lt;/em&gt; help his ?nCock.
 
@@ -45306,7 +45306,7 @@ The wolf lands hard on his tail with a yelp.
   and bind it tightly to his thigh.
 
   The spider-gem has magical strength,
-  and the legs have little difficulty
+  and its legs have little difficulty
   lifting the wolf&#39;s hips off the floor.
   Soon, the wolf&#39;s tail and his other arm are pulled away,
   exposing his tailhole to the air,
@@ -45345,26 +45345,27 @@ The wolf lands hard on his tail with a yelp.
   its slick surface slipping another millimeter in
   and stretching the wolf&#39;s hole another millimeter wider,
   with an agonizing sensation that feels like
-  muscles could tear.
-  Nero pants heavily
-  as the spider-gem pushes slowly forward,
+  his muscles will tear apart.
+  Nero pants heavily.
+  His consciousness becomes narrowly focused on his ass
+  while the spider-gem pushes slowly forward,
   its slick surface slipping another millimeter in
-  and stretching the wolf&#39;s ass another millimeter wider,
-  with a painful stretching that feels like
+  and stretching the wolf&#39;s hole another millimeter wider,
+  with a painful pressure that feels like
 
 &lt;&lt;nero-caged-fill&gt;&gt;
   his skin will break,
   and the wolf struggles and whines
   as the spider-gem pushes slowly inward.
   Its slick surface slips another millimeter forward
-  and stretches the wolf&#39;s hole another millimeter wider,
+  and stretches the wolf&#39;s ass another millimeter wider,
   with a agonizing sensation that feels like
-  muscles could tear.
+  his muscles will tear apart.
   Nero breathes rapid breaths
   as the spider-gem pushes slowly deeper,
   with its slick surface slipping in another millimeter,
-  stretching the wolf&#39;s ass another millimeter more,
-  with a painful stretching that feels like
+  stretching the wolf&#39;s hole another millimeter more,
+  with a painful pressure that feels like
 
 &lt;&lt;/nero-caged&gt;&gt;
 
@@ -45374,7 +45375,8 @@ The wolf lands hard on his tail with a yelp.
   Suddenly, the widest part of the gem
   &lt;clue-cut/&gt;
   slips past the wolf&#39;s sphincter.
-  The whole gem squirts &lt;em&gt;into&lt;/em&gt; Nero&#39;s ass,
+  Nero gasps.
+  The whole gem squirts &lt;em&gt;into&lt;/em&gt; his ass,
   and his tailhole contracts with relief,
   clutching the cluster of crystal legs
   that are attached to the gem and sticking out his hole.
@@ -45390,16 +45392,16 @@ The wolf lands hard on his tail with a yelp.
   and he imagines it will feel equally terrible coming out.
 
   Nero&#39;s rumination is interrupted by a spray of dampness
-  on his backside and the scent of fresh cum.
-  It&#39;s Ivex&#39;s cum, of course.
+  on his backside and the scent of fresh ?nCum.
+  It&#39;s Ivex&#39;s ?nCum, of course.
   
   Nero snarls his disgust and reaches back with one hand
-  to wipe the sticky cum off his fur as well as he can.
+  to wipe as much of the sticky ?nCum off his fur as he can.
   
   Ivex speaks. &quot;I suggest you lick it up.&quot;
 
   The wolf is certainly &lt;em&gt;not&lt;/em&gt; going to do &lt;em&gt;that&lt;/em&gt;.
-  He regrets getting the cum on his paw.
+  He regrets getting the ?nCum on his paw.
   The stench of the panther&#39;s spunk is overwhelming.
   Nero tries to wipe his fingers clean on a wall.
   The wall begins to glow yellow at the place where he touched it.
@@ -45409,20 +45411,20 @@ The wolf lands hard on his tail with a yelp.
   and it grows stronger as the yellow spot on the wall
   becomes brighter and redder.
   Nero moans a bit when the spot becomes a vibrant red,
-  and the gem&#39;s stimulation rubs him deeply
+  and the gem&#39;s vibration rubs him deeply
   near the root of his inaccessible ?nCock.
-  He&#39;s heard that some men find stimulation
+  He knows that some men find stimulation
   &lt;em&gt;in there&lt;/em&gt; pleasurable,
   but he never really understood what that meant,
   until now.
 
-  The vibration is deeply sensual,
+  The rumbling sensation is deeply delightful,
   and somehow sexual,
   in a way that&#39;s separate from his ?nCock.
   He groans and wonders if it&#39;s possible
-  to reach sexual release
+  to reach an orgasm
   from just the gem&#39;s throbbing against his prostate.
-  The thought of achieving an orgasm
+  The thought of achieving sexual release
   without using his ?nCock is embarrassing, emasculating,
   but the pleasure is undeniably compelling,
   and he can&#39;t help wishing for more,
@@ -45443,26 +45445,27 @@ The wolf lands hard on his tail with a yelp.
   When Nero recovers from the shocks,
   the spot on the wall is yellow again,
   and there are now more yellow spots on the wall and floor
-  in places that were touched by his cum-stained paw
+  in places that were touched by his ?nCum/**/-stained paw
   when he writhed from the pain.
 
-  All of the yellow cum spots start turning red again.
+  All of the yellow ?nCum spots start turning red again.
   Ivex says,
   &quot;In case you haven&#39;t already figured it out,
-  the wall reacts to cum. The floor and ceiling as well.&quot;
+  the wall reacts to ?nCum. The floor and ceiling as well.&quot;
   
-  Nero quickly tries using his arm to mop up the streaks of cum
+  &lt;caged-cum-start/&gt;
+  Nero quickly tries using his arm to mop up the streaks of ?nCum
   that are making the wall glow.
   The pulsing vibration in his ass is distracting and makes it hard to focus.
 
-  He manages to remove most of the cum,
+  He manages to remove most of the ?nCum,
   but he has trouble with a smear near a corner
   and does not get it all before the spot flashes purple again
   and delivers four more sharp &lt;a data-shock=4&gt;shocks&lt;/a&gt; to his ass.
 
   The wolf screams and thrashes his limbs against the walls
   of his tiny cell.
-  The thrashing spreads more of the cum that was soaked in his fur.
+  The thrashing spreads more of the ?nCum that was soaked in his fur.
   When Nero&#39;s eyes can focus again, he sees yellow splotches on
   every surface of the cell.
   He realizes with dismay that he cannot
@@ -45475,36 +45478,37 @@ The wolf lands hard on his tail with a yelp.
   to avoid acknowledging what he&#39;s doing.
   He tries to ignore the throbbing in his ass.
   He uses his nose and his tongue to find and slurp up
-  as much of the noxious panther&#39;s cum as he can
+  as much of the noxious panther&#39;s ?nCum as he can
   before the shocks begin again.
 
   There are five &lt;a data-shock=5&gt;shocks&lt;/a&gt; this time.
   Familiarity does not make the pain easier to bear.
   Nero&#39;s heart is racing in panic,
   but he thinks he&#39;s close to done.
-  The difficult part is the cum stuck in the fur
+  The difficult part is the ?nCum stuck in the fur
   on his back in a place he can&#39;t reach.
   He just has to be careful to avoid touching his
   back to any surface of the cell,
   or clean it up quickly when it does.
 
   Nero opens his eyes to scan his work.
-  There are two one glowing spots left, on the floor.
+  There are two glowing spots of ?nCum left,
+  on the floor.
   The wolf isn&#39;t quite fast enough to avoid
   getting &lt;a data-shock=1&gt;shocked&lt;/a&gt; again,
   but the spots are completely erased before
   the second &lt;a data-shock=1&gt;shock&lt;/a&gt; hits.
   Nero feels triumph. He&#39;s &lt;em class=nobr&gt;done&lt;/em&gt;.
+  &lt;caged-cum-stop/&gt;
 
-  He tenses and clenches his spasming muscles
+  He clenches his spasming muscles
   to ride out the final barrage of
   &lt;a data-shock=4&gt;shocks&lt;/a&gt;.
 
   It takes several huffing breaths
   for the wolf to be certain the shocks are done.
 
-
-  He breathes relief and begins methodically licking up the cum
+  He breathes relief and begins methodically licking up the ?nCum
   that remains on his hands and other parts of his fur.
   There&#39;s no rush now, he just needs to get it done,
   so he can finally relax, and rest in a position
@@ -45517,7 +45521,7 @@ The wolf lands hard on his tail with a yelp.
   He doesn&#39;t know what will happen when the gem
   comes out of his ass, but it can stay there for now.
 
-  His throat feels dry. He&#39;s licked off as much cum
+  His throat feels dry. He&#39;s licked off as much ?nCum
   from his body as he can.
   Nero gathers himself into a loose ball pressed
   against the wall and tries to relax.

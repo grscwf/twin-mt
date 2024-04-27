@@ -221,7 +221,6 @@ const chainObserverInit = () => {
 
   const observer = new MutationObserver((changes) => {
     changes.forEach((change) => {
-      console.log(change);
       if (hasPassageLink(change.addedNodes)) {
         MT.warn("Passage dynamically added a link (chain-url may fail).");
       }
