@@ -111,7 +111,7 @@ Macro.add("mt-assert", {
     const expr = this.args.full;
     const rawExpr = this.args.raw;
 
-    if (State.temporary.isArchive) return;
+    if (State.temporary.isTranscript) return;
 
     const val = MT.untraced(() => eval(expr));
     MT.assert(val, `(${rawExpr}) should be true`, this);

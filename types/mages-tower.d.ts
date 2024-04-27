@@ -200,7 +200,10 @@ declare module "twine-sugarcube" {
     /** True if rendering passage as archives entry. */
     isArchive?: boolean;
 
-    /** True if rendering passage as transcript or archives entry. */
+    /** True if rendering for compute-variants. */
+    isSpeculative?: boolean;
+
+    /** True if rendering passage as transcript, archives, or trail entry. */
     isTranscript?: boolean;
 
     /** Set by Notes button for Notes Popup. */
