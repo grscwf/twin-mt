@@ -162,7 +162,7 @@ const renderUnseen = (title, out) => {
 
 /** @type {(div: JQuery<HTMLElement>) => JQuery<HTMLElement>} */
 const makeClue = (div) => {
-  const hasCut = div.find("#clue-cut").length !== 0;
+  const hasCut = div.find("#clue-cut, clue-cut").length !== 0;
   let wordsLeft = hasCut ? 100 : 10;
   /** @type {(node: Node) => void} */
   const trim = (node) => {
@@ -182,7 +182,7 @@ const makeClue = (div) => {
       }
       wordsLeft -= n;
     } else if (node instanceof HTMLElement) {
-      if (node.tagName === "B" && node.getAttribute("id") === "clue-cut") {
+      if (node.tagName === "CLUE-CUT" || node.id === "clue-cut") {
         wordsLeft = 0;
       } else if (/^(BR|HR)/.test(node.tagName)) {
         node.parentNode?.removeChild(node);
