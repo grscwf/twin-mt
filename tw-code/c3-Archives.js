@@ -347,6 +347,7 @@ MT.arcRender = (output) => {
     }
   };
 
+  MT.scrollWait = true;
   renderLoop();
 };
 

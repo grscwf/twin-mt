@@ -81,16 +81,16 @@
         cage.addClass(classes);
       }
 
-      const shocks = cage.find("[data-shock]");
-      if (shocks.length) {
-        let n = 0;
-        shocks.each((i, el) => {
-          if (el.dataset.shock != null) {
-            n += +el.dataset.shock;
-          }
-        });
-        shakeWords(cage, n);
-      }
+      // const shocks = cage.find("[data-shock]");
+      // if (shocks.length) {
+      //   let n = 0;
+      //   shocks.each((i, el) => {
+      //     if (el.dataset.shock != null) {
+      //       n += +el.dataset.shock;
+      //     }
+      //   });
+      //   shakeWords(cage, n);
+      // }
 
       cage.append("<a class=caged-continue>Continue</a>");
 
