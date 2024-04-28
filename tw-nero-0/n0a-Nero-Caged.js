@@ -517,13 +517,25 @@ const cagedSplit = (text, fill, once) => {
   let cumActive = false;
   let shockActive = false;
   blocks.forEach((block, i) => {
-    if (cumActive || $(block).find("caged-cum-start").length) {
+    const jq = $(block);
+
+    if (cumActive || jq.find("caged-cum-start").length) {
       cumActive = true;
-      $(block).find("caged-cum").addClass("caged-cum-active");
+      jq.find("caged-cum").addClass("caged-cum-active");
     }
-    if ($(block).find("caged-cum-stop").length) {
+
+    if (jq.find("caged-cum-stop").length) {
       // next block
       cumActive = false;
+    }
+
+    if (jq.find("caged-shock-start").length) {
+      shockActive = true;
+    } else if (shockActive) {
+      jq.prepend("<caged-shock-continue>");
+    }
+    if (jq.find("caged-shock-end").length) {
+      shockActive = false;
     }
   });
 
