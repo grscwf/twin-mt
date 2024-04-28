@@ -1,11 +1,17 @@
 (() => {
   const CAGED_BORDER = 0;
 
-  /** @typedef { { height: number, blocks: DocumentFragment[] } } SplitInfo */
+  /**
+   * @typedef {object} SplitInfo
+   * @prop {number} height
+   * @prop {DocumentFragment[]} blocks
+   * @prop {Array<string | undefined>} classes
+   */
 
   Template.add("iCock", `<a class="caged-cock caged-i-cock">cock</a>`);
   Template.add("nCock", `<a class="caged-cock caged-n-cock">cock</a>`);
-  Template.add("nCum", '<span class="caged-cum">cum</span>');
+  Template.add("nCum", "<caged-cum>cum</caged-cum>");
+  Template.add("nCumCap", "<caged-cum>Cum</caged-cum>");
 
   /**
    * <<nero-caged $next [slow]>>
@@ -70,6 +76,11 @@
       const block = /** @type { DocumentFragment } */ (split.blocks[i]);
       cage.append($(block).contents());
 
+      const classes = split.classes[i];
+      if (classes != null) {
+        cage.addClass(classes);
+      }
+
       const shocks = cage.find("[data-shock]");
       if (shocks.length) {
         let n = 0;
@@ -111,6 +122,11 @@
       const block = split.blocks[i];
       if (block != null) {
         $(block).clone().appendTo(box);
+
+        const classes = split.classes[i];
+        if (classes != null) {
+          box.addClass(classes);
+        }
       }
 
       box.append("<a class=caged-continue>Continue</a>");
@@ -185,8 +201,8 @@
 
     box.on("click", (e) => {
       let t = $(e.target);
-      // find an enclosing <a>
-      while (t.length && t.prop("tagName") !== "A") {
+      // find an enclosing <a> or <caged-cum>
+      while (t.length && !["A", "CAGED-CUM"].includes(t.prop("tagName"))) {
         t = t.parent();
       }
       const shock = t.attr("data-shock");
@@ -200,14 +216,19 @@
         }
       } else if (t.hasClass("caged-cock")) {
         t.addClass("caged-touched");
+      } else if (t.hasClass("caged-cum-active")) {
+        t.addClass("caged-touched");
       } else if (t.hasClass("caged-continue")) {
         const cocks = box.find(
           ".caged-cock:not(.caged-touched):not(.caged-optional)"
         );
         const shocks = box.find(
-          `[data-shock]:not([data-shock="0"]:not(.caged-optional))`
+          `[data-shock]:not([data-shock="0"]):not(.caged-optional)`
         );
-        if (cocks.length === 0 && shocks.length === 0) {
+        const cum = box.find(
+          `.caged-cum-active:not(.caged-touched):not(.caged-optional)`
+        );
+        if (cocks.length === 0 && shocks.length === 0 && cum.length === 0) {
           e.preventDefault();
           e.stopPropagation();
           goNext();
@@ -343,7 +364,7 @@
    */
   function splitText(text, fill, once) {
     if (text.trim() === "") {
-      return { height: 0, blocks: [] };
+      return { height: 0, blocks: [], classes: [] };
     }
     let rendered = renderWithWordsMarked(text);
 
@@ -354,7 +375,7 @@
     inner.appendTo(outer);
     inner.append($(rendered).contents());
 
-    /** @type { DocumentFragment[] } */
+    /** @type {DocumentFragment[]} */
     const blocks = [];
     let height = 0;
     try {
@@ -363,7 +384,7 @@
         MT.warn("Failed to render in splitText.");
         const block = document.createDocumentFragment();
         $(rendered).contents().appendTo(block);
-        return { height, blocks: [block] };
+        return { height, blocks: [block], classes: [] };
       }
 
       let lineStart = 0;
@@ -417,7 +438,7 @@
         for (let j = lineStart; j < current; j++) {
           const word = /** @type { HTMLElement } */ (words[j]);
           const parent = word.parentElement;
-          if (parent != null && parent.tagName === "A") {
+          if (parent != null && ["A", "CAGED-CUM"].includes(parent.tagName)) {
             parent.className += " caged-optional";
           }
         }
@@ -470,6 +491,20 @@
       outer.remove();
     }
 
-    return { height, blocks };
+    /** @type {Array<string | undefined>} */
+    const classes = [];
+    let cumActive = false;
+    blocks.forEach((block, i) => {
+      if (cumActive || $(block).find("caged-cum-start").length) {
+        cumActive = true;
+        $(block).find("caged-cum").addClass("caged-cum-active");
+      }
+      if ($(block).find("caged-cum-stop").length) {
+        // next block
+        cumActive = false;
+      }
+    });
+
+    return { height, blocks, classes };
   }
 })();
