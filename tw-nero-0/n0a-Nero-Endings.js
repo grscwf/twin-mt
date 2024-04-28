@@ -36,6 +36,7 @@ MT.neroEndings = {
       "n9a Caged Harsh 4",
       "n9a Caged Harsh 5",
       "n9a Caged Harsh 6",
+      "n9a Caged Harsh 7",
       "n9a Caged Harsh End",
     ],
   },
