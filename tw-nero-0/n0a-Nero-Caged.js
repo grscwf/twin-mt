@@ -4,7 +4,6 @@ Template.add("iCock", `<a class="caged-cock caged-i-cock">cock</a>`);
 Template.add("nCock", `<a class="caged-cock caged-n-cock">cock</a>`);
 Template.add("nCum", "<caged-cum>cum</caged-cum>");
 Template.add("nCum2", "<caged-cum delayed>cum</caged-cum>")
-Template.add("nCumCap", "<caged-cum>Cum</caged-cum>");
 
 /**
  * @typedef {object} SplitInfo
