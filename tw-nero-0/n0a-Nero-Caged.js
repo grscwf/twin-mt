@@ -3,6 +3,7 @@ const CAGED_BORDER = 0;
 Template.add("iCock", `<a class="caged-cock caged-i-cock">cock</a>`);
 Template.add("nCock", `<a class="caged-cock caged-n-cock">cock</a>`);
 Template.add("nCum", "<caged-cum>cum</caged-cum>");
+Template.add("nCum2", "<caged-cum delayed>cum</caged-cum>")
 Template.add("nCumCap", "<caged-cum>Cum</caged-cum>");
 
 /**
@@ -267,6 +268,7 @@ const cagedRenderLive = (out, split, next, slow) => {
       t.addClass("caged-touched");
     } else if (t.hasClass("caged-cum-active")) {
       t.addClass("caged-touched");
+      $(".caged-box").find("caged-cum").removeAttr("delayed");
     } else if (t.hasClass("caged-continue")) {
       const cocks = box.find(
         ".caged-cock:not(.caged-touched):not(.caged-optional)"
