@@ -23,6 +23,9 @@ let shockGoal = 0;
 /** @type { (n: number) => void} */
 const cagedShockAdd = (n) => {
   shockGoal += n;
+  if ($(".caged-box caged-shock-start").length) {
+    shockGoal += 999;
+  }
   if (shockTimeout == null) {
     shockTimeout = setTimeout(cagedShockOn);
   }
@@ -35,6 +38,7 @@ const cagedShockReset = () => {
     clearTimeout(shockTimeout);
   }
   shockTimeout = null;
+  $(".caged-box").removeClass("caged-shocking");
 };
 
 const cagedShockOn = () => {
@@ -49,12 +53,11 @@ const cagedShockOn = () => {
 const cagedShockOff = () => {
   shockTimeout = null;
   if (shockPaused) return;
-  const box = $(".caged-box");
-  box.removeClass("caged-shocking");
+  $(".caged-box").removeClass("caged-shocking");
   if (shockCount < shockGoal) {
     // avoid flashing faster than 3Hz
     // https://www.w3.org/TR/WCAG21/#seizures-and-physical-reactions
-    shockTimeout = setTimeout(cagedShockOn, 400);
+    shockTimeout = setTimeout(cagedShockOn, 600);
   }
 };
 
@@ -179,6 +182,10 @@ const cagedRenderLive = (out, split, next, slow) => {
     }
 
     box.append("<a class=caged-continue>Continue</a>");
+
+    if (box.find("caged-shock-continue").length) {
+      setTimeout(() => cagedShockAdd(999), 1000);
+    }
 
     MT.scrollSavePos();
   };
