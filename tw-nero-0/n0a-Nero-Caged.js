@@ -57,7 +57,8 @@ const cagedShockOff = () => {
   if (shockCount < shockGoal) {
     // avoid flashing faster than 3Hz
     // https://www.w3.org/TR/WCAG21/#seizures-and-physical-reactions
-    shockTimeout = setTimeout(cagedShockOn, 600);
+    const delay = shockGoal < 100 ? 400 : 1600;
+    shockTimeout = setTimeout(cagedShockOn, delay);
   }
 };
 
