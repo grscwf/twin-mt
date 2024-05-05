@@ -27,6 +27,11 @@ MT.tran.renderHistory = (out) => {
   const hist = MT.getHistory();
   let turn = 0;
 
+  if (hist.length === 0) {
+    outer.append("<em>You haven't started playing yet!</em>");
+    return;
+  }
+
   const renderSome = () => {
     const batch = 10;
     const stop = Math.min(turn + batch, hist.length);
