@@ -43,9 +43,13 @@ const glitchVowels = "áaeiouyAEIOUY";
 
 /** @type {(textNode: Node, g: number, speed: number) => number} */
 const glitchText = (textNode, g, speed) => {
+  const text = textNode.nodeValue || "";
+  if (text.trim() === "") return g;
+
   const outer = $("<span class=glitch-text>");
   textNode.parentNode?.replaceChild(MT.jqUnwrap(outer), textNode);
-  const words = textNode.nodeValue?.split(/(\s+)/) || [];
+
+  const words = text.split(/(\s+)/);
   for (const word of words) {
     if (/\s/.test(word)) {
       outer.append(word);
@@ -53,7 +57,7 @@ const glitchText = (textNode, g, speed) => {
       $(barbGlitch[0] || "").appendTo(outer);
     } else if (word === "##barbed-2##") {
       $(barbGlitch[1] || "").appendTo(outer);
-    } else {
+    } else if (word !== "") {
       const gf = Math.min(Math.floor(g / speed), 4);
       g++;
       const inner = $(`<span class="glitch-word-${gf}">`).appendTo(outer);
