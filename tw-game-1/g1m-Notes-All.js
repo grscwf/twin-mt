@@ -18,7 +18,7 @@ MT.notesAllStart = () => {
     $("#notes-overwrite").on("click", confirmOverwrite);
     $("#notes-save").on("click", saveToFile);
     $("#notes-load").on("click", loadFromFile);
-    $("#notes-load-file").on("change", ev => loadFilePicked(ev.target));
+    $("#notes-load-file").on("change", (ev) => loadFilePicked(ev.target));
     $("#notes-share").prop("disabled", T.canShare).on("click", doShare);
     $("input[name=notes-add-trail]").on("change", toggleTrail);
     restoreSession();
@@ -238,10 +238,4 @@ MT.notesAllStart = () => {
     const text = getText();
     navigator.share({ title, text });
   }
-
-  T.switch = () => {
-    $("#notes-detail").toggleClass("mt-hidden");
-    const hidden = $("#notes-detail").hasClass("mt-hidden");
-    $("#notes-switch").text(hidden ? "(show intro)" : "(hide intro)");
-  };
 };

@@ -274,7 +274,7 @@ MT.arcRender = (output) => {
 
   $(output).wiki(
     `<<sticky-head>>` +
-      `<div class=ui-title>${title}</div>` +
+      `<h1>${title}</h1>` +
       `<</sticky-head>>`
   );
 
@@ -408,34 +408,24 @@ MT.arcPageStart = () => {
     V.xn_TamedHarsh ||
     V.xn_TamedMild;
 
-  /** @type {(which: string) => void} */
-  T.open = (which) => {
-    $(".arc-closable").removeClass("arc-open");
-    $(".arc-switch").text("(show)");
-    $(`.arc-closable-${which}`).addClass("arc-open");
-    $(`.arc-switch-${which}`).text("(hide)");
-  };
-
-  /** @type {(which: string) => void} */
-  T.toggle = (which) => {
-    const now = session.get(sessionKey);
-    const next = now === which ? "none" : which;
-    session.set(sessionKey, next);
-    T.open(next);
-  };
-
-  /** @type {(which: string) => string} */
-  T.switch = (which) => {
-    let mkp =
-      `<a class="arc-switch arc-switch-${which}"` +
-      ` onclick="SugarCube.State.temporary.toggle('${which}')"` +
-      `>(show)</a>`;
-    return mkp;
-  };
-
   $(document).one(":passagedisplay", () => {
-    const state = session.get(sessionKey);
-    T.open(state || "intro");
+    $("#story details").on("toggle", ev => {
+      const el = ev.target;
+      if (!(el instanceof HTMLDetailsElement)) return;
+      if (!el.open) return;
+      const open = $("#story details").index(el);
+      if (open >= 0) {
+        session.set(sessionKey, open);
+      }
+    });
+
+    const open = session.get(sessionKey);
+    if (typeof open === "number") {
+      const el = $("#story details")[open];
+      if (el instanceof HTMLDetailsElement) {
+        el.open = true;
+      }
+    }
   });
 
   lockpickStart();

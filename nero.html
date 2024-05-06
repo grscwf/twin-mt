@@ -145,21 +145,12 @@ meta-text {
 #story h1 {
   font-size: 1.2rem;
   font-weight: bold;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
 }
 #story h2 {
   font-size: 1.1em;
   font-weight: bold;
-  margin: 1rem 0 1rem 0;
-}
-
-#story .ui-title {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-#story .ui-title-more {
-  font-size: 0.8em;
-  margin-left: 0.5em;
+  margin: 1rem 0 0.5rem 0;
 }
 
 #story .ui-subtitle {
@@ -329,15 +320,19 @@ a:hover {
 /* Link Styles - End */
 
 ul.actions {
-  margin-top: 0;
-  padding-left: 0.5em;
+  margin: 0;
+  padding-left: 0.5rem;
 }
 
 ul.actions li {
-  margin-bottom: 20px;
-  padding: 0 0 0 25px;
-  position: relative;
   list-style: none;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+ul.actions > li:not(:first-child),
+ul.actions > span[data-name="mtl"]:not(:first-child) {
+  margin-top: 1rem;
 }
 
 ul.actions li::before {
@@ -703,6 +698,14 @@ meta-text {
 
 #story details:not([open]) .details-open {
   display: none;
+}
+
+#story details[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+#story details[open] {
+  padding-bottom: 0.5rem;
 }
 /* twine-user-stylesheet #7: "c3-Draft-Sign.css" */
 #draft-sign {
@@ -1245,9 +1248,9 @@ ul.actions .mt-seen-true li::before {
 }
 */
 
-#trail-intro {
+#trail-key {
+  margin-bottom: 0.5rem;
   margin-left: 2rem;
-  margin-bottom: 1rem;
 }
 
 .trail-small-box {
@@ -1428,6 +1431,7 @@ ul.actions .mt-seen-true li::before {
 
 #tran-stats {
   font-size: 12px;
+  font-weight: normal;
   margin-left: 1em;
   vertical-align: center;
 }
@@ -3244,7 +3248,7 @@ MT.arcRender = (output) => {
 
   $(output).wiki(
     `<<sticky-head>>` +
-      `<div class=ui-title>${title}</div>` +
+      `<h1>${title}</h1>` +
       `<</sticky-head>>`
   );
 
@@ -3378,34 +3382,24 @@ MT.arcPageStart = () => {
     V.xn_TamedHarsh ||
     V.xn_TamedMild;
 
-  /** @type {(which: string) => void} */
-  T.open = (which) => {
-    $(".arc-closable").removeClass("arc-open");
-    $(".arc-switch").text("(show)");
-    $(`.arc-closable-${which}`).addClass("arc-open");
-    $(`.arc-switch-${which}`).text("(hide)");
-  };
-
-  /** @type {(which: string) => void} */
-  T.toggle = (which) => {
-    const now = session.get(sessionKey);
-    const next = now === which ? "none" : which;
-    session.set(sessionKey, next);
-    T.open(next);
-  };
-
-  /** @type {(which: string) => string} */
-  T.switch = (which) => {
-    let mkp =
-      `<a class="arc-switch arc-switch-${which}"` +
-      ` onclick="SugarCube.State.temporary.toggle('${which}')"` +
-      `>(show)</a>`;
-    return mkp;
-  };
-
   $(document).one(":passagedisplay", () => {
-    const state = session.get(sessionKey);
-    T.open(state || "intro");
+    $("#story details").on("toggle", ev => {
+      const el = ev.target;
+      if (!(el instanceof HTMLDetailsElement)) return;
+      if (!el.open) return;
+      const open = $("#story details").index(el);
+      if (open >= 0) {
+        session.set(sessionKey, open);
+      }
+    });
+
+    const open = session.get(sessionKey);
+    if (typeof open === "number") {
+      const el = $("#story details")[open];
+      if (el instanceof HTMLDetailsElement) {
+        el.open = true;
+      }
+    }
   });
 
   lockpickStart();
@@ -11464,7 +11458,7 @@ MT.notesAllStart = () => {
     $("#notes-overwrite").on("click", confirmOverwrite);
     $("#notes-save").on("click", saveToFile);
     $("#notes-load").on("click", loadFromFile);
-    $("#notes-load-file").on("change", ev => loadFilePicked(ev.target));
+    $("#notes-load-file").on("change", (ev) => loadFilePicked(ev.target));
     $("#notes-share").prop("disabled", T.canShare).on("click", doShare);
     $("input[name=notes-add-trail]").on("change", toggleTrail);
     restoreSession();
@@ -11684,12 +11678,6 @@ MT.notesAllStart = () => {
     const text = getText();
     navigator.share({ title, text });
   }
-
-  T.switch = () => {
-    $("#notes-detail").toggleClass("mt-hidden");
-    const hidden = $("#notes-detail").hasClass("mt-hidden");
-    $("#notes-switch").text(hidden ? "(show intro)" : "(hide intro)");
-  };
 };
 /* twine-user-script #46: "g1m-Notes-Popup.js" */
 MT.notesPopupStart = () => {
@@ -14567,7 +14555,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -14823,11 +14811,15 @@ to unlock them again.
   &lt;&lt;/if&gt;&gt;
 &lt;&lt;/sticky-return-and&gt;&gt;
 
-&lt;h1&gt;
-  Welcome to the Mage&#39;s Tower Archives &lt;&lt;= _switch(&quot;intro&quot;)&gt;&gt;
-&lt;/h1&gt;
+&lt;details name=&quot;arc-fold&quot;&gt;
+  &lt;summary&gt;
+    &lt;h1&gt;
+      Welcome to the Mage&#39;s Tower Archives
+      &lt;a class=&quot;details-open&quot;&gt;(hide intro)&lt;/a&gt;
+      &lt;a class=&quot;details-closed&quot;&gt;(show intro)&lt;/a&gt;
+    &lt;/h1&gt;
+  &lt;/summary&gt;
 
-&lt;div class=&quot;arc-body arc-closable arc-closable-intro&quot;&gt;
   Here you can revisit all the endings and keywords
   that the adventurers have seen
   in their time in the Mage&#39;s Tower.
@@ -14854,25 +14846,26 @@ to unlock them again.
   you can save a game at the point the ending begins.
   ?P
   If you want to erase all your progress and start over,
-  use the &quot;Lock&quot; action below.
-  ?P
-&lt;/div&gt;
+  use the &quot;Lock&quot; action in the Control Panel below.
+&lt;/details&gt;
 
-&lt;div class=ui-subtitle&gt;
-  Control Panel
-&lt;/div&gt;
+&lt;details name=&quot;arc-fold&quot;&gt;
+  &lt;summary&gt;
+    &lt;h2&gt;
+      Control Panel
+      &lt;a class=&quot;details-open&quot;&gt;(hide)&lt;/a&gt;
+      &lt;a class=&quot;details-closed&quot;&gt;(show)&lt;/a&gt;
+    &lt;/h2&gt;
+  &lt;/summary&gt;
 
-&lt;div class=&quot;arc-body&quot;&gt;
   &lt;&lt;if _lockpick || _anyNero&gt;&gt;
     &lt;&lt;arc-select mn_arcBarbs &quot;Feline cock:&quot;&gt;&gt;
       &lt;&lt;arc-option n &quot;Smooth&quot; true&gt;&gt;
       &lt;&lt;arc-option y &quot;Barbed&quot; true&gt;&gt;
     &lt;&lt;/arc-select&gt;&gt;
   &lt;&lt;/if&gt;&gt;
-&lt;/div&gt;
 
-&lt;ul class=actions&gt;
-  &lt;li&gt;
+  &lt;div&gt;
     &lt;&lt;link &quot;Lock all the Archives&quot;&gt;&gt;
       &lt;&lt;script&gt;&gt;
         Dialog.setup(&quot;Confirm Lock Archives&quot;);
@@ -14880,39 +14873,49 @@ to unlock them again.
         Dialog.open();
       &lt;&lt;/script&gt;&gt;
     &lt;&lt;/link&gt;&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/details&gt;
 
-&lt;div class=ui-subtitle&gt;
-  Drekkar Endings (_drekkarEndingsUnlocked)
-  &lt;&lt;= _switch(&quot;drekkar&quot;)&gt;&gt;
-&lt;/div&gt;
-&lt;div class=&quot;arc-body arc-closable arc-closable-drekkar&quot;&gt;
+&lt;details name=&quot;arc-fold&quot;&gt;
+  &lt;summary&gt;
+    &lt;h2&gt;
+      Drekkar Endings (_drekkarEndingsUnlocked)
+      &lt;a class=&quot;details-open&quot;&gt;(hide)&lt;/a&gt;
+      &lt;a class=&quot;details-closed&quot;&gt;(show)&lt;/a&gt;
+    &lt;/h2&gt;
+  &lt;/summary&gt;
+
   &lt;&lt;include &quot;d0a Drekkar Ending Index&quot;&gt;&gt;
-  &lt;hr&gt;
-&lt;/div&gt;
+&lt;/details&gt;
 
-&lt;div class=ui-subtitle&gt;
-  Nero Endings (_neroEndingsUnlocked)
-  &lt;&lt;= _switch(&quot;nero&quot;)&gt;&gt;
-&lt;/div&gt;
-&lt;div class=&quot;arc-body arc-closable arc-closable-nero&quot;&gt;
+&lt;details name=&quot;arc-fold&quot;&gt;
+  &lt;summary&gt;
+    &lt;h2&gt;
+      Nero Endings (_neroEndingsUnlocked)
+      &lt;a class=&quot;details-open&quot;&gt;(hide)&lt;/a&gt;
+      &lt;a class=&quot;details-closed&quot;&gt;(show)&lt;/a&gt;
+    &lt;/h2&gt;
+  &lt;/summary&gt;
+
   &lt;&lt;include &quot;n0a Nero Ending Index&quot;&gt;&gt;
-  &lt;hr&gt;
-&lt;/div&gt;
+&lt;/details&gt;
 
-&lt;div class=ui-subtitle&gt;
-  Nero Keywords (_neroKeywordsUnlocked)
-  &lt;&lt;= _switch(&quot;nero-kw&quot;)&gt;&gt;
-&lt;/div&gt;
-&lt;div class=&quot;arc-body arc-closable arc-closable-nero-kw&quot;&gt;
+&lt;details name=&quot;arc-fold&quot;&gt;
+  &lt;summary&gt;
+    &lt;h2&gt;
+      Nero Keywords (_neroKeywordsUnlocked)
+      &lt;a class=&quot;details-open&quot;&gt;(hide)&lt;/a&gt;
+      &lt;a class=&quot;details-closed&quot;&gt;(show)&lt;/a&gt;
+    &lt;/h2&gt;
+  &lt;/summary&gt;
+
   &lt;&lt;= MT.neroKeywordList()&gt;&gt;
-&lt;/div&gt;
+&lt;/details&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="12" name="g1m Credits" tags="is-menu" position="250,1725" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;sticky-head&gt;&gt;
-  &lt;div class=ui-title&gt;Credits&lt;/div&gt;
+  &lt;h1&gt;Credits&lt;/h1&gt;
 &lt;&lt;/sticky-head&gt;&gt;
 
 &lt;&lt;sticky-return&gt;&gt;
@@ -15393,13 +15396,15 @@ if (!State.temporary.isTranscript) {
 
 &lt;&lt;sticky-return&gt;&gt;
 
-&lt;h1&gt;
-  All Notes
-  &lt;a id=&quot;notes-switch&quot; onclick=&quot;SugarCube.State.temporary.switch()&quot;
-    &gt;(show intro)&lt;/a&gt;
-&lt;/h1&gt;
+&lt;details&gt;
+  &lt;summary&gt;
+    &lt;h1&gt;
+      All Notes
+      &lt;a class=&quot;details-open&quot;&gt;(hide intro)&lt;/a&gt;
+      &lt;a class=&quot;details-closed&quot;&gt;(show intro)&lt;/a&gt;
+    &lt;/h1&gt;
+  &lt;/summary&gt;
 
-&lt;div id=&quot;notes-detail&quot; class=&quot;mt-hidden&quot;&gt;
   This is a system for attaching notes to individual pages in the story.
   It&#39;s intended for playtesters to record bugs and feedback as they play,
   but you can also use it for personal notes.
@@ -15429,7 +15434,7 @@ if (!State.temporary.isTranscript) {
   When that happens, the conflicting value will be shown,
   and you will have the option of choosing which version to keep.
   ?P
-&lt;/div&gt;
+&lt;/details&gt;
 
 &lt;div id=&quot;notes-full&quot;&gt;
   &lt;textarea id=&quot;notes-input&quot;&gt;&lt;/textarea&gt;
@@ -15448,7 +15453,7 @@ if (!State.temporary.isTranscript) {
     &lt;button id=&quot;notes-lose&quot;&gt;&amp;#x21d1; Lose edits&lt;/button&gt;
     &lt;button id=&quot;notes-overwrite&quot;&gt;&amp;#x21d3; Overwrite conflict&lt;/button&gt;
   &lt;/div&gt;
-  &lt;div class=ui-subtitle&gt;Conflicting update&lt;/div&gt;
+  &lt;h2&gt;Conflicting update&lt;/h2&gt;
   &lt;textarea disabled&gt;&lt;/textarea&gt;
 &lt;/div&gt;
 &lt;hr&gt;
@@ -15504,9 +15509,9 @@ if (!State.temporary.isTranscript) {
   [[View all notes|g1m Notes All]]
 &lt;&lt;/sticky-return-and&gt;&gt;
 
-&lt;div class=ui-subtitle&gt;
+&lt;h2&gt;
   Notes for [page $g_notesOrigin]
-&lt;/div&gt;
+&lt;/h2&gt;
 
 &lt;textarea id=&quot;notes-input&quot; placeholder=&quot;Enter text here&quot;&gt;&lt;/textarea&gt;
 
@@ -15519,7 +15524,7 @@ if (!State.temporary.isTranscript) {
     &lt;button id=&quot;notes-lose&quot;&gt;Lose edits &amp;#x21d1;&lt;/button&gt;
     &lt;button id=&quot;notes-force&quot;&gt;&amp;#x21d3; Overwrite conflict&lt;/button&gt;
   &lt;/div&gt;
-  &lt;div class=ui-subtitle&gt;Local storage has a conflicting value:&lt;/div&gt;
+  &lt;h2&gt;Local storage has a conflicting value:&lt;/h2&gt;
   &lt;textarea disabled&gt;&lt;/textarea&gt;
 &lt;/div&gt;
 
@@ -15705,7 +15710,6 @@ if (!State.temporary.isTranscript) {
   &lt;details&gt;
     &lt;summary&gt;Mild spoilers&lt;/summary&gt;
 
-    &lt;br&gt;
     There are five bad endings: Tamed Mild, Tamed Harsh,
     Caged Mild, Caged Harsh, and Broken.
     &lt;ul&gt;
@@ -15922,26 +15926,23 @@ hello some more
     but ?debug mode will also show one full rendering of the page.
   &lt;&lt;/if&gt;&gt;
 
-  ?P
 &lt;/details&gt;
 
-&lt;span class=nobr&gt;
+&lt;div id=&quot;trail-key&quot;&gt;
   &lt;span class=&quot;trail-small-box trail-current&quot;&gt;&lt;/span&gt; current trail
   &amp;nbsp;
   &lt;span class=&quot;trail-small-box trail-older&quot;&gt;&lt;/span&gt; older trails
-&lt;/span&gt;
-
-?P
+&lt;/div&gt;
 
 &lt;div id=&quot;trail-output&quot;&gt;&lt;/div&gt;
 
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="25" name="g1m Transcript" tags="is-menu" position="375,2475" size="100,100">&lt;&lt;nobr&gt;&gt;
 
 &lt;&lt;sticky-head&gt;&gt;
-  &lt;div&gt;
-    &lt;span class=ui-title&gt;Story Transcript&lt;/span&gt;
+  &lt;h1&gt;
+    Story Transcript
     &lt;span id=&quot;tran-stats&quot;&gt;&lt;/span&gt;
-  &lt;/div&gt;
+  &lt;/h1&gt;
 &lt;&lt;/sticky-head&gt;&gt;
 
 &lt;&lt;script&gt;&gt;
