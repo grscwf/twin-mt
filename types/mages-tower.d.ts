@@ -96,6 +96,9 @@ declare module "twine-sugarcube" {
     /** Latest barbs choice was yes. */
     mg_barbsYes?: boolean;
 
+    /** True if trail intro was seen. */
+    mg_trailIntroSeen?: boolean;
+
     /** Latest knot choice was no. */
     mg_knotNo?: boolean;
 

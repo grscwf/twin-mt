@@ -191,7 +191,7 @@ const chainReplayUrl = () => {
 };
 
 /** Check for dynamic passage rendering that might break chai-url. */
-const chainObserverInit = () => {
+const chainObserverStart = () => {
   if (!setup.playtest) return;
 
   /** @type {(node: Node) => boolean} */
@@ -248,7 +248,7 @@ const chainObserverInit = () => {
   });
 };
 
-const chainInit = () => {
+const chainStart = () => {
   const passages = MT.jqUnwrap($("#passages"));
   passages.addEventListener("click", chainRememberChoice, true);
   document.addEventListener("keydown", chainKbCopy);
@@ -256,6 +256,6 @@ const chainInit = () => {
   chainReplayUrl();
 };
 
-$(document).on(":storyready", chainInit);
+$(document).on(":storyready", chainStart);
 
-chainObserverInit();
+chainObserverStart();

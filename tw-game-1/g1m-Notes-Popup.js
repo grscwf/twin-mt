@@ -1,4 +1,4 @@
-MT.notesPopupInit = () => {
+MT.notesPopupStart = () => {
   const T = State.temporary;
   const V = State.variables;
   const noteStore = window.sessionStorage;

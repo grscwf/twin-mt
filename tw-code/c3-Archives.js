@@ -351,7 +351,7 @@ MT.arcRender = (output) => {
   renderLoop();
 };
 
-const lockpickSetup = () => {
+const lockpickStart = () => {
   const T = State.temporary;
   if (!setup.debug) return;
   T.lockpick = setup.debug && session.get("arc-lockpick");
@@ -395,7 +395,7 @@ const arcCountUnlocks = () => {
   );
 };
 
-MT.arcPageSetup = () => {
+MT.arcPageStart = () => {
   const sessionKey = "arc-open";
 
   const T = State.temporary;
@@ -438,6 +438,6 @@ MT.arcPageSetup = () => {
     T.open(state || "intro");
   });
 
-  lockpickSetup();
+  lockpickStart();
   arcCountUnlocks();
 };

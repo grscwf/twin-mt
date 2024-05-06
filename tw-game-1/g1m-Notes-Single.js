@@ -1,4 +1,4 @@
-MT.notesSingleSetup = () => {
+MT.notesSingleStart = () => {
   const T = State.temporary;
   const V = State.variables;
   const noteStore = window.sessionStorage;

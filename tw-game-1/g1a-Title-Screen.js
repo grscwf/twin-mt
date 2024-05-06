@@ -1,4 +1,4 @@
-MT.titleInit = () => {
+MT.titleStart = () => {
   const V = State.variables;
   const T = State.temporary;
 

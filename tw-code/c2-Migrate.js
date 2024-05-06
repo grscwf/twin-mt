@@ -37,6 +37,7 @@ const migrateMetadata = () => {
   };
 
   remove("mg_trail");
+  remove("mg_trailHideIntro")
   remove("mg_notesNoTrailTimes");
   remove("mi_notesNoTrailTimes");
   remove("mi_trail");

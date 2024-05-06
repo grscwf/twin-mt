@@ -310,6 +310,17 @@ const packActiveTrail = () => {
   localStorage.removeItem(key);
 };
 
+MT.trailStart = () => {
+  $(document).one(":passagedisplay", () => {
+    $("#trail-details").prop("open", !State.variables.mg_trailIntroSeen);
+    MT.mdSet("mg_trailIntroSeen", true);
+
+    MT.trailViewRender($("#trail-output"));
+  });
+};
+
+MT.mdDefUnsaved("mg_trailIntroSeen");
+
 if (setup.playtest) {
   claimOldTrail();
   packStaleTrails();
