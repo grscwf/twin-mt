@@ -328,18 +328,15 @@ a:hover {
 
 ul.actions {
   margin: 0;
+  margin-top: -1rem;
   padding-left: 0.5rem;
 }
 
 ul.actions li {
   list-style: none;
+  margin-top: 1rem;
   padding-left: 1.5rem;
   position: relative;
-}
-
-ul.actions > li:not(:first-child),
-ul.actions > span:not(:first-child) li {
-  margin-top: 1rem;
 }
 
 ul.actions li::before {
@@ -12003,9 +12000,6 @@ let shockGoal = 0;
 /** @type { (n: number) => void} */
 const cagedShockAdd = (n) => {
   shockGoal += n;
-  if ($(".caged-box caged-shock-start").length) {
-    shockGoal += 999;
-  }
   if (shockTimeout == null) {
     shockTimeout = setTimeout(cagedShockOn);
   }
@@ -12117,16 +12111,10 @@ const cagedRenderTranscript = (out, split) => {
     const block = /** @type { DocumentFragment } */ (split.blocks[i]);
     box.append($(block).contents());
 
-    // const shocks = cage.find("[data-shock]");
-    // if (shocks.length) {
-    //   let n = 0;
-    //   shocks.each((i, el) => {
-    //     if (el.dataset.shock != null) {
-    //       n += +el.dataset.shock;
-    //     }
-    //   });
-    //   shakeWords(cage, n);
-    // }
+    if (box.find("[data-shock], caged-shock-happened").length) {
+      // only slight skew; more is distracting and hard to read in transcript
+      cagedShake(box, 1);
+    }
 
     box.append("<a class=caged-continue>Continue</a>");
 
@@ -12164,8 +12152,11 @@ const cagedRenderLive = (out, split, next, slow) => {
 
     box.append("<a class=caged-continue>Continue</a>");
 
+    if (box.find("caged-shock-happened").length) {
+      cagedShake(box, 1);
+    }
     if (box.find("caged-shock-continue").length) {
-      setTimeout(() => cagedShockAdd(999), 1000);
+      setTimeout(() => cagedShockAdd(3), 500);
     }
 
     MT.scrollSavePos();
@@ -12505,6 +12496,7 @@ const cagedSplit = (text, fill, once) => {
 
   let cumActive = false;
   let shockActive = false;
+  let shockHappened = false;
   blocks.forEach((block, i) => {
     const jq = $(block);
 
@@ -12516,6 +12508,12 @@ const cagedSplit = (text, fill, once) => {
     if (jq.find("caged-cum-stop").length) {
       // next block
       cumActive = false;
+    }
+
+    if (shockHappened) {
+      jq.prepend("<caged-shock-happened>");
+    } else if (jq.find("[data-shock], caged-shock-happened").length) {
+      shockHappened = true;
     }
 
     if (jq.find("caged-shock-start").length) {
@@ -14566,7 +14564,7 @@ MT.mdDefUnsaved("md_arcEnthrallmentVariant");
 MT.mdDefUnsaved("md_arcExtractionVariant");
 MT.mdDefUnsaved("md_arcInterrogationFreeze");
 MT.mdDefUnsaved("md_arcInterrogationVariant");
-</script><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
+</script><tw-tag name="is-menu" color="yellow"></tw-tag><tw-tag name="maybe-password" color="purple"></tw-tag><tw-tag name="must-fix" color="orange"></tw-tag><tw-tag name="text" color="blue"></tw-tag><tw-tag name="init" color="blue"></tw-tag><tw-tag name="ending" color="orange"></tw-tag><tw-tag name="inclusion" color="blue"></tw-tag><tw-tag name="incomplete" color="red"></tw-tag><tw-tag name="ivex-advances" color="orange"></tw-tag><tw-tag name="section-start" color="green"></tw-tag><tw-tag name="big-mood" color="purple"></tw-tag><tw-tag name="ivex-repeats" color="yellow"></tw-tag><tw-tag name="has-hole" color="orange"></tw-tag><tw-tag name="key" color="yellow"></tw-tag><tw-tag name="roam-stop" color="red"></tw-tag><tw-tag name="section-end" color="purple"></tw-tag><tw-tag name="under-construction" color="red"></tw-tag><tw-tag name="action-point" color="blue"></tw-tag><tw-passagedata pid="1" name="StoryAuthor" tags="" position="250,125" size="100,100">&lt;&lt;nobr&gt;&gt;
 by
 &lt;a href=&quot;http://www.slethstories.com/&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;
 &gt;Sleth&lt;/a&gt;
@@ -20274,7 +20272,7 @@ But I think I&#39;ve demonstrated that you do not
 understand anything about my magic, correct?&quot;
 
 ?P
-Nero nods again, shyly. The shyness is a ruse, of course,
+Nero nods again, shyly. The shyness is a ruse,
 but it isn&#39;t difficult to evoke that feeling.
 
 ?P
@@ -21949,7 +21947,7 @@ seeking attention...
   the question &lt;em&gt;anyway&lt;/em&gt;.
   What &lt;em&gt;other&lt;/em&gt; malicious acts might the panther do
   under the pretense of the wolf&#39;s comfort?
-  Nero shivers from amorphous fears of Ivex&#39;s power.
+  Nero shivers from amorphous fears of the panther&#39;s power.
   &lt;&lt;set _pw = &quot;Yes I&#39;m Quite Comfortable&quot;&gt;&gt;
 
 &lt;&lt;elseif $n_tough&gt;&gt;
@@ -22564,7 +22562,7 @@ disappears with a &lt;em&gt;fwoosh&lt;/em&gt;.
 
   &lt;&lt;mtl [[n1e Crop 1]] &quot;//2&quot;&gt;&gt;
     &lt;&lt;if $n_subby&gt;&gt;
-      Pant with lust and confusion.
+      Pant with hesitant lust.
     &lt;&lt;elseif $n_tough || $n_abused&gt;&gt;
       Growl with anger and lust.
     &lt;&lt;else&gt;&gt;
@@ -22778,7 +22776,7 @@ Nero
   The giant emotion trembles, making whispering sounds
   through the wolf&#39;s soul, a sound that might be a word or a name.
   He tries to chase that word, and in that chase he
-  forgets about the other words he was going to say.
+  forgets the other words he was going to say.
 
 &lt;&lt;elseif $n_tough&gt;&gt;
   The wolf&#39;s anger makes him bark each word with intensity
@@ -25333,16 +25331,16 @@ Ivex the Magnificent&#39;s...
 
 ?P
 &lt;&lt;barbs-announce soon&gt;&gt;
-&lt;ul class=actions&gt;
-  &lt;&lt;mt-seen $sn_barbsSkip&gt;&gt;
+&lt;&lt;mt-seen $sn_barbsSkip&gt;&gt;
+  &lt;ul class=actions&gt;
     &lt;&lt;mtl $n_afterNaked &quot;$n_barbs = true&quot;&gt;&gt;
       ...barbed feline cock.
     &lt;&lt;/mtl&gt;&gt;
     &lt;&lt;mtl $n_afterNaked &quot;delete $n_barbs&quot;&gt;&gt;
       ...smooth feline cock.
     &lt;&lt;/mtl&gt;&gt;
-  &lt;&lt;/mt-seen&gt;&gt;
-&lt;/ul&gt;
+  &lt;/ul&gt;
+&lt;&lt;/mt-seen&gt;&gt;
 
 &lt;&lt;run
   $n_ivexNear = true;
@@ -26689,7 +26687,9 @@ intonation of the most basic mage-sight spell...
     &lt;&lt;if $n_ivexNear&gt;&gt;
       hears the incantation.
     &lt;&lt;else&gt;&gt;
-      notices the whispered incantation.
+      notices the
+      &lt;&lt;= $n_apprentice ? &quot;quiet&quot; : &quot;whispered&quot;&gt;&gt;
+      incantation.
     &lt;&lt;/if&gt;&gt;
     He
     &lt;&lt;= $n_candleLit ? &quot;chuckles in his mask.&quot; : &quot;chuckles.&quot;&gt;&gt;
@@ -27031,7 +27031,7 @@ is unlike any he&#39;s seen before.
 &lt;&lt;if $n_apprentice&gt;&gt;
   Nero had hoped that appealing to the panther&#39;s ego would lead Ivex
   to pontificate on matters more intellectual than carnal,
-  but it seems the panther&#39;s mind is always seeking things carnal.
+  but it seems the panther is always seeking things carnal.
 
 &lt;&lt;else&gt;&gt;
   Nero is no longer simply a captive in an interrogation.
@@ -27435,6 +27435,7 @@ for (const pw of JSON.parse(V.n_passFound || &quot;[]&quot;)) {
 MT.assert(T.toTry.length &gt; 0, &quot;should have passwords to try&quot;);
 T.toTry.sort();
 &lt;&lt;/script&gt;&gt;\</tw-passagedata><tw-passagedata pid="275" name="n1s Help Device" tags="mt-ready" position="4525,775" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 &lt;&lt;mt-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
 
 &lt;&lt;set _speaks =
@@ -27580,6 +27581,7 @@ $n_afterAction
 &lt;&lt;set $n_rememberPlease = true&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="276" name="n1s Help Touch" tags="mt-ready" position="4775,775" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-always n_rememberPlease true&gt;&gt;
+&lt;&lt;vi-ignore n_ivexGone&gt;&gt;
 &lt;&lt;mt-assert $n_ivexGone || $n_ivexNear || !$n_candleHorny&gt;&gt;
 
 &lt;&lt;run
@@ -33824,7 +33826,7 @@ How are you avoiding Rankine Calamity?&quot;
 &lt;&lt;else&gt;&gt;
   The wolf is certain that the panther is bluffing.
   In the web of exotic energy that connects the crystals,
-  each strand of it is sturdy, but the web itself is much too
+  each strand looks sturdy, but the web itself is much too
   complex to remain stable.
 &lt;&lt;/if&gt;&gt;
 
@@ -34147,7 +34149,7 @@ additional forces to hold it apart from every other one.
 ?P
 Rankine&#39;s Calamity happened during a demonstration
 of four crystals that the wolf mage was directing to dance in front of him.
-Four crystals need twelve forces.
+Four crystals need twelve opposing forces.
 It&#39;s a delicate
 balance that continually shifts as the crystals and the
 objects near them move about.
@@ -44075,7 +44077,7 @@ Nero screams.
 &lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="526" name="n2y Wand Finish B1" tags="mt-ready" position="10075,2275" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;vi-ignore n_extraHorny n_mageSight&gt;&gt;
 
-Nero stands to find a
+Nero stands and looks for a
 &lt;clue-cut/&gt;
 way to...
 he&#39;s not sure if cumming or escaping is the stronger motivation.
@@ -44880,7 +44882,7 @@ It feels even better than he thought it &lt;em&gt;could&lt;/em&gt; be.
 The tube embraces every millimeter of skin on
 &lt;&lt;= MT.impliedKnot() ? &quot;&quot; : &quot;the head of&quot;&gt;&gt; his cock,
 much better than his hand can do.
-It&#39;s even better than any woman could be,
+It&#39;s even better than any woman would be,
 because the hole &lt;em&gt;vibrates&lt;/em&gt;
 in a way that no mundane muscles could ever do.
 Nero had planned to stroke the tube up and down his shaft,
@@ -45629,7 +45631,7 @@ The wolf lands hard on his tail with a yelp.
   will push him over the edge,
   even without the participation of his ?nCock.
 
-  Suddenly, the red spot flashes a brilliant purple color,
+  Suddenly, the red spot on the wall flashes a brilliant purple color,
   and the wolf feels
   a sharp electric &lt;a data-shock=1&gt;shock&lt;/a&gt; in his ass.
   Nero yelps. His muscles spasm.
@@ -45886,8 +45888,8 @@ The wolf lands hard on his tail with a yelp.
   The urgent desire overwhelms any embarrassment that would have
   occupied his mind an hour ago.
   Feral, animal lust fills his trembling body
-  and begs for attention within the wordless wavering
-  of the whine that streams out his open muzzle.
+  and begs for attention with a wordless wavering
+  whine that streams out his open muzzle.
   A slight touch on his ?nCock turns the wolf&#39;s noises into moans.
 
   Ivex speaks softly.
@@ -45912,13 +45914,13 @@ The wolf lands hard on his tail with a yelp.
   When Ivex says that word,
   the entire cell flashes purple.
 
-  The &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt;
+  The &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt;
   &lt;caged-shock-start/&gt;
   in Nero&#39;s ass begin again, and this time they do not stop.
   He writhes and screams and pulls at the nub of
   the gem sticking out his tailhole,
   but he cannot escape the
-  &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt;.
+  &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt;.
   This is &lt;em&gt;not&lt;/em&gt; what the ranchers do.
   Their electrical probe is more gentle,
   like a pulsing massage,
@@ -45930,11 +45932,11 @@ The wolf lands hard on his tail with a yelp.
   and force them to squeeze out his pent-up ?nCum.
   Nero feels the ?nCum shooting out his ?nCock,
   and then it sprays out the ceiling in messy spurts.
-  Nero is too distracted by the painful &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt;
+  Nero is too distracted by the painful &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt;
   to catch the ?nCum cleanly.
   Fresh, warm ?nCum splashes across his muzzle and down his fur.
   His thrashing sends globs of ?nCum flying everywhere.
-  The &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt; continue.
+  The &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt; continue.
   The ?nCum does not stop.
   Nero becomes splattered with more ?nCum than he&#39;s ever shot before,
   more ?nCum than should be possible.
@@ -45946,9 +45948,9 @@ The wolf lands hard on his tail with a yelp.
   Eventually, the ceiling does finish spurting
   the wolf&#39;s ?nCum.
 
-  But the &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt; do not stop.
+  But the &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt; do not stop.
   The gem in his ass keeps delivering
-  &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt; in synchrony with
+  &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt; in synchrony with
   the cell&#39;s flashing purple light.
   Some of the surface of the cell does become dark.
   Nero has trouble focusing,
@@ -45956,7 +45958,7 @@ The wolf lands hard on his tail with a yelp.
   itself to highlight every place that&#39;s smeared with ?nCum.
   The wolf can guess what he needs to do.
   He groans. There is &lt;em&gt;so much&lt;/em&gt; ?nCum.
-  And the pulse of &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt; does not stop.
+  And the pulse of &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt; does not stop.
   It&#39;s clear that the gem&#39;s punishment
   will continue until he cleans up all the ?nCum.
 
@@ -45972,7 +45974,7 @@ The wolf lands hard on his tail with a yelp.
   spit in his palm to help dilute the streaks
   of ?nCum as he continues to wipe the ceiling clean.
   His tail is lashing uncontrollably from the
-  incessant barrage of &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt;.
+  incessant barrage of &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt;.
   He pins his tail against the wall with one hand
   and continues cleaning the ?nCum with the other.
 
@@ -45982,7 +45984,7 @@ The wolf lands hard on his tail with a yelp.
   and scraping at the ?nCum again,
   until the purple flashing at that spot is gone.
   Nero hopes that reducing the mess of ?nCum will
-  reduce the force of the &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt;.
+  reduce the force of the &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt;.
   Or maybe he&#39;s just becoming used to it.
   The agony has become hypnotic.
   His vision is filled with swirls of purple ?nCum.
@@ -46002,9 +46004,9 @@ The wolf lands hard on his tail with a yelp.
 
   He really &lt;em&gt;can&lt;/em&gt; lick up all the ?nCum.
   He&#39;s become &lt;em&gt;efficient&lt;/em&gt;.
-  The repeated &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt; make it hard to think.
+  The repeated &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt; make it hard to think.
   But his rational mind still exists in the staccato moments
-  between each disorienting &lt;a data-shock=&quot;1&quot;&gt;shock&lt;/a&gt;.
+  between each disorienting &lt;a data-shock=&quot;3&quot;&gt;shock&lt;/a&gt;.
   And he knows how to find every spot of ?nCum
   and lick it up.
 
@@ -46024,7 +46026,7 @@ The wolf lands hard on his tail with a yelp.
 &lt;&lt;nero-caged-fill&gt;&gt;
 
   Nero pauses to take deep breaths and swallow some ?nCum.
-  The &lt;a data-shock=&quot;1&quot;&gt;shocks&lt;/a&gt; urge him on.
+  The &lt;a data-shock=&quot;3&quot;&gt;shocks&lt;/a&gt; urge him on.
   He changes position to bring his muzzle
   near another ?nCum stain,
   so that his tongue can lick the floor until
@@ -46049,6 +46051,7 @@ The wolf lands hard on his tail with a yelp.
   The last spot of purple light disappears
   &lt;clue-cut/&gt;
   underneath Nero&#39;s tongue.
+  &lt;caged-shock-happened/&gt;
 
   The wolf feels triumph as the large gem in his rectum
   stops delivering its shocks.

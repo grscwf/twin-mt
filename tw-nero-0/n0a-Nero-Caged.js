@@ -23,9 +23,6 @@ let shockGoal = 0;
 /** @type { (n: number) => void} */
 const cagedShockAdd = (n) => {
   shockGoal += n;
-  if ($(".caged-box caged-shock-start").length) {
-    shockGoal += 999;
-  }
   if (shockTimeout == null) {
     shockTimeout = setTimeout(cagedShockOn);
   }
@@ -137,16 +134,10 @@ const cagedRenderTranscript = (out, split) => {
     const block = /** @type { DocumentFragment } */ (split.blocks[i]);
     box.append($(block).contents());
 
-    // const shocks = cage.find("[data-shock]");
-    // if (shocks.length) {
-    //   let n = 0;
-    //   shocks.each((i, el) => {
-    //     if (el.dataset.shock != null) {
-    //       n += +el.dataset.shock;
-    //     }
-    //   });
-    //   shakeWords(cage, n);
-    // }
+    if (box.find("[data-shock], caged-shock-happened").length) {
+      // only slight skew; more is distracting and hard to read in transcript
+      cagedShake(box, 1);
+    }
 
     box.append("<a class=caged-continue>Continue</a>");
 
@@ -184,8 +175,11 @@ const cagedRenderLive = (out, split, next, slow) => {
 
     box.append("<a class=caged-continue>Continue</a>");
 
+    if (box.find("caged-shock-happened").length) {
+      cagedShake(box, 1);
+    }
     if (box.find("caged-shock-continue").length) {
-      setTimeout(() => cagedShockAdd(999), 1000);
+      setTimeout(() => cagedShockAdd(3), 500);
     }
 
     MT.scrollSavePos();
@@ -525,6 +519,7 @@ const cagedSplit = (text, fill, once) => {
 
   let cumActive = false;
   let shockActive = false;
+  let shockHappened = false;
   blocks.forEach((block, i) => {
     const jq = $(block);
 
@@ -536,6 +531,12 @@ const cagedSplit = (text, fill, once) => {
     if (jq.find("caged-cum-stop").length) {
       // next block
       cumActive = false;
+    }
+
+    if (shockHappened) {
+      jq.prepend("<caged-shock-happened>");
+    } else if (jq.find("[data-shock], caged-shock-happened").length) {
+      shockHappened = true;
     }
 
     if (jq.find("caged-shock-start").length) {
