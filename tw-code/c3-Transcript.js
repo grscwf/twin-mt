@@ -27,8 +27,8 @@ MT.tran.renderHistory = (out) => {
   const hist = MT.getHistory();
   let turn = 0;
 
-  if (hist.length === 0) {
-    outer.append("<em>You haven't started playing yet!</em>");
+  if (hist.length < 1) {
+    outer.append("<em>Nothing has happened yet!</em>");
     return;
   }
 
