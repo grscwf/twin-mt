@@ -179,7 +179,7 @@ const cagedRenderLive = (out, split, next, slow) => {
       cagedShake(box, 1);
     }
     if (box.find("caged-shock-continue").length) {
-      setTimeout(() => cagedShockAdd(3), 500);
+      setTimeout(() => cagedShockAdd(2), 500);
     }
 
     MT.scrollSavePos();
@@ -256,6 +256,8 @@ const cagedRenderLive = (out, split, next, slow) => {
     while (t.length && !["A", "CAGED-CUM"].includes(t.prop("tagName"))) {
       t = t.parent();
     }
+    // on continuous shock, any click flashes
+    const shocking = box.find("caged-shock-continue").length !== 0;
     const shock = t.attr("data-shock");
     if (shock != null) {
       e.preventDefault();
@@ -265,11 +267,17 @@ const cagedRenderLive = (out, split, next, slow) => {
         cagedShockAdd(n);
         t.attr("data-shock", "0");
       }
+      // mark when continuous shock starts
+      if (!shocking && box.find("caged-shock-start").length) {
+        box.prepend("<caged-shock-continue/>");
+      }
     } else if (t.hasClass("caged-cock")) {
       t.addClass("caged-touched");
+      if (shocking) cagedShockAdd(2);
     } else if (t.hasClass("caged-cum-active")) {
       t.addClass("caged-touched");
       $(".caged-box").find("caged-cum").removeAttr("delayed");
+      if (shocking) cagedShockAdd(2);
     } else if (t.hasClass("caged-continue")) {
       const cocks = box.find(
         ".caged-cock:not(.caged-touched):not(.caged-optional)"
