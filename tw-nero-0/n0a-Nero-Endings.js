@@ -27,7 +27,7 @@ MT.neroEndings = {
       "n9b Broken C5",
     ],
   },
-  xn_CagedHarsh: {
+  xn_CagedHarsh2: {
     title: "Bad Ending: Caged (Harsh)",
     passages: [
       "n9a Caged Harsh 1",
@@ -40,7 +40,7 @@ MT.neroEndings = {
       "n9a Caged Harsh End",
     ],
   },
-  xn_CagedMild: {
+  xn_CagedMild2: {
     title: "Bad Ending: Caged (Mild)",
     passages: [
       "n9a Caged Mild 1",

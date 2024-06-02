@@ -403,8 +403,8 @@ MT.arcPageStart = () => {
 
   T.anyNero =
     V.xn_Broken ||
-    V.xn_CagedHarsh ||
-    V.xn_CagedMild ||
+    V.xn_CagedHarsh2 ||
+    V.xn_CagedMild2 ||
     V.xn_TamedHarsh ||
     V.xn_TamedMild;
 

@@ -49,6 +49,10 @@ const migrateMetadata = () => {
   remove("mn_playerReadGlitch");
   remove("mn_playerSawIvexRemember");
 
+  // player unlocked placeholder endings
+  remove("xn_CagedHarsh");
+  remove("xn_CagedMild");
+
   rename("mg_notesNoTrail", "mi_notesNoTrail");
   rename("notes", "mi_notes");
 };
