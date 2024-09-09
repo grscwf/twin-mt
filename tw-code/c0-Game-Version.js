@@ -1,3 +1,3 @@
-setup.version = "v2.0-beta-20240909";
+setup.version = "v2.0-nero-wip";
 
 Config.saves.id = "sleth-mages-tower-2";
