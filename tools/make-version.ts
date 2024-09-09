@@ -6,30 +6,14 @@
  */
 
 import { Command } from "@commander-js/extra-typings";
-import { runP } from "./lib";
+import { fatal, nonfatal, runP } from "./lib";
 import fsP from "fs/promises";
 
 const top = `${__dirname}/..`;
 const versionJS = `${top}/tw-code/c0-Game-Version.js`;
 
-function fatal(message: string, ...args: unknown[]): never {
-  if (args.length) {
-    console.error(message, ...args);
-  }
-  throw new Error(message);
-}
 
-function nonfatal(
-  force: boolean | undefined,
-  message: string,
-  ...args: unknown[]
-) {
-  if (force) {
-    console.error(message, ...args);
-  } else {
-    fatal(message, ...args);
-  }
-}
+
 
 async function main(argv: string[]) {
   const program = new Command()

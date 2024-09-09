@@ -73,3 +73,24 @@ export function timestamp(): string {
   const now = new Date().toISOString();
   return now.replace("T", " ");
 }
+
+/** Report a fatal error and throw */
+export function fatal(message: string, ...args: unknown[]): never {
+  if (args.length) {
+    console.error(message, ...args);
+  }
+  throw new Error(message);
+}
+
+/** Report a nonfatal error. Throw unless `force` */
+export function nonfatal(
+  force: boolean | undefined,
+  message: string,
+  ...args: unknown[]
+) {
+  if (force) {
+    console.error(message, ...args);
+  } else {
+    fatal(message, ...args);
+  }
+}
