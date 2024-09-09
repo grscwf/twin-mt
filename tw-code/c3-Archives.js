@@ -135,8 +135,8 @@ Macro.add("arc-ending", {
     let setter = /** @type {string | null | undefined} */ (this.args[3]);
 
     const T = State.temporary;
-    const unlocked = enabled || T.lockpick;
     const isLink = typeof link !== "string";
+    const unlocked = enabled || (isLink && T.lockpick);
     offText = offText || (isLink ? link.text || "" : link);
     setter = setter || "";
 
@@ -234,7 +234,7 @@ Macro.add("ending-good", {
  */
 const arcAnnounce = (type, metaVar, text, output) => {
   const V = /** @type {Record<string, unknown>} */ (State.variables);
-  if (metaVar == null || V[metaVar]) {
+  if (metaVar == null || metaVar === "" || V[metaVar]) {
     $(output).append(`<span class="ending-${type}">${text}</span>`);
   } else {
     $(output).append(
@@ -402,7 +402,7 @@ MT.arcPageStart = () => {
   const V = State.variables;
 
   T.anyNero =
-    V.xn_Broken ||
+    V.xn_Broken2 ||
     V.xn_CagedHarsh2 ||
     V.xn_CagedMild2 ||
     V.xn_TamedHarsh ||

@@ -922,6 +922,7 @@ MT.gotoPaths = [
       { t: "n2y Wand Endgame 5" },
       { t: "n2y Wand Endgame 6" },
       { choice: "broken", note: true },
+      { t: "n0a Broken WIP" },
       { t: "n9b Broken A1" },
       { t: "n9b Broken A2" },
       { t: "n9b Broken A3" },

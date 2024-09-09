@@ -3,6 +3,30 @@ MT.neroEndings = {
   xn_Broken: {
     title: "Challenge Ending: Broken",
     passages: [
+      "n2y Wand Use 5",
+      "n2y Wand Use 6",
+      "n2y Wand Use 7",
+      "n2y Wand Finish A1",
+      "n2y Wand Finish A2",
+      "n2y Wand Finish A3",
+      "n2y Wand Finish A4",
+      "n2y Wand Finish A5",
+      "n2y Wand Finish A6",
+      "n2y Wand Finish B1",
+      "n2y Wand Finish B2",
+      "n2y Wand Finish B3",
+      "n2y Wand Endgame 2",
+      "n2y Wand Endgame 3",
+      "n2y Wand Endgame 4",
+      "n2y Wand Endgame 5",
+      "n2y Wand Endgame 6",
+      "n0a Broken WIP",
+    ]
+  },
+
+  xn_Broken2: {
+    title: "Challenge Ending: Broken",
+    passages: [
       "n9b Broken A1",
       "n9b Broken A2",
       "n9b Broken A3",

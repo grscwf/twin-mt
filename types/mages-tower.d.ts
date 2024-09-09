@@ -192,7 +192,7 @@ declare module "twine-sugarcube" {
 
     xd_IvexPunishment?: boolean;
 
-    xn_Broken?: boolean;
+    xn_Broken2?: boolean;
     xn_CagedHarsh2?: boolean;
     xn_CagedMild2?: boolean;
     xn_TamedHarsh?: boolean;
