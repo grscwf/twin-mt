@@ -5,7 +5,7 @@ Template.add(
   `<div class="mt-cons clue-remove">&#x1f6a7;Under Construction&#x1f6a7;</div>`
 );
 
-Template.add("debugIcon", "&#x1f527;");
+Template.add("debugIcon", "<mt-icon>&#x1f527;</mt-icon>");
 
 Template.add("msTara", "Ms.&nbsp;Tara");
 
@@ -16,4 +16,4 @@ Template.add(
     `<</link>></li>`
 );
 
-Template.add("testIcon", "&#x1f9ea;");
+Template.add("testIcon", "<mt-icon>&#x1f9ea;</mt-icon>");
